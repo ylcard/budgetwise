@@ -1,114 +1,32 @@
-
-import React, { useState, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Filter } from "lucide-react";
+import { Plus } from "lucide-react";
+import {
+  useTransactionsData,
+  useTransactionFiltering,
+  useTransactionActions,
+} from "../components/hooks/useFinancialData";
 
 import TransactionForm from "../components/transactions/TransactionForm";
 import TransactionList from "../components/transactions/TransactionList";
 import TransactionFilters from "../components/transactions/TransactionFilters";
 
 export default function Transactions() {
+  // UI state
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  
-  const now = new Date();
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-  
-  const [filters, setFilters] = useState({ 
-    type: 'all', 
-    category: [], // Changed to array for multi-select
-    paymentStatus: 'all',
-    startDate: currentMonthStart,
-    endDate: currentMonthEnd
-  });
-  const queryClient = useQueryClient();
 
-  const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date'),
-  });
+  // Data fetching
+  const { transactions, categories, isLoading } = useTransactionsData();
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list(),
-  });
+  // Filtering logic
+  const { filters, setFilters, filteredTransactions } = useTransactionFiltering(transactions);
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transaction.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      setShowForm(false);
-      setEditingTransaction(null);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      setShowForm(false);
-      setEditingTransaction(null);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Transaction.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    },
-  });
-
-  const handleSubmit = (data) => {
-    if (editingTransaction) {
-      updateMutation.mutate({ id: editingTransaction.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
-
-  const handleEdit = (transaction) => {
-    setEditingTransaction(transaction);
-    setShowForm(true);
-  };
-
-  const handleDelete = (id) => {
-    if (confirm('Are you sure you want to delete this transaction?')) {
-      deleteMutation.mutate(id);
-    }
-  };
-
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const typeMatch = filters.type === 'all' || t.type === filters.type;
-      
-      // Updated to handle multiple categories
-      const categoryMatch = !filters.category || filters.category.length === 0 || filters.category.includes(t.category_id);
-      
-      const paymentStatusMatch = filters.paymentStatus === 'all' || 
-        (filters.paymentStatus === 'paid' && t.isPaid) ||
-        (filters.paymentStatus === 'unpaid' && !t.isPaid);
-      
-      let dateMatch = true;
-      if (filters.startDate && filters.endDate) {
-        // Ensure comparison is consistent. Convert transaction date to same format as filter dates.
-        const transactionDate = new Date(t.date);
-        const start = new Date(filters.startDate);
-        const end = new Date(filters.endDate);
-        
-        // Normalize dates to start of day for comparison to include full end day
-        transactionDate.setHours(0, 0, 0, 0);
-        start.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
-
-        dateMatch = transactionDate >= start && transactionDate <= end;
-      }
-      
-      return typeMatch && categoryMatch && paymentStatusMatch && dateMatch;
-    });
-  }, [transactions, filters]);
+  // Actions (mutations and handlers)
+  const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useTransactionActions(
+    setShowForm,
+    setEditingTransaction
+  );
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -134,12 +52,12 @@ export default function Transactions() {
           <TransactionForm
             transaction={editingTransaction}
             categories={categories}
-            onSubmit={handleSubmit}
+            onSubmit={(data) => handleSubmit(data, editingTransaction)}
             onCancel={() => {
               setShowForm(false);
               setEditingTransaction(null);
             }}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            isSubmitting={isSubmitting}
           />
         )}
 

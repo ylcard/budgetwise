@@ -355,3 +355,111 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear) =
     currentMonthExpenses,
   };
 };
+
+// ==========================================
+// TRANSACTION PAGE HOOKS
+// ==========================================
+
+// Hook for transaction filtering state and logic
+export const useTransactionFiltering = (transactions) => {
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  
+  const [filters, setFilters] = useState({ 
+    type: 'all', 
+    category: [],
+    paymentStatus: 'all',
+    startDate: currentMonthStart,
+    endDate: currentMonthEnd
+  });
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const typeMatch = filters.type === 'all' || t.type === filters.type;
+      
+      const categoryMatch = !filters.category || filters.category.length === 0 || filters.category.includes(t.category_id);
+      
+      const paymentStatusMatch = filters.paymentStatus === 'all' || 
+        (filters.paymentStatus === 'paid' && t.isPaid) ||
+        (filters.paymentStatus === 'unpaid' && !t.isPaid);
+      
+      let dateMatch = true;
+      if (filters.startDate && filters.endDate) {
+        const transactionDate = new Date(t.date);
+        const start = new Date(filters.startDate);
+        const end = new Date(filters.endDate);
+        
+        transactionDate.setHours(0, 0, 0, 0);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+
+        dateMatch = transactionDate >= start && transactionDate <= end;
+      }
+      
+      return typeMatch && categoryMatch && paymentStatusMatch && dateMatch;
+    });
+  }, [transactions, filters]);
+
+  return {
+    filters,
+    setFilters,
+    filteredTransactions,
+  };
+};
+
+// Hook for transaction actions (CRUD operations)
+export const useTransactionActions = (setShowForm, setEditingTransaction) => {
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Transaction.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setShowForm(false);
+      setEditingTransaction(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setShowForm(false);
+      setEditingTransaction(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Transaction.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
+
+  const handleSubmit = (data, editingTransaction) => {
+    if (editingTransaction) {
+      updateMutation.mutate({ id: editingTransaction.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (transaction) => {
+    setEditingTransaction(transaction);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this transaction?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  return {
+    handleSubmit,
+    handleEdit,
+    handleDelete,
+    isSubmitting: createMutation.isPending || updateMutation.isPending,
+  };
+};
