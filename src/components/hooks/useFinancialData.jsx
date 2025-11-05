@@ -155,6 +155,15 @@ export const useSystemBudgetManagement = (
   monthEnd
 ) => {
   const queryClient = useQueryClient();
+  
+  // Track which period has been synced to prevent duplicate operations
+  const [syncedPeriod, setSyncedPeriod] = useState(null);
+  const currentPeriodKey = `${selectedMonth}-${selectedYear}`;
+
+  // Reset synced flag when month/year changes
+  useEffect(() => {
+    setSyncedPeriod(null);
+  }, [selectedMonth, selectedYear]);
 
   // Mutation for synchronizing system budgets
   const synchronizeBudgetsMutation = useMutation({
@@ -208,19 +217,54 @@ export const useSystemBudgetManagement = (
         queryClient.invalidateQueries({ queryKey: ['systemBudgets'] });
         queryClient.invalidateQueries({ queryKey: ['allSystemBudgets'] });
       }
+      // Mark this period as successfully synced
+      setSyncedPeriod(currentPeriodKey);
     },
     onError: (error) => {
       console.error('Error synchronizing system budgets:', error);
+      // Don't mark as synced on error, allow retry
     },
   });
 
   useEffect(() => {
-    // Only run if we have all the required data and mutation is not pending
-    if (user && goals.length > 0 && Array.isArray(systemBudgets) && !synchronizeBudgetsMutation.isPending) {
-      const currentMonthIncome = getCurrentMonthTransactions(transactions, selectedMonth, selectedYear)
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
+    // Exit early if already synced this period
+    if (syncedPeriod === currentPeriodKey) {
+      return;
+    }
 
+    // Exit early if prerequisites not met
+    if (!user || goals.length === 0 || !Array.isArray(systemBudgets) || synchronizeBudgetsMutation.isPending) {
+      return;
+    }
+
+    // Check if all three system budget types exist for this period
+    const systemTypes = ['needs', 'wants', 'savings'];
+    const missingTypes = systemTypes.filter(type => 
+      !systemBudgets.some(sb => sb.systemBudgetType === type)
+    );
+
+    // Calculate current month income
+    const currentMonthIncome = getCurrentMonthTransactions(transactions, selectedMonth, selectedYear)
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Build goal map for comparison
+    const goalMap = goals.reduce((acc, goal) => {
+      acc[goal.priority] = goal.target_percentage;
+      return acc;
+    }, {});
+
+    // Check if any existing budgets need amount updates
+    const needsUpdate = systemBudgets.some(sb => {
+      const percentage = goalMap[sb.systemBudgetType] || 0;
+      const expectedAmount = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
+      return Math.abs(sb.budgetAmount - expectedAmount) > 0.01;
+    });
+
+    // Only trigger mutation if:
+    // 1. There are missing budget types for this period, OR
+    // 2. Existing budgets need amount updates
+    if (missingTypes.length > 0 || needsUpdate) {
       synchronizeBudgetsMutation.mutate({
         user,
         goals,
@@ -229,12 +273,11 @@ export const useSystemBudgetManagement = (
         monthStart,
         monthEnd
       });
+    } else {
+      // All budgets exist and are up-to-date, mark as synced without mutation
+      setSyncedPeriod(currentPeriodKey);
     }
-  }, [user, selectedMonth, selectedYear, goals.length, systemBudgets?.length, monthStart, monthEnd]);
-  // CRITICAL: Removed 'transactions' and 'synchronizeBudgetsMutation' from dependencies
-  // - 'transactions' changes frequently but we only need its value when the effect runs
-  // - 'synchronizeBudgetsMutation' is stable from useMutation and shouldn't trigger re-runs
-  // This prevents duplicate system budget creation by avoiding rapid re-triggers
+  }, [user, selectedMonth, selectedYear, goals.length, systemBudgets?.length, monthStart, monthEnd, syncedPeriod, currentPeriodKey, synchronizeBudgetsMutation.isPending, transactions]);
 };
 
 // Hook for computing active budgets for the selected month
