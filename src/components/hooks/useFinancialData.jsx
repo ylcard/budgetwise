@@ -159,11 +159,17 @@ export const useSystemBudgetManagement = (
   
   // Track which period has been synced to prevent duplicate operations
   const [syncedPeriod, setSyncedPeriod] = useState(null);
+  
+  // NEW: Track if initial sync attempt has been made for this period
+  // This prevents the effect from running multiple times before the mutation completes
+  const [hasAttemptedSync, setHasAttemptedSync] = useState(null);
+  
   const currentPeriodKey = `${selectedMonth}-${selectedYear}`;
 
-  // Reset synced flag when month/year changes
+  // Reset flags when month/year changes
   useEffect(() => {
     setSyncedPeriod(null);
+    setHasAttemptedSync(null);
   }, [selectedMonth, selectedYear]);
 
   // Mutation for synchronizing system budgets
@@ -223,7 +229,8 @@ export const useSystemBudgetManagement = (
     },
     onError: (error) => {
       console.error('Error synchronizing system budgets:', error);
-      // Don't mark as synced on error, allow retry
+      // Reset attempt flag on error to allow retry
+      setHasAttemptedSync(null);
     },
   });
 
@@ -233,7 +240,13 @@ export const useSystemBudgetManagement = (
       return;
     }
 
-    // Exit early if already synced this period
+    // Exit early if we've already attempted sync for this period
+    // This prevents multiple rapid attempts before mutation completes
+    if (hasAttemptedSync === currentPeriodKey) {
+      return;
+    }
+
+    // Exit early if already synced this period via mutation success
     if (syncedPeriod === currentPeriodKey) {
       return;
     }
@@ -267,6 +280,10 @@ export const useSystemBudgetManagement = (
       return Math.abs(sb.budgetAmount - expectedAmount) > 0.01;
     });
 
+    // Mark that we've attempted sync IMMEDIATELY before doing anything
+    // This prevents race conditions where the effect runs multiple times
+    setHasAttemptedSync(currentPeriodKey);
+
     // Only trigger mutation if:
     // 1. There are missing budget types for this period, OR
     // 2. Existing budgets need amount updates
@@ -283,7 +300,7 @@ export const useSystemBudgetManagement = (
       // All budgets exist and are up-to-date, mark as synced without mutation
       setSyncedPeriod(currentPeriodKey);
     }
-  }, [user, selectedMonth, selectedYear, goals.length, systemBudgets?.length, monthStart, monthEnd, syncedPeriod, currentPeriodKey, synchronizeBudgetsMutation.isPending, transactions, isSystemBudgetsLoading]);
+  }, [user, selectedMonth, selectedYear, goals.length, systemBudgets?.length, monthStart, monthEnd, isSystemBudgetsLoading, hasAttemptedSync, currentPeriodKey, transactions, synchronizeBudgetsMutation.isPending, syncedPeriod]);
 };
 
 // Hook for computing active budgets for the selected month
