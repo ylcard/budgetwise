@@ -463,3 +463,77 @@ export const useTransactionActions = (setShowForm, setEditingTransaction) => {
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
 };
+
+// ==========================================
+// CATEGORIES PAGE HOOKS
+// ==========================================
+
+// Hook for fetching categories data
+export const useCategoryData = () => {
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => base44.entities.Category.list(),
+    initialData: [],
+  });
+
+  return {
+    categories,
+    isLoading,
+  };
+};
+
+// Hook for category actions (CRUD operations)
+export const useCategoryActions = (setShowForm, setEditingCategory) => {
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Category.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setShowForm(false);
+      setEditingCategory(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Category.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setShowForm(false);
+      setEditingCategory(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Category.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+  });
+
+  const handleSubmit = (data, editingCategory) => {
+    if (editingCategory) {
+      updateMutation.mutate({ id: editingCategory.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (category) => {
+    setEditingCategory(category);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this category? This will not delete associated transactions.')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  return {
+    handleSubmit,
+    handleEdit,
+    handleDelete,
+    isSubmitting: createMutation.isPending || updateMutation.isPending,
+  };
+};
