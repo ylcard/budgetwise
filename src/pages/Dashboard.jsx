@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import {
   useSystemBudgetManagement,
   useActiveBudgets,
   useTransactionMutations,
-  useMiniBudgetManager, // Changed from useBudgetMutations to useMiniBudgetManager
+  useBudgetMutations,
   useDashboardSummary,
 } from "../components/hooks/useFinancialData";
 
@@ -42,7 +41,7 @@ export default function Dashboard() {
   const { goals } = useBudgetGoals(user);
   const { allMiniBudgets } = useAllMiniBudgets(user);
   const { allSystemBudgets } = useAllSystemBudgets(user);
-  const { systemBudgets, monthStart, monthEnd, isLoading: isSystemBudgetsLoading } = useSystemBudgets(user, selectedMonth, selectedYear);
+  const { systemBudgets, monthStart, monthEnd } = useSystemBudgets(user, selectedMonth, selectedYear);
 
   // System budget management (auto-create/update)
   useSystemBudgetManagement(
@@ -53,8 +52,7 @@ export default function Dashboard() {
     transactions,
     systemBudgets,
     monthStart,
-    monthEnd,
-    isSystemBudgetsLoading
+    monthEnd
   );
 
   // Computed data
@@ -71,18 +69,14 @@ export default function Dashboard() {
     selectedYear
   );
 
-  // Mutations
-  const { createTransaction, isCreating: isCreatingTransaction } = useTransactionMutations(() => {
-    setShowQuickAdd(false);
-    setShowQuickAddIncome(false);
-  });
-  
-  const {
-    handleSubmit: createBudget,
-    handleDelete: deleteBudget,
-    handleComplete: completeBudget,
-    isSubmitting: isCreatingBudget,
-  } = useMiniBudgetManager(user, transactions); // Using useMiniBudgetManager instead of useBudgetMutations
+  // Mutations with state setters passed to hooks
+  const { createTransaction, isCreating } = useTransactionMutations(setShowQuickAdd, setShowQuickAddIncome);
+  const { createBudget, deleteBudget, completeBudget } = useBudgetMutations(
+    user,
+    transactions,
+    allMiniBudgets,
+    setShowQuickAddBudget
+  );
 
   const displayDate = new Date(selectedYear, selectedMonth);
 
@@ -161,24 +155,21 @@ export default function Dashboard() {
           categories={categories}
           miniBudgets={allActiveBudgets}
           onSubmit={createTransaction}
-          isSubmitting={isCreatingTransaction} // Updated isSubmitting prop
+          isSubmitting={isCreating}
         />
 
         <QuickAddIncome
           open={showQuickAddIncome}
           onOpenChange={setShowQuickAddIncome}
           onSubmit={createTransaction}
-          isSubmitting={isCreatingTransaction} // Updated isSubmitting prop
+          isSubmitting={isCreating}
         />
 
         <QuickAddBudget
           open={showQuickAddBudget}
           onOpenChange={setShowQuickAddBudget}
-          onSubmit={(data) => {
-            createBudget(data);
-            setShowQuickAddBudget(false);
-          }}
-          isSubmitting={isCreatingBudget} // Updated isSubmitting prop
+          onSubmit={createBudget}
+          isSubmitting={isCreating}
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
         />
