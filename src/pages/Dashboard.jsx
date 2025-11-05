@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import {
   useSystemBudgetManagement,
   useActiveBudgets,
   useTransactionMutations,
-  useBudgetMutations,
+  useMiniBudgetManager, // Changed from useBudgetMutations to useMiniBudgetManager
   useDashboardSummary,
 } from "../components/hooks/useFinancialData";
 
@@ -69,14 +70,18 @@ export default function Dashboard() {
     selectedYear
   );
 
-  // Mutations with state setters passed to hooks
-  const { createTransaction, isCreating } = useTransactionMutations(setShowQuickAdd, setShowQuickAddIncome);
-  const { createBudget, deleteBudget, completeBudget } = useBudgetMutations(
-    user,
-    transactions,
-    allMiniBudgets,
-    setShowQuickAddBudget
-  );
+  // Mutations
+  const { createTransaction, isCreating: isCreatingTransaction } = useTransactionMutations(() => {
+    setShowQuickAdd(false);
+    setShowQuickAddIncome(false);
+  });
+  
+  const {
+    handleSubmit: createBudget,
+    handleDelete: deleteBudget,
+    handleComplete: completeBudget,
+    isSubmitting: isCreatingBudget,
+  } = useMiniBudgetManager(user, transactions); // Using useMiniBudgetManager instead of useBudgetMutations
 
   const displayDate = new Date(selectedYear, selectedMonth);
 
@@ -155,21 +160,24 @@ export default function Dashboard() {
           categories={categories}
           miniBudgets={allActiveBudgets}
           onSubmit={createTransaction}
-          isSubmitting={isCreating}
+          isSubmitting={isCreatingTransaction} // Updated isSubmitting prop
         />
 
         <QuickAddIncome
           open={showQuickAddIncome}
           onOpenChange={setShowQuickAddIncome}
           onSubmit={createTransaction}
-          isSubmitting={isCreating}
+          isSubmitting={isCreatingTransaction} // Updated isSubmitting prop
         />
 
         <QuickAddBudget
           open={showQuickAddBudget}
           onOpenChange={setShowQuickAddBudget}
-          onSubmit={createBudget}
-          isSubmitting={isCreating}
+          onSubmit={(data) => {
+            createBudget(data);
+            setShowQuickAddBudget(false);
+          }}
+          isSubmitting={isCreatingBudget} // Updated isSubmitting prop
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
         />
