@@ -177,7 +177,6 @@ export const useSystemBudgetManagement = (
             );
           }
         } else {
-          // If no existingBudget for this type and month, create one.
           updates.push(
             base44.entities.SystemBudget.create({
               name: type.charAt(0).toUpperCase() + type.slice(1),
@@ -210,7 +209,7 @@ export const useSystemBudgetManagement = (
   });
 
   useEffect(() => {
-    if (user && goals.length > 0 && systemBudgets !== undefined && !synchronizeBudgetsMutation.isPending) {
+    if (user && goals.length > 0 && Array.isArray(systemBudgets) && !synchronizeBudgetsMutation.isPending) {
       const currentMonthIncome = getCurrentMonthTransactions(transactions, selectedMonth, selectedYear)
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + t.amount, 0);
@@ -224,7 +223,7 @@ export const useSystemBudgetManagement = (
         monthEnd
       });
     }
-  }, [user, selectedMonth, selectedYear, goals, systemBudgets, monthStart, monthEnd, queryClient, transactions, synchronizeBudgetsMutation]);
+  }, [user, selectedMonth, selectedYear, goals.length, systemBudgets?.length, monthStart, monthEnd, transactions]);
 };
 
 // Hook for computing active budgets for the selected month
