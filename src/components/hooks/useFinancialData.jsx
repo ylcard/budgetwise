@@ -690,3 +690,141 @@ export const useSettingsForm = (settings, updateSettings) => {
     saveSuccess,
   };
 };
+
+// ==========================================
+// MINI BUDGETS PAGE HOOKS
+// ==========================================
+
+// Hook for fetching and filtering mini budgets data
+export const useMiniBudgetsData = (user, selectedMonth, selectedYear) => {
+  const { data: allMiniBudgets = [], isLoading } = useQuery({
+    queryKey: ['miniBudgets'],
+    queryFn: async () => {
+      if (!user) return [];
+      const all = await base44.entities.MiniBudget.list('-startDate');
+      return all.filter(mb => mb.user_email === user.email);
+    },
+    initialData: [],
+    enabled: !!user,
+  });
+
+  const miniBudgets = useMemo(() => {
+    const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
+    const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+    
+    return allMiniBudgets.filter(mb => {
+      return mb.startDate <= monthEnd && mb.endDate >= monthStart;
+    });
+  }, [allMiniBudgets, selectedMonth, selectedYear]);
+
+  return {
+    allMiniBudgets,
+    miniBudgets,
+    isLoading,
+  };
+};
+
+// Hook for mini budgets period state
+export const useMiniBudgetsPeriod = () => {
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
+  const displayDate = useMemo(() => {
+    return new Date(selectedYear, selectedMonth);
+  }, [selectedMonth, selectedYear]);
+
+  return {
+    selectedMonth,
+    setSelectedMonth,
+    selectedYear,
+    setSelectedYear,
+    displayDate,
+  };
+};
+
+// Hook for mini budget actions (CRUD operations)
+export const useMiniBudgetActions = (user, transactions) => {
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.MiniBudget.create({
+      ...data,
+      user_email: user.email,
+      isSystemBudget: false
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
+      setShowForm(false);
+      setEditingBudget(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.MiniBudget.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
+      setShowForm(false);
+      setEditingBudget(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const budgetTransactions = transactions.filter(t => t.miniBudgetId === id);
+      
+      for (const transaction of budgetTransactions) {
+        await base44.entities.Transaction.delete(transaction.id);
+      }
+      
+      await base44.entities.MiniBudget.delete(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.MiniBudget.update(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
+    },
+  });
+
+  const handleSubmit = (data) => {
+    if (editingBudget) {
+      updateMutation.mutate({ id: editingBudget.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (budget) => {
+    setEditingBudget(budget);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id) => {
+    // Note: Deletion confirmation should be handled by parent component
+    deleteMutation.mutate(id);
+  };
+
+  const handleStatusChange = (id, newStatus) => {
+    updateStatusMutation.mutate({ id, status: newStatus });
+  };
+
+  return {
+    showForm,
+    setShowForm,
+    editingBudget,
+    setEditingBudget,
+    handleSubmit,
+    handleEdit,
+    handleDelete,
+    handleStatusChange,
+    isSubmitting: createMutation.isPending || updateMutation.isPending,
+  };
+};
