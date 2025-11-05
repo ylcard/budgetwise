@@ -537,3 +537,112 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
 };
+
+// ==========================================
+// REPORTS PAGE HOOKS
+// ==========================================
+
+// Hook for fetching reports data
+export const useReportData = (user) => {
+  const { data: transactions = [], isLoading: loadingTransactions } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: () => base44.entities.Transaction.list('-date'),
+    initialData: [],
+  });
+
+  const { data: categories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => base44.entities.Category.list(),
+    initialData: [],
+  });
+
+  const { data: goals = [], isLoading: loadingGoals } = useQuery({
+    queryKey: ['goals'],
+    queryFn: async () => {
+      if (!user) return [];
+      const allGoals = await base44.entities.BudgetGoal.list();
+      return allGoals.filter(g => g.user_email === user.email);
+    },
+    initialData: [],
+    enabled: !!user,
+  });
+
+  return {
+    transactions,
+    categories,
+    goals,
+    isLoading: loadingTransactions || loadingCategories || loadingGoals,
+  };
+};
+
+// Hook for report period state and derived data
+export const useReportPeriodState = (transactions) => {
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
+  const monthlyTransactions = useMemo(() => {
+    return getCurrentMonthTransactions(transactions, selectedMonth, selectedYear);
+  }, [transactions, selectedMonth, selectedYear]);
+
+  const monthlyIncome = useMemo(() => {
+    return monthlyTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [monthlyTransactions]);
+
+  const displayDate = useMemo(() => {
+    return new Date(selectedYear, selectedMonth);
+  }, [selectedMonth, selectedYear]);
+
+  return {
+    selectedMonth,
+    setSelectedMonth,
+    selectedYear,
+    setSelectedYear,
+    monthlyTransactions,
+    monthlyIncome,
+    displayDate,
+  };
+};
+
+// Hook for goal actions (mutations)
+export const useGoalActions = (user, goals) => {
+  const queryClient = useQueryClient();
+
+  const updateGoalMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.BudgetGoal.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    },
+  });
+
+  const createGoalMutation = useMutation({
+    mutationFn: (data) => base44.entities.BudgetGoal.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    },
+  });
+
+  const handleGoalUpdate = async (priority, percentage) => {
+    const existingGoal = goals.find(g => g.priority === priority);
+    
+    if (existingGoal) {
+      await updateGoalMutation.mutateAsync({
+        id: existingGoal.id,
+        data: { target_percentage: percentage }
+      });
+    } else if (user) {
+      await createGoalMutation.mutateAsync({
+        priority,
+        target_percentage: percentage,
+        user_email: user.email
+      });
+    }
+  };
+
+  return {
+    handleGoalUpdate,
+    isSaving: updateGoalMutation.isPending || createGoalMutation.isPending,
+  };
+};
