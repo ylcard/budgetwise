@@ -646,3 +646,47 @@ export const useGoalActions = (user, goals) => {
     isSaving: updateGoalMutation.isPending || createGoalMutation.isPending,
   };
 };
+
+// ==========================================
+// SETTINGS PAGE HOOKS
+// ==========================================
+
+// Hook for settings form state and submission
+export const useSettingsForm = (settings, updateSettings) => {
+  const [formData, setFormData] = useState(settings);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Synchronize formData with global settings when they change
+  useEffect(() => {
+    setFormData(settings);
+  }, [settings]);
+
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      await updateSettings(formData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return {
+    formData,
+    handleFormChange,
+    handleSubmit,
+    isSaving,
+    saveSuccess,
+  };
+};

@@ -1,11 +1,11 @@
-
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSettings } from "../components/utils/SettingsContext";
+import { useSettingsForm } from "../components/hooks/useFinancialData";
 import { formatCurrency } from "../components/utils/formatCurrency";
 import { Settings as SettingsIcon, Check } from "lucide-react";
 
@@ -20,29 +20,12 @@ const CURRENCY_OPTIONS = [
 
 export default function Settings() {
   const { settings, updateSettings } = useSettings();
-  const [formData, setFormData] = useState(settings);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    setFormData(settings);
-  }, [settings]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveSuccess(false);
-
-    try {
-      await updateSettings(formData);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      console.error('Error saving settings:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  
+  // Form state and submission logic from hook
+  const { formData, handleFormChange, handleSubmit, isSaving, saveSuccess } = useSettingsForm(
+    settings,
+    updateSettings
+  );
 
   const previewAmount = 1234567.89;
 
@@ -70,7 +53,7 @@ export default function Settings() {
                 <Label htmlFor="currency">Currency</Label>
                 <Select
                   value={formData.currencySymbol}
-                  onValueChange={(value) => setFormData({ ...formData, currencySymbol: value })}
+                  onValueChange={(value) => handleFormChange('currencySymbol', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -89,7 +72,7 @@ export default function Settings() {
                 <Label htmlFor="position">Currency Symbol Position</Label>
                 <Select
                   value={formData.currencyPosition}
-                  onValueChange={(value) => setFormData({ ...formData, currencyPosition: value })}
+                  onValueChange={(value) => handleFormChange('currencyPosition', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -106,7 +89,7 @@ export default function Settings() {
                   <Label htmlFor="thousand">Thousand Separator</Label>
                   <Select
                     value={formData.thousandSeparator}
-                    onValueChange={(value) => setFormData({ ...formData, thousandSeparator: value })}
+                    onValueChange={(value) => handleFormChange('thousandSeparator', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -123,7 +106,7 @@ export default function Settings() {
                   <Label htmlFor="decimal">Decimal Separator</Label>
                   <Select
                     value={formData.decimalSeparator}
-                    onValueChange={(value) => setFormData({ ...formData, decimalSeparator: value })}
+                    onValueChange={(value) => handleFormChange('decimalSeparator', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -145,7 +128,7 @@ export default function Settings() {
                     min="0"
                     max="4"
                     value={formData.decimalPlaces}
-                    onChange={(e) => setFormData({ ...formData, decimalPlaces: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => handleFormChange('decimalPlaces', parseInt(e.target.value) || 0)}
                   />
                 </div>
 
@@ -155,7 +138,7 @@ export default function Settings() {
                       type="checkbox"
                       id="hideZeros"
                       checked={formData.hideTrailingZeros}
-                      onChange={(e) => setFormData({ ...formData, hideTrailingZeros: e.target.checked })}
+                      onChange={(e) => handleFormChange('hideTrailingZeros', e.target.checked)}
                       className="w-4 h-4 rounded border-gray-300"
                     />
                     Hide Trailing Zeros
@@ -168,7 +151,7 @@ export default function Settings() {
                 <Label htmlFor="dateFormat">Date Format</Label>
                 <Select
                   value={formData.dateFormat}
-                  onValueChange={(value) => setFormData({ ...formData, dateFormat: value })}
+                  onValueChange={(value) => handleFormChange('dateFormat', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
