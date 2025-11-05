@@ -8,8 +8,33 @@ import {
   getFirstDayOfMonth,
   getLastDayOfMonth,
   getUnpaidExpensesForMonth,
-  getSystemBudgetStats // Assuming this utility function is available in budgetCalculations.ts
+  getSystemBudgetStats
 } from "../utils/budgetCalculations";
+
+// ==========================================
+// GENERIC HELPER HOOKS
+// ==========================================
+
+/**
+ * Generic hook for user-filtered queries
+ * Reduces boilerplate for queries that need user email filtering
+ */
+export const useUserFilteredQuery = (queryKey, fetcher, options = {}) => {
+  return useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (!options.user) return [];
+      return await fetcher(options.user);
+    },
+    initialData: [],
+    enabled: !!options.user,
+    ...options.queryOptions,
+  });
+};
+
+// ==========================================
+// CORE DATA HOOKS
+// ==========================================
 
 // Hook for managing month/year navigation state
 export const useMonthNavigation = () => {
@@ -26,10 +51,19 @@ export const useMonthNavigation = () => {
 };
 
 // Hook for fetching transactions and categories
-export const useTransactionsData = () => {
+export const useTransactionsData = (startDate, endDate) => {
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date'),
+    queryKey: ['transactions', startDate, endDate],
+    queryFn: async () => {
+      // If date range provided, use server-side filtering
+      if (startDate && endDate) {
+        return await base44.entities.Transaction.filter(
+          { date: { '$gte': startDate, '$lte': endDate } },
+          '-date'
+        );
+      }
+      return await base44.entities.Transaction.list('-date');
+    },
     initialData: [],
   });
 
@@ -48,50 +82,38 @@ export const useTransactionsData = () => {
 
 // Hook for fetching budget goals
 export const useBudgetGoals = (user) => {
-  const { data: goals = [], isLoading } = useQuery({
-    queryKey: ['goals'],
-    queryFn: async () => {
-      if (!user) return [];
+  return useUserFilteredQuery(
+    ['goals'],
+    async (user) => {
       const allGoals = await base44.entities.BudgetGoal.list();
       return allGoals.filter(g => g.user_email === user.email);
     },
-    initialData: [],
-    enabled: !!user,
-  });
-
-  return { goals, isLoading };
+    { user }
+  );
 };
 
 // Hook for fetching all mini budgets
 export const useAllMiniBudgets = (user) => {
-  const { data: allMiniBudgets = [], isLoading } = useQuery({
-    queryKey: ['miniBudgets'],
-    queryFn: async () => {
-      if (!user) return [];
+  return useUserFilteredQuery(
+    ['miniBudgets'],
+    async (user) => {
       const all = await base44.entities.MiniBudget.list('-startDate');
       return all.filter(mb => mb.user_email === user.email);
     },
-    initialData: [],
-    enabled: !!user,
-  });
-
-  return { allMiniBudgets, isLoading };
+    { user }
+  );
 };
 
 // Hook for fetching all system budgets
 export const useAllSystemBudgets = (user) => {
-  const { data: allSystemBudgets = [], isLoading } = useQuery({
-    queryKey: ['allSystemBudgets'],
-    queryFn: async () => {
-      if (!user) return [];
+  return useUserFilteredQuery(
+    ['allSystemBudgets'],
+    async (user) => {
       const all = await base44.entities.SystemBudget.list();
       return all.filter(sb => sb.user_email === user.email);
     },
-    initialData: [],
-    enabled: !!user,
-  });
-
-  return { allSystemBudgets, isLoading };
+    { user }
+  );
 };
 
 // Hook for fetching system budgets for a specific month
@@ -99,10 +121,9 @@ export const useSystemBudgets = (user, selectedMonth, selectedYear) => {
   const monthStart = useMemo(() => getFirstDayOfMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
   const monthEnd = useMemo(() => getLastDayOfMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
 
-  const { data: systemBudgets = [], isLoading } = useQuery({
-    queryKey: ['systemBudgets', selectedMonth, selectedYear],
-    queryFn: async () => {
-      if (!user) return [];
+  const { data: systemBudgets = [], isLoading } = useUserFilteredQuery(
+    ['systemBudgets', selectedMonth, selectedYear],
+    async (user) => {
       const all = await base44.entities.SystemBudget.list();
       return all.filter(sb => 
         sb.user_email === user.email &&
@@ -110,9 +131,8 @@ export const useSystemBudgets = (user, selectedMonth, selectedYear) => {
         sb.endDate === monthEnd
       );
     },
-    initialData: [],
-    enabled: !!user,
-  });
+    { user }
+  );
 
   return { systemBudgets, monthStart, monthEnd, isLoading };
 };
@@ -130,92 +150,97 @@ export const useSystemBudgetManagement = (
 ) => {
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const ensureSystemBudgets = async () => {
-      if (!user || goals.length === 0) return;
+  // Mutation for synchronizing system budgets
+  const synchronizeBudgetsMutation = useMutation({
+    mutationFn: async ({ user, goals, currentMonthIncome, systemBudgets, monthStart, monthEnd }) => {
+      const systemTypes = ['needs', 'wants', 'savings'];
+      const colors = { needs: '#EF4444', wants: '#F59E0B', savings: '#10B981' };
       
-      try {
-        const systemTypes = ['needs', 'wants', 'savings'];
-        const colors = { needs: '#EF4444', wants: '#F59E0B', savings: '#10B981' };
-        
-        const currentMonthIncome = getCurrentMonthTransactions(transactions, selectedMonth, selectedYear)
-          .filter(t => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0);
+      const goalMap = goals.reduce((acc, goal) => {
+        acc[goal.priority] = goal.target_percentage;
+        return acc;
+      }, {});
+      
+      const updates = [];
 
-        const goalMap = goals.reduce((acc, goal) => {
-          acc[goal.priority] = goal.target_percentage;
-          return acc;
-        }, {});
+      for (const type of systemTypes) {
+        const existingBudget = systemBudgets.find(sb => sb.systemBudgetType === type);
+        const percentage = goalMap[type] || 0;
+        const amount = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
         
-        let needsInvalidation = false;
-
-        for (const type of systemTypes) {
-          const existingBudget = systemBudgets.find(sb => sb.systemBudgetType === type);
-          const percentage = goalMap[type] || 0;
-          const amount = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
-          
-          if (existingBudget) {
-            if (Math.abs(existingBudget.budgetAmount - amount) > 0.01) {
-              await base44.entities.SystemBudget.update(existingBudget.id, {
+        if (existingBudget) {
+          if (Math.abs(existingBudget.budgetAmount - amount) > 0.01) {
+            updates.push(
+              base44.entities.SystemBudget.update(existingBudget.id, {
                 budgetAmount: amount
-              });
-              needsInvalidation = true;
-            }
-          } else {
-            const allSystemBudgetsCheck = await base44.entities.SystemBudget.list();
-            const duplicateCheck = allSystemBudgetsCheck.find(sb => 
-              sb.user_email === user.email &&
-              sb.systemBudgetType === type &&
-              sb.startDate === monthStart &&
-              sb.endDate === monthEnd
+              })
             );
-            
-            if (!duplicateCheck) {
-              await base44.entities.SystemBudget.create({
-                name: type.charAt(0).toUpperCase() + type.slice(1),
-                budgetAmount: amount,
-                startDate: monthStart,
-                endDate: monthEnd,
-                color: colors[type],
-                user_email: user.email,
-                systemBudgetType: type
-              });
-              needsInvalidation = true;
-            }
           }
+        } else {
+          // If no existingBudget for this type and month, create one.
+          updates.push(
+            base44.entities.SystemBudget.create({
+              name: type.charAt(0).toUpperCase() + type.slice(1),
+              budgetAmount: amount,
+              startDate: monthStart,
+              endDate: monthEnd,
+              color: colors[type],
+              user_email: user.email,
+              systemBudgetType: type
+            })
+          );
         }
-        
-        if (needsInvalidation) {
-          queryClient.invalidateQueries({ queryKey: ['systemBudgets'] });
-          queryClient.invalidateQueries({ queryKey: ['allSystemBudgets'] });
-        }
-      } catch (error) {
-        console.error('Error in ensureSystemBudgets:', error);
       }
-    };
-    
-    if (user && goals.length > 0 && systemBudgets !== undefined) {
-      ensureSystemBudgets();
+
+      if (updates.length > 0) {
+        await Promise.all(updates);
+      }
+
+      return updates.length;
+    },
+    onSuccess: (updatesCount) => {
+      if (updatesCount > 0) {
+        queryClient.invalidateQueries({ queryKey: ['systemBudgets'] });
+        queryClient.invalidateQueries({ queryKey: ['allSystemBudgets'] });
+      }
+    },
+    onError: (error) => {
+      console.error('Error synchronizing system budgets:', error);
+    },
+  });
+
+  useEffect(() => {
+    if (user && goals.length > 0 && systemBudgets !== undefined && !synchronizeBudgetsMutation.isPending) {
+      const currentMonthIncome = getCurrentMonthTransactions(transactions, selectedMonth, selectedYear)
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      synchronizeBudgetsMutation.mutate({
+        user,
+        goals,
+        currentMonthIncome,
+        systemBudgets,
+        monthStart,
+        monthEnd
+      });
     }
-  }, [user, selectedMonth, selectedYear, goals, systemBudgets, monthStart, monthEnd, queryClient, transactions]);
+  }, [user, selectedMonth, selectedYear, goals, systemBudgets, monthStart, monthEnd, queryClient, transactions, synchronizeBudgetsMutation]);
 };
 
 // Hook for computing active budgets for the selected month
 export const useActiveBudgets = (allMiniBudgets, allSystemBudgets, selectedMonth, selectedYear) => {
+  // Calculate month boundaries once
+  const monthStart = useMemo(() => getFirstDayOfMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
+  const monthEnd = useMemo(() => getLastDayOfMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
+
   const activeMiniBudgets = useMemo(() => {
-    const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
-    const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
-    
     return allMiniBudgets.filter(mb => {
       if (mb.status !== 'active' && mb.status !== 'completed') return false;
       return mb.startDate <= monthEnd && mb.endDate >= monthStart;
     });
-  }, [allMiniBudgets, selectedMonth, selectedYear]);
+  }, [allMiniBudgets, monthStart, monthEnd]);
 
   const allActiveBudgets = useMemo(() => {
-    const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
-    const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
-    
     const activeMini = allMiniBudgets.filter(mb => {
       if (mb.status !== 'active' && mb.status !== 'completed') return false;
       return mb.startDate <= monthEnd && mb.endDate >= monthStart;
@@ -238,50 +263,55 @@ export const useActiveBudgets = (allMiniBudgets, allSystemBudgets, selectedMonth
       }));
     
     return [...activeSystem, ...activeMini];
-  }, [allMiniBudgets, allSystemBudgets, selectedMonth, selectedYear]);
+  }, [allMiniBudgets, allSystemBudgets, monthStart, monthEnd]);
 
   return { activeMiniBudgets, allActiveBudgets };
 };
 
-// Hook for transaction mutations
-export const useTransactionMutations = (setShowQuickAdd, setShowQuickAddIncome) => {
+// ==========================================
+// CONSOLIDATED MINI BUDGET MANAGER
+// ==========================================
+
+/**
+ * Comprehensive hook for managing MiniBudget entities
+ * Consolidates CRUD operations and form state management
+ * Used by Dashboard, MiniBudgets, and Budgets pages
+ */
+export const useMiniBudgetManager = (user, transactions) => {
   const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transaction.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['systemBudgets'] });
-      setShowQuickAdd(false);
-      setShowQuickAddIncome(false);
-    },
-  });
-
-  return {
-    createTransaction: createMutation.mutate,
-    isCreating: createMutation.isPending,
-  };
-};
-
-// Hook for budget mutations
-export const useBudgetMutations = (user, transactions, allMiniBudgets, setShowQuickAddBudget) => {
-  const queryClient = useQueryClient();
-
-  const createBudgetMutation = useMutation({
     mutationFn: (data) => base44.entities.MiniBudget.create({
       ...data,
-      user_email: user.email,
+      user_email: user?.email,
       isSystemBudget: false
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-      setShowQuickAddBudget(false);
+      setShowForm(false);
+      setEditingBudget(null);
+    },
+    onError: (error) => {
+      console.error('Error creating mini budget:', error);
     },
   });
 
-  const deleteBudgetMutation = useMutation({
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.MiniBudget.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
+      setShowForm(false);
+      setEditingBudget(null);
+    },
+    onError: (error) => {
+      console.error('Error updating mini budget:', error);
+    },
+  });
+
+  const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      // Use transactions from closure
       const budgetTransactions = transactions.filter(t => t.miniBudgetId === id);
       
       for (const transaction of budgetTransactions) {
@@ -294,13 +324,26 @@ export const useBudgetMutations = (user, transactions, allMiniBudgets, setShowQu
       queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
+    onError: (error) => {
+      console.error('Error deleting mini budget:', error);
+    },
   });
 
-  const completeBudgetMutation = useMutation({
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.MiniBudget.update(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
+    },
+    onError: (error) => {
+      console.error('Error updating budget status:', error);
+    },
+  });
+
+  const completeMutation = useMutation({
     mutationFn: async (id) => {
-      // Use allMiniBudgets and transactions from closure
-      const budget = allMiniBudgets.find(mb => mb.id === id);
-      if (!budget) return;
+      const budgets = await base44.entities.MiniBudget.list(); // Fetch all to find the specific budget
+      const targetBudget = budgets.find(mb => mb.id === id);
+      if (!targetBudget) return;
       
       const budgetTransactions = transactions.filter(t => t.miniBudgetId === id && t.isPaid);
       const actualSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -308,22 +351,82 @@ export const useBudgetMutations = (user, transactions, allMiniBudgets, setShowQu
       await base44.entities.MiniBudget.update(id, { 
         status: 'completed',
         allocatedAmount: actualSpent,
-        originalAllocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount
+        originalAllocatedAmount: targetBudget.originalAllocatedAmount || targetBudget.allocatedAmount
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
+    onError: (error) => {
+      console.error('Error completing mini budget:', error);
+    },
+  });
+
+  const handleSubmit = (data) => {
+    if (editingBudget) {
+      updateMutation.mutate({ id: editingBudget.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (budget) => {
+    setEditingBudget(budget);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id) => {
+    deleteMutation.mutate(id);
+  };
+
+  const handleStatusChange = (id, newStatus) => {
+    updateStatusMutation.mutate({ id, status: newStatus });
+  };
+
+  const handleComplete = (id) => {
+    completeMutation.mutate(id);
+  };
+
+  return {
+    showForm,
+    setShowForm,
+    editingBudget,
+    setEditingBudget,
+    handleSubmit,
+    handleEdit,
+    handleDelete,
+    handleStatusChange,
+    handleComplete,
+    isSubmitting: createMutation.isPending || updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+    isCompleting: completeMutation.isPending,
+  };
+};
+
+// ==========================================
+// TRANSACTION MUTATIONS
+// ==========================================
+
+// Hook for transaction mutations (used in Dashboard quick add)
+export const useTransactionMutations = (onSuccess) => {
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Transaction.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['systemBudgets'] });
+      if (onSuccess) onSuccess();
+    },
+    onError: (error) => {
+      console.error('Error creating transaction:', error);
+    },
   });
 
   return {
-    createBudget: createBudgetMutation.mutate,
-    deleteBudget: deleteBudgetMutation.mutate,
-    completeBudget: completeBudgetMutation.mutate,
-    isCreating: createBudgetMutation.isPending,
-    isDeleting: deleteBudgetMutation.isPending,
-    isCompleting: completeBudgetMutation.isPending,
+    createTransaction: createMutation.mutate,
+    isCreating: createMutation.isPending,
   };
 };
 
@@ -410,15 +513,16 @@ export const useTransactionFiltering = (transactions) => {
 };
 
 // Hook for transaction actions (CRUD operations)
-export const useTransactionActions = (setShowForm, setEditingTransaction) => {
+export const useTransactionActions = () => {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Transaction.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      setShowForm(false);
-      setEditingTransaction(null);
+    },
+    onError: (error) => {
+      console.error('Error creating transaction:', error);
     },
   });
 
@@ -426,8 +530,9 @@ export const useTransactionActions = (setShowForm, setEditingTransaction) => {
     mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      setShowForm(false);
-      setEditingTransaction(null);
+    },
+    onError: (error) => {
+      console.error('Error updating transaction:', error);
     },
   });
 
@@ -436,25 +541,34 @@ export const useTransactionActions = (setShowForm, setEditingTransaction) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
+    onError: (error) => {
+      console.error('Error deleting transaction:', error);
+    },
   });
 
-  const handleSubmit = (data, editingTransaction) => {
+  const handleSubmit = (data, editingTransaction, onSuccess) => {
     if (editingTransaction) {
-      updateMutation.mutate({ id: editingTransaction.id, data });
+      updateMutation.mutate({ id: editingTransaction.id, data }, {
+        onSuccess: () => {
+          if (onSuccess) onSuccess();
+        }
+      });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          if (onSuccess) onSuccess();
+        }
+      });
     }
   };
 
-  const handleEdit = (transaction) => {
+  const handleEdit = (transaction, setEditingTransaction, setShowForm) => {
     setEditingTransaction(transaction);
     setShowForm(true);
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this transaction?')) {
-      deleteMutation.mutate(id);
-    }
+    deleteMutation.mutate(id);
   };
 
   return {
@@ -494,6 +608,9 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
       setShowForm(false);
       setEditingCategory(null);
     },
+    onError: (error) => {
+      console.error('Error creating category:', error);
+    },
   });
 
   const updateMutation = useMutation({
@@ -503,12 +620,18 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
       setShowForm(false);
       setEditingCategory(null);
     },
+    onError: (error) => {
+      console.error('Error updating category:', error);
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Category.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+    onError: (error) => {
+      console.error('Error deleting category:', error);
     },
   });
 
@@ -526,9 +649,7 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this category? This will not delete associated transactions.')) {
-      deleteMutation.mutate(id);
-    }
+    deleteMutation.mutate(id);
   };
 
   return {
@@ -557,16 +678,14 @@ export const useReportData = (user) => {
     initialData: [],
   });
 
-  const { data: goals = [], isLoading: loadingGoals } = useQuery({
-    queryKey: ['goals'],
-    queryFn: async () => {
-      if (!user) return [];
+  const { data: goals = [], isLoading: loadingGoals } = useUserFilteredQuery(
+    ['goals'],
+    async (user) => {
       const allGoals = await base44.entities.BudgetGoal.list();
       return allGoals.filter(g => g.user_email === user.email);
     },
-    initialData: [],
-    enabled: !!user,
-  });
+    { user }
+  );
 
   return {
     transactions,
@@ -616,12 +735,18 @@ export const useGoalActions = (user, goals) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
+    onError: (error) => {
+      console.error('Error updating goal:', error);
+    },
   });
 
   const createGoalMutation = useMutation({
     mutationFn: (data) => base44.entities.BudgetGoal.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+    },
+    onError: (error) => {
+      console.error('Error creating goal:', error);
     },
   });
 
@@ -698,16 +823,14 @@ export const useSettingsForm = (settings, updateSettings) => {
 
 // Hook for fetching and filtering mini budgets data
 export const useMiniBudgetsData = (user, selectedMonth, selectedYear) => {
-  const { data: allMiniBudgets = [], isLoading } = useQuery({
-    queryKey: ['miniBudgets'],
-    queryFn: async () => {
-      if (!user) return [];
+  const { data: allMiniBudgets = [], isLoading } = useUserFilteredQuery(
+    ['miniBudgets'],
+    async (user) => {
       const all = await base44.entities.MiniBudget.list('-startDate');
       return all.filter(mb => mb.user_email === user.email);
     },
-    initialData: [],
-    enabled: !!user,
-  });
+    { user }
+  );
 
   const miniBudgets = useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
@@ -746,88 +869,8 @@ export const useMiniBudgetsPeriod = () => {
 
 // Hook for mini budget actions (CRUD operations)
 export const useMiniBudgetActions = (user, transactions) => {
-  const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [editingBudget, setEditingBudget] = useState(null);
-
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.MiniBudget.create({
-      ...data,
-      user_email: user.email,
-      isSystemBudget: false
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-      setShowForm(false);
-      setEditingBudget(null);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MiniBudget.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-      setShowForm(false);
-      setEditingBudget(null);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const budgetTransactions = transactions.filter(t => t.miniBudgetId === id);
-      
-      for (const transaction of budgetTransactions) {
-        await base44.entities.Transaction.delete(transaction.id);
-      }
-      
-      await base44.entities.MiniBudget.delete(id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    },
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.MiniBudget.update(id, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-    },
-  });
-
-  const handleSubmit = (data) => {
-    if (editingBudget) {
-      updateMutation.mutate({ id: editingBudget.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
-
-  const handleEdit = (budget) => {
-    setEditingBudget(budget);
-    setShowForm(true);
-  };
-
-  const handleDelete = (id) => {
-    // Note: Deletion confirmation should be handled by parent component
-    deleteMutation.mutate(id);
-  };
-
-  const handleStatusChange = (id, newStatus) => {
-    updateStatusMutation.mutate({ id, status: newStatus });
-  };
-
-  return {
-    showForm,
-    setShowForm,
-    editingBudget,
-    setEditingBudget,
-    handleSubmit,
-    handleEdit,
-    handleDelete,
-    handleStatusChange,
-    isSubmitting: createMutation.isPending || updateMutation.isPending,
-  };
+  // Delegate to the consolidated manager
+  return useMiniBudgetManager(user, transactions);
 };
 
 
@@ -842,7 +885,7 @@ export const useBudgetsData = (user, selectedMonth, selectedYear) => {
 
   const { data: transactions = [], isLoading: loadingTransactions } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list(), // Using list() as per outline, consider using '-date' for consistency
+    queryFn: () => base44.entities.Transaction.list(),
     initialData: [],
   });
 
@@ -852,21 +895,18 @@ export const useBudgetsData = (user, selectedMonth, selectedYear) => {
     initialData: [],
   });
 
-  const { data: allMiniBudgets = [], isLoading: loadingMiniBudgets } = useQuery({
-    queryKey: ['miniBudgets'],
-    queryFn: async () => {
-      if (!user) return [];
+  const { data: allMiniBudgets = [], isLoading: loadingMiniBudgets } = useUserFilteredQuery(
+    ['miniBudgets'],
+    async (user) => {
       const all = await base44.entities.MiniBudget.list('-startDate');
       return all.filter(mb => mb.user_email === user.email);
     },
-    initialData: [],
-    enabled: !!user,
-  });
+    { user }
+  );
 
-  const { data: systemBudgets = [], isLoading: loadingSystemBudgets } = useQuery({
-    queryKey: ['systemBudgets', selectedMonth, selectedYear],
-    queryFn: async () => {
-      if (!user) return [];
+  const { data: systemBudgets = [], isLoading: loadingSystemBudgets } = useUserFilteredQuery(
+    ['systemBudgets', selectedMonth, selectedYear],
+    async (user) => {
       const all = await base44.entities.SystemBudget.list();
       return all.filter(sb => 
         sb.user_email === user.email &&
@@ -874,9 +914,8 @@ export const useBudgetsData = (user, selectedMonth, selectedYear) => {
         sb.endDate === monthEnd
       );
     },
-    initialData: [],
-    enabled: !!user,
-  });
+    { user }
+  );
 
   // Filter custom budgets based on date overlap
   const customBudgets = useMemo(() => {
@@ -928,88 +967,6 @@ export const useBudgetsData = (user, selectedMonth, selectedYear) => {
 
 // Hook for budget actions (CRUD operations and form state)
 export const useBudgetActions = (user, transactions) => {
-  const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [editingBudget, setEditingBudget] = useState(null);
-
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.MiniBudget.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-      setShowForm(false);
-      setEditingBudget(null);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MiniBudget.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-      setShowForm(false);
-      setEditingBudget(null);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const budgetTransactions = transactions.filter(t => t.miniBudgetId === id);
-      
-      for (const transaction of budgetTransactions) {
-        await base44.entities.Transaction.delete(transaction.id);
-      }
-      
-      await base44.entities.MiniBudget.delete(id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    },
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.MiniBudget.update(id, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
-    },
-  });
-
-  const handleSubmit = (data) => {
-    const budgetData = {
-      ...data,
-      user_email: user.email,
-      isSystemBudget: false
-    };
-
-    if (editingBudget) {
-      updateMutation.mutate({ id: editingBudget.id, data: budgetData });
-    } else {
-      createMutation.mutate(budgetData);
-    }
-  };
-
-  const handleEdit = (budget) => {
-    setEditingBudget(budget);
-    setShowForm(true);
-  };
-
-  const handleDelete = (id) => {
-    // Note: Deletion confirmation should be handled by parent component
-    deleteMutation.mutate(id);
-  };
-
-  const handleStatusChange = (id, newStatus) => {
-    updateStatusMutation.mutate({ id, status: newStatus });
-  };
-
-  return {
-    showForm,
-    setShowForm,
-    editingBudget,
-    setEditingBudget,
-    handleSubmit,
-    handleEdit,
-    handleDelete,
-    handleStatusChange,
-    isSubmitting: createMutation.isPending || updateMutation.isPending,
-  };
+  // Delegate to the consolidated manager
+  return useMiniBudgetManager(user, transactions);
 };
