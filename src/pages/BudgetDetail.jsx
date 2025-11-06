@@ -5,20 +5,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Plus, DollarSign, TrendingDown, CheckCircle, Clock, Trash2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
 import { formatCurrency } from "../components/utils/formatCurrency";
 import { formatDate } from "../components/utils/formatDate";
-import { getMiniBudgetStats, getSystemBudgetStats, getMiniBudgetAllocationStats } from "../components/utils/budgetCalculations";
+import { getCustomBudgetStats, getSystemBudgetStats, getCustomBudgetAllocationStats } from "../components/utils/budgetCalculations";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import TransactionCard from "../components/transactions/TransactionCard";
 import TransactionForm from "../components/transactions/TransactionForm";
-import AllocationManager from "../components/minibudgets/AllocationManager";
-import MiniBudgetCard from "../components/minibudgets/MiniBudgetCard";
-import { getProgressBarColor } from "../components/utils/progressBarColor";
+import AllocationManager from "../components/custombudgets/AllocationManager";
+import CustomBudgetCard from "../components/custombudgets/CustomBudgetCard";
 
 export default function BudgetDetail() {
     const { settings } = useSettings();
@@ -35,12 +33,12 @@ export default function BudgetDetail() {
         queryFn: async () => {
             if (!budgetId) return null;
 
-            // Try to find in MiniBudget first
-            const allMiniBudgets = await base44.entities.MiniBudget.list();
-            const miniBudget = allMiniBudgets.find(mb => mb.id === budgetId);
+            // Try to find in CustomBudget first
+            const allCustomBudgets = await base44.entities.CustomBudget.list();
+            const customBudget = allCustomBudgets.find(cb => cb.id === budgetId);
 
-            if (miniBudget) {
-                return { ...miniBudget, isSystemBudget: miniBudget.isSystemBudget || false };
+            if (customBudget) {
+                return { ...customBudget, isSystemBudget: customBudget.isSystemBudget || false };
             }
 
             // If not found, try SystemBudget
@@ -76,17 +74,17 @@ export default function BudgetDetail() {
     const { data: allBudgets = [] } = useQuery({
         queryKey: ['allBudgets'],
         queryFn: async () => {
-            const miniB = await base44.entities.MiniBudget.list();
+            const customB = await base44.entities.CustomBudget.list();
             const sysB = await base44.entities.SystemBudget.list();
-            return [...miniB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
+            return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         initialData: [],
     });
 
-    const { data: allMiniBudgets = [] } = useQuery({
-        queryKey: ['allMiniBudgets'],
+    const { data: allCustomBudgets = [] } = useQuery({
+        queryKey: ['allCustomBudgets'],
         queryFn: async () => {
-            const all = await base44.entities.MiniBudget.list();
+            const all = await base44.entities.CustomBudget.list();
             return all;
         },
         initialData: [],
@@ -95,8 +93,8 @@ export default function BudgetDetail() {
     const { data: allocations = [] } = useQuery({
         queryKey: ['allocations', budgetId],
         queryFn: async () => {
-            const all = await base44.entities.MiniBudgetAllocation.list();
-            return all.filter(a => a.miniBudgetId === budgetId);
+            const all = await base44.entities.CustomBudgetAllocation.list();
+            return all.filter(a => a.customBudgetId === budgetId);
         },
         initialData: [],
         enabled: !!budgetId && budget && !budget.isSystemBudget,
@@ -127,29 +125,29 @@ export default function BudgetDetail() {
     });
 
     const createAllocationMutation = useMutation({
-        mutationFn: (data) => base44.entities.MiniBudgetAllocation.create(data),
+        mutationFn: (data) => base44.entities.CustomBudgetAllocation.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] });
         },
     });
 
     const updateAllocationMutation = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.MiniBudgetAllocation.update(id, data),
+        mutationFn: ({ id, data }) => base44.entities.CustomBudgetAllocation.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] });
         },
     });
 
     const deleteAllocationMutation = useMutation({
-        mutationFn: (id) => base44.entities.MiniBudgetAllocation.delete(id),
+        mutationFn: (id) => base44.entities.CustomBudgetAllocation.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] });
         },
     });
 
-    const { data: miniBudgets = [] } = useQuery({
-        queryKey: ['miniBudgets'],
-        queryFn: () => base44.entities.MiniBudget.list(),
+    const { data: customBudgets = [] } = useQuery({
+        queryKey: ['customBudgets'],
+        queryFn: () => base44.entities.CustomBudget.list(),
         initialData: [],
     });
 
@@ -161,7 +159,7 @@ export default function BudgetDetail() {
             const budgetEnd = new Date(budget.endDate);
 
             // Get IDs of ALL custom budgets (regardless of status) to exclude their transactions
-            const allCustomBudgetIds = allMiniBudgets.map(mb => mb.id);
+            const allCustomBudgetIds = allCustomBudgets.map(cb => cb.id);
 
             // Filter transactions: exclude those from ANY custom budgets
             return transactions.filter(t => {
@@ -171,7 +169,7 @@ export default function BudgetDetail() {
                 if (!category || category.priority !== budget.systemBudgetType) return false;
 
                 // Exclude transactions from ANY custom budget (active, completed, or archived)
-                if (t.miniBudgetId && allCustomBudgetIds.includes(t.miniBudgetId)) {
+                if (t.customBudgetId && allCustomBudgetIds.includes(t.customBudgetId)) {
                     return false;
                 }
 
@@ -189,18 +187,18 @@ export default function BudgetDetail() {
                 return false;
             });
         } else {
-            // For custom budgets, filter by miniBudgetId
-            return transactions.filter(t => t.miniBudgetId === budgetId);
+            // For custom budgets, filter by customBudgetId
+            return transactions.filter(t => t.customBudgetId === budgetId);
         }
-    }, [transactions, budgetId, budget, categories, allMiniBudgets]);
+    }, [transactions, budgetId, budget, categories, allCustomBudgets]);
 
     const relatedCustomBudgetsForDisplay = useMemo(() => {
-        if (!budget || !budget.isSystemBudget) return []; // Only proceeds if it's a system budget
+        if (!budget || !budget.isSystemBudget) return [];
 
         // NEW LOGIC: If it's a 'needs' system budget, no custom budgets should be shown.
         // Custom budgets are inherently 'wants'.
         if (budget.systemBudgetType === 'needs') {
-            return []; // Do not display any custom budgets on Needs or Savings system budget pages
+            return [];
         }
 
         // If it's a 'wants' system budget, then we should display relevant custom budgets.
@@ -208,37 +206,36 @@ export default function BudgetDetail() {
             const budgetStart = new Date(budget.startDate);
             const budgetEnd = new Date(budget.endDate);
 
-            return allMiniBudgets.filter(mb => {
+            return allCustomBudgets.filter(cb => {
                 // Only consider active or completed custom budgets
-                if (mb.status !== 'active' && mb.status !== 'completed') return false;
+                if (cb.status !== 'active' && cb.status !== 'completed') return false;
 
                 // Crucially, filter out any actual SystemBudgets from this list
-                // (allMiniBudgets might contain system budgets if it fetches all MiniBudget entities regardless of isSystemBudget field)
-                if (mb.isSystemBudget) return false;
+                if (cb.isSystemBudget) return false;
 
-                // Check date overlap (existing logic)
-                const mbStart = new Date(mb.startDate);
-                const mbEnd = new Date(mb.endDate);
-                return mbStart <= budgetEnd && mbEnd >= budgetStart;
+                // Check date overlap
+                const cbStart = new Date(cb.startDate);
+                const cbEnd = new Date(cb.endDate);
+                return cbStart <= budgetEnd && cbEnd >= budgetStart;
             });
         }
 
-        return []; // Fallback, should not be reached for system budgets
-    }, [budget, allMiniBudgets]);
+        return [];
+    }, [budget, allCustomBudgets]);
 
     const stats = useMemo(() => {
         if (!budget) return null;
 
         if (budget.isSystemBudget) {
-            return getSystemBudgetStats(budget, transactions, categories, allMiniBudgets);
+            return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets);
         } else {
-            return getMiniBudgetStats(budget, transactions);
+            return getCustomBudgetStats(budget, transactions);
         }
-    }, [budget, transactions, categories, allMiniBudgets]);
+    }, [budget, transactions, categories, allCustomBudgets]);
 
     const allocationStats = useMemo(() => {
         if (!budget || budget.isSystemBudget) return null;
-        return getMiniBudgetAllocationStats(budget, allocations, transactions);
+        return getCustomBudgetAllocationStats(budget, allocations, transactions);
     }, [budget, allocations, transactions]);
 
     const categoryMap = categories.reduce((acc, cat) => {
@@ -269,7 +266,7 @@ export default function BudgetDetail() {
                 await base44.entities.Transaction.delete(transaction.id);
             }
 
-            await base44.entities.MiniBudget.delete(budgetId);
+            await base44.entities.CustomBudget.delete(budgetId);
             window.location.href = createPageUrl("Budgets");
         }
     };
@@ -281,7 +278,7 @@ export default function BudgetDetail() {
 
             const actualSpent = stats.totalSpent;
 
-            await base44.entities.MiniBudget.update(id, {
+            await base44.entities.CustomBudget.update(id, {
                 status: 'completed',
                 allocatedAmount: actualSpent,
                 originalAllocatedAmount: budgetToComplete.originalAllocatedAmount || budgetToComplete.allocatedAmount
@@ -289,7 +286,7 @@ export default function BudgetDetail() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
-            queryClient.invalidateQueries({ queryKey: ['miniBudgets'] });
+            queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
         },
     });
 
@@ -493,7 +490,7 @@ export default function BudgetDetail() {
 
                 {!budget.isSystemBudget && budget.status !== 'completed' && allocationStats && (
                     <AllocationManager
-                        miniBudget={budget}
+                        customBudget={budget}
                         allocations={allocations}
                         categories={categories}
                         allocationStats={allocationStats}
@@ -515,10 +512,10 @@ export default function BudgetDetail() {
                         <CardContent>
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {relatedCustomBudgetsForDisplay.map((customBudget) => {
-                                    const customBudgetStats = getMiniBudgetStats(customBudget, transactions);
+                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions);
 
                                     return (
-                                        <MiniBudgetCard
+                                        <CustomBudgetCard
                                             key={customBudget.id}
                                             budget={{
                                                 ...customBudget,
@@ -586,8 +583,8 @@ export default function BudgetDetail() {
                     open={showQuickAdd}
                     onOpenChange={setShowQuickAdd}
                     categories={categories}
-                    miniBudgets={allBudgets}
-                    defaultMiniBudgetId={budgetId}
+                    customBudgets={allBudgets}
+                    defaultCustomBudgetId={budgetId}
                     onSubmit={(data) => createTransactionMutation.mutate(data)}
                     isSubmitting={createTransactionMutation.isPending}
                 />
