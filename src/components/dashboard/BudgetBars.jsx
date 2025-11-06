@@ -1,16 +1,15 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { formatCurrency } from "../utils/formatCurrency";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
-import BudgetBar from "../minibudgets/BudgetBar";
+import BudgetBar from "../custombudgets/BudgetBar";
 
 export default function BudgetBars({ 
   systemBudgets, 
-  miniBudgets, 
-  allMiniBudgets = [], 
+  customBudgets, 
+  allCustomBudgets = [], 
   transactions, 
   categories, 
   currentMonth, 
@@ -27,7 +26,7 @@ export default function BudgetBars({
 
   // Use the extracted hook for all calculations
   const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } = 
-    useBudgetBarsData(systemBudgets, miniBudgets, allMiniBudgets, transactions, categories, goals, monthlyIncome);
+    useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome);
 
   const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
   const canScrollLeft = customStartIndex > 0;
