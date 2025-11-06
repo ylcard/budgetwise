@@ -3,7 +3,6 @@ import Transactions from './pages/Transactions';
 import Categories from './pages/Categories';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import MiniBudgets from './pages/MiniBudgets';
 import Budgets from './pages/Budgets';
 import BudgetDetail from './pages/BudgetDetail';
 import Layout from './Layout.jsx';
@@ -15,7 +14,6 @@ export const PAGES = {
     "Categories": Categories,
     "Reports": Reports,
     "Settings": Settings,
-    "MiniBudgets": MiniBudgets,
     "Budgets": Budgets,
     "BudgetDetail": BudgetDetail,
 }
