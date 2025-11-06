@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -20,8 +19,8 @@ export default function QuickAddTransaction({
   open, 
   onOpenChange, 
   categories, 
-  miniBudgets, 
-  defaultMiniBudgetId = '', 
+  customBudgets, 
+  defaultCustomBudgetId = '', 
   onSubmit, 
   isSubmitting 
 }) {
@@ -33,14 +32,14 @@ export default function QuickAddTransaction({
     date: formatDateString(new Date()),
     isPaid: false,
     paidDate: '',
-    miniBudgetId: defaultMiniBudgetId || ''
+    customBudgetId: defaultCustomBudgetId || ''
   });
 
   useEffect(() => {
-    if (defaultMiniBudgetId) {
-      setFormData(prev => ({ ...prev, miniBudgetId: defaultMiniBudgetId }));
+    if (defaultCustomBudgetId) {
+      setFormData(prev => ({ ...prev, customBudgetId: defaultCustomBudgetId }));
     }
-  }, [defaultMiniBudgetId]);
+  }, [defaultCustomBudgetId]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -50,7 +49,7 @@ export default function QuickAddTransaction({
       ...formData,
       amount: parseFloat(normalizedAmount),
       paidDate: formData.isPaid ? (formData.paidDate || formData.date) : null,
-      miniBudgetId: formData.miniBudgetId || null
+      customBudgetId: formData.customBudgetId || null
     });
     
     setFormData({
@@ -61,7 +60,7 @@ export default function QuickAddTransaction({
       date: formatDateString(new Date()),
       isPaid: false,
       paidDate: '',
-      miniBudgetId: defaultMiniBudgetId || ''
+      customBudgetId: defaultCustomBudgetId || ''
     });
   };
 
@@ -142,17 +141,17 @@ export default function QuickAddTransaction({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="miniBudget">Budget</Label>
+            <Label htmlFor="customBudget">Budget</Label>
             <Select
-              value={formData.miniBudgetId || ''}
-              onValueChange={(value) => setFormData({ ...formData, miniBudgetId: value || '' })}
+              value={formData.customBudgetId || ''}
+              onValueChange={(value) => setFormData({ ...formData, customBudgetId: value || '' })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select budget (optional)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={null}>None</SelectItem>
-                {miniBudgets.map((budget) => (
+                {customBudgets.map((budget) => (
                   <SelectItem key={budget.id} value={budget.id}>
                     {budget.isSystemBudget && <span className="text-blue-600 mr-1">★</span>}
                     {budget.name}

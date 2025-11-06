@@ -12,12 +12,12 @@ import { useSettings } from "../utils/SettingsContext";
 import { usePeriod } from "../hooks/usePeriod";
 import { createEntityMap } from "../utils/budgetCalculations";
 
-export default function RecentTransactions({ transactions, categories, miniBudgets, isCollapsed, onToggleCollapse }) {
+export default function RecentTransactions({ transactions, categories, customBudgets, isCollapsed, onToggleCollapse }) {
   const { settings } = useSettings();
   const { currentYear } = usePeriod();
 
   const categoryMap = createEntityMap(categories);
-  const miniBudgetMap = createEntityMap(miniBudgets);
+  const customBudgetMap = createEntityMap(customBudgets);
 
   if (transactions.length === 0) {
     return (
@@ -70,7 +70,7 @@ export default function RecentTransactions({ transactions, categories, miniBudge
           <div className="space-y-2">
             {transactions.map((transaction) => {
               const category = categoryMap[transaction.category_id];
-              const miniBudget = transaction.miniBudgetId ? miniBudgetMap[transaction.miniBudgetId] : null;
+              const customBudget = transaction.customBudgetId ? customBudgetMap[transaction.customBudgetId] : null;
               const isIncome = transaction.type === 'income';
               const IconComponent = category?.icon && iconMap[category.icon] ? iconMap[category.icon] : null;
               
@@ -114,11 +114,11 @@ export default function RecentTransactions({ transactions, categories, miniBudge
                             </p>
                           </>
                         )}
-                        {miniBudget && (
+                        {customBudget && (
                           <>
                             <span className="text-gray-300">•</span>
                             <Badge variant="outline" className="text-xs">
-                              {miniBudget.name}
+                              {customBudget.name}
                             </Badge>
                           </>
                         )}

@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSettings } from "../utils/SettingsContext";
-import { useAllBudgets } from "../hooks/useBase44Entities"; // New import
+import { useAllBudgets } from "../hooks/useBase44Entities";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
@@ -30,7 +30,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     date: formatDateString(new Date()),
     isPaid: false,
     paidDate: '',
-    miniBudgetId: '',
+    customBudgetId: '',
     notes: ''
   });
 
@@ -44,7 +44,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
         date: transaction.date || formatDateString(new Date()),
         isPaid: transaction.type === 'expense' ? (transaction.isPaid || false) : false,
         paidDate: transaction.paidDate || '',
-        miniBudgetId: transaction.miniBudgetId || '',
+        customBudgetId: transaction.customBudgetId || '',
         notes: transaction.notes || ''
       });
     }
@@ -59,12 +59,12 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     
     if (formData.type === 'expense') {
       submitData.paidDate = formData.isPaid ? (formData.paidDate || formData.date) : null;
-      submitData.miniBudgetId = formData.miniBudgetId || null;
+      submitData.customBudgetId = formData.customBudgetId || null;
     } else {
       delete submitData.isPaid;
       delete submitData.paidDate;
       submitData.category_id = null;
-      submitData.miniBudgetId = null;
+      submitData.customBudgetId = null;
     }
     
     onSubmit(submitData);
@@ -118,7 +118,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
                     ...formData, 
                     type: value,
                     category_id: value === 'income' ? '' : formData.category_id,
-                    miniBudgetId: value === 'income' ? '' : formData.miniBudgetId,
+                    customBudgetId: value === 'income' ? '' : formData.customBudgetId,
                     isPaid: value === 'income' ? false : formData.isPaid,
                     paidDate: value === 'income' ? '' : formData.paidDate
                   })}
@@ -156,10 +156,10 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
 
             {formData.type === 'expense' && (
               <div className="space-y-2">
-                <Label htmlFor="miniBudget">Budget (Optional)</Label>
+                <Label htmlFor="customBudget">Budget (Optional)</Label>
                 <Select
-                  value={formData.miniBudgetId || ''}
-                  onValueChange={(value) => setFormData({ ...formData, miniBudgetId: value || '' })}
+                  value={formData.customBudgetId || ''}
+                  onValueChange={(value) => setFormData({ ...formData, customBudgetId: value || '' })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select budget (optional)" />
