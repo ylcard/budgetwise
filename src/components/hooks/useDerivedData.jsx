@@ -7,10 +7,10 @@ import {
   getLastDayOfMonth,
   getUnpaidExpensesForMonth,
   getSystemBudgetStats,
-  getCustomBudgetStats, // Changed from getMiniBudgetStats
+  getCustomBudgetStats,
   getDirectUnpaidExpenses,
   createEntityMap,
-  filterActiveCustomBudgets, // Changed from filterActiveMiniBudgets
+  filterActiveCustomBudgets,
 } from "../utils/budgetCalculations";
 import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
 import { iconMap } from "../utils/iconMapConfig";
@@ -92,24 +92,24 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear) =
 };
 
 // Hook for computing active budgets for the selected period
-export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear) => { // Changed allMiniBudgets to allCustomBudgets
-  const activeCustomBudgets = useMemo(() => { // Changed activeMiniBudgets to activeCustomBudgets
+export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear) => {
+  const activeCustomBudgets = useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
     
-    return allCustomBudgets.filter(cb => { // Changed allMiniBudgets to allCustomBudgets, mb to cb
-      if (cb.status !== 'active' && cb.status !== 'completed') return false; // Changed mb to cb
-      return cb.startDate <= monthEnd && cb.endDate >= monthStart; // Changed mb to cb
+    return allCustomBudgets.filter(cb => {
+      if (cb.status !== 'active' && cb.status !== 'completed') return false;
+      return cb.startDate <= monthEnd && cb.endDate >= monthStart;
     });
-  }, [allCustomBudgets, selectedMonth, selectedYear]); // Changed allMiniBudgets to allCustomBudgets
+  }, [allCustomBudgets, selectedMonth, selectedYear]);
 
   const allActiveBudgets = useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
     
-    const activeCustom = allCustomBudgets.filter(cb => { // Changed allMiniBudgets to allCustomBudgets, mb to cb, activeMini to activeCustom
-      if (cb.status !== 'active' && cb.status !== 'completed') return false; // Changed mb to cb
-      return cb.startDate <= monthEnd && cb.endDate >= monthStart; // Changed mb to cb
+    const activeCustom = allCustomBudgets.filter(cb => {
+      if (cb.status !== 'active' && cb.status !== 'completed') return false;
+      return cb.startDate <= monthEnd && cb.endDate >= monthStart;
     });
     
     const activeSystem = allSystemBudgets
@@ -129,55 +129,55 @@ export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMon
       }));
     
     return [...activeSystem, ...activeCustom];
-  }, [allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear]); // Changed allMiniBudgets to allCustomBudgets
+  }, [allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear]);
 
-  return { activeCustomBudgets, allActiveBudgets }; // Changed activeMiniBudgets to activeCustomBudgets
+  return { activeCustomBudgets, allActiveBudgets };
 };
 
 // Hook for filtering custom budgets by period
-export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, selectedYear) => { // Changed useMiniBudgetsFiltered to useCustomBudgetsFiltered, allMiniBudgets to allCustomBudgets
+export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, selectedYear) => {
   return useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
     
-    return allCustomBudgets.filter(cb => { // Changed allMiniBudgets to allCustomBudgets, mb to cb
-      return cb.startDate <= monthEnd && cb.endDate >= monthStart; // Changed mb to cb
+    return allCustomBudgets.filter(cb => {
+      return cb.startDate <= monthEnd && cb.endDate >= monthStart;
     });
-  }, [allCustomBudgets, selectedMonth, selectedYear]); // Changed allMiniBudgets to allCustomBudgets
+  }, [allCustomBudgets, selectedMonth, selectedYear]);
 };
 
 // Hook for processing budgets data (for Budgets page)
 export const useBudgetsAggregates = (
   transactions,
   categories,
-  allCustomBudgets, // Changed allMiniBudgets to allCustomBudgets
+  allCustomBudgets,
   systemBudgets,
   selectedMonth,
   selectedYear
 ) => {
   // Filter custom budgets based on date overlap
   const customBudgets = useMemo(() => {
-    return allCustomBudgets.filter(cb => { // Changed allMiniBudgets to allCustomBudgets, mb to cb
-      const start = new Date(cb.startDate); // Changed mb to cb
-      const end = new Date(cb.endDate); // Changed mb to cb
+    return allCustomBudgets.filter(cb => {
+      const start = new Date(cb.startDate);
+      const end = new Date(cb.endDate);
       const selectedMonthStart = new Date(selectedYear, selectedMonth, 1);
       const selectedMonthEnd = new Date(selectedYear, selectedMonth + 1, 0);
       
       return (start <= selectedMonthEnd && end >= selectedMonthStart);
     });
-  }, [allCustomBudgets, selectedMonth, selectedYear]); // Changed allMiniBudgets to allCustomBudgets
+  }, [allCustomBudgets, selectedMonth, selectedYear]);
 
   // Pre-calculate system budget stats
   const systemBudgetsWithStats = useMemo(() => {
     return systemBudgets.map(sb => {
-      const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets); // Changed allMiniBudgets to allCustomBudgets
+      const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets);
       return {
         ...sb,
         allocatedAmount: sb.budgetAmount,
         preCalculatedStats: stats
       };
     });
-  }, [systemBudgets, transactions, categories, allCustomBudgets]); // Changed allMiniBudgets to allCustomBudgets
+  }, [systemBudgets, transactions, categories, allCustomBudgets]);
 
   // Group custom budgets by status
   const groupedCustomBudgets = useMemo(() => {
@@ -248,8 +248,8 @@ export const useTransactionFiltering = (transactions) => {
 // Hook for budget bars data calculations
 export const useBudgetBarsData = (
   systemBudgets,
-  customBudgets, // Changed miniBudgets to customBudgets
-  allCustomBudgets, // Changed allMiniBudgets to allCustomBudgets
+  customBudgets,
+  allCustomBudgets,
   transactions,
   categories,
   goals,
@@ -263,13 +263,13 @@ export const useBudgetBarsData = (
     // Since CustomBudget entity only has 'active' or 'completed' status (no 'archived' or other states),
     // all customBudgets are already displayable. This assignment is kept for clarity and potential
     // future filtering logic if additional statuses are added.
-    const custom = customBudgets; // Changed miniBudgets to customBudgets
+    const custom = customBudgets;
     
     // Create goal map using enhanced createEntityMap with value extractor
     const goalMap = createEntityMap(goals, 'priority', (goal) => goal.target_percentage);
     
     // Filter only active custom budgets for 'wants' budget calculations
-    const activeCustom = filterActiveCustomBudgets(custom); // Changed filterActiveMiniBudgets to filterActiveCustomBudgets
+    const activeCustom = filterActiveCustomBudgets(custom);
         
     // Process system budgets
     const systemBudgetsData = system.map(sb => {
@@ -278,23 +278,23 @@ export const useBudgetBarsData = (
         allocatedAmount: sb.budgetAmount
       };
       
-      const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets); // Changed allMiniBudgets to allCustomBudgets
+      const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets);
       const targetPercentage = goalMap[sb.systemBudgetType] || 0;
       const targetAmount = sb.budgetAmount;
       
       let expectedAmount = 0;
       
       if (sb.systemBudgetType === 'wants') {
-        const directUnpaid = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets); // Changed allMiniBudgets to allCustomBudgets
+        const directUnpaid = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
         
-        const activeCustomExpected = activeCustom.reduce((sum, cb) => { // Changed cb from mb
-          const cbStats = getCustomBudgetStats(cb, transactions); // Changed getMiniBudgetStats to getCustomBudgetStats, cb from mb
-          return sum + (cb.allocatedAmount - cbStats.paidAmount); // Changed cb from mb
+        const activeCustomExpected = activeCustom.reduce((sum, cb) => {
+          const cbStats = getCustomBudgetStats(cb, transactions);
+          return sum + (cb.allocatedAmount - cbStats.paidAmount);
         }, 0);
         
         expectedAmount = directUnpaid + activeCustomExpected;
       } else if (sb.systemBudgetType === 'needs') {
-        expectedAmount = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets); // Changed allMiniBudgets to allCustomBudgets
+        expectedAmount = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
       } else if (sb.systemBudgetType === 'savings') {
         expectedAmount = 0;
       }
@@ -317,15 +317,15 @@ export const useBudgetBarsData = (
     });
     
     // Process custom budgets
-    const customBudgetsData = custom.map(cb => { // Changed mb to cb
-      const stats = getCustomBudgetStats(cb, transactions); // Changed getMiniBudgetStats to getCustomBudgetStats, mb to cb
-      const maxHeight = Math.max(cb.allocatedAmount, stats.totalSpent); // Changed mb to cb
-      const isOverBudget = stats.totalSpent > cb.allocatedAmount; // Changed mb to cb
-      const overBudgetAmount = isOverBudget ? stats.totalSpent - cb.allocatedAmount : 0; // Changed mb to cb
+    const customBudgetsData = custom.map(cb => {
+      const stats = getCustomBudgetStats(cb, transactions);
+      const maxHeight = Math.max(cb.allocatedAmount, stats.totalSpent);
+      const isOverBudget = stats.totalSpent > cb.allocatedAmount;
+      const overBudgetAmount = isOverBudget ? stats.totalSpent - cb.allocatedAmount : 0;
       
       return {
-        ...cb, // Changed mb to cb
-        originalAllocatedAmount: cb.originalAllocatedAmount || cb.allocatedAmount, // Changed mb to cb
+        ...cb,
+        originalAllocatedAmount: cb.originalAllocatedAmount || cb.allocatedAmount,
         stats,
         maxHeight,
         isOverBudget,
@@ -362,7 +362,7 @@ export const useBudgetBarsData = (
       savingsTarget: savingsTargetAmount,
       savingsShortfall
     };
-  }, [systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome]); // Changed miniBudgets to customBudgets, allMiniBudgets to allCustomBudgets
+  }, [systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome]);
 };
 
 // Hook for monthly breakdown calculations
