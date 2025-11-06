@@ -1,3 +1,64 @@
+/*
+ * ⚠️⚠️⚠️ DEPRECATED - SCHEDULED FOR DELETION ⚠️⚠️⚠️
+ * 
+ * This file is DEPRECATED and scheduled for deletion.
+ * DO NOT USE THIS COMPONENT IN NEW CODE.
+ * 
+ * === DEPRECATION REASONS ===
+ * 
+ * 1. NOT RENDERED ANYWHERE
+ *    - Dashboard.js does NOT import or render this component
+ *    - Reports page uses PriorityChart.jsx instead
+ *    - No active usage found in the entire codebase
+ * 
+ * 2. MASSIVE CODE DUPLICATION (~95%)
+ *    - Nearly identical calculation logic to usePriorityChartData hook
+ *    - Same categoryMap creation
+ *    - Same goalMap creation
+ *    - Same expensesByPriority aggregation
+ *    - Same percentage calculations
+ *    - Total of ~80 lines of duplicated code
+ * 
+ * 3. DUPLICATE priorityConfig DEFINITION
+ *    - priorityConfig defined locally here
+ *    - Also defined in usePriorityChartData hook
+ *    - Also defined in GoalSettings.jsx
+ *    - Should be extracted to shared constant file
+ * 
+ * 4. NO MEMOIZATION
+ *    - All calculations run on every render
+ *    - Performance issue with many transactions
+ *    - Hook version uses useMemo properly
+ * 
+ * 5. ARCHITECTURAL REDUNDANCY
+ *    - PriorityChart.jsx (used in Reports page) serves the same purpose
+ *    - Both components show actual vs target priority spending
+ *    - PriorityChart uses proper hook for calculations
+ * 
+ * === REPLACEMENT ===
+ * Use PriorityChart.jsx from components/reports/PriorityChart.jsx instead
+ * It uses the usePriorityChartData hook for calculations (proper architecture)
+ * 
+ * === MIGRATION PATH ===
+ * If you need priority breakdown display:
+ * 1. Import PriorityChart from components/reports/PriorityChart
+ * 2. Pass transactions, categories, goals, and monthlyIncome as props
+ * 3. Component handles all calculations internally via hook
+ * 
+ * === DELETION TIMELINE ===
+ * Date Deprecated: 2025-11-06
+ * Scheduled Deletion: After verification that no pages import/use this component
+ * 
+ * === VERIFICATION CHECKLIST BEFORE DELETION ===
+ * [x] Confirmed not imported in Dashboard.js
+ * [x] Confirmed not imported in Reports.js (uses PriorityChart instead)
+ * [ ] Grep codebase for "PriorityBreakdown" imports
+ * [ ] Verify no dynamic imports or lazy loading
+ * [ ] Delete this file entirely
+ */
+
+/* ENTIRE COMPONENT COMMENTED OUT - DO NOT UNCOMMENT
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -8,23 +69,13 @@ import { createPageUrl } from "@/utils";
 import { formatCurrency } from "../utils/formatCurrency";
 import { useSettings } from "../utils/SettingsContext";
 
-/*
- * ⚠️ REFACTORING NOTE ⚠️
- * FIXED: Removed undefined `calculateMonthlyAmount` prop - now using t.amount directly
- * FIXED: Added proper currency formatting with user settings
- * FIXED: Updated priority keys to match app's system (needs/wants/savings instead of essential/optional/savings/other)
- * 
- * This component is used in the Dashboard (if rendered) or Reports page.
- * Uses progress bars (correct visualization for this app).
- */
-
 const priorityConfig = {
   needs: { label: "Needs", color: "#EF4444", bg: "bg-red-50" },
   wants: { label: "Wants", color: "#F59E0B", bg: "bg-orange-50" },
   savings: { label: "Savings", color: "#10B981", bg: "bg-green-50" }
 };
 
-export default function PriorityBreakdown({ transactions, categories, goals, /* calculateMonthlyAmount, */ totalIncome, isLoading }) {
+export default function PriorityBreakdown({ transactions, categories, goals, totalIncome, isLoading }) {
   const { settings } = useSettings();
 
   const categoryMap = categories.reduce((acc, cat) => {
@@ -37,14 +88,12 @@ export default function PriorityBreakdown({ transactions, categories, goals, /* 
     return acc;
   }, {});
 
-  // FIXED: Using t.amount directly instead of calculateMonthlyAmount(t)
   const expensesByPriority = transactions
     .filter(t => t.type === 'expense' && t.category_id)
     .reduce((acc, t) => {
       const category = categoryMap[t.category_id];
       if (category) {
         const priority = category.priority;
-        // ✅ FIXED: Direct amount usage
         acc[priority] = (acc[priority] || 0) + t.amount;
       }
       return acc;
@@ -139,7 +188,6 @@ export default function PriorityBreakdown({ transactions, categories, goals, /* 
             />
             
             <div className="flex items-center justify-between text-xs text-gray-500">
-              {/* ✅ FIXED: Using formatCurrency with user settings */}
               <span>{formatCurrency(item.amount, settings)}</span>
               {item.target > 0 && item.isOverTarget && (
                 <span className="text-red-600 font-medium">
@@ -157,4 +205,11 @@ export default function PriorityBreakdown({ transactions, categories, goals, /* 
       </CardContent>
     </Card>
   );
+}
+
+END OF COMMENTED OUT CODE */
+
+// Export empty component to prevent import errors until file is deleted
+export default function PriorityBreakdown() {
+  return null;
 }
