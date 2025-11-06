@@ -10,7 +10,9 @@ import {
   getMiniBudgetStats,
   getDirectUnpaidExpenses,
   createEntityMap, // Added import
+  filterActiveMiniBudgets,
 } from "../utils/budgetCalculations";
+import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
 import { iconMap } from "../utils/iconMapConfig";
 import { Circle } from "lucide-react";
 
@@ -255,18 +257,19 @@ export const useBudgetBarsData = (
 ) => {
   return useMemo(() => {
     const system = systemBudgets.sort((a, b) => {
-      const order = { needs: 0, wants: 1, savings: 2 };
-      return order[a.systemBudgetType] - order[b.systemBudgetType];
+      return PRIORITY_ORDER[a.systemBudgetType] - PRIORITY_ORDER[b.systemBudgetType];
     });
     
-    const custom = miniBudgets.filter(mb => mb.status === 'active' || mb.status === 'completed');
+    // Since MiniBudget entity only has 'active' or 'completed' status (no 'archived' or other states),
+    // all miniBudgets are already displayable. This assignment is kept for clarity and potential
+    // future filtering logic if additional statuses are added.
+    const custom = miniBudgets;
     
-    const goalMap = goals.reduce((acc, goal) => {
-      acc[goal.priority] = goal.target_percentage;
-      return acc;
-    }, {});
+    // Create goal map using enhanced createEntityMap with value extractor
+    const goalMap = createEntityMap(goals, 'priority', (goal) => goal.target_percentage);
     
-    const activeCustom = custom.filter(mb => mb.status === 'active');
+    // Filter only active custom budgets for 'wants' budget calculations
+    const activeCustom = filterActiveMiniBudgets(custom);
         
     // Process system budgets
     const systemBudgetsData = system.map(sb => {
@@ -365,10 +368,7 @@ export const useBudgetBarsData = (
 // Hook for monthly breakdown calculations
 export const useMonthlyBreakdown = (transactions, categories, monthlyIncome) => {
   return useMemo(() => {
-    const categoryMap = categories.reduce((acc, cat) => {
-      acc[cat.id] = cat;
-      return acc;
-    }, {});
+    const categoryMap = createEntityMap(categories);
 
     const expensesByCategory = transactions
       .filter(t => t.type === 'expense')
@@ -405,15 +405,8 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome) => 
 // Hook for priority chart data calculations
 export const usePriorityChartData = (transactions, categories, goals, monthlyIncome) => {
   return useMemo(() => {
-    const categoryMap = categories.reduce((acc, cat) => {
-      acc[cat.id] = cat;
-      return acc;
-    }, {});
-
-    const goalMap = goals.reduce((acc, goal) => {
-      acc[goal.priority] = goal.target_percentage;
-      return acc;
-    }, {});
+    const categoryMap = createEntityMap(categories);
+    const goalMap = createEntityMap(goals, 'priority', (goal) => goal.target_percentage);
 
     const expensesByPriority = transactions
       .filter(t => t.type === 'expense' && t.category_id)
@@ -426,13 +419,7 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
         return acc;
       }, {});
 
-    const priorityConfig = {
-      needs: { label: "Needs", color: "#EF4444" },
-      wants: { label: "Wants", color: "#F59E0B" },
-      savings: { label: "Savings", color: "#10B981" }
-    };
-
-    const chartData = Object.entries(priorityConfig)
+    const chartData = Object.entries(PRIORITY_CONFIG)
       .map(([key, config]) => {
         const amount = expensesByPriority[key] || 0;
         const actual = monthlyIncome > 0 ? (amount / monthlyIncome) * 100 : 0;

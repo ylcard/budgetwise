@@ -1,13 +1,27 @@
 
 // Utility function to create a map from an array of entities
-export const createEntityMap = (entities, keyField = 'id') => {
+// Can optionally extract a specific field value instead of the whole entity
+export const createEntityMap = (entities, keyField = 'id', valueExtractor = null) => {
     if (!Array.isArray(entities)) return {};
     return entities.reduce((acc, entity) => {
         if (entity && entity[keyField]) {
-            acc[entity[keyField]] = entity;
+            acc[entity[keyField]] = valueExtractor ? valueExtractor(entity) : entity;
         }
         return acc;
     }, {});
+};
+
+// Filter mini budgets by status
+export const filterActiveMiniBudgets = (miniBudgets) => {
+    return miniBudgets.filter(mb => mb.status === 'active');
+};
+
+export const filterCompletedMiniBudgets = (miniBudgets) => {
+    return miniBudgets.filter(mb => mb.status === 'completed');
+};
+
+export const filterActiveOrCompletedMiniBudgets = (miniBudgets) => {
+    return miniBudgets.filter(mb => mb.status === 'active' || mb.status === 'completed');
 };
 
 // Utility function to create timezone-agnostic date from YYYY-MM-DD string
