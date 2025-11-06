@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +51,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
             <label className="text-sm font-medium">Start Date</label>
             <DatePicker
               value={tempStart}
-              onChange={(e) => setTempStart(e.target.value)}
+              onChange={(value) => setTempStart(value)}
               placeholder="Select start date"
             />
           </div>
@@ -61,7 +60,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
             <label className="text-sm font-medium">End Date</label>
             <DatePicker
               value={tempEnd}
-              onChange={(e) => setTempEnd(e.target.value)}
+              onChange={(value) => setTempEnd(value)}
               placeholder="Select end date"
             />
           </div>

@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import DatePicker from "../ui/DatePicker";
+import DateRangePicker from "../ui/DateRangePicker";
 
 export default function TransactionFilters({ filters, setFilters, categories }) {
   const selectedCategories = Array.isArray(filters.category) ? filters.category : [];
@@ -26,6 +26,10 @@ export default function TransactionFilters({ filters, setFilters, categories }) 
 
   const handleClearCategories = () => {
     setFilters({ ...filters, category: [] });
+  };
+
+  const handleDateRangeChange = (startDate, endDate) => {
+    setFilters({ ...filters, startDate, endDate });
   };
 
   return (
@@ -129,27 +133,11 @@ export default function TransactionFilters({ filters, setFilters, categories }) 
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs text-gray-500">From</Label>
-              <DatePicker
-                value={filters.startDate}
-                onChange={(value) => setFilters({ ...filters, startDate: value })}
-                placeholder="Start date"
-                className="w-40"
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <Label className="text-xs text-gray-500">To</Label>
-              <DatePicker
-                value={filters.endDate}
-                onChange={(value) => setFilters({ ...filters, endDate: value })}
-                placeholder="End date"
-                className="w-40"
-              />
-            </div>
-          </div>
+          <DateRangePicker
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+            onRangeChange={handleDateRangeChange}
+          />
         </div>
       </CardContent>
     </Card>
