@@ -19,6 +19,10 @@ export const usePeriod = () => {
     return getLastDayOfMonth(selectedMonth, selectedYear);
   }, [selectedMonth, selectedYear]);
 
+  const currentYear = useMemo(() => {
+    return now.getFullYear();
+  }, []);
+
   return {
     selectedMonth,
     setSelectedMonth,
@@ -27,5 +31,6 @@ export const usePeriod = () => {
     displayDate,
     monthStart,
     monthEnd,
+    currentYear,
   };
 };

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
 import {
   useActiveBudgets,
   useDashboardSummary,
+  usePaidTransactions, // Added import
 } from "../components/hooks/useDerivedData";
 import {
   useTransactionMutationsDashboard,
@@ -43,6 +45,7 @@ export default function Dashboard() {
 
   // Data fetching
   const { transactions } = useTransactions();
+  const paidTransactions = usePaidTransactions(transactions); // Added filter
   const { categories } = useCategories();
   const { goals } = useGoals(user);
   const { allMiniBudgets } = useMiniBudgetsAll(user);
@@ -144,7 +147,7 @@ export default function Dashboard() {
           />
 
           <RecentTransactions
-            transactions={transactions.slice(0, 10)}
+            transactions={paidTransactions.slice(0, 10)} // Changed to paidTransactions
             categories={categories}
             miniBudgets={activeMiniBudgets}
             settings={settings}

@@ -7,9 +7,41 @@ import {
   getLastDayOfMonth,
   getUnpaidExpensesForMonth,
   getSystemBudgetStats,
-  getMiniBudgetStats, // Added for new hooks
-  getDirectUnpaidExpenses, // Added for new hooks
+  getMiniBudgetStats,
+  getDirectUnpaidExpenses,
+  createEntityMap, // Added import
 } from "../utils/budgetCalculations";
+import { iconMap } from "../utils/iconMapConfig";
+import { Circle } from "lucide-react";
+
+// Hook for filtering paid transactions
+export const usePaidTransactions = (transactions) => {
+  return useMemo(() => {
+    return transactions.filter(t => {
+      if (t.type === 'income') return true;
+      return t.isPaid === true;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [transactions]);
+};
+
+// Hook for transaction display logic (icon, colors, status)
+export const useTransactionDisplay = (transaction, category) => {
+  return useMemo(() => {
+    const isIncome = transaction.type === 'income';
+    const isPaid = transaction.isPaid;
+    const IconComponent = category?.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
+    const iconColor = isIncome ? '#10B981' : (category?.color || '#94A3B8');
+    const iconBgColor = `${iconColor}20`;
+    
+    return {
+      isIncome,
+      isPaid,
+      IconComponent,
+      iconColor,
+      iconBgColor,
+    };
+  }, [transaction, category]);
+};
 
 // Hook for filtering transactions by current month
 export const useMonthlyTransactions = (transactions, selectedMonth, selectedYear) => {

@@ -1,4 +1,15 @@
 
+// Utility function to create a map from an array of entities
+export const createEntityMap = (entities, keyField = 'id') => {
+    if (!Array.isArray(entities)) return {};
+    return entities.reduce((acc, entity) => {
+        if (entity && entity[keyField]) {
+            acc[entity[keyField]] = entity;
+        }
+        return acc;
+    }, {});
+};
+
 // Utility function to create timezone-agnostic date from YYYY-MM-DD string
 export const parseDate = (dateString) => {
     if (!dateString) return null;

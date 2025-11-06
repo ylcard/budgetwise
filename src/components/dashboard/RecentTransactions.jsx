@@ -3,26 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Circle, ArrowRight, Check, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { formatCurrency } from "../utils/formatCurrency";
 import { iconMap, IncomeIcon } from "../utils/iconMapConfig";
+import { useSettings } from "../utils/SettingsContext";
+import { usePeriod } from "../hooks/usePeriod";
+import { createEntityMap } from "../utils/budgetCalculations";
 
-export default function RecentTransactions({ transactions, categories, miniBudgets, settings, isCollapsed, onToggleCollapse }) {
-  const categoryMap = categories.reduce((acc, cat) => {
-    acc[cat.id] = cat;
-    return acc;
-  }, {});
+export default function RecentTransactions({ transactions, categories, miniBudgets, isCollapsed, onToggleCollapse }) {
+  const { settings } = useSettings();
+  const { currentYear } = usePeriod();
 
-  const miniBudgetMap = miniBudgets.reduce((acc, mb) => {
-    if (mb && mb.id) {
-      acc[mb.id] = mb;
-    }
-    return acc;
-  }, {});
-
-  const currentYear = new Date().getFullYear();
+  const categoryMap = createEntityMap(categories);
+  const miniBudgetMap = createEntityMap(miniBudgets);
 
   if (transactions.length === 0) {
     return (
@@ -41,7 +36,7 @@ export default function RecentTransactions({ transactions, categories, miniBudge
         {!isCollapsed && (
           <CardContent>
             <div className="h-40 flex items-center justify-center text-gray-400">
-              <p>No transactions yet. Add your first one!</p>
+              <p>No paid transactions yet. Add your first one!</p>
             </div>
           </CardContent>
         )}
@@ -77,8 +72,7 @@ export default function RecentTransactions({ transactions, categories, miniBudge
               const category = categoryMap[transaction.category_id];
               const miniBudget = transaction.miniBudgetId ? miniBudgetMap[transaction.miniBudgetId] : null;
               const isIncome = transaction.type === 'income';
-              const IconComponent = category?.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
-              const isPaid = transaction.isPaid;
+              const IconComponent = category?.icon && iconMap[category.icon] ? iconMap[category.icon] : null;
               
               const paidYear = transaction.paidDate ? new Date(transaction.paidDate).getFullYear() : null;
               const showYear = paidYear && paidYear !== currentYear;
@@ -86,9 +80,7 @@ export default function RecentTransactions({ transactions, categories, miniBudge
               return (
                 <div 
                   key={transaction.id}
-                  className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group ${
-                    !isIncome && !isPaid ? 'opacity-60' : ''
-                  }`}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
                 >
                   <div className="flex items-center gap-3 flex-1">
                     {isIncome ? (
@@ -98,11 +90,9 @@ export default function RecentTransactions({ transactions, categories, miniBudge
                       >
                         <IncomeIcon className="w-5 h-5" style={{ color: '#10B981' }} />
                       </div>
-                    ) : category && (
+                    ) : category && IconComponent && (
                       <div 
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform ${
-                          !isPaid ? 'grayscale' : ''
-                        }`}
+                        className="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
                         style={{ backgroundColor: `${category.color}20` }}
                       >
                         <IconComponent className="w-5 h-5" style={{ color: category.color }} />
@@ -111,17 +101,12 @@ export default function RecentTransactions({ transactions, categories, miniBudge
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-gray-900">{transaction.title}</p>
-                        {!isIncome && (isPaid ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-orange-500" />
-                        ))}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <p className="text-sm text-gray-500">
                           {format(new Date(transaction.date), "MMM d, yyyy")}
                         </p>
-                        {!isIncome && isPaid && transaction.paidDate && (
+                        {!isIncome && transaction.paidDate && (
                           <>
                             <span className="text-gray-300">•</span>
                             <p className="text-xs text-green-600">
