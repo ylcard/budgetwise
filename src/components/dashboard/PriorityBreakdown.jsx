@@ -5,15 +5,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Target, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { formatCurrency } from "../utils/formatCurrency";
+import { useSettings } from "../utils/SettingsContext";
+
+/*
+ * ⚠️ REFACTORING NOTE ⚠️
+ * FIXED: Removed undefined `calculateMonthlyAmount` prop - now using t.amount directly
+ * FIXED: Added proper currency formatting with user settings
+ * FIXED: Updated priority keys to match app's system (needs/wants/savings instead of essential/optional/savings/other)
+ * 
+ * This component is used in the Dashboard (if rendered) or Reports page.
+ * Uses progress bars (correct visualization for this app).
+ */
 
 const priorityConfig = {
-  essential: { label: "Essential", color: "#EF4444", bg: "bg-red-50" },
-  optional: { label: "Optional", color: "#F59E0B", bg: "bg-orange-50" },
-  savings: { label: "Savings", color: "#10B981", bg: "bg-green-50" },
-  other: { label: "Other", color: "#6366F1", bg: "bg-indigo-50" }
+  needs: { label: "Needs", color: "#EF4444", bg: "bg-red-50" },
+  wants: { label: "Wants", color: "#F59E0B", bg: "bg-orange-50" },
+  savings: { label: "Savings", color: "#10B981", bg: "bg-green-50" }
 };
 
-export default function PriorityBreakdown({ transactions, categories, goals, calculateMonthlyAmount, totalIncome, isLoading }) {
+export default function PriorityBreakdown({ transactions, categories, goals, /* calculateMonthlyAmount, */ totalIncome, isLoading }) {
+  const { settings } = useSettings();
+
   const categoryMap = categories.reduce((acc, cat) => {
     acc[cat.id] = cat;
     return acc;
@@ -24,13 +37,15 @@ export default function PriorityBreakdown({ transactions, categories, goals, cal
     return acc;
   }, {});
 
+  // FIXED: Using t.amount directly instead of calculateMonthlyAmount(t)
   const expensesByPriority = transactions
     .filter(t => t.type === 'expense' && t.category_id)
     .reduce((acc, t) => {
       const category = categoryMap[t.category_id];
       if (category) {
         const priority = category.priority;
-        acc[priority] = (acc[priority] || 0) + calculateMonthlyAmount(t);
+        // ✅ FIXED: Direct amount usage
+        acc[priority] = (acc[priority] || 0) + t.amount;
       }
       return acc;
     }, {});
@@ -124,7 +139,8 @@ export default function PriorityBreakdown({ transactions, categories, goals, cal
             />
             
             <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>${item.amount.toFixed(2)}</span>
+              {/* ✅ FIXED: Using formatCurrency with user settings */}
+              <span>{formatCurrency(item.amount, settings)}</span>
               {item.target > 0 && item.isOverTarget && (
                 <span className="text-red-600 font-medium">
                   {(item.percentage - item.target).toFixed(1)}% over
