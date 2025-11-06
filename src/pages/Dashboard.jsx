@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import {
   useTransactions,
   useCategories,
   useGoals,
-  useMiniBudgetsAll,
+  useCustomBudgetsAll,
   useSystemBudgetsAll,
   useSystemBudgetsForPeriod,
   useSystemBudgetManagement,
@@ -16,7 +15,7 @@ import {
 import {
   useActiveBudgets,
   useDashboardSummary,
-  usePaidTransactions, // Added import
+  usePaidTransactions,
 } from "../components/hooks/useDerivedData";
 import {
   useTransactionMutationsDashboard,
@@ -45,10 +44,10 @@ export default function Dashboard() {
 
   // Data fetching
   const { transactions } = useTransactions();
-  const paidTransactions = usePaidTransactions(transactions); // Added filter
+  const paidTransactions = usePaidTransactions(transactions);
   const { categories } = useCategories();
   const { goals } = useGoals(user);
-  const { allMiniBudgets } = useMiniBudgetsAll(user);
+  const { allCustomBudgets } = useCustomBudgetsAll(user);
   const { allSystemBudgets } = useSystemBudgetsAll(user);
   const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
@@ -65,8 +64,8 @@ export default function Dashboard() {
   );
 
   // Computed data
-  const { activeMiniBudgets, allActiveBudgets } = useActiveBudgets(
-    allMiniBudgets,
+  const { activeCustomBudgets, allActiveBudgets } = useActiveBudgets(
+    allCustomBudgets,
     allSystemBudgets,
     selectedMonth,
     selectedYear
@@ -83,7 +82,7 @@ export default function Dashboard() {
   const { createBudget, deleteBudget, completeBudget } = useBudgetMutationsDashboard(
     user,
     transactions,
-    allMiniBudgets,
+    allCustomBudgets,
     setShowQuickAddBudget
   );
 
@@ -132,8 +131,8 @@ export default function Dashboard() {
         <div className={`grid gap-6 transition-all ${isTransactionsCollapsed ? 'lg:grid-cols-[1fr_80px]' : 'lg:grid-cols-[2fr_1fr]'}`}>
           <BudgetBars
             systemBudgets={systemBudgets}
-            miniBudgets={activeMiniBudgets}
-            allMiniBudgets={allMiniBudgets}
+            customBudgets={activeCustomBudgets}
+            allCustomBudgets={allCustomBudgets}
             transactions={transactions}
             categories={categories}
             currentMonth={selectedMonth}
@@ -147,9 +146,9 @@ export default function Dashboard() {
           />
 
           <RecentTransactions
-            transactions={paidTransactions.slice(0, 10)} // Changed to paidTransactions
+            transactions={paidTransactions.slice(0, 10)}
             categories={categories}
-            miniBudgets={activeMiniBudgets}
+            customBudgets={activeCustomBudgets}
             settings={settings}
             isCollapsed={isTransactionsCollapsed}
             onToggleCollapse={() => setIsTransactionsCollapsed(!isTransactionsCollapsed)}
@@ -160,7 +159,7 @@ export default function Dashboard() {
           open={showQuickAdd}
           onOpenChange={setShowQuickAdd}
           categories={categories}
-          miniBudgets={allActiveBudgets}
+          customBudgets={allActiveBudgets}
           onSubmit={createTransaction}
           isSubmitting={isCreating}
         />
