@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,53 +25,53 @@ export const useTransactionMutationsDashboard = (setShowQuickAdd, setShowQuickAd
 };
 
 // Hook for budget mutations (Dashboard)
-export const useBudgetMutationsDashboard = (user, transactions, allMiniBudgets, setShowQuickAddBudget) => {
+export const useBudgetMutationsDashboard = (user, transactions, allCustomBudgets, setShowQuickAddBudget) => {
   const queryClient = useQueryClient();
 
   const createBudgetMutation = useMutation({
-    mutationFn: (data) => base44.entities.MiniBudget.create({
+    mutationFn: (data) => base44.entities.CustomBudget.create({
       ...data,
       user_email: user.email,
       isSystemBudget: false
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       setShowQuickAddBudget(false);
     },
   });
 
   const deleteBudgetMutation = useMutation({
     mutationFn: async (id) => {
-      const budgetTransactions = transactions.filter(t => t.miniBudgetId === id);
+      const budgetTransactions = transactions.filter(t => t.customBudgetId === id);
       
       for (const transaction of budgetTransactions) {
         await base44.entities.Transaction.delete(transaction.id);
       }
       
-      await base44.entities.MiniBudget.delete(id);
+      await base44.entities.CustomBudget.delete(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
     },
   });
 
   const completeBudgetMutation = useMutation({
     mutationFn: async (id) => {
-      const budget = allMiniBudgets.find(mb => mb.id === id);
+      const budget = allCustomBudgets.find(cb => cb.id === id);
       if (!budget) return;
       
-      const budgetTransactions = transactions.filter(t => t.miniBudgetId === id && t.isPaid);
+      const budgetTransactions = transactions.filter(t => t.customBudgetId === id && t.isPaid);
       const actualSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
       
-      await base44.entities.MiniBudget.update(id, { 
+      await base44.entities.CustomBudget.update(id, { 
         status: 'completed',
         allocatedAmount: actualSpent,
         originalAllocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
     },
   });
@@ -238,29 +239,29 @@ export const useGoalActions = (user, goals) => {
   };
 };
 
-// Hook for mini budget actions (CRUD operations)
-export const useMiniBudgetActions = (user, transactions) => {
+// Hook for custom budget actions (CRUD operations)
+export const useCustomBudgetActions = (user, transactions) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.MiniBudget.create({
+    mutationFn: (data) => base44.entities.CustomBudget.create({
       ...data,
       user_email: user.email,
       isSystemBudget: false
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       setShowForm(false);
       setEditingBudget(null);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MiniBudget.update(id, data),
+    mutationFn: ({ id, data }) => base44.entities.CustomBudget.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       setShowForm(false);
       setEditingBudget(null);
     },
@@ -268,24 +269,24 @@ export const useMiniBudgetActions = (user, transactions) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const budgetTransactions = transactions.filter(t => t.miniBudgetId === id);
+      const budgetTransactions = transactions.filter(t => t.customBudgetId === id);
       
       for (const transaction of budgetTransactions) {
         await base44.entities.Transaction.delete(transaction.id);
       }
       
-      await base44.entities.MiniBudget.delete(id);
+      await base44.entities.CustomBudget.delete(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
     },
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.MiniBudget.update(id, { status }),
+    mutationFn: ({ id, status }) => base44.entities.CustomBudget.update(id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
     },
   });
 
@@ -330,18 +331,18 @@ export const useBudgetActions = (user, transactions) => {
   const [editingBudget, setEditingBudget] = useState(null);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.MiniBudget.create(data),
+    mutationFn: (data) => base44.entities.CustomBudget.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       setShowForm(false);
       setEditingBudget(null);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MiniBudget.update(id, data),
+    mutationFn: ({ id, data }) => base44.entities.CustomBudget.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       setShowForm(false);
       setEditingBudget(null);
     },
@@ -349,24 +350,24 @@ export const useBudgetActions = (user, transactions) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const budgetTransactions = transactions.filter(t => t.miniBudgetId === id);
+      const budgetTransactions = transactions.filter(t => t.customBudgetId === id);
       
       for (const transaction of budgetTransactions) {
         await base44.entities.Transaction.delete(transaction.id);
       }
       
-      await base44.entities.MiniBudget.delete(id);
+      await base44.entities.CustomBudget.delete(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
     },
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.MiniBudget.update(id, { status }),
+    mutationFn: ({ id, status }) => base44.entities.CustomBudget.update(id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MINI_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
     },
   });
 
