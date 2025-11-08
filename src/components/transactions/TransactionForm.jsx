@@ -37,9 +37,10 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     paidDate: '',
     customBudgetId: '',
     notes: '',
-    originalCurrency: settings.currencyCode || 'USD'
+    originalCurrency: null // Start as null until settings load
   });
 
+  // Initialize form data when editing an existing transaction
   useEffect(() => {
     if (transaction) {
       setFormData({
@@ -52,24 +53,21 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
         paidDate: transaction.paidDate || '',
         customBudgetId: transaction.customBudgetId || '',
         notes: transaction.notes || '',
-        originalCurrency: transaction.originalCurrency || settings.currencyCode || 'USD'
+        originalCurrency: transaction.originalCurrency || settings.currencyCode || null
       });
     }
   }, [transaction, settings.currencyCode]);
 
-  // Update form currency when settings load/change
+  // Initialize originalCurrency only after settings are loaded (for new transactions)
   useEffect(() => {
-    if (!settingsLoading && settings.currencyCode && !transaction) {
-      setFormData(prev => ({
-        ...prev,
-        originalCurrency: settings.currencyCode
-      }));
+    if (!transaction && !settingsLoading && settings.currencyCode && formData.originalCurrency === null) {
+      setFormData(prev => ({ ...prev, originalCurrency: settings.currencyCode }));
     }
-  }, [settings.currencyCode, settingsLoading, transaction]);
+  }, [transaction, settingsLoading, settings.currencyCode, formData.originalCurrency]);
 
   const isForeignCurrency = useMemo(() => {
-    // Ensure we have valid settings before checking
-    if (settingsLoading || !settings.currencyCode) {
+    // Don't show foreign currency UI if settings are still loading or currency not set
+    if (settingsLoading || !settings.currencyCode || !formData.originalCurrency) {
       return false;
     }
     return formData.type === 'expense' && formData.originalCurrency !== settings.currencyCode;
@@ -98,7 +96,6 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Log current state for debugging
     console.log('Form submission - settings.currencyCode:', settings.currencyCode);
     console.log('Form submission - formData.originalCurrency:', formData.originalCurrency);
     console.log('Form submission - isForeignCurrency:', isForeignCurrency);
@@ -110,7 +107,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     let originalCurrency = null;
     let originalAmountValue = null;
 
-    // Convert currency if needed for expenses
+    // Convert currency if needed for expenses - comparing form currency to user's base currency
     if (isForeignCurrency) {
       try {
         console.log(`Converting ${inputAmount} from ${formData.originalCurrency} to ${settings.currencyCode}`);
@@ -171,14 +168,23 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     onSubmit(submitData);
   };
 
-  // Don't render form until settings are loaded
-  if (settingsLoading) {
+  // Show loading state while settings are being fetched
+  if (settingsLoading || (!transaction && formData.originalCurrency === null)) {
     return (
-      <Card className="border-none shadow-lg">
-        <CardContent className="p-6">
-          <div className="text-center text-gray-500">Loading settings...</div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+      >
+        <Card className="border-none shadow-lg">
+          <CardContent className="p-12">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500">Loading settings...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 

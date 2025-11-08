@@ -43,8 +43,15 @@ export default function QuickAddTransaction({
     isPaid: false,
     paidDate: '',
     customBudgetId: defaultCustomBudgetId || '',
-    originalCurrency: settings.currencyCode || 'USD'
+    originalCurrency: null // Start as null until settings load
   });
+
+  // Initialize originalCurrency only after settings are loaded
+  useEffect(() => {
+    if (!settingsLoading && settings.currencyCode && formData.originalCurrency === null) {
+      setFormData(prev => ({ ...prev, originalCurrency: settings.currencyCode }));
+    }
+  }, [settingsLoading, settings.currencyCode, formData.originalCurrency]);
 
   useEffect(() => {
     if (defaultCustomBudgetId) {
@@ -52,16 +59,9 @@ export default function QuickAddTransaction({
     }
   }, [defaultCustomBudgetId]);
 
-  // Update form currency when settings load/change
-  useEffect(() => {
-    if (!settingsLoading && settings.currencyCode) {
-      setFormData(prev => ({ ...prev, originalCurrency: settings.currencyCode }));
-    }
-  }, [settings.currencyCode, settingsLoading]);
-
   const isForeignCurrency = useMemo(() => {
-    // Ensure we have valid settings before checking
-    if (settingsLoading || !settings.currencyCode) {
+    // Don't show foreign currency UI if settings are still loading or currency not set
+    if (settingsLoading || !settings.currencyCode || !formData.originalCurrency) {
       return false;
     }
     return formData.originalCurrency !== settings.currencyCode;
@@ -90,7 +90,6 @@ export default function QuickAddTransaction({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Log current state for debugging
     console.log('QuickAdd submission - settings.currencyCode:', settings.currencyCode);
     console.log('QuickAdd submission - formData.originalCurrency:', formData.originalCurrency);
     console.log('QuickAdd submission - isForeignCurrency:', isForeignCurrency);
@@ -103,7 +102,7 @@ export default function QuickAddTransaction({
     let originalCurrency = null;
     let originalAmountValue = null;
 
-    // Convert currency if needed
+    // Convert currency if needed - comparing form currency to user's base currency
     if (isForeignCurrency) {
       try {
         console.log(`Converting ${inputAmount} from ${formData.originalCurrency} to ${settings.currencyCode}`);
@@ -148,6 +147,7 @@ export default function QuickAddTransaction({
       exchangeRateUsed: exchangeRateUsed
     });
     
+    // Reset form after submission, using current settings currency
     setFormData({
       title: '',
       amount: '',
@@ -157,9 +157,28 @@ export default function QuickAddTransaction({
       isPaid: false,
       paidDate: '',
       customBudgetId: defaultCustomBudgetId || '',
-      originalCurrency: settings.currencyCode || 'USD'
+      originalCurrency: settings.currencyCode
     });
   };
+
+  // Show loading state while settings are being fetched
+  if (settingsLoading || formData.originalCurrency === null) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Quick Add Expense</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-12">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-sm text-gray-500">Loading settings...</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
