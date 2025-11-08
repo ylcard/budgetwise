@@ -7,7 +7,7 @@ const STORAGE_KEY = 'budgetwise_settings';
 
 const defaultSettings = {
   currencySymbol: '$',
-  currencyCode: 'USD',
+  currencyCode: 'GBP',
   currencyPosition: 'before',
   thousandSeparator: ',',
   decimalSeparator: '.',
