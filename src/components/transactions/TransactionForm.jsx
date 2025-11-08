@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, RefreshCw } from "lucide-react";
+import { X, RefreshCw, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { useSettings } from "../utils/SettingsContext";
@@ -57,9 +57,15 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     }
   }, [transaction, settings.currencyCode]);
 
-  const isForeignCurrency = formData.type === 'expense' && formData.originalCurrency !== settings.currencyCode;
+  const isForeignCurrency = useMemo(() => {
+    return formData.type === 'expense' && formData.originalCurrency !== settings.currencyCode;
+  }, [formData.type, formData.originalCurrency, settings.currencyCode]);
 
-  const handleRefreshRates = async () => {
+  const handleResetCurrency = useCallback(() => {
+    setFormData(prev => ({ ...prev, originalCurrency: settings.currencyCode }));
+  }, [settings.currencyCode]);
+
+  const handleRefreshRates = useCallback(async () => {
     if (!user) return;
     
     const result = await refreshRates(
@@ -73,22 +79,22 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
       description: result.message,
       variant: result.success ? "default" : "destructive"
     });
-  };
+  }, [user, formData.date, formData.originalCurrency, settings.currencyCode, refreshRates, toast]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const originalAmount = parseFloat(formData.amount);
+    const inputAmount = parseFloat(formData.amount);
     
-    let finalAmount = originalAmount;
+    let finalAmount = inputAmount;
     let exchangeRateUsed = null;
     let originalCurrency = null;
     let originalAmountValue = null;
 
     // Convert currency if needed for expenses
-    if (formData.type === 'expense' && isForeignCurrency) {
+    if (isForeignCurrency) {
       try {
         const { convertedAmount, exchangeRate } = await convertCurrency(
-          originalAmount,
+          inputAmount,
           formData.originalCurrency,
           settings.currencyCode,
           formData.date
@@ -97,11 +103,11 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
         finalAmount = convertedAmount;
         exchangeRateUsed = exchangeRate;
         originalCurrency = formData.originalCurrency;
-        originalAmountValue = originalAmount;
+        originalAmountValue = inputAmount;
       } catch (error) {
         toast({
           title: "Conversion Error",
-          description: "Please refresh exchange rates before submitting.",
+          description: "Please refresh exchange rates for this date and currency before submitting.",
           variant: "destructive"
         });
         return;
@@ -109,8 +115,12 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     }
 
     const submitData = {
-      ...formData,
+      title: formData.title,
       amount: finalAmount,
+      type: formData.type,
+      category_id: formData.category_id,
+      date: formData.date,
+      notes: formData.notes,
       originalAmount: originalAmountValue,
       originalCurrency: originalCurrency,
       exchangeRateUsed: exchangeRateUsed
@@ -118,10 +128,11 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     
     if (formData.type === 'expense') {
       submitData.paidDate = formData.isPaid ? (formData.paidDate || formData.date) : null;
+      submitData.isPaid = formData.isPaid;
       submitData.customBudgetId = formData.customBudgetId || null;
     } else {
-      delete submitData.isPaid;
-      delete submitData.paidDate;
+      submitData.isPaid = false;
+      submitData.paidDate = null;
       submitData.category_id = null;
       submitData.customBudgetId = null;
       submitData.originalAmount = null;
@@ -195,16 +206,27 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
                     />
                   </div>
                   {isForeignCurrency && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleRefreshRates}
-                      disabled={isRefreshing}
-                      title="Refresh exchange rates"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    </Button>
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleResetCurrency}
+                        title="Reset to base currency"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleRefreshRates}
+                        disabled={isRefreshing}
+                        title="Refresh exchange rates"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </>
                   )}
                 </div>
                 {isForeignCurrency && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, RotateCcw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
@@ -53,14 +53,20 @@ export default function QuickAddTransaction({
   }, [defaultCustomBudgetId]);
 
   useEffect(() => {
-    if (settings.currencyCode) {
+    if (settings.currencyCode && !formData.originalCurrency) {
       setFormData(prev => ({ ...prev, originalCurrency: settings.currencyCode }));
     }
+  }, [settings.currencyCode, formData.originalCurrency]);
+
+  const isForeignCurrency = useMemo(() => {
+    return formData.originalCurrency !== settings.currencyCode;
+  }, [formData.originalCurrency, settings.currencyCode]);
+
+  const handleResetCurrency = useCallback(() => {
+    setFormData(prev => ({ ...prev, originalCurrency: settings.currencyCode }));
   }, [settings.currencyCode]);
 
-  const isForeignCurrency = formData.originalCurrency !== settings.currencyCode;
-
-  const handleRefreshRates = async () => {
+  const handleRefreshRates = useCallback(async () => {
     if (!user) return;
     
     const result = await refreshRates(
@@ -74,14 +80,14 @@ export default function QuickAddTransaction({
       description: result.message,
       variant: result.success ? "default" : "destructive"
     });
-  };
+  }, [user, formData.date, formData.originalCurrency, settings.currencyCode, refreshRates, toast]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const normalizedAmount = normalizeAmount(formData.amount);
-    const originalAmount = parseFloat(normalizedAmount);
+    const inputAmount = parseFloat(normalizedAmount);
     
-    let finalAmount = originalAmount;
+    let finalAmount = inputAmount;
     let exchangeRateUsed = null;
     let originalCurrency = null;
     let originalAmountValue = null;
@@ -90,7 +96,7 @@ export default function QuickAddTransaction({
     if (isForeignCurrency) {
       try {
         const { convertedAmount, exchangeRate } = await convertCurrency(
-          originalAmount,
+          inputAmount,
           formData.originalCurrency,
           settings.currencyCode,
           formData.date
@@ -99,11 +105,11 @@ export default function QuickAddTransaction({
         finalAmount = convertedAmount;
         exchangeRateUsed = exchangeRate;
         originalCurrency = formData.originalCurrency;
-        originalAmountValue = originalAmount;
+        originalAmountValue = inputAmount;
       } catch (error) {
         toast({
           title: "Conversion Error",
-          description: "Please refresh exchange rates before submitting.",
+          description: "Please refresh exchange rates for this date and currency before submitting.",
           variant: "destructive"
         });
         return;
@@ -111,13 +117,17 @@ export default function QuickAddTransaction({
     }
     
     onSubmit({
-      ...formData,
+      title: formData.title,
       amount: finalAmount,
+      type: formData.type,
+      category_id: formData.category_id,
+      date: formData.date,
+      isPaid: formData.isPaid,
+      paidDate: formData.isPaid ? (formData.paidDate || formData.date) : null,
+      customBudgetId: formData.customBudgetId || null,
       originalAmount: originalAmountValue,
       originalCurrency: originalCurrency,
-      exchangeRateUsed: exchangeRateUsed,
-      paidDate: formData.isPaid ? (formData.paidDate || formData.date) : null,
-      customBudgetId: formData.customBudgetId || null
+      exchangeRateUsed: exchangeRateUsed
     });
     
     setFormData({
@@ -162,16 +172,27 @@ export default function QuickAddTransaction({
                 />
               </div>
               {isForeignCurrency && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={handleRefreshRates}
-                  disabled={isRefreshing}
-                  title="Refresh exchange rates"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleResetCurrency}
+                    title="Reset to base currency"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleRefreshRates}
+                    disabled={isRefreshing}
+                    title="Refresh exchange rates"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
+                </>
               )}
             </div>
             {isForeignCurrency && (
