@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, DollarSign, TrendingDown, CheckCircle, Clock, Trash2, AlertCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
 import { formatCurrency } from "../components/utils/formatCurrency";
 import { formatDate } from "../components/utils/formatDate";
 import { getCustomBudgetStats, getSystemBudgetStats, getCustomBudgetAllocationStats } from "../components/utils/budgetCalculations";
-import { useCustomBudgetActions } from "../components/hooks/useActions";
 import { useCashWallet } from "../components/hooks/useBase44Entities";
+import { calculateRemainingCashAllocations, returnCashToWallet } from "../components/utils/cashAllocationUtils";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import TransactionCard from "../components/transactions/TransactionCard";
 import TransactionForm from "../components/transactions/TransactionForm";
@@ -24,15 +23,23 @@ import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 export default function BudgetDetail() {
     const { settings, user } = useSettings();
     const queryClient = useQueryClient();
+    const location = useLocation(); // Add location hook to detect URL changes
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [showEditForm, setShowEditForm] = useState(false);
-    const [showEditBudgetForm, setShowEditBudgetForm] = useState(false); // New state for budget editing
+    const [showEditBudgetForm, setShowEditBudgetForm] = useState(false);
 
     const urlParams = new URLSearchParams(window.location.search);
     const budgetId = urlParams.get('id');
 
     const { cashWallet } = useCashWallet(user);
+
+    // Force query refetch when URL changes
+    useEffect(() => {
+        if (budgetId) {
+          queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+        }
+    }, [budgetId, location, queryClient]);
 
     const { data: budget, isLoading: budgetLoading } = useQuery({
         queryKey: ['budget', budgetId],
@@ -104,13 +111,11 @@ export default function BudgetDetail() {
         enabled: !!budgetId && budget && !budget.isSystemBudget,
     });
 
-    // Add custom budget actions for handling complete/edit/delete of embedded custom budgets
-    const customBudgetActions = useCustomBudgetActions(user, transactions);
-
     const createTransactionMutation = useMutation({
         mutationFn: (data) => base44.entities.Transaction.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
             setShowQuickAdd(false);
         },
     });
@@ -152,6 +157,39 @@ export default function BudgetDetail() {
         },
     });
 
+    const completeBudgetMutation = useMutation({
+        mutationFn: async (id) => {
+            const budgetToComplete = budget;
+            if (!budgetToComplete) return;
+
+            // Return remaining cash to wallet if any
+            if (budgetToComplete.cashAllocations && budgetToComplete.cashAllocations.length > 0 && cashWallet) {
+              const remaining = calculateRemainingCashAllocations(budgetToComplete, transactions);
+              if (remaining.length > 0) {
+                await returnCashToWallet(
+                  cashWallet.id,
+                  cashWallet.balances || [],
+                  remaining
+                );
+              }
+            }
+
+            const actualSpent = getCustomBudgetStats(budgetToComplete, transactions).totalSpent;
+
+            await base44.entities.CustomBudget.update(id, {
+                status: 'completed',
+                allocatedAmount: actualSpent,
+                originalAllocatedAmount: budgetToComplete.originalAllocatedAmount || budgetToComplete.allocatedAmount,
+                cashAllocations: [] // Clear cash allocations
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+            queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
+            queryClient.invalidateQueries({ queryKey: ['cashWallet'] });
+        },
+    });
+
     const reactivateBudgetMutation = useMutation({
         mutationFn: async (id) => {
             const budgetToReactivate = budget;
@@ -160,7 +198,8 @@ export default function BudgetDetail() {
             await base44.entities.CustomBudget.update(id, {
                 status: 'active',
                 allocatedAmount: budgetToReactivate.originalAllocatedAmount || budgetToReactivate.allocatedAmount,
-                originalAllocatedAmount: null
+                originalAllocatedAmount: null,
+                cashAllocations: [] // Do not restore cash allocations
             });
         },
         onSuccess: () => {
@@ -286,25 +325,6 @@ export default function BudgetDetail() {
             window.location.href = createPageUrl("Budgets");
         }
     };
-
-    const completeBudgetMutation = useMutation({
-        mutationFn: async (id) => {
-            const budgetToComplete = budget;
-            if (!budgetToComplete) return;
-
-            const actualSpent = stats.totalSpent;
-
-            await base44.entities.CustomBudget.update(id, {
-                status: 'completed',
-                allocatedAmount: actualSpent,
-                originalAllocatedAmount: budgetToComplete.originalAllocatedAmount || budgetToComplete.allocatedAmount
-            });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
-            queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
-        },
-    });
 
     const handleEditBudget = (data) => {
         updateBudgetMutation.mutate({ id: budgetId, data });
@@ -449,6 +469,59 @@ export default function BudgetDetail() {
                     </div>
                 </div>
 
+                <div className="grid md:grid-cols-4 gap-4">
+                    <Card className="border-none shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Budget</CardTitle>
+                            <DollarSign className="w-4 h-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-gray-900">
+                                {formatCurrency(budget.allocatedAmount || budget.budgetAmount, settings)}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Spent</CardTitle>
+                            <TrendingDown className="w-4 h-4 text-red-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-red-600">
+                                {formatCurrency(stats.totalSpent, settings)}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {((stats.totalSpent / (budget.allocatedAmount || budget.budgetAmount)) * 100).toFixed(1)}% used
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Remaining</CardTitle>
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className={`text-2xl font-bold ${stats.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(stats.remaining, settings)}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Unpaid</CardTitle>
+                            <Clock className="w-4 h-4 text-orange-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-orange-600">
+                                {formatCurrency(stats.unpaidAmount, settings)}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 {budget.description && (
                     <Card className="border-none shadow-lg">
                         <CardHeader>
@@ -495,7 +568,7 @@ export default function BudgetDetail() {
                                             }}
                                             transactions={transactions}
                                             settings={settings}
-                                            hideActions={true} // New prop to hide actions
+                                            hideActions={true}
                                         />
                                     );
                                 })}
@@ -549,16 +622,6 @@ export default function BudgetDetail() {
                     />
                 )}
 
-                <QuickAddTransaction
-                    open={showQuickAdd}
-                    onOpenChange={setShowQuickAdd}
-                    categories={categories}
-                    customBudgets={allBudgets}
-                    defaultCustomBudgetId={budgetId}
-                    onSubmit={(data) => createTransactionMutation.mutate(data)}
-                    isSubmitting={createTransactionMutation.isPending}
-                />
-
                 {showEditBudgetForm && !budget.isSystemBudget && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -573,6 +636,16 @@ export default function BudgetDetail() {
                         </div>
                     </div>
                 )}
+
+                <QuickAddTransaction
+                    open={showQuickAdd}
+                    onOpenChange={setShowQuickAdd}
+                    categories={categories}
+                    customBudgets={allBudgets}
+                    defaultCustomBudgetId={budgetId}
+                    onSubmit={(data) => createTransactionMutation.mutate(data)}
+                    isSubmitting={createTransactionMutation.isPending}
+                />
             </div>
         </div>
     );
