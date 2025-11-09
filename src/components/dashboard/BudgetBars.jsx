@@ -71,8 +71,7 @@ export default function BudgetBars({
                   isCustom={false}
                   isSystemSavings={budget.systemBudgetType === 'savings'}
                   settings={settings}
-                  onDelete={onDeleteBudget}
-                  onComplete={onCompleteBudget}
+                  hideActions={true}
                 />
               ))}
             </div>
@@ -124,8 +123,7 @@ export default function BudgetBars({
                   budget={budget}
                   isCustom={true}
                   settings={settings}
-                  onDelete={onDeleteBudget}
-                  onComplete={onCompleteBudget}
+                  hideActions={true}
                 />
               ))}
             </div>
