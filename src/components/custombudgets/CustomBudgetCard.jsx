@@ -12,7 +12,15 @@ import { formatCurrency } from "../utils/formatCurrency";
 import { motion } from "framer-motion";
 import { getProgressBarColor } from "../utils/progressBarColor";
 
-export default function CustomBudgetCard({ budget, transactions, settings, onEdit, onDelete, onStatusChange }) {
+export default function CustomBudgetCard({ 
+  budget, 
+  transactions, 
+  settings, 
+  onEdit, 
+  onDelete, 
+  onStatusChange,
+  hideActions = false
+}) {
   // Use pre-calculated stats if available (for system budgets), otherwise calculate
   const stats = useMemo(() => {
     if (budget.preCalculatedStats) {
@@ -21,9 +29,9 @@ export default function CustomBudgetCard({ budget, transactions, settings, onEdi
     return getCustomBudgetStats(budget, transactions);
   }, [budget, transactions]);
 
-  const canDelete = !budget.isSystemBudget;
-  const canEdit = !budget.isSystemBudget;
-  const canChangeStatus = !budget.isSystemBudget;
+  const canDelete = !budget.isSystemBudget && !hideActions;
+  const canEdit = !budget.isSystemBudget && !hideActions;
+  const canChangeStatus = !budget.isSystemBudget && !hideActions;
   
   const isCompleted = budget.status === 'completed';
 
@@ -60,7 +68,7 @@ export default function CustomBudgetCard({ budget, transactions, settings, onEdi
             </div>
             {(canEdit || canDelete) && (
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {canEdit && (
+                {canEdit && onEdit && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -70,7 +78,7 @@ export default function CustomBudgetCard({ budget, transactions, settings, onEdi
                     <Pencil className="w-4 h-4" />
                   </Button>
                 )}
-                {canDelete && (
+                {canDelete && onDelete && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -145,7 +153,7 @@ export default function CustomBudgetCard({ budget, transactions, settings, onEdi
               )}
             </div>
 
-            {canChangeStatus && budget.status === 'active' && (
+            {canChangeStatus && budget.status === 'active' && onStatusChange && (
               <div className="flex gap-2 pt-2">
                 <Button
                   variant="outline"
