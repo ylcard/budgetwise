@@ -11,7 +11,8 @@ export default function BudgetBar({
   isSystemSavings = false,
   settings,
   onDelete,
-  onComplete 
+  onComplete,
+  hideActions = false
 }) {
   const { 
     stats, 
@@ -119,7 +120,7 @@ export default function BudgetBar({
           )}
           
           {/* Action buttons for custom budgets only */}
-          {isCustom && !isCompleted && (
+          {!hideActions && isCustom && !isCompleted && onDelete && onComplete && (
             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               <Button
                 variant="ghost"
