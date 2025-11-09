@@ -172,6 +172,7 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
     const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
     return {
+        totalBudget,
         totalSpent,
         cardSpent,
         cashSpent,

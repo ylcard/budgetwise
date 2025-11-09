@@ -90,7 +90,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
       .filter(t => shouldCountTowardBudget(t))
       .reduce((sum, t) => sum + t.amount, 0);
     
-    // Get allocated amounts from active custom budgets within this period
+    // Get REMAINING amounts from active custom budgets within this period
     const activeCustomBudgets = allCustomBudgets.filter(cb => {
       if (cb.status !== 'active') return false;
       const cbStart = parseDate(cb.startDate);
@@ -100,19 +100,13 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
       return cbStart <= monthEndDate && cbEnd >= monthStartDate;
     });
     
-    const customBudgetAllocations = activeCustomBudgets.reduce((sum, cb) => {
-      // Include both digital and cash allocations as "expected" expenses
-      const digitalAllocation = cb.allocatedAmount || 0;
-      const cashAllocation = cb.cashAllocations?.reduce((s, a) => s + a.amount, 0) || 0;
-      
-      // Get stats to subtract what's already been paid
+    const customBudgetRemaining = activeCustomBudgets.reduce((sum, cb) => {
       const stats = getCustomBudgetStats(cb, transactions);
-      const expectedFromBudget = (digitalAllocation + cashAllocation) - stats.paidAmount;
-      
-      return sum + Math.max(0, expectedFromBudget);
+      // Use remaining amount instead of total allocation to avoid double counting
+      return sum + Math.max(0, stats.remaining);
     }, 0);
     
-    return paidExpenses + unpaidExpenses + customBudgetAllocations;
+    return paidExpenses + unpaidExpenses + customBudgetRemaining;
   }, [transactions, selectedMonth, selectedYear, allCustomBudgets]);
 
   return {
@@ -320,19 +314,13 @@ export const useBudgetBarsData = (
       if (sb.systemBudgetType === 'wants') {
         const directUnpaid = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
         
-        // For active custom budgets: use allocated amount - paid amount
-        // For completed custom budgets: use actual spent - paid amount (which should be 0 since completed means fully paid)
+        // For custom budgets: use remaining unspent amount (total - totalSpent)
         const activeCustomExpected = activeCustom.reduce((sum, cb) => {
           const cbStats = getCustomBudgetStats(cb, transactions);
-          const digitalAllocation = cb.allocatedAmount || 0;
-          const cashAllocation = cb.cashAllocations?.reduce((s, a) => s + a.amount, 0) || 0;
-          const totalAllocation = digitalAllocation + cashAllocation;
           
-          // If completed, use actual spent (should equal paid amount)
-          // If active, use allocated - paid
-          const expectedFromBudget = cb.status === 'completed' 
-            ? cbStats.totalSpent - cbStats.paidAmount  // Should be 0 for completed
-            : totalAllocation - cbStats.paidAmount;
+          // Use totalBudget - totalSpent to get the remaining unspent amount
+          // This avoids double-counting unpaid expenses
+          const expectedFromBudget = cbStats.totalBudget - cbStats.totalSpent;
           
           return sum + Math.max(0, expectedFromBudget);
         }, 0);
@@ -364,11 +352,9 @@ export const useBudgetBarsData = (
     // Process custom budgets
     const customBudgetsData = custom.map(cb => {
       const stats = getCustomBudgetStats(cb, transactions);
-      const cashAllocatedTotal = cb.cashAllocations?.reduce((sum, alloc) => sum + alloc.amount, 0) || 0;
-      const totalBudget = cb.allocatedAmount + cashAllocatedTotal;
-      const maxHeight = Math.max(totalBudget, stats.totalSpent);
-      const isOverBudget = stats.totalSpent > totalBudget;
-      const overBudgetAmount = isOverBudget ? stats.totalSpent - totalBudget : 0;
+      const maxHeight = Math.max(stats.totalBudget, stats.totalSpent);
+      const isOverBudget = stats.totalSpent > stats.totalBudget;
+      const overBudgetAmount = isOverBudget ? stats.totalSpent - stats.totalBudget : 0;
       
       return {
         ...cb,

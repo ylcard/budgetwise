@@ -1,3 +1,4 @@
+
 import React, { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,7 +120,7 @@ export default function CustomBudgetCard({
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Original Budget</p>
                     <p className="font-bold text-gray-900">
-                      {formatCurrency(budget.originalAllocatedAmount || budget.allocatedAmount, settings)}
+                      {formatCurrency(budget.originalAllocatedAmount || stats.totalBudget, settings)}
                     </p>
                   </div>
                 </>
@@ -134,7 +135,7 @@ export default function CustomBudgetCard({
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Total Budget</p>
                     <p className="font-bold text-gray-900">
-                      {formatCurrency(budget.allocatedAmount, settings)}
+                      {formatCurrency(stats.totalBudget, settings)}
                     </p>
                   </div>
                 </>

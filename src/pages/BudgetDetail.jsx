@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import TransactionForm from "../components/transactions/TransactionForm";
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import CustomBudgetCard from "../components/custombudgets/CustomBudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
+import { QUERY_KEYS } from "@/lib/queryKeys"; // Assuming QUERY_KEYS is defined somewhere, adding it for safety as it's used in createTransactionMutation
 
 export default function BudgetDetail() {
     const { settings, user } = useSettings();
@@ -477,7 +479,7 @@ export default function BudgetDetail() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-gray-900">
-                                {formatCurrency(budget.allocatedAmount || budget.budgetAmount, settings)}
+                                {formatCurrency(stats.totalBudget || budget.allocatedAmount || budget.budgetAmount, settings)}
                             </div>
                         </CardContent>
                     </Card>
@@ -492,7 +494,7 @@ export default function BudgetDetail() {
                                 {formatCurrency(stats.totalSpent, settings)}
                             </div>
                             <p className="text-xs text-gray-500 mt-1">
-                                {((stats.totalSpent / (budget.allocatedAmount || budget.budgetAmount)) * 100).toFixed(1)}% used
+                                {((stats.totalSpent / (stats.totalBudget || budget.allocatedAmount || budget.budgetAmount)) * 100).toFixed(1)}% used
                             </p>
                         </CardContent>
                     </Card>
