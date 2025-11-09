@@ -11,6 +11,9 @@ import {
   getDirectUnpaidExpenses,
   createEntityMap,
   filterActiveCustomBudgets,
+  // Added based on outline for useDashboardSummary
+  shouldCountTowardBudget, 
+  parseDate, 
 } from "../utils/budgetCalculations";
 import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
 import { iconMap } from "../utils/iconMapConfig";
@@ -62,7 +65,7 @@ export const useMonthlyIncome = (monthlyTransactions) => {
 };
 
 // Hook for dashboard summary calculations
-export const useDashboardSummary = (transactions, selectedMonth, selectedYear) => {
+export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets) => {
   const remainingBudget = useMemo(() => {
     return calculateRemainingBudget(transactions, selectedMonth, selectedYear);
   }, [transactions, selectedMonth, selectedYear]);
@@ -74,15 +77,43 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear) =
   }, [transactions, selectedMonth, selectedYear]);
 
   const currentMonthExpenses = useMemo(() => {
+    const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
+    const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+    
+    // Get paid expenses
     const paidExpenses = getCurrentMonthTransactions(transactions, selectedMonth, selectedYear)
-      .filter(t => t.type === 'expense')
+      .filter(t => t.type === 'expense' && shouldCountTowardBudget(t))
       .reduce((sum, t) => sum + t.amount, 0);
     
+    // Get unpaid direct expenses
     const unpaidExpenses = getUnpaidExpensesForMonth(transactions, selectedMonth, selectedYear)
+      .filter(t => shouldCountTowardBudget(t))
       .reduce((sum, t) => sum + t.amount, 0);
     
-    return paidExpenses + unpaidExpenses;
-  }, [transactions, selectedMonth, selectedYear]);
+    // Get allocated amounts from active custom budgets within this period
+    const activeCustomBudgets = allCustomBudgets.filter(cb => {
+      if (cb.status !== 'active') return false;
+      const cbStart = parseDate(cb.startDate);
+      const cbEnd = parseDate(cb.endDate);
+      const monthStartDate = parseDate(monthStart);
+      const monthEndDate = parseDate(monthEnd);
+      return cbStart <= monthEndDate && cbEnd >= monthStartDate;
+    });
+    
+    const customBudgetAllocations = activeCustomBudgets.reduce((sum, cb) => {
+      // Include both digital and cash allocations as "expected" expenses
+      const digitalAllocation = cb.allocatedAmount || 0;
+      const cashAllocation = cb.cashAllocations?.reduce((s, a) => s + a.amount, 0) || 0;
+      
+      // Get stats to subtract what's already been paid
+      const stats = getCustomBudgetStats(cb, transactions);
+      const expectedFromBudget = (digitalAllocation + cashAllocation) - stats.paidAmount;
+      
+      return sum + Math.max(0, expectedFromBudget);
+    }, 0);
+    
+    return paidExpenses + unpaidExpenses + customBudgetAllocations;
+  }, [transactions, selectedMonth, selectedYear, allCustomBudgets]);
 
   return {
     remainingBudget,
@@ -170,7 +201,12 @@ export const useBudgetsAggregates = (
   // Pre-calculate system budget stats
   const systemBudgetsWithStats = useMemo(() => {
     return systemBudgets.map(sb => {
-      const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets);
+      const budgetForStats = {
+        ...sb,
+        allocatedAmount: sb.budgetAmount
+      };
+      
+      const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets);
       return {
         ...sb,
         allocatedAmount: sb.budgetAmount,
@@ -260,9 +296,6 @@ export const useBudgetBarsData = (
       return PRIORITY_ORDER[a.systemBudgetType] - PRIORITY_ORDER[b.systemBudgetType];
     });
     
-    // Since CustomBudget entity only has 'active' or 'completed' status (no 'archived' or other states),
-    // all customBudgets are already displayable. This assignment is kept for clarity and potential
-    // future filtering logic if additional statuses are added.
     const custom = customBudgets;
     
     // Create goal map using enhanced createEntityMap with value extractor
@@ -287,9 +320,21 @@ export const useBudgetBarsData = (
       if (sb.systemBudgetType === 'wants') {
         const directUnpaid = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
         
+        // For active custom budgets: use allocated amount - paid amount
+        // For completed custom budgets: use actual spent - paid amount (which should be 0 since completed means fully paid)
         const activeCustomExpected = activeCustom.reduce((sum, cb) => {
           const cbStats = getCustomBudgetStats(cb, transactions);
-          return sum + (cb.allocatedAmount - cbStats.paidAmount);
+          const digitalAllocation = cb.allocatedAmount || 0;
+          const cashAllocation = cb.cashAllocations?.reduce((s, a) => s + a.amount, 0) || 0;
+          const totalAllocation = digitalAllocation + cashAllocation;
+          
+          // If completed, use actual spent (should equal paid amount)
+          // If active, use allocated - paid
+          const expectedFromBudget = cb.status === 'completed' 
+            ? cbStats.totalSpent - cbStats.paidAmount  // Should be 0 for completed
+            : totalAllocation - cbStats.paidAmount;
+          
+          return sum + Math.max(0, expectedFromBudget);
         }, 0);
         
         expectedAmount = directUnpaid + activeCustomExpected;
@@ -319,9 +364,11 @@ export const useBudgetBarsData = (
     // Process custom budgets
     const customBudgetsData = custom.map(cb => {
       const stats = getCustomBudgetStats(cb, transactions);
-      const maxHeight = Math.max(cb.allocatedAmount, stats.totalSpent);
-      const isOverBudget = stats.totalSpent > cb.allocatedAmount;
-      const overBudgetAmount = isOverBudget ? stats.totalSpent - cb.allocatedAmount : 0;
+      const cashAllocatedTotal = cb.cashAllocations?.reduce((sum, alloc) => sum + alloc.amount, 0) || 0;
+      const totalBudget = cb.allocatedAmount + cashAllocatedTotal;
+      const maxHeight = Math.max(totalBudget, stats.totalSpent);
+      const isOverBudget = stats.totalSpent > totalBudget;
+      const overBudgetAmount = isOverBudget ? stats.totalSpent - totalBudget : 0;
       
       return {
         ...cb,

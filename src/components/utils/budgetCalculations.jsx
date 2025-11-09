@@ -1,3 +1,4 @@
+
 // Utility function to create a map from an array of entities
 // Can optionally extract a specific field value instead of the whole entity
 export const createEntityMap = (entities, keyField = 'id', valueExtractor = null) => {
@@ -162,10 +163,12 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
         .filter(t => t.type === 'expense' && !t.isPaid)
         .reduce((sum, t) => sum + t.amount, 0);
 
-    const totalBudget = customBudget.allocatedAmount + (customBudget.cashAllocatedAmount || 0);
+    // Calculate total allocated amount including cash allocations
+    const cashAllocatedTotal = customBudget.cashAllocations?.reduce((sum, alloc) => sum + alloc.amount, 0) || 0;
+    const totalBudget = customBudget.allocatedAmount + cashAllocatedTotal;
     const remaining = totalBudget - totalSpent;
     const cardRemaining = customBudget.allocatedAmount - cardSpent;
-    const cashRemaining = (customBudget.cashAllocatedAmount || 0) - cashSpent;
+    const cashRemaining = cashAllocatedTotal - cashSpent;
     const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
     return {
