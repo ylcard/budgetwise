@@ -143,7 +143,7 @@ export const useBudgetMutationsDashboard = (user, transactions, allCustomBudgets
 };
 
 // Hook for transaction actions (CRUD operations - Transactions page)
-export const useTransactionActions = (setShowForm, setEditingTransaction) => {
+export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet) => {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -169,7 +169,38 @@ export const useTransactionActions = (setShowForm, setEditingTransaction) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
+    mutationFn: async ({ id, data, oldTransaction }) => {
+      // Handle cash wallet balance adjustments for cash expense edits
+      if (oldTransaction?.isCashTransaction && 
+          oldTransaction?.cashTransactionType === 'expense_from_wallet' &&
+          oldTransaction?.cashAmount && 
+          oldTransaction?.cashCurrency &&
+          cashWallet) {
+        
+        const oldAmount = oldTransaction.cashAmount;
+        const newAmount = data.cashAmount || oldAmount;
+        const oldCurrency = oldTransaction.cashCurrency;
+        const newCurrency = data.cashCurrency || oldCurrency;
+        
+        // If amount or currency changed
+        if (oldAmount !== newAmount || oldCurrency !== newCurrency) {
+          const balances = cashWallet.balances || [];
+          let updatedBalances = [...balances];
+          
+          // Return old amount to wallet (reversing the previous expense)
+          updatedBalances = updateCurrencyBalance(updatedBalances, oldCurrency, oldAmount);
+          
+          // Deduct new amount from wallet (applying the new expense)
+          updatedBalances = updateCurrencyBalance(updatedBalances, newCurrency, -newAmount);
+          
+          await base44.entities.CashWallet.update(cashWallet.id, {
+            balances: updatedBalances
+          });
+        }
+      }
+      
+      return await base44.entities.Transaction.update(id, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
@@ -193,44 +224,22 @@ export const useTransactionActions = (setShowForm, setEditingTransaction) => {
   const deleteMutation = useMutation({
     mutationFn: async (transaction) => {
       // Handle cash wallet balance adjustment for cash transactions
-      if (transaction.isCashTransaction && transaction.cashAmount && transaction.cashCurrency) {
-        const allWallets = await base44.entities.CashWallet.list();
-        const wallet = allWallets.find(w => w.created_by === transaction.created_by);
+      if (transaction.isCashTransaction && transaction.cashAmount && transaction.cashCurrency && cashWallet) {
+        const balances = cashWallet.balances || [];
+        let updatedBalances = [...balances];
         
-        if (wallet) {
-          const balances = wallet.balances || [];
-          let updatedBalances = [...balances];
-          
-          // Reverse the transaction effect on wallet
-          if (transaction.cashTransactionType === 'withdrawal_to_wallet') {
-            // Was added to wallet, so subtract it
-            updatedBalances = balances.map(b => 
-              b.currencyCode === transaction.cashCurrency
-                ? { ...b, amount: b.amount - transaction.cashAmount }
-                : b
-            ).filter(b => b.amount > 0.01); // Filter out balances that become zero or negative
-          } else if (transaction.cashTransactionType === 'deposit_from_wallet_to_bank' || transaction.cashTransactionType === 'expense_from_wallet') {
-            // Was removed/spent from wallet, so add it back
-            const existingBalanceIndex = balances.findIndex(b => b.currencyCode === transaction.cashCurrency);
-            if (existingBalanceIndex !== -1) {
-              updatedBalances = balances.map((b, index) =>
-                index === existingBalanceIndex
-                  ? { ...b, amount: b.amount + transaction.cashAmount }
-                  : b
-              );
-            } else {
-              // Should not happen if it was a valid cash transaction from wallet, but add as fallback
-              updatedBalances = [...balances, { 
-                currencyCode: transaction.cashCurrency, 
-                amount: transaction.cashAmount 
-              }];
-            }
-          }
-          
-          await base44.entities.CashWallet.update(wallet.id, {
-            balances: updatedBalances
-          });
+        // Reverse the transaction effect on wallet
+        if (transaction.cashTransactionType === 'withdrawal_to_wallet') {
+          // Was added to wallet, so subtract it
+          updatedBalances = updateCurrencyBalance(updatedBalances, transaction.cashCurrency, -transaction.cashAmount);
+        } else if (transaction.cashTransactionType === 'deposit_from_wallet_to_bank' || transaction.cashTransactionType === 'expense_from_wallet') {
+          // Was removed/spent from wallet, so add it back
+          updatedBalances = updateCurrencyBalance(updatedBalances, transaction.cashCurrency, transaction.cashAmount);
         }
+        
+        await base44.entities.CashWallet.update(cashWallet.id, {
+          balances: updatedBalances
+        });
       }
       
       // Delete the transaction
@@ -256,7 +265,11 @@ export const useTransactionActions = (setShowForm, setEditingTransaction) => {
 
   const handleSubmit = (data, editingTransaction) => {
     if (editingTransaction) {
-      updateMutation.mutate({ id: editingTransaction.id, data });
+      updateMutation.mutate({ 
+        id: editingTransaction.id, 
+        data,
+        oldTransaction: editingTransaction 
+      });
     } else {
       createMutation.mutate(data);
     }
@@ -279,6 +292,24 @@ export const useTransactionActions = (setShowForm, setEditingTransaction) => {
     handleDelete,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
+};
+
+// Helper function to update balance for a specific currency (used in transaction updates)
+const updateCurrencyBalance = (balances, currencyCode, amountChange) => {
+  const existingBalanceIndex = balances.findIndex(b => b.currencyCode === currencyCode);
+  
+  if (existingBalanceIndex !== -1) {
+    const updatedBalances = balances.map((b, index) => 
+      index === existingBalanceIndex 
+        ? { ...b, amount: b.amount + amountChange }
+        : b
+    );
+    // Filter out balances that become zero or negative (considering floating point precision)
+    return updatedBalances.filter(b => b.amount > 0.01); 
+  } else if (amountChange > 0) { // Only add if it's a positive amount
+    return [...balances, { currencyCode, amount: amountChange }];
+  }
+  return balances;
 };
 
 // Hook for category actions (CRUD operations)
