@@ -52,7 +52,7 @@ export default function QuickAddIncome({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Income Source *</Label>
+            <Label htmlFor="title">Income Source</Label>
             <Input
               id="title"
               value={formData.title}
@@ -65,7 +65,7 @@ export default function QuickAddIncome({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">Amount</Label>
               <AmountInput
                 id="amount"
                 value={formData.amount}
@@ -76,7 +76,7 @@ export default function QuickAddIncome({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="date">Date</Label>
               <DatePicker
                 value={formData.date}
                 onChange={(value) => setFormData({ ...formData, date: value })}

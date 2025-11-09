@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -59,7 +60,7 @@ export default function CustomBudgetForm({ budget, onSubmit, onCancel, isSubmitt
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="name">{isQuickAdd ? 'Budget Name' : 'Event Name'} *</Label>
+          <Label htmlFor="name">{isQuickAdd ? 'Budget Name' : 'Event Name'}</Label>
           <Input
             id="name"
             value={formData.name}
@@ -71,7 +72,7 @@ export default function CustomBudgetForm({ budget, onSubmit, onCancel, isSubmitt
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="allocatedAmount">Total Budget *</Label>
+          <Label htmlFor="allocatedAmount">Total Budget</Label>
           <AmountInput
             id="allocatedAmount"
             value={formData.allocatedAmount}
@@ -84,7 +85,7 @@ export default function CustomBudgetForm({ budget, onSubmit, onCancel, isSubmitt
 
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="startDate">Start Date *</Label>
+          <Label htmlFor="startDate">Start Date</Label>
           <DatePicker
             id="startDate"
             value={formData.startDate}
@@ -94,7 +95,7 @@ export default function CustomBudgetForm({ budget, onSubmit, onCancel, isSubmitt
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="endDate">End Date *</Label>
+          <Label htmlFor="endDate">End Date</Label>
           <DatePicker
             id="endDate"
             value={formData.endDate}

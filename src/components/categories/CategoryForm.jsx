@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,7 +71,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Category Name *</Label>
+              <Label htmlFor="name">Category Name</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -81,7 +82,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
             </div>
 
             <div className="space-y-2">
-              <Label>Icon *</Label>
+              <Label>Icon</Label>
               <div className="grid grid-cols-6 md:grid-cols-8 gap-2">
                 {POPULAR_ICONS.map((iconName) => {
                   const Icon = iconMap[iconName];
@@ -104,7 +105,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
             </div>
 
             <div className="space-y-2">
-              <Label>Color *</Label>
+              <Label>Color</Label>
               <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                 {PRESET_COLORS.map((color) => (
                   <button
@@ -127,7 +128,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority *</Label>
+              <Label htmlFor="priority">Priority</Label>
               <Select
                 value={formData.priority}
                 onValueChange={(value) => setFormData({ ...formData, priority: value })}

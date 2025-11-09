@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,17 +6,23 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X } from "lucide-react";
+import { X, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { useToast } from "@/components/ui/use-toast";
 import { useSettings } from "../utils/SettingsContext";
 import { useAllBudgets } from "../hooks/useBase44Entities";
+import { useExchangeRates } from "../hooks/useExchangeRates";
+import { calculateConvertedAmount, getRateForDate } from "../utils/currencyCalculations";
+import { formatDateString, normalizeAmount } from "../utils/budgetCalculations";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
-import { formatDateString } from "../utils/budgetCalculations";
+import CurrencySelect from "../ui/CurrencySelect";
 
 export default function TransactionForm({ transaction, categories, onSubmit, onCancel, isSubmitting }) {
-  const { user } = useSettings();
+  const { user, settings } = useSettings();
+  const { toast } = useToast();
+  const { exchangeRates, refreshRates, isRefreshing } = useExchangeRates();
   
   // Use the extracted hook for fetching budgets
   const { allBudgets } = useAllBudgets(user);
@@ -25,6 +30,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
+    originalCurrency: settings.baseCurrency || 'USD',
     type: 'expense',
     category_id: '',
     date: formatDateString(new Date()),
@@ -38,7 +44,8 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
     if (transaction) {
       setFormData({
         title: transaction.title || '',
-        amount: transaction.amount?.toString() || '',
+        amount: transaction.originalAmount?.toString() || transaction.amount?.toString() || '',
+        originalCurrency: transaction.originalCurrency || settings.baseCurrency || 'USD',
         type: transaction.type || 'expense',
         category_id: transaction.category_id || '',
         date: transaction.date || formatDateString(new Date()),
@@ -48,21 +55,83 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
         notes: transaction.notes || ''
       });
     }
-  }, [transaction]);
+  }, [transaction, settings.baseCurrency]);
+
+  const isForeignCurrency = formData.originalCurrency !== (settings.baseCurrency || 'USD');
+
+  const handleRefreshRates = async () => {
+    const result = await refreshRates(
+      formData.originalCurrency,
+      settings.baseCurrency || 'USD',
+      formData.date
+    );
+
+    if (result.success) {
+      toast({
+        title: result.alreadyFresh ? "Rates Up to Date" : "Success",
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const normalizedAmount = normalizeAmount(formData.amount);
+    const originalAmount = parseFloat(normalizedAmount);
+    
+    let finalAmount = originalAmount;
+    let exchangeRateUsed = null;
+
+    // Perform currency conversion if needed
+    if (isForeignCurrency) {
+      const sourceRate = getRateForDate(exchangeRates, formData.originalCurrency, formData.date);
+      const targetRate = getRateForDate(exchangeRates, settings.baseCurrency || 'USD', formData.date);
+
+      if (!sourceRate || !targetRate) {
+        toast({
+          title: "Exchange Rate Missing",
+          description: "Please refresh the exchange rates before submitting.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const conversion = calculateConvertedAmount(
+        originalAmount,
+        formData.originalCurrency,
+        settings.baseCurrency || 'USD',
+        { sourceToUSD: sourceRate, targetToUSD: targetRate }
+      );
+
+      finalAmount = conversion.convertedAmount;
+      exchangeRateUsed = conversion.exchangeRateUsed;
+    }
+
     const submitData = {
-      ...formData,
-      amount: parseFloat(formData.amount)
+      title: formData.title,
+      amount: finalAmount,
+      originalAmount: originalAmount,
+      originalCurrency: formData.originalCurrency,
+      exchangeRateUsed: exchangeRateUsed,
+      type: formData.type,
+      category_id: formData.category_id || null,
+      date: formData.date,
+      notes: formData.notes || null
     };
     
     if (formData.type === 'expense') {
+      submitData.isPaid = formData.isPaid;
       submitData.paidDate = formData.isPaid ? (formData.paidDate || formData.date) : null;
       submitData.customBudgetId = formData.customBudgetId || null;
     } else {
-      delete submitData.isPaid;
-      delete submitData.paidDate;
+      submitData.isPaid = false;
+      submitData.paidDate = null;
       submitData.category_id = null;
       submitData.customBudgetId = null;
     }
@@ -87,7 +156,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
+                <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -98,7 +167,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount *</Label>
+                <Label htmlFor="amount">Amount</Label>
                 <AmountInput
                   id="amount"
                   value={formData.amount}
@@ -111,7 +180,7 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="type">Type *</Label>
+                <Label htmlFor="type">Type</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ 
@@ -134,13 +203,35 @@ export default function TransactionForm({ transaction, categories, onSubmit, onC
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
+                <Label htmlFor="date">Date</Label>
                 <DatePicker
                   value={formData.date}
                   onChange={(value) => setFormData({ ...formData, date: value })}
                   placeholder="Select date"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="currency">Currency</Label>
+                {isForeignCurrency && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRefreshRates}
+                    disabled={isRefreshing}
+                    className="h-8 px-2 text-blue-600 hover:text-blue-700"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
+                )}
+              </div>
+              <CurrencySelect
+                value={formData.originalCurrency}
+                onValueChange={(value) => setFormData({ ...formData, originalCurrency: value })}
+              />
             </div>
 
             {formData.type === 'expense' && (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -150,7 +151,7 @@ export default function QuickAddTransaction({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">What did you spend on? *</Label>
+            <Label htmlFor="title">What did you spend on?</Label>
             <Input
               id="title"
               value={formData.title}
@@ -163,7 +164,7 @@ export default function QuickAddTransaction({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">Amount</Label>
               <AmountInput
                 id="amount"
                 value={formData.amount}
@@ -174,7 +175,7 @@ export default function QuickAddTransaction({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="date">Date</Label>
               <DatePicker
                 value={formData.date}
                 onChange={(value) => setFormData({ ...formData, date: value })}
@@ -185,7 +186,7 @@ export default function QuickAddTransaction({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="currency">Currency *</Label>
+              <Label htmlFor="currency">Currency</Label>
               {isForeignCurrency && (
                 <Button
                   type="button"
