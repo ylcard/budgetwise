@@ -4,6 +4,12 @@ import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "./queryKeys";
+import {
+  allocateCashFromWallet,
+  returnCashToWallet,
+  calculateAllocationChanges,
+  calculateRemainingCashAllocations,
+} from "../utils/cashAllocationUtils";
 
 // Hook for transaction mutations (Dashboard)
 export const useTransactionMutationsDashboard = (setShowQuickAdd, setShowQuickAddIncome) => {
@@ -438,19 +444,34 @@ export const useGoalActions = (user, goals) => {
 };
 
 // Hook for custom budget actions (CRUD operations)
-export const useCustomBudgetActions = (user, transactions) => {
+export const useCustomBudgetActions = (user, transactions, cashWallet) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.CustomBudget.create({
-      ...data,
-      user_email: user.email,
-      isSystemBudget: false
-    }),
+    mutationFn: async (data) => {
+      // Create the budget first
+      const newBudget = await base44.entities.CustomBudget.create({
+        ...data,
+        user_email: user.email,
+        isSystemBudget: false
+      });
+
+      // Handle cash allocations if any
+      if (data.cashAllocations && data.cashAllocations.length > 0 && cashWallet) {
+        await allocateCashFromWallet(
+          cashWallet.id,
+          cashWallet.balances || [],
+          data.cashAllocations
+        );
+      }
+
+      return newBudget;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
       setShowForm(false);
       setEditingBudget(null);
       showToast({
@@ -469,9 +490,46 @@ export const useCustomBudgetActions = (user, transactions) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.CustomBudget.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const allBudgets = await base44.entities.CustomBudget.list();
+      const existingBudget = allBudgets.find(b => b.id === id);
+      
+      if (!existingBudget) {
+        throw new Error('Budget not found');
+      }
+
+      // Handle cash allocation changes
+      if (cashWallet) {
+        const oldAllocations = existingBudget.cashAllocations || [];
+        const newAllocations = data.cashAllocations || [];
+        
+        const changes = calculateAllocationChanges(oldAllocations, newAllocations);
+        
+        for (const change of changes) {
+          if (change.isIncrease) {
+            // Allocate more cash from wallet
+            await allocateCashFromWallet(
+              cashWallet.id,
+              cashWallet.balances || [],
+              [{ currencyCode: change.currencyCode, amount: change.amount }]
+            );
+          } else {
+            // Return cash to wallet
+            await returnCashToWallet(
+              cashWallet.id,
+              cashWallet.balances || [],
+              [{ currencyCode: change.currencyCode, amount: change.amount }]
+            );
+          }
+        }
+      }
+
+      // Update the budget
+      return await base44.entities.CustomBudget.update(id, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
       setShowForm(false);
       setEditingBudget(null);
       showToast({
@@ -491,17 +549,39 @@ export const useCustomBudgetActions = (user, transactions) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const budgetTransactions = transactions.filter(t => t.customBudgetId === id);
+      // Get the budget first
+      const allBudgets = await base44.entities.CustomBudget.list();
+      const budget = allBudgets.find(b => b.id === id);
       
+      if (!budget) {
+        throw new Error('Budget not found');
+      }
+
+      // Delete associated transactions
+      const budgetTransactions = transactions.filter(t => t.customBudgetId === id);
       for (const transaction of budgetTransactions) {
         await base44.entities.Transaction.delete(transaction.id);
       }
+
+      // Return any remaining cash allocations to wallet
+      if (budget.cashAllocations && budget.cashAllocations.length > 0 && cashWallet) {
+        const remaining = calculateRemainingCashAllocations(budget, transactions);
+        if (remaining.length > 0) {
+          await returnCashToWallet(
+            cashWallet.id,
+            cashWallet.balances || [],
+            remaining
+          );
+        }
+      }
       
+      // Delete the budget
       await base44.entities.CustomBudget.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
       showToast({
         title: "Success",
         description: "Budget deleted successfully",
@@ -518,9 +598,55 @@ export const useCustomBudgetActions = (user, transactions) => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.CustomBudget.update(id, { status }),
+    mutationFn: async ({ id, status }) => {
+      const allBudgets = await base44.entities.CustomBudget.list();
+      const budget = allBudgets.find(b => b.id === id);
+      
+      if (!budget) {
+        throw new Error('Budget not found');
+      }
+
+      if (status === 'completed') {
+        // When completing: return remaining cash to wallet
+        if (budget.cashAllocations && budget.cashAllocations.length > 0 && cashWallet) {
+          const remaining = calculateRemainingCashAllocations(budget, transactions);
+          if (remaining.length > 0) {
+            await returnCashToWallet(
+              cashWallet.id,
+              cashWallet.balances || [],
+              remaining
+            );
+          }
+        }
+
+        // Calculate actual spent amount
+        const budgetTransactions = transactions.filter(t => t.customBudgetId === id && t.isPaid);
+        const actualSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+        return await base44.entities.CustomBudget.update(id, {
+          status: 'completed',
+          allocatedAmount: actualSpent,
+          originalAllocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount,
+          cashAllocations: [] // Clear cash allocations when completing
+        });
+      } else if (status === 'active') {
+        // When reactivating: restore original allocated amount, but do NOT restore cash allocations
+        // The cash is already back in the wallet or spent through transactions.
+        // If the user wants to re-allocate cash, they will have to do it manually.
+        return await base44.entities.CustomBudget.update(id, {
+          status: 'active',
+          allocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount,
+          originalAllocatedAmount: null, // Clear original allocated amount as it's now active again
+          cashAllocations: [] // Clear cash allocations on reactivation to avoid re-allocating
+        });
+      } else {
+        // For other status changes (e.g., 'pending' if implemented)
+        return await base44.entities.CustomBudget.update(id, { status });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
       showToast({
         title: "Success",
         description: "Budget status updated successfully",
