@@ -11,6 +11,7 @@ import {
   useSystemBudgetsAll,
   useSystemBudgetsForPeriod,
   useSystemBudgetManagement,
+  useCashWallet,
 } from "../components/hooks/useBase44Entities";
 import {
   useActiveBudgets,
@@ -29,6 +30,10 @@ import QuickAddTransaction from "../components/transactions/QuickAddTransaction"
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import MonthNavigator from "../components/ui/MonthNavigator";
+import CashWalletCard from "../components/cashwallet/CashWalletCard";
+import CashWithdrawDialog from "../components/cashwallet/CashWithdrawDialog";
+import CashDepositDialog from "../components/cashwallet/CashDepositDialog";
+import { useCashWalletActions } from "../components/cashwallet/useCashWalletActions";
 
 export default function Dashboard() {
   const { settings, user } = useSettings();
@@ -50,6 +55,7 @@ export default function Dashboard() {
   const { allCustomBudgets } = useCustomBudgetsAll(user);
   const { allSystemBudgets } = useSystemBudgetsAll(user);
   const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+  const { cashWallet } = useCashWallet(user);
 
   // System budget management (auto-create/update)
   useSystemBudgetManagement(
@@ -86,6 +92,18 @@ export default function Dashboard() {
     setShowQuickAddBudget
   );
 
+  // Cash wallet actions
+  const {
+    showWithdrawDialog,
+    setShowWithdrawDialog,
+    showDepositDialog,
+    setShowDepositDialog,
+    handleWithdraw,
+    handleDeposit,
+    isWithdrawing,
+    isDepositing,
+  } = useCashWalletActions(user, cashWallet);
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -121,12 +139,19 @@ export default function Dashboard() {
           }}
         />
 
-        <RemainingBudgetCard
-          remaining={remainingBudget}
-          income={currentMonthIncome}
-          expenses={currentMonthExpenses}
-          settings={settings}
-        />
+        <div className="grid md:grid-cols-2 gap-6">
+          <RemainingBudgetCard
+            remaining={remainingBudget}
+            income={currentMonthIncome}
+            expenses={currentMonthExpenses}
+            settings={settings}
+          />
+          <CashWalletCard
+            cashWallet={cashWallet}
+            onWithdraw={() => setShowWithdrawDialog(true)}
+            onDeposit={() => setShowDepositDialog(true)}
+          />
+        </div>
 
         <div className={`grid gap-6 transition-all ${isTransactionsCollapsed ? 'lg:grid-cols-[1fr_80px]' : 'lg:grid-cols-[2fr_1fr]'}`}>
           <BudgetBars
@@ -178,6 +203,21 @@ export default function Dashboard() {
           isSubmitting={isCreating}
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
+        />
+
+        <CashWithdrawDialog
+          open={showWithdrawDialog}
+          onOpenChange={setShowWithdrawDialog}
+          onSubmit={handleWithdraw}
+          categories={categories}
+          isSubmitting={isWithdrawing}
+        />
+
+        <CashDepositDialog
+          open={showDepositDialog}
+          onOpenChange={setShowDepositDialog}
+          onSubmit={handleDeposit}
+          isSubmitting={isDepositing}
         />
       </div>
     </div>
