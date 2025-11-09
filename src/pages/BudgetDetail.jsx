@@ -18,6 +18,7 @@ import TransactionCard from "../components/transactions/TransactionCard";
 import TransactionForm from "../components/transactions/TransactionForm";
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import CustomBudgetCard from "../components/custombudgets/CustomBudgetCard";
+import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm"; // Import CustomBudgetForm
 
 export default function BudgetDetail() {
     const { settings, user } = useSettings();
@@ -25,6 +26,7 @@ export default function BudgetDetail() {
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [showEditForm, setShowEditForm] = useState(false);
+    const [showEditBudgetForm, setShowEditBudgetForm] = useState(false); // New state for budget editing
 
     const urlParams = new URLSearchParams(window.location.search);
     const budgetId = urlParams.get('id');
@@ -144,6 +146,32 @@ export default function BudgetDetail() {
         mutationFn: (id) => base44.entities.CustomBudgetAllocation.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] });
+        },
+    });
+
+    const reactivateBudgetMutation = useMutation({
+        mutationFn: async (id) => {
+            const budgetToReactivate = budget;
+            if (!budgetToReactivate) return;
+
+            await base44.entities.CustomBudget.update(id, {
+                status: 'active',
+                allocatedAmount: budgetToReactivate.originalAllocatedAmount || budgetToReactivate.allocatedAmount,
+                originalAllocatedAmount: null
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+            queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
+        },
+    });
+
+    const updateBudgetMutation = useMutation({
+        mutationFn: ({ id, data }) => base44.entities.CustomBudget.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+            queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
+            setShowEditBudgetForm(false);
         },
     });
 
@@ -275,6 +303,10 @@ export default function BudgetDetail() {
         },
     });
 
+    const handleEditBudget = (data) => {
+        updateBudgetMutation.mutate({ id: budgetId, data });
+    };
+
     useEffect(() => {
         if (!budgetId || (budget === null && !budgetLoading)) {
             const timer = setTimeout(() => {
@@ -340,6 +372,8 @@ export default function BudgetDetail() {
     }
 
     const canDelete = !budget.isSystemBudget;
+    const isCompleted = budget.status === 'completed';
+    const canEdit = !budget.isSystemBudget;
 
     return (
         <div className="min-h-screen p-4 md:p-8">
@@ -356,12 +390,23 @@ export default function BudgetDetail() {
                             {budget.isSystemBudget && (
                                 <Badge variant="outline">System</Badge>
                             )}
+                            {isCompleted && (
+                                <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                            )}
                         </div>
                         <p className="text-gray-500 mt-1">
                             {formatDate(budget.startDate, settings.dateFormat)} - {formatDate(budget.endDate, settings.dateFormat)}
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        {canEdit && !isCompleted && (
+                            <Button
+                                onClick={() => setShowEditBudgetForm(true)}
+                                variant="outline"
+                            >
+                                Edit Budget
+                            </Button>
+                        )}
                         {!budget.isSystemBudget && budget.status === 'active' && (
                             <Button
                                 onClick={() => completeBudgetMutation.mutate(budgetId)}
@@ -370,6 +415,15 @@ export default function BudgetDetail() {
                             >
                                 <CheckCircle className="w-4 h-4 mr-2" />
                                 Complete
+                            </Button>
+                        )}
+                        {!budget.isSystemBudget && budget.status === 'completed' && (
+                            <Button
+                                onClick={() => reactivateBudgetMutation.mutate(budgetId)}
+                                disabled={reactivateBudgetMutation.isPending}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                Reactivate
                             </Button>
                         )}
                         {canDelete && (
@@ -390,59 +444,6 @@ export default function BudgetDetail() {
                             Add Expense
                         </Button>
                     </div>
-                </div>
-
-                <div className="grid md:grid-cols-4 gap-4">
-                    <Card className="border-none shadow-lg">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Budget</CardTitle>
-                            <DollarSign className="w-4 h-4 text-blue-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-gray-900">
-                                {formatCurrency(budget.allocatedAmount || budget.budgetAmount, settings)}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-lg">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Spent</CardTitle>
-                            <TrendingDown className="w-4 h-4 text-red-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-red-600">
-                                {formatCurrency(stats.totalSpent, settings)}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                                {((stats.totalSpent / (budget.allocatedAmount || budget.budgetAmount)) * 100).toFixed(1)}% used
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-lg">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Remaining</CardTitle>
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className={`text-2xl font-bold ${stats.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatCurrency(stats.remaining, settings)}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-lg">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Unpaid</CardTitle>
-                            <Clock className="w-4 h-4 text-orange-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-orange-600">
-                                {formatCurrency(stats.unpaidAmount, settings)}
-                            </div>
-                        </CardContent>
-                    </Card>
                 </div>
 
                 {budget.description && (
@@ -491,9 +492,7 @@ export default function BudgetDetail() {
                                             }}
                                             transactions={transactions}
                                             settings={settings}
-                                            onEdit={customBudgetActions.handleEditBudget}
-                                            onDelete={customBudgetActions.handleDeleteBudget}
-                                            onStatusChange={customBudgetActions.handleStatusChange}
+                                            hideActions={true} // New prop to hide actions
                                         />
                                     );
                                 })}
@@ -556,6 +555,19 @@ export default function BudgetDetail() {
                     onSubmit={(data) => createTransactionMutation.mutate(data)}
                     isSubmitting={createTransactionMutation.isPending}
                 />
+
+                {showEditBudgetForm && !budget.isSystemBudget && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            <CustomBudgetForm
+                                budget={budget}
+                                onSubmit={handleEditBudget}
+                                onCancel={() => setShowEditBudgetForm(false)}
+                                isSubmitting={updateBudgetMutation.isPending}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
