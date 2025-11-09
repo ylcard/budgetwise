@@ -120,7 +120,8 @@ export const useAllBudgets = (user) => {
       const customBudgets = await base44.entities.CustomBudget.list();
       const systemBudgets = await base44.entities.SystemBudget.list();
       
-      const userCustomBudgets = customBudgets.filter(cb => cb.user_email === user.email && cb.status === 'active');
+      // Include ALL custom budgets (both active and completed) - removed status filter
+      const userCustomBudgets = customBudgets.filter(cb => cb.user_email === user.email);
       const userSystemBudgets = systemBudgets
         .filter(sb => sb.user_email === user.email)
         .map(sb => ({
