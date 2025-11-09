@@ -1,5 +1,3 @@
-
-
 // Utility function to create a map from an array of entities
 // Can optionally extract a specific field value instead of the whole entity
 export const createEntityMap = (entities, keyField = 'id', valueExtractor = null) => {
@@ -59,6 +57,17 @@ export const getLastDayOfMonth = (month, year) => {
     return formatDateString(new Date(year, month + 1, 0));
 };
 
+// Helper to check if a transaction should be counted toward budgets
+// Cash expenses from wallet should NOT be counted (the withdrawal already counted)
+export const shouldCountTowardBudget = (transaction) => {
+    if (!transaction.isCashTransaction) return true;
+    
+    // Only count withdrawals to wallet and deposits from wallet to bank
+    // Do NOT count expenses from wallet (they're already counted via the withdrawal)
+    return transaction.cashTransactionType === 'withdrawal_to_wallet' || 
+           transaction.cashTransactionType === 'deposit_from_wallet_to_bank';
+};
+
 export const getCurrentMonthTransactions = (transactions, month, year) => {
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 0);
@@ -97,12 +106,14 @@ export const calculateRemainingBudget = (transactions, month, year) => {
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + t.amount, 0);
 
+    // Only count expenses that should be counted toward budget
     const paidExpenses = currentMonthTransactions
-        .filter(t => t.type === 'expense')
+        .filter(t => t.type === 'expense' && shouldCountTowardBudget(t))
         .reduce((sum, t) => sum + t.amount, 0);
 
-    // Add unpaid expenses for the month
-    const unpaidExpenses = getUnpaidExpensesForMonth(transactions, month, year);
+    // Add unpaid expenses for the month (exclude cash expenses from wallet)
+    const unpaidExpenses = getUnpaidExpensesForMonth(transactions, month, year)
+        .filter(t => shouldCountTowardBudget(t));
     const unpaidExpenseAmount = unpaidExpenses.reduce((sum, t) => sum + t.amount, 0);
 
     return income - paidExpenses - unpaidExpenseAmount;
@@ -127,7 +138,19 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
         return transactionDate >= budgetStart && transactionDate <= budgetEnd;
     });
 
+    // Separate card and cash transactions
+    const cardTransactions = budgetTransactions.filter(t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet');
+    const cashTransactions = budgetTransactions.filter(t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet');
+
     const totalSpent = budgetTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const cardSpent = cardTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const cashSpent = cashTransactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
 
@@ -139,16 +162,21 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
         .filter(t => t.type === 'expense' && !t.isPaid)
         .reduce((sum, t) => sum + t.amount, 0);
 
-    const remaining = customBudget.allocatedAmount - totalSpent;
-    const percentageUsed = customBudget.allocatedAmount > 0
-        ? (totalSpent / customBudget.allocatedAmount) * 100
-        : 0;
+    const totalBudget = customBudget.allocatedAmount + (customBudget.cashAllocatedAmount || 0);
+    const remaining = totalBudget - totalSpent;
+    const cardRemaining = customBudget.allocatedAmount - cardSpent;
+    const cashRemaining = (customBudget.cashAllocatedAmount || 0) - cashSpent;
+    const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
     return {
         totalSpent,
+        cardSpent,
+        cashSpent,
         paidAmount,
         unpaidAmount,
         remaining,
+        cardRemaining,
+        cashRemaining,
         percentageUsed,
         transactionCount: budgetTransactions.length
     };
@@ -189,7 +217,14 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
         return false;
     });
 
+    // Separate card and cash transactions
+    const cardTransactions = budgetTransactions.filter(t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet');
+    const cashTransactions = budgetTransactions.filter(t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet');
+
     const totalSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const cardSpent = cardTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const cashSpent = cashTransactions.reduce((sum, t) => sum + t.amount, 0);
+
     const paidAmount = budgetTransactions
         .filter(t => t.isPaid)
         .reduce((sum, t) => sum + t.amount, 0);
@@ -197,21 +232,25 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
         .filter(t => !t.isPaid)
         .reduce((sum, t) => sum + t.amount, 0);
 
+    const totalBudget = systemBudget.budgetAmount + (systemBudget.cashAllocatedAmount || 0);
+    const cardRemaining = systemBudget.budgetAmount - cardSpent;
+    const cashRemaining = (systemBudget.cashAllocatedAmount || 0) - cashSpent;
+
     return {
         totalSpent,
+        cardSpent,
+        cashSpent,
         paidAmount,
         unpaidAmount,
-        remaining: systemBudget.budgetAmount - totalSpent,
-        percentageUsed: systemBudget.budgetAmount > 0
-            ? (totalSpent / systemBudget.budgetAmount) * 100
-            : 0,
+        remaining: totalBudget - totalSpent,
+        cardRemaining,
+        cashRemaining,
+        percentageUsed: totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0,
         transactionCount: budgetTransactions.length
     };
 };
 
 // Helper function to get direct unpaid expenses (not linked to any custom budget)
-// This function needs to be updated similarly if it also needs to respect effective priority based on customBudget links.
-// For now, keeping it as is, assuming 'direct' means solely based on category.
 export const getDirectUnpaidExpenses = (systemBudget, transactions, categories, allCustomBudgets = []) => {
     const budgetStart = parseDate(systemBudget.startDate);
     const budgetEnd = parseDate(systemBudget.endDate);

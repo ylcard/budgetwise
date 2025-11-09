@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -137,6 +136,22 @@ export const useAllBudgets = (user) => {
   });
 
   return { allBudgets, isLoading };
+};
+
+// Hook for fetching cash wallet
+export const useCashWallet = (user) => {
+  const { data: cashWallet, isLoading } = useQuery({
+    queryKey: [QUERY_KEYS.CASH_WALLET],
+    queryFn: async () => {
+      if (!user) return null;
+      const wallets = await base44.entities.CashWallet.list();
+      return wallets.find(w => w.user_email === user.email) || null;
+    },
+    initialData: null,
+    enabled: !!user,
+  });
+
+  return { cashWallet, isLoading };
 };
 
 // Hook for managing system budgets (create/update logic)
