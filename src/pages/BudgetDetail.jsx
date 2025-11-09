@@ -18,7 +18,7 @@ import TransactionCard from "../components/transactions/TransactionCard";
 import TransactionForm from "../components/transactions/TransactionForm";
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import CustomBudgetCard from "../components/custombudgets/CustomBudgetCard";
-import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm"; // Import CustomBudgetForm
+import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 
 export default function BudgetDetail() {
     const { settings, user } = useSettings();
