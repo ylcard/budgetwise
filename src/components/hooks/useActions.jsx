@@ -475,6 +475,7 @@ export const useGoalActions = (user, goals) => {
 };
 
 // Hook for custom budget actions (CRUD operations)
+// FIXED: handleSubmit now accepts budget parameter directly to avoid async state issues
 export const useCustomBudgetActions = (user, transactions, cashWallet) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -558,6 +559,8 @@ export const useCustomBudgetActions = (user, transactions, cashWallet) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
+      queryClient.invalidateQueries({ queryKey: ['budget'] });
+      queryClient.invalidateQueries({ queryKey: ['allBudgets'] });
       setShowForm(false);
       setEditingBudget(null);
       showToast({
@@ -685,9 +688,12 @@ export const useCustomBudgetActions = (user, transactions, cashWallet) => {
     },
   });
 
-  const handleSubmit = (data) => {
-    if (editingBudget) {
-      updateMutation.mutate({ id: editingBudget.id, data });
+  // FIXED: Accept budgetToEdit parameter to avoid async state issues
+  const handleSubmit = (data, budgetToEdit = null) => {
+    const budgetForUpdate = budgetToEdit || editingBudget;
+    
+    if (budgetForUpdate) {
+      updateMutation.mutate({ id: budgetForUpdate.id, data });
     } else {
       createMutation.mutate(data);
     }

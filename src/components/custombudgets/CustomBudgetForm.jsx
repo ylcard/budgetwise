@@ -183,33 +183,31 @@ export default function CustomBudgetForm({
             {formData.cashAllocations.map((alloc, index) => {
               const available = getCurrencyBalance(cashWallet, alloc.currencyCode);
               return (
-                <div key={index} className="flex gap-2 items-end">
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Currency</Label>
-                      <CurrencySelect
-                        value={alloc.currencyCode}
-                        onValueChange={(value) => 
-                          handleCashAllocationChange(index, 'currencyCode', value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center justify-between">
-                        <span>Amount</span>
-                        <span className="text-gray-500">
-                          Available: {settings ? formatCurrency(available, { ...settings, currencySymbol: getCurrencySymbol(alloc.currencyCode) }) : `${getCurrencySymbol(alloc.currencyCode)}${available.toFixed(2)}`}
-                        </span>
-                      </Label>
-                      <AmountInput
-                        value={alloc.amount}
-                        onChange={(e) => 
-                          handleCashAllocationChange(index, 'amount', e.target.value)
-                        }
-                        placeholder="0.00"
-                        currencySymbol={getCurrencySymbol(alloc.currencyCode)}
-                      />
-                    </div>
+                <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Currency</Label>
+                    <CurrencySelect
+                      value={alloc.currencyCode}
+                      onValueChange={(value) => 
+                        handleCashAllocationChange(index, 'currencyCode', value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center justify-between">
+                      <span>Amount</span>
+                      <span className="text-gray-500">
+                        Available: {settings ? formatCurrency(available, { ...settings, currencySymbol: getCurrencySymbol(alloc.currencyCode) }) : `${getCurrencySymbol(alloc.currencyCode)}${available.toFixed(2)}`}
+                      </span>
+                    </Label>
+                    <AmountInput
+                      value={alloc.amount}
+                      onChange={(e) => 
+                        handleCashAllocationChange(index, 'amount', e.target.value)
+                      }
+                      placeholder="0.00"
+                      currencySymbol={getCurrencySymbol(alloc.currencyCode)}
+                    />
                   </div>
                   <Button
                     type="button"

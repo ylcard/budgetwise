@@ -330,11 +330,9 @@ export default function BudgetDetail() {
         }
     };
 
+    // FIXED: Pass budget directly to handleSubmit to avoid async state issues
     const handleEditBudget = (data) => {
-        // Set the editing budget so the hook knows we're editing
-        budgetActions.setEditingBudget(budget);
-        // Call the proper submit handler that includes cash allocation logic
-        budgetActions.handleSubmit(data);
+        budgetActions.handleSubmit(data, budget);
     };
 
     useEffect(() => {

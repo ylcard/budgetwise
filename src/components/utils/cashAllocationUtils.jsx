@@ -57,11 +57,11 @@ export const validateCashAllocations = (cashWallet, requestedAllocations, baseCu
 };
 
 // Allocate cash from wallet (deduct from wallet balance)
-// Uses user_email to identify and update the wallet
+// Filters by user_email to find wallet, uses id to update
 export const allocateCashFromWallet = async (userEmail, allocations) => {
     if (!allocations || allocations.length === 0) return;
 
-    // Fetch the user's wallet directly using filter by user_email
+    // Fetch the user's wallet using filter by user_email
     const userWallets = await base44.entities.CashWallet.filter({ user_email: userEmail });
     
     if (!userWallets || userWallets.length === 0) {
@@ -79,18 +79,18 @@ export const allocateCashFromWallet = async (userEmail, allocations) => {
         );
     });
 
-    // Update by user_email (entity's unique identifier)
-    await base44.entities.CashWallet.update(wallet.user_email, {
+    // Update using wallet.id (Base44 auto-generated identifier)
+    await base44.entities.CashWallet.update(wallet.id, {
         balances: updatedBalances
     });
 };
 
 // Return cash to wallet (add back to wallet balance)
-// Uses user_email to identify and update the wallet
+// Filters by user_email to find wallet, uses id to update
 export const returnCashToWallet = async (userEmail, allocations) => {
     if (!allocations || allocations.length === 0) return;
 
-    // Fetch the user's wallet directly using filter by user_email
+    // Fetch the user's wallet using filter by user_email
     const userWallets = await base44.entities.CashWallet.filter({ user_email: userEmail });
     
     if (!userWallets || userWallets.length === 0) {
@@ -108,8 +108,8 @@ export const returnCashToWallet = async (userEmail, allocations) => {
         );
     });
 
-    // Update by user_email (entity's unique identifier)
-    await base44.entities.CashWallet.update(wallet.user_email, {
+    // Update using wallet.id (Base44 auto-generated identifier)
+    await base44.entities.CashWallet.update(wallet.id, {
         balances: updatedBalances
     });
 };
