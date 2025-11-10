@@ -1,4 +1,7 @@
 
+
+const { calculateAggregatedRemainingAmounts } = require('./budgetAggregations');
+
 // Utility function to create a map from an array of entities
 // Can optionally extract a specific field value instead of the whole entity
 export const createEntityMap = (entities, keyField = 'id', valueExtractor = null) => {
@@ -201,6 +204,7 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
 };
 
 // ENHANCED: System Budget Stats - Returns structured paid/unpaid with multi-currency support
+// Now includes aggregated remaining amounts from active custom budgets in unpaid
 export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets = [], baseCurrency = 'USD') => {
     const budgetStart = parseDate(systemBudget.startDate);
     const budgetEnd = parseDate(systemBudget.endDate);
@@ -281,6 +285,24 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
                 amount: t.originalAmount || t.amount
             });
         }
+    });
+
+    // NEW: Add aggregated remaining amounts from active custom budgets to unpaid
+    const aggregatedRemaining = calculateAggregatedRemainingAmounts(
+        allCustomBudgets,
+        transactions,
+        baseCurrency
+    );
+
+    // Add the main sum (base currency) to unpaid total
+    unpaidTotalBaseCurrency += aggregatedRemaining.mainSum;
+
+    // Add foreign currency amounts to unpaid foreign currencies
+    aggregatedRemaining.separateCashAmounts.forEach(cashAmount => {
+        unpaidForeignCurrencies.push({
+            currencyCode: cashAmount.currencyCode,
+            amount: cashAmount.amount
+        });
     });
 
     // Structure the response

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { formatCurrency } from "../utils/formatCurrency";
 import { motion } from "framer-motion";
+import { CheckCircle, Clock } from "lucide-react";
 
 // Helper to get currency symbol
 const getCurrencySymbol = (currencyCode) => {
@@ -52,7 +53,7 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
   // Unpaid amount (digital only, in base currency)
   const unpaidAmount = stats?.digital?.unpaid || 0;
 
-  // Circular progress SVG
+  // Circular progress SVG - FIXED: Increased container size to prevent clipping
   const radius = 38;
   const circumference = 2 * Math.PI * radius;
   const paidPercentage = (stats?.totalAllocatedUnits || 0) > 0 
@@ -81,19 +82,27 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
         <div className="h-1 w-full" style={{ backgroundColor: color }} />
         <CardContent className="p-4">
           <Link to={createPageUrl(`BudgetDetail?id=${budget.id}`)}>
-            <h3 className="font-bold text-gray-900 text-sm mb-3 hover:text-blue-600 transition-colors truncate">
-              {budget.name}
-            </h3>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="font-bold text-gray-900 text-sm hover:text-blue-600 transition-colors truncate flex-1">
+                {budget.name}
+              </h3>
+              {budget.status === 'completed' && (
+                <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+              )}
+              {budget.status === 'active' && (
+                <Clock className="w-3 h-3 text-orange-500 flex-shrink-0" />
+              )}
+            </div>
           </Link>
 
-          {/* Circular Progress */}
+          {/* Circular Progress - FIXED: Increased container from w-20 h-20 to w-24 h-24 */}
           <div className="flex items-center justify-center mb-3">
-            <div className="relative w-20 h-20">
-              <svg className="w-20 h-20 transform -rotate-90">
+            <div className="relative w-24 h-24">
+              <svg className="w-24 h-24 transform -rotate-90">
                 {/* Background circle */}
                 <circle
-                  cx="40"
-                  cy="40"
+                  cx="48"
+                  cy="48"
                   r={radius}
                   stroke="#E5E7EB"
                   strokeWidth="6"
@@ -101,8 +110,8 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
                 />
                 {/* Paid progress */}
                 <circle
-                  cx="40"
-                  cy="40"
+                  cx="48"
+                  cy="48"
                   r={radius}
                   stroke={color}
                   strokeWidth="6"
@@ -115,8 +124,8 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
                 {/* Unpaid progress */}
                 {unpaidAmount > 0 && (
                   <circle
-                    cx="40"
-                    cy="40"
+                    cx="48"
+                    cy="48"
                     r={radius}
                     stroke={lightColor}
                     strokeWidth="6"

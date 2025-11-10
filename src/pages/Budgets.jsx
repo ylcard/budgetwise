@@ -13,6 +13,7 @@ import {
 } from "../components/hooks/useBase44Entities";
 import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
+import { getCustomBudgetStats } from "../components/utils/budgetCalculations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
-import CustomBudgetCard from "../components/custombudgets/CustomBudgetCard";
+import CompactCustomBudgetCard from "../components/custombudgets/CompactCustomBudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
 
 const statusConfig = {
@@ -57,7 +58,7 @@ export default function Budgets() {
     selectedYear
   );
 
-  // Actions - NOW USING useCustomBudgetActions instead of useBudgetActions
+  // Actions
   const customBudgetActions = useCustomBudgetActions(user, transactions, cashWallet);
 
   // Confirm and execute delete
@@ -108,10 +109,11 @@ export default function Budgets() {
             isSubmitting={customBudgetActions.isSubmitting}
             cashWallet={cashWallet}
             baseCurrency={settings.baseCurrency}
+            settings={settings}
           />
         )}
 
-        {/* System Budgets Section */}
+        {/* System Budgets Section - UPDATED: Using CompactCustomBudgetCard */}
         {systemBudgetsWithStats.length > 0 && (
           <Card className="border-none shadow-lg">
             <CardHeader>
@@ -126,24 +128,30 @@ export default function Budgets() {
               </p>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {systemBudgetsWithStats.map((budget) => (
-                  <CustomBudgetCard
-                    key={budget.id}
-                    budget={budget}
-                    transactions={transactions}
-                    settings={settings}
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                    onStatusChange={() => {}}
-                  />
-                ))}
+              <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {systemBudgetsWithStats.map((budget) => {
+                  // Adapt system budget data for CompactCustomBudgetCard
+                  const adaptedBudget = {
+                    ...budget,
+                    allocatedAmount: budget.budgetAmount,
+                    status: 'active'
+                  };
+                  
+                  return (
+                    <CompactCustomBudgetCard
+                      key={budget.id}
+                      budget={adaptedBudget}
+                      stats={budget.preCalculatedStats}
+                      settings={settings}
+                    />
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Custom Budgets Section */}
+        {/* Custom Budgets Section - UPDATED: Using CompactCustomBudgetCard */}
         {customBudgets.length === 0 ? (
           <Card className="border-none shadow-lg">
             <CardHeader>
@@ -175,18 +183,19 @@ export default function Budgets() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {statusBudgets.map((budget) => (
-                      <CustomBudgetCard
-                        key={budget.id}
-                        budget={budget}
-                        transactions={transactions}
-                        settings={settings}
-                        onEdit={customBudgetActions.handleEdit}
-                        onDelete={(id) => setBudgetToDelete(id)}
-                        onStatusChange={customBudgetActions.handleStatusChange}
-                      />
-                    ))}
+                  <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {statusBudgets.map((budget) => {
+                      const stats = getCustomBudgetStats(budget, transactions);
+                      
+                      return (
+                        <CompactCustomBudgetCard
+                          key={budget.id}
+                          budget={budget}
+                          stats={stats}
+                          settings={settings}
+                        />
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

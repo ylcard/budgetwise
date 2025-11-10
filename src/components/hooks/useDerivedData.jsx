@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import {
   calculateRemainingBudget,
@@ -8,13 +9,12 @@ import {
   getSystemBudgetStats,
   getCustomBudgetStats,
   getDirectUnpaidExpenses,
-  calculateWantsExpectedAmount,
   createEntityMap,
   filterActiveCustomBudgets,
-  // Added based on outline for useDashboardSummary
   shouldCountTowardBudget,
   parseDate,
 } from "../utils/budgetCalculations";
+import { calculateAggregatedRemainingAmounts } from "../utils/budgetAggregations";
 import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
 import { iconMap } from "../utils/iconMapConfig";
 import { Circle } from "lucide-react";
@@ -293,6 +293,7 @@ export const useTransactionFiltering = (transactions) => {
 };
 
 // Hook for budget bars data calculations
+// UPDATED: Now uses calculateAggregatedRemainingAmounts for expectedAmount calculation
 export const useBudgetBarsData = (
   systemBudgets,
   customBudgets,
@@ -320,7 +321,7 @@ export const useBudgetBarsData = (
         allocatedAmount: sb.budgetAmount
       };
 
-      const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets);
+      const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets, baseCurrency);
       const targetPercentage = goalMap[sb.systemBudgetType] || 0;
       const targetAmount = sb.budgetAmount;
 
@@ -328,16 +329,18 @@ export const useBudgetBarsData = (
       let expectedSeparateCash = [];
 
       if (sb.systemBudgetType === 'wants') {
-        // Use new calculation function that handles digital/cash separation
-        const wantsExpected = calculateWantsExpectedAmount(
+        // UPDATED: Use the new shared aggregation function
+        const aggregatedRemaining = calculateAggregatedRemainingAmounts(
           allCustomBudgets,
           transactions,
-          categories,
-          budgetForStats,
           baseCurrency
         );
-        expectedAmount = wantsExpected.mainSum;
-        expectedSeparateCash = wantsExpected.separateCashAmounts;
+        expectedAmount = aggregatedRemaining.mainSum;
+        expectedSeparateCash = aggregatedRemaining.separateCashAmounts;
+
+        // Add direct unpaid digital expenses
+        const directUnpaid = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
+        expectedAmount += directUnpaid;
       } else if (sb.systemBudgetType === 'needs') {
         expectedAmount = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
       } else if (sb.systemBudgetType === 'savings') {
