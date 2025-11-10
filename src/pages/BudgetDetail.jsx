@@ -20,7 +20,19 @@ import TransactionForm from "../components/transactions/TransactionForm";
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import CustomBudgetCard from "../components/custombudgets/CustomBudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
-import { QUERY_KEYS } from "../components/hooks/queryKeys"; // Changed import path for QUERY_KEYS
+import { QUERY_KEYS } from "../components/hooks/queryKeys";
+
+// Helper to get currency symbol
+const getCurrencySymbol = (currencyCode) => {
+  const currencySymbols = {
+    'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'CA$', 'AUD': 'A$',
+    'CHF': 'CHF', 'CNY': '¥', 'INR': '₹', 'MXN': 'MX$', 'BRL': 'R$', 'ZAR': 'R',
+    'KRW': '₩', 'SGD': 'S$', 'NZD': 'NZ$', 'HKD': 'HK$', 'SEK': 'kr', 'NOK': 'kr',
+    'DKK': 'kr', 'PLN': 'zł', 'THB': '฿', 'MYR': 'RM', 'IDR': 'Rp', 'PHP': '₱',
+    'CZK': 'Kč', 'ILS': '₪', 'CLP': 'CLP$', 'AED': 'د.إ', 'SAR': '﷼', 'TWD': 'NT$', 'TRY': '₺'
+  };
+  return currencySymbols[currencyCode] || currencyCode;
+};
 
 export default function BudgetDetail() {
     const { settings, user } = useSettings();
@@ -400,6 +412,33 @@ export default function BudgetDetail() {
     const isCompleted = budget.status === 'completed';
     const canEdit = !budget.isSystemBudget;
 
+    // Calculate totals for display
+    let totalBudget = 0;
+    let totalSpent = 0;
+    let totalRemaining = 0;
+    let totalUnpaid = 0;
+    
+    if (budget.isSystemBudget) {
+        totalBudget = budget.budgetAmount || 0;
+        totalSpent = stats.totalSpent || 0;
+        totalRemaining = stats.remaining || 0;
+        totalUnpaid = stats.unpaidAmount || 0;
+    } else {
+        // For custom budgets, aggregate digital and cash
+        totalBudget = stats.digital.allocated;
+        totalSpent = stats.digital.spent;
+        totalRemaining = stats.digital.remaining;
+        totalUnpaid = stats.digital.unpaid; // Cash transactions are always paid, so unpaid is digital only
+        
+        if (stats.cashByCurrency) {
+            Object.values(stats.cashByCurrency).forEach(cashData => {
+                totalBudget += cashData.allocated;
+                totalSpent += cashData.spent;
+                totalRemaining += cashData.remaining;
+            });
+        }
+    }
+
     return (
         <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -479,8 +518,18 @@ export default function BudgetDetail() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-gray-900">
-                                {formatCurrency(stats.totalBudget || budget.allocatedAmount || budget.budgetAmount, settings)}
+                                {formatCurrency(totalBudget, settings)}
                             </div>
+                            {!budget.isSystemBudget && stats.cashByCurrency && Object.keys(stats.cashByCurrency).length > 0 && (
+                                <div className="mt-2 text-xs text-gray-600 space-y-1">
+                                    <p>Digital: {formatCurrency(stats.digital.allocated, settings)}</p>
+                                    {Object.entries(stats.cashByCurrency).map(([currency, data]) => (
+                                        <p key={currency}>
+                                            Cash ({currency}): {formatCurrency(data.allocated, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -491,11 +540,21 @@ export default function BudgetDetail() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-red-600">
-                                {formatCurrency(stats.totalSpent, settings)}
+                                {formatCurrency(totalSpent, settings)}
                             </div>
                             <p className="text-xs text-gray-500 mt-1">
-                                {((stats.totalSpent / (stats.totalBudget || budget.allocatedAmount || budget.budgetAmount)) * 100).toFixed(1)}% used
+                                {((totalSpent / totalBudget) * 100).toFixed(1)}% used
                             </p>
+                            {!budget.isSystemBudget && stats.cashByCurrency && Object.keys(stats.cashByCurrency).length > 0 && (
+                                <div className="mt-2 text-xs text-gray-600 space-y-1">
+                                    <p>Digital: {formatCurrency(stats.digital.spent, settings)}</p>
+                                    {Object.entries(stats.cashByCurrency).map(([currency, data]) => (
+                                        <p key={currency}>
+                                            Cash ({currency}): {formatCurrency(data.spent, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -505,21 +564,34 @@ export default function BudgetDetail() {
                             <CheckCircle className="w-4 h-4 text-green-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-2xl font-bold ${stats.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatCurrency(stats.remaining, settings)}
+                            <div className={`text-2xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(totalRemaining, settings)}
                             </div>
+                            {!budget.isSystemBudget && stats.cashByCurrency && Object.keys(stats.cashByCurrency).length > 0 && (
+                                <div className="mt-2 text-xs text-gray-600 space-y-1">
+                                    <p>Digital: {formatCurrency(stats.digital.remaining, settings)}</p>
+                                    {Object.entries(stats.cashByCurrency).map(([currency, data]) => (
+                                        <p key={currency}>
+                                            Cash ({currency}): {formatCurrency(data.remaining, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
                     <Card className="border-none shadow-lg">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Unpaid</CardTitle>
+                            <CardTitle className="text-sm font-medium text-gray-500">Unpaid (Digital Only)</CardTitle>
                             <Clock className="w-4 h-4 text-orange-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-orange-600">
-                                {formatCurrency(stats.unpaidAmount, settings)}
+                                {formatCurrency(totalUnpaid, settings)}
                             </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Cash expenses are always paid
+                            </p>
                         </CardContent>
                     </Card>
                 </div>
