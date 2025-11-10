@@ -1,6 +1,5 @@
 
-
-const { calculateAggregatedRemainingAmounts } = require('./budgetAggregations');
+import { calculateAggregatedRemainingAmounts } from './budgetAggregations';
 
 // Utility function to create a map from an array of entities
 // Can optionally extract a specific field value instead of the whole entity
