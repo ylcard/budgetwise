@@ -11,6 +11,7 @@ import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
 import { formatCurrency } from "../components/utils/formatCurrency";
 import { formatDate } from "../components/utils/formatDate";
+import { getCurrencySymbol } from "../components/utils/currencyUtils";
 import { getCustomBudgetStats, getSystemBudgetStats, getCustomBudgetAllocationStats } from "../components/utils/budgetCalculations";
 import { useCashWallet } from "../components/hooks/useBase44Entities";
 import { calculateRemainingCashAllocations, returnCashToWallet } from "../components/utils/cashAllocationUtils";
@@ -22,18 +23,6 @@ import AllocationManager from "../components/custombudgets/AllocationManager";
 import CompactCustomBudgetCard from "../components/custombudgets/CompactCustomBudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
-
-// Helper to get currency symbol
-const getCurrencySymbol = (currencyCode) => {
-  const currencySymbols = {
-    'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'CA$', 'AUD': 'A$',
-    'CHF': 'CHF', 'CNY': '¥', 'INR': '₹', 'MXN': 'MX$', 'BRL': 'R$', 'ZAR': 'R',
-    'KRW': '₩', 'SGD': 'S$', 'NZD': 'NZ$', 'HKD': 'HK$', 'SEK': 'kr', 'NOK': 'kr',
-    'DKK': 'kr', 'PLN': 'zł', 'THB': '฿', 'MYR': 'RM', 'IDR': 'Rp', 'PHP': '₱',
-    'CZK': 'Kč', 'ILS': '₪', 'CLP': 'CLP$', 'AED': 'د.إ', 'SAR': '﷼', 'TWD': 'NT$', 'TRY': '₺'
-  };
-  return currencySymbols[currencyCode] || currencyCode;
-};
 
 export default function BudgetDetail() {
     const { settings, user } = useSettings();
@@ -86,7 +75,7 @@ export default function BudgetDetail() {
 
     const { data: transactions = [] } = useQuery({
         queryKey: ['transactions'],
-        queryFn: () => base44.entities.Transaction.list('-date'),
+        queryFn: () => base44.entities.Transaction.list('date', 1000), // Oldest first (ascending order)
         initialData: [],
     });
 
@@ -330,7 +319,6 @@ export default function BudgetDetail() {
         }
     };
 
-    // FIXED: Pass budget directly to handleSubmit to avoid async state issues
     const handleEditBudget = (data) => {
         budgetActions.handleSubmit(data, budget);
     };

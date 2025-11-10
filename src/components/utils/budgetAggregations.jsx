@@ -1,6 +1,10 @@
 import { getCustomBudgetStats } from "./budgetCalculations";
+import { getCurrencySymbol } from "./currencyUtils";
 
-// Helper to get currency symbol
+// DEPRECATED: getCurrencySymbol function moved to components/utils/currencyUtils.js
+// This helper is now imported from the centralized utility file
+// Scheduled for removal in next refactoring cycle
+/*
 const getCurrencySymbol = (currencyCode) => {
   const currencySymbols = {
     'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'CA$', 'AUD': 'A$',
@@ -11,6 +15,7 @@ const getCurrencySymbol = (currencyCode) => {
   };
   return currencySymbols[currencyCode] || currencyCode;
 };
+*/
 
 /**
  * Calculates aggregated remaining amounts from custom budgets.

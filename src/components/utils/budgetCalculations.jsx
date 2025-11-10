@@ -1,5 +1,6 @@
 
 import { calculateAggregatedRemainingAmounts } from './budgetAggregations';
+import { getCurrencySymbol } from './currencyUtils';
 
 // Utility function to create a map from an array of entities
 // Can optionally extract a specific field value instead of the whole entity
@@ -375,35 +376,33 @@ export const getDirectUnpaidExpenses = (systemBudget, transactions, categories, 
     return directUnpaidTransactions.reduce((sum, t) => sum + t.amount, 0);
 };
 
-// NEW: Calculate "Expected" Amount for "Wants" System Budget
+// DEPRECATED: calculateWantsExpectedAmount function's logic has been extracted to
+// components/utils/budgetAggregations.js as calculateAggregatedRemainingAmounts
+// This function is now redundant and scheduled for removal in next refactoring cycle
+// Use calculateAggregatedRemainingAmounts instead for all aggregation needs
+/*
 export const calculateWantsExpectedAmount = (allCustomBudgets, transactions, categories, systemBudget, baseCurrency) => {
     let mainSum = 0;
     const separateCashAmounts = {};
 
-    // Loop through all custom budgets
     allCustomBudgets.forEach(cb => {
         const cbStats = getCustomBudgetStats(cb, transactions);
 
-        // For ACTIVE budgets: include digital remaining and digital unpaid
         if (cb.status === 'active') {
             mainSum += cbStats.digital.remaining;
             mainSum += cbStats.digital.unpaid;
         }
 
-        // For COMPLETED budgets: include ONLY digital unpaid (not remaining)
         if (cb.status === 'completed') {
             mainSum += cbStats.digital.unpaid;
         }
 
-        // For ALL budgets (active or completed): handle cash remaining
         Object.keys(cbStats.cashByCurrency).forEach(currencyCode => {
             const cashData = cbStats.cashByCurrency[currencyCode];
             
             if (currencyCode === baseCurrency) {
-                // Cash in base currency: add to main sum
                 mainSum += cashData.remaining;
             } else {
-                // Cash in different currency: accumulate separately
                 if (!separateCashAmounts[currencyCode]) {
                     separateCashAmounts[currencyCode] = 0;
                 }
@@ -412,15 +411,12 @@ export const calculateWantsExpectedAmount = (allCustomBudgets, transactions, cat
         });
     });
 
-    // Add direct unpaid digital expenses
     const directUnpaid = getDirectUnpaidExpenses(systemBudget, transactions, categories, allCustomBudgets);
     mainSum += directUnpaid;
 
-    // Convert separateCashAmounts object to array with currency symbols
     const separateCashArray = Object.keys(separateCashAmounts)
         .filter(currencyCode => separateCashAmounts[currencyCode] > 0)
         .map(currencyCode => {
-            // Get currency symbol from SUPPORTED_CURRENCIES (we'll need to import this)
             const symbol = getCurrencySymbol(currencyCode);
             return {
                 currencyCode,
@@ -434,44 +430,23 @@ export const calculateWantsExpectedAmount = (allCustomBudgets, transactions, cat
         separateCashAmounts: separateCashArray
     };
 };
+*/
 
-// Helper to get currency symbol
+// DEPRECATED: getCurrencySymbol function moved to components/utils/currencyUtils.js
+// This helper is now imported from the centralized utility file
+// Scheduled for removal in next refactoring cycle
+/*
 const getCurrencySymbol = (currencyCode) => {
     const currencySymbols = {
-        'USD': '$',
-        'EUR': '€',
-        'GBP': '£',
-        'JPY': '¥',
-        'CAD': 'CA$',
-        'AUD': 'A$',
-        'CHF': 'CHF',
-        'CNY': '¥',
-        'INR': '₹',
-        'MXN': 'MX$',
-        'BRL': 'R$',
-        'ZAR': 'R',
-        'KRW': '₩',
-        'SGD': 'S$',
-        'NZD': 'NZ$',
-        'HKD': 'HK$',
-        'SEK': 'kr',
-        'NOK': 'kr',
-        'DKK': 'kr',
-        'PLN': 'zł',
-        'THB': '฿',
-        'MYR': 'RM',
-        'IDR': 'Rp',
-        'PHP': '₱',
-        'CZK': 'Kč',
-        'ILS': '₪',
-        'CLP': 'CLP$',
-        'AED': 'د.إ',
-        'SAR': '﷼',
-        'TWD': 'NT$',
-        'TRY': '₺'
+        'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'CA$', 'AUD': 'A$',
+        'CHF': 'CHF', 'CNY': '¥', 'INR': '₹', 'MXN': 'MX$', 'BRL': 'R$', 'ZAR': 'R',
+        'KRW': '₩', 'SGD': 'S$', 'NZD': 'NZ$', 'HKD': 'HK$', 'SEK': 'kr', 'NOK': 'kr',
+        'DKK': 'kr', 'PLN': 'zł', 'THB': '฿', 'MYR': 'RM', 'IDR': 'Rp', 'PHP': '₱',
+        'CZK': 'Kč', 'ILS': '₪', 'CLP': 'CLP$', 'AED': 'د.إ', 'SAR': '﷼', 'TWD': 'NT$', 'TRY': '₺'
     };
     return currencySymbols[currencyCode] || currencyCode;
 };
+*/
 
 export const getCustomBudgetAllocationStats = (customBudget, allocations, transactions) => {
     const budgetStart = parseDate(customBudget.startDate);

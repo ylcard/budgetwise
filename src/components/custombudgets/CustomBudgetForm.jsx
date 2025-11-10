@@ -13,9 +13,19 @@ import { PRESET_COLORS } from "../utils/constants";
 import { normalizeAmount } from "../utils/budgetCalculations";
 import { getCurrencyBalance, validateCashAllocations } from "../utils/cashAllocationUtils";
 import { formatCurrency } from "../utils/formatCurrency";
-import { SUPPORTED_CURRENCIES } from "../utils/currencyCalculations";
+import { getCurrencySymbol } from "../utils/currencyUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// DEPRECATED: getCurrencySymbol function moved to components/utils/currencyUtils.js
+// This helper is now imported from the centralized utility file
+// Scheduled for removal in next refactoring cycle
+/*
+const getCurrencySymbol = (currencyCode) => {
+  const currency = SUPPORTED_CURRENCIES.find(c => c.code === currencyCode);
+  return currency?.symbol || currencyCode;
+};
+*/
 
 export default function CustomBudgetForm({ 
   budget, 
@@ -123,11 +133,6 @@ export default function CustomBudgetForm({
       cashAllocations: processedCashAllocations,
       status: budget?.status || 'active'
     });
-  };
-
-  const getCurrencySymbol = (currencyCode) => {
-    const currency = SUPPORTED_CURRENCIES.find(c => c.code === currencyCode);
-    return currency?.symbol || currencyCode;
   };
 
   const content = (

@@ -3,10 +3,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { formatCurrency } from "../utils/formatCurrency";
+import { getCurrencySymbol } from "../utils/currencyUtils";
 import { motion } from "framer-motion";
 import { CheckCircle, Clock } from "lucide-react";
 
-// Helper to get currency symbol
+// DEPRECATED: getCurrencySymbol function moved to components/utils/currencyUtils.js
+// This helper is now imported from the centralized utility file
+// Scheduled for removal in next refactoring cycle
+/*
 const getCurrencySymbol = (currencyCode) => {
   const currencySymbols = {
     'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'CA$', 'AUD': 'A$',
@@ -17,6 +21,7 @@ const getCurrencySymbol = (currencyCode) => {
   };
   return currencySymbols[currencyCode] || currencyCode;
 };
+*/
 
 export default function CompactCustomBudgetCard({ budget, stats, settings }) {
   const baseCurrency = settings?.baseCurrency || 'USD';

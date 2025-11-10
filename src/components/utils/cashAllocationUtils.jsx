@@ -7,7 +7,8 @@ export const getCurrencyBalance = (cashWallet, currencyCode) => {
     return balance ? balance.amount : 0;
 };
 
-// Update balance for a specific currency (helper function)
+// Update balance for a specific currency
+// Extracted from useActions.js for reusability
 export const updateCurrencyBalance = (balances, currencyCode, amountChange) => {
     const existingBalanceIndex = balances.findIndex(b => b.currencyCode === currencyCode);
     
