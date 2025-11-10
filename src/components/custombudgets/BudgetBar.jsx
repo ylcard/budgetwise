@@ -19,7 +19,8 @@ export default function BudgetBar({
     stats, 
     targetAmount, 
     targetPercentage, 
-    expectedAmount, 
+    expectedAmount,
+    expectedSeparateCash = [],
     maxHeight, 
     isOverBudget, 
     overBudgetAmount,
@@ -27,8 +28,18 @@ export default function BudgetBar({
     savingsTarget
   } = budget;
   
-  // Use totalBudget from stats for accurate display
-  const budgetAmount = stats.totalBudget || budget.budgetAmount || budget.allocatedAmount;
+  // Calculate budget amount based on digital and cash
+  let budgetAmount = 0;
+  if (isCustom && stats) {
+    budgetAmount = stats.digital.allocated;
+    if (stats.cashByCurrency) {
+      Object.values(stats.cashByCurrency).forEach(cashData => {
+        budgetAmount += cashData.allocated;
+      });
+    }
+  } else {
+    budgetAmount = stats?.totalBudget || budget.budgetAmount || budget.allocatedAmount || 0;
+  }
   
   // Calculate heights as percentages
   const paidHeightPct = maxHeight > 0 ? (stats.paidAmount / maxHeight) * 100 : 0;
@@ -41,11 +52,20 @@ export default function BudgetBar({
   const isSystemBudget = !!budget.systemBudgetType;
   
   // Calculate remaining for display
-  const remaining = isSystemSavings 
-    ? savingsTarget - actualSavings 
-    : (!isCustom 
-        ? targetAmount - expectedAmount - stats.paidAmount 
-        : stats.remaining);
+  let remaining = 0;
+  if (isSystemSavings) {
+    remaining = savingsTarget - actualSavings;
+  } else if (!isCustom) {
+    remaining = targetAmount - expectedAmount - stats.paidAmount;
+  } else if (stats) {
+    // For custom budgets, sum digital and cash remaining
+    remaining = stats.digital.remaining;
+    if (stats.cashByCurrency) {
+      Object.values(stats.cashByCurrency).forEach(cashData => {
+        remaining += cashData.remaining;
+      });
+    }
+  }
   
   // Get the color for the vertical bar - use budget's own color, not dynamic
   const barColor = budget.color || '#3B82F6';
@@ -179,9 +199,16 @@ export default function BudgetBar({
                 Budget: {formatCurrency(targetAmount, settings)}
               </p>
               {expectedAmount > 0 && (
-                <p className="text-xs text-orange-600">
-                  Expected: {formatCurrency(expectedAmount, settings)}
-                </p>
+                <div className="text-xs text-orange-600">
+                  <span>Expected: {formatCurrency(expectedAmount, settings)}</span>
+                  {expectedSeparateCash && expectedSeparateCash.length > 0 && (
+                    <span className="ml-1">
+                      ({expectedSeparateCash.map(cash => 
+                        `${cash.symbol}${cash.amount.toFixed(2)}`
+                      ).join(', ')})
+                    </span>
+                  )}
+                </div>
               )}
               <p className="text-xs text-gray-600">
                 Paid: {formatCurrency(stats.paidAmount, settings)}
@@ -193,7 +220,7 @@ export default function BudgetBar({
           ) : isCompleted ? (
             <>
               <p className="text-xs text-gray-600">
-                Spent: {formatCurrency(stats.totalSpent, settings)}
+                Spent: {formatCurrency(stats.digital.spent, settings)}
               </p>
             </>
           ) : (
@@ -202,7 +229,7 @@ export default function BudgetBar({
                 Budget: {formatCurrency(budgetAmount, settings)}
               </p>
               <p className="text-xs text-gray-600">
-                Paid: {formatCurrency(stats.paidAmount, settings)}
+                Paid: {formatCurrency(stats.digital.spent, settings)}
               </p>
               <p className={`text-sm font-medium mt-1 ${remaining < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                 {remaining < 0 ? `Over by ${formatCurrency(Math.abs(remaining), settings)}` : `Remaining: ${formatCurrency(remaining, settings)}`}
