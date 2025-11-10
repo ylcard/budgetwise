@@ -54,10 +54,10 @@ export default function BudgetBar({
     remaining = savingsTarget - actualSavings;
   } else if (isCustom && stats) {
     // For custom budgets, sum digital and cash remaining
-    remaining = stats.digital.remaining;
-    if (stats.cashByCurrency) {
+    remaining = stats?.digital?.remaining || 0;
+    if (stats?.cashByCurrency) {
       Object.values(stats.cashByCurrency).forEach(cashData => {
-        remaining += cashData.remaining;
+        remaining += cashData?.remaining || 0;
       });
     }
   } else {
@@ -217,7 +217,7 @@ export default function BudgetBar({
             /* Completed custom budget labels */
             <>
               <p className="text-xs text-gray-600">
-                Spent: {formatCurrency(stats.digital.spent, settings)}
+                Spent: {formatCurrency(stats?.digital?.spent || 0, settings)}
               </p>
             </>
           ) : (
