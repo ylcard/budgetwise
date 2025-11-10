@@ -20,36 +20,18 @@ const getCurrencySymbol = (currencyCode) => {
 export default function CompactCustomBudgetCard({ budget, stats, settings }) {
   const baseCurrency = settings?.baseCurrency || 'USD';
 
-  // Calculate total allocated (treating all currencies as equal units)
-  const totalAllocated = useMemo(() => {
-    let total = stats?.digital?.allocated || 0;
-    if (stats?.cashByCurrency) {
-      Object.values(stats.cashByCurrency).forEach(cashData => {
-        total += cashData?.allocated || 0;
-      });
-    }
-    return total;
+  // Use unit-based totals for percentage calculation (no conversion)
+  const percentageUsed = useMemo(() => {
+    const allocated = stats?.totalAllocatedUnits || 0;
+    const spent = stats?.totalSpentUnits || 0;
+    return allocated > 0 ? (spent / allocated) * 100 : 0;
   }, [stats]);
-
-  // Calculate total spent (paid + unpaid, treating all currencies as equal units)
-  const totalSpent = useMemo(() => {
-    let spent = (stats?.digital?.spent || 0) + (stats?.digital?.unpaid || 0);
-    if (stats?.cashByCurrency) {
-      Object.values(stats.cashByCurrency).forEach(cashData => {
-        spent += cashData?.spent || 0;
-      });
-    }
-    return spent;
-  }, [stats]);
-
-  // Calculate percentage used
-  const percentageUsed = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
 
   // Separate paid amounts by currency
   const paidAmounts = useMemo(() => {
     const amounts = {};
     
-    // Digital paid (in base currency)
+    // Digital paid (in base currency) - subtract unpaid to get actual paid
     const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
     if (digitalPaid > 0) {
       amounts[baseCurrency] = (amounts[baseCurrency] || 0) + digitalPaid;
@@ -71,16 +53,23 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
   const unpaidAmount = stats?.digital?.unpaid || 0;
 
   // Circular progress SVG
-  const radius = 45;
+  const radius = 38;
   const circumference = 2 * Math.PI * radius;
-  const paidPercentage = totalAllocated > 0 ? ((totalSpent - unpaidAmount) / totalAllocated) * 100 : 0;
-  const unpaidPercentage = totalAllocated > 0 ? (unpaidAmount / totalAllocated) * 100 : 0;
+  const paidPercentage = (stats?.totalAllocatedUnits || 0) > 0 
+    ? (((stats?.totalSpentUnits || 0) - (stats?.totalUnpaidUnits || 0)) / (stats?.totalAllocatedUnits || 0)) * 100 
+    : 0;
+  const unpaidPercentage = (stats?.totalAllocatedUnits || 0) > 0 
+    ? ((stats?.totalUnpaidUnits || 0) / (stats?.totalAllocatedUnits || 0)) * 100 
+    : 0;
   
   const paidStrokeDashoffset = circumference - (paidPercentage / 100) * circumference;
   const unpaidStrokeDashoffset = circumference - ((paidPercentage + unpaidPercentage) / 100) * circumference;
 
   const color = budget.color || '#3B82F6';
   const lightColor = `${color}80`; // 50% opacity for unpaid
+
+  const hasPaid = Object.values(paidAmounts).some(amount => amount > 0);
+  const hasUnpaid = unpaidAmount > 0;
 
   return (
     <motion.div
@@ -99,24 +88,24 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
 
           {/* Circular Progress */}
           <div className="flex items-center justify-center mb-3">
-            <div className="relative w-24 h-24">
-              <svg className="w-24 h-24 transform -rotate-90">
+            <div className="relative w-20 h-20">
+              <svg className="w-20 h-20 transform -rotate-90">
                 {/* Background circle */}
                 <circle
-                  cx="48"
-                  cy="48"
+                  cx="40"
+                  cy="40"
                   r={radius}
                   stroke="#E5E7EB"
-                  strokeWidth="8"
+                  strokeWidth="6"
                   fill="none"
                 />
                 {/* Paid progress */}
                 <circle
-                  cx="48"
-                  cy="48"
+                  cx="40"
+                  cy="40"
                   r={radius}
                   stroke={color}
-                  strokeWidth="8"
+                  strokeWidth="6"
                   fill="none"
                   strokeDasharray={circumference}
                   strokeDashoffset={paidStrokeDashoffset}
@@ -126,11 +115,11 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
                 {/* Unpaid progress */}
                 {unpaidAmount > 0 && (
                   <circle
-                    cx="48"
-                    cy="48"
+                    cx="40"
+                    cy="40"
                     r={radius}
                     stroke={lightColor}
-                    strokeWidth="8"
+                    strokeWidth="6"
                     fill="none"
                     strokeDasharray={circumference}
                     strokeDashoffset={unpaidStrokeDashoffset}
@@ -141,35 +130,39 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
               </svg>
               {/* Percentage text */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-lg font-bold text-gray-900">
+                <span className="text-base font-bold text-gray-900">
                   {Math.round(percentageUsed)}%
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Paid and Unpaid Amounts */}
-          <div className="space-y-2 text-sm">
-            {/* Paid amounts */}
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Paid</p>
-              {Object.entries(paidAmounts).map(([currency, amount]) => {
-                const symbol = getCurrencySymbol(currency);
-                return (
-                  <p key={currency} className="font-semibold text-gray-900">
-                    {currency === baseCurrency 
-                      ? formatCurrency(amount, settings)
-                      : `${symbol}${amount.toFixed(2)}`
-                    }
-                  </p>
-                );
-              })}
-            </div>
-
-            {/* Unpaid amount */}
-            {unpaidAmount > 0 && (
+          {/* Paid and Unpaid Amounts - Side by Side */}
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            {/* Paid column */}
+            {hasPaid && (
               <div>
-                <p className="text-xs text-gray-500 mb-1">Unpaid</p>
+                <p className="text-gray-500 mb-1">Paid</p>
+                {Object.entries(paidAmounts)
+                  .filter(([_, amount]) => amount > 0)
+                  .map(([currency, amount]) => {
+                    const symbol = getCurrencySymbol(currency);
+                    return (
+                      <p key={currency} className="font-semibold text-gray-900">
+                        {currency === baseCurrency 
+                          ? formatCurrency(amount, settings)
+                          : `${symbol}${amount.toFixed(2)}`
+                        }
+                      </p>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Unpaid column */}
+            {hasUnpaid && (
+              <div>
+                <p className="text-gray-500 mb-1">Unpaid</p>
                 <p className="font-semibold text-orange-600">
                   {formatCurrency(unpaidAmount, settings)}
                 </p>

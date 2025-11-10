@@ -120,7 +120,7 @@ export const calculateRemainingBudget = (transactions, month, year) => {
     return income - paidExpenses - unpaidExpenseAmount;
 };
 
-// REFACTORED: Custom Budget Stats with Strict Digital/Cash Separation
+// ENHANCED: Custom Budget Stats with Unit-Based Totals for Percentage Calculation
 export const getCustomBudgetStats = (customBudget, transactions) => {
     const budgetStart = parseDate(customBudget.startDate);
     const budgetEnd = parseDate(customBudget.endDate);
@@ -152,10 +152,10 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
     const digitalAllocated = customBudget.allocatedAmount || 0;
     const digitalSpent = digitalTransactions
         .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
     const digitalUnpaid = digitalTransactions
         .filter(t => t.type === 'expense' && !t.isPaid)
-        .reduce((sum, t) => sum + t.amount, 0);
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
     const digitalRemaining = digitalAllocated - digitalSpent;
 
     // Calculate cash stats by currency
@@ -180,6 +180,11 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
         };
     });
 
+    // Calculate unit-based totals for percentage calculation (no conversion, just sum as units)
+    const totalAllocatedUnits = digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+    const totalSpentUnits = digitalSpent + Object.values(cashByCurrency).reduce((sum, cashData) => sum + cashData.spent, 0);
+    const totalUnpaidUnits = digitalUnpaid; // Cash is always paid
+
     return {
         digital: {
             allocated: digitalAllocated,
@@ -188,15 +193,17 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
             remaining: digitalRemaining
         },
         cashByCurrency,
+        totalAllocatedUnits,
+        totalSpentUnits,
+        totalUnpaidUnits,
         totalTransactionCount: budgetTransactions.length
     };
 };
 
 // ENHANCED: System Budget Stats - Returns structured paid/unpaid with multi-currency support
-export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets = []) => {
+export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets = [], baseCurrency = 'USD') => {
     const budgetStart = parseDate(systemBudget.startDate);
     const budgetEnd = parseDate(systemBudget.endDate);
-    const baseCurrency = 'USD'; // This should ideally come from settings, but defaulting for now
 
     // Create a map of category_id to priority
     const categoryPriorityMap = {};
@@ -242,52 +249,56 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
     const paidTransactions = budgetTransactions.filter(t => t.isPaid);
     const unpaidTransactions = budgetTransactions.filter(t => !t.isPaid);
 
-    // Calculate paid amounts by currency
-    const paidByCurrency = {};
+    // Calculate paid: sum in base currency, list foreign currency originals separately
+    let paidTotalBaseCurrency = 0;
+    const paidForeignCurrencies = [];
+
     paidTransactions.forEach(t => {
-        // For cash transactions, use cashCurrency and cashAmount if available, else original
-        const currency = t.isCashTransaction && t.cashCurrency ? t.cashCurrency : (t.originalCurrency || baseCurrency);
-        const amount = t.isCashTransaction && t.cashAmount ? t.cashAmount : (t.originalAmount || t.amount);
+        // Use t.amount which is already in base currency
+        paidTotalBaseCurrency += t.amount;
         
-        if (!paidByCurrency[currency]) {
-            paidByCurrency[currency] = 0;
+        // If original currency differs from base currency, track it separately
+        if (t.originalCurrency && t.originalCurrency !== baseCurrency) {
+            paidForeignCurrencies.push({
+                currencyCode: t.originalCurrency,
+                amount: t.originalAmount || t.amount
+            });
         }
-        paidByCurrency[currency] += amount;
     });
 
-    // Calculate unpaid amounts by currency (digital only, as cash is always paid)
-    const unpaidByCurrency = {};
+    // Calculate unpaid: sum in base currency, list foreign currency originals separately
+    let unpaidTotalBaseCurrency = 0;
+    const unpaidForeignCurrencies = [];
+
     unpaidTransactions.forEach(t => {
-        // Unpaid transactions are always digital, so use original details
-        const currency = t.originalCurrency || baseCurrency;
-        const amount = t.originalAmount || t.amount;
+        // Use t.amount which is already in base currency
+        unpaidTotalBaseCurrency += t.amount;
         
-        if (!unpaidByCurrency[currency]) {
-            unpaidByCurrency[currency] = 0;
+        // If original currency differs from base currency, track it separately
+        if (t.originalCurrency && t.originalCurrency !== baseCurrency) {
+            unpaidForeignCurrencies.push({
+                currencyCode: t.originalCurrency,
+                amount: t.originalAmount || t.amount
+            });
         }
-        unpaidByCurrency[currency] += amount;
     });
 
     // Structure the response
     const paid = {
-        baseCurrencyAmount: paidByCurrency[baseCurrency] || 0,
-        otherCurrencyAmounts: Object.entries(paidByCurrency)
-            .filter(([currency]) => currency !== baseCurrency)
-            .map(([currencyCode, amount]) => ({ currencyCode, amount }))
+        totalBaseCurrencyAmount: paidTotalBaseCurrency,
+        foreignCurrencyDetails: paidForeignCurrencies
     };
 
     const unpaid = {
-        baseCurrencyAmount: unpaidByCurrency[baseCurrency] || 0,
-        otherCurrencyAmounts: Object.entries(unpaidByCurrency)
-            .filter(([currency]) => currency !== baseCurrency)
-            .map(([currencyCode, amount]) => ({ currencyCode, amount }))
+        totalBaseCurrencyAmount: unpaidTotalBaseCurrency,
+        foreignCurrencyDetails: unpaidForeignCurrencies
     };
 
     // Legacy fields for backwards compatibility
     const totalBudget = systemBudget.budgetAmount + (systemBudget.cashAllocatedAmount || 0);
-    const totalSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0); // This sum is in base currency due to implicit conversion by t.amount
-    const paidAmount = paidTransactions.reduce((sum, t) => sum + t.amount, 0); // Base currency sum
-    const unpaidAmount = unpaidTransactions.reduce((sum, t) => sum + t.amount, 0); // Base currency sum
+    const totalSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const paidAmount = paidTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const unpaidAmount = unpaidTransactions.reduce((sum, t) => sum + t.amount, 0);
 
     return {
         paid,

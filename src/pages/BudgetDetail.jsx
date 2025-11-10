@@ -19,7 +19,7 @@ import QuickAddTransaction from "../components/transactions/QuickAddTransaction"
 import TransactionCard from "../components/transactions/TransactionCard";
 import TransactionForm from "../components/transactions/TransactionForm";
 import AllocationManager from "../components/custombudgets/AllocationManager";
-import CompactCustomBudgetCard from "../components/custombudgets/CompactCustomBudgetCard"; // Updated import
+import CompactCustomBudgetCard from "../components/custombudgets/CompactCustomBudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 
@@ -290,11 +290,11 @@ export default function BudgetDetail() {
         if (!budget) return null;
 
         if (budget.isSystemBudget) {
-            return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, settings.baseCurrency);
+            return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, settings?.baseCurrency || 'USD');
         } else {
             return getCustomBudgetStats(budget, transactions);
         }
-    }, [budget, transactions, categories, allCustomBudgets, settings.baseCurrency]);
+    }, [budget, transactions, categories, allCustomBudgets, settings]);
 
     const allocationStats = useMemo(() => {
         if (!budget || budget.isSystemBudget) return null;
@@ -377,8 +377,8 @@ export default function BudgetDetail() {
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-4"> {/* Changed from md:grid-cols-4 */}
-                        {[1, 2, 3].map((i) => ( // Changed from 1,2,3,4
+                    <div className="grid md:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
                             <Card key={i} className="border-none shadow-lg">
                                 <CardContent className="p-6">
                                     <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-2" />
@@ -411,13 +411,13 @@ export default function BudgetDetail() {
         totalBudget = budget.budgetAmount || 0;
         totalRemaining = stats.remaining || 0;
     } else {
-        // For custom budgets, aggregate digital and cash with safety checks
-        totalBudget = stats?.digital?.allocated || 0;
-        totalRemaining = stats?.digital?.remaining || 0;
+        // For custom budgets, use unit-based totals
+        totalBudget = stats?.totalAllocatedUnits || 0;
         
+        // Calculate remaining from digital and cash
+        totalRemaining = stats?.digital?.remaining || 0;
         if (stats?.cashByCurrency) {
             Object.values(stats.cashByCurrency).forEach(cashData => {
-                totalBudget += cashData?.allocated || 0;
                 totalRemaining += cashData?.remaining || 0;
             });
         }
@@ -494,7 +494,7 @@ export default function BudgetDetail() {
                     </div>
                 </div>
 
-                {/* NEW: Combined Spent and Unpaid Card Layout */}
+                {/* UPDATED: Card Layout with Side-by-Side Expenses */}
                 <div className="grid md:grid-cols-3 gap-4">
                     <Card className="border-none shadow-lg">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -518,7 +518,7 @@ export default function BudgetDetail() {
                         </CardContent>
                     </Card>
 
-                    {/* COMBINED: Paid + Unpaid Card */}
+                    {/* UPDATED: Expenses Card with Side-by-Side Layout */}
                     <Card className="border-none shadow-lg">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-gray-500">Expenses</CardTitle>
@@ -526,79 +526,92 @@ export default function BudgetDetail() {
                         </CardHeader>
                         <CardContent>
                             {budget.isSystemBudget ? (
-                                <>
-                                    {/* System Budget: Show paid and unpaid with multi-currency support */}
-                                    <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Paid column */}
+                                    {(stats.paid.totalBaseCurrencyAmount > 0 || stats.paid.foreignCurrencyDetails.length > 0) && (
                                         <div>
                                             <p className="text-xs text-gray-500 mb-1">Paid</p>
-                                            <div className="text-2xl font-bold text-gray-900">
-                                                {formatCurrency(stats.paid.baseCurrencyAmount, settings)}
-                                            </div>
-                                            {stats.paid.otherCurrencyAmounts.map(({ currencyCode, amount }) => (
-                                                <div key={currencyCode} className="text-lg font-semibold text-gray-700 mt-1">
+                                            {stats.paid.totalBaseCurrencyAmount > 0 && (
+                                                <div className="text-lg font-bold text-gray-900">
+                                                    {formatCurrency(stats.paid.totalBaseCurrencyAmount, settings)}
+                                                </div>
+                                            )}
+                                            {stats.paid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                                                <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-gray-700 mt-1">
                                                     {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
                                                 </div>
                                             ))}
                                         </div>
-                                        {(stats.unpaid.baseCurrencyAmount > 0 || stats.unpaid.otherCurrencyAmounts.length > 0) && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-1">Unpaid</p>
-                                                <div className="text-xl font-bold text-orange-600">
-                                                    {formatCurrency(stats.unpaid.baseCurrencyAmount, settings)}
-                                                </div>
-                                                {stats.unpaid.otherCurrencyAmounts.map(({ currencyCode, amount }) => (
-                                                    <div key={currencyCode} className="text-lg font-semibold text-orange-500 mt-1">
-                                                        {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    {/* Custom Budget: Show paid (digital + cash) and unpaid */}
-                                    <div className="space-y-3">
+                                    )}
+
+                                    {/* Unpaid column */}
+                                    {(stats.unpaid.totalBaseCurrencyAmount > 0 || stats.unpaid.foreignCurrencyDetails.length > 0) && (
                                         <div>
-                                            <p className="text-xs text-gray-500 mb-1">Paid</p>
-                                            {(() => {
-                                                const baseCurrency = settings.baseCurrency || 'USD';
-                                                const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
-                                                
-                                                // Group all paid amounts by currency
-                                                const paidByCurrency = {};
-                                                if (digitalPaid > 0) {
-                                                    paidByCurrency[baseCurrency] = digitalPaid;
-                                                }
-                                                
-                                                if (stats?.cashByCurrency) {
-                                                    Object.entries(stats.cashByCurrency).forEach(([currency, data]) => {
-                                                        if (data?.spent > 0) {
-                                                            paidByCurrency[currency] = (paidByCurrency[currency] || 0) + data.spent;
-                                                        }
-                                                    });
-                                                }
-                                                
-                                                return Object.entries(paidByCurrency).map(([currency, amount], index) => (
-                                                    <div key={currency} className={index === 0 ? "text-2xl font-bold text-gray-900" : "text-lg font-semibold text-gray-700 mt-1"}>
-                                                        {currency === baseCurrency 
-                                                            ? formatCurrency(amount, settings)
-                                                            : `${getCurrencySymbol(currency)}${amount.toFixed(2)}`
-                                                        }
-                                                    </div>
-                                                ));
-                                            })()}
-                                        </div>
-                                        {(stats?.digital?.unpaid || 0) > 0 && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-1">Unpaid</p>
-                                                <div className="text-xl font-bold text-orange-600">
-                                                    {formatCurrency(stats.digital.unpaid, settings)}
+                                            <p className="text-xs text-gray-500 mb-1">Unpaid</p>
+                                            {stats.unpaid.totalBaseCurrencyAmount > 0 && (
+                                                <div className="text-lg font-bold text-orange-600">
+                                                    {formatCurrency(stats.unpaid.totalBaseCurrencyAmount, settings)}
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
+                                            )}
+                                            {stats.unpaid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                                                <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-orange-500 mt-1">
+                                                    {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Paid column */}
+                                    {(() => {
+                                        const baseCurrency = settings.baseCurrency || 'USD';
+                                        const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
+                                        
+                                        // Group all paid amounts by currency
+                                        const paidByCurrency = {};
+                                        if (digitalPaid > 0) {
+                                            paidByCurrency[baseCurrency] = digitalPaid;
+                                        }
+                                        
+                                        if (stats?.cashByCurrency) {
+                                            Object.entries(stats.cashByCurrency).forEach(([currency, data]) => {
+                                                if (data?.spent > 0) {
+                                                    paidByCurrency[currency] = (paidByCurrency[currency] || 0) + data.spent;
+                                                }
+                                            });
+                                        }
+                                        
+                                        const hasPaid = Object.keys(paidByCurrency).length > 0;
+                                        const hasUnpaid = (stats?.digital?.unpaid || 0) > 0;
+                                        
+                                        return (
+                                            <>
+                                                {hasPaid && (
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 mb-1">Paid</p>
+                                                        {Object.entries(paidByCurrency).map(([currency, amount], index) => (
+                                                            <div key={currency} className={index === 0 ? "text-lg font-bold text-gray-900" : "text-sm font-semibold text-gray-700 mt-1"}>
+                                                                {currency === baseCurrency 
+                                                                    ? formatCurrency(amount, settings)
+                                                                    : `${getCurrencySymbol(currency)}${amount.toFixed(2)}`
+                                                                }
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {hasUnpaid && (
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 mb-1">Unpaid</p>
+                                                        <div className="text-lg font-bold text-orange-600">
+                                                            {formatCurrency(stats.digital.unpaid, settings)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
                             )}
                         </CardContent>
                     </Card>
@@ -664,10 +677,10 @@ export default function BudgetDetail() {
                                     const customBudgetStats = getCustomBudgetStats(customBudget, transactions);
 
                                     return (
-                                        <CompactCustomBudgetCard // Changed from CustomBudgetCard
+                                        <CompactCustomBudgetCard
                                             key={customBudget.id}
-                                            budget={customBudget} // Updated prop
-                                            stats={customBudgetStats} // Updated prop
+                                            budget={customBudget}
+                                            stats={customBudgetStats}
                                             settings={settings}
                                         />
                                     );
@@ -746,7 +759,7 @@ export default function BudgetDetail() {
                     defaultCustomBudgetId={budgetId}
                     onSubmit={(data) => createTransactionMutation.mutate(data)}
                     isSubmitting={createTransactionMutation.isPending}
-                    transactions={transactions} // Added transactions prop
+                    transactions={transactions}
                 />
             </div>
         </div>
