@@ -5,7 +5,7 @@ import { formatCurrency } from "../utils/formatCurrency";
 
 
 export default function RemainingBudgetCard({ remainingBudget, currentMonthIncome, currentMonthExpenses, settings }) {
-  const percentageUsed = income > 0 ? (expenses / income) * 100 : 0;
+  const percentageUsed = currentMonthIncome > 0 ? (currentMonthExpenses / currentMonthIncome) * 100 : 0;
 
   return (
     <Card className="border-none shadow-xl bg-gradient-to-br from-blue-600 to-purple-700 text-white overflow-hidden relative">
