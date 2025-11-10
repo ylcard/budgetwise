@@ -370,15 +370,28 @@ export const useBudgetBarsData = (
     const customBudgetsData = custom.map(cb => {
       const stats = getCustomBudgetStats(cb, transactions);
       
-      // Calculate total budget and total spent from digital and cash
+      // Calculate total budget from digital and cash allocations
       let totalBudget = stats.digital.allocated;
-      let totalSpent = stats.digital.spent;
-      
       Object.values(stats.cashByCurrency).forEach(cashData => {
         totalBudget += cashData.allocated;
-        totalSpent += cashData.spent;
       });
       
+      // Calculate paid amount (digital spent - unpaid + cash spent)
+      // Cash expenses are always considered "paid" by the budget calculation logic since they reduce cash allocated.
+      // Digital paid: digital.spent - digital.unpaid
+      // Cash paid: sum of cashData.spent for all currencies
+      let paidAmount = stats.digital.spent - stats.digital.unpaid;
+      Object.values(stats.cashByCurrency).forEach(cashData => {
+        paidAmount += cashData.spent;
+      });
+      
+      // Calculate expected/unpaid amount (digital only, cash is always paid from allocation)
+      const expectedAmount = stats.digital.unpaid;
+      
+      // Calculate total spent (paid + unpaid)
+      const totalSpent = paidAmount + expectedAmount;
+      
+      // Max height is the larger of allocated budget or total spent
       const maxHeight = Math.max(totalBudget, totalSpent);
       const isOverBudget = totalSpent > totalBudget;
       const overBudgetAmount = isOverBudget ? totalSpent - totalBudget : 0;
@@ -386,7 +399,13 @@ export const useBudgetBarsData = (
       return {
         ...cb,
         originalAllocatedAmount: cb.originalAllocatedAmount || cb.allocatedAmount,
-        stats,
+        stats: {
+          ...stats,
+          paidAmount, // This is the total paid across digital and cash
+          totalBudget // This is the total allocated across digital and cash
+        },
+        targetAmount: totalBudget, // Target is the total allocated budget
+        expectedAmount, // This is specifically the unpaid digital amount
         maxHeight,
         isOverBudget,
         overBudgetAmount
