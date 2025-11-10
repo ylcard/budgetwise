@@ -18,7 +18,7 @@ import {
   useActiveBudgets,
   useDashboardSummary,
   usePaidTransactions,
-  useMonthlyIncome, // Added useMonthlyIncome import
+  useMonthlyIncome,
 } from "../components/hooks/useDerivedData";
 import {
   useTransactionMutationsDashboard,
@@ -172,7 +172,8 @@ export default function Dashboard() {
             currentYear={selectedYear}
             settings={settings}
             goals={goals}
-            monthlyIncome={monthlyIncome} // Used the new monthlyIncome
+            monthlyIncome={monthlyIncome}
+            baseCurrency={settings.baseCurrency}
             onDeleteBudget={deleteBudget}
             onCompleteBudget={completeBudget}
             onCreateBudget={() => setShowQuickAddBudget(true)}
@@ -208,7 +209,7 @@ export default function Dashboard() {
           open={showQuickAddBudget}
           onOpenChange={setShowQuickAddBudget}
           onSubmit={createBudget}
-          isSubmitting={isCreatingBudget} // Changed to isCreatingBudget
+          isSubmitting={isCreatingBudget}
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
         />
