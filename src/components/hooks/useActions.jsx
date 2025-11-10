@@ -9,6 +9,7 @@ import {
   returnCashToWallet,
   calculateAllocationChanges,
   calculateRemainingCashAllocations,
+  updateCurrencyBalance,
 } from "../utils/cashAllocationUtils";
 
 // Hook for transaction mutations (Dashboard)
@@ -292,24 +293,6 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
     handleDelete,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
-};
-
-// Helper function to update balance for a specific currency (used in transaction updates)
-const updateCurrencyBalance = (balances, currencyCode, amountChange) => {
-  const existingBalanceIndex = balances.findIndex(b => b.currencyCode === currencyCode);
-  
-  if (existingBalanceIndex !== -1) {
-    const updatedBalances = balances.map((b, index) => 
-      index === existingBalanceIndex 
-        ? { ...b, amount: b.amount + amountChange }
-        : b
-    );
-    // Filter out balances that become zero or negative (considering floating point precision)
-    return updatedBalances.filter(b => b.amount > 0.01); 
-  } else if (amountChange > 0) { // Only add if it's a positive amount
-    return [...balances, { currencyCode, amount: amountChange }];
-  }
-  return balances;
 };
 
 // Hook for category actions (CRUD operations)
