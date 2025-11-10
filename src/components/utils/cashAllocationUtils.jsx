@@ -151,6 +151,32 @@ export const calculateRemainingCashAllocations = (budget, transactions) => {
     return remaining;
 };
 
+// Get remaining allocated cash for a specific budget and currency
+// This is used for validating cash expense transactions
+export const getRemainingAllocatedCash = (budget, transactions, currencyCode) => {
+    if (!budget || !budget.cashAllocations || budget.cashAllocations.length === 0) {
+        return 0;
+    }
+
+    // Find the allocation for this currency
+    const allocation = budget.cashAllocations.find(alloc => alloc.currencyCode === currencyCode);
+    if (!allocation) {
+        return 0;
+    }
+
+    // Calculate spent for this currency
+    const cashExpenses = transactions.filter(
+        t => t.customBudgetId === budget.id && 
+             t.isCashTransaction && 
+             t.cashTransactionType === 'expense_from_wallet' &&
+             t.cashCurrency === currencyCode
+    );
+
+    const spent = cashExpenses.reduce((sum, expense) => sum + (expense.cashAmount || 0), 0);
+
+    return allocation.amount - spent;
+};
+
 // Calculate changes in cash allocations (for budget updates)
 export const calculateAllocationChanges = (oldAllocations, newAllocations) => {
     const changes = [];

@@ -13,31 +13,24 @@ import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
 import CurrencySelect from "../ui/CurrencySelect";
-import { useSettings } from "../utils/SettingsContext";
 import { formatDateString, normalizeAmount } from "../utils/budgetCalculations";
-import { SUPPORTED_CURRENCIES } from "../utils/currencyCalculations";
 
-export default function CashWithdrawDialog({ 
+export default function CashDepositDialog({ 
   open, 
   onOpenChange, 
   onSubmit, 
+  isSubmitting,
   categories,
-  isSubmitting 
+  baseCurrency
 }) {
-  const { settings } = useSettings();
-  
   const [formData, setFormData] = useState({
-    title: 'Cash Withdrawal',
+    title: '',
     amount: '',
-    currency: settings.baseCurrency || 'USD',
+    currency: baseCurrency || 'USD',
     date: formatDateString(new Date()),
     category_id: '',
     notes: ''
   });
-
-  const selectedCurrencySymbol = SUPPORTED_CURRENCIES.find(
-    c => c.code === formData.currency
-  )?.symbol || formData.currency;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -48,11 +41,10 @@ export default function CashWithdrawDialog({
       amount: parseFloat(normalizedAmount)
     });
     
-    // Reset form
     setFormData({
-      title: 'Cash Withdrawal',
+      title: '',
       amount: '',
-      currency: settings.baseCurrency || 'USD',
+      currency: baseCurrency || 'USD',
       date: formatDateString(new Date()),
       category_id: '',
       notes: ''
@@ -63,7 +55,7 @@ export default function CashWithdrawDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Withdraw Cash</DialogTitle>
+          <DialogTitle>Deposit Cash</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -72,7 +64,7 @@ export default function CashWithdrawDialog({
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g., ATM Withdrawal, Cash from Bank"
+              placeholder="e.g., ATM withdrawal"
               required
               autoFocus
             />
@@ -80,13 +72,12 @@ export default function CashWithdrawDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Cash Amount</Label>
+              <Label htmlFor="amount">Amount</Label>
               <AmountInput
                 id="amount"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="0.00"
-                currencySymbol={selectedCurrencySymbol}
                 required
               />
             </div>
@@ -110,7 +101,7 @@ export default function CashWithdrawDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">Category (Optional)</Label>
+            <Label htmlFor="category">Category</Label>
             <CategorySelect
               value={formData.category_id}
               onValueChange={(value) => setFormData({ ...formData, category_id: value })}
@@ -119,18 +110,14 @@ export default function CashWithdrawDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Additional details..."
+              placeholder="Add any additional notes..."
               rows={2}
             />
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
-            <p><strong>Note:</strong> This withdrawal will be recorded as an expense at the current exchange rate. You can edit the transaction later to adjust the actual bank charge.</p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
@@ -140,9 +127,9 @@ export default function CashWithdrawDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-blue-600 to-blue-700"
+              className="bg-gradient-to-r from-blue-600 to-purple-600"
             >
-              {isSubmitting ? 'Processing...' : 'Withdraw Cash'}
+              {isSubmitting ? 'Processing...' : 'Deposit Cash'}
             </Button>
           </div>
         </form>

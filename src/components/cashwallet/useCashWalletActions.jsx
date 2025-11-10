@@ -7,8 +7,8 @@ import { calculateConvertedAmount, getRateForDate } from "../utils/currencyCalcu
 
 export const useCashWalletActions = (user, cashWallet, settings, exchangeRates) => {
   const queryClient = useQueryClient();
-  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
-  const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+  const [depositCashDialogOpen, setDepositCashDialogOpen] = useState(false);
+  const [returnCashDialogOpen, setReturnCashDialogOpen] = useState(false);
 
   // Ensure cash wallet exists
   const ensureCashWallet = async () => {
@@ -38,8 +38,8 @@ export const useCashWalletActions = (user, cashWallet, settings, exchangeRates) 
     }
   };
 
-  // Withdraw cash (Bank -> Wallet)
-  const withdrawMutation = useMutation({
+  // Deposit Cash (Bank -> Wallet)
+  const depositCashMutation = useMutation({
     mutationFn: async (data) => {
       const wallet = await ensureCashWallet();
       
@@ -97,24 +97,24 @@ export const useCashWalletActions = (user, cashWallet, settings, exchangeRates) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-      setWithdrawDialogOpen(false);
+      setDepositCashDialogOpen(false);
       showToast({
         title: "Success",
-        description: "Cash withdrawn to wallet successfully",
+        description: "Cash deposited to wallet successfully",
       });
     },
     onError: (error) => {
-      console.error('Error withdrawing cash:', error);
+      console.error('Error depositing cash:', error);
       showToast({
         title: "Error",
-        description: error?.message || "Failed to withdraw cash. Please try again.",
+        description: error?.message || "Failed to deposit cash. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  // Deposit cash (Wallet -> Bank)
-  const depositMutation = useMutation({
+  // Return Cash (Wallet -> Bank)
+  const returnCashMutation = useMutation({
     mutationFn: async (data) => {
       const wallet = await ensureCashWallet();
       const balances = wallet.balances || [];
@@ -175,32 +175,32 @@ export const useCashWalletActions = (user, cashWallet, settings, exchangeRates) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-      setDepositDialogOpen(false);
+      setReturnCashDialogOpen(false);
       showToast({
         title: "Success",
-        description: "Cash deposited to bank successfully",
+        description: "Cash returned to bank successfully",
       });
     },
     onError: (error) => {
-      console.error('Error depositing cash:', error);
+      console.error('Error returning cash:', error);
       showToast({
         title: "Error",
-        description: error?.message || "Failed to deposit cash. Please try again.",
+        description: error?.message || "Failed to return cash. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   return {
-    withdrawDialogOpen,
-    setWithdrawDialogOpen,
-    depositDialogOpen,
-    setDepositDialogOpen,
-    openWithdrawDialog: () => setWithdrawDialogOpen(true),
-    openDepositDialog: () => setDepositDialogOpen(true),
-    handleWithdraw: withdrawMutation.mutate,
-    handleDeposit: depositMutation.mutate,
-    isWithdrawing: withdrawMutation.isPending,
-    isDepositing: depositMutation.isPending,
+    depositCashDialogOpen,
+    setDepositCashDialogOpen,
+    returnCashDialogOpen,
+    setReturnCashDialogOpen,
+    openDepositCashDialog: () => setDepositCashDialogOpen(true),
+    openReturnCashDialog: () => setReturnCashDialogOpen(true),
+    handleDepositCash: depositCashMutation.mutate,
+    handleReturnCash: returnCashMutation.mutate,
+    isDepositingCash: depositCashMutation.isPending,
+    isReturningCash: returnCashMutation.isPending,
   };
 };

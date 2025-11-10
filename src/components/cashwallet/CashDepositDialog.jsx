@@ -9,37 +9,36 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
-import { useSettings } from "../utils/SettingsContext";
+import CurrencySelect from "../ui/CurrencySelect";
 import { formatDateString, normalizeAmount } from "../utils/budgetCalculations";
+import { getCurrencyBalance } from "../utils/cashAllocationUtils";
 import { SUPPORTED_CURRENCIES } from "../utils/currencyCalculations";
 
-export default function CashDepositDialog({ 
+export default function CashReturnDialog({ 
   open, 
   onOpenChange, 
-  onSubmit,
+  onSubmit, 
+  isSubmitting,
   cashWallet,
-  isSubmitting 
+  baseCurrency,
+  settings
 }) {
-  const { settings } = useSettings();
-  const balances = cashWallet?.balances || [];
-  
   const [formData, setFormData] = useState({
-    title: 'Cash Deposit to Bank',
+    title: '',
     amount: '',
-    currency: balances.length > 0 ? balances[0].currencyCode : (settings.baseCurrency || 'USD'),
+    currency: baseCurrency || 'USD',
     date: formatDateString(new Date()),
     notes: ''
   });
 
-  const selectedCurrencySymbol = SUPPORTED_CURRENCIES.find(
-    c => c.code === formData.currency
-  )?.symbol || formData.currency;
+  const availableBalance = getCurrencyBalance(cashWallet, formData.currency);
 
-  const selectedBalance = balances.find(b => b.currencyCode === formData.currency);
-  const availableAmount = selectedBalance?.amount || 0;
+  const getCurrencySymbol = (currencyCode) => {
+    const currency = SUPPORTED_CURRENCIES.find(c => c.code === currencyCode);
+    return currency?.symbol || currencyCode;
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -50,11 +49,10 @@ export default function CashDepositDialog({
       amount: parseFloat(normalizedAmount)
     });
     
-    // Reset form
     setFormData({
-      title: 'Cash Deposit to Bank',
+      title: '',
       amount: '',
-      currency: balances.length > 0 ? balances[0].currencyCode : (settings.baseCurrency || 'USD'),
+      currency: baseCurrency || 'USD',
       date: formatDateString(new Date()),
       notes: ''
     });
@@ -64,7 +62,7 @@ export default function CashDepositDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Deposit Cash to Bank</DialogTitle>
+          <DialogTitle>Return Cash</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -73,29 +71,10 @@ export default function CashDepositDialog({
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g., Cash Deposit, Bank Deposit"
+              placeholder="e.g., Cash deposit to bank"
               required
               autoFocus
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
-            <Select
-              value={formData.currency}
-              onValueChange={(value) => setFormData({ ...formData, currency: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {balances.map((balance) => (
-                  <SelectItem key={balance.currencyCode} value={balance.currencyCode}>
-                    {balance.currencyCode} (Available: {balance.amount.toFixed(2)})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -106,31 +85,42 @@ export default function CashDepositDialog({
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="0.00"
-                currencySymbol={selectedCurrencySymbol}
                 required
               />
-              <p className="text-xs text-gray-500">
-                Available: {selectedCurrencySymbol}{availableAmount.toFixed(2)}
-              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <DatePicker
-                value={formData.date}
-                onChange={(value) => setFormData({ ...formData, date: value })}
-                placeholder="Pick a date"
+              <Label htmlFor="currency">Currency</Label>
+              <CurrencySelect
+                value={formData.currency}
+                onValueChange={(value) => setFormData({ ...formData, currency: value })}
               />
             </div>
           </div>
 
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Available in wallet:</span>
+            <span className="font-semibold text-gray-900">
+              {getCurrencySymbol(formData.currency)}{availableBalance.toFixed(2)}
+            </span>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="date">Date</Label>
+            <DatePicker
+              value={formData.date}
+              onChange={(value) => setFormData({ ...formData, date: value })}
+              placeholder="Pick a date"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Additional details..."
+              placeholder="Add any additional notes..."
               rows={2}
             />
           </div>
@@ -144,7 +134,7 @@ export default function CashDepositDialog({
               disabled={isSubmitting}
               className="bg-gradient-to-r from-green-600 to-emerald-600"
             >
-              {isSubmitting ? 'Processing...' : 'Deposit to Bank'}
+              {isSubmitting ? 'Processing...' : 'Return Cash'}
             </Button>
           </div>
         </form>

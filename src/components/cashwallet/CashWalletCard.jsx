@@ -2,20 +2,10 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
-// import { useSettings } from "../utils/SettingsContext"; // UNUSED: Component doesn't use settings
-// import { formatCurrency } from "../utils/formatCurrency"; // UNUSED: Component formats amounts manually
 import { SUPPORTED_CURRENCIES } from "../utils/currencyCalculations";
 
-export default function CashWalletCard({ cashWallet, onWithdraw, onDeposit }) {
-  // const { settings } = useSettings(); // UNUSED: settings not needed in this component
+export default function CashWalletCard({ cashWallet, onDepositCash, onReturnCash }) {
   const balances = cashWallet?.balances || [];
-
-  // Get total in base currency
-  // const totalInBaseCurrency = balances.reduce((sum, bal) => { // UNUSED: Was meant for future feature
-  //   // For simplicity, just sum all balances (in a real app, would convert using rates)
-  //   // For now, show each currency separately
-  //   return sum;
-  // }, 0);
 
   return (
     <Card className="h-full bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
@@ -52,21 +42,21 @@ export default function CashWalletCard({ cashWallet, onWithdraw, onDeposit }) {
 
         <div className="grid grid-cols-2 gap-2">
           <Button
-            onClick={onWithdraw}
+            onClick={onDepositCash}
             size="sm"
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-xs"
           >
             <ArrowDownToLine className="w-3 h-3 mr-1" />
-            Withdraw
+            Deposit Cash
           </Button>
           <Button
-            onClick={onDeposit}
+            onClick={onReturnCash}
             size="sm"
             variant="outline"
             className="border-green-600 text-green-700 hover:bg-green-50 text-xs"
           >
             <ArrowUpFromLine className="w-3 h-3 mr-1" />
-            Deposit
+            Return Cash
           </Button>
         </div>
       </CardContent>
