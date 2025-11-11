@@ -3,8 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/formatCurrency";
 
-
-export default function RemainingBudgetCard({ remainingBudget, currentMonthIncome, currentMonthExpenses, settings }) {
+export default function RemainingBudgetCard({ 
+  remainingBudget, 
+  currentMonthIncome, 
+  currentMonthExpenses, 
+  settings,
+  addIncomeButton = null
+}) {
   const percentageUsed = currentMonthIncome > 0 ? (currentMonthExpenses / currentMonthIncome) * 100 : 0;
 
   return (
@@ -13,9 +18,16 @@ export default function RemainingBudgetCard({ remainingBudget, currentMonthIncom
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
       
       <CardContent className="p-8 relative z-10">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <Wallet className="w-6 h-6" />
-          <h2 className="text-lg font-medium opacity-90">Remaining Budget This Month</h2>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <Wallet className="w-6 h-6" />
+            <h2 className="text-lg font-medium opacity-90">Remaining Budget This Month</h2>
+          </div>
+          {addIncomeButton && (
+            <div className="ml-auto">
+              {addIncomeButton}
+            </div>
+          )}
         </div>
         
         <div className="mt-6">
@@ -56,3 +68,6 @@ export default function RemainingBudgetCard({ remainingBudget, currentMonthIncom
     </Card>
   );
 }
+
+// ISSUE FIX (2025-01-11): Added addIncomeButton prop to allow passing Add Income button
+// Button is positioned in the top-right corner of the card header for better visual grouping

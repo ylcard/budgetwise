@@ -13,6 +13,7 @@ import { formatDate } from "../components/utils/formatDate";
 import { getCurrencySymbol } from "../components/utils/currencyUtils";
 import { getCustomBudgetStats, getSystemBudgetStats, getCustomBudgetAllocationStats } from "../components/utils/budgetCalculations";
 import { useCashWallet } from "../components/hooks/useBase44Entities";
+import { useTransactionActions } from "../components/hooks/useActions";
 import { calculateRemainingCashAllocations, returnCashToWallet } from "../components/utils/cashAllocationUtils";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
@@ -113,19 +114,15 @@ export default function BudgetDetail() {
     // Use proper budget actions hook with cash allocation handling
     const budgetActions = useCustomBudgetActions(user, transactions, cashWallet);
 
+    // Use proper transaction actions hook for handling edits/deletes
+    const transactionActions = useTransactionActions(null, null, cashWallet);
+
     const createTransactionMutation = useMutation({
         mutationFn: (data) => base44.entities.Transaction.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
             setShowQuickAdd(false);
-        },
-    });
-
-    const deleteTransactionMutation = useMutation({
-        mutationFn: (id) => base44.entities.Transaction.delete(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['transactions'] });
         },
     });
 
@@ -282,10 +279,8 @@ export default function BudgetDetail() {
         return acc;
     }, {});
 
-    const handleDeleteTransaction = (id) => {
-        if (confirm('Are you sure you want to delete this transaction?')) {
-            deleteTransactionMutation.mutate(id);
-        }
+    const handleEditBudget = (data) => {
+        budgetActions.handleSubmit(data, budget);
     };
 
     const handleDeleteBudget = async () => {
@@ -293,10 +288,6 @@ export default function BudgetDetail() {
             await budgetActions.handleDelete(budgetId);
             window.location.href = createPageUrl("Budgets");
         }
-    };
-
-    const handleEditBudget = (data) => {
-        budgetActions.handleSubmit(data, budget);
     };
 
     useEffect(() => {
@@ -448,11 +439,10 @@ export default function BudgetDetail() {
                                 Delete
                             </Button>
                         )}
-                        {/* REMOVED: Add Expense button from header - moved to Direct Expenses section (2025-01-11) */}
                     </div>
                 </div>
 
-                {/* Summary Cards - ISSUE FIX #5: Center amounts, align paid/unpaid sections */}
+                {/* Summary Cards - ISSUE FIX #3 & #4: Consistent text sizes, conditional Expenses layout (2025-01-11) */}
                 <div className="grid md:grid-cols-3 gap-4">
                     <Card className="border-none shadow-lg">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -460,7 +450,7 @@ export default function BudgetDetail() {
                             <DollarSign className="w-4 h-4 text-blue-500" />
                         </CardHeader>
                         <CardContent className="text-center">
-                            <div className="text-2xl font-bold text-gray-900">
+                            <div className="text-lg font-bold text-gray-900">
                                 {formatCurrency(totalBudget, settings)}
                             </div>
                             {!budget.isSystemBudget && stats?.cashByCurrency && Object.keys(stats.cashByCurrency).length > 0 && (
@@ -483,89 +473,153 @@ export default function BudgetDetail() {
                         </CardHeader>
                         <CardContent>
                             {budget.isSystemBudget ? (
-                                <div className="grid grid-cols-2 gap-4">
-                                    {(stats.paid.totalBaseCurrencyAmount > 0 || stats.paid.foreignCurrencyDetails.length > 0) && (
-                                        <div className="flex flex-col items-center justify-center">
-                                            <p className="text-xs text-gray-500 mb-1">Paid</p>
-                                            {stats.paid.totalBaseCurrencyAmount > 0 && (
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {formatCurrency(stats.paid.totalBaseCurrencyAmount, settings)}
-                                                </div>
-                                            )}
-                                            {stats.paid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
-                                                <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-gray-700 mt-1">
-                                                    {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {(stats.unpaid.totalBaseCurrencyAmount > 0 || stats.unpaid.foreignCurrencyDetails.length > 0) && (
-                                        <div className="flex flex-col items-center justify-center">
-                                            <p className="text-xs text-gray-500 mb-1">Unpaid</p>
-                                            {stats.unpaid.totalBaseCurrencyAmount > 0 && (
-                                                <div className="text-lg font-bold text-orange-600">
-                                                    {formatCurrency(stats.unpaid.totalBaseCurrencyAmount, settings)}
-                                                </div>
-                                            )}
-                                            {stats.unpaid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
-                                                <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-orange-500 mt-1">
-                                                    {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 gap-4">
-                                    {(() => {
-                                        const baseCurrency = settings.baseCurrency || 'USD';
-                                        const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
-                                        
-                                        const paidByCurrency = {};
-                                        if (digitalPaid > 0) {
-                                            paidByCurrency[baseCurrency] = digitalPaid;
-                                        }
-                                        
-                                        if (stats?.cashByCurrency) {
-                                            Object.entries(stats.cashByCurrency).forEach(([currency, data]) => {
-                                                if (data?.spent > 0) {
-                                                    paidByCurrency[currency] = (paidByCurrency[currency] || 0) + data.spent;
-                                                }
-                                            });
-                                        }
-                                        
-                                        const hasPaid = Object.keys(paidByCurrency).length > 0;
-                                        const hasUnpaid = (stats?.digital?.unpaid || 0) > 0;
-                                        
+                                (() => {
+                                    const hasPaid = stats.paid.totalBaseCurrencyAmount > 0 || stats.paid.foreignCurrencyDetails.length > 0;
+                                    const hasUnpaid = stats.unpaid.totalBaseCurrencyAmount > 0 || stats.unpaid.foreignCurrencyDetails.length > 0;
+                                    
+                                    if (hasPaid && hasUnpaid) {
+                                        // Both paid and unpaid - use grid
                                         return (
-                                            <>
-                                                {hasPaid && (
-                                                    <div className="flex flex-col items-center justify-center">
-                                                        <p className="text-xs text-gray-500 mb-1">Paid</p>
-                                                        {Object.entries(paidByCurrency).map(([currency, amount], index) => (
-                                                            <div key={currency} className={index === 0 ? "text-lg font-bold text-gray-900" : "text-sm font-semibold text-gray-700 mt-1"}>
-                                                                {currency === baseCurrency 
-                                                                    ? formatCurrency(amount, settings)
-                                                                    : `${getCurrencySymbol(currency)}${amount.toFixed(2)}`
-                                                                }
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {hasUnpaid && (
-                                                    <div className="flex flex-col items-center justify-center">
-                                                        <p className="text-xs text-gray-500 mb-1">Unpaid</p>
-                                                        <div className="text-lg font-bold text-orange-600">
-                                                            {formatCurrency(stats.digital.unpaid, settings)}
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <p className="text-xs text-gray-500 mb-1">Paid</p>
+                                                    {stats.paid.totalBaseCurrencyAmount > 0 && (
+                                                        <div className="text-lg font-bold text-gray-900">
+                                                            {formatCurrency(stats.paid.totalBaseCurrencyAmount, settings)}
                                                         </div>
+                                                    )}
+                                                    {stats.paid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                                                        <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-gray-700 mt-1">
+                                                            {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <p className="text-xs text-gray-500 mb-1">Unpaid</p>
+                                                    {stats.unpaid.totalBaseCurrencyAmount > 0 && (
+                                                        <div className="text-lg font-bold text-orange-600">
+                                                            {formatCurrency(stats.unpaid.totalBaseCurrencyAmount, settings)}
+                                                        </div>
+                                                    )}
+                                                    {stats.unpaid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                                                        <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-orange-500 mt-1">
+                                                            {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    } else if (hasPaid) {
+                                        // Only paid - center it
+                                        return (
+                                            <div className="flex flex-col items-center justify-center h-full">
+                                                <p className="text-xs text-gray-500 mb-1">Paid</p>
+                                                {stats.paid.totalBaseCurrencyAmount > 0 && (
+                                                    <div className="text-lg font-bold text-gray-900">
+                                                        {formatCurrency(stats.paid.totalBaseCurrencyAmount, settings)}
                                                     </div>
                                                 )}
-                                            </>
+                                                {stats.paid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                                                    <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-gray-700 mt-1">
+                                                        {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         );
-                                    })()}
-                                </div>
-                            )}
+                                    } else if (hasUnpaid) {
+                                        // Only unpaid - center it
+                                        return (
+                                            <div className="flex flex-col items-center justify-center h-full">
+                                                <p className="text-xs text-gray-500 mb-1">Unpaid</p>
+                                                {stats.unpaid.totalBaseCurrencyAmount > 0 && (
+                                                    <div className="text-lg font-bold text-orange-600">
+                                                        {formatCurrency(stats.unpaid.totalBaseCurrencyAmount, settings)}
+                                                    </div>
+                                                )}
+                                                {stats.unpaid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                                                    <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-orange-500 mt-1">
+                                                        {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    } else {
+                                        return <div className="text-center text-gray-400">No expenses</div>;
+                                    }
+                                })()
+                            ) : (
+                                (() => {
+                                    const baseCurrency = settings.baseCurrency || 'USD';
+                                    const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
+                                    
+                                    const paidByCurrency = {};
+                                    if (digitalPaid > 0) {
+                                        paidByCurrency[baseCurrency] = digitalPaid;
+                                    }
+                                    
+                                    if (stats?.cashByCurrency) {
+                                        Object.entries(stats.cashByCurrency).forEach(([currency, data]) => {
+                                            if (data?.spent > 0) {
+                                                paidByCurrency[currency] = (paidByCurrency[currency] || 0) + data.spent;
+                                            }
+                                        });
+                                    }
+                                    
+                                    const hasPaid = Object.keys(paidByCurrency).length > 0;
+                                    const hasUnpaid = (stats?.digital?.unpaid || 0) > 0;
+                                    
+                                    if (hasPaid && hasUnpaid) {
+                                        // Both paid and unpaid - use grid
+                                        return (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <p className="text-xs text-gray-500 mb-1">Paid</p>
+                                                    {Object.entries(paidByCurrency).map(([currency, amount], index) => (
+                                                        <div key={currency} className={index === 0 ? "text-lg font-bold text-gray-900" : "text-sm font-semibold text-gray-700 mt-1"}>
+                                                            {currency === baseCurrency 
+                                                                ? formatCurrency(amount, settings)
+                                                                : `${getCurrencySymbol(currency)}${amount.toFixed(2)}`
+                                                            }
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <p className="text-xs text-gray-500 mb-1">Unpaid</p>
+                                                    <div className="text-lg font-bold text-orange-600">
+                                                        {formatCurrency(stats.digital.unpaid, settings)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    } else if (hasPaid) {
+                                        // Only paid - center it
+                                        return (
+                                            <div className="flex flex-col items-center justify-center h-full">
+                                                <p className="text-xs text-gray-500 mb-1">Paid</p>
+                                                {Object.entries(paidByCurrency).map(([currency, amount], index) => (
+                                                    <div key={currency} className={index === 0 ? "text-lg font-bold text-gray-900" : "text-sm font-semibold text-gray-700 mt-1"}>
+                                                        {currency === baseCurrency 
+                                                            ? formatCurrency(amount, settings)
+                                                            : `${getCurrencySymbol(currency)}${amount.toFixed(2)}`
+                                                        }
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    } else if (hasUnpaid) {
+                                        // Only unpaid - center it
+                                        return (
+                                            <div className="flex flex-col items-center justify-center h-full">
+                                                <p className="text-xs text-gray-500 mb-1">Unpaid</p>
+                                                <div className="text-lg font-bold text-orange-600">
+                                                    {formatCurrency(stats.digital.unpaid, settings)}
+                                                </div>
+                                            </div>
+                                        );
+                                    } else {
+                                        return <div className="text-center text-gray-400">No expenses</div>;
+                                    }
+                                })()}
                         </CardContent>
                     </Card>
 
@@ -575,7 +629,7 @@ export default function BudgetDetail() {
                             <CheckCircle className="w-4 h-4 text-green-500" />
                         </CardHeader>
                         <CardContent className="text-center">
-                            <div className={`text-2xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <div className={`text-lg font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {formatCurrency(totalRemaining, settings)}
                             </div>
                             {!budget.isSystemBudget && stats?.cashByCurrency && Object.keys(stats.cashByCurrency).length > 0 && (
@@ -655,7 +709,6 @@ export default function BudgetDetail() {
                                 </p>
                             )}
                         </div>
-                        {/* ISSUE FIX #2: Add Expense button moved to Direct Expenses section (2025-01-11) */}
                         <QuickAddTransaction
                             open={showQuickAdd}
                             onOpenChange={setShowQuickAdd}
@@ -680,9 +733,9 @@ export default function BudgetDetail() {
                                         transaction={transaction}
                                         category={categoryMap[transaction.category_id]}
                                         onEdit={(t, data) => {
-                                            createTransactionMutation.mutate(data);
+                                            transactionActions.handleSubmit(data, t);
                                         }}
-                                        onDelete={handleDeleteTransaction}
+                                        onDelete={() => transactionActions.handleDelete(transaction)}
                                     />
                                 ))}
                             </div>
@@ -710,6 +763,9 @@ export default function BudgetDetail() {
     );
 }
 
-// DEPRECATED: The editingTransaction state and TransactionForm modal wrapper have been removed
-// Transaction editing now happens via TransactionCard's built-in popover form
-// The showEditForm state and handleEditTransaction/handleUpdateTransaction functions are no longer needed
+// CRITICAL BUG FIX (2025-01-11):
+// 1. Fixed duplicate record creation: TransactionCard's onEdit now calls transactionActions.handleSubmit
+//    which correctly determines whether to create or update based on whether transaction exists
+//    Previous issue: was calling createTransactionMutation.mutate directly, always creating new records
+// 2. Fixed budget pre-selection: Implemented in TransactionFormContent to ensure pre-selected budget is
+//    always in dropdown regardless of date filtering

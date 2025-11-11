@@ -91,27 +91,7 @@ export default function Dashboard() {
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-500 mt-1">Welcome back, {user?.full_name || 'User'}!</p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowQuickAddIncome(true)}
-              variant="outline"
-              className="border-green-600 text-green-600 hover:bg-green-50"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Income
-            </Button>
-            {/* REMOVED: Orphaned "Add Expense" button - 2025-01-11
-                This button was orphaned and not properly integrated with QuickAddTransaction component
-                The QuickAddTransaction component now renders its own trigger button within BudgetBars
-            */}
-            {/* <Button
-              onClick={() => setShowQuickAdd(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Expense
-            </Button> */}
-          </div>
+          {/* REMOVED: Add Income button moved to RemainingBudgetCard (2025-01-11) */}
         </div>
 
         <MonthNavigator
@@ -130,6 +110,17 @@ export default function Dashboard() {
               currentMonthIncome={currentMonthIncome}
               currentMonthExpenses={currentMonthExpenses}
               settings={settings}
+              addIncomeButton={
+                <Button
+                  onClick={() => setShowQuickAddIncome(true)}
+                  variant="ghost"
+                  className="text-white border-white/30 hover:bg-white/20 hover:border-white/50"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Income
+                </Button>
+              }
             />
           </div>
           <div className="md:col-span-1">
@@ -222,3 +213,6 @@ export default function Dashboard() {
     </div>
   );
 }
+
+// ISSUE FIX (2025-01-11): Moved Add Income button from page header to RemainingBudgetCard
+// Button now appears in top-right of the card with styling that matches the card's gradient theme
