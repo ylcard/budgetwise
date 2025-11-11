@@ -1,3 +1,7 @@
+// COMMENTED OUT 11-Nov-2025: This file's functionality has been moved to components/utils/currencyUtils.js for better organization.
+// All imports should now use: import { formatCurrency } from '../utils/currencyUtils';
+
+/*
 export const formatCurrency = (amount, settings) => {
   if (amount === null || amount === undefined || isNaN(amount)) {
     return settings.currencyPosition === 'before' 
@@ -30,3 +34,4 @@ export const formatCurrency = (amount, settings) => {
     ? `${settings.currencySymbol}${withSign}`
     : `${withSign}${settings.currencySymbol}`;
 };
+*/
