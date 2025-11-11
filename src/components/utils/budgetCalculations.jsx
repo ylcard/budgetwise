@@ -1,4 +1,3 @@
-
 import { calculateAggregatedRemainingAmounts } from './budgetAggregations';
 import { getCurrencySymbol } from './currencyUtils';
 
@@ -25,6 +24,10 @@ export const filterCompletedCustomBudgets = (customBudgets) => {
 
 export const filterActiveOrCompletedCustomBudgets = (customBudgets) => {
     return customBudgets.filter(cb => cb.status === 'active' || cb.status === 'completed');
+};
+
+export const filterPlannedCustomBudgets = (customBudgets) => {
+    return customBudgets.filter(cb => cb.status === 'planned');
 };
 
 // Normalize amount input by removing non-numeric characters except decimal separators
@@ -123,25 +126,13 @@ export const calculateRemainingBudget = (transactions, month, year) => {
     return income - paidExpenses - unpaidExpenseAmount;
 };
 
-// ENHANCED: Custom Budget Stats with Unit-Based Totals for Percentage Calculation
+// CRITICAL FIX (2025-01-11): Custom Budget Stats with Prepayment Support
+// Changed to include ALL transactions with matching customBudgetId, regardless of date
+// This allows "pre-payments" (e.g., hotel booked months in advance) to count towards the budget
 export const getCustomBudgetStats = (customBudget, transactions) => {
-    const budgetStart = parseDate(customBudget.startDate);
-    const budgetEnd = parseDate(customBudget.endDate);
-
-    // Only include transactions within the budget period
-    const budgetTransactions = transactions.filter(t => {
-        if (t.customBudgetId !== customBudget.id) return false;
-
-        // For paid transactions, check if paid date is within budget period
-        if (t.isPaid && t.paidDate) {
-            const paidDate = parseDate(t.paidDate);
-            return paidDate >= budgetStart && paidDate <= budgetEnd;
-        }
-
-        // For unpaid transactions, check if transaction date is within budget period
-        const transactionDate = parseDate(t.date);
-        return transactionDate >= budgetStart && transactionDate <= budgetEnd;
-    });
+    // REMOVED date filtering - if a transaction has this customBudgetId, it belongs to this budget
+    // regardless of when it was paid relative to the budget's event period
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
 
     // Separate digital and cash transactions
     const digitalTransactions = budgetTransactions.filter(
@@ -376,94 +367,9 @@ export const getDirectUnpaidExpenses = (systemBudget, transactions, categories, 
     return directUnpaidTransactions.reduce((sum, t) => sum + t.amount, 0);
 };
 
-// DEPRECATED: calculateWantsExpectedAmount function's logic has been extracted to
-// components/utils/budgetAggregations.js as calculateAggregatedRemainingAmounts
-// This function is now redundant and scheduled for removal in next refactoring cycle
-// Use calculateAggregatedRemainingAmounts instead for all aggregation needs
-/*
-export const calculateWantsExpectedAmount = (allCustomBudgets, transactions, categories, systemBudget, baseCurrency) => {
-    let mainSum = 0;
-    const separateCashAmounts = {};
-
-    allCustomBudgets.forEach(cb => {
-        const cbStats = getCustomBudgetStats(cb, transactions);
-
-        if (cb.status === 'active') {
-            mainSum += cbStats.digital.remaining;
-            mainSum += cbStats.digital.unpaid;
-        }
-
-        if (cb.status === 'completed') {
-            mainSum += cbStats.digital.unpaid;
-        }
-
-        Object.keys(cbStats.cashByCurrency).forEach(currencyCode => {
-            const cashData = cbStats.cashByCurrency[currencyCode];
-            
-            if (currencyCode === baseCurrency) {
-                mainSum += cashData.remaining;
-            } else {
-                if (!separateCashAmounts[currencyCode]) {
-                    separateCashAmounts[currencyCode] = 0;
-                }
-                separateCashAmounts[currencyCode] += cashData.remaining;
-            }
-        });
-    });
-
-    const directUnpaid = getDirectUnpaidExpenses(systemBudget, transactions, categories, allCustomBudgets);
-    mainSum += directUnpaid;
-
-    const separateCashArray = Object.keys(separateCashAmounts)
-        .filter(currencyCode => separateCashAmounts[currencyCode] > 0)
-        .map(currencyCode => {
-            const symbol = getCurrencySymbol(currencyCode);
-            return {
-                currencyCode,
-                amount: separateCashAmounts[currencyCode],
-                symbol
-            };
-        });
-
-    return {
-        mainSum,
-        separateCashAmounts: separateCashArray
-    };
-};
-*/
-
-// DEPRECATED: getCurrencySymbol function moved to components/utils/currencyUtils.js
-// This helper is now imported from the centralized utility file
-// Scheduled for removal in next refactoring cycle
-/*
-const getCurrencySymbol = (currencyCode) => {
-    const currencySymbols = {
-        'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'CA$', 'AUD': 'A$',
-        'CHF': 'CHF', 'CNY': '¥', 'INR': '₹', 'MXN': 'MX$', 'BRL': 'R$', 'ZAR': 'R',
-        'KRW': '₩', 'SGD': 'S$', 'NZD': 'NZ$', 'HKD': 'HK$', 'SEK': 'kr', 'NOK': 'kr',
-        'DKK': 'kr', 'PLN': 'zł', 'THB': '฿', 'MYR': 'RM', 'IDR': 'Rp', 'PHP': '₱',
-        'CZK': 'Kč', 'ILS': '₪', 'CLP': 'CLP$', 'AED': 'د.إ', 'SAR': '﷼', 'TWD': 'NT$', 'TRY': '₺'
-    };
-    return currencySymbols[currencyCode] || currencyCode;
-};
-*/
-
 export const getCustomBudgetAllocationStats = (customBudget, allocations, transactions) => {
-    const budgetStart = parseDate(customBudget.startDate);
-    const budgetEnd = parseDate(customBudget.endDate);
-
-    // Filter transactions for this custom budget within date range
-    const budgetTransactions = transactions.filter(t => {
-        if (t.customBudgetId !== customBudget.id) return false;
-
-        if (t.isPaid && t.paidDate) {
-            const paidDate = parseDate(t.paidDate);
-            return paidDate >= budgetStart && paidDate <= budgetEnd;
-        }
-
-        const transactionDate = parseDate(t.date);
-        return transactionDate >= budgetStart && transactionDate <= budgetEnd;
-    });
+    // REMOVED date filtering - allocations apply to the budget regardless of when expenses occur
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
 
     // Calculate total allocated
     const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
@@ -546,3 +452,8 @@ export const filterBudgetsByTransactionDate = (customBudgets, transactionDate) =
         return txDate >= startDate && txDate <= endDate;
     });
 };
+
+// ENHANCEMENT (2025-01-11): Added filterPlannedCustomBudgets function
+// CRITICAL FIX (2025-01-11): Removed date filtering from getCustomBudgetStats
+// This allows prepayments and post-payments to be correctly associated with custom budgets
+// The budget's startDate/endDate now define the event period, not the expense inclusion criteria

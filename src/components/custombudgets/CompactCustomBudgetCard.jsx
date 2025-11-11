@@ -9,48 +9,81 @@ import { CheckCircle, Clock } from "lucide-react";
 
 export default function CompactCustomBudgetCard({ budget, stats, settings }) {
   const baseCurrency = settings?.baseCurrency || 'USD';
+  const isSystemBudget = budget.isSystemBudget || false;
 
-  // Use unit-based totals for percentage calculation (no conversion)
-  const percentageUsed = useMemo(() => {
-    const allocated = stats?.totalAllocatedUnits || 0;
-    const spent = stats?.totalSpentUnits || 0;
-    return allocated > 0 ? (spent / allocated) * 100 : 0;
-  }, [stats]);
+  // Calculate percentage and amounts based on budget type
+  const { percentageUsed, paidAmounts, unpaidAmount } = useMemo(() => {
+    if (isSystemBudget) {
+      // System Budget Logic
+      const totalBudget = budget.budgetAmount || 0;
+      const paidTotal = stats?.paid?.totalBaseCurrencyAmount || 0;
+      const unpaidTotal = stats?.unpaid?.totalBaseCurrencyAmount || 0;
+      const totalSpent = paidTotal + unpaidTotal;
+      
+      const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+      
+      // Paid amounts - base currency + foreign currencies
+      const paid = {};
+      if (paidTotal > 0) {
+        paid[baseCurrency] = paidTotal;
+      }
+      if (stats?.paid?.foreignCurrencyDetails) {
+        stats.paid.foreignCurrencyDetails.forEach(detail => {
+          if (detail.amount > 0) {
+            paid[detail.currencyCode] = (paid[detail.currencyCode] || 0) + detail.amount;
+          }
+        });
+      }
+      
+      return {
+        percentageUsed: percentage,
+        paidAmounts: paid,
+        unpaidAmount: unpaidTotal
+      };
+    } else {
+      // Custom Budget Logic
+      const allocated = stats?.totalAllocatedUnits || 0;
+      const spent = stats?.totalSpentUnits || 0;
+      const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
 
-  // Separate paid amounts by currency
-  const paidAmounts = useMemo(() => {
-    const amounts = {};
-    
-    // Digital paid (in base currency) - subtract unpaid to get actual paid
-    const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
-    if (digitalPaid > 0) {
-      amounts[baseCurrency] = (amounts[baseCurrency] || 0) + digitalPaid;
+      // Separate paid amounts by currency
+      const paid = {};
+      
+      // Digital paid (in base currency) - subtract unpaid to get actual paid
+      const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
+      if (digitalPaid > 0) {
+        paid[baseCurrency] = (paid[baseCurrency] || 0) + digitalPaid;
+      }
+      
+      // Cash paid by currency
+      if (stats?.cashByCurrency) {
+        Object.entries(stats.cashByCurrency).forEach(([currency, data]) => {
+          if (data?.spent > 0) {
+            paid[currency] = (paid[currency] || 0) + data.spent;
+          }
+        });
+      }
+      
+      // Unpaid amount (digital only, in base currency)
+      const unpaid = stats?.digital?.unpaid || 0;
+      
+      return {
+        percentageUsed: percentage,
+        paidAmounts: paid,
+        unpaidAmount: unpaid
+      };
     }
-    
-    // Cash paid by currency
-    if (stats?.cashByCurrency) {
-      Object.entries(stats.cashByCurrency).forEach(([currency, data]) => {
-        if (data?.spent > 0) {
-          amounts[currency] = (amounts[currency] || 0) + data.spent;
-        }
-      });
-    }
-    
-    return amounts;
-  }, [stats, baseCurrency]);
-
-  // Unpaid amount (digital only, in base currency)
-  const unpaidAmount = stats?.digital?.unpaid || 0;
+  }, [stats, baseCurrency, isSystemBudget, budget]);
 
   // Circular progress SVG
   const radius = 38;
   const circumference = 2 * Math.PI * radius;
-  const paidPercentage = (stats?.totalAllocatedUnits || 0) > 0 
-    ? (((stats?.totalSpentUnits || 0) - (stats?.totalUnpaidUnits || 0)) / (stats?.totalAllocatedUnits || 0)) * 100 
-    : 0;
-  const unpaidPercentage = (stats?.totalAllocatedUnits || 0) > 0 
-    ? ((stats?.totalUnpaidUnits || 0) / (stats?.totalAllocatedUnits || 0)) * 100 
-    : 0;
+  
+  // Calculate paid and unpaid percentages for the circle
+  const totalBudget = isSystemBudget ? (budget.budgetAmount || 0) : (stats?.totalAllocatedUnits || 0);
+  const paidTotal = Object.values(paidAmounts).reduce((sum, val) => sum + val, 0);
+  const paidPercentage = totalBudget > 0 ? (paidTotal / totalBudget) * 100 : 0;
+  const unpaidPercentage = totalBudget > 0 ? (unpaidAmount / totalBudget) * 100 : 0;
   
   const paidStrokeDashoffset = circumference - (paidPercentage / 100) * circumference;
   const unpaidStrokeDashoffset = circumference - ((paidPercentage + unpaidPercentage) / 100) * circumference;
@@ -67,7 +100,6 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.02 }}
     >
-      {/* ENHANCEMENT (2025-01-11): Added min-h-[240px] for consistent card heights */}
       <Card className="border-none shadow-md hover:shadow-lg transition-all overflow-hidden min-h-[240px] flex flex-col">
         <div className="h-1 w-full" style={{ backgroundColor: color }} />
         <CardContent className="p-4 flex-1 flex flex-col">
@@ -76,11 +108,16 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
               <h3 className="font-bold text-gray-900 text-sm hover:text-blue-600 transition-colors truncate flex-1">
                 {budget.name}
               </h3>
-              {budget.status === 'completed' && (
-                <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
-              )}
-              {budget.status === 'active' && (
-                <Clock className="w-3 h-3 text-orange-500 flex-shrink-0" />
+              {/* ENHANCEMENT (2025-01-11): Hide icons for system budgets */}
+              {!isSystemBudget && (
+                <>
+                  {budget.status === 'completed' && (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  )}
+                  {(budget.status === 'active' || budget.status === 'planned') && (
+                    <Clock className="w-3 h-3 text-orange-500 flex-shrink-0" />
+                  )}
+                </>
               )}
             </div>
           </Link>
@@ -99,20 +136,22 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
                   fill="none"
                 />
                 {/* Paid progress */}
-                <circle
-                  cx="48"
-                  cy="48"
-                  r={radius}
-                  stroke={color}
-                  strokeWidth="6"
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={paidStrokeDashoffset}
-                  strokeLinecap="round"
-                  className="transition-all duration-500"
-                />
+                {paidPercentage > 0 && (
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r={radius}
+                    stroke={color}
+                    strokeWidth="6"
+                    fill="none"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={paidStrokeDashoffset}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                  />
+                )}
                 {/* Unpaid progress */}
-                {unpaidAmount > 0 && (
+                {unpaidPercentage > 0 && (
                   <circle
                     cx="48"
                     cy="48"
@@ -136,34 +175,39 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
             </div>
           </div>
 
-          {/* Paid and Unpaid Amounts - Side by Side OR Single Centered */}
-          {/* ENHANCEMENT (2025-01-11): Always render grid to maintain consistent height */}
-          <div className="grid grid-cols-2 gap-3 text-xs min-h-[60px]">
-            {/* Paid column */}
-            <div className={hasPaid ? '' : 'opacity-0'}>
-              <p className="text-gray-500 mb-1">Paid</p>
-              {Object.entries(paidAmounts)
-                .filter(([_, amount]) => amount > 0)
-                .map(([currency, amount]) => {
-                  const symbol = getCurrencySymbol(currency);
-                  return (
-                    <p key={currency} className="font-semibold text-gray-900 truncate">
-                      {currency === baseCurrency 
-                        ? formatCurrency(amount, settings)
-                        : `${symbol}${amount.toFixed(2)}`
-                      }
-                    </p>
-                  );
-                })}
-            </div>
+          {/* ENHANCEMENT (2025-01-11): Dynamic layout based on what amounts exist */}
+          {/* If both paid and unpaid exist: side by side grid */}
+          {/* If only one exists: centered single column */}
+          <div className={`text-xs min-h-[60px] ${hasPaid && hasUnpaid ? 'grid grid-cols-2 gap-3' : 'flex flex-col items-center justify-center'}`}>
+            {/* Paid section */}
+            {hasPaid && (
+              <div className={hasUnpaid ? '' : 'text-center'}>
+                <p className="text-gray-500 mb-1">Paid</p>
+                {Object.entries(paidAmounts)
+                  .filter(([_, amount]) => amount > 0)
+                  .map(([currency, amount]) => {
+                    const symbol = getCurrencySymbol(currency);
+                    return (
+                      <p key={currency} className="font-semibold text-gray-900 truncate">
+                        {currency === baseCurrency 
+                          ? formatCurrency(amount, settings)
+                          : `${symbol}${amount.toFixed(2)}`
+                        }
+                      </p>
+                    );
+                  })}
+              </div>
+            )}
 
-            {/* Unpaid column */}
-            <div className={hasUnpaid ? '' : 'opacity-0'}>
-              <p className="text-gray-500 mb-1">Unpaid</p>
-              <p className="font-semibold text-orange-600 truncate">
-                {formatCurrency(unpaidAmount, settings)}
-              </p>
-            </div>
+            {/* Unpaid section */}
+            {hasUnpaid && (
+              <div className={hasPaid ? '' : 'text-center'}>
+                <p className="text-gray-500 mb-1">Unpaid</p>
+                <p className="font-semibold text-orange-600 truncate">
+                  {formatCurrency(unpaidAmount, settings)}
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -171,9 +215,8 @@ export default function CompactCustomBudgetCard({ budget, stats, settings }) {
   );
 }
 
-// ENHANCEMENT (2025-01-11):
-// Issue #4 - Fixed inconsistent card sizes by:
-// 1. Adding min-h-[240px] to ensure all cards have the same minimum height
-// 2. Using flex layout to distribute space properly
-// 3. Always rendering the grid with min-h-[60px] for the amounts section
-// 4. Using opacity-0 instead of conditional rendering to maintain layout consistency
+// ENHANCEMENTS (2025-01-11):
+// 1. Fixed system budget stats display by checking budget.isSystemBudget and using correct fields
+// 2. Dynamic layout: centers single amounts, uses grid for side-by-side when both paid/unpaid exist
+// 3. Removed icons (CheckCircle, Clock) for system budgets
+// 4. Maintains consistent card height with min-h-[240px] and flex layout
