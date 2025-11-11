@@ -7,7 +7,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSettings } from "../utils/SettingsContext";
-import { formatDate } from "../utils/formatDate";
+// UPDATED 12-Jan-2025: Changed import to use dateUtils.js instead of deprecated formatDate.jsx
+import { formatDate } from "../utils/dateUtils";
 import DatePicker from "./DatePicker";
 
 export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
