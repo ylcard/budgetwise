@@ -14,10 +14,21 @@ import { ArrowLeft, DollarSign, TrendingDown, CheckCircle, Trash2, AlertCircle }
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
-import { formatCurrency } from "../components/utils/formatCurrency";
-import { formatDate } from "../components/utils/formatDate";
+// UPDATED 11-Nov-2025: Changed imports from formatCurrency and formatDate to use new utility files
+import { formatCurrency } from "../components/utils/currencyUtils";
+import { formatDate, parseDate } from "../components/utils/dateUtils";
 import { getCurrencySymbol } from "../components/utils/currencyUtils";
-import { getCustomBudgetStats, getSystemBudgetStats, getCustomBudgetAllocationStats } from "../components/utils/budgetCalculations";
+// COMMENTED OUT 11-Nov-2025: Removed budgetCalculations imports, now using expenseCalculations directly
+// import { getCustomBudgetStats, getSystemBudgetStats, getCustomBudgetAllocationStats } from "../components/utils/budgetCalculations";
+import {
+  getPaidNeedsExpenses,
+  getUnpaidNeedsExpenses,
+  getDirectPaidWantsExpenses,
+  getDirectUnpaidWantsExpenses,
+  getPaidCustomBudgetExpenses,
+  getUnpaidCustomBudgetExpenses,
+  getPaidSavingsExpenses,
+} from "../components/utils/expenseCalculations";
 import { useCashWallet } from "../components/hooks/useBase44Entities";
 import { useTransactionActions } from "../components/hooks/useActions";
 import { calculateRemainingCashAllocations, returnCashToWallet } from "../components/utils/cashAllocationUtils";
@@ -29,6 +40,153 @@ import BudgetCard from "../components/budgets/BudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
+
+// REFACTORED 11-Nov-2025: Helper to calculate custom budget stats using direct transaction filtering
+const getCustomBudgetStats = (customBudget, transactions) => {
+  const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+
+  // Separate digital and cash transactions
+  const digitalTransactions = budgetTransactions.filter(
+    t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet'
+  );
+  const cashTransactions = budgetTransactions.filter(
+    t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
+  );
+
+  // Calculate digital stats
+  const digitalAllocated = customBudget.allocatedAmount || 0;
+  const digitalSpent = digitalTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+  const digitalUnpaid = digitalTransactions
+    .filter(t => t.type === 'expense' && !t.isPaid)
+    .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+  const digitalRemaining = digitalAllocated - digitalSpent;
+
+  // Calculate cash stats by currency
+  const cashByCurrency = {};
+  const cashAllocations = customBudget.cashAllocations || [];
+  
+  cashAllocations.forEach(allocation => {
+    const currencyCode = allocation.currencyCode;
+    const allocated = allocation.amount || 0;
+    
+    const spent = cashTransactions
+      .filter(t => t.type === 'expense' && t.cashCurrency === currencyCode)
+      .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
+    
+    const remaining = allocated - spent;
+    
+    cashByCurrency[currencyCode] = {
+      allocated,
+      spent,
+      remaining
+    };
+  });
+
+  // Calculate unit-based totals
+  const totalAllocatedUnits = digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+  const totalSpentUnits = digitalSpent + Object.values(cashByCurrency).reduce((sum, cashData) => sum + cashData.spent, 0);
+  const totalUnpaidUnits = digitalUnpaid;
+
+  return {
+    digital: {
+      allocated: digitalAllocated,
+      spent: digitalSpent,
+      unpaid: digitalUnpaid,
+      remaining: digitalRemaining
+    },
+    cashByCurrency,
+    totalAllocatedUnits,
+    totalSpentUnits,
+    totalUnpaidUnits,
+    totalTransactionCount: budgetTransactions.length
+  };
+};
+
+// REFACTORED 11-Nov-2025: Helper to calculate system budget stats using expenseCalculations functions
+const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate) => {
+  let paidAmount = 0;
+  let unpaidAmount = 0;
+
+  if (systemBudget.systemBudgetType === 'needs') {
+    paidAmount = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+    unpaidAmount = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+  } else if (systemBudget.systemBudgetType === 'wants') {
+    const directPaid = getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+    const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+    paidAmount = directPaid + customPaid;
+
+    const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+    const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+    unpaidAmount = directUnpaid + customUnpaid;
+  } else if (systemBudget.systemBudgetType === 'savings') {
+    paidAmount = getPaidSavingsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+    unpaidAmount = 0;
+  }
+
+  const totalBudget = systemBudget.budgetAmount || 0;
+  const totalSpent = paidAmount + unpaidAmount;
+  const remaining = totalBudget - totalSpent;
+  const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+  return {
+    paid: {
+      totalBaseCurrencyAmount: paidAmount,
+      foreignCurrencyDetails: []
+    },
+    unpaid: {
+      totalBaseCurrencyAmount: unpaidAmount,
+      foreignCurrencyDetails: []
+    },
+    totalSpent,
+    paidAmount,
+    unpaidAmount,
+    remaining,
+    percentageUsed,
+    transactionCount: 0 // Could be calculated if needed
+  };
+};
+
+// REFACTORED 11-Nov-2025: Helper for custom budget allocation stats
+const getCustomBudgetAllocationStats = (customBudget, allocations, transactions) => {
+  const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+
+  // Calculate total allocated
+  const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
+  const unallocated = customBudget.allocatedAmount - totalAllocated;
+
+  // Calculate spending per category
+  const categorySpending = {};
+  allocations.forEach(allocation => {
+    const spent = budgetTransactions
+      .filter(t => t.type === 'expense' && t.category_id === allocation.categoryId)
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const remaining = allocation.allocatedAmount - spent;
+
+    categorySpending[allocation.categoryId] = {
+      allocated: allocation.allocatedAmount,
+      spent,
+      remaining,
+      percentageUsed: allocation.allocatedAmount > 0 ? (spent / allocation.allocatedAmount) * 100 : 0
+    };
+  });
+
+  // Calculate unallocated spending
+  const allocatedCategoryIds = allocations.map(a => a.categoryId);
+  const unallocatedSpent = budgetTransactions
+    .filter(t => t.type === 'expense' && (!t.category_id || !allocatedCategoryIds.includes(t.category_id)))
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  return {
+    totalAllocated,
+    unallocated,
+    unallocatedSpent,
+    unallocatedRemaining: unallocated - unallocatedSpent,
+    categorySpending
+  };
+};
 
 export default function BudgetDetail() {
   const { settings, user } = useSettings();
@@ -166,7 +324,7 @@ export default function BudgetDetail() {
         }
       }
 
-      const actualSpent = getCustomBudgetStats(budgetToComplete, transactions).totalSpent;
+      const actualSpent = getCustomBudgetStats(budgetToComplete, transactions).totalSpentUnits;
 
       await base44.entities.CustomBudget.update(id, {
         status: 'completed',
@@ -221,12 +379,12 @@ export default function BudgetDetail() {
         }
 
         if (t.isPaid && t.paidDate) {
-          const paidDate = new Date(t.paidDate);
+          const paidDate = parseDate(t.paidDate);
           return paidDate >= budgetStart && paidDate <= budgetEnd;
         }
 
         if (!t.isPaid) {
-          const transactionDate = new Date(t.date);
+          const transactionDate = parseDate(t.date);
           return transactionDate >= budgetStart && transactionDate <= budgetEnd;
         }
 
@@ -279,11 +437,11 @@ export default function BudgetDetail() {
     if (!budget) return null;
 
     if (budget.isSystemBudget) {
-      return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, settings?.baseCurrency || 'USD');
+      return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate);
     } else {
       return getCustomBudgetStats(budget, transactions);
     }
-  }, [budget, transactions, categories, allCustomBudgets, settings]);
+  }, [budget, transactions, categories, allCustomBudgets]);
 
   const allocationStats = useMemo(() => {
     if (!budget || budget.isSystemBudget) return null;
