@@ -1,8 +1,7 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, Circle, Check, Clock } from "lucide-react";
-import { format } = "date-fns";
+import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useSettings } from "../utils/SettingsContext";
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
