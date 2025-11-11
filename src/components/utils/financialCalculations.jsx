@@ -243,7 +243,39 @@ export const getUnpaidCustomBudgetExpenses = (transactions, allCustomBudgets, st
 };
 
 /**
- * 7. Get All Cash Expenses
+ * 7. Get Paid Expenses in the Savings budget
+ * ADDED 2025-01-12: Needed by BudgetDetail.js for system budget calculations
+ * Returns sum of all paid, non-cash expenses with "savings" category priority for a given period
+ * NOTE: Savings budgets typically track manual transfers, so this uses the same logic as needs
+ */
+export const getPaidSavingsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
+  const categoryPriorityMap = {};
+  categories.forEach(cat => {
+    categoryPriorityMap[cat.id] = cat.priority;
+  });
+
+  const allCustomBudgetIds = allCustomBudgets.map(cb => cb.id);
+
+  return transactions
+    .filter(t => {
+      if (t.type !== 'expense' || !t.category_id) return false;
+      if (isCashExpense(t)) return false;
+      if (!t.isPaid || !t.paidDate) return false;
+      
+      // Exclude expenses tied to custom budgets
+      if (t.customBudgetId && allCustomBudgetIds.includes(t.customBudgetId)) return false;
+      
+      // Check category priority
+      if (categoryPriorityMap[t.category_id] !== 'savings') return false;
+      
+      // Check if paid within date range
+      return isWithinDateRange(t, startDate, endDate, true);
+    })
+    .reduce((sum, t) => sum + t.amount, 0);
+};
+
+/**
+ * 8. Get All Cash Expenses
  * Returns sum of all cash expenses (from wallet) for a given period
  * Reserved for future use if needed
  */
@@ -294,3 +326,4 @@ export const getMonthlyPaidExpenses = (transactions, startDate, endDate) => {
 // - Replaces the old expenseCalculations.js (now commented out)
 // - Eliminates redundant getCurrentMonthTransactions from generalUtils.js
 // - Provides single source of truth for all financial aggregations
+// - Added getPaidSavingsExpenses for system budget calculations (12-Jan-2025)
