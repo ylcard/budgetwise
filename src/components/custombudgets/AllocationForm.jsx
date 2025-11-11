@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,16 +9,16 @@ import { motion } from "framer-motion";
 import AmountInput from "../ui/AmountInput";
 import CategorySelect from "../ui/CategorySelect";
 import CurrencySelect from "../ui/CurrencySelect";
-import { normalizeAmount } from "../utils/budgetCalculations";
-import { getCurrencySymbol } from "../utils/currencyUtils";
-import { formatCurrency } from "../utils/formatCurrency";
+// UPDATED 12-Jan-2025: Changed import to use generalUtils.js
+import { normalizeAmount } from "../utils/generalUtils";
+import { getCurrencySymbol, formatCurrency } from "../utils/currencyUtils";
 
-export default function AllocationForm({ 
-  allocation, 
+export default function AllocationForm({
+  allocation,
   customBudget,
-  categories, 
-  onSubmit, 
-  onCancel, 
+  categories,
+  onSubmit,
+  onCancel,
   isSubmitting,
   settings,
   cashWallet
@@ -52,7 +53,7 @@ export default function AllocationForm({
 
   // Calculate available funds
   const availableDigital = customBudget?.allocatedAmount || 0;
-  
+
   const availableCashByCurrency = {};
   if (hasCashAllocations) {
     customBudget.cashAllocations.forEach(alloc => {
@@ -70,9 +71,9 @@ export default function AllocationForm({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     const normalizedAmount = normalizeAmount(formData.allocatedAmount);
-    
+
     onSubmit({
       ...formData,
       allocatedAmount: parseFloat(normalizedAmount),
@@ -139,7 +140,7 @@ export default function AllocationForm({
                   )}
                 </div>
               )}
-              
+
               {/* Also show wallet cash for reference */}
               {formData.allocationType === 'cash' && Object.keys(walletCashByCurrency).length > 0 && (
                 <div className="mt-2 pt-2 border-t border-blue-200">
@@ -208,9 +209,10 @@ export default function AllocationForm({
   );
 }
 
-// ENHANCEMENT (2025-01-11): 
+// ENHANCEMENT (2025-01-11):
 // 1. Added allocation type selector (Digital vs Cash) - only visible when budget has cash allocations
 // 2. Added currency selector for cash allocations
 // 3. Added "Available to Allocate" display showing budget's available digital/cash funds
 // 4. Also displays wallet cash balance for reference when allocating cash
 // 5. Updated entity schema to include allocationType and currency fields
+// UPDATED 12-Jan-2025: Changed imports to use generalUtils.js and currencyUtils.js

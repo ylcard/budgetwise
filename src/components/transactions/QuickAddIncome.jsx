@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -11,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
-import { formatDateString, normalizeAmount } from "../utils/budgetCalculations";
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js
+import { formatDateString } from "../utils/dateUtils";
+import { normalizeAmount } from "../utils/generalUtils";
 
 export default function QuickAddIncome({ 
   open, 
@@ -102,3 +103,5 @@ export default function QuickAddIncome({
     </Dialog>
   );
 }
+
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js instead of budgetCalculations.jsx
