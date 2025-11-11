@@ -18,7 +18,7 @@ import { calculateRemainingCashAllocations, returnCashToWallet } from "../compon
 import { useCustomBudgetActions } from "../components/hooks/useActions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import TransactionCard from "../components/transactions/TransactionCard";
-import TransactionForm from "../components/transactions/TransactionForm";
+// import TransactionForm from "../components/transactions/TransactionForm"; // Removed as it's no longer used
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import CompactCustomBudgetCard from "../components/custombudgets/CompactCustomBudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
@@ -29,8 +29,8 @@ export default function BudgetDetail() {
     const queryClient = useQueryClient();
     const location = useLocation();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState(null);
-    const [showEditForm, setShowEditForm] = useState(false);
+    // Removed: const [editingTransaction, setEditingTransaction] = useState(null);
+    // Removed: const [showEditForm, setShowEditForm] = useState(false);
 
     const urlParams = new URLSearchParams(window.location.search);
     const budgetId = urlParams.get('id');
@@ -126,12 +126,13 @@ export default function BudgetDetail() {
         },
     });
 
+    // This mutation is now used directly by TransactionCard's internal form
     const updateTransactionMutation = useMutation({
         mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            setShowEditForm(false);
-            setEditingTransaction(null);
+            // Removed: setShowEditForm(false);
+            // Removed: setEditingTransaction(null);
         },
     });
 
@@ -295,16 +296,8 @@ export default function BudgetDetail() {
         return acc;
     }, {});
 
-    const handleEditTransaction = (transaction) => {
-        setEditingTransaction(transaction);
-        setShowEditForm(true);
-    };
-
-    const handleUpdateTransaction = (data) => {
-        if (editingTransaction) {
-            updateTransactionMutation.mutate({ id: editingTransaction.id, data });
-        }
-    };
+    // Removed: const handleEditTransaction = (transaction) => { ... };
+    // Removed: const handleUpdateTransaction = (data) => { ... };
 
     const handleDeleteTransaction = (id) => {
         if (confirm('Are you sure you want to delete this transaction?')) {
@@ -472,17 +465,21 @@ export default function BudgetDetail() {
                                 Delete
                             </Button>
                         )}
-                        <Button
-                            onClick={() => setShowQuickAdd(true)}
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Expense
-                        </Button>
+                        {/* QuickAddTransaction component now renders its own trigger button */}
+                        <QuickAddTransaction
+                            open={showQuickAdd}
+                            onOpenChange={setShowQuickAdd}
+                            categories={categories}
+                            customBudgets={allBudgets}
+                            defaultCustomBudgetId={budgetId}
+                            onSubmit={(data) => createTransactionMutation.mutate(data)}
+                            isSubmitting={createTransactionMutation.isPending}
+                            transactions={transactions}
+                        />
                     </div>
                 </div>
 
-                {/* UPDATED: Card Layout with Side-by-Side Expenses */}
+                {/* Summary Cards */}
                 <div className="grid md:grid-cols-3 gap-4">
                     <Card className="border-none shadow-lg">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -506,7 +503,6 @@ export default function BudgetDetail() {
                         </CardContent>
                     </Card>
 
-                    {/* UPDATED: Expenses Card with Side-by-Side Layout */}
                     <Card className="border-none shadow-lg">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-gray-500">Expenses</CardTitle>
@@ -551,7 +547,6 @@ export default function BudgetDetail() {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 gap-4">
-                                    {/* Paid column */}
                                     {(() => {
                                         const baseCurrency = settings.baseCurrency || 'USD';
                                         const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
@@ -701,7 +696,7 @@ export default function BudgetDetail() {
                                         key={transaction.id}
                                         transaction={transaction}
                                         category={categoryMap[transaction.category_id]}
-                                        onEdit={handleEditTransaction}
+                                        onEdit={({ id, data }) => updateTransactionMutation.mutate({ id, data })}
                                         onDelete={handleDeleteTransaction}
                                     />
                                 ))}
@@ -710,18 +705,7 @@ export default function BudgetDetail() {
                     </CardContent>
                 </Card>
 
-                {showEditForm && (
-                    <TransactionForm
-                        transaction={editingTransaction}
-                        categories={categories}
-                        onSubmit={handleUpdateTransaction}
-                        onCancel={() => {
-                            setShowEditForm(false);
-                            setEditingTransaction(null);
-                        }}
-                        isSubmitting={updateTransactionMutation.isPending}
-                    />
-                )}
+                {/* Removed the TransactionForm modal wrapper */}
 
                 {budgetActions.showForm && !budget.isSystemBudget && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -738,17 +722,6 @@ export default function BudgetDetail() {
                         </div>
                     </div>
                 )}
-
-                <QuickAddTransaction
-                    open={showQuickAdd}
-                    onOpenChange={setShowQuickAdd}
-                    categories={categories}
-                    customBudgets={allBudgets}
-                    defaultCustomBudgetId={budgetId}
-                    onSubmit={(data) => createTransactionMutation.mutate(data)}
-                    isSubmitting={createTransactionMutation.isPending}
-                    transactions={transactions}
-                />
             </div>
         </div>
     );
