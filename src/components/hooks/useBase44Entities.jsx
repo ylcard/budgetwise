@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -172,6 +173,18 @@ export const useSystemBudgetManagement = (
     const ensureSystemBudgets = async () => {
       if (!user || goals.length === 0) return;
       
+      // CRITICAL FIX (2025-01-12): Only create system budgets for the CURRENT month/year
+      const now = new Date();
+      // getMonth() returns 0-11, so it matches selectedMonth directly (which is also 0-11)
+      const currentMonth = now.getMonth(); 
+      const currentYear = now.getFullYear();
+      
+      // Guard: If viewing a different month, don't create or update system budgets
+      if (selectedMonth !== currentMonth || selectedYear !== currentYear) {
+        console.warn("Attempted to manage system budgets for a non-current month. Operation skipped.");
+        return;
+      }
+      
       try {
         const systemTypes = ['needs', 'wants', 'savings'];
         const colors = { needs: '#EF4444', wants: '#F59E0B', savings: '#10B981' };
@@ -193,13 +206,15 @@ export const useSystemBudgetManagement = (
           const amount = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
           
           if (existingBudget) {
-            if (Math.abs(existingBudget.budgetAmount - amount) > 0.01) {
+            // Only update if the calculated amount significantly differs to avoid unnecessary writes
+            if (Math.abs(existingBudget.budgetAmount - amount) > 0.01) { 
               await base44.entities.SystemBudget.update(existingBudget.id, {
                 budgetAmount: amount
               });
               needsInvalidation = true;
             }
           } else {
+            // Check for duplicates before creating to prevent race conditions or multiple creations
             const allSystemBudgetsCheck = await base44.entities.SystemBudget.list();
             const duplicateCheck = allSystemBudgetsCheck.find(sb => 
               sb.user_email === user.email &&
@@ -232,6 +247,7 @@ export const useSystemBudgetManagement = (
       }
     };
     
+    // Only run if user, goals are loaded, and systemBudgets data has been fetched (not undefined)
     if (user && goals.length > 0 && systemBudgets !== undefined) {
       ensureSystemBudgets();
     }
