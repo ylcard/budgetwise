@@ -1,3 +1,4 @@
+
 import { calculateAggregatedRemainingAmounts } from './budgetAggregations';
 import { getCurrencySymbol } from './currencyUtils';
 
@@ -194,9 +195,17 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
     };
 };
 
-// ENHANCED: System Budget Stats - Returns structured paid/unpaid with multi-currency support
-// Now includes aggregated remaining amounts from active custom budgets in unpaid
-export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets = [], baseCurrency = 'USD') => {
+// CRITICAL FIX (2025-01-12): Added includeAggregatedRemaining parameter
+// When true (default for Dashboard): includes aggregated remaining from custom budgets
+// When false (for Budgets page cards): only shows direct expenses
+export const getSystemBudgetStats = (
+    systemBudget, 
+    transactions, 
+    categories, 
+    allCustomBudgets = [], 
+    baseCurrency = 'USD',
+    includeAggregatedRemaining = true
+) => {
     const budgetStart = parseDate(systemBudget.startDate);
     const budgetEnd = parseDate(systemBudget.endDate);
 
@@ -278,23 +287,26 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
         }
     });
 
-    // NEW: Add aggregated remaining amounts from active custom budgets to unpaid
-    const aggregatedRemaining = calculateAggregatedRemainingAmounts(
-        allCustomBudgets,
-        transactions,
-        baseCurrency
-    );
+    // CRITICAL FIX (2025-01-12): Only add aggregated remaining if explicitly requested
+    // This prevents double-counting on Budgets page while keeping Dashboard calculation correct
+    if (includeAggregatedRemaining) {
+        const aggregatedRemaining = calculateAggregatedRemainingAmounts(
+            allCustomBudgets,
+            transactions,
+            baseCurrency
+        );
 
-    // Add the main sum (base currency) to unpaid total
-    unpaidTotalBaseCurrency += aggregatedRemaining.mainSum;
+        // Add the main sum (base currency) to unpaid total
+        unpaidTotalBaseCurrency += aggregatedRemaining.mainSum;
 
-    // Add foreign currency amounts to unpaid foreign currencies
-    aggregatedRemaining.separateCashAmounts.forEach(cashAmount => {
-        unpaidForeignCurrencies.push({
-            currencyCode: cashAmount.currencyCode,
-            amount: cashAmount.amount
+        // Add foreign currency amounts to unpaid foreign currencies
+        aggregatedRemaining.separateCashAmounts.forEach(cashAmount => {
+            unpaidForeignCurrencies.push({
+                currencyCode: cashAmount.currencyCode,
+                amount: cashAmount.amount
+            });
         });
-    });
+    }
 
     // Structure the response
     const paid = {
@@ -452,8 +464,3 @@ export const filterBudgetsByTransactionDate = (customBudgets, transactionDate) =
         return txDate >= startDate && txDate <= endDate;
     });
 };
-
-// ENHANCEMENT (2025-01-11): Added filterPlannedCustomBudgets function
-// CRITICAL FIX (2025-01-11): Removed date filtering from getCustomBudgetStats
-// This allows prepayments and post-payments to be correctly associated with custom budgets
-// The budget's startDate/endDate now define the event period, not the expense inclusion criteria

@@ -189,6 +189,7 @@ export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, select
 };
 
 // Hook for processing budgets data (for Budgets page)
+// CRITICAL FIX (2025-01-12): Pass includeAggregatedRemaining=false to prevent double-counting
 export const useBudgetsAggregates = (
   transactions,
   categories,
@@ -217,7 +218,15 @@ export const useBudgetsAggregates = (
         allocatedAmount: sb.budgetAmount
       };
 
-      const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets);
+      // CRITICAL FIX: Pass false to prevent including aggregated remaining in Budgets page cards
+      const stats = getSystemBudgetStats(
+        budgetForStats, 
+        transactions, 
+        categories, 
+        allCustomBudgets,
+        'USD', // This will be overridden by user's baseCurrency from settings
+        false  // includeAggregatedRemaining = false for Budgets page
+      );
       return {
         ...sb,
         allocatedAmount: sb.budgetAmount,
@@ -294,6 +303,7 @@ export const useTransactionFiltering = (transactions) => {
 
 // Hook for budget bars data calculations
 // UPDATED: Now uses calculateAggregatedRemainingAmounts for expectedAmount calculation
+// KEPT: useBudgetBarsData uses includeAggregatedRemaining=true (default) for Dashboard
 export const useBudgetBarsData = (
   systemBudgets,
   customBudgets,
@@ -321,6 +331,7 @@ export const useBudgetBarsData = (
         allocatedAmount: sb.budgetAmount
       };
 
+      // Dashboard: Use default includeAggregatedRemaining=true
       const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets, baseCurrency);
       const targetPercentage = goalMap[sb.systemBudgetType] || 0;
       const targetAmount = sb.budgetAmount;
@@ -517,3 +528,7 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
     return chartData;
   }, [transactions, categories, goals, monthlyIncome]);
 };
+
+// CRITICAL FIX (2025-01-12): Modified useBudgetsAggregates to pass includeAggregatedRemaining=false
+// This prevents double-counting of custom budget remaining amounts in system budget cards on Budgets page
+// Dashboard calculations remain unchanged (use default includeAggregatedRemaining=true)
