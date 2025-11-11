@@ -7,8 +7,8 @@ import AllocationForm from "./AllocationForm";
 import AllocationCard from "./AllocationCard";
 import { useSettings } from "../utils/SettingsContext";
 import { useCashWallet } from "../hooks/useBase44Entities";
-import { formatCurrency } from "../utils/formatCurrency";
-import { getCurrencySymbol } from "../utils/currencyUtils";
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils";
 
 export default function AllocationManager({
   customBudget,
@@ -167,3 +167,4 @@ export default function AllocationManager({
 // 2. Shows cash remaining by currency in a grid layout
 // 3. Passes cashWallet to AllocationForm for available balance display
 // 4. Calculates remaining cash per currency based on allocations
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
