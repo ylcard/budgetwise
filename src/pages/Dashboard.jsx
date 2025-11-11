@@ -196,16 +196,6 @@ export default function Dashboard() {
           isSubmitting={transactionActions.isCreating}
         />
 
-        {showQuickAddBudget && (
-          <QuickAddBudget
-            onSubmit={budgetActions.handleSubmit}
-            onCancel={() => setShowQuickAddBudget(false)}
-            isSubmitting={budgetActions.isSubmitting}
-            cashWallet={cashWallet}
-            baseCurrency={settings.baseCurrency}
-          />
-        )}
-
         <CashWithdrawDialog
           open={cashWalletActions.depositCashDialogOpen}
           onOpenChange={cashWalletActions.setDepositCashDialogOpen}
