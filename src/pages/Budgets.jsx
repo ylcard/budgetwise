@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -69,6 +70,32 @@ export default function Budgets() {
     }
   };
 
+  // Consolidate and sort all custom budgets
+  // Sort: active first, then planned, then completed; within each group, sort by closest date to now
+  const sortedCustomBudgets = (() => {
+    const now = new Date();
+    
+    return [...customBudgets].sort((a, b) => {
+      // First: sort by status priority (active > planned > completed)
+      const statusPriority = { active: 1, planned: 2, completed: 3 };
+      const aPriority = statusPriority[a.status] || 999;
+      const bPriority = statusPriority[b.status] || 999;
+      
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+      
+      // Second: within the same status, sort by closest date to current date
+      // Note: startDate should be ISO string or Date object for valid parsing
+      const aStart = new Date(a.startDate);
+      const bStart = new Date(b.startDate);
+      const aDistance = Math.abs(aStart.getTime() - now.getTime());
+      const bDistance = Math.abs(bStart.getTime() - now.getTime());
+      
+      return aDistance - bDistance;
+    });
+  })();
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -113,7 +140,7 @@ export default function Budgets() {
           />
         )}
 
-        {/* System Budgets Section - UPDATED: Using CompactCustomBudgetCard */}
+        {/* System Budgets Section */}
         {systemBudgetsWithStats.length > 0 && (
           <Card className="border-none shadow-lg">
             <CardHeader>
@@ -151,8 +178,8 @@ export default function Budgets() {
           </Card>
         )}
 
-        {/* Custom Budgets Section - UPDATED: Using CompactCustomBudgetCard */}
-        {customBudgets.length === 0 ? (
+        {/* Single consolidated custom budgets section with sorting */}
+        {sortedCustomBudgets.length === 0 ? (
           <Card className="border-none shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -168,39 +195,35 @@ export default function Budgets() {
             </CardContent>
           </Card>
         ) : (
-          Object.entries(statusConfig).map(([status, config]) => {
-            const statusBudgets = groupedCustomBudgets[status] || [];
-            if (statusBudgets.length === 0) return null;
-
-            return (
-              <Card key={status} className="border-none shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-lg text-sm ${config.bg} ${config.color}`}>
-                      Custom Budgets - {config.label}
-                    </span>
-                    <span className="text-gray-400">({statusBudgets.length})</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {statusBudgets.map((budget) => {
-                      const stats = getCustomBudgetStats(budget, transactions);
-                      
-                      return (
-                        <CompactCustomBudgetCard
-                          key={budget.id}
-                          budget={budget}
-                          stats={stats}
-                          settings={settings}
-                        />
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
+                  Custom Budgets
+                </span>
+                <span className="text-gray-400">({sortedCustomBudgets.length})</span>
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-2">
+                Custom budgets containing wants expenses, sorted by status and date
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {sortedCustomBudgets.map((budget) => {
+                  const stats = getCustomBudgetStats(budget, transactions);
+                  
+                  return (
+                    <CompactCustomBudgetCard
+                      key={budget.id}
+                      budget={budget}
+                      stats={stats}
+                      settings={settings}
+                    />
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <AlertDialog open={!!budgetToDelete} onOpenChange={(open) => !open && setBudgetToDelete(null)}>

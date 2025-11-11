@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +19,7 @@ import { useExchangeRates } from "../hooks/useExchangeRates";
 import { getCurrencyBalance, getRemainingAllocatedCash } from "../utils/cashAllocationUtils";
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate, SUPPORTED_CURRENCIES } from "../utils/currencyCalculations";
-import { formatDateString, normalizeAmount, filterBudgetsByTransactionDate } from "../utils/budgetCalculations";
+import { formatDateString, normalizeAmount } from "../utils/budgetCalculations";
 
 export default function TransactionFormContent({
   initialTransaction = null,
@@ -102,20 +103,27 @@ export default function TransactionFormContent({
     c => c.code === formData.originalCurrency
   )?.symbol || getCurrencySymbol(formData.originalCurrency);
 
-  // Filter budgets by transaction date, but ALWAYS include the pre-selected budget for editing
+  // ENHANCEMENT (2025-01-11): Filter budgets to show active + planned statuses
+  // This allows linking expenses to future/past budgets while keeping the list manageable
   const filteredBudgets = (() => {
-    const dateFiltered = filterBudgetsByTransactionDate(allBudgets, formData.date);
+    // Filter for active and planned budgets
+    const statusFiltered = allBudgets.filter(b => {
+      // Include system budgets
+      if (b.isSystemBudget) return true;
+      // Include active and planned custom budgets
+      return b.status === 'active' || b.status === 'planned';
+    });
     
     // If editing and the transaction has a budget, ensure it's always in the list
     if (initialTransaction?.customBudgetId) {
       const preSelectedBudget = allBudgets.find(b => b.id === initialTransaction.customBudgetId);
-      if (preSelectedBudget && !dateFiltered.find(b => b.id === preSelectedBudget.id)) {
+      if (preSelectedBudget && !statusFiltered.find(b => b.id === preSelectedBudget.id)) {
         // Add the pre-selected budget at the beginning
-        return [preSelectedBudget, ...dateFiltered];
+        return [preSelectedBudget, ...statusFiltered];
       }
     }
     
-    return dateFiltered;
+    return statusFiltered;
   })();
 
   // Calculate available cash balance dynamically
@@ -380,8 +388,6 @@ export default function TransactionFormContent({
         )}
       </div>
 
-      {/* REMOVED: Type field completely - expenses cannot be converted to income or vice versa (2025-01-11) */}
-
       {/* Category and Budget (side by side) */}
       {formData.type === 'expense' && (
         <div className="grid md:grid-cols-2 gap-4">
@@ -448,8 +454,7 @@ export default function TransactionFormContent({
   );
 }
 
-// ISSUE FIX (2025-01-11):
-// 1. Removed Type field completely - transactions cannot be converted between expense/income
-// 2. Made Category and Budget fields side-by-side in a grid for better space utilization
-// 3. Fixed budget pre-selection: filteredBudgets now ALWAYS includes the pre-selected budget for editing,
-//    even if it's filtered out by date - preventing race conditions and ensuring proper pre-selection
+// ENHANCEMENT (2025-01-11): Updated budget filtering to show active + planned budgets
+// Removed date-based filtering (filterBudgetsByTransactionDate) in favor of status-based filtering
+// This allows users to link transactions to future events (planned budgets) or current events (active budgets)
+// Pre-selected budget for editing is always included regardless of status

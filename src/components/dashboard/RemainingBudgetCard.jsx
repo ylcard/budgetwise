@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency } from "../utils/formatCurrency";
 
 export default function RemainingBudgetCard({ 
@@ -8,7 +8,9 @@ export default function RemainingBudgetCard({
   currentMonthIncome, 
   currentMonthExpenses, 
   settings,
-  addIncomeButton = null
+  monthNavigator = null,
+  addIncomeButton = null,
+  addExpenseButton = null
 }) {
   const percentageUsed = currentMonthIncome > 0 ? (currentMonthExpenses / currentMonthIncome) * 100 : 0;
 
@@ -18,19 +20,24 @@ export default function RemainingBudgetCard({
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
       
       <CardContent className="p-8 relative z-10">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <Wallet className="w-6 h-6" />
-            <h2 className="text-lg font-medium opacity-90">Remaining Budget This Month</h2>
+        {/* ENHANCEMENT (2025-01-11): Month navigator and buttons at the top */}
+        <div className="flex items-center justify-between mb-6">
+          {/* Left: Month Navigator */}
+          <div>
+            {monthNavigator}
           </div>
-          {addIncomeButton && (
-            <div className="ml-auto">
-              {addIncomeButton}
-            </div>
-          )}
+          
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-2">
+            {addIncomeButton}
+            {addExpenseButton}
+          </div>
         </div>
+
+        {/* ENHANCEMENT (2025-01-11): Centered title */}
+        <h2 className="text-2xl font-semibold text-center mb-4">Remaining Budget</h2>
         
-        <div className="mt-6">
+        <div>
           <p className="text-5xl md:text-6xl font-bold mb-6 text-center">
             {formatCurrency(remainingBudget, settings)}
           </p>
@@ -69,5 +76,8 @@ export default function RemainingBudgetCard({
   );
 }
 
-// ISSUE FIX (2025-01-11): Added addIncomeButton prop to allow passing Add Income button
-// Button is positioned in the top-right corner of the card header for better visual grouping
+// ENHANCEMENTS (2025-01-11):
+// 1. Added monthNavigator prop for the month switch element (positioned top-left)
+// 2. Added addExpenseButton prop alongside addIncomeButton (both positioned top-right)
+// 3. Renamed title from "Remaining Budget This Month" to "Remaining Budget" and centered it
+// 4. Removed Wallet icon from title to simplify the design
