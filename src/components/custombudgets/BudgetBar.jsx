@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Trash2 } from "lucide-react";
@@ -20,7 +19,7 @@ export default function BudgetBar({
     targetAmount, 
     targetPercentage, 
     expectedAmount = 0,
-    expectedSeparateCash = [],
+    expectedSeparateCash = [], // DEPRECATED 2025-01-12: No longer used as we removed "ghost amounts"
     maxHeight, 
     isOverBudget, 
     overBudgetAmount,
@@ -104,7 +103,8 @@ export default function BudgetBar({
                 }}
               />
               
-              {/* Expected/Unpaid amount (on top of paid) - semi-transparent */}
+              {/* UPDATED 2025-01-12: Changed "Expected" to "Unpaid" - now only shows actual unpaid expenses */}
+              {/* Unpaid amount (on top of paid) - semi-transparent */}
               {expectedAmount > 0 && (
                 <div
                   className="absolute w-full transition-all duration-300"
@@ -196,9 +196,12 @@ export default function BudgetBar({
               <p className="text-xs text-gray-600">
                 Budget: {formatCurrency(targetAmount, settings)}
               </p>
+              {/* UPDATED 2025-01-12: Changed label from "Expected" to "Unpaid" */}
               {expectedAmount > 0 && (
                 <div className="text-xs text-orange-600">
-                  <span>Expected: {formatCurrency(expectedAmount, settings)}</span>
+                  <span>Unpaid: {formatCurrency(expectedAmount, settings)}</span>
+                  {/* COMMENTED OUT 2025-01-12: No longer showing separate cash as we removed "ghost amounts" */}
+                  {/*
                   {expectedSeparateCash && expectedSeparateCash.length > 0 && (
                     <span className="ml-1">
                       ({expectedSeparateCash.map(cash => 
@@ -206,6 +209,7 @@ export default function BudgetBar({
                       ).join(', ')})
                     </span>
                   )}
+                  */}
                 </div>
               )}
               {/* ENHANCEMENT (2025-01-11): Only show "Paid" if amount is greater than 0 */}
@@ -231,6 +235,7 @@ export default function BudgetBar({
               <p className="text-xs text-gray-600">
                 Budget: {formatCurrency(budgetAmount, settings)}
               </p>
+              {/* UPDATED 2025-01-12: Changed label from "Expected" to "Unpaid" */}
               {expectedAmount > 0 && (
                 <p className="text-xs text-orange-600">
                   Unpaid: {formatCurrency(expectedAmount, settings)}
@@ -252,3 +257,7 @@ export default function BudgetBar({
     </Link>
   );
 }
+
+// UPDATED 2025-01-12: Changed "Expected" labels to "Unpaid" throughout
+// This better reflects that we're showing actual unpaid expenses, not theoretical allocations
+// Removed display of separate cash amounts as we no longer include "ghost amounts" in calculations
