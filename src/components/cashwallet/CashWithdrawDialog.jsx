@@ -13,7 +13,9 @@ import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
 import CurrencySelect from "../ui/CurrencySelect";
-import { formatDateString, normalizeAmount } from "../utils/budgetCalculations";
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js
+import { formatDateString } from "../utils/dateUtils";
+import { normalizeAmount } from "../utils/generalUtils";
 
 export default function CashDepositDialog({ 
   open, 
@@ -137,3 +139,5 @@ export default function CashDepositDialog({
     </Dialog>
   );
 }
+
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js instead of budgetCalculations.jsx

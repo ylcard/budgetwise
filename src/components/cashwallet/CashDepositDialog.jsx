@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
 import CurrencySelect from "../ui/CurrencySelect";
-import { formatDateString, normalizeAmount } from "../utils/budgetCalculations";
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js
+import { formatDateString } from "../utils/dateUtils";
+import { normalizeAmount } from "../utils/generalUtils";
 import { getCurrencyBalance } from "../utils/cashAllocationUtils";
 import { SUPPORTED_CURRENCIES } from "../utils/currencyCalculations";
 
@@ -142,3 +144,5 @@ export default function CashReturnDialog({
     </Dialog>
   );
 }
+
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js instead of budgetCalculations.jsx
