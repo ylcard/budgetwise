@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { formatCurrency } from "../utils/formatCurrency";
-import { getCurrencySymbol } from "../utils/currencyUtils";
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils";
 import { iconMap } from "../utils/iconMapConfig";
 
 export default function AllocationCard({ allocation, category, stats, onEdit, onDelete, settings }) {
@@ -102,3 +102,4 @@ export default function AllocationCard({ allocation, category, stats, onEdit, on
 // Added support for displaying allocation type (Cash vs Digital) with badge
 // Shows currency for cash allocations
 // Uses correct currency symbol based on allocation type
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
