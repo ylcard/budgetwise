@@ -1,21 +1,23 @@
-
 import { useMemo, useState } from "react";
-import {
-  calculateRemainingBudget,
-  getCurrentMonthTransactions,
-  getFirstDayOfMonth,
-  getLastDayOfMonth,
-  getUnpaidExpensesForMonth,
-  getSystemBudgetStats,
-  getCustomBudgetStats,
-  getDirectUnpaidExpenses, // This is still used in getSystemBudgetStats internally
-  createEntityMap,
-  filterActiveCustomBudgets,
-  shouldCountTowardBudget,
-  parseDate,
-} from "../utils/budgetCalculations";
-// COMMENTED OUT 2025-01-12: Replaced with new granular expense functions
-// import { calculateAggregatedRemainingAmounts } from "../utils/budgetAggregations";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+// COMMENTED OUT 11-Nov-2025: Removed budgetCalculations imports, now using dateUtils, generalUtils, and expenseCalculations
+// import {
+//   calculateRemainingBudget,
+//   getCurrentMonthTransactions,
+//   getFirstDayOfMonth,
+//   getLastDayOfMonth,
+//   getUnpaidExpensesForMonth,
+//   getSystemBudgetStats,
+//   getCustomBudgetStats,
+//   getDirectUnpaidExpenses,
+//   createEntityMap,
+//   filterActiveCustomBudgets,
+//   shouldCountTowardBudget,
+//   parseDate,
+// } from "../utils/budgetCalculations";
+import { parseDate, getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
+import { createEntityMap } from "../utils/generalUtils";
 import {
   getTotalMonthExpenses,
   getPaidNeedsExpenses,
@@ -24,6 +26,7 @@ import {
   getDirectUnpaidWantsExpenses,
   getPaidCustomBudgetExpenses,
   getUnpaidCustomBudgetExpenses,
+  getPaidSavingsExpenses,
 } from "../utils/expenseCalculations";
 import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
 import { iconMap } from "../utils/iconMapConfig";
@@ -62,7 +65,21 @@ export const useTransactionDisplay = (transaction, category) => {
 // Hook for filtering transactions by current month
 export const useMonthlyTransactions = (transactions, selectedMonth, selectedYear) => {
   return useMemo(() => {
-    return getCurrentMonthTransactions(transactions, selectedMonth, selectedYear);
+    const monthStart = new Date(selectedYear, selectedMonth, 1);
+    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
+
+    return transactions.filter(t => {
+      // For income, just check the date
+      if (t.type === 'income') {
+        const transactionDate = parseDate(t.date);
+        return transactionDate >= monthStart && transactionDate <= monthEnd;
+      }
+
+      // For expenses, check if paid in this month
+      if (!t.isPaid || !t.paidDate) return false;
+      const paidDate = parseDate(t.paidDate);
+      return paidDate >= monthStart && paidDate <= monthEnd;
+    });
   }, [transactions, selectedMonth, selectedYear]);
 };
 
@@ -75,17 +92,62 @@ export const useMonthlyIncome = (monthlyTransactions) => {
   }, [monthlyTransactions]);
 };
 
-// REFACTORED 2025-01-12: Simplified to use centralized expense calculation functions
-// Removed "ghost amount" (remaining budget allocation) from expenses
-// Now only includes actual paid and unpaid non-cash expenses
+// REFACTORED 11-Nov-2025: Simplified to use centralized expense calculation functions
 export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets, categories) => {
   const remainingBudget = useMemo(() => {
-    return calculateRemainingBudget(transactions, selectedMonth, selectedYear);
+    const monthStart = new Date(selectedYear, selectedMonth, 1);
+    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
+
+    const currentMonthTransactions = transactions.filter(t => {
+      if (t.type === 'income') {
+        const transactionDate = parseDate(t.date);
+        return transactionDate >= monthStart && transactionDate <= monthEnd;
+      }
+
+      if (!t.isPaid || !t.paidDate) return false;
+      const paidDate = parseDate(t.paidDate);
+      return paidDate >= monthStart && paidDate <= monthEnd;
+    });
+
+    const income = currentMonthTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Only count expenses that should be counted toward budget (excludes cash expenses from wallet)
+    const paidExpenses = currentMonthTransactions
+      .filter(t => {
+        if (t.type !== 'expense') return false;
+        // Exclude cash expenses from wallet
+        if (t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet') return false;
+        return true;
+      })
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Add unpaid expenses for the month (exclude cash expenses from wallet)
+    const unpaidExpenses = transactions
+      .filter(t => {
+        if (t.type !== 'expense') return false;
+        if (t.isPaid) return false;
+        if (t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet') return false;
+
+        const transactionDate = parseDate(t.date);
+        return transactionDate >= monthStart && transactionDate <= monthEnd;
+      })
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return income - paidExpenses - unpaidExpenses;
   }, [transactions, selectedMonth, selectedYear]);
 
   const currentMonthIncome = useMemo(() => {
-    return getCurrentMonthTransactions(transactions, selectedMonth, selectedYear)
-      .filter(t => t.type === 'income')
+    const monthStart = new Date(selectedYear, selectedMonth, 1);
+    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
+
+    return transactions
+      .filter(t => {
+        if (t.type !== 'income') return false;
+        const transactionDate = parseDate(t.date);
+        return transactionDate >= monthStart && transactionDate <= monthEnd;
+      })
       .reduce((sum, t) => sum + t.amount, 0);
   }, [transactions, selectedMonth, selectedYear]);
 
@@ -93,50 +155,8 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
-    // SIMPLIFIED 2025-01-12: Use centralized function that only counts actual expenses
-    // Excludes cash expenses and remaining budget allocations
+    // Use centralized function that only counts actual expenses
     return getTotalMonthExpenses(transactions, categories, allCustomBudgets, monthStart, monthEnd);
-
-    // COMMENTED OUT 2025-01-12: Old over-engineered logic that included "ghost amounts"
-    /*
-    const monthStartDate = parseDate(monthStart);
-    const monthEndDate = parseDate(monthEnd);
-
-    const allTransactionalExpenses = transactions
-      .filter(t => {
-        if (t.type !== 'expense') return false;
-        // trying to disable this check in order to avoid skipping unpaid expenses from custom budgets
-        //if (!shouldCountTowardBudget(t)) return false;
-
-        if (t.isPaid && t.paidDate) {
-          const paidDate = parseDate(t.paidDate);
-          return paidDate >= monthStartDate && paidDate <= monthEndDate;
-        }
-
-        if (!t.isPaid) {
-          const transactionDate = parseDate(t.date);
-          return transactionDate >= monthStartDate && transactionDate <= monthEndDate;
-        }
-
-        return false;
-      })
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const activeCustomBudgets = allCustomBudgets.filter(cb => {
-      if (cb.status !== 'active') return false;
-      const cbStart = parseDate(cb.startDate);
-      const cbEnd = parseDate(cb.endDate);
-      return cbStart <= monthEndDate && cbEnd >= monthStartDate;
-    });
-
-    const customBudgetRemaining = activeCustomBudgets.reduce((sum, cb) => {
-      const stats = getCustomBudgetStats(cb, transactions);
-      const digitalRemaining = stats.digital.remaining;
-      return sum + Math.max(0, digitalRemaining);
-    }, 0);
-
-    return allTransactionalExpenses + customBudgetRemaining;
-    */
   }, [transactions, selectedMonth, selectedYear, allCustomBudgets, categories]);
 
   return {
@@ -216,8 +236,7 @@ export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, select
   }, [allCustomBudgets, selectedMonth, selectedYear]);
 };
 
-// Hook for processing budgets data (for Budgets page)
-// CRITICAL FIX (2025-01-12): Use granular expense functions for Wants budget
+// REFACTORED 11-Nov-2025: Now uses expenseCalculations directly instead of budgetCalculations
 export const useBudgetsAggregates = (
   transactions,
   categories,
@@ -238,42 +257,57 @@ export const useBudgetsAggregates = (
     });
   }, [allCustomBudgets, selectedMonth, selectedYear]);
 
-  // Pre-calculate system budget stats
-  // CRITICAL FIX (2025-01-12): Use granular expense functions for Wants budget paid amount
+  // REFACTORED 11-Nov-2025: Calculate system budget stats using expenseCalculations functions directly
   const systemBudgetsWithStats = useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
     return systemBudgets.map(sb => {
-      const budgetForStats = {
-        ...sb,
-        allocatedAmount: sb.budgetAmount
-      };
+      let paidAmount = 0;
+      let unpaidAmount = 0;
 
-      // Get base stats from getSystemBudgetStats
-      const stats = getSystemBudgetStats(
-        budgetForStats, 
-        transactions, 
-        categories, 
-        allCustomBudgets,
-        'USD', // This will be overridden by user's baseCurrency from settings
-        false  // includeAggregatedRemaining = false for Budgets page
-      );
-
-      // CRITICAL FIX (2025-01-12): Override paidAmount for Wants budget with granular functions
-      // This ensures prepayments and system budget exclusions are properly handled
-      if (sb.systemBudgetType === 'wants') {
+      // Calculate paid and unpaid amounts using granular expenseCalculations functions
+      if (sb.systemBudgetType === 'needs') {
+        paidAmount = getPaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        unpaidAmount = getUnpaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+      } else if (sb.systemBudgetType === 'wants') {
         const directPaid = getDirectPaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
         const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
-        
-        // Override the paidAmount in stats with the correctly calculated value
-        stats.paidAmount = directPaid + customPaid;
+        paidAmount = directPaid + customPaid;
+
+        const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
+        unpaidAmount = directUnpaid + customUnpaid;
+      } else if (sb.systemBudgetType === 'savings') {
+        paidAmount = getPaidSavingsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        unpaidAmount = 0; // Savings typically doesn't have unpaid expenses
       }
+
+      const totalSpent = paidAmount + unpaidAmount;
+      const totalBudget = sb.budgetAmount;
+      const remaining = totalBudget - totalSpent;
+      const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+      const preCalculatedStats = {
+        paidAmount,
+        unpaidAmount,
+        totalSpent,
+        remaining,
+        percentageUsed,
+        paid: {
+          totalBaseCurrencyAmount: paidAmount,
+          foreignCurrencyDetails: []
+        },
+        unpaid: {
+          totalBaseCurrencyAmount: unpaidAmount,
+          foreignCurrencyDetails: []
+        }
+      };
 
       return {
         ...sb,
         allocatedAmount: sb.budgetAmount,
-        preCalculatedStats: stats
+        preCalculatedStats
       };
     });
   }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear]);
@@ -344,8 +378,7 @@ export const useTransactionFiltering = (transactions) => {
   };
 };
 
-// REFACTORED 2025-01-12: Updated to use new granular expense functions
-// Removed aggregatedRemainingAmounts to eliminate "ghost amount" from "Expected" (now "Unpaid")
+// REFACTORED 11-Nov-2025: Updated to use granular expense functions from expenseCalculations
 export const useBudgetBarsData = (
   systemBudgets,
   customBudgets,
@@ -370,48 +403,40 @@ export const useBudgetBarsData = (
     const endDate = system.length > 0 ? system[0].endDate : null;
 
     const systemBudgetsData = system.map(sb => {
-      const budgetForStats = {
-        ...sb,
-        allocatedAmount: sb.budgetAmount
-      };
-
-      const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets, baseCurrency);
       const targetPercentage = goalMap[sb.systemBudgetType] || 0;
       const targetAmount = sb.budgetAmount;
 
+      let paidAmount = 0;
       let expectedAmount = 0;
-      let expectedSeparateCash = []; // No longer needed but kept for compatibility
 
-      // REFACTORED 2025-01-12: Use granular expense functions instead of aggregatedRemainingAmounts
+      // Calculate using granular expenseCalculations functions
       if (sb.systemBudgetType === 'wants') {
-        // Only count actual unpaid expenses, not remaining allocations
+        const directPaid = getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+        paidAmount = directPaid + customPaid;
+
         const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
         const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
         expectedAmount = directUnpaid + customUnpaid;
-
-        // COMMENTED OUT 2025-01-12: Removed "ghost amount" (remaining budget allocation)
-        /*
-        const aggregatedRemaining = calculateAggregatedRemainingAmounts(
-          allCustomBudgets,
-          transactions,
-          baseCurrency
-        );
-        expectedAmount = aggregatedRemaining.mainSum;
-        expectedSeparateCash = aggregatedRemaining.separateCashAmounts;
-
-        const directUnpaid = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
-        expectedAmount += directUnpaid;
-        */
       } else if (sb.systemBudgetType === 'needs') {
+        paidAmount = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
         expectedAmount = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
       } else if (sb.systemBudgetType === 'savings') {
+        paidAmount = getPaidSavingsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
         expectedAmount = 0;
       }
 
-      const actualTotal = expectedAmount + stats.paidAmount;
+      const actualTotal = expectedAmount + paidAmount;
       const maxHeight = Math.max(targetAmount, actualTotal);
       const isOverBudget = actualTotal > targetAmount;
       const overBudgetAmount = isOverBudget ? actualTotal - targetAmount : 0;
+
+      const stats = {
+        paidAmount,
+        unpaidAmount: expectedAmount,
+        totalSpent: actualTotal,
+        remaining: targetAmount - actualTotal
+      };
 
       return {
         ...sb,
@@ -419,32 +444,67 @@ export const useBudgetBarsData = (
         targetAmount,
         targetPercentage,
         expectedAmount,
-        expectedSeparateCash,
+        expectedSeparateCash: [],
         maxHeight,
         isOverBudget,
         overBudgetAmount
       };
     });
 
+    // Custom budgets calculation (using existing getCustomBudgetStats from budgetCalculations for now)
+    // TODO: This could also be refactored to use expenseCalculations if needed
     const customBudgetsData = custom.map(cb => {
-      const stats = getCustomBudgetStats(cb, transactions);
+      // For custom budgets, we calculate digital spent/unpaid directly
+      const budgetTransactions = transactions.filter(t => t.customBudgetId === cb.id);
+      
+      const digitalTransactions = budgetTransactions.filter(
+        t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet'
+      );
+      const cashTransactions = budgetTransactions.filter(
+        t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
+      );
 
-      let totalBudget = stats?.digital?.allocated || 0;
-      if (stats?.cashByCurrency) {
-        Object.values(stats.cashByCurrency).forEach(cashData => {
+      const digitalAllocated = cb.allocatedAmount || 0;
+      const digitalSpent = digitalTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+      const digitalUnpaid = digitalTransactions
+        .filter(t => t.type === 'expense' && !t.isPaid)
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+
+      const cashByCurrency = {};
+      const cashAllocations = cb.cashAllocations || [];
+      
+      cashAllocations.forEach(allocation => {
+        const currencyCode = allocation.currencyCode;
+        const allocated = allocation.amount || 0;
+        
+        const spent = cashTransactions
+          .filter(t => t.type === 'expense' && t.cashCurrency === currencyCode)
+          .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
+        
+        cashByCurrency[currencyCode] = {
+          allocated,
+          spent,
+          remaining: allocated - spent
+        };
+      });
+
+      let totalBudget = digitalAllocated;
+      if (cashByCurrency) {
+        Object.values(cashByCurrency).forEach(cashData => {
           totalBudget += cashData?.allocated || 0;
         });
       }
 
-      let paidAmount = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
-      if (stats?.cashByCurrency) {
-        Object.values(stats.cashByCurrency).forEach(cashData => {
+      let paidAmount = digitalSpent - digitalUnpaid;
+      if (cashByCurrency) {
+        Object.values(cashByCurrency).forEach(cashData => {
           paidAmount += cashData?.spent || 0;
         });
       }
 
-      const expectedAmount = stats?.digital?.unpaid || 0;
-
+      const expectedAmount = digitalUnpaid;
       const totalSpent = paidAmount + expectedAmount;
 
       const maxHeight = Math.max(totalBudget, totalSpent);
@@ -455,9 +515,14 @@ export const useBudgetBarsData = (
         ...cb,
         originalAllocatedAmount: cb.originalAllocatedAmount || cb.allocatedAmount,
         stats: {
-          ...stats,
           paidAmount,
-          totalBudget
+          totalBudget,
+          digital: {
+            allocated: digitalAllocated,
+            spent: digitalSpent,
+            unpaid: digitalUnpaid
+          },
+          cashByCurrency
         },
         targetAmount: totalBudget,
         expectedAmount,
@@ -571,9 +636,8 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
   }, [transactions, categories, goals, monthlyIncome]);
 };
 
-// REFACTORED 2025-01-12: Simplified expense calculations and removed "ghost amounts"
-// - useDashboardSummary now uses getTotalMonthExpenses (only actual transactions, no cash, no remaining allocations)
-// - useBudgetBarsData now uses granular expense functions and removes aggregatedRemainingAmounts
-// - "Expected" amounts now only reflect actual unpaid expenses (will be renamed to "Unpaid" in UI)
-// CRITICAL FIX (2025-01-12): useBudgetsAggregates now uses granular functions for Wants budget paid amount
-// - This ensures prepayments are included and system budget expenses are properly excluded
+// REFACTORED 11-Nov-2025: Comprehensive refactoring complete
+// - All date utilities moved to dateUtils.js
+// - All general utilities moved to generalUtils.js
+// - All expense calculations now use expenseCalculations.js directly
+// - Removed all dependencies on budgetCalculations.js
