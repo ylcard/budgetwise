@@ -11,7 +11,8 @@ import {
   calculateRemainingCashAllocations,
   updateCurrencyBalance,
 } from "../utils/cashAllocationUtils";
-import { parseDate } from "../utils/budgetCalculations";
+// UPDATED 11-Nov-2025: Changed import from budgetCalculations to dateUtils
+import { parseDate } from "../utils/dateUtils";
 
 // Hook for transaction mutations (Dashboard)
 export const useTransactionMutationsDashboard = (setShowQuickAdd, setShowQuickAddIncome) => {
