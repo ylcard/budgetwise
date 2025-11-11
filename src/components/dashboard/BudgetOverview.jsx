@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Circle } from "lucide-react";
 import { iconMap } from "../utils/iconMapConfig";
-import { formatCurrency } from "../utils/formatCurrency";
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+import { formatCurrency } from "../utils/currencyUtils";
 import { useSettings } from "../utils/SettingsContext";
 
 /*
@@ -153,3 +154,5 @@ export default function BudgetOverview({ transactions, categories, /* calculateM
     </Card>
   );
 }
+
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js

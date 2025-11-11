@@ -1,9 +1,9 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Wallet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency } from "../utils/formatCurrency";
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+import { formatCurrency } from "../utils/currencyUtils";
 import { useSettings } from "../utils/SettingsContext";
 
 export default function QuickStats({ income, expenses, balance, isLoading }) {
@@ -64,3 +64,5 @@ export default function QuickStats({ income, expenses, balance, isLoading }) {
     </div>
   );
 }
+
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
