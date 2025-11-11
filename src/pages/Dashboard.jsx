@@ -65,14 +65,14 @@ export default function Dashboard() {
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
     const monthlyIncome = useMonthlyIncome(monthlyTransactions);
     
-    // FIXED 2025-01-12: Added categories parameter to useDashboardSummary
+    // Dashboard summary with categories parameter for granular expense calculations
     const { remainingBudget, currentMonthIncome, currentMonthExpenses } = useDashboardSummary(
         transactions,
         selectedMonth,
         selectedYear,
         allCustomBudgets,
         systemBudgets,
-        categories // Added categories parameter
+        categories
     );
     
     const { activeCustomBudgets, allActiveBudgets } = useActiveBudgets(
@@ -90,7 +90,6 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-6">
-                {/* ENHANCEMENT (2025-01-11): Simplified header - removed month navigator (moved to card) */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
@@ -98,7 +97,6 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* ENHANCEMENT (2025-01-11): Main cards with integrated month navigator and action buttons */}
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-2">
                         <RemainingBudgetCard
@@ -149,7 +147,6 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* ENHANCEMENT (2025-01-11): Budget bars and recent transactions with matched heights */}
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
                         <BudgetBars
@@ -229,5 +226,5 @@ export default function Dashboard() {
     );
 }
 
-// FIXED 2025-01-12: Added categories parameter to useDashboardSummary call
-// This is required for the new granular expense calculation functions
+// REFACTORED 11-Nov-2025: Updated to use new utility file structure (dateUtils, currencyUtils, generalUtils)
+// All imports now point to specialized utility files instead of deprecated budgetCalculations.js
