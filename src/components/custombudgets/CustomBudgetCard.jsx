@@ -7,8 +7,10 @@ import { Pencil, Trash2, Calendar, Receipt, CheckCircle, Archive } from "lucide-
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { getCustomBudgetStats } from "../utils/budgetCalculations";
-import { formatCurrency } from "../utils/formatCurrency";
+// COMMENTED OUT 12-Jan-2025: getCustomBudgetStats is now calculated inline where needed
+// import { getCustomBudgetStats } from "../utils/budgetCalculations";
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils";
 import { motion } from "framer-motion";
 import { getProgressBarColor } from "../utils/progressBarColor";
 
@@ -21,12 +23,68 @@ export default function CustomBudgetCard({
   onStatusChange,
   hideActions = false
 }) {
-  // Use pre-calculated stats if available (for system budgets), otherwise calculate
+  // Use pre-calculated stats if available (for system budgets), otherwise calculate inline
   const stats = useMemo(() => {
     if (budget.preCalculatedStats) {
       return budget.preCalculatedStats;
     }
-    return getCustomBudgetStats(budget, transactions);
+    
+    // Calculate stats inline (same logic as getCustomBudgetStats)
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === budget.id);
+
+    const digitalTransactions = budgetTransactions.filter(
+      t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet'
+    );
+    const cashTransactions = budgetTransactions.filter(
+      t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
+    );
+
+    const digitalAllocated = budget.allocatedAmount || 0;
+    const digitalSpent = digitalTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+    const digitalUnpaid = digitalTransactions
+      .filter(t => t.type === 'expense' && !t.isPaid)
+      .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+    const digitalRemaining = digitalAllocated - digitalSpent;
+
+    const cashByCurrency = {};
+    const cashAllocations = budget.cashAllocations || [];
+    
+    cashAllocations.forEach(allocation => {
+      const currencyCode = allocation.currencyCode;
+      const allocated = allocation.amount || 0;
+      
+      const spent = cashTransactions
+        .filter(t => t.type === 'expense' && t.cashCurrency === currencyCode)
+        .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
+      
+      const remaining = allocated - spent;
+      
+      cashByCurrency[currencyCode] = {
+        allocated,
+        spent,
+        remaining
+      };
+    });
+
+    const totalAllocatedUnits = digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+    const totalSpentUnits = digitalSpent + Object.values(cashByCurrency).reduce((sum, cashData) => sum + cashData.spent, 0);
+    const totalUnpaidUnits = digitalUnpaid;
+
+    return {
+      digital: {
+        allocated: digitalAllocated,
+        spent: digitalSpent,
+        unpaid: digitalUnpaid,
+        remaining: digitalRemaining
+      },
+      cashByCurrency,
+      totalAllocatedUnits,
+      totalSpentUnits,
+      totalUnpaidUnits,
+      totalTransactionCount: budgetTransactions.length
+    };
   }, [budget, transactions]);
 
   const canDelete = !budget.isSystemBudget && !hideActions;
@@ -195,40 +253,5 @@ export default function CustomBudgetCard({
   );
 }
 
-// Helper to get currency symbol
-const getCurrencySymbol = (currencyCode) => {
-  const currencySymbols = {
-    'USD': '$',
-    'EUR': '€',
-    'GBP': '£',
-    'JPY': '¥',
-    'CAD': 'CA$',
-    'AUD': 'A$',
-    'CHF': 'CHF',
-    'CNY': '¥',
-    'INR': '₹',
-    'MXN': 'MX$',
-    'BRL': 'R$',
-    'ZAR': 'R',
-    'KRW': '₩',
-    'SGD': 'S$',
-    'NZD': 'NZ$',
-    'HKD': 'HK$',
-    'SEK': 'kr',
-    'NOK': 'kr',
-    'DKK': 'kr',
-    'PLN': 'zł',
-    'THB': '฿',
-    'MYR': 'RM',
-    'IDR': 'Rp',
-    'PHP': '₱',
-    'CZK': 'Kč',
-    'ILS': '₪',
-    'CLP': 'CLP$',
-    'AED': 'د.إ',
-    'SAR': '﷼',
-    'TWD': 'NT$',
-    'TRY': '₺'
-  };
-  return currencySymbols[currencyCode] || currencyCode;
-};
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+// UPDATED 12-Jan-2025: Removed dependency on budgetCalculations.js, now calculating stats inline
