@@ -89,7 +89,8 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
     const allTransactionalExpenses = transactions
       .filter(t => {
         if (t.type !== 'expense') return false;
-        if (!shouldCountTowardBudget(t)) return false;
+        // trying to disable this check in order to avoid skipping unpaid expenses from custom budgets
+        //if (!shouldCountTowardBudget(t)) return false;
 
         // If paid, check paidDate
         if (t.isPaid && t.paidDate) {
