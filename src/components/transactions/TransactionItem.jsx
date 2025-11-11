@@ -5,7 +5,8 @@ import { Pencil, Trash2, Circle, Check, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useSettings } from "../utils/SettingsContext";
-import { formatCurrency } from "../utils/formatCurrency";
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+import { formatCurrency } from "../utils/currencyUtils";
 import { iconMap, IncomeIcon } from "../utils/iconMapConfig";
 
 export default function TransactionItem({ transaction, category, onEdit, onDelete }) {
@@ -112,3 +113,5 @@ export default function TransactionItem({ transaction, category, onEdit, onDelet
     </motion.div>
   );
 }
+
+// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
