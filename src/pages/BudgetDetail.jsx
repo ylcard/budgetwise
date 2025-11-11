@@ -1,11 +1,10 @@
-
 import React, { useMemo, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, DollarSign, TrendingDown, CheckCircle, Clock, Trash2, AlertCircle } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingDown, CheckCircle, Trash2, AlertCircle } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
@@ -18,7 +17,6 @@ import { calculateRemainingCashAllocations, returnCashToWallet } from "../compon
 import { useCustomBudgetActions } from "../components/hooks/useActions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import TransactionCard from "../components/transactions/TransactionCard";
-// import TransactionForm from "../components/transactions/TransactionForm"; // Removed as it's no longer used
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import CompactCustomBudgetCard from "../components/custombudgets/CompactCustomBudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
@@ -29,8 +27,6 @@ export default function BudgetDetail() {
     const queryClient = useQueryClient();
     const location = useLocation();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
-    // Removed: const [editingTransaction, setEditingTransaction] = useState(null);
-    // Removed: const [showEditForm, setShowEditForm] = useState(false);
 
     const urlParams = new URLSearchParams(window.location.search);
     const budgetId = urlParams.get('id');
@@ -75,7 +71,7 @@ export default function BudgetDetail() {
 
     const { data: transactions = [] } = useQuery({
         queryKey: ['transactions'],
-        queryFn: () => base44.entities.Transaction.list('date', 1000), // Oldest first (ascending order)
+        queryFn: () => base44.entities.Transaction.list('date', 1000),
         initialData: [],
     });
 
@@ -123,16 +119,6 @@ export default function BudgetDetail() {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
             setShowQuickAdd(false);
-        },
-    });
-
-    // This mutation is now used directly by TransactionCard's internal form
-    const updateTransactionMutation = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            // Removed: setShowEditForm(false);
-            // Removed: setEditingTransaction(null);
         },
     });
 
@@ -186,7 +172,7 @@ export default function BudgetDetail() {
                 status: 'completed',
                 allocatedAmount: actualSpent,
                 originalAllocatedAmount: budgetToComplete.originalAllocatedAmount || budgetToComplete.allocatedAmount,
-                cashAllocations: [] // Clear cash allocations
+                cashAllocations: []
             });
         },
         onSuccess: () => {
@@ -206,7 +192,7 @@ export default function BudgetDetail() {
                 status: 'active',
                 allocatedAmount: budgetToReactivate.originalAllocatedAmount || budgetToReactivate.allocatedAmount,
                 originalAllocatedAmount: null,
-                cashAllocations: [] // Do not restore cash allocations
+                cashAllocations: []
             });
         },
         onSuccess: () => {
@@ -295,9 +281,6 @@ export default function BudgetDetail() {
         acc[cat.id] = cat;
         return acc;
     }, {});
-
-    // Removed: const handleEditTransaction = (transaction) => { ... };
-    // Removed: const handleUpdateTransaction = (data) => { ... };
 
     const handleDeleteTransaction = (id) => {
         if (confirm('Are you sure you want to delete this transaction?')) {
@@ -465,28 +448,18 @@ export default function BudgetDetail() {
                                 Delete
                             </Button>
                         )}
-                        {/* QuickAddTransaction component now renders its own trigger button */}
-                        <QuickAddTransaction
-                            open={showQuickAdd}
-                            onOpenChange={setShowQuickAdd}
-                            categories={categories}
-                            customBudgets={allBudgets}
-                            defaultCustomBudgetId={budgetId}
-                            onSubmit={(data) => createTransactionMutation.mutate(data)}
-                            isSubmitting={createTransactionMutation.isPending}
-                            transactions={transactions}
-                        />
+                        {/* REMOVED: Add Expense button from header - moved to Direct Expenses section (2025-01-11) */}
                     </div>
                 </div>
 
-                {/* Summary Cards */}
+                {/* Summary Cards - ISSUE FIX #5: Center amounts, align paid/unpaid sections */}
                 <div className="grid md:grid-cols-3 gap-4">
                     <Card className="border-none shadow-lg">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-gray-500">Budget</CardTitle>
                             <DollarSign className="w-4 h-4 text-blue-500" />
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="text-center">
                             <div className="text-2xl font-bold text-gray-900">
                                 {formatCurrency(totalBudget, settings)}
                             </div>
@@ -511,9 +484,8 @@ export default function BudgetDetail() {
                         <CardContent>
                             {budget.isSystemBudget ? (
                                 <div className="grid grid-cols-2 gap-4">
-                                    {/* Paid column */}
                                     {(stats.paid.totalBaseCurrencyAmount > 0 || stats.paid.foreignCurrencyDetails.length > 0) && (
-                                        <div>
+                                        <div className="flex flex-col items-center justify-center">
                                             <p className="text-xs text-gray-500 mb-1">Paid</p>
                                             {stats.paid.totalBaseCurrencyAmount > 0 && (
                                                 <div className="text-lg font-bold text-gray-900">
@@ -528,9 +500,8 @@ export default function BudgetDetail() {
                                         </div>
                                     )}
 
-                                    {/* Unpaid column */}
                                     {(stats.unpaid.totalBaseCurrencyAmount > 0 || stats.unpaid.foreignCurrencyDetails.length > 0) && (
-                                        <div>
+                                        <div className="flex flex-col items-center justify-center">
                                             <p className="text-xs text-gray-500 mb-1">Unpaid</p>
                                             {stats.unpaid.totalBaseCurrencyAmount > 0 && (
                                                 <div className="text-lg font-bold text-orange-600">
@@ -551,7 +522,6 @@ export default function BudgetDetail() {
                                         const baseCurrency = settings.baseCurrency || 'USD';
                                         const digitalPaid = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
                                         
-                                        // Group all paid amounts by currency
                                         const paidByCurrency = {};
                                         if (digitalPaid > 0) {
                                             paidByCurrency[baseCurrency] = digitalPaid;
@@ -571,7 +541,7 @@ export default function BudgetDetail() {
                                         return (
                                             <>
                                                 {hasPaid && (
-                                                    <div>
+                                                    <div className="flex flex-col items-center justify-center">
                                                         <p className="text-xs text-gray-500 mb-1">Paid</p>
                                                         {Object.entries(paidByCurrency).map(([currency, amount], index) => (
                                                             <div key={currency} className={index === 0 ? "text-lg font-bold text-gray-900" : "text-sm font-semibold text-gray-700 mt-1"}>
@@ -584,7 +554,7 @@ export default function BudgetDetail() {
                                                     </div>
                                                 )}
                                                 {hasUnpaid && (
-                                                    <div>
+                                                    <div className="flex flex-col items-center justify-center">
                                                         <p className="text-xs text-gray-500 mb-1">Unpaid</p>
                                                         <div className="text-lg font-bold text-orange-600">
                                                             {formatCurrency(stats.digital.unpaid, settings)}
@@ -604,7 +574,7 @@ export default function BudgetDetail() {
                             <CardTitle className="text-sm font-medium text-gray-500">Remaining</CardTitle>
                             <CheckCircle className="w-4 h-4 text-green-500" />
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="text-center">
                             <div className={`text-2xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {formatCurrency(totalRemaining, settings)}
                             </div>
@@ -674,15 +644,28 @@ export default function BudgetDetail() {
                 )}
 
                 <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle>
-                            {budget.isSystemBudget ? 'Direct Expenses' : 'Expenses'} ({budgetTransactions.length})
-                        </CardTitle>
-                        {budget.isSystemBudget && (
-                            <p className="text-sm text-gray-500 mt-1">
-                                Expenses not part of any custom budget
-                            </p>
-                        )}
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>
+                                {budget.isSystemBudget ? 'Direct Expenses' : 'Expenses'} ({budgetTransactions.length})
+                            </CardTitle>
+                            {budget.isSystemBudget && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Expenses not part of any custom budget
+                                </p>
+                            )}
+                        </div>
+                        {/* ISSUE FIX #2: Add Expense button moved to Direct Expenses section (2025-01-11) */}
+                        <QuickAddTransaction
+                            open={showQuickAdd}
+                            onOpenChange={setShowQuickAdd}
+                            categories={categories}
+                            customBudgets={allBudgets}
+                            defaultCustomBudgetId={budgetId}
+                            onSubmit={(data) => createTransactionMutation.mutate(data)}
+                            isSubmitting={createTransactionMutation.isPending}
+                            transactions={transactions}
+                        />
                     </CardHeader>
                     <CardContent>
                         {budgetTransactions.length === 0 ? (
@@ -696,7 +679,9 @@ export default function BudgetDetail() {
                                         key={transaction.id}
                                         transaction={transaction}
                                         category={categoryMap[transaction.category_id]}
-                                        onEdit={({ id, data }) => updateTransactionMutation.mutate({ id, data })}
+                                        onEdit={(t, data) => {
+                                            createTransactionMutation.mutate(data);
+                                        }}
                                         onDelete={handleDeleteTransaction}
                                     />
                                 ))}
@@ -704,8 +689,6 @@ export default function BudgetDetail() {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Removed the TransactionForm modal wrapper */}
 
                 {budgetActions.showForm && !budget.isSystemBudget && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -726,3 +709,7 @@ export default function BudgetDetail() {
         </div>
     );
 }
+
+// DEPRECATED: The editingTransaction state and TransactionForm modal wrapper have been removed
+// Transaction editing now happens via TransactionCard's built-in popover form
+// The showEditForm state and handleEditTransaction/handleUpdateTransaction functions are no longer needed
