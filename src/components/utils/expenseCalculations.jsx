@@ -28,6 +28,21 @@ const isWithinDateRange = (transaction, startDate, endDate, usePaidDate = false)
 };
 
 /**
+ * Helper to determine if a budget ID refers to an actual custom budget (not a system budget)
+ * ADDED 2025-01-12: Fixes issue where customBudgetId can refer to both custom and system budgets
+ * System budgets stored in CustomBudget entity have isSystemBudget: true
+ */
+const isActualCustomBudget = (budgetId, allCustomBudgets) => {
+  if (!budgetId || !allCustomBudgets) return false;
+  
+  const budget = allCustomBudgets.find(cb => cb.id === budgetId);
+  
+  // Return true only if budget exists AND is not a system budget
+  // (isSystemBudget should be false, undefined, or null for actual custom budgets)
+  return budget && !budget.isSystemBudget;
+};
+
+/**
  * 1. Get Paid Expenses in the Needs budget
  * Returns sum of all paid, non-cash expenses with "needs" category priority for a given period
  */
@@ -150,37 +165,20 @@ export const getDirectUnpaidWantsExpenses = (transactions, categories, startDate
 /**
  * 5. Get Paid Expenses in all custom budgets
  * FIXED 2025-01-12: Removed budget date range filtering to allow pre-paid expenses
- * Now includes all paid non-cash expenses linked to ANY custom budget, regardless of budget's own date range
- * The expense's paidDate determines when it impacts the month, not the budget's event dates
+ * FIXED 2025-01-12: Added isActualCustomBudget check to exclude system budget expenses
+ * Now includes all paid non-cash expenses linked to actual custom budgets (not system budgets),
+ * regardless of the budget's own date range. The expense's paidDate determines when it impacts the month.
  */
 export const getPaidCustomBudgetExpenses = (transactions, allCustomBudgets, startDate, endDate) => {
-  // REMOVED 2025-01-12: Budget date range filtering
-  // Old logic filtered custom budgets by date overlap, which excluded pre-paid expenses
-  // like a flight paid in November for a June event
-  /*
-  const rangeStart = parseDate(startDate);
-  const rangeEnd = parseDate(endDate);
-
-  const relevantBudgetIds = allCustomBudgets
-    .filter(cb => {
-      if (cb.status !== 'active' && cb.status !== 'completed' && cb.status !== 'planned') return false;
-      const cbStart = parseDate(cb.startDate);
-      const cbEnd = parseDate(cb.endDate);
-      return cbStart <= rangeEnd && cbEnd >= rangeStart;
-    })
-    .map(cb => cb.id);
-  */
-
-  // NEW 2025-01-12: Any expense with a customBudgetId is considered a custom budget expense
-  // regardless of the budget's own date range. We only check the transaction's paid date.
   return transactions
     .filter(t => {
       if (t.type !== 'expense') return false;
       if (isCashExpense(t)) return false;
       if (!t.isPaid || !t.paidDate) return false;
       
-      // Must be tied to ANY custom budget (no date range check on budget itself)
-      if (!t.customBudgetId) return false;
+      // CRITICAL FIX 2025-01-12: Must be tied to an ACTUAL custom budget (not a system budget)
+      // The customBudgetId field can point to both custom and system budgets
+      if (!isActualCustomBudget(t.customBudgetId, allCustomBudgets)) return false;
       
       // Check if paid within the specified date range
       return isWithinDateRange(t, startDate, endDate, true);
@@ -191,34 +189,20 @@ export const getPaidCustomBudgetExpenses = (transactions, allCustomBudgets, star
 /**
  * 6. Get Unpaid Expenses in all custom budgets
  * FIXED 2025-01-12: Removed budget date range filtering to allow future expenses
- * Now includes all unpaid non-cash expenses linked to ANY custom budget, regardless of budget's own date range
- * The expense's transaction date determines when it impacts the month, not the budget's event dates
+ * FIXED 2025-01-12: Added isActualCustomBudget check to exclude system budget expenses
+ * Now includes all unpaid non-cash expenses linked to actual custom budgets (not system budgets),
+ * regardless of the budget's own date range. The expense's transaction date determines when it impacts the month.
  */
 export const getUnpaidCustomBudgetExpenses = (transactions, allCustomBudgets, startDate, endDate) => {
-  // REMOVED 2025-01-12: Budget date range filtering (same reasoning as getPaidCustomBudgetExpenses)
-  /*
-  const rangeStart = parseDate(startDate);
-  const rangeEnd = parseDate(endDate);
-
-  const relevantBudgetIds = allCustomBudgets
-    .filter(cb => {
-      if (cb.status !== 'active' && cb.status !== 'completed' && cb.status !== 'planned') return false;
-      const cbStart = parseDate(cb.startDate);
-      const cbEnd = parseDate(cb.endDate);
-      return cbStart <= rangeEnd && cbEnd >= rangeStart;
-    })
-    .map(cb => cb.id);
-  */
-
-  // NEW 2025-01-12: Any unpaid expense with a customBudgetId counts toward that month's expenses
   return transactions
     .filter(t => {
       if (t.type !== 'expense') return false;
       if (isCashExpense(t)) return false;
       if (t.isPaid) return false; // Only unpaid
       
-      // Must be tied to ANY custom budget (no date range check on budget itself)
-      if (!t.customBudgetId) return false;
+      // CRITICAL FIX 2025-01-12: Must be tied to an ACTUAL custom budget (not a system budget)
+      // The customBudgetId field can point to both custom and system budgets
+      if (!isActualCustomBudget(t.customBudgetId, allCustomBudgets)) return false;
       
       // Check if transaction date within range
       return isWithinDateRange(t, startDate, endDate, false);
@@ -259,10 +243,14 @@ export const getTotalMonthExpenses = (transactions, categories, allCustomBudgets
   return paidNeeds + unpaidNeeds + paidWants + unpaidWants + paidCustom + unpaidCustom;
 };
 
-// FIXED 2025-01-12: Pre-paid expense support
-// Removed budget date range filtering from getPaidCustomBudgetExpenses and getUnpaidCustomBudgetExpenses
-// This allows expenses like "flight paid in Nov 2025 for June 2026 trip" to be correctly included
-// in November's expenses, even though the trip's budget period is in June 2026
+// FIXED 2025-01-12: Pre-paid expense support + System budget exclusion
+// 1. Removed budget date range filtering from getPaidCustomBudgetExpenses and getUnpaidCustomBudgetExpenses
+//    This allows expenses like "flight paid in Nov 2025 for June 2026 trip" to be correctly included
+//    in November's expenses, even though the trip's budget period is in June 2026
+//
+// 2. Added isActualCustomBudget() helper to distinguish between custom and system budgets
+//    The customBudgetId field can refer to both types, but we only want actual custom budget expenses
+//    System budgets (Needs/Wants/Savings) have isSystemBudget: true in the CustomBudget entity
 //
 // KEY INSIGHT: An expense's payment/incurrence date determines WHEN it impacts finances (the month view),
 // while its customBudgetId determines WHAT KIND of expense it is (which budget category it belongs to).
