@@ -8,13 +8,23 @@ import {
   getUnpaidExpensesForMonth,
   getSystemBudgetStats,
   getCustomBudgetStats,
-  getDirectUnpaidExpenses,
+  getDirectUnpaidExpenses, // This is still used in getSystemBudgetStats internally
   createEntityMap,
   filterActiveCustomBudgets,
   shouldCountTowardBudget,
   parseDate,
 } from "../utils/budgetCalculations";
-import { calculateAggregatedRemainingAmounts } from "../utils/budgetAggregations";
+// COMMENTED OUT 2025-01-12: Replaced with new granular expense functions
+// import { calculateAggregatedRemainingAmounts } from "../utils/budgetAggregations";
+import {
+  getTotalMonthExpenses,
+  getPaidNeedsExpenses,
+  getUnpaidNeedsExpenses,
+  getDirectPaidWantsExpenses,
+  getDirectUnpaidWantsExpenses,
+  getPaidCustomBudgetExpenses,
+  getUnpaidCustomBudgetExpenses,
+} from "../utils/expenseCalculations";
 import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
 import { iconMap } from "../utils/iconMapConfig";
 import { Circle } from "lucide-react";
@@ -65,8 +75,10 @@ export const useMonthlyIncome = (monthlyTransactions) => {
   }, [monthlyTransactions]);
 };
 
-// Hook for dashboard summary calculations
-export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets) => {
+// REFACTORED 2025-01-12: Simplified to use centralized expense calculation functions
+// Removed "ghost amount" (remaining budget allocation) from expenses
+// Now only includes actual paid and unpaid non-cash expenses
+export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets, categories) => {
   const remainingBudget = useMemo(() => {
     return calculateRemainingBudget(transactions, selectedMonth, selectedYear);
   }, [transactions, selectedMonth, selectedYear]);
@@ -80,36 +92,36 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
   const currentMonthExpenses = useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+
+    // SIMPLIFIED 2025-01-12: Use centralized function that only counts actual expenses
+    // Excludes cash expenses and remaining budget allocations
+    return getTotalMonthExpenses(transactions, categories, allCustomBudgets, monthStart, monthEnd);
+
+    // COMMENTED OUT 2025-01-12: Old over-engineered logic that included "ghost amounts"
+    /*
     const monthStartDate = parseDate(monthStart);
     const monthEndDate = parseDate(monthEnd);
 
-    // Sum ALL transactional expenses for the current month
-    // For paid expenses: count if paidDate is in the month
-    // For unpaid expenses: count if date is in the month
     const allTransactionalExpenses = transactions
       .filter(t => {
         if (t.type !== 'expense') return false;
         // trying to disable this check in order to avoid skipping unpaid expenses from custom budgets
         //if (!shouldCountTowardBudget(t)) return false;
 
-        // If paid, check paidDate
         if (t.isPaid && t.paidDate) {
           const paidDate = parseDate(t.paidDate);
           return paidDate >= monthStartDate && paidDate <= monthEndDate;
         }
 
-        // If unpaid, check transaction date
         if (!t.isPaid) {
           const transactionDate = parseDate(t.date);
           return transactionDate >= monthStartDate && transactionDate <= monthEndDate;
         }
 
-        return false; // Should not reach here for expense transactions not meeting previous criteria
+        return false;
       })
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Add remaining DIGITAL amounts from active custom budgets
-    // DO NOT add cash remaining - it's already counted via withdrawal transactions
     const activeCustomBudgets = allCustomBudgets.filter(cb => {
       if (cb.status !== 'active') return false;
       const cbStart = parseDate(cb.startDate);
@@ -119,13 +131,13 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
 
     const customBudgetRemaining = activeCustomBudgets.reduce((sum, cb) => {
       const stats = getCustomBudgetStats(cb, transactions);
-      // ONLY count digital remaining (cash is already counted via withdrawal)
       const digitalRemaining = stats.digital.remaining;
       return sum + Math.max(0, digitalRemaining);
     }, 0);
 
     return allTransactionalExpenses + customBudgetRemaining;
-  }, [transactions, selectedMonth, selectedYear, allCustomBudgets]);
+    */
+  }, [transactions, selectedMonth, selectedYear, allCustomBudgets, categories]);
 
   return {
     remainingBudget,
@@ -317,9 +329,8 @@ export const useTransactionFiltering = (transactions) => {
   };
 };
 
-// Hook for budget bars data calculations
-// UPDATED: Now uses calculateAggregatedRemainingAmounts for expectedAmount calculation
-// KEPT: useBudgetBarsData uses includeAggregatedRemaining=true (default) for Dashboard
+// REFACTORED 2025-01-12: Updated to use new granular expense functions
+// Removed aggregatedRemainingAmounts to eliminate "ghost amount" from "Expected" (now "Unpaid")
 export const useBudgetBarsData = (
   systemBudgets,
   customBudgets,
@@ -337,26 +348,34 @@ export const useBudgetBarsData = (
 
     const custom = customBudgets;
 
-    // Create goal map using enhanced createEntityMap with value extractor
     const goalMap = createEntityMap(goals, 'priority', (goal) => goal.target_percentage);
 
-    // Process system budgets
+    // Get date range from first system budget (they should all have the same range)
+    const startDate = system.length > 0 ? system[0].startDate : null;
+    const endDate = system.length > 0 ? system[0].endDate : null;
+
     const systemBudgetsData = system.map(sb => {
       const budgetForStats = {
         ...sb,
         allocatedAmount: sb.budgetAmount
       };
 
-      // Dashboard: Use default includeAggregatedRemaining=true
       const stats = getSystemBudgetStats(budgetForStats, transactions, categories, allCustomBudgets, baseCurrency);
       const targetPercentage = goalMap[sb.systemBudgetType] || 0;
       const targetAmount = sb.budgetAmount;
 
       let expectedAmount = 0;
-      let expectedSeparateCash = [];
+      let expectedSeparateCash = []; // No longer needed but kept for compatibility
 
+      // REFACTORED 2025-01-12: Use granular expense functions instead of aggregatedRemainingAmounts
       if (sb.systemBudgetType === 'wants') {
-        // UPDATED: Use the new shared aggregation function
+        // Only count actual unpaid expenses, not remaining allocations
+        const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+        expectedAmount = directUnpaid + customUnpaid;
+
+        // COMMENTED OUT 2025-01-12: Removed "ghost amount" (remaining budget allocation)
+        /*
         const aggregatedRemaining = calculateAggregatedRemainingAmounts(
           allCustomBudgets,
           transactions,
@@ -365,11 +384,11 @@ export const useBudgetBarsData = (
         expectedAmount = aggregatedRemaining.mainSum;
         expectedSeparateCash = aggregatedRemaining.separateCashAmounts;
 
-        // Add direct unpaid digital expenses
         const directUnpaid = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
         expectedAmount += directUnpaid;
+        */
       } else if (sb.systemBudgetType === 'needs') {
-        expectedAmount = getDirectUnpaidExpenses(budgetForStats, transactions, categories, allCustomBudgets);
+        expectedAmount = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
       } else if (sb.systemBudgetType === 'savings') {
         expectedAmount = 0;
       }
@@ -392,11 +411,9 @@ export const useBudgetBarsData = (
       };
     });
 
-    // Process custom budgets
     const customBudgetsData = custom.map(cb => {
       const stats = getCustomBudgetStats(cb, transactions);
 
-      // Safely calculate total budget from digital and cash allocations
       let totalBudget = stats?.digital?.allocated || 0;
       if (stats?.cashByCurrency) {
         Object.values(stats.cashByCurrency).forEach(cashData => {
@@ -404,8 +421,6 @@ export const useBudgetBarsData = (
         });
       }
 
-      // Calculate paid amount (digital spent + cash spent)
-      // Cash expenses are always paid, digital can be paid or unpaid
       let paidAmount = (stats?.digital?.spent || 0) - (stats?.digital?.unpaid || 0);
       if (stats?.cashByCurrency) {
         Object.values(stats.cashByCurrency).forEach(cashData => {
@@ -413,13 +428,10 @@ export const useBudgetBarsData = (
         });
       }
 
-      // Calculate expected/unpaid amount (digital only, cash is always paid)
       const expectedAmount = stats?.digital?.unpaid || 0;
 
-      // Calculate total spent (paid + unpaid)
       const totalSpent = paidAmount + expectedAmount;
 
-      // Max height is the larger of allocated budget or total spent
       const maxHeight = Math.max(totalBudget, totalSpent);
       const isOverBudget = totalSpent > totalBudget;
       const overBudgetAmount = isOverBudget ? totalSpent - totalBudget : 0;
@@ -440,7 +452,6 @@ export const useBudgetBarsData = (
       };
     });
 
-    // Calculate savings
     const savingsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'savings');
     const savingsTargetAmount = savingsBudget ? savingsBudget.targetAmount : 0;
 
@@ -545,5 +556,7 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
   }, [transactions, categories, goals, monthlyIncome]);
 };
 
-// CRITICAL ENHANCEMENT (2025-01-12): Modified useActiveBudgets to include planned budgets
-// Planned budgets that overlap with the selected month are now shown in Dashboard
+// REFACTORED 2025-01-12: Simplified expense calculations and removed "ghost amounts"
+// - useDashboardSummary now uses getTotalMonthExpenses (only actual transactions, no cash, no remaining allocations)
+// - useBudgetBarsData now uses granular expense functions and removes aggregatedRemainingAmounts
+// - "Expected" amounts now only reflect actual unpaid expenses (will be renamed to "Unpaid" in UI)

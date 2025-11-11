@@ -1,111 +1,76 @@
-import { getCustomBudgetStats } from "./budgetCalculations";
-import { getCurrencySymbol } from "./currencyUtils";
+// PARTIALLY DEPRECATED 2025-01-12
+// This file contains aggregation utilities for budget calculations
+// calculateAggregatedRemainingAmounts has been deprecated in favor of granular expense functions
 
-// DEPRECATED: getCurrencySymbol function moved to components/utils/currencyUtils.js
-// This helper is now imported from the centralized utility file
-// Scheduled for removal in next refactoring cycle
+import { parseDate } from './budgetCalculations';
+import { getCurrencySymbol } from './currencyUtils';
+
+// COMMENTED OUT 2025-01-12: Deprecated function - replaced by granular expense functions in expenseCalculations.js
+// This function was calculating "ghost amounts" (remaining allocated funds) which are no longer used
+// Keeping for reference but should not be called anywhere in the app
 /*
-const getCurrencySymbol = (currencyCode) => {
-  const currencySymbols = {
-    'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'CA$', 'AUD': 'A$',
-    'CHF': 'CHF', 'CNY': '¥', 'INR': '₹', 'MXN': 'MX$', 'BRL': 'R$', 'ZAR': 'R',
-    'KRW': '₩', 'SGD': 'S$', 'NZD': 'NZ$', 'HKD': 'HK$', 'SEK': 'kr', 'NOK': 'kr',
-    'DKK': 'kr', 'PLN': 'zł', 'THB': '฿', 'MYR': 'RM', 'IDR': 'Rp', 'PHP': '₱',
-    'CZK': 'Kč', 'ILS': '₪', 'CLP': 'CLP$', 'AED': 'د.إ', 'SAR': '﷼', 'TWD': 'NT$', 'TRY': '₺'
-  };
-  return currencySymbols[currencyCode] || currencyCode;
-};
-*/
-
-/**
- * Calculates aggregated remaining amounts from custom budgets.
- * This includes:
- * - Digital remaining amounts (in base currency)
- * - Digital unpaid amounts (in base currency)
- * - Cash remaining amounts (separated by currency)
- * 
- * Used for:
- * 1. Calculating "Expected" amounts for system budget bars
- * 2. Calculating "Unpaid" amounts for system budget detail pages
- * 
- * @param {Array} allCustomBudgets - All custom budgets
- * @param {Array} transactions - All transactions
- * @param {string} baseCurrency - User's base currency (e.g., 'EUR', 'USD')
- * @param {Object} options - Additional options
- * @param {boolean} options.includeCompleted - Include completed budgets (default: true)
- * @param {string} options.budgetType - Filter by budget type (e.g., 'wants', 'needs', 'savings')
- * @returns {Object} { mainSum: number, separateCashAmounts: Array<{currencyCode, amount, symbol}> }
- */
 export const calculateAggregatedRemainingAmounts = (
   allCustomBudgets,
   transactions,
-  baseCurrency = 'USD',
-  options = {}
+  baseCurrency = 'USD'
 ) => {
-  const {
-    includeCompleted = true,
-    budgetType = null
-  } = options;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  const activeCustomBudgets = allCustomBudgets.filter(cb => {
+    if (cb.status !== 'active') return false;
+    
+    const endDate = parseDate(cb.endDate);
+    return endDate >= now;
+  });
 
-  let mainSum = 0;
-  const separateCashAmounts = {};
+  let totalDigitalRemaining = 0;
+  const cashRemainingByCurrency = {};
 
-  // Loop through all custom budgets
-  allCustomBudgets.forEach(cb => {
-    // Skip system budgets
-    if (cb.isSystemBudget) return;
+  activeCustomBudgets.forEach(budget => {
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === budget.id);
+    
+    const digitalAllocated = budget.allocatedAmount || 0;
+    const digitalSpent = budgetTransactions
+      .filter(t => t.type === 'expense' && (!t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet'))
+      .reduce((sum, t) => sum + t.amount, 0);
+    const digitalRemaining = Math.max(0, digitalAllocated - digitalSpent);
+    
+    totalDigitalRemaining += digitalRemaining;
 
-    // Filter by status
-    if (cb.status === 'active') {
-      // Active budgets are always included
-    } else if (cb.status === 'completed' && includeCompleted) {
-      // Completed budgets are included only if option is set
-    } else {
-      // Skip other statuses (archived, etc.)
-      return;
-    }
-
-    const cbStats = getCustomBudgetStats(cb, transactions);
-
-    // For ACTIVE budgets: include digital remaining and digital unpaid
-    if (cb.status === 'active') {
-      mainSum += cbStats.digital.remaining;
-      mainSum += cbStats.digital.unpaid;
-    }
-
-    // For COMPLETED budgets: include ONLY digital unpaid (not remaining)
-    if (cb.status === 'completed') {
-      mainSum += cbStats.digital.unpaid;
-    }
-
-    // For ALL budgets (active or completed): handle cash remaining
-    Object.keys(cbStats.cashByCurrency).forEach(currencyCode => {
-      const cashData = cbStats.cashByCurrency[currencyCode];
+    const cashAllocations = budget.cashAllocations || [];
+    cashAllocations.forEach(allocation => {
+      const currencyCode = allocation.currencyCode;
+      const allocated = allocation.amount || 0;
       
-      if (currencyCode === baseCurrency) {
-        // Cash in base currency: add to main sum
-        mainSum += cashData.remaining;
-      } else {
-        // Cash in different currency: accumulate separately
-        if (!separateCashAmounts[currencyCode]) {
-          separateCashAmounts[currencyCode] = 0;
+      const spent = budgetTransactions
+        .filter(t => t.type === 'expense' && t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet' && t.cashCurrency === currencyCode)
+        .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
+      
+      const remaining = Math.max(0, allocated - spent);
+      
+      if (remaining > 0) {
+        if (!cashRemainingByCurrency[currencyCode]) {
+          cashRemainingByCurrency[currencyCode] = 0;
         }
-        separateCashAmounts[currencyCode] += cashData.remaining;
+        cashRemainingByCurrency[currencyCode] += remaining;
       }
     });
   });
 
-  // Convert separateCashAmounts object to array with currency symbols
-  const separateCashArray = Object.keys(separateCashAmounts)
-    .filter(currencyCode => separateCashAmounts[currencyCode] > 0)
-    .map(currencyCode => ({
+  const separateCashAmounts = Object.entries(cashRemainingByCurrency)
+    .map(([currencyCode, amount]) => ({
       currencyCode,
-      amount: separateCashAmounts[currencyCode],
+      amount,
       symbol: getCurrencySymbol(currencyCode)
     }));
 
   return {
-    mainSum,
-    separateCashAmounts: separateCashArray
+    mainSum: totalDigitalRemaining,
+    separateCashAmounts
   };
 };
+*/
+
+// TEMPORARY NOTE 2025-01-12: This file may be deleted in the future if no other aggregation functions are needed
+// For now, keeping it as a placeholder in case we need to add new aggregation utilities

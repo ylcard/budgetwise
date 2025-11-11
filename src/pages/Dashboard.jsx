@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -28,13 +27,13 @@ import {
 import { useCashWalletActions } from "../components/cashwallet/useCashWalletActions";
 import { useExchangeRates } from "../components/hooks/useExchangeRates";
 
+import MonthNavigator from "../components/ui/MonthNavigator";
+import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
+import BudgetBars from "../components/dashboard/BudgetBars";
+import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
-import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
-import RecentTransactions from "../components/dashboard/RecentTransactions";
-import MonthNavigator from "../components/ui/MonthNavigator";
-import BudgetBars from "../components/dashboard/BudgetBars";
 import CashWalletCard from "../components/cashwallet/CashWalletCard";
 import CashWithdrawDialog from "../components/cashwallet/CashWithdrawDialog";
 import CashDepositDialog from "../components/cashwallet/CashDepositDialog";
@@ -65,13 +64,17 @@ export default function Dashboard() {
     const paidTransactions = usePaidTransactions(transactions, 10);
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
     const monthlyIncome = useMonthlyIncome(monthlyTransactions);
+    
+    // FIXED 2025-01-12: Added categories parameter to useDashboardSummary
     const { remainingBudget, currentMonthIncome, currentMonthExpenses } = useDashboardSummary(
         transactions,
         selectedMonth,
         selectedYear,
         allCustomBudgets,
-        systemBudgets
+        systemBudgets,
+        categories // Added categories parameter
     );
+    
     const { activeCustomBudgets, allActiveBudgets } = useActiveBudgets(
         allCustomBudgets,
         allSystemBudgets,
@@ -225,3 +228,6 @@ export default function Dashboard() {
         </div>
     );
 }
+
+// FIXED 2025-01-12: Added categories parameter to useDashboardSummary call
+// This is required for the new granular expense calculation functions
