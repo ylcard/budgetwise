@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import {
   calculateRemainingBudget,
@@ -239,9 +240,6 @@ export const useBudgetsAggregates = (
 
   // Pre-calculate system budget stats
   const systemBudgetsWithStats = useMemo(() => {
-    const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
-    const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
-
     return systemBudgets.map(sb => {
       const budgetForStats = {
         ...sb,
@@ -257,26 +255,13 @@ export const useBudgetsAggregates = (
         'USD', // This will be overridden by user's baseCurrency from settings
         false  // includeAggregatedRemaining = false for Budgets page
       );
-
-      // CRITICAL FIX 2025-01-12: For "Wants" system budget, override paidAmount
-      // Use granular helper functions to get accurate paid amount
-      let overriddenPaidAmount = stats.paidAmount;
-      if (sb.systemBudgetType === 'wants') {
-        const directPaidWants = getDirectPaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-        const customBudgetPaidWants = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
-        overriddenPaidAmount = directPaidWants + customBudgetPaidWants;
-      }
-
       return {
         ...sb,
         allocatedAmount: sb.budgetAmount,
-        preCalculatedStats: {
-          ...stats,
-          paidAmount: overriddenPaidAmount
-        }
+        preCalculatedStats: stats
       };
     });
-  }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear]);
+  }, [systemBudgets, transactions, categories, allCustomBudgets]);
 
   // Group custom budgets by status
   const groupedCustomBudgets = useMemo(() => {
@@ -346,7 +331,6 @@ export const useTransactionFiltering = (transactions) => {
 
 // REFACTORED 2025-01-12: Updated to use new granular expense functions
 // Removed aggregatedRemainingAmounts to eliminate "ghost amount" from "Expected" (now "Unpaid")
-// CRITICAL FIX 2025-01-12: For "Wants" system budget, use granular functions for accurate paid amount
 export const useBudgetBarsData = (
   systemBudgets,
   customBudgets,
@@ -383,16 +367,9 @@ export const useBudgetBarsData = (
       let expectedAmount = 0;
       let expectedSeparateCash = []; // No longer needed but kept for compatibility
 
-      // CRITICAL FIX 2025-01-12: Use granular functions for accurate amounts
-      let overriddenPaidAmount = stats.paidAmount;
-      
+      // REFACTORED 2025-01-12: Use granular expense functions instead of aggregatedRemainingAmounts
       if (sb.systemBudgetType === 'wants') {
-        // Calculate paid amount using granular functions
-        const directPaidWants = getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-        const customBudgetPaidWants = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
-        overriddenPaidAmount = directPaidWants + customBudgetPaidWants;
-
-        // Calculate unpaid amount using granular functions
+        // Only count actual unpaid expenses, not remaining allocations
         const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
         const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
         expectedAmount = directUnpaid + customUnpaid;
@@ -416,19 +393,14 @@ export const useBudgetBarsData = (
         expectedAmount = 0;
       }
 
-      // Use overridden paid amount for "wants", otherwise use stats.paidAmount
-      const finalPaidAmount = sb.systemBudgetType === 'wants' ? overriddenPaidAmount : stats.paidAmount;
-      const actualTotal = expectedAmount + finalPaidAmount;
+      const actualTotal = expectedAmount + stats.paidAmount;
       const maxHeight = Math.max(targetAmount, actualTotal);
       const isOverBudget = actualTotal > targetAmount;
       const overBudgetAmount = isOverBudget ? actualTotal - targetAmount : 0;
 
       return {
         ...sb,
-        stats: {
-          ...stats,
-          paidAmount: finalPaidAmount
-        },
+        stats,
         targetAmount,
         targetPercentage,
         expectedAmount,
@@ -588,6 +560,3 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
 // - useDashboardSummary now uses getTotalMonthExpenses (only actual transactions, no cash, no remaining allocations)
 // - useBudgetBarsData now uses granular expense functions and removes aggregatedRemainingAmounts
 // - "Expected" amounts now only reflect actual unpaid expenses (will be renamed to "Unpaid" in UI)
-// CRITICAL FIX 2025-01-12: For "Wants" system budget, use granular functions for accurate paid amount
-// - getDirectPaidWantsExpenses + getPaidCustomBudgetExpenses for correct paid amount calculation
-// - This fixes the issue where paid amount was €1,241.14 instead of €675.71

@@ -1,13 +1,24 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useSettings } from "../components/utils/SettingsContext";
+import { usePeriod } from "../components/hooks/usePeriod";
+import {
+  useTransactions,
+  useCategories,
+  useCustomBudgetsAll,
+  useSystemBudgetsForPeriod,
+  useCashWallet,
+} from "../components/hooks/useBase44Entities";
+import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
+import { useCustomBudgetActions } from "../components/hooks/useActions";
+import { getCustomBudgetStats } from "../components/utils/budgetCalculations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,210 +29,234 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus } from "lucide-react";
-import { useSettings } from "../components/utils/SettingsContext";
-import { formatDate } from "../components/utils/formatDate";
-import { usePeriod } from "../components/hooks/usePeriod";
-import { useTransactions, useCategories, useCustomBudgetsAll, useSystemBudgetsAll, useCashWallet } from "../components/hooks/useBase44Entities";
-import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
-import { useCustomBudgetActions } from "../components/hooks/useActions";
+
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import BudgetCard from "../components/budgets/BudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
-import { motion, AnimatePresence } from "framer-motion";
 
-export default function BudgetsPage() {
-  const { settings, user } = useSettings();
-  const { selectedMonth, selectedYear, setSelectedMonth, setSelectedYear, displayDate } = usePeriod();
+export default function Budgets() {
+  const { user, settings } = useSettings();
   const [budgetToDelete, setBudgetToDelete] = useState(null);
+
+  const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
 
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { allCustomBudgets } = useCustomBudgetsAll(user);
-  const { allSystemBudgets } = useSystemBudgetsAll(user);
+  const { systemBudgets, isLoading: loadingSystemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
   const { cashWallet } = useCashWallet(user);
 
   const { customBudgets, systemBudgetsWithStats, groupedCustomBudgets } = useBudgetsAggregates(
     transactions,
     categories,
     allCustomBudgets,
-    allSystemBudgets,
+    systemBudgets,
     selectedMonth,
     selectedYear
   );
 
-  const budgetActions = useCustomBudgetActions(user, transactions, cashWallet);
+  const customBudgetActions = useCustomBudgetActions(user, transactions, cashWallet);
 
-  const handleDeleteConfirm = () => {
+  const confirmDelete = () => {
     if (budgetToDelete) {
-      budgetActions.handleDelete(budgetToDelete);
+      customBudgetActions.handleDelete(budgetToDelete);
       setBudgetToDelete(null);
     }
   };
 
-  // Sort custom budgets by status and date proximity
-  const sortedCustomBudgets = (status) => {
-    const budgets = groupedCustomBudgets[status] || [];
+  const sortedCustomBudgets = (() => {
     const now = new Date();
     
-    return budgets.sort((a, b) => {
+    return [...customBudgets].sort((a, b) => {
+      const statusPriority = { active: 1, planned: 2, completed: 3 };
+      const aPriority = statusPriority[a.status] || 999;
+      const bPriority = statusPriority[b.status] || 999;
+      
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+      
       const aStart = new Date(a.startDate);
       const bStart = new Date(b.startDate);
-      
-      // Calculate distance from today
-      const aDistance = Math.abs(aStart.getTime() - now.getTime());
-      const bDistance = Math.abs(bStart.getTime() - now.getTime());
+      const aDistance = Math.abs(aStart - now);
+      const bDistance = Math.abs(bStart - now);
       
       return aDistance - bDistance;
     });
-  };
+  })();
 
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Budgets</h1>
-            <p className="text-gray-500 mt-1">
-              Manage your budgets for {formatDate(displayDate, settings.dateFormat)}
-            </p>
+            <p className="text-gray-500 mt-1">Manage your budgets for {displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
           </div>
-          <MonthNavigator
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            onMonthChange={setSelectedMonth}
-            onYearChange={setSelectedYear}
-          />
         </div>
 
-        <Card className="border-none shadow-lg bg-gradient-to-br from-blue-50 to-purple-50">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-blue-900">System Budgets</CardTitle>
-              <p className="text-sm text-blue-700 mt-1">
+        <MonthNavigator
+          currentMonth={selectedMonth}
+          currentYear={selectedYear}
+          onMonthChange={(month, year) => {
+            setSelectedMonth(month);
+            setSelectedYear(year);
+          }}
+        />
+
+        {/* System Budgets Section */}
+        {systemBudgetsWithStats.length > 0 && (
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-lg text-sm bg-blue-50 text-blue-600">
+                  System Budgets
+                </span>
+                <span className="text-gray-400">({systemBudgetsWithStats.length})</span>
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-2">
                 Automatically managed based on your budget goals. These update based on your monthly income.
               </p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
-              {systemBudgetsWithStats.map((budget) => (
-                <BudgetCard
-                  key={budget.id}
-                  budget={budget}
-                  stats={budget.preCalculatedStats}
-                  settings={settings}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {systemBudgetsWithStats.map((budget) => {
+                  const adaptedBudget = {
+                    ...budget,
+                    allocatedAmount: budget.budgetAmount,
+                    status: 'active',
+                    isSystemBudget: true
+                  };
+                  
+                  return (
+                    <BudgetCard
+                      key={budget.id}
+                      budget={adaptedBudget}
+                      stats={budget.preCalculatedStats}
+                      settings={settings}
+                    />
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="border-none shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Custom Budgets</CardTitle>
-              <p className="text-sm text-gray-500 mt-1">
-                Custom budgets containing wants expenses, sorted by status and date
-              </p>
-            </div>
-            <Popover open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
-              <PopoverTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Custom Budget
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-[600px] max-h-[90vh] overflow-y-auto"
-                align="center"
-                side="top"
-                sideOffset={10}
-                style={{
-                  position: 'fixed',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: 100
-                }}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                >
+        {/* ENHANCEMENT (2025-01-12): Custom Budgets with Popover form */}
+        {sortedCustomBudgets.length === 0 ? (
+          <Card className="border-none shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
+                  Custom Budgets
+                </span>
+              </div>
+              <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
+                <PopoverTrigger asChild>
+                  <Button
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Custom Budget
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[600px]" align="end">
                   <div className="space-y-2">
                     <h3 className="font-semibold text-lg">Create Custom Budget</h3>
                     <CustomBudgetForm
-                      onSubmit={budgetActions.handleSubmit}
-                      onCancel={() => budgetActions.setShowForm(false)}
-                      isSubmitting={budgetActions.isSubmitting}
+                      budget={customBudgetActions.editingBudget}
+                      onSubmit={customBudgetActions.handleSubmit}
+                      onCancel={() => {
+                        customBudgetActions.setShowForm(false);
+                        customBudgetActions.setEditingBudget(null);
+                      }}
+                      isSubmitting={customBudgetActions.isSubmitting}
                       cashWallet={cashWallet}
                       baseCurrency={settings.baseCurrency}
                       settings={settings}
                     />
                   </div>
-                </motion.div>
-              </PopoverContent>
-            </Popover>
-          </CardHeader>
-          <CardContent>
-            {customBudgets.length === 0 ? (
+                </PopoverContent>
+              </Popover>
+            </CardHeader>
+            <CardContent>
               <div className="h-40 flex items-center justify-center text-gray-400">
                 <p>No custom budgets yet. Create your first one!</p>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <AnimatePresence mode="wait">
-                  {['active', 'planned', 'completed'].map(status => {
-                    const budgets = sortedCustomBudgets(status);
-                    if (budgets.length === 0) return null;
-
-                    return (
-                      <motion.div
-                        key={status}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <div className="mb-3">
-                          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                            {status === 'active' ? 'Active' : status === 'planned' ? 'Planned' : 'Completed'} ({budgets.length})
-                          </h3>
-                        </div>
-                        <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                          {budgets.map((budget) => (
-                            <BudgetCard
-                              key={budget.id}
-                              budget={budget}
-                              stats={null}
-                              settings={settings}
-                              onDelete={() => setBudgetToDelete(budget.id)}
-                            />
-                          ))}
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-none shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
+                    Custom Budgets
+                  </span>
+                  <span className="text-gray-400">({sortedCustomBudgets.length})</span>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Custom budgets containing wants expenses, sorted by status and date
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
+                <PopoverTrigger asChild>
+                  <Button
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Custom Budget
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[600px]" align="end">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-lg">Create Custom Budget</h3>
+                    <CustomBudgetForm
+                      budget={customBudgetActions.editingBudget}
+                      onSubmit={customBudgetActions.handleSubmit}
+                      onCancel={() => {
+                        customBudgetActions.setShowForm(false);
+                        customBudgetActions.setEditingBudget(null);
+                      }}
+                      isSubmitting={customBudgetActions.isSubmitting}
+                      cashWallet={cashWallet}
+                      baseCurrency={settings.baseCurrency}
+                      settings={settings}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {sortedCustomBudgets.map((budget) => {
+                  const stats = getCustomBudgetStats(budget, transactions);
+                  
+                  return (
+                    <BudgetCard
+                      key={budget.id}
+                      budget={budget}
+                      stats={stats}
+                      settings={settings}
+                    />
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        <AlertDialog open={!!budgetToDelete} onOpenChange={() => setBudgetToDelete(null)}>
+        <AlertDialog open={!!budgetToDelete} onOpenChange={(open) => !open && setBudgetToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Budget</AlertDialogTitle>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this budget? All associated transactions will also be deleted. This action cannot be undone.
+                This will delete the budget and all associated transactions. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -232,9 +267,8 @@ export default function BudgetsPage() {
   );
 }
 
-// MAJOR UI ENHANCEMENT 2025-01-12: Fixed popover positioning to prevent jarring jumps
-// - Changed PopoverContent to use fixed positioning with center alignment
-// - Added inline styles: position: fixed, top: 50%, left: 50%, transform: translate(-50%, -50%)
-// - Added framer-motion for smooth scale animation when popover opens
-// - Popover now stays centered and grows in place when "Add Cash" is clicked
-// - No more jumping around the page when form content changes
+// ENHANCEMENT (2025-01-12): Converted form to Popover
+// - Form now appears in popover instead of full-screen Card
+// - Popover width set to 600px for optimal form layout
+// - Aligned to "end" for right-side appearance
+// - No scrolling required due to compact form design
