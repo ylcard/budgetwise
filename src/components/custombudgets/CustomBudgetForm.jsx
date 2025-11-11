@@ -8,9 +8,11 @@ import AmountInput from "../ui/AmountInput";
 import DateRangePicker from "../ui/DateRangePicker";
 import CurrencySelect from "../ui/CurrencySelect";
 import { PRESET_COLORS } from "../utils/constants";
-import { normalizeAmount, parseDate } from "../utils/budgetCalculations";
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js
+import { normalizeAmount } from "../utils/generalUtils";
+import { parseDate } from "../utils/dateUtils";
 import { getCurrencyBalance, validateCashAllocations } from "../utils/cashAllocationUtils";
-import { formatCurrency } from "../utils/formatCurrency";
+import { formatCurrency } from "../utils/currencyUtils";
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -306,3 +308,4 @@ export default function CustomBudgetForm({
 //    - Allocations appear in collapsible green-themed section
 //    - Filtered currencies to only show available wallet balances
 // 4. Dynamic display of available cash balance for selected currency
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js instead of budgetCalculations.jsx
