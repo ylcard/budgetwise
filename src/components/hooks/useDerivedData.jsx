@@ -133,25 +133,40 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
   };
 };
 
-// Hook for computing active budgets for the selected period
+// CRITICAL ENHANCEMENT (2025-01-12): Include planned budgets that overlap with the month
 export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear) => {
   const activeCustomBudgets = useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+    const monthStartDate = parseDate(monthStart);
+    const monthEndDate = parseDate(monthEnd);
 
     return allCustomBudgets.filter(cb => {
-      if (cb.status !== 'active' && cb.status !== 'completed') return false;
-      return cb.startDate <= monthEnd && cb.endDate >= monthStart;
+      // Include active, completed, AND planned budgets that overlap with the month
+      if (cb.status !== 'active' && cb.status !== 'completed' && cb.status !== 'planned') return false;
+      
+      const cbStart = parseDate(cb.startDate);
+      const cbEnd = parseDate(cb.endDate);
+      
+      // Check if budget period overlaps with the selected month
+      return cbStart <= monthEndDate && cbEnd >= monthStartDate;
     });
   }, [allCustomBudgets, selectedMonth, selectedYear]);
 
   const allActiveBudgets = useMemo(() => {
     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+    const monthStartDate = parseDate(monthStart);
+    const monthEndDate = parseDate(monthEnd);
 
     const activeCustom = allCustomBudgets.filter(cb => {
-      if (cb.status !== 'active' && cb.status !== 'completed') return false;
-      return cb.startDate <= monthEnd && cb.endDate >= monthStart;
+      // Include active, completed, AND planned budgets
+      if (cb.status !== 'active' && cb.status !== 'completed' && cb.status !== 'planned') return false;
+      
+      const cbStart = parseDate(cb.startDate);
+      const cbEnd = parseDate(cb.endDate);
+      
+      return cbStart <= monthEndDate && cbEnd >= monthStartDate;
     });
 
     const activeSystem = allSystemBudgets
@@ -529,6 +544,5 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
   }, [transactions, categories, goals, monthlyIncome]);
 };
 
-// CRITICAL FIX (2025-01-12): Modified useBudgetsAggregates to pass includeAggregatedRemaining=false
-// This prevents double-counting of custom budget remaining amounts in system budget cards on Budgets page
-// Dashboard calculations remain unchanged (use default includeAggregatedRemaining=true)
+// CRITICAL ENHANCEMENT (2025-01-12): Modified useActiveBudgets to include planned budgets
+// Planned budgets that overlap with the selected month are now shown in Dashboard

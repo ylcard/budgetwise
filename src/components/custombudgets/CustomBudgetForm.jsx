@@ -3,17 +3,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Trash2, Banknote } from "lucide-react";
+import { AlertCircle, Trash2, Plus } from "lucide-react";
 import AmountInput from "../ui/AmountInput";
 import DateRangePicker from "../ui/DateRangePicker";
 import CurrencySelect from "../ui/CurrencySelect";
 import { PRESET_COLORS } from "../utils/constants";
-import { normalizeAmount } from "../utils/budgetCalculations";
+import { normalizeAmount, parseDate } from "../utils/budgetCalculations";
 import { getCurrencyBalance, validateCashAllocations } from "../utils/cashAllocationUtils";
 import { formatCurrency } from "../utils/formatCurrency";
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { showToast } from "@/components/ui/use-toast";
 
 export default function CustomBudgetForm({ 
   budget, 
@@ -36,7 +37,6 @@ export default function CustomBudgetForm({
     color: '#3B82F6'
   });
 
-  const [showCashAllocation, setShowCashAllocation] = useState(false);
   const [validationError, setValidationError] = useState(null);
 
   // Get available currencies from wallet
@@ -55,7 +55,6 @@ export default function CustomBudgetForm({
         description: budget.description || '',
         color: budget.color || '#3B82F6'
       });
-      setShowCashAllocation((budget.cashAllocations || []).length > 0);
     } else {
       setFormData(prev => ({
         ...prev,
@@ -63,11 +62,20 @@ export default function CustomBudgetForm({
         endDate: monthEnd,
         cashAllocations: []
       }));
-      setShowCashAllocation(false);
     }
   }, [budget, monthStart, monthEnd]);
 
   const handleAddCashAllocation = () => {
+    // Check if there's cash available
+    if (availableCurrencies.length === 0) {
+      showToast({
+        title: "No cash available",
+        description: "There's no cash in your wallet to allocate.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const defaultCurrency = availableCurrencies[0] || baseCurrency || 'USD';
     setFormData(prev => ({
       ...prev,
@@ -146,8 +154,7 @@ export default function CustomBudgetForm({
         </Alert>
       )}
 
-      {/* ENHANCEMENT: Budget Name + Date Range side-by-side */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 items-end">
         <div className="space-y-2">
           <Label htmlFor="name">Budget Name</Label>
           <Input
@@ -170,8 +177,7 @@ export default function CustomBudgetForm({
         </div>
       </div>
 
-      {/* ENHANCEMENT: Card Budget + Allocate Cash button side-by-side */}
-      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+      <div className="grid grid-cols-[200px_1fr] gap-3 items-end">
         <div className="space-y-2">
           <Label htmlFor="allocatedAmount">Card Budget</Label>
           <AmountInput
@@ -185,90 +191,66 @@ export default function CustomBudgetForm({
 
         <Button
           type="button"
-          variant={showCashAllocation ? "default" : "outline"}
-          onClick={() => {
-            setShowCashAllocation(!showCashAllocation);
-            if (!showCashAllocation && formData.cashAllocations.length === 0) {
-              handleAddCashAllocation();
-            }
-          }}
-          className={showCashAllocation ? "bg-green-600 hover:bg-green-700" : ""}
+          variant="outline"
+          onClick={handleAddCashAllocation}
+          className="h-10"
         >
-          <Banknote className="w-4 h-4 mr-2" />
-          {showCashAllocation ? "Hide Cash" : "Allocate Cash"}
+          <Plus className="w-4 h-4 mr-2" />
+          Add Cash
         </Button>
       </div>
 
-      {/* Cash Allocations Section */}
-      {showCashAllocation && (
-        <div className="space-y-2 p-4 bg-green-50 rounded-lg border border-green-200">
-          <div className="flex items-center justify-between mb-2">
-            <Label className="text-sm font-semibold text-green-900">Cash Allocations</Label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleAddCashAllocation}
-              className="text-green-700 hover:text-green-900 hover:bg-green-100"
-            >
-              + Add Currency
-            </Button>
-          </div>
+      {formData.cashAllocations.length > 0 && (
+        <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
+          <Label className="text-sm font-semibold text-green-900">Cash Allocations</Label>
           
-          {formData.cashAllocations.length > 0 ? (
-            <div className="space-y-2">
-              {formData.cashAllocations.map((alloc, index) => {
-                const available = getCurrencyBalance(cashWallet, alloc.currencyCode);
-                return (
-                  <div key={index} className="grid grid-cols-[120px_1fr_auto] gap-2 items-end bg-white p-2 rounded border border-green-200">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Currency</Label>
-                      <CurrencySelect
-                        value={alloc.currencyCode}
-                        onValueChange={(value) => 
-                          handleCashAllocationChange(index, 'currencyCode', value)
-                        }
-                        filterCurrencies={availableCurrencies}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center justify-between">
-                        <span>Amount</span>
-                        <span className="text-gray-500 font-normal">
-                          Available: {settings ? formatCurrency(available, { ...settings, currencySymbol: getCurrencySymbol(alloc.currencyCode) }) : `${getCurrencySymbol(alloc.currencyCode)}${available.toFixed(2)}`}
-                        </span>
-                      </Label>
-                      <AmountInput
-                        value={alloc.amount}
-                        onChange={(e) => 
-                          handleCashAllocationChange(index, 'amount', e.target.value)
-                        }
-                        placeholder="0.00"
-                        currencySymbol={getCurrencySymbol(alloc.currencyCode)}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveCashAllocation(index)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+          <div className="space-y-2">
+            {formData.cashAllocations.map((alloc, index) => {
+              const available = getCurrencyBalance(cashWallet, alloc.currencyCode);
+              return (
+                <div key={index} className="grid grid-cols-[120px_1fr_auto] gap-2 items-end bg-white p-2 rounded border border-green-200">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Currency</Label>
+                    <CurrencySelect
+                      value={alloc.currencyCode}
+                      onValueChange={(value) => 
+                        handleCashAllocationChange(index, 'currencyCode', value)
+                      }
+                      filterCurrencies={availableCurrencies}
+                    />
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-xs text-green-700 text-center py-2">
-              No cash allocations yet. Click "+ Add Currency" to add.
-            </p>
-          )}
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center justify-between">
+                      <span>Amount</span>
+                      <span className="text-gray-500 font-normal">
+                        Available: {settings ? formatCurrency(available, { ...settings, currencySymbol: getCurrencySymbol(alloc.currencyCode) }) : `${getCurrencySymbol(alloc.currencyCode)}${available.toFixed(2)}`}
+                      </span>
+                    </Label>
+                    <AmountInput
+                      value={alloc.amount}
+                      onChange={(e) => 
+                        handleCashAllocationChange(index, 'amount', e.target.value)
+                      }
+                      placeholder="0.00"
+                      currencySymbol={getCurrencySymbol(alloc.currencyCode)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveCashAllocation(index)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* ENHANCEMENT: Compact color selection - single row */}
       <div className="space-y-2">
         <Label className="text-sm">Color</Label>
         <div className="flex gap-2">
@@ -314,14 +296,13 @@ export default function CustomBudgetForm({
   );
 }
 
-// MAJOR REFACTOR (2025-01-12): Custom Budget Form Overhaul
-// 1. Removed Card wrapper - now pure form for use in Popover
-// 2. Budget Name + Date Range side-by-side at top
-// 3. Card Budget + "Allocate Cash" toggle button side-by-side
-// 4. Cash allocations in collapsible section with green theme
-// 5. Compact color selection (single row, smaller buttons)
-// 6. Currencies filtered to only show available wallet balances
-// 7. Removed motion wrapper (parent handles animation)
-// 8. Optimized layout to prevent scrolling
-// 9. Updated labels: "Budget Name", "Card Budget"
-// 10. Integrated DateRangePicker component
+// MAJOR ENHANCEMENTS (2025-01-12):
+// 1. Fixed field alignment: grid-cols-2 items-end for Budget Name + Date Range
+// 2. Card Budget narrowed to 200px width (grid-cols-[200px_1fr])
+// 3. Cash allocation UI refactored:
+//    - Removed toggle/hide behavior
+//    - "Add Cash" button directly adds allocation fields
+//    - Toast notification if no cash available in wallet
+//    - Allocations appear in collapsible green-themed section
+//    - Filtered currencies to only show available wallet balances
+// 4. Dynamic display of available cash balance for selected currency

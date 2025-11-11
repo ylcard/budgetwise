@@ -5,6 +5,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ArrowLeft, DollarSign, TrendingDown, CheckCircle, Trash2, AlertCircle } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -417,12 +422,27 @@ export default function BudgetDetail() {
           </div>
           <div className="flex gap-2">
             {canEdit && !isCompleted && (
-              <Button
-                onClick={() => budgetActions.setShowForm(true)}
-                variant="outline"
-              >
-                Edit Budget
-              </Button>
+              <Popover open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline">
+                    Edit Budget
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[600px]" align="end">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-lg">Edit Budget</h3>
+                    <CustomBudgetForm
+                      budget={budget}
+                      onSubmit={handleEditBudget}
+                      onCancel={() => budgetActions.setShowForm(false)}
+                      isSubmitting={budgetActions.isSubmitting}
+                      cashWallet={cashWallet}
+                      baseCurrency={settings.baseCurrency}
+                      settings={settings}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
             {!budget.isSystemBudget && budget.status === 'active' && (
               <Button
@@ -646,23 +666,14 @@ export default function BudgetDetail() {
             )}
           </CardContent>
         </Card>
-
-        {budgetActions.showForm && !budget.isSystemBudget && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <CustomBudgetForm
-                budget={budget}
-                onSubmit={handleEditBudget}
-                onCancel={() => budgetActions.setShowForm(false)}
-                isSubmitting={budgetActions.isSubmitting}
-                cashWallet={cashWallet}
-                baseCurrency={settings.baseCurrency}
-                settings={settings}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 }
+
+// MAJOR REFACTOR (2025-01-12): Converted Edit Budget to Popover
+// - Removed fixed overlay (div with "fixed inset-0 bg-black/50")
+// - Now uses Popover component with 600px width
+// - Consistent with Create Budget popover design
+// - No backdrop darkening issue
+// - No cutoff issues - properly positioned

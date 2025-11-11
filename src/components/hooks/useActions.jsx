@@ -11,6 +11,7 @@ import {
   calculateRemainingCashAllocations,
   updateCurrencyBalance,
 } from "../utils/cashAllocationUtils";
+import { parseDate } from "../utils/budgetCalculations";
 
 // Hook for transaction mutations (Dashboard)
 export const useTransactionMutationsDashboard = (setShowQuickAdd, setShowQuickAddIncome) => {
@@ -314,28 +315,6 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
   };
 };
 
-// DEPRECATED: updateCurrencyBalance helper function has been moved to
-// components/utils/cashAllocationUtils.js for better reusability
-// Import it from there instead of defining it locally
-// Scheduled for removal in next refactoring cycle
-/*
-const updateCurrencyBalance = (balances, currencyCode, amountChange) => {
-  const existingBalanceIndex = balances.findIndex(b => b.currencyCode === currencyCode);
-  
-  if (existingBalanceIndex !== -1) {
-    const updatedBalances = balances.map((b, index) => 
-      index === existingBalanceIndex 
-        ? { ...b, amount: b.amount + amountChange }
-        : b
-    );
-    return updatedBalances.filter(b => b.amount > 0.01); 
-  } else if (amountChange > 0) {
-    return [...balances, { currencyCode, amount: amountChange }];
-  }
-  return balances;
-};
-*/
-
 // Hook for category actions (CRUD operations)
 export const useCategoryActions = (setShowForm, setEditingCategory) => {
   const queryClient = useQueryClient();
@@ -500,6 +479,7 @@ export const useGoalActions = (user, goals) => {
 
 // Hook for custom budget actions (CRUD operations)
 // FIXED: handleSubmit now accepts budget parameter directly to avoid async state issues
+// CRITICAL ENHANCEMENT (2025-01-12): Intelligent status setting for new budgets
 export const useCustomBudgetActions = (user, transactions, cashWallet) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -507,9 +487,17 @@ export const useCustomBudgetActions = (user, transactions, cashWallet) => {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
+      // CRITICAL: Determine status based on start date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const startDate = parseDate(data.startDate);
+      const status = startDate > today ? 'planned' : 'active';
+
       // Create the budget first
       const newBudget = await base44.entities.CustomBudget.create({
         ...data,
+        status, // Intelligent status assignment
         user_email: user.email,
         isSystemBudget: false
       });
