@@ -146,23 +146,6 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <QuickAddTransaction
-                    open={showQuickAdd}
-                    onOpenChange={setShowQuickAdd}
-                    categories={categories}
-                    customBudgets={allActiveBudgets}
-                    onSubmit={transactionActions.createTransaction}
-                    isSubmitting={transactionActions.isCreating}
-                    transactions={transactions}
-                />
-
-                <QuickAddIncome
-                    open={showQuickAddIncome}
-                    onOpenChange={setShowQuickAddIncome}
-                    onSubmit={transactionActions.createTransaction}
-                    isSubmitting={transactionActions.isCreating}
-                />
-
                 {/* ENHANCEMENT (2025-01-11): Budget bars and recent transactions with matched heights */}
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
