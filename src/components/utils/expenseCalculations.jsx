@@ -2,7 +2,8 @@
 // Centralized expense calculation functions for granular control over expense data
 // These functions provide specific sums for different types of expenses across budgets
 
-import { parseDate } from './budgetCalculations';
+// UPDATED 11-Nov-2025: Changed import from budgetCalculations.js to dateUtils.js
+import { parseDate } from './dateUtils';
 
 /**
  * Helper to check if a transaction is a cash expense (which should be excluded from most calculations)
@@ -256,3 +257,5 @@ export const getTotalMonthExpenses = (transactions, categories, allCustomBudgets
 // while its customBudgetId determines WHAT KIND of expense it is (which budget category it belongs to).
 // The budget's own startDate/endDate determine when the budget is "active" for planning purposes,
 // but should NOT restrict when linked expenses are counted.
+
+// UPDATED 11-Nov-2025: Changed parseDate import from budgetCalculations.js to dateUtils.js
