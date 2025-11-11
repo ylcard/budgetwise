@@ -8,8 +8,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSettings } from "../utils/SettingsContext";
-import { formatDate } from "../utils/formatDate";
-import { parseDate, formatDateString } from "../utils/budgetCalculations";
+// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js instead of budgetCalculations.js
+import { formatDate } from "../utils/dateUtils";
+import { parseDate, formatDateString } from "../utils/dateUtils";
 
 export default function DatePicker({ value, onChange, placeholder = "Pick a date", className = "" }) {
   const { settings } = useSettings();
