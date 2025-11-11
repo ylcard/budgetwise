@@ -1,7 +1,8 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { formatCurrency } from "../utils/formatCurrency";
+// UPDATED 11-Nov-2025: Changed import from formatCurrency.js to currencyUtils.js
+import { formatCurrency } from "../utils/currencyUtils";
 
 export default function RemainingBudgetCard({ 
   remainingBudget, 
@@ -77,9 +78,4 @@ export default function RemainingBudgetCard({
   );
 }
 
-// MAJOR REFACTOR (2025-01-12): Dashboard Remaining Budget Card Redesign
-// 1. Remaining Budget text + amount centered at top
-// 2. Income/Expenses/Budget Used in grid-cols-3 with max-width constraint (max-w-3xl)
-// 3. Add Income/Expense buttons moved to top-right corner
-// 4. All sections properly aligned and responsive
-// 5. Removed unnecessary bottom section duplication
+// UPDATED 11-Nov-2025: Changed import to use currencyUtils.js instead of deprecated formatCurrency.js

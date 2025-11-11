@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { getFirstDayOfMonth, getLastDayOfMonth } from "../utils/budgetCalculations";
+// UPDATED 11-Nov-2025: Changed import from budgetCalculations.js to dateUtils.js
+import { getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
 
 // Unified hook for managing month/year selection and derived date values
 export const usePeriod = () => {
@@ -34,3 +35,5 @@ export const usePeriod = () => {
     currentYear,
   };
 };
+
+// UPDATED 11-Nov-2025: Changed import to use dateUtils.js instead of deprecated budgetCalculations.js

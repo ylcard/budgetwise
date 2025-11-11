@@ -26,7 +26,7 @@ import {
   getDirectUnpaidWantsExpenses,
   getPaidCustomBudgetExpenses,
   getUnpaidCustomBudgetExpenses,
-  getPaidSavingsExpenses,
+  // REMOVED 11-Nov-2025: getPaidSavingsExpenses doesn't exist in expenseCalculations
 } from "../utils/expenseCalculations";
 import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
 import { iconMap } from "../utils/iconMapConfig";
@@ -279,7 +279,8 @@ export const useBudgetsAggregates = (
         const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
         unpaidAmount = directUnpaid + customUnpaid;
       } else if (sb.systemBudgetType === 'savings') {
-        paidAmount = getPaidSavingsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        // FIXED 11-Nov-2025: Savings uses needs calculation (manually track savings transfers)
+        paidAmount = getPaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
         unpaidAmount = 0; // Savings typically doesn't have unpaid expenses
       }
 
@@ -422,7 +423,8 @@ export const useBudgetBarsData = (
         paidAmount = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
         expectedAmount = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
       } else if (sb.systemBudgetType === 'savings') {
-        paidAmount = getPaidSavingsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        // FIXED 11-Nov-2025: Savings uses needs calculation
+        paidAmount = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
         expectedAmount = 0;
       }
 
@@ -641,3 +643,4 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
 // - All general utilities moved to generalUtils.js
 // - All expense calculations now use expenseCalculations.js directly
 // - Removed all dependencies on budgetCalculations.js
+// FIXED 11-Nov-2025: Removed non-existent getPaidSavingsExpenses import - savings uses needs calculation
