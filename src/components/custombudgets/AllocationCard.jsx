@@ -41,7 +41,7 @@ export default function AllocationCard({ allocation, category, stats, onEdit, on
                 <h4 className="font-semibold text-gray-900 truncate">{category?.name || 'Unknown'}</h4>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline" className="text-xs">
-                    {isCash ? `Cash (${currency})` : 'Digital'}
+                    {isCash ? 'Cash' : 'Card'}
                   </Badge>
                 </div>
               </div>
@@ -99,7 +99,7 @@ export default function AllocationCard({ allocation, category, stats, onEdit, on
 }
 
 // ENHANCEMENT (2025-01-11):
-// Added support for displaying allocation type (Cash vs Digital) with badge
+// Added support for displaying allocation type (Cash vs Card) with badge
 // Shows currency for cash allocations
 // Uses correct currency symbol based on allocation type
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
