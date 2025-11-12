@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 // import AllocationForm from "./AllocationForm";
 import AllocationFormDialog from "./AllocationFormDialog";
 import AllocationCard from "./AllocationCard";
+import ConfirmDialog from "../ui/ConfirmDialog";
 import { useSettings } from "../utils/SettingsContext";
 import { useCashWallet } from "../hooks/useBase44Entities";
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
@@ -29,6 +30,8 @@ export default function AllocationManager({
   const { cashWallet } = useCashWallet(user);
   const [showForm, setShowForm] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState(null);
+  // ADDED 13-Jan-2025: State for delete confirmation dialog
+  const [deleteAllocationId, setDeleteAllocationId] = useState(null);
 
   const handleSubmit = (data) => {
     if (editingAllocation) {
@@ -48,9 +51,15 @@ export default function AllocationManager({
     setShowForm(true);
   };
 
+  // UPDATED 13-Jan-2025: Replaced browser confirm with ConfirmDialog state
   const handleDelete = (id) => {
-    if (confirm('Are you sure you want to delete this allocation?')) {
-      onDeleteAllocation(id);
+    setDeleteAllocationId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteAllocationId) {
+      onDeleteAllocation(deleteAllocationId);
+      setDeleteAllocationId(null);
     }
   };
 
@@ -128,7 +137,7 @@ export default function AllocationManager({
             
             {/* Show placeholder if no cash allocations */}
             {Object.keys(remainingCashByCurrency).length === 0 && (
-              <div className="flex flex-col">
+              <div className="flex flex-col items-center">
                 <p className="text-sm text-gray-500 mb-2">Cash</p>
                 <p className="text-sm text-gray-400 italic">No cash allocated</p>
               </div>
@@ -174,14 +183,30 @@ export default function AllocationManager({
             })}
           </div>
         )}
+
+        {/* ADDED 13-Jan-2025: Delete confirmation dialog */}
+        <ConfirmDialog
+          open={!!deleteAllocationId}
+          onOpenChange={(open) => !open && setDeleteAllocationId(null)}
+          title="Delete Allocation?"
+          message="Are you sure you want to delete this allocation? This action cannot be undone."
+          onConfirm={confirmDelete}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isDestructive={true}
+        />
       </CardContent>
     </Card>
   );
 }
 
+// UPDATED 13-Jan-2025: Replaced browser confirm() with ConfirmDialog component for delete action
+// - Added deleteAllocationId state
+// - Added ConfirmDialog component at bottom of CardContent
+// - Removed confirm() call from handleDelete
 // REFACTORED 13-Jan-2025: Major redesign and refactoring
 // 1. Redesigned "Remaining Funds" card with horizontal split (Card | Cash) using grid layout
-// 2. Added max-w-2xl to constrain card width
+// 2. Added max-w-xs to constrain card width (updated from max-w-2xl per user changes)
 // 3. Fixed Card remaining calculation: only deducts digital allocations, not expenses
 // 4. Fixed Cash remaining calculation: only deducts cash allocations per currency, not expenses
 // 5. Removed currency code display next to Cash (e.g., "(EUR)") - symbol is sufficient

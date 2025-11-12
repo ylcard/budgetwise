@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -146,7 +147,8 @@ export const useBudgetMutationsDashboard = (user, transactions, allCustomBudgets
 
 // Hook for transaction actions (CRUD operations - Transactions page)
 // ENHANCED: Now handles complex cash transaction changes
-export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet) => {
+// UPDATED 13-Jan-2025: Added showDeleteConfirm state and onDeleteConfirm callback for ConfirmDialog integration
+export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet, showDeleteConfirm, setShowDeleteConfirm, onDeleteConfirm) => {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -154,8 +156,8 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
-      setShowForm(false);
-      setEditingTransaction(null);
+      if (setShowForm) setShowForm(false);
+      if (setEditingTransaction) setEditingTransaction(null);
       showToast({
         title: "Success",
         description: "Transaction created successfully",
@@ -225,8 +227,8 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
-      setShowForm(false);
-      setEditingTransaction(null);
+      if (setShowForm) setShowForm(false);
+      if (setEditingTransaction) setEditingTransaction(null);
       showToast({
         title: "Success",
         description: "Transaction updated successfully",
@@ -297,13 +299,20 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
   };
 
   const handleEdit = (transaction) => {
-    setEditingTransaction(transaction);
-    setShowForm(true);
+    if (setEditingTransaction) setEditingTransaction(transaction);
+    if (setShowForm) setShowForm(true);
   };
 
+  // UPDATED 13-Jan-2025: Now triggers ConfirmDialog instead of browser confirm
   const handleDelete = (transaction) => {
-    if (window.confirm('Are you sure you want to delete this transaction?')) {
-      deleteMutation.mutate(transaction);
+    if (setShowDeleteConfirm && onDeleteConfirm) {
+      onDeleteConfirm(() => deleteMutation.mutate(transaction));
+      setShowDeleteConfirm(true);
+    } else {
+      // Fallback for components not using ConfirmDialog yet
+      if (window.confirm('Are you sure you want to delete this transaction?')) {
+        deleteMutation.mutate(transaction);
+      }
     }
   };
 
@@ -316,15 +325,16 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
 };
 
 // Hook for category actions (CRUD operations)
-export const useCategoryActions = (setShowForm, setEditingCategory) => {
+// UPDATED 13-Jan-2025: Added showDeleteConfirm state and onDeleteConfirm callback for ConfirmDialog integration
+export const useCategoryActions = (setShowForm, setEditingCategory, showDeleteConfirm, setShowDeleteConfirm, onDeleteConfirm) => {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Category.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-      setShowForm(false);
-      setEditingCategory(null);
+      if (setShowForm) setShowForm(false);
+      if (setEditingCategory) setEditingCategory(null);
       showToast({
         title: "Success",
         description: "Category created successfully",
@@ -344,8 +354,8 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
     mutationFn: ({ id, data }) => base44.entities.Category.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-      setShowForm(false);
-      setEditingCategory(null);
+      if (setShowForm) setShowForm(false);
+      if (setEditingCategory) setEditingCategory(null);
       showToast({
         title: "Success",
         description: "Category updated successfully",
@@ -389,13 +399,20 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
   };
 
   const handleEdit = (category) => {
-    setEditingCategory(category);
-    setShowForm(true);
+    if (setEditingCategory) setEditingCategory(category);
+    if (setShowForm) setShowForm(true);
   };
 
+  // UPDATED 13-Jan-2025: Now triggers ConfirmDialog instead of browser confirm
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this category? This will not delete associated transactions.')) {
-      deleteMutation.mutate(id);
+    if (setShowDeleteConfirm && onDeleteConfirm) {
+      onDeleteConfirm(() => deleteMutation.mutate(id));
+      setShowDeleteConfirm(true);
+    } else {
+      // Fallback for components not using ConfirmDialog yet
+      if (window.confirm('Are you sure you want to delete this category? This will not delete associated transactions.')) {
+        deleteMutation.mutate(id);
+      }
     }
   };
 
@@ -924,4 +941,8 @@ export const useSettingsForm = (settings, updateSettings) => {
   };
 };
 
+// UPDATED 13-Jan-2025: Modified useTransactionActions and useCategoryActions to support ConfirmDialog integration
+// - Added showDeleteConfirm, setShowDeleteConfirm, and onDeleteConfirm parameters
+// - handleDelete now triggers ConfirmDialog state instead of browser confirm()
+// - Maintained backward compatibility with fallback to window.confirm for components not yet using ConfirmDialog
 // UPDATED 11-Nov-2025: Changed parseDate import from budgetCalculations.js to dateUtils.js

@@ -38,6 +38,7 @@ import AllocationManager from "../components/custombudgets/AllocationManager";
 import BudgetCard from "../components/budgets/BudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 
 // REFACTORED 13-Jan-2025: Updated to accept monthStart and monthEnd parameters for filtering paid expenses by selected month
@@ -212,6 +213,8 @@ export default function BudgetDetail() {
     const queryClient = useQueryClient();
     const location = useLocation();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
+    // ADDED 13-Jan-2025: State for delete confirmation dialog
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // ADDED 13-Jan-2025: Use period hook to get selected month boundaries
     const { selectedMonth, selectedYear, monthStart, monthEnd } = usePeriod();
@@ -480,11 +483,10 @@ export default function BudgetDetail() {
         budgetActions.handleSubmit(data, budget);
     };
 
+    // UPDATED 13-Jan-2025: Replaced browser confirm with ConfirmDialog state
     const handleDeleteBudget = async () => {
-        if (confirm('Are you sure you want to delete this budget? All associated transactions will also be deleted.')) {
-            await budgetActions.handleDelete(budgetId);
-            window.location.href = createPageUrl("Budgets");
-        }
+        await budgetActions.handleDelete(budgetId);
+        window.location.href = createPageUrl("Budgets");
     };
 
     useEffect(() => {
@@ -651,7 +653,7 @@ export default function BudgetDetail() {
                         )}
                         {canDelete && (
                             <Button
-                                onClick={handleDeleteBudget}
+                                onClick={() => setShowDeleteConfirm(true)}
                                 variant="outline"
                                 className="text-red-600 border-red-600 hover:bg-red-50"
                             >
@@ -857,8 +859,19 @@ export default function BudgetDetail() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* ADDED 13-Jan-2025: Delete confirmation dialog */}
+                <ConfirmDialog
+                    open={showDeleteConfirm}
+                    onOpenChange={setShowDeleteConfirm}
+                    title="Delete Budget?"
+                    message="This will delete the budget and all associated transactions. This action cannot be undone."
+                    onConfirm={handleDeleteBudget}
+                    confirmText="Delete"
+                    cancelText="Cancel"
+                    isDestructive={true}
+                />
             </div>
         </div>
     );
 }
-
