@@ -23,7 +23,13 @@ export default function Reports() {
 
   // Derived data
   const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
-  const monthlyIncome = useMonthlyIncome(monthlyTransactions);
+  
+  // REFACTORED 14-Jan-2025: Use centralized useMonthlyIncome hook with full transactions + month/year
+  // Previous implementation filtered transactions first (monthlyTransactions), now passes full set
+  const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
+  
+  // COMMENTED OUT 14-Jan-2025: Old implementation that required pre-filtered monthlyTransactions
+  // const monthlyIncome = useMonthlyIncome(monthlyTransactions);
 
   // Goal mutations and actions
   const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
@@ -80,3 +86,5 @@ export default function Reports() {
     </div>
   );
 }
+
+// REFACTORED 14-Jan-2025: Updated to use centralized useMonthlyIncome hook with full transactions + month/year parameters

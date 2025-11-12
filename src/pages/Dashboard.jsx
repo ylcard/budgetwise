@@ -64,7 +64,13 @@ export default function Dashboard() {
     // Derived data
     const paidTransactions = usePaidTransactions(transactions, 10);
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
-    const monthlyIncome = useMonthlyIncome(monthlyTransactions);
+    
+    // REFACTORED 14-Jan-2025: Use centralized useMonthlyIncome hook with full transactions + month/year
+    // Previous implementation filtered transactions first (monthlyTransactions), now passes full set
+    const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
+    
+    // COMMENTED OUT 14-Jan-2025: Old implementation that required pre-filtered monthlyTransactions
+    // const monthlyIncome = useMonthlyIncome(monthlyTransactions);
     
     // Dashboard summary with categories parameter for granular expense calculations
     const { remainingBudget, currentMonthIncome, currentMonthExpenses } = useDashboardSummary(
@@ -236,3 +242,4 @@ export default function Dashboard() {
 // REFACTORED 11-Nov-2025: Updated to use new utility file structure (dateUtils, currencyUtils, generalUtils)
 // All imports now point to specialized utility files instead of deprecated budgetCalculations.js
 // UPDATED 13-Jan-2025: QuickAddTransaction and QuickAddIncome now render their own trigger buttons inline in RemainingBudgetCard
+// REFACTORED 14-Jan-2025: Updated to use centralized useMonthlyIncome hook with full transactions + month/year parameters

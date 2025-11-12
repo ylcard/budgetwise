@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -76,17 +75,31 @@ export const useMonthlyTransactions = (transactions, selectedMonth, selectedYear
     }, [transactions, selectedMonth, selectedYear]);
 };
 
-// Hook for calculating monthly income
-export const useMonthlyIncome = (monthlyTransactions) => {
+// REFACTORED 14-Jan-2025: Centralized hook for calculating monthly income
+// Now accepts full transaction array and date parameters for reusability
+// All components should use this hook instead of calculating income internally
+export const useMonthlyIncome = (transactions, selectedMonth, selectedYear) => {
     return useMemo(() => {
-        return monthlyTransactions
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + t.amount, 0);
-    }, [monthlyTransactions]);
+        const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
+        const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+        return getMonthlyIncome(transactions, monthStart, monthEnd);
+    }, [transactions, selectedMonth, selectedYear]);
 };
+
+// COMMENTED OUT 14-Jan-2025: Old implementation that required pre-filtered monthlyTransactions
+// Replaced with new implementation above that accepts full transactions + month/year parameters
+// This aligns with our centralized calculation approach from financialCalculations.js
+// export const useMonthlyIncome = (monthlyTransactions) => {
+//     return useMemo(() => {
+//         return monthlyTransactions
+//             .filter(t => t.type === 'income')
+//             .reduce((sum, t) => sum + t.amount, 0);
+//     }, [monthlyTransactions]);
+// };
 
 // REFACTORED 12-Jan-2025: Uses financialCalculations for income and expense aggregates
 // REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
+// REFACTORED 14-Jan-2025: Now uses centralized useMonthlyIncome hook instead of internal calculation
 export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets, categories) => {
     const remainingBudget = useMemo(() => {
         // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
@@ -113,12 +126,17 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
         return income - paidExpenses - unpaidExpenses;
     }, [transactions, selectedMonth, selectedYear]);
 
-    const currentMonthIncome = useMemo(() => {
-        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
-        const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
-        const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
-        return getMonthlyIncome(transactions, monthStart, monthEnd);
-    }, [transactions, selectedMonth, selectedYear]);
+    // REFACTORED 14-Jan-2025: Use centralized useMonthlyIncome hook instead of internal calculation
+    const currentMonthIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
+
+    // COMMENTED OUT 14-Jan-2025: Internal calculation replaced by centralized useMonthlyIncome hook
+    // This eliminates redundant income calculation logic and ensures consistency across the app
+    // const currentMonthIncome = useMemo(() => {
+    //     // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
+    //     const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
+    //     const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+    //     return getMonthlyIncome(transactions, monthStart, monthEnd);
+    // }, [transactions, selectedMonth, selectedYear]);
 
     const currentMonthExpenses = useMemo(() => {
         // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
@@ -213,7 +231,7 @@ export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, select
 
 // REFACTORED 12-Jan-2025: Updated to use granular expense functions from financialCalculations
 // REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
-// FIXED 14-Jan-2025: Corrected Savings budget to use getPaidSavingsExpenses instead of getPaidNeedsExpenses
+// FIXED 14-Jan-2025: Corrected Savings budget calculation
 export const useBudgetsAggregates = (
     transactions,
     categories,
@@ -679,3 +697,7 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
 // - Savings budget now uses getPaidSavingsExpenses for manual savings tracking
 // - totalActualSavings (automatic + manual) is now properly integrated into savingsBudget.stats.paidAmount
 // - This ensures BudgetBar component correctly displays the combined savings amount
+// REFACTORED 14-Jan-2025: Centralized monthly income calculation
+// - Refactored useMonthlyIncome to accept full transactions + month/year parameters
+// - useDashboardSummary now uses centralized useMonthlyIncome hook instead of internal calculation
+// - This eliminates redundant income calculation logic and ensures consistency across the app
