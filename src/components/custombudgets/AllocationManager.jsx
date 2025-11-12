@@ -97,7 +97,7 @@ export default function AllocationManager({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* REDESIGNED 13-Jan-2025: Remaining Funds Card with horizontal layout and corrected calculations */}
-        <div className="max-w-3xs p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+        <div className="max-w-xs p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
           <p className="text-sm font-medium text-gray-600 mb-4">Remaining Funds</p>
           
           <div className="grid grid-cols-2 gap-6">
