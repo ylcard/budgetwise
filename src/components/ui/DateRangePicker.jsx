@@ -39,7 +39,7 @@ export default function DateRangePicker({ getFirstDayOfMonth, getLastDayOfMonth,
           <CalendarIcon className="mr-2 h-4 w-4" />
           {getFirstDayOfMonth && getLastDayOfMonth ? (
             <span>
-              {formatDate(getFirstDayOfMonth, settings.dateFormat)} - {formatDate(getLastDayOfMonth, settings.dateFormat)}
+              {formatDate(tempStart, settings.dateFormat)} - {formatDate(tempEnd, settings.dateFormat)}
             </span>
           ) : (
             <span className="text-muted-foreground">Pick date range</span>
