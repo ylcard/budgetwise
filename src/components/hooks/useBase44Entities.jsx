@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
 // UPDATED 13-Jan-2025: Changed to explicitly use .jsx extension for financialCalculations
-import { getMonthlyIncome } from "../utils/financialCalculations.jsx";
+import { getMonthlyIncome } from "../utils/financialCalculations";
 import { getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
 
 // Hook to fetch transactions
