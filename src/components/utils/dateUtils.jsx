@@ -15,7 +15,9 @@ import { format } from "date-fns";
 export const formatDate = (date, dateFormat = "MMM dd, yyyy") => {
   if (!date) return "";
   
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  // Trying to fix the 1 day offset
+  // const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const dateObj = typeof date === 'string' ? parseDate(date) : date;
   
   // Map our format strings to date-fns format strings
   const formatMap = {
