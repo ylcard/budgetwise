@@ -1,8 +1,8 @@
 import React from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -10,45 +10,43 @@ import CustomBudgetForm from "../custombudgets/CustomBudgetForm";
 import { useSettings } from "../utils/SettingsContext";
 import { useCashWallet } from "../hooks/useBase44Entities";
 
-export default function QuickAddBudget({ 
-  open, 
-  onOpenChange, 
-  onSubmit, 
-  onCancel,
-  isSubmitting,
-  cashWallet,
-  baseCurrency
+export default function QuickAddBudget({
+    open,
+    onOpenChange,
+    onSubmit,
+    onCancel,
+    isSubmitting,
+    cashWallet,
+    baseCurrency
 }) {
-  const { settings } = useSettings();
+    const { settings } = useSettings();
 
-  return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Budget
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-[600px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto z-50" 
-        align="center"
-        side="top"
-        sideOffset={0}
-      >
-        <div className="space-y-2">
-          <h3 className="font-semibold text-lg">Create Custom Budget</h3>
-          <CustomBudgetForm
-            onSubmit={onSubmit}
-            onCancel={() => onOpenChange(false)}
-            isSubmitting={isSubmitting}
-            cashWallet={cashWallet}
-            baseCurrency={baseCurrency}
-            settings={settings}
-          />
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Budget
+            </Button>
+            <DialogContent
+                className="w-[600px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto z-50"
+                align="center"
+                side="top"
+                sideOffset={0}
+            >
+                <div className="space-y-2">
+                    <h3 className="font-semibold text-lg">Create Custom Budget</h3>
+                    <CustomBudgetForm
+                        onSubmit={onSubmit}
+                        onCancel={() => onOpenChange(false)}
+                        isSubmitting={isSubmitting}
+                        cashWallet={cashWallet}
+                        baseCurrency={baseCurrency}
+                        settings={settings}
+                    />
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 // REFACTOR (2025-01-12): Converted from Dialog to Popover
