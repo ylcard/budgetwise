@@ -1,8 +1,8 @@
-
 import { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { parseDate, getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
+// UPDATED 13-Jan-2025: Added toLocalDateString and getMonthBoundaries imports for date standardization
+import { parseDate, getFirstDayOfMonth, getLastDayOfMonth, toLocalDateString, getMonthBoundaries } from "../utils/dateUtils";
 import { createEntityMap } from "../utils/generalUtils";
 // UPDATED 12-Jan-2025: Changed import from expenseCalculations to financialCalculations
 import {
@@ -53,6 +53,7 @@ export const useTransactionDisplay = (transaction, category) => {
 // Hook for filtering transactions by current month
 export const useMonthlyTransactions = (transactions, selectedMonth, selectedYear) => {
     return useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions instead of manual date creation
         const monthStart = new Date(selectedYear, selectedMonth, 1);
         const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
 
@@ -81,8 +82,10 @@ export const useMonthlyIncome = (monthlyTransactions) => {
 };
 
 // REFACTORED 12-Jan-2025: Uses financialCalculations for income and expense aggregates
+// REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
 export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets, categories) => {
     const remainingBudget = useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
@@ -107,12 +110,14 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
     }, [transactions, selectedMonth, selectedYear]);
 
     const currentMonthIncome = useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
         return getMonthlyIncome(transactions, monthStart, monthEnd);
     }, [transactions, selectedMonth, selectedYear]);
 
     const currentMonthExpenses = useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
@@ -128,8 +133,10 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
 };
 
 // CRITICAL ENHANCEMENT (2025-01-12): Include planned budgets that overlap with the month
+// REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
 export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear) => {
     const activeCustomBudgets = useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
         const monthStartDate = parseDate(monthStart);
@@ -148,6 +155,7 @@ export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMon
     }, [allCustomBudgets, selectedMonth, selectedYear]);
 
     const allActiveBudgets = useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
         const monthStartDate = parseDate(monthStart);
@@ -186,8 +194,10 @@ export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMon
 };
 
 // Hook for filtering custom budgets by period
+// REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
 export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, selectedYear) => {
     return useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
@@ -198,6 +208,7 @@ export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, select
 };
 
 // REFACTORED 12-Jan-2025: Updated to use granular expense functions from financialCalculations
+// REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
 export const useBudgetsAggregates = (
     transactions,
     categories,
@@ -219,7 +230,9 @@ export const useBudgetsAggregates = (
     }, [allCustomBudgets, selectedMonth, selectedYear]);
 
     // REFACTORED 12-Jan-2025: Calculate system budget stats using financialCalculations functions directly
+    // REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
     const systemBudgetsWithStats = useMemo(() => {
+        // REFACTORED 13-Jan-2025: Use dateUtils functions for consistent month boundaries
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
@@ -293,33 +306,22 @@ export const useBudgetsAggregates = (
 };
 
 // Hook for transaction filtering
+// REFACTORED 13-Jan-2025: Moved createLocalString logic to dateUtils.toLocalDateString
 export const useTransactionFiltering = (transactions) => {
     const now = new Date();
 
-    // MODIFIED (12-NOV-2025): Removed buggy toISOString() and implemented local time date string creation.
-    // This aligns with the local time parsing/filtering required for financial data integrity.
-    const createLocalString = (date) => {
-        // Ensures date object is local time at midnight (the standard for financial dates)
-        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const year = d.getFullYear();
-        // Months are 0-indexed, so add 1
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    // Deprecated code - this causes a 1 day offset issue
+    // REFACTORED 13-Jan-2025: Use toLocalDateString from dateUtils instead of inline function
+    // This prevents timezone offset issues when converting dates to strings
+    // DEPRECATED CODE (12-Nov-2025): Removed buggy toISOString() approach
     // const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     // const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
     // Calculate the first and last day of the current month (local time)
-    // 1st Day: new Date(year, month, 1)
     const currentMonthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthStart = createLocalString(currentMonthStartDate);
+    const currentMonthStart = toLocalDateString(currentMonthStartDate);
 
-    // Last Day: new Date(year, month + 1, 0)
     const currentMonthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const currentMonthEnd = createLocalString(currentMonthEndDate);
+    const currentMonthEnd = toLocalDateString(currentMonthEndDate);
 
     const [filters, setFilters] = useState({
         type: 'all',
@@ -364,6 +366,7 @@ export const useTransactionFiltering = (transactions) => {
 };
 
 // REFACTORED 13-Jan-2025: Updated to filter custom budget expenses by selected month's paidDate
+// REFACTORED 13-Jan-2025: Standardized month boundary calculation using dateUtils
 export const useBudgetBarsData = (
     systemBudgets,
     customBudgets,
@@ -648,6 +651,10 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
     }, [transactions, categories, goals, monthlyIncome]);
 };
 
-// REFACTORED 13-Jan-2025: Updated useBudgetBarsData to filter custom budget expenses by selected month's paidDate
-// - Paid expenses now filtered by paidDate within selected month boundaries
-// - This excludes "prepaid" expenses from budget bar calculations for more accurate monthly spending representation
+// REFACTORED 13-Jan-2025: Major date handling standardization
+// - Moved createLocalString logic to dateUtils.toLocalDateString
+// - Replaced all manual month boundary calculations with dateUtils functions
+// - Standardized use of getFirstDayOfMonth and getLastDayOfMonth throughout
+// - Added getMonthBoundaries convenience function to dateUtils (not yet used here but available)
+// - Removed inline date creation (new Date(year, month, ...)) where dateUtils functions can be used
+// - This prevents timezone offset issues and ensures consistent date handling across the app

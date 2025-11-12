@@ -4,6 +4,7 @@ import { format } from "date-fns";
  * Date utility functions
  * Centralized date parsing, formatting, and period calculation helpers
  * Created: 11-Nov-2025 - Consolidated from budgetCalculations.js and formatDate.js
+ * Updated: 13-Jan-2025 - Added toLocalDateString for consistent local date string creation
  */
 
 /**
@@ -57,6 +58,24 @@ export const formatDateString = (date) => {
 };
 
 /**
+ * ADDED 13-Jan-2025: Create local time YYYY-MM-DD string from Date object
+ * Ensures date object is local time at midnight (the standard for financial dates)
+ * This prevents timezone offset issues when converting dates to strings
+ * @param {Date} date - Date object to convert
+ * @returns {string} Local date string in YYYY-MM-DD format
+ */
+export const toLocalDateString = (date) => {
+    if (!date) return '';
+    // Ensures date object is local time at midnight (the standard for financial dates)
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const year = d.getFullYear();
+    // Months are 0-indexed, so add 1
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+/**
  * Get first day of month as YYYY-MM-DD
  * @param {number} month - Month (0-11)
  * @param {number} year - Year
@@ -74,4 +93,18 @@ export const getFirstDayOfMonth = (month, year) => {
  */
 export const getLastDayOfMonth = (month, year) => {
     return formatDateString(new Date(year, month + 1, 0));
+};
+
+/**
+ * ADDED 13-Jan-2025: Get both first and last day of month as YYYY-MM-DD strings
+ * Convenience function that returns both month boundaries in one call
+ * @param {number} month - Month (0-11)
+ * @param {number} year - Year
+ * @returns {{ monthStart: string, monthEnd: string }} Object with monthStart and monthEnd
+ */
+export const getMonthBoundaries = (month, year) => {
+    return {
+        monthStart: getFirstDayOfMonth(month, year),
+        monthEnd: getLastDayOfMonth(month, year)
+    };
 };
