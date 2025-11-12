@@ -153,7 +153,7 @@ export default function CustomBudgetCard({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onDelete(budget)}
+                    onClick={() => onDelete(budget.id)}
                     className="hover:bg-red-50 hover:text-red-600 h-8 w-8"
                   >
                     <Trash2 className="w-4 h-4" />
