@@ -46,7 +46,7 @@ export default function AllocationCard({ allocation, category, stats, onEdit, on
                 </div>
               </div>
             </div>
-            <div className="flex gap-1">
+            <div className="flex justify-end gap-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button variant="ghost" size="icon" onClick={onEdit} className="hover:bg-blue-50 hover:text-blue-600  h-7 w-7 rounded flex items-center justify-center">
                 <Pencil className="w-3 h-3" />
               </Button>
