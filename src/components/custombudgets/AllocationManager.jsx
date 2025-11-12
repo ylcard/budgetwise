@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import AllocationForm from "./AllocationForm";
+// COMMENTED OUT 13-Jan-2025: AnimatePresence no longer needed as form is now in Dialog
+// import { motion, AnimatePresence } from "framer-motion";
+// COMMENTED OUT 13-Jan-2025: AllocationForm replaced with AllocationFormDialog
+// import AllocationForm from "./AllocationForm";
+import AllocationFormDialog from "./AllocationFormDialog";
 import AllocationCard from "./AllocationCard";
 import { useSettings } from "../utils/SettingsContext";
 import { useCashWallet } from "../hooks/useBase44Entities";
@@ -15,6 +18,8 @@ export default function AllocationManager({
   allocations,
   categories,
   allocationStats,
+  monthStart,
+  monthEnd,
   onCreateAllocation,
   onUpdateAllocation,
   onDeleteAllocation,
@@ -54,17 +59,22 @@ export default function AllocationManager({
     setEditingAllocation(null);
   };
 
-  // Calculate remaining funds - split by digital and cash
-  const remainingDigital = allocationStats?.unallocatedRemaining || 0;
+  // REFACTORED 13-Jan-2025: Calculate remaining funds purely based on allocations (no expenses)
+  // Card remaining = customBudget.allocatedAmount - sum of digital allocations
+  const digitalAllocations = allocations.filter(a => a.allocationType === 'digital');
+  const totalDigitalAllocated = digitalAllocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
+  const remainingCard = customBudget.allocatedAmount - totalDigitalAllocated;
   
+  // Cash remaining per currency = cashAllocations[currency] - sum of cash allocations for that currency
   const remainingCashByCurrency = {};
   if (customBudget?.cashAllocations) {
     customBudget.cashAllocations.forEach(cashAlloc => {
-      const allocated = allocations
-        .filter(a => a.allocationType === 'cash' && a.currency === cashAlloc.currencyCode)
-        .reduce((sum, a) => sum + a.allocatedAmount, 0);
+      const cashAllocationsForCurrency = allocations.filter(
+        a => a.allocationType === 'cash' && a.currency === cashAlloc.currencyCode
+      );
+      const totalAllocatedForCurrency = cashAllocationsForCurrency.reduce((sum, a) => sum + a.allocatedAmount, 0);
       
-      remainingCashByCurrency[cashAlloc.currencyCode] = cashAlloc.amount - allocated;
+      remainingCashByCurrency[cashAlloc.currencyCode] = cashAlloc.amount - totalAllocatedForCurrency;
     });
   }
 
@@ -86,51 +96,57 @@ export default function AllocationManager({
         </Button>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Remaining Funds Card */}
-        <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
-          <p className="text-sm font-medium text-gray-600 mb-2">Remaining Funds</p>
+        {/* REDESIGNED 13-Jan-2025: Remaining Funds Card with horizontal layout and corrected calculations */}
+        <div className="max-w-2xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+          <p className="text-sm font-medium text-gray-600 mb-4">Remaining Funds</p>
           
-          {/* Digital Remaining */}
-          <div className="mb-3">
-            <p className="text-xs text-gray-500 mb-1">Card</p>
-            <p className="text-3xl font-bold text-gray-900">
-              {formatCurrency(remainingDigital, settings)}
-            </p>
-          </div>
-
-          {/* Cash Remaining by Currency */}
-          {Object.keys(remainingCashByCurrency).length > 0 && (
-            <div className="pt-3 border-t border-gray-300">
-              <p className="text-xs text-gray-500 mb-2">Cash</p>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(remainingCashByCurrency).map(([currency, amount]) => (
-                  <div key={currency} className="bg-white/60 rounded-lg p-2">
-                    <p className="text-xs text-gray-600">{currency}</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {formatCurrency(amount, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
-                    </p>
-                  </div>
-                ))}
-              </div>
+          <div className="grid grid-cols-2 gap-6">
+            {/* Card Remaining */}
+            <div className="flex flex-col">
+              <p className="text-sm text-gray-500 mb-2">Card</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {formatCurrency(remainingCard, settings)}
+              </p>
             </div>
-          )}
+
+            {/* Cash Remaining by Currency */}
+            {Object.keys(remainingCashByCurrency).length > 0 && (
+              <div className="flex flex-col">
+                <p className="text-sm text-gray-500 mb-2">Cash</p>
+                <div className="space-y-2">
+                  {Object.entries(remainingCashByCurrency).map(([currency, amount]) => (
+                    <div key={currency}>
+                      <p className="text-lg font-bold text-gray-900">
+                        {formatCurrency(amount, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Show placeholder if no cash allocations */}
+            {Object.keys(remainingCashByCurrency).length === 0 && (
+              <div className="flex flex-col">
+                <p className="text-sm text-gray-500 mb-2">Cash</p>
+                <p className="text-sm text-gray-400 italic">No cash allocated</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Allocation Form */}
-        <AnimatePresence>
-          {showForm && (
-            <AllocationForm
-              allocation={editingAllocation}
-              customBudget={customBudget}
-              categories={categories}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-              isSubmitting={isSubmitting}
-              settings={settings}
-              cashWallet={cashWallet}
-            />
-          )}
-        </AnimatePresence>
+        {/* UPDATED 13-Jan-2025: Replaced inline AllocationForm with AllocationFormDialog */}
+        <AllocationFormDialog
+          open={showForm}
+          onOpenChange={setShowForm}
+          allocation={editingAllocation}
+          customBudget={customBudget}
+          categories={categories}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          settings={settings}
+          cashWallet={cashWallet}
+        />
 
         {/* Allocations List */}
         {allocations.length === 0 ? (
@@ -138,7 +154,7 @@ export default function AllocationManager({
             <p>No allocations yet. Add your first one!</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {allocations.map((allocation) => {
               const category = categories.find(c => c.id === allocation.categoryId);
               const stats = allocationStats?.categorySpending?.[allocation.categoryId];
@@ -162,6 +178,16 @@ export default function AllocationManager({
   );
 }
 
+// REFACTORED 13-Jan-2025: Major redesign and refactoring
+// 1. Redesigned "Remaining Funds" card with horizontal split (Card | Cash) using grid layout
+// 2. Added max-w-2xl to constrain card width
+// 3. Fixed Card remaining calculation: only deducts digital allocations, not expenses
+// 4. Fixed Cash remaining calculation: only deducts cash allocations per currency, not expenses
+// 5. Removed currency code display next to Cash (e.g., "(EUR)") - symbol is sufficient
+// 6. Renamed "Digital" to "Card" throughout
+// 7. Replaced inline AllocationForm with AllocationFormDialog for better UX
+// 8. Updated allocation cards grid to be more responsive (xl:grid-cols-4 instead of 2)
+// 9. Removed AnimatePresence wrapper (Dialog handles animations)
 // ENHANCEMENT (2025-01-11):
 // 1. Updated remaining funds display to separate digital and cash amounts
 // 2. Shows cash remaining by currency in a grid layout

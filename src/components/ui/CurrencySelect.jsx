@@ -41,10 +41,13 @@ const SUPPORTED_CURRENCIES = [
   { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
 ];
 
-export default function CurrencySelect({ value, onValueChange, filterCurrencies = null }) {
-  // ENHANCEMENT (2025-01-12): Filter currencies if filterCurrencies array is provided
-  const displayCurrencies = filterCurrencies && filterCurrencies.length > 0
-    ? SUPPORTED_CURRENCIES.filter(c => filterCurrencies.includes(c.code))
+export default function CurrencySelect({ value, onValueChange, filterCurrencies = null, limitToCurrencies = null }) {
+  // UPDATED 13-Jan-2025: Support both filterCurrencies (legacy) and limitToCurrencies (new preferred name)
+  const currencyLimit = limitToCurrencies || filterCurrencies;
+  
+  // ENHANCEMENT (2025-01-12): Filter currencies if currencyLimit array is provided
+  const displayCurrencies = currencyLimit && currencyLimit.length > 0
+    ? SUPPORTED_CURRENCIES.filter(c => currencyLimit.includes(c.code))
     : SUPPORTED_CURRENCIES;
 
   return (
@@ -63,6 +66,9 @@ export default function CurrencySelect({ value, onValueChange, filterCurrencies 
   );
 }
 
+// UPDATED 13-Jan-2025: Added limitToCurrencies prop (preferred) while maintaining filterCurrencies (legacy) for backward compatibility
+// When limitToCurrencies or filterCurrencies is provided, only shows currencies in the filter array
+// Used to filter cash allocations to only show currencies available in the custom budget
 // ENHANCEMENT (2025-01-12): Added filterCurrencies prop
 // When provided, only shows currencies in the filter array
 // Used to filter cash allocations to only show currencies available in wallet
