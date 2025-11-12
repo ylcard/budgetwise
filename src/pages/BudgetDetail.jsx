@@ -600,7 +600,7 @@ export default function BudgetDetail() {
                             )}
                         </div>
                         <p className="text-gray-500 mt-1">
-                            {formatDate(budget.startDate, settings.dateFormat)} - {formatDate(budget.endDate, settings.dateFormat)}
+                            {formatDate(parseDate(budget.startDate), settings.dateFormat)} - {formatDate(parseDate(budget.endDate), settings.dateFormat)}
                         </p>
                     </div>
                     <div className="flex gap-2">
