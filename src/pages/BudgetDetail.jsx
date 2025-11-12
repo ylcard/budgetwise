@@ -831,6 +831,7 @@ export default function BudgetDetail() {
                             onSubmit={(data) => createTransactionMutation.mutate(data)}
                             isSubmitting={createTransactionMutation.isPending}
                             transactions={transactions}
+                            triggerSize="sm"
                             triggerClassName="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
                         />
                     </CardHeader>
