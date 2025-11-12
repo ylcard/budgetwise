@@ -47,10 +47,10 @@ export default function AllocationCard({ allocation, category, stats, onEdit, on
               </div>
             </div>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" onClick={onEdit} className="hover:bg-blue-50 hover:text-blue-600  h-8 w-8">
+              <Button variant="ghost" size="icon" onClick={onEdit} className="hover:bg-blue-50 hover:text-blue-600  h-7 w-7 rounded flex items-center justify-center">
                 <Pencil className="w-3 h-3" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={onDelete} className="hover:bg-blue-50 hover:text-red-700 text-red-600 h-8 w-8">
+              <Button variant="ghost" size="icon" onClick={onDelete} className="hover:bg-red-50 hover:text-red-600 h-7 w-7 rounded flex items-center justify-center">
                 <Trash2 className="w-3 h-3" />
               </Button>
             </div>
