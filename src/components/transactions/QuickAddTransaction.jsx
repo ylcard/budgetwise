@@ -24,7 +24,7 @@ export default function QuickAddTransaction({
   renderTrigger = true, // NEW: Control whether to render the trigger button
   triggerVariant = "default", // NEW: Allow customization of trigger button style
   triggerSize = "default", // NEW: Allow customization of trigger button size
-  triggerClassName = 'className="bg-gradient-to-r from-blue-600 to-purple-600"' // NEW: Allow custom classes for trigger button
+  triggerClassName = className="bg-gradient-to-r from-blue-600 to-purple-600" // NEW: Allow custom classes for trigger button
 }) {
   const { user } = useSettings();
   const { cashWallet } = useCashWallet(user);
