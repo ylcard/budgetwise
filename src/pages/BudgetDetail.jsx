@@ -612,10 +612,10 @@ export default function BudgetDetail() {
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent
-                                    className="w-[600px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto z-50"
+                                    className="w-[600px] max-h-[90vh] overflow-y-auto z-50"
                                     align="center"
-                                    side="top"
-                                    sideOffset={0}
+                                    side="bottom"
+                                    sideOffset={8}
                                 >
                                     <div className="space-y-2">
                                         <h3 className="font-semibold text-lg">Edit Budget</h3>
