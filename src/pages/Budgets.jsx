@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -28,14 +29,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { parseDate } from "../components/utils/dateUtils";
 
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import BudgetCard from "../components/budgets/BudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
 
-// Helper to calculate custom budget stats directly
-const getCustomBudgetStats = (customBudget, transactions) => {
+// UPDATED 13-Jan-2025: Added monthStart and monthEnd parameters to filter paid expenses by selected month
+const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) => {
   const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+
+  // Parse month boundaries for filtering paid expenses
+  const monthStartDate = parseDate(monthStart);
+  const monthEndDate = parseDate(monthEnd);
 
   // Separate digital and cash transactions
   const digitalTransactions = budgetTransactions.filter(
@@ -45,17 +51,24 @@ const getCustomBudgetStats = (customBudget, transactions) => {
     t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
   );
 
-  // Calculate digital stats
+  // Calculate digital stats - ONLY include paid expenses that were paid within the selected month
   const digitalAllocated = customBudget.allocatedAmount || 0;
   const digitalSpent = digitalTransactions
-    .filter(t => t.type === 'expense')
+    .filter(t => {
+      if (t.type !== 'expense') return false;
+      if (!t.isPaid || !t.paidDate) return false;
+      
+      // Filter by paidDate within selected month
+      const paidDate = parseDate(t.paidDate);
+      return paidDate >= monthStartDate && paidDate <= monthEndDate;
+    })
     .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+  
   const digitalUnpaid = digitalTransactions
     .filter(t => t.type === 'expense' && !t.isPaid)
     .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
-  const digitalRemaining = digitalAllocated - digitalSpent;
 
-  // Calculate cash stats by currency
+  // Calculate cash stats by currency - ONLY include paid expenses that were paid within the selected month
   const cashByCurrency = {};
   const cashAllocations = customBudget.cashAllocations || [];
   
@@ -64,15 +77,21 @@ const getCustomBudgetStats = (customBudget, transactions) => {
     const allocated = allocation.amount || 0;
     
     const spent = cashTransactions
-      .filter(t => t.type === 'expense' && t.cashCurrency === currencyCode)
+      .filter(t => {
+        if (t.type !== 'expense') return false;
+        if (t.cashCurrency !== currencyCode) return false;
+        if (!t.isPaid || !t.paidDate) return false;
+        
+        // Filter by paidDate within selected month
+        const paidDate = parseDate(t.paidDate);
+        return paidDate >= monthStartDate && paidDate <= monthEndDate;
+      })
       .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
-    
-    const remaining = allocated - spent;
     
     cashByCurrency[currencyCode] = {
       allocated,
       spent,
-      remaining
+      remaining: allocated - spent
     };
   });
 
@@ -86,7 +105,7 @@ const getCustomBudgetStats = (customBudget, transactions) => {
       allocated: digitalAllocated,
       spent: digitalSpent,
       unpaid: digitalUnpaid,
-      remaining: digitalRemaining
+      remaining: digitalAllocated - digitalSpent
     },
     cashByCurrency,
     totalAllocatedUnits,
@@ -301,8 +320,9 @@ export default function Budgets() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {/* UPDATED 13-Jan-2025: Pass monthStart and monthEnd to getCustomBudgetStats */}
                 {sortedCustomBudgets.map((budget) => {
-                  const stats = getCustomBudgetStats(budget, transactions);
+                  const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
                   
                   return (
                     <BudgetCard
@@ -338,3 +358,8 @@ export default function Budgets() {
     </div>
   );
 }
+
+// REFACTORED 13-Jan-2025: Updated getCustomBudgetStats to filter paid expenses by selected month's paidDate
+// - Added monthStart and monthEnd parameters to getCustomBudgetStats
+// - Paid expenses now filtered by paidDate within selected month boundaries
+// - This excludes "prepaid" expenses from budget calculations for display purposes

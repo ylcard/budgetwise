@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -196,7 +197,7 @@ export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, select
   }, [allCustomBudgets, selectedMonth, selectedYear]);
 };
 
-// REFACTORED 12-Jan-2025: Now uses financialCalculations directly
+// REFACTORED 12-Jan-2025: Updated to use granular expense functions from financialCalculations
 export const useBudgetsAggregates = (
   transactions,
   categories,
@@ -339,7 +340,7 @@ export const useTransactionFiltering = (transactions) => {
   };
 };
 
-// REFACTORED 12-Jan-2025: Updated to use granular expense functions from financialCalculations
+// REFACTORED 13-Jan-2025: Updated to filter custom budget expenses by selected month's paidDate
 export const useBudgetBarsData = (
   systemBudgets,
   customBudgets,
@@ -362,6 +363,10 @@ export const useBudgetBarsData = (
     // Get date range from first system budget (they should all have the same range)
     const startDate = system.length > 0 ? system[0].startDate : null;
     const endDate = system.length > 0 ? system[0].endDate : null;
+
+    // Parse month boundaries for filtering
+    const monthStartDate = startDate ? parseDate(startDate) : null;
+    const monthEndDate = endDate ? parseDate(endDate) : null;
 
     const systemBudgetsData = system.map(sb => {
       const targetPercentage = goalMap[sb.systemBudgetType] || 0;
@@ -412,7 +417,7 @@ export const useBudgetBarsData = (
       };
     });
 
-    // Custom budgets calculation
+    // Custom budgets calculation - UPDATED to filter expenses by selected month's paidDate
     const customBudgetsData = custom.map(cb => {
       const budgetTransactions = transactions.filter(t => t.customBudgetId === cb.id);
       
@@ -424,9 +429,22 @@ export const useBudgetBarsData = (
       );
 
       const digitalAllocated = cb.allocatedAmount || 0;
+      
+      // UPDATED 13-Jan-2025: Filter by paidDate within selected month for paid expenses
       const digitalSpent = digitalTransactions
-        .filter(t => t.type === 'expense')
+        .filter(t => {
+          if (t.type !== 'expense') return false;
+          if (!t.isPaid || !t.paidDate) return false;
+          
+          // Filter by paidDate within selected month
+          if (monthStartDate && monthEndDate) {
+            const paidDate = parseDate(t.paidDate);
+            return paidDate >= monthStartDate && paidDate <= monthEndDate;
+          }
+          return true;
+        })
         .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+      
       const digitalUnpaid = digitalTransactions
         .filter(t => t.type === 'expense' && !t.isPaid)
         .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
@@ -438,8 +456,20 @@ export const useBudgetBarsData = (
         const currencyCode = allocation.currencyCode;
         const allocated = allocation.amount || 0;
         
+        // UPDATED 13-Jan-2025: Filter by paidDate within selected month for paid expenses
         const spent = cashTransactions
-          .filter(t => t.type === 'expense' && t.cashCurrency === currencyCode)
+          .filter(t => {
+            if (t.type !== 'expense') return false;
+            if (t.cashCurrency !== currencyCode) return false;
+            if (!t.isPaid || !t.paidDate) return false;
+            
+            // Filter by paidDate within selected month
+            if (monthStartDate && monthEndDate) {
+              const paidDate = parseDate(t.paidDate);
+              return paidDate >= monthStartDate && paidDate <= monthEndDate;
+            }
+            return true;
+          })
           .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
         
         cashByCurrency[currencyCode] = {
@@ -456,7 +486,7 @@ export const useBudgetBarsData = (
         });
       }
 
-      let paidAmount = digitalSpent - digitalUnpaid;
+      let paidAmount = digitalSpent; // Corrected: digitalSpent already represents paid transactions
       if (cashByCurrency) {
         Object.values(cashByCurrency).forEach(cashData => {
           paidAmount += cashData?.spent || 0;
@@ -595,8 +625,6 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
   }, [transactions, categories, goals, monthlyIncome]);
 };
 
-// REFACTORED 12-Jan-2025: Comprehensive refactoring complete
-// - All date utilities use dateUtils.js
-// - All general utilities use generalUtils.js
-// - All financial calculations now use financialCalculations.js (unified income + expense)
-// - Eliminated redundant getCurrentMonthTransactions from generalUtils.js
+// REFACTORED 13-Jan-2025: Updated useBudgetBarsData to filter custom budget expenses by selected month's paidDate
+// - Paid expenses now filtered by paidDate within selected month boundaries
+// - This excludes "prepaid" expenses from budget bar calculations for more accurate monthly spending representation

@@ -31,6 +31,7 @@ import { useCashWallet } from "../components/hooks/useBase44Entities";
 import { useTransactionActions } from "../components/hooks/useActions";
 import { calculateRemainingCashAllocations, returnCashToWallet } from "../components/utils/cashAllocationUtils";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
+import { usePeriod } from "../components/hooks/usePeriod";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import TransactionCard from "../components/transactions/TransactionCard";
 import AllocationManager from "../components/custombudgets/AllocationManager";
@@ -39,9 +40,13 @@ import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 
-// REFACTORED 11-Nov-2025: Helper to calculate custom budget stats using direct transaction filtering
-const getCustomBudgetStats = (customBudget, transactions) => {
+// REFACTORED 13-Jan-2025: Updated to accept monthStart and monthEnd parameters for filtering paid expenses by selected month
+const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) => {
     const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+
+    // Parse month boundaries for filtering paid expenses
+    const monthStartDate = parseDate(monthStart);
+    const monthEndDate = parseDate(monthEnd);
 
     // Separate digital and cash transactions
     const digitalTransactions = budgetTransactions.filter(
@@ -51,17 +56,25 @@ const getCustomBudgetStats = (customBudget, transactions) => {
         t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
     );
 
-    // Calculate digital stats
+    // Calculate digital stats - ONLY include paid expenses that were paid within the selected month
     const digitalAllocated = customBudget.allocatedAmount || 0;
     const digitalSpent = digitalTransactions
-        .filter(t => t.type === 'expense')
+        .filter(t => {
+            if (t.type !== 'expense') return false;
+            if (!t.isPaid || !t.paidDate) return false;
+            
+            // Filter by paidDate within selected month
+            const paidDate = parseDate(t.paidDate);
+            return paidDate >= monthStartDate && paidDate <= monthEndDate;
+        })
         .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+    
     const digitalUnpaid = digitalTransactions
         .filter(t => t.type === 'expense' && !t.isPaid)
         .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
     const digitalRemaining = digitalAllocated - digitalSpent;
 
-    // Calculate cash stats by currency
+    // Calculate cash stats by currency - ONLY include paid expenses that were paid within the selected month
     const cashByCurrency = {};
     const cashAllocations = customBudget.cashAllocations || [];
 
@@ -70,7 +83,15 @@ const getCustomBudgetStats = (customBudget, transactions) => {
         const allocated = allocation.amount || 0;
 
         const spent = cashTransactions
-            .filter(t => t.type === 'expense' && t.cashCurrency === currencyCode)
+            .filter(t => {
+                if (t.type !== 'expense') return false;
+                if (t.cashCurrency !== currencyCode) return false;
+                if (!t.isPaid || !t.paidDate) return false;
+                
+                // Filter by paidDate within selected month
+                const paidDate = parseDate(t.paidDate);
+                return paidDate >= monthStartDate && paidDate <= monthEndDate;
+            })
             .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
 
         const remaining = allocated - spent;
@@ -191,6 +212,9 @@ export default function BudgetDetail() {
     const queryClient = useQueryClient();
     const location = useLocation();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
+
+    // ADDED 13-Jan-2025: Use period hook to get selected month boundaries
+    const { selectedMonth, selectedYear, monthStart, monthEnd } = usePeriod();
 
     const urlParams = new URLSearchParams(window.location.search);
     const budgetId = urlParams.get('id');
@@ -322,7 +346,7 @@ export default function BudgetDetail() {
                 }
             }
 
-            const actualSpent = getCustomBudgetStats(budgetToComplete, transactions).totalSpentUnits;
+            const actualSpent = getCustomBudgetStats(budgetToComplete, transactions, monthStart, monthEnd).totalSpentUnits;
 
             await base44.entities.CustomBudget.update(id, {
                 status: 'completed',
@@ -431,15 +455,16 @@ export default function BudgetDetail() {
         return [];
     }, [budget, allCustomBudgets]);
 
+    // UPDATED 13-Jan-2025: Pass monthStart and monthEnd to getCustomBudgetStats
     const stats = useMemo(() => {
         if (!budget) return null;
 
         if (budget.isSystemBudget) {
             return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate);
         } else {
-            return getCustomBudgetStats(budget, transactions);
+            return getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
         }
-    }, [budget, transactions, categories, allCustomBudgets]);
+    }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd]);
 
     const allocationStats = useMemo(() => {
         if (!budget || budget.isSystemBudget) return null;
@@ -654,7 +679,7 @@ export default function BudgetDetail() {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="flex flex-col items-center justify-center">
-                                            <p className="text-xs text-gray-500 mb-1">Digital</p>
+                                            <p className="text-xs text-gray-500 mb-1">Card</p>
                                             <div className="text-base font-semibold text-gray-900">
                                                 {formatCurrency(stats.digital.allocated, settings)}
                                             </div>
@@ -705,7 +730,7 @@ export default function BudgetDetail() {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="flex flex-col items-center justify-center">
-                                            <p className="text-xs text-gray-500 mb-1">Digital</p>
+                                            <p className="text-xs text-gray-500 mb-1">Card</p>
                                             <div className={`text-base font-semibold ${stats.digital.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                 {formatCurrency(stats.digital.remaining, settings)}
                                             </div>
@@ -742,12 +767,15 @@ export default function BudgetDetail() {
                     </Card>
                 )}
 
+                {/* UPDATED 13-Jan-2025: Pass monthStart and monthEnd to AllocationManager */}
                 {!budget.isSystemBudget && budget.status !== 'completed' && allocationStats && (
                     <AllocationManager
                         customBudget={budget}
                         allocations={allocations}
                         categories={categories}
                         allocationStats={allocationStats}
+                        monthStart={monthStart}
+                        monthEnd={monthEnd}
                         onCreateAllocation={(data) => createAllocationMutation.mutate(data)}
                         onUpdateAllocation={({ id, data }) => updateAllocationMutation.mutate({ id, data })}
                         onDeleteAllocation={(id) => deleteAllocationMutation.mutate(id)}
@@ -766,7 +794,7 @@ export default function BudgetDetail() {
                         <CardContent>
                             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {relatedCustomBudgetsForDisplay.map((customBudget) => {
-                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions);
+                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
 
                                     return (
                                         <BudgetCard
@@ -831,3 +859,4 @@ export default function BudgetDetail() {
         </div>
     );
 }
+
