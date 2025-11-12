@@ -89,6 +89,7 @@ export default function AllocationManager({
         </div>
         <Button
           onClick={() => setShowForm(true)}
+          size="sm"
           className="bg-gradient-to-r from-blue-600 to-purple-600"
         >
           <Plus className="w-4 h-4 mr-2" />
