@@ -181,7 +181,7 @@ export const getUnpaidCustomBudgetExpenses = (transactions, allCustomBudgets, st
  * - Cash expenses (tracked separately)
  * - Expenses assigned to custom budgets
  */
-/*
+
 export const getPaidSavingsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
   return transactions
     .filter(t => {
@@ -198,7 +198,6 @@ export const getPaidSavingsExpenses = (transactions, categories, startDate, endD
     })
     .reduce((sum, t) => sum + t.amount, 0);
 };
-*/
 
 /**
  * Calculate all cash expenses within a date range
