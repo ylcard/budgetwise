@@ -109,7 +109,7 @@ export default function TransactionFormContent({
   // This allows linking expenses to future/past budgets while keeping the list manageable
   const filteredBudgets = (() => {
     // Filter for active and planned budgets
-    const statusFiltered = allBudgets.filter(b => {
+    let statusFiltered = allBudgets.filter(b => {
       // Include system budgets
       if (b.isSystemBudget) return true;
       // Include active and planned custom budgets
@@ -121,11 +121,18 @@ export default function TransactionFormContent({
       const preSelectedBudget = allBudgets.find(b => b.id === initialTransaction.customBudgetId);
       if (preSelectedBudget && !statusFiltered.find(b => b.id === preSelectedBudget.id)) {
         // Add the pre-selected budget at the beginning
+        
         return [preSelectedBudget, ...statusFiltered];
       }
     }
     
-    return statusFiltered;
+    //return statusFiltered;
+    const sortedBudgets = [...statusFiltered].sort((a, b) => {
+        if (a.isSystemBudget && !b.isSystemBudget) return -1;
+        if (!a.isSystemBudget && b.isSystemBudget) return 1;
+        return a.name.localeCompare(b.name);
+    });
+    return sortedBudgets;
   })();
 
   // Calculate available cash balance dynamically
