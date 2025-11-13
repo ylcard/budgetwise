@@ -73,7 +73,7 @@ export default function TransactionFormContent({
       // Reset to defaults for new transaction
       setFormData({
         title: '',
-        amount: '',
+        amount: null,
         originalCurrency: settings?.baseCurrency || 'USD',
         type: 'expense',
         category_id: '',
