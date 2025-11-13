@@ -5,7 +5,7 @@
  * user settings for date formatting and utility functions for storage/retrieval.
  */
 
-import React, { useState, useState } from "react";
+import React, { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
