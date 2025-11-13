@@ -55,7 +55,7 @@ export const formatDateString = (date) => {
  * @param {number} year - Year
  * @returns {string} First day of month as YYYY-MM-DD
  */
-export const getFirstDayOfMonth = (month, year) => {
+const getFirstDayOfMonth = (month, year) => {
     return formatDateString(new Date(year, month, 1));
 };
 
@@ -65,7 +65,7 @@ export const getFirstDayOfMonth = (month, year) => {
  * @param {number} year - Year
  * @returns {string} Last day of month as YYYY-MM-DD
  */
-export const getLastDayOfMonth = (month, year) => {
+const getLastDayOfMonth = (month, year) => {
     return formatDateString(new Date(year, month + 1, 0));
 };
 
