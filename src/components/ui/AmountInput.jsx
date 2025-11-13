@@ -4,7 +4,7 @@
  * Handles display, synchronization, and parsing of localized currency strings based on user settings.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency, unformatCurrency } from "../utils/currencyUtils";
