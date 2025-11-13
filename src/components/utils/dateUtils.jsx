@@ -39,14 +39,54 @@ export const parseDate = (dateString) => {
  * @param {Date|string} date - Date to format
  * @returns {string} Formatted date string
  */
+// export const formatDateString = (date) => {
+//     if (!date) return '';
+//     const d = date instanceof Date ? date : new Date(date);
+//     const year = d.getFullYear();
+//     const month = String(d.getMonth() + 1).padStart(2, '0');
+//     const day = String(d.getDate()).padStart(2, '0');
+//     return `${year}-${month}-${day}`;
+// };
+
+/**
+ * Format date as YYYY-MM-DD (timezone-agnostic, local midnight).
+ * This function ensures the date components are derived from the local timezone at midnight, 
+ * which is CRITICAL for consistent financial date boundary comparisons.
+ * * @param {Date|string} date - Date object or date string to format
+ * @returns {string} Local date string in YYYY-MM-DD format, or empty string on failure.
+ */
 export const formatDateString = (date) => {
     if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date);
+
+    // Normalize input to a Date object
+    let inputDate;
+    if (date instanceof Date) {
+        inputDate = date;
+    } else {
+        // Handle string or timestamp input
+        inputDate = new Date(date);
+        if (isNaN(inputDate)) {
+            // Return empty string for invalid dates
+            return '';
+        }
+    }
+
+    // CRITICAL STEP: Construct a NEW Date object using the input's LOCAL year, month, and day.
+    // This resets the time to 00:00:00 in the LOCAL timezone, nullifying any offset issues.
+    const d = new Date(
+        inputDate.getFullYear(), 
+        inputDate.getMonth(), 
+        inputDate.getDate()
+    );
+
     const year = d.getFullYear();
+    // Months are 0-indexed, so add 1
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
+    
     return `${year}-${month}-${day}`;
 };
+
 
 /**
  * Get first day of month as YYYY-MM-DD
@@ -82,13 +122,13 @@ export const getMonthBoundaries = (month, year) => {
     };
 };
 
-export const toLocalDateString = (date) => {
-    if (!date) return '';
-    // Ensures date object is local time at midnight (the standard for financial dates)
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const year = d.getFullYear();
-    // Months are 0-indexed, so add 1
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
+// export const toLocalDateString = (date) => {
+//     if (!date) return '';
+//     // Ensures date object is local time at midnight (the standard for financial dates)
+//     const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+//     const year = d.getFullYear();
+//     // Months are 0-indexed, so add 1
+//     const month = String(d.getMonth() + 1).padStart(2, '0');
+//     const day = String(d.getDate()).padStart(2, '0');
+//     return `${year}-${month}-${day}`;
+// };
