@@ -15,12 +15,12 @@ import { format } from "date-fns";
  * @returns {string} The formatted date string
  */
 export const formatDate = (date, dateFormat = "MMM dd, yyyy") => {
-  if (!date) return "";
-  
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const fnsFormat = dateFormat || "MMM dd, yyyy";
-  
-  return format(dateObj, fnsFormat);
+    if (!date) return "";
+
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const fnsFormat = dateFormat || "MMM dd, yyyy";
+
+    return format(dateObj, fnsFormat);
 };
 
 /**
@@ -42,10 +42,9 @@ export const parseDate = (dateString) => {
 export const formatDateString = (date) => {
     if (!date) return '';
     const d = date instanceof Date ? date : new Date(date);
-    const localAnchor = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const year = localAnchor.getFullYear();
-    const month = String(localAnchor.getMonth() + 1).padStart(2, '0');
-    const day = String(localAnchor.getDate()).padStart(2, '0');
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
 
