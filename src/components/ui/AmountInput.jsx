@@ -48,7 +48,7 @@ export default function AmountInput({
      */
     useEffect(() => {
         // Check if external 'value' (number) differs from the number represented by our display string
-        const currentNumericValue = parseFloat(unformatCurrency(displayValue, settings));
+        const currentNumericValue = parseFloat(unformatCurrency(displayValue || '', settings));
 
         if (value === null || value === undefined || isNaN(value)) {
             if (displayValue !== null) setDisplayValue(null);
