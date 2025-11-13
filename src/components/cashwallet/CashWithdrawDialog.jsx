@@ -27,7 +27,7 @@ export default function CashDepositDialog({
 }) {
   const [formData, setFormData] = useState({
     title: '',
-    amount: '',
+    amount: null,
     currency: baseCurrency || 'USD',
     date: formatDateString(new Date()),
     category_id: '',
@@ -45,7 +45,7 @@ export default function CashDepositDialog({
     
     setFormData({
       title: '',
-      amount: '',
+      amount: null,
       currency: baseCurrency || 'USD',
       date: formatDateString(new Date()),
       category_id: '',
