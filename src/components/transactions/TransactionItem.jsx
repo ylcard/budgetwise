@@ -8,8 +8,17 @@ import { useSettings } from "../utils/SettingsContext";
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
 import { formatCurrency } from "../utils/currencyUtils";
 import { iconMap, IncomeIcon } from "../utils/iconMapConfig";
+import TransactionForm from "./TransactionForm";
 
-export default function TransactionItem({ transaction, category, onEdit, onDelete }) {
+// UPDATED 15-Jan-2025: Added onSubmit and isSubmitting props for edit form handling
+export default function TransactionItem({ 
+  transaction, 
+  category, 
+  onEdit, 
+  onDelete,
+  onSubmit,
+  isSubmitting
+}) {
   const { settings } = useSettings();
   
   const isIncome = transaction.type === 'income';
@@ -92,14 +101,24 @@ export default function TransactionItem({ transaction, category, onEdit, onDelet
         </div>
 
         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onEdit(transaction)}
-            className="hover:bg-blue-50 hover:text-blue-600"
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
+          {/* UPDATED 15-Jan-2025: Wrapped edit button in TransactionForm for proper form handling */}
+          <TransactionForm
+            transaction={transaction}
+            categories={[]} // Categories fetched internally by TransactionForm
+            onSubmit={(data) => onSubmit(data, transaction)}
+            onCancel={() => {}}
+            isSubmitting={isSubmitting}
+            transactions={[]} // Transactions fetched internally
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+            }
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -115,3 +134,11 @@ export default function TransactionItem({ transaction, category, onEdit, onDelet
 }
 
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+
+// CRITICAL FIX 15-Jan-2025: Resolved edit button not working on Transactions page
+// Root Cause: The edit button was calling onEdit(transaction), which was mapped to handleEdit from useTransactionActions
+// However, handleEdit only sets state (editingTransaction, showForm) but doesn't actually open a form in this context
+// because the TransactionItem component didn't have an edit form integrated into it
+// Solution: Wrapped the edit button in TransactionForm component (same pattern as Budget Detail page)
+// Now the edit button properly opens the TransactionForm popover with the transaction data pre-filled
+// The form submission is handled via onSubmit callback which calls handleSubmit from useTransactionActions
