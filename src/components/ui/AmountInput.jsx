@@ -51,7 +51,7 @@ export default function AmountInput({
         const currentNumericValue = parseFloat(unformatCurrency(displayValue, settings));
 
         if (value === null || value === undefined || isNaN(value)) {
-            if (displayValue !== '') setDisplayValue('');
+            if (displayValue !== null) setDisplayValue(null);
         } else if (value !== currentNumericValue) {
             setDisplayValue(formatCurrency(value, settings));
         }
