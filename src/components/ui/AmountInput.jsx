@@ -38,7 +38,7 @@ export default function AmountInput({
      * @type {[string, function(string)]} Internal state for the formatted string visible in the input field.
      */
     const [displayValue, setDisplayValue] = useState(
-        value !== null && value !== undefined && !isNaN(value) ? formatCurrency(value, settings) : ''
+        value !== null && value !== undefined && !isNaN(value) ? formatCurrency(value, settings) : null // Use null for uninitialized state
     );
 
     /**
@@ -51,7 +51,7 @@ export default function AmountInput({
         const currentNumericValue = parseFloat(unformatCurrency(displayValue, settings));
 
         if (value === null || value === undefined || isNaN(value)) {
-            if (displayValue !== '') setDisplayValue('');
+            if (displayValue !== null) setDisplayValue(null); // Set to null to show placeholder
         } else if (value !== currentNumericValue) {
             setDisplayValue(formatCurrency(value, settings));
         }
@@ -62,7 +62,7 @@ export default function AmountInput({
      * @param {React.ChangeEvent<HTMLInputElement>} e
      */
     const handleChange = (e) => {
-        const rawInput = e.target.value;
+        const rawInput = e.target.value === null ? '' : e.target.value; // Handle null state when typing starts
 
         // 1. Update the internal display state immediately
         setDisplayValue(rawInput);
@@ -74,6 +74,8 @@ export default function AmountInput({
         const numericRegex = /^-?\d*\.?\d*$/;
 
         if (numericString === '') {
+            // If input is truly empty, pass null to parent and internal state
+            setDisplayValue(null);
             onChange(null);
         } else if (numericRegex.test(numericString)) {
             // Parse and enforce precision before sending to parent
@@ -88,7 +90,7 @@ export default function AmountInput({
 
     return (
         <div className="relative">
-            {settings.currencyPosition === 'before' && (
+            {settings.currencyPosition === 'before' && displayValue !== null && (
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 sm:text-sm font-medium">
                         {displaySymbol}
@@ -98,13 +100,13 @@ export default function AmountInput({
             <Input
                 type="text"
                 inputMode="decimal"
-                value={displayValue}
+                value={displayValue === null ? '' : displayValue} // Show empty string when null for placeholder effect
                 onChange={handleChange}
-                placeholder={placeholder}
+                placeholder={displayValue === null ? placeholder : ''} // Use placeholder only when internal state is null
                 className={`${settings.currencyPosition === 'before' ? 'pl-8' : 'pr-8'} ${className}`}
                 {...props}
             />
-            {settings.currencyPosition === 'after' && (
+            {settings.currencyPosition === 'after' && displayValue !== null && (
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 sm:text-sm font-medium">
                         {displaySymbol}
