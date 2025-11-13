@@ -28,7 +28,7 @@ export default function QuickAddIncome({
 }) {
   const [formData, setFormData] = useState({
     title: '',
-    amount: '',
+    amount: null,
     type: 'income',
     date: formatDateString(new Date())
   });
@@ -45,7 +45,7 @@ export default function QuickAddIncome({
     // Reset form
     setFormData({
       title: '',
-      amount: '',
+      amount: null,
       type: 'income',
       date: formatDateString(new Date())
     });
