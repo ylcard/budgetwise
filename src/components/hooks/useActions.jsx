@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +16,8 @@ import {
   updateCurrencyBalance,
 } from "../utils/cashAllocationUtils";
 import { parseDate } from "../utils/dateUtils";
+// ADDED 17-Jan-2025: Import createPageUrl for redirect after budget deletion
+import { createPageUrl } from "@/utils";
 
 // COMMENTED OUT 16-Jan-2025: Removed redundant dashboard hooks - data integrity issues
 // These hooks contained critical flaws:
@@ -403,6 +406,7 @@ export const useGoalActions = (user, goals) => {
 // FIXED 16-Jan-2025: Custom budget deletion now uses base44.entities.CustomBudget.get(id) instead of list().find()
 // ENHANCED 16-Jan-2025: Added options parameter with onSuccess callback support for Dashboard integration
 // UPDATED 17-Jan-2025: Exposed handleDeleteDirect to fix nested confirmation issue
+// FIXED 17-Jan-2025: Added onAfterSuccess to redirect to Budgets page after deletion
 // Hook for custom budget actions (CRUD operations)
 export const useCustomBudgetActions = (user, transactions, cashWallet, options = {}) => {
   const [showForm, setShowForm] = useState(false);
@@ -487,6 +491,7 @@ export const useCustomBudgetActions = (user, transactions, cashWallet, options =
   // DELETE: Use generic hook with robust transaction deletion and cash return
   // CRITICAL FIX 16-Jan-2025: Now uses base44.entities.CustomBudget.get(id) for efficiency
   // UPDATED 17-Jan-2025: Destructured deleteDirect and exposed as handleDeleteDirect
+  // FIXED 17-Jan-2025: Added onAfterSuccess to redirect to Budgets page after deletion
   const { handleDelete: handleDeleteBudget, deleteDirect, isDeleting } = useDeleteEntity({
     entityName: 'CustomBudget',
     queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, QUERY_KEYS.TRANSACTIONS, QUERY_KEYS.CASH_WALLET],
@@ -519,6 +524,10 @@ export const useCustomBudgetActions = (user, transactions, cashWallet, options =
           );
         }
       }
+    },
+    onAfterSuccess: () => {
+      // ADDED 17-Jan-2025: Redirect to Budgets page after successful deletion
+      window.location.href = createPageUrl("Budgets");
     }
   });
 
@@ -681,6 +690,11 @@ export const useSettingsForm = (settings, updateSettings) => {
 // - Fixes the "double confirmation" bug where custom budget deletion was blocked by nested confirmations
 // - Backwards compatible: existing code using handleDelete continues to work unchanged
 // 
+// CRITICAL FIX 17-Jan-2025: Budget Deletion Redirect
+// - Added onAfterSuccess callback to useDeleteEntity for custom budgets
+// - Automatically redirects to Budgets page after successful deletion using createPageUrl("Budgets")
+// - Ensures consistent UX where users are navigated away from deleted budget detail pages
+// 
 // Benefits of Refactoring:
 // - 60% reduction in boilerplate code across entity action hooks
 // - Consistent confirmation UX via global ConfirmDialogProvider
@@ -688,4 +702,5 @@ export const useSettingsForm = (settings, updateSettings) => {
 // - Entity-specific logic is now explicit in onBeforeCreate/Update/Delete callbacks
 // - Dashboard no longer uses buggy simplified hooks, ensuring data integrity
 // - No more nested confirmation dialogs blocking user actions
+// - Automatic navigation after deletion prevents showing deleted budget details
 // - Easier to maintain, test, and extend for future entity types
