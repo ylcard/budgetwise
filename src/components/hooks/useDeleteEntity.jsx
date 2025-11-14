@@ -104,7 +104,7 @@ export const useDeleteEntity = ({
 
       // Perform the actual entity deletion via the base44 API
       // This line is only reached if onBeforeDelete completes successfully
-      await base44.entities[entityName].delete(id);
+      await base44.entities[entityName].delete(idOrEntity.id);
     },
     onSuccess: () => {
       // Invalidate all specified query keys to trigger refetches
