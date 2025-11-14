@@ -14,6 +14,7 @@ import { ArrowLeft, DollarSign, TrendingDown, CheckCircle, Trash2, AlertCircle }
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
+import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 // UPDATED 12-Jan-2025: Changed imports to use currencyUtils.js and dateUtils.js
 import { formatCurrency, getCurrencySymbol } from "../components/utils/currencyUtils";
 import { formatDate, parseDate } from "../components/utils/dateUtils";
@@ -38,7 +39,6 @@ import AllocationManager from "../components/custombudgets/AllocationManager";
 import BudgetCard from "../components/budgets/BudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
-import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 
 // REFACTORED 13-Jan-2025: Updated to accept monthStart and monthEnd parameters for filtering paid expenses by selected month
@@ -213,9 +213,8 @@ export default function BudgetDetail() {
     const queryClient = useQueryClient();
     const location = useLocation();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
-    // ADDED 13-Jan-2025: State for delete confirmation dialog
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
+    const { confirmAction } = useConfirm();
+    
     // ADDED 13-Jan-2025: Use period hook to get selected month boundaries
     const { selectedMonth, selectedYear, monthStart, monthEnd } = usePeriod();
 
@@ -483,10 +482,17 @@ export default function BudgetDetail() {
         budgetActions.handleSubmit(data, budget);
     };
 
-    // UPDATED 13-Jan-2025: Replaced browser confirm with ConfirmDialog state
-    const handleDeleteBudget = async () => {
-        await budgetActions.handleDelete(budgetId);
-        window.location.href = createPageUrl("Budgets");
+    // UPDATED 15-Jan-2025: Now uses useConfirm hook from global provider
+    const handleDeleteBudget = () => {
+        confirmAction(
+            "Delete Budget",
+            "This will delete the budget and all associated transactions. This action cannot be undone.",
+            async () => {
+                await budgetActions.handleDelete(budgetId);
+                window.location.href = createPageUrl("Budgets");
+            },
+            { destructive: true }
+        );
     };
 
     useEffect(() => {
@@ -653,7 +659,7 @@ export default function BudgetDetail() {
                         )}
                         {canDelete && (
                             <Button
-                                onClick={() => setShowDeleteConfirm(true)}
+                                onClick={handleDeleteBudget}
                                 variant="outline"
                                 className="text-red-600 border-red-600 hover:bg-red-50"
                             >
@@ -859,18 +865,6 @@ export default function BudgetDetail() {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* ADDED 13-Jan-2025: Delete confirmation dialog */}
-                <ConfirmDialog
-                    open={showDeleteConfirm}
-                    onOpenChange={setShowDeleteConfirm}
-                    title="Delete Budget?"
-                    message="This will delete the budget and all associated transactions. This action cannot be undone."
-                    onConfirm={handleDeleteBudget}
-                    confirmText="Delete"
-                    cancelText="Cancel"
-                    isDestructive={true}
-                />
             </div>
         </div>
     );
