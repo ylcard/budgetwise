@@ -141,7 +141,7 @@ export default function CustomBudgetForm({
             return;
         }
 
-        onSubmit({
+        return onSubmit({
             ...formData,
             allocatedAmount: parseFloat(normalizedAmount),
             cashAllocations: processedCashAllocations,
