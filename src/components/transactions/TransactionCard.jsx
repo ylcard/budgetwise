@@ -9,6 +9,9 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { iconMap, IncomeIcon } from "../utils/iconMapConfig";
 import TransactionForm from "./TransactionForm";
 import { useTransactions, useCategories } from "../hooks/useBase44Entities";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for delete action
+// (TransactionForm already uses CustomButton for edit trigger)
+import { CustomButton } from "@/components/ui/CustomButton";
 
 export default function TransactionCard({ transaction, category, onEdit, onDelete }) {
   const { settings } = useSettings();
@@ -41,12 +44,14 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
               isSubmitting={false}
               transactions={transactions}
             />
-            <button
+            <CustomButton
+              variant="ghost"
+              size="icon-sm"
               onClick={() => onDelete(transaction.id)}
-              className="hover:bg-red-50 hover:text-red-600 h-7 w-7 rounded flex items-center justify-center"
+              className="hover:bg-red-50 hover:text-red-600 h-7 w-7"
             >
               <Trash2 className="w-4 h-4" />
-            </button>
+            </CustomButton>
           </div>
 
           {/* Icon and category section */}
@@ -114,3 +119,6 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
 // The old Button with Pencil icon has been replaced with TransactionForm component as the trigger
 // ISSUE FIX (2025-01-11): Added useCategories() hook to fetch categories data instead of empty array
 // This fixes the "No category found" issue in the edit transaction form
+// UPDATED 16-Jan-2025: Replaced native <button> with CustomButton for delete action
+// - Delete button uses variant="ghost" size="icon-sm"
+// - Maintains hover effects (hover:bg-red-50 hover:text-red-600)

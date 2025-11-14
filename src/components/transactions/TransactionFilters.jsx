@@ -4,7 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import {
   Popover,
   PopoverContent,
@@ -57,28 +59,28 @@ export default function TransactionFilters({ filters, setFilters, categories }) 
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-48 justify-between">
+              <CustomButton variant="outline" className="w-48 justify-between">
                 {selectedCategories.length === 0 ? (
                   "All Categories"
                 ) : (
                   `${selectedCategories.length} selected`
                 )}
                 <Filter className="w-4 h-4 ml-2" />
-              </Button>
+              </CustomButton>
             </PopoverTrigger>
             <PopoverContent className="w-64">
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-sm font-semibold">Categories</Label>
                   {selectedCategories.length > 0 && (
-                    <Button
+                    <CustomButton
                       variant="ghost"
                       size="sm"
                       onClick={handleClearCategories}
                       className="h-6 px-2 text-xs"
                     >
                       Clear
-                    </Button>
+                    </CustomButton>
                   )}
                 </div>
                 <div className="max-h-64 overflow-y-auto space-y-2">
@@ -143,3 +145,8 @@ export default function TransactionFilters({ filters, setFilters, categories }) 
     </Card>
   );
 }
+
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for filter actions
+// - Category trigger button uses variant="outline"
+// - Clear categories button uses variant="ghost" size="sm"
+// - All functionality preserved with consistent styling

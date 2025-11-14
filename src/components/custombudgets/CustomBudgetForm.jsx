@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Trash2, Plus } from "lucide-react";
 import AmountInput from "../ui/AmountInput";
@@ -191,7 +193,7 @@ export default function CustomBudgetForm({
           />
         </div>
 
-        <Button
+        <CustomButton
           type="button"
           variant="outline"
           onClick={handleAddCashAllocation}
@@ -199,7 +201,7 @@ export default function CustomBudgetForm({
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Cash
-        </Button>
+        </CustomButton>
       </div>
 
       {formData.cashAllocations.length > 0 && (
@@ -237,7 +239,7 @@ export default function CustomBudgetForm({
                       currencySymbol={getCurrencySymbol(alloc.currencyCode)}
                     />
                   </div>
-                  <Button
+                  <CustomButton
                     type="button"
                     variant="ghost"
                     size="icon"
@@ -245,7 +247,7 @@ export default function CustomBudgetForm({
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </CustomButton>
                 </div>
               );
             })}
@@ -283,16 +285,16 @@ export default function CustomBudgetForm({
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <CustomButton type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button
+        </CustomButton>
+        <CustomButton
           type="submit"
           disabled={isSubmitting}
-          className="bg-gradient-to-r from-blue-600 to-purple-600"
+          variant="primary"
         >
           {isSubmitting ? 'Saving...' : budget ? 'Update Budget' : 'Create Budget'}
-        </Button>
+        </CustomButton>
       </div>
     </form>
   );
@@ -309,3 +311,9 @@ export default function CustomBudgetForm({
 //    - Filtered currencies to only show available wallet balances
 // 4. Dynamic display of available cash balance for selected currency
 // UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js instead of budgetCalculations.jsx
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for form actions
+// - "Add Cash" button uses variant="outline"
+// - Remove cash allocation button uses variant="ghost" size="icon"
+// - Cancel button uses variant="outline"
+// - Submit button uses variant="primary" (gradient blue-purple)
+// - Color selection buttons intentionally kept as native <button>s for inline styling

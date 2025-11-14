@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Circle } from "lucide-react";
@@ -55,9 +56,9 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
       <Card className="border-none shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{category ? 'Edit' : 'Create'} Category</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
+          <CustomButton variant="ghost" size="icon" onClick={onCancel}>
             <X className="w-4 h-4" />
-          </Button>
+          </CustomButton>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -150,16 +151,16 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel}>
+              <CustomButton type="button" variant="outline" onClick={onCancel}>
                 Cancel
-              </Button>
-              <Button
+              </CustomButton>
+              <CustomButton
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-blue-600 to-purple-600"
+                variant="primary"
               >
                 {isSubmitting ? 'Saving...' : category ? 'Update' : 'Create'}
-              </Button>
+              </CustomButton>
             </div>
           </form>
         </CardContent>
@@ -167,3 +168,10 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
     </motion.div>
   );
 }
+
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for form actions
+// - Close button (X) uses variant="ghost" size="icon"
+// - Cancel button uses variant="outline"
+// - Submit button uses variant="primary" (gradient blue-purple)
+// - Native <button>s for icon/color selection intentionally kept as they need specific inline styling
+// - All functionality preserved with consistent purpose-based styling
