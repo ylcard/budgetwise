@@ -1,7 +1,9 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSettings } from "../components/utils/SettingsContext";
@@ -184,10 +186,10 @@ export default function Settings() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button
+                <CustomButton
                   type="submit"
                   disabled={isSaving}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  variant="primary"
                 >
                   {isSaving ? 'Saving...' : saveSuccess ? (
                     <>
@@ -195,7 +197,7 @@ export default function Settings() {
                       Saved!
                     </>
                   ) : 'Save Settings'}
-                </Button>
+                </CustomButton>
               </div>
             </CardContent>
           </Card>
@@ -206,3 +208,6 @@ export default function Settings() {
 }
 
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for "Save Settings" button
+// - Uses variant="primary" (gradient blue-purple) for primary action
+// - Removed manual gradient styling as variant provides it

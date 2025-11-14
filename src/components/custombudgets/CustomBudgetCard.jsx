@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Pencil, Trash2, Calendar, Receipt, CheckCircle, Archive } from "lucide-react";
@@ -140,24 +142,24 @@ export default function CustomBudgetCard({
             {(canEdit || canDelete) && (
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 {canEdit && onEdit && (
-                  <Button
+                  <CustomButton
                     variant="ghost"
                     size="icon"
                     onClick={() => onEdit(budget)}
                     className="hover:bg-blue-50 hover:text-blue-600 h-8 w-8"
                   >
                     <Pencil className="w-4 h-4" />
-                  </Button>
+                  </CustomButton>
                 )}
                 {canDelete && onDelete && (
-                  <Button
+                  <CustomButton
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(budget.id)}
                     className="hover:bg-red-50 hover:text-red-600 h-8 w-8"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </CustomButton>
                 )}
               </div>
             )}
@@ -235,7 +237,7 @@ export default function CustomBudgetCard({
 
             {canChangeStatus && budget.status === 'active' && onStatusChange && (
               <div className="flex gap-2 pt-2">
-                <Button
+                <CustomButton
                   variant="outline"
                   size="sm"
                   onClick={() => onStatusChange(budget.id, 'completed')}
@@ -243,7 +245,7 @@ export default function CustomBudgetCard({
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Complete
-                </Button>
+                </CustomButton>
               </div>
             )}
           </div>
@@ -255,3 +257,7 @@ export default function CustomBudgetCard({
 
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
 // UPDATED 12-Jan-2025: Removed dependency on budgetCalculations.js, now calculating stats inline
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for action buttons
+// - Edit/Delete buttons use variant="ghost" size="icon" with specific hover colors
+// - Complete button uses variant="outline" size="sm" with custom text and border colors
+// - All functionality preserved with consistent styling

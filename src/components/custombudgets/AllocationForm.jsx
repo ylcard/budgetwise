@@ -1,8 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 // COMMENTED OUT 13-Jan-2025: Card components no longer needed as form is now wrapped in Dialog
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 // COMMENTED OUT 13-Jan-2025: X icon no longer needed as Dialog has its own close button
 // import { X } from "lucide-react";
@@ -112,22 +115,22 @@ export default function AllocationForm({
             <div className="space-y-2">
               <Label>Allocation Type</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Button
+                <CustomButton
                   type="button"
                   variant={formData.allocationType === 'digital' ? 'default' : 'outline'}
                   onClick={() => setFormData({ ...formData, allocationType: 'digital', currency: baseCurrency })}
                   className="w-full"
                 >
                   Card
-                </Button>
-                <Button
+                </CustomButton>
+                <CustomButton
                   type="button"
                   variant={formData.allocationType === 'cash' ? 'default' : 'outline'}
                   onClick={() => setFormData({ ...formData, allocationType: 'cash', currency: availableCashCurrencies[0] || baseCurrency })}
                   className="w-full"
                 >
                   Cash
-                </Button>
+                </CustomButton>
               </div>
             </div>
           )}
@@ -203,16 +206,16 @@ export default function AllocationForm({
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <CustomButton type="button" variant="outline" onClick={onCancel}>
               Cancel
-            </Button>
-            <Button
+            </CustomButton>
+            <CustomButton
               type="submit"
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-blue-600 to-purple-600"
+              variant="primary"
             >
               {isSubmitting ? 'Saving...' : allocation ? 'Update' : 'Add'}
-            </Button>
+            </CustomButton>
           </div>
         </form>
     //   </CardContent>
@@ -236,3 +239,7 @@ export default function AllocationForm({
 // - Also displays wallet cash balance for reference when allocating cash
 // - Updated entity schema to include allocationType and currency fields
 // UPDATED 12-Jan-2025: Changed imports to use generalUtils.js and currencyUtils.js
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for form actions
+// - Allocation type toggle buttons use variant="default" or "outline" based on selection
+// - Cancel button uses variant="outline"
+// - Submit button uses variant="primary" (gradient blue-purple)

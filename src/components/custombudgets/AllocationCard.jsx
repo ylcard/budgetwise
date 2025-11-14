@@ -1,6 +1,8 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -47,12 +49,22 @@ export default function AllocationCard({ allocation, category, stats, onEdit, on
               </div>
             </div>
             <div className="flex justify-end gap-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button variant="ghost" size="icon" onClick={onEdit} className="hover:bg-blue-50 hover:text-blue-600  h-7 w-7 rounded flex items-center justify-center">
+              <CustomButton 
+                variant="ghost" 
+                size="icon-sm" 
+                onClick={onEdit} 
+                className="hover:bg-blue-50 hover:text-blue-600 h-7 w-7"
+              >
                 <Pencil className="w-3 h-3" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onDelete} className="hover:bg-red-50 hover:text-red-600 h-7 w-7 rounded flex items-center justify-center">
+              </CustomButton>
+              <CustomButton 
+                variant="ghost" 
+                size="icon-sm" 
+                onClick={onDelete} 
+                className="hover:bg-red-50 hover:text-red-600 h-7 w-7"
+              >
                 <Trash2 className="w-3 h-3" />
-              </Button>
+              </CustomButton>
             </div>
           </div>
 
@@ -103,3 +115,6 @@ export default function AllocationCard({ allocation, category, stats, onEdit, on
 // Shows currency for cash allocations
 // Uses correct currency symbol based on allocation type
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for action buttons
+// - Edit/Delete buttons use variant="ghost" size="icon-sm" with specific hover colors
+// - All functionality preserved with consistent styling

@@ -1,6 +1,8 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Wallet, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { SUPPORTED_CURRENCIES } from "../utils/currencyCalculations";
 
@@ -41,15 +43,16 @@ export default function CashWalletCard({ cashWallet, onDepositCash, onReturnCash
         )}
 
         <div className="grid grid-cols-2 gap-2">
-          <Button
+          <CustomButton
             onClick={onDepositCash}
             size="sm"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-xs"
+            variant="primary"
+            className="text-xs"
           >
             <ArrowDownToLine className="w-3 h-3 mr-1" />
             Deposit Cash
-          </Button>
-          <Button
+          </CustomButton>
+          <CustomButton
             onClick={onReturnCash}
             size="sm"
             variant="outline"
@@ -57,9 +60,14 @@ export default function CashWalletCard({ cashWallet, onDepositCash, onReturnCash
           >
             <ArrowUpFromLine className="w-3 h-3 mr-1" />
             Return Cash
-          </Button>
+          </CustomButton>
         </div>
       </CardContent>
     </Card>
   );
 }
+
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for cash wallet actions
+// - Deposit Cash button uses variant="primary" (gradient blue-purple)
+// - Return Cash button uses variant="outline" with custom green border and text colors
+// - All functionality preserved with consistent styling

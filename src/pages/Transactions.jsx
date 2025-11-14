@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { useTransactions, useCategories, useCashWallet } from "../components/hooks/useBase44Entities";
 import { useTransactionFiltering } from "../components/hooks/useDerivedData";
@@ -47,10 +49,10 @@ export default function Transactions() {
             isSubmitting={isSubmitting}
             transactions={transactions}
             trigger={
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
+              <CustomButton variant="primary" className="shadow-lg">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Transaction
-              </Button>
+              </CustomButton>
             }
           />
         </div>
@@ -90,3 +92,7 @@ export default function Transactions() {
 // UPDATED 15-Jan-2025: Removed local ConfirmDialog component and state
 // Now uses global ConfirmDialogProvider via useConfirm hook in useTransactionActions
 // All confirmation logic centralized in useActions hook using confirmAction from provider
+
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for "Add Transaction" trigger
+// - Uses variant="primary" (gradient blue-purple) for primary action
+// - Removed manual gradient styling as variant provides it

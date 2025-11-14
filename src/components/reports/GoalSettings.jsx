@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Target, Save } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -108,15 +110,21 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
           )}
         </div>
 
-        <Button
+        <CustomButton
           onClick={handleSave}
           disabled={!isValid || isSaving}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          variant="primary"
+          className="w-full"
         >
           <Save className="w-4 h-4 mr-2" />
           {isSaving ? 'Saving...' : 'Save Goals'}
-        </Button>
+        </CustomButton>
       </CardContent>
     </Card>
   );
 }
+
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for "Save Goals" button
+// - Uses variant="primary" (gradient blue-purple) for primary action
+// - Removed manual gradient styling as variant provides it
+// - All functionality preserved with consistent styling
