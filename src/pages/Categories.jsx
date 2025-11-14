@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+// UPDATED 15-Jan-2025: Changed Button import to CustomButton
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { useCategories } from "../components/hooks/useBase44Entities";
 import { useCategoryActions } from "../components/hooks/useActions";
@@ -29,16 +30,17 @@ export default function Categories() {
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Categories</h1>
             <p className="text-gray-500 mt-1">Organize your transactions with custom categories</p>
           </div>
-          <Button
+          {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
+          <CustomButton
             onClick={() => {
               setEditingCategory(null);
               setShowForm(!showForm);
             }}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+            variant="create"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Category
-          </Button>
+          </CustomButton>
         </div>
 
         {showForm && (
@@ -63,3 +65,5 @@ export default function Categories() {
     </div>
   );
 }
+
+// UPDATED 15-Jan-2025: Replaced Button with CustomButton, using create variant for "Add Category" button

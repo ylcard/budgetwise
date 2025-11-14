@@ -1,6 +1,6 @@
-
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+// UPDATED 15-Jan-2025: Changed Button import to CustomButton
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -234,12 +234,11 @@ export default function Budgets() {
               </div>
               <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
                 <PopoverTrigger asChild>
-                  <Button
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                  >
+                  {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
+                  <CustomButton variant="create">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Custom Budget
-                  </Button>
+                  </CustomButton>
                 </PopoverTrigger>
                 <PopoverContent 
                   className="w-[600px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto z-50" 
@@ -287,12 +286,11 @@ export default function Budgets() {
               </div>
               <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
                 <PopoverTrigger asChild>
-                  <Button
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                  >
+                  {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
+                  <CustomButton variant="create">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Custom Budget
-                  </Button>
+                  </CustomButton>
                 </PopoverTrigger>
                 <PopoverContent 
                   className="w-[600px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto z-50" 
@@ -363,3 +361,4 @@ export default function Budgets() {
 // - Added monthStart and monthEnd parameters to getCustomBudgetStats
 // - Paid expenses now filtered by paidDate within selected month boundaries
 // - This excludes "prepaid" expenses from budget calculations for display purposes
+// UPDATED 15-Jan-2025: Replaced Button with CustomButton, using create variant for "Create Custom Budget" buttons

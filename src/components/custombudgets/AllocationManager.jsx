@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// UPDATED 15-Jan-2025: Changed Button import to CustomButton
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 // COMMENTED OUT 13-Jan-2025: AnimatePresence no longer needed as form is now in Dialog
 // import { motion, AnimatePresence } from "framer-motion";
@@ -96,14 +97,15 @@ export default function AllocationManager({
             Allocate portions of your budget to specific categories
           </p>
         </div>
-        <Button
+        {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
+        <CustomButton
           onClick={() => setShowForm(true)}
           size="sm"
-          className="bg-gradient-to-r from-blue-600 to-purple-600"
+          variant="create"
         >
           <Plus className="w-4 h-4 mr-2" />
           Allocate Funds
-        </Button>
+        </CustomButton>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* REDESIGNED 13-Jan-2025: Remaining Funds Card with horizontal layout and corrected calculations */}
@@ -220,3 +222,4 @@ export default function AllocationManager({
 // 3. Passes cashWallet to AllocationForm for available balance display
 // 4. Calculates remaining cash per currency based on allocations
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
+// UPDATED 15-Jan-2025: Replaced Button with CustomButton, using create variant for "Allocate Funds" button
