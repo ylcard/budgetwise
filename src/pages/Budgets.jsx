@@ -144,9 +144,10 @@ export default function Budgets() {
 
   const customBudgetActions = useCustomBudgetActions(user, transactions, cashWallet);
 
+  // UPDATED 17-Jan-2025: Use handleDeleteDirect to avoid nested confirmation
   const confirmDelete = () => {
     if (budgetToDelete) {
-      customBudgetActions.handleDelete(budgetToDelete);
+      customBudgetActions.handleDeleteDirect(budgetToDelete);
       setBudgetToDelete(null);
     }
   };
@@ -400,3 +401,7 @@ export default function Budgets() {
 // - Now uses the same QuickAddBudget component as Dashboard for consistency
 // - Adheres to UI modality guidelines (Dialog for major forms, not Popover)
 // - Eliminates code duplication and improves maintainability
+// CRITICAL FIX 17-Jan-2025: Fixed nested confirmation issue for budget deletion
+// - Changed confirmDelete to call customBudgetActions.handleDeleteDirect instead of handleDelete
+// - This bypasses the generic hook's confirmation since AlertDialog already shows confirmation
+// - Resolves the "double confirmation" bug that prevented budget deletion from completing

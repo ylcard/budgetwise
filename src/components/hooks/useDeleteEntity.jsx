@@ -9,6 +9,9 @@ import { showToast } from "@/components/ui/use-toast";
  * CREATED 16-Jan-2025: Centralized entity deletion logic to reduce boilerplate,
  * ensure consistency, and provide robust handling of complex deletion dependencies.
  * 
+ * UPDATED 17-Jan-2025: Added deleteDirect function to bypass confirmation when callers
+ * already show their own confirmation dialog (prevents nested confirmations).
+ * 
  * This hook enforces an "all-or-nothing" approach: if onBeforeDelete throws an error,
  * the entity deletion is aborted, preventing orphaned data.
  * 
@@ -21,7 +24,10 @@ import { showToast } from "@/components/ui/use-toast";
  *                                            CRITICAL: If this function throws an error, the entity will NOT be deleted
  * @param {Function} config.onAfterSuccess - Optional callback function to run after successful deletion
  * 
- * @returns {Object} - { handleDelete, isDeleting }
+ * @returns {Object} - { handleDelete, deleteDirect, isDeleting }
+ *   - handleDelete: Shows confirmation dialog, then deletes (use when you want built-in confirmation)
+ *   - deleteDirect: Deletes immediately without confirmation (use when caller already confirmed)
+ *   - isDeleting: Boolean indicating if deletion is in progress
  * 
  * @example
  * // Simple usage (Category - no dependencies)
@@ -79,6 +85,18 @@ import { showToast } from "@/components/ui/use-toast";
  *     window.location.href = createPageUrl("Budgets");
  *   }
  * });
+ * 
+ * @example
+ * // Using direct delete when caller already shows confirmation (avoids nested confirmation)
+ * const { deleteDirect, isDeleting } = useDeleteEntity({
+ *   entityName: 'CustomBudget',
+ *   queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS],
+ * });
+ * 
+ * // In component with AlertDialog:
+ * <AlertDialog>
+ *   <AlertDialogAction onClick={() => deleteDirect(budgetId)}>Delete</AlertDialogAction>
+ * </AlertDialog>
  */
 export const useDeleteEntity = ({
   entityName,
@@ -136,6 +154,7 @@ export const useDeleteEntity = ({
     },
   });
 
+  // ADDED 17-Jan-2025: handleDelete shows confirmation, then calls mutation
   const handleDelete = (idOrEntity) => {
     confirmAction(
       confirmTitle || `Delete ${entityName}`,
@@ -145,8 +164,15 @@ export const useDeleteEntity = ({
     );
   };
 
+  // ADDED 17-Jan-2025: deleteDirect calls mutation immediately (bypasses confirmation)
+  // Use this when the caller already shows their own confirmation dialog
+  const deleteDirect = (idOrEntity) => {
+    deleteMutation.mutate(idOrEntity);
+  };
+
   return {
     handleDelete,
+    deleteDirect,
     isDeleting: deleteMutation.isPending,
   };
 };
@@ -170,8 +196,16 @@ export const useDeleteEntity = ({
 // - Uses base44.entities[entityName].get(id) instead of list().find() for targeted fetching
 // - Only fetches data when needed within onBeforeDelete
 // 
+// UPDATED 17-Jan-2025: Added deleteDirect function to fix nested confirmation issue
+// - When pages/components show their own confirmation (AlertDialog, confirmAction), they can now
+//   call deleteDirect() to bypass the hook's built-in confirmation
+// - This fixes the "double confirmation" bug where custom budget deletion was blocked
+// - handleDelete still shows confirmation for components that want the built-in UX
+// - Backwards compatible: existing code using handleDelete continues to work unchanged
+// 
 // Benefits:
 // - Reduces code duplication across entity-specific action hooks
 // - Ensures consistent confirmation UX and error handling
 // - Makes dependency management explicit and testable
 // - Simplifies maintenance (single source of truth for deletion logic)
+// - Prevents nested confirmation dialogs that block user actions

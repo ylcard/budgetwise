@@ -402,6 +402,7 @@ export const useGoalActions = (user, goals) => {
 // REFACTORED 16-Jan-2025: Major refactor using generic CRUD hooks
 // FIXED 16-Jan-2025: Custom budget deletion now uses base44.entities.CustomBudget.get(id) instead of list().find()
 // ENHANCED 16-Jan-2025: Added options parameter with onSuccess callback support for Dashboard integration
+// UPDATED 17-Jan-2025: Exposed handleDeleteDirect to fix nested confirmation issue
 // Hook for custom budget actions (CRUD operations)
 export const useCustomBudgetActions = (user, transactions, cashWallet, options = {}) => {
   const [showForm, setShowForm] = useState(false);
@@ -485,7 +486,8 @@ export const useCustomBudgetActions = (user, transactions, cashWallet, options =
 
   // DELETE: Use generic hook with robust transaction deletion and cash return
   // CRITICAL FIX 16-Jan-2025: Now uses base44.entities.CustomBudget.get(id) for efficiency
-  const { handleDelete: handleDeleteBudget, isDeleting } = useDeleteEntity({
+  // UPDATED 17-Jan-2025: Destructured deleteDirect and exposed as handleDeleteDirect
+  const { handleDelete: handleDeleteBudget, deleteDirect, isDeleting } = useDeleteEntity({
     entityName: 'CustomBudget',
     queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, QUERY_KEYS.TRANSACTIONS, QUERY_KEYS.CASH_WALLET],
     confirmTitle: "Delete Budget",
@@ -595,6 +597,7 @@ export const useCustomBudgetActions = (user, transactions, cashWallet, options =
     handleSubmit,
     handleEdit,
     handleDelete: handleDeleteBudget,
+    handleDeleteDirect: deleteDirect, // ADDED 17-Jan-2025: Expose direct delete for callers with own confirmation
     handleStatusChange,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
@@ -671,10 +674,18 @@ export const useSettingsForm = (settings, updateSettings) => {
 // - Added SYSTEM_BUDGETS invalidation to transaction creation for consistency
 // - This consolidation eliminates data corruption risks and ensures all budget/transaction operations are handled correctly
 // 
+// CRITICAL FIX 17-Jan-2025: Nested Confirmation Issue
+// - Added handleDeleteDirect to useCustomBudgetActions return object
+// - This exposes the deleteDirect function from useDeleteEntity for callers that already show their own confirmation
+// - Pages like Budgets.jsx and BudgetDetail.jsx can now call handleDeleteDirect to bypass the hook's built-in confirmation
+// - Fixes the "double confirmation" bug where custom budget deletion was blocked by nested confirmations
+// - Backwards compatible: existing code using handleDelete continues to work unchanged
+// 
 // Benefits of Refactoring:
 // - 60% reduction in boilerplate code across entity action hooks
 // - Consistent confirmation UX via global ConfirmDialogProvider
 // - Robust error handling prevents partial deletions and orphaned data
 // - Entity-specific logic is now explicit in onBeforeCreate/Update/Delete callbacks
 // - Dashboard no longer uses buggy simplified hooks, ensuring data integrity
+// - No more nested confirmation dialogs blocking user actions
 // - Easier to maintain, test, and extend for future entity types

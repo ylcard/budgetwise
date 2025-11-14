@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -479,15 +478,16 @@ export default function BudgetDetail() {
     };
 
     // CRITICAL FIX 16-Jan-2025: Removed premature redirect that caused confirmation dialog to close immediately
+    // UPDATED 17-Jan-2025: Use handleDeleteDirect to avoid nested confirmation
     // Navigation now happens automatically via useDeleteEntity's onAfterSuccess callback in useCustomBudgetActions
     const handleDeleteBudget = () => {
         confirmAction(
             "Delete Budget",
             "This will delete the budget and all associated transactions. This action cannot be undone.",
             async () => {
-                await budgetActions.handleDelete(budgetId);
+                await budgetActions.handleDeleteDirect(budgetId);
                 // CRITICAL: Navigation moved to useDeleteEntity's onAfterSuccess to prevent premature redirect
-                // The `budgetActions.handleDelete` (which wraps `useDeleteEntity`) is now responsible for navigation.
+                // The `budgetActions.handleDeleteDirect` (which wraps `useDeleteEntity`) is now responsible for navigation.
             },
             { destructive: true }
         );
