@@ -3,11 +3,12 @@ import React, { useState } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+// COMMENTED OUT 16-Jan-2025: Removed Popover imports as we now use Dialog-based QuickAddBudget
+// import {
+//   Popover,
+//   PopoverContent,
+//   PopoverTrigger,
+// } from "@/components/ui/popover";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -31,9 +32,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { parseDate } from "../components/utils/dateUtils";
 
-import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
+// COMMENTED OUT 16-Jan-2025: No longer directly embedding CustomBudgetForm in Popover
+// import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import BudgetCard from "../components/budgets/BudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
+// ADDED 16-Jan-2025: Import QuickAddBudget for standardized Dialog-based budget creation
+import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 
 // UPDATED 13-Jan-2025: Added monthStart and monthEnd parameters to filter paid expenses by selected month
 const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) => {
@@ -118,6 +122,8 @@ const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) 
 export default function Budgets() {
   const { user, settings } = useSettings();
   const [budgetToDelete, setBudgetToDelete] = useState(null);
+  // ADDED 16-Jan-2025: State for controlling QuickAddBudget dialog visibility
+  const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
 
   const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
 
@@ -232,9 +238,14 @@ export default function Budgets() {
                   Custom Budgets
                 </span>
               </div>
+              {/* UPDATED 16-Jan-2025: Replaced Popover with CustomButton triggering QuickAddBudget dialog */}
+              <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Custom Budget
+              </CustomButton>
+              {/* COMMENTED OUT 16-Jan-2025: Removed Popover-based budget creation in favor of Dialog-based QuickAddBudget
               <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
                 <PopoverTrigger asChild>
-                  {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
                   <CustomButton variant="create">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Custom Budget
@@ -263,6 +274,7 @@ export default function Budgets() {
                   </div>
                 </PopoverContent>
               </Popover>
+              */}
             </CardHeader>
             <CardContent>
               <div className="h-40 flex items-center justify-center text-gray-400">
@@ -284,9 +296,14 @@ export default function Budgets() {
                   Custom budgets containing wants expenses, sorted by status and date
                 </p>
               </div>
+              {/* UPDATED 16-Jan-2025: Replaced Popover with CustomButton triggering QuickAddBudget dialog */}
+              <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Custom Budget
+              </CustomButton>
+              {/* COMMENTED OUT 16-Jan-2025: Removed Popover-based budget creation in favor of Dialog-based QuickAddBudget
               <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
                 <PopoverTrigger asChild>
-                  {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
                   <CustomButton variant="create">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Custom Budget
@@ -315,6 +332,7 @@ export default function Budgets() {
                   </div>
                 </PopoverContent>
               </Popover>
+              */}
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -335,6 +353,19 @@ export default function Budgets() {
             </CardContent>
           </Card>
         )}
+
+        {/* ADDED 16-Jan-2025: QuickAddBudget Dialog for standardized budget creation UI */}
+        <QuickAddBudget
+          open={showQuickAddBudget}
+          onOpenChange={setShowQuickAddBudget}
+          onSubmit={customBudgetActions.handleSubmit}
+          onCancel={() => setShowQuickAddBudget(false)}
+          isSubmitting={customBudgetActions.isSubmitting}
+          cashWallet={cashWallet}
+          baseCurrency={settings.baseCurrency}
+          transactions={transactions}
+          allBudgets={allCustomBudgets}
+        />
 
         <AlertDialog open={!!budgetToDelete} onOpenChange={(open) => !open && setBudgetToDelete(null)}>
           <AlertDialogContent>
@@ -362,3 +393,10 @@ export default function Budgets() {
 // - Paid expenses now filtered by paidDate within selected month boundaries
 // - This excludes "prepaid" expenses from budget calculations for display purposes
 // UPDATED 15-Jan-2025: Replaced Button with CustomButton, using create variant for "Create Custom Budget" buttons
+// REFACTORED 16-Jan-2025: Standardized budget creation UI to use Dialog-based QuickAddBudget component
+// - Removed Popover-based budget creation form (lines 235-265 and 287-317)
+// - Added showQuickAddBudget state to control QuickAddBudget dialog visibility
+// - Replaced both Popover instances with simple CustomButton triggers
+// - Now uses the same QuickAddBudget component as Dashboard for consistency
+// - Adheres to UI modality guidelines (Dialog for major forms, not Popover)
+// - Eliminates code duplication and improves maintainability
