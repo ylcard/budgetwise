@@ -1,9 +1,10 @@
-
 import React, { useMemo, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// UPDATED 16-Jan-2025: Replaced Button import with CustomButton for action consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Badge } from "@/components/ui/badge";
 import {
     Popover,
@@ -15,10 +16,8 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
-// UPDATED 12-Jan-2025: Changed imports to use currencyUtils.js and dateUtils.js
 import { formatCurrency, getCurrencySymbol } from "../components/utils/currencyUtils";
 import { formatDate, parseDate } from "../components/utils/dateUtils";
-// UPDATED 13-Jan-2025: Changed to explicitly use .jsx extension for financialCalculations
 import {
     getPaidNeedsExpenses,
     getUnpaidNeedsExpenses,
@@ -26,7 +25,7 @@ import {
     getDirectUnpaidWantsExpenses,
     getPaidCustomBudgetExpenses,
     getUnpaidCustomBudgetExpenses,
-    getPaidSavingsExpenses, // Retained for functionality as it's used in getSystemBudgetStats
+    getPaidSavingsExpenses,
 } from "../components/utils/financialCalculations";
 import { useCashWallet } from "../components/hooks/useBase44Entities";
 import { useTransactionActions } from "../components/hooks/useActions";
@@ -215,7 +214,6 @@ export default function BudgetDetail() {
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const { confirmAction } = useConfirm();
     
-    // ADDED 13-Jan-2025: Use period hook to get selected month boundaries
     const { selectedMonth, selectedYear, monthStart, monthEnd } = usePeriod();
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -457,7 +455,6 @@ export default function BudgetDetail() {
         return [];
     }, [budget, allCustomBudgets]);
 
-    // UPDATED 13-Jan-2025: Pass monthStart and monthEnd to getCustomBudgetStats
     const stats = useMemo(() => {
         if (!budget) return null;
 
@@ -482,17 +479,10 @@ export default function BudgetDetail() {
         budgetActions.handleSubmit(data, budget);
     };
 
-    // UPDATED 15-Jan-2025: Now uses useConfirm hook from global provider
-    const handleDeleteBudget = () => {
-        confirmAction(
-            "Delete Budget",
-            "This will delete the budget and all associated transactions. This action cannot be undone.",
-            async () => {
-                await budgetActions.handleDelete(budgetId);
-                window.location.href = createPageUrl("Budgets");
-            },
-            { destructive: true }
-        );
+    // UPDATED 16-Jan-2025: Simplified using useCustomBudgetActions.handleDelete
+    const handleDeleteBudget = async () => {
+        await budgetActions.handleDelete(budgetId);
+        window.location.href = createPageUrl("Budgets");
     };
 
     useEffect(() => {
@@ -591,9 +581,10 @@ export default function BudgetDetail() {
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex items-center gap-4">
                     <Link to={createPageUrl("Budgets")}>
-                        <Button variant="ghost" size="icon">
+                        {/* UPDATED 16-Jan-2025: Replaced Button with CustomButton variant="ghost" */}
+                        <CustomButton variant="ghost" size="icon">
                             <ArrowLeft className="w-5 h-5" />
-                        </Button>
+                        </CustomButton>
                     </Link>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -613,9 +604,10 @@ export default function BudgetDetail() {
                         {canEdit && !isCompleted && (
                             <Popover open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
                                 <PopoverTrigger asChild>
-                                    <Button variant="outline">
+                                    {/* UPDATED 16-Jan-2025: Replaced Button with CustomButton variant="modify" */}
+                                    <CustomButton variant="modify">
                                         Edit Budget
-                                    </Button>
+                                    </CustomButton>
                                 </PopoverTrigger>
                                 <PopoverContent
                                     className="w-[600px] max-h-[90vh] overflow-y-auto z-50"
@@ -639,33 +631,35 @@ export default function BudgetDetail() {
                             </Popover>
                         )}
                         {!budget.isSystemBudget && budget.status === 'active' && (
-                            <Button
+                            // UPDATED 16-Jan-2025: Replaced Button with CustomButton variant="success"
+                            <CustomButton
+                                variant="success"
                                 onClick={() => completeBudgetMutation.mutate(budgetId)}
                                 disabled={completeBudgetMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 text-white"
                             >
                                 <CheckCircle className="w-4 h-4 mr-2" />
                                 Complete
-                            </Button>
+                            </CustomButton>
                         )}
                         {!budget.isSystemBudget && budget.status === 'completed' && (
-                            <Button
+                            // UPDATED 16-Jan-2025: Replaced Button with CustomButton variant="success"
+                            <CustomButton
+                                variant="success"
                                 onClick={() => reactivateBudgetMutation.mutate(budgetId)}
                                 disabled={reactivateBudgetMutation.isPending}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
                             >
                                 Reactivate
-                            </Button>
+                            </CustomButton>
                         )}
                         {canDelete && (
-                            <Button
+                            // UPDATED 16-Jan-2025: Replaced Button with CustomButton variant="delete"
+                            <CustomButton
+                                variant="delete"
                                 onClick={handleDeleteBudget}
-                                variant="outline"
-                                className="text-red-600 border-red-600 hover:bg-red-50"
                             >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete
-                            </Button>
+                            </CustomButton>
                         )}
                     </div>
                 </div>
@@ -775,7 +769,6 @@ export default function BudgetDetail() {
                     </Card>
                 )}
 
-                {/* UPDATED 13-Jan-2025: Pass monthStart and monthEnd to AllocationManager */}
                 {!budget.isSystemBudget && budget.status !== 'completed' && allocationStats && (
                     <AllocationManager
                         customBudget={budget}
@@ -869,3 +862,13 @@ export default function BudgetDetail() {
         </div>
     );
 }
+
+// UPDATED 16-Jan-2025: Replaced all Button components with CustomButton using purpose-based variants
+// - Back button: variant="ghost" (minimal style for navigation)
+// - Edit Budget: variant="modify" (blue for modification actions)
+// - Complete Budget: variant="success" (green for completion actions)
+// - Reactivate Budget: variant="success" (green for positive status change)
+// - Delete Budget: variant="delete" (red for deletion actions)
+// 
+// Simplified handleDeleteBudget to use budgetActions.handleDelete directly
+// (confirmation dialog is now handled internally by useDeleteEntity hook)
