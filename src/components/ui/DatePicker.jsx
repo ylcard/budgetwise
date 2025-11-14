@@ -1,13 +1,14 @@
-
 /**
  * @fileoverview DatePicker component for selecting a single date,
- * integrating UI components (Popover, Button, Calendar) and utilizing
+ * integrating UI components (Popover, CustomButton, Calendar) and utilizing
  * user settings for date formatting and utility functions for storage/retrieval.
  */
 
 import React, { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -58,13 +59,13 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <CustomButton
           variant="outline"
           className={`w-full justify-start text-left font-normal ${!value && "text-muted-foreground"} ${className}`}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {value ? formatDate(value, settings.dateFormat) : <span>{placeholder}</span>}
-        </Button>
+        </CustomButton>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
         <Calendar
@@ -78,3 +79,8 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
     </Popover>
   );
 }
+
+// UPDATED 16-Jan-2025: Replaced shadcn Button with CustomButton
+// - Trigger button now uses CustomButton with variant="outline"
+// - Calendar component (internal date selection UI) remains unchanged (external library component)
+// - All functionality preserved, consistent styling applied

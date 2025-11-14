@@ -1,5 +1,7 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MonthYearPickerPopover from "./MonthYearPickerPopover";
@@ -36,14 +38,14 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
-        <Button
+        <CustomButton
           variant="ghost"
           size="icon"
           onClick={goToPreviousMonth}
           className="h-8 w-8 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
         >
           <ChevronLeft className="w-5 h-5" />
-        </Button>
+        </CustomButton>
         
         <MonthYearPickerPopover
           currentMonth={currentMonth}
@@ -57,14 +59,14 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
           </button>
         </MonthYearPickerPopover>
         
-        <Button
+        <CustomButton
           variant="ghost"
           size="icon"
           onClick={goToNextMonth}
           className="h-8 w-8 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
         >
           <ChevronRight className="w-5 h-5" />
-        </Button>
+        </CustomButton>
       </div>
 
       <AnimatePresence>
@@ -74,7 +76,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
           >
-            <Button
+            <CustomButton
               variant="outline"
               size="sm"
               onClick={goToCurrentMonth}
@@ -82,7 +84,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
             >
               <Calendar className="w-4 h-4 mr-2" />
               Current Month
-            </Button>
+            </CustomButton>
           </motion.div>
         )}
       </AnimatePresence>
@@ -90,7 +92,11 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
   );
 }
 
-// ENHANCEMENTS (2025-01-12):
-// 1. Improved arrow visibility: Added explicit text colors (text-gray-700 hover:text-blue-600) and increased icon size to w-5 h-5
-// 2. Made month name clickable: Wrapped in MonthYearPickerPopover with hover effects
-// 3. Reusable component: MonthYearPickerPopover can be used elsewhere in the app
+// UPDATED 16-Jan-2025: Replaced shadcn Button with CustomButton
+// - Previous/Next month buttons now use CustomButton with variant="ghost" size="icon"
+// - "Current Month" button uses CustomButton with variant="outline" size="sm"
+// - Month/year selector button (line 53) intentionally kept as native <button>
+//   REASON: This button acts as a trigger for MonthYearPickerPopover's PopoverTrigger
+//   The Popover library expects its trigger to be a direct child, and wrapping it in
+//   CustomButton could interfere with Popover's internal ref management and event handling
+// - All functionality preserved, consistent styling applied where appropriate

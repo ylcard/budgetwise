@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { Check, ChevronsUpDown, Circle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import {
   Command,
   CommandEmpty,
@@ -29,7 +31,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <CustomButton
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -49,7 +51,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
             <span className="text-muted-foreground">{placeholder}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+        </CustomButton>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
@@ -86,3 +88,8 @@ export default function CategorySelect({ value, onValueChange, categories, place
     </Popover>
   );
 }
+
+// UPDATED 16-Jan-2025: Replaced shadcn Button with CustomButton
+// - Trigger button now uses CustomButton with variant="outline"
+// - All functionality preserved (combobox role, aria-expanded, icon display)
+// - Consistent styling applied

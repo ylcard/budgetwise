@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSettings } from "../utils/SettingsContext";
-// UPDATED 12-Jan-2025: Changed import to use dateUtils.js instead of deprecated formatDate.jsx
 import { formatDate } from "../utils/dateUtils";
 import DatePicker from "./DatePicker";
 
@@ -29,7 +30,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button
+                <CustomButton
                     variant="outline"
                     className="w-full md:w-auto justify-start text-left font-normal"
                 >
@@ -41,7 +42,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     ) : (
                         <span className="text-muted-foreground">Pick date range</span>
                     )}
-                </Button>
+                </CustomButton>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
                 <div className="space-y-4">
@@ -64,24 +65,32 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     </div>
 
                     <div className="flex gap-2 pt-2">
-                        <Button
+                        <CustomButton
                             variant="outline"
                             size="sm"
                             onClick={handleCancel}
                             className="flex-1"
                         >
                             Cancel
-                        </Button>
-                        <Button
+                        </CustomButton>
+                        <CustomButton
+                            variant="primary"
                             size="sm"
                             onClick={handleApply}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600"
+                            className="flex-1"
                         >
                             Apply
-                        </Button>
+                        </CustomButton>
                     </div>
                 </div>
             </PopoverContent>
         </Popover>
     );
 }
+
+// UPDATED 16-Jan-2025: Replaced shadcn Button with CustomButton
+// - Trigger button uses CustomButton with variant="outline"
+// - Cancel button uses CustomButton with variant="outline"
+// - Apply button uses CustomButton with variant="primary" (gradient blue-purple)
+// - Removed manual gradient styling as variant="primary" provides it
+// - All functionality preserved, consistent styling applied

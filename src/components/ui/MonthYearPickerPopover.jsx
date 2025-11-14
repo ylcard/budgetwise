@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+// UPDATED 16-Jan-2025: Replaced Button with CustomButton for consistency
+// import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import {
   Popover,
   PopoverContent,
@@ -89,21 +91,22 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button
+            <CustomButton
               variant="outline"
               size="sm"
               onClick={handleCancel}
               className="flex-1"
             >
               Cancel
-            </Button>
-            <Button
+            </CustomButton>
+            <CustomButton
+              variant="primary"
               size="sm"
               onClick={handleApply}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600"
+              className="flex-1"
             >
               Apply
-            </Button>
+            </CustomButton>
           </div>
         </div>
       </PopoverContent>
@@ -111,6 +114,8 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
   );
 }
 
-// NEW COMPONENT (2025-01-12): MonthYearPickerPopover
-// Reusable popover for selecting month and year with dropdown selects
-// Used by MonthNavigator to make month name clickable
+// UPDATED 16-Jan-2025: Replaced shadcn Button with CustomButton
+// - Cancel button uses CustomButton with variant="outline"
+// - Apply button uses CustomButton with variant="primary" (gradient blue-purple)
+// - Removed manual gradient styling as variant="primary" provides it
+// - All functionality preserved, consistent styling applied
