@@ -21,8 +21,9 @@ import {
     useDashboardSummary,
     useActiveBudgets,
 } from "../components/hooks/useDerivedData";
+// UPDATED 16-Jan-2025: Removed useTransactionMutationsDashboard (deprecated), now using useTransactionActions
 import {
-    useTransactionMutationsDashboard,
+    useTransactionActions,
     useCustomBudgetActions,
 } from "../components/hooks/useActions";
 import { useCashWalletActions } from "../components/cashwallet/useCashWalletActions";
@@ -89,9 +90,22 @@ export default function Dashboard() {
         selectedYear
     );
 
-    // Actions
-    const transactionActions = useTransactionMutationsDashboard(setShowQuickAdd, setShowQuickAddIncome);
-    const budgetActions = useCustomBudgetActions(user, transactions, cashWallet);
+    // UPDATED 16-Jan-2025: Replaced deprecated useTransactionMutationsDashboard with unified useTransactionActions
+    // Now uses options.onSuccess callback to close dialogs after successful transaction creation
+    const transactionActions = useTransactionActions(null, null, cashWallet, {
+        onSuccess: () => {
+            setShowQuickAdd(false);
+            setShowQuickAddIncome(false);
+        }
+    });
+
+    // ENHANCED 16-Jan-2025: Added options.onSuccess callback to close dialog after budget creation
+    const budgetActions = useCustomBudgetActions(user, transactions, cashWallet, {
+        onSuccess: () => {
+            setShowQuickAddBudget(false);
+        }
+    });
+
     const cashWalletActions = useCashWalletActions(user, cashWallet, settings, exchangeRates);
 
     return (
@@ -125,8 +139,8 @@ export default function Dashboard() {
                                 <QuickAddIncome
                                     open={showQuickAddIncome}
                                     onOpenChange={setShowQuickAddIncome}
-                                    onSubmit={transactionActions.createTransaction}
-                                    isSubmitting={transactionActions.isCreating}
+                                    onSubmit={transactionActions.handleSubmit}
+                                    isSubmitting={transactionActions.isSubmitting}
                                     renderTrigger={true}
                                     triggerVariant="ghost"
                                     triggerSize="sm"
@@ -139,8 +153,8 @@ export default function Dashboard() {
                                     onOpenChange={setShowQuickAdd}
                                     categories={categories}
                                     customBudgets={allActiveBudgets}
-                                    onSubmit={transactionActions.createTransaction}
-                                    isSubmitting={transactionActions.isCreating}
+                                    onSubmit={transactionActions.handleSubmit}
+                                    isSubmitting={transactionActions.isSubmitting}
                                     transactions={transactions}
                                     renderTrigger={true}
                                     triggerVariant="ghost"
@@ -243,3 +257,9 @@ export default function Dashboard() {
 // All imports now point to specialized utility files instead of deprecated budgetCalculations.js
 // UPDATED 13-Jan-2025: QuickAddTransaction and QuickAddIncome now render their own trigger buttons inline in RemainingBudgetCard
 // REFACTORED 14-Jan-2025: Updated to use centralized useMonthlyIncome hook with full transactions + month/year parameters
+// CRITICAL REFACTOR 16-Jan-2025: Fixed data integrity issues by removing deprecated dashboard hooks
+// - Removed useTransactionMutationsDashboard (had missing SYSTEM_BUDGETS invalidation)
+// - Now uses unified useTransactionActions with options.onSuccess callback for dialog closing
+// - Enhanced budgetActions with options.onSuccess callback for consistent UI behavior
+// - All CRUD operations now go through robust, fully-featured hooks with proper cash wallet handling
+// - This prevents data corruption (missing cash returns, incorrect status assignment) previously present in dashboard-specific hooks
