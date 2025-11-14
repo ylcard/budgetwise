@@ -1,6 +1,6 @@
-
 import React from "react";
-import { Button } from "@/components/ui/button";
+// UPDATED 15-Jan-2025: Changed Button import to CustomButton
+import { CustomButton } from "@/components/ui/CustomButton";
 import { CheckCircle, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -141,21 +141,22 @@ export default function BudgetBar({
           {/* Action buttons for custom budgets only */}
           {!hideActions && isCustom && !isCompleted && onDelete && onComplete && (
             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-              <Button
-                variant="ghost"
-                size="icon"
+              {/* UPDATED 15-Jan-2025: Changed to CustomButton with success variant */}
+              <CustomButton
+                variant="success"
+                size="icon-sm"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   onComplete(budget.id);
                 }}
-                className="h-7 w-7 bg-green-600 hover:bg-green-700 text-white"
               >
                 <CheckCircle className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
+              </CustomButton>
+              {/* UPDATED 15-Jan-2025: Changed to CustomButton with delete variant */}
+              <CustomButton
+                variant="delete"
+                size="icon-sm"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -163,10 +164,9 @@ export default function BudgetBar({
                     onDelete(budget.id);
                   }
                 }}
-                className="h-7 w-7 bg-red-600 hover:bg-red-700 text-white"
               >
                 <Trash2 className="w-4 h-4" />
-              </Button>
+              </CustomButton>
             </div>
           )}
         </div>
@@ -263,3 +263,7 @@ export default function BudgetBar({
 // UPDATED 2025-01-12: Changed "Expected" labels to "Unpaid" throughout
 // This better reflects that we're showing actual unpaid expenses, not theoretical allocations
 // Removed display of separate cash amounts as we no longer include "ghost amounts" in calculations
+// UPDATED 15-Jan-2025: Replaced Button with CustomButton
+// - Complete button uses success variant (green)
+// - Delete button uses delete variant (red)
+// - Both use icon-sm size for compact display

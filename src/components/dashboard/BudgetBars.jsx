@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// UPDATED 15-Jan-2025: Changed Button import to CustomButton
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
 import { formatCurrency } from "../utils/currencyUtils";
@@ -93,32 +94,34 @@ export default function BudgetBars({
                         <div className="flex items-center gap-2">
                             {customBudgetsData.length > barsPerPage && (
                                 <>
-                                    <Button
+                                    {/* UPDATED 15-Jan-2025: Changed to CustomButton */}
+                                    <CustomButton
                                         variant="outline"
                                         size="icon"
                                         onClick={() => setCustomStartIndex(Math.max(0, customStartIndex - 1))}
                                         disabled={!canScrollLeft}
                                     >
                                         <ChevronLeft className="w-4 h-4" />
-                                    </Button>
-                                    <Button
+                                    </CustomButton>
+                                    <CustomButton
                                         variant="outline"
                                         size="icon"
                                         onClick={() => setCustomStartIndex(customStartIndex + 1)}
                                         disabled={!canScrollRight}
                                     >
                                         <ChevronRight className="w-4 h-4" />
-                                    </Button>
+                                    </CustomButton>
                                 </>
                             )}
-                            <Button
-                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                            {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
+                            <CustomButton
+                                variant="create"
                                 size="sm"
                                 onClick={onCreateBudget}
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 New Budget
-                            </Button>
+                            </CustomButton>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -153,3 +156,7 @@ export default function BudgetBars({
         </div>
     );
 }
+
+// UPDATED 15-Jan-2025: Replaced Button with CustomButton
+// - Navigation buttons (ChevronLeft/Right) use outline variant
+// - "New Budget" button uses create variant for visual consistency
