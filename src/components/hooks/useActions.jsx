@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
+import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 import { QUERY_KEYS } from "./queryKeys";
 import {
   allocateCashFromWallet,
@@ -147,9 +147,10 @@ export const useBudgetMutationsDashboard = (user, transactions, allCustomBudgets
 
 // Hook for transaction actions (CRUD operations - Transactions page)
 // ENHANCED: Now handles complex cash transaction changes
-// UPDATED 13-Jan-2025: Added showDeleteConfirm state and onDeleteConfirm callback for ConfirmDialog integration
-export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet, showDeleteConfirm, setShowDeleteConfirm, onDeleteConfirm) => {
+// UPDATED 15-Jan-2025: Removed ConfirmDialog state management, now uses useConfirm hook
+export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet) => {
   const queryClient = useQueryClient();
+  const { confirmAction } = useConfirm();
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Transaction.create(data),
@@ -303,17 +304,14 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
     if (setShowForm) setShowForm(true);
   };
 
-  // UPDATED 13-Jan-2025: Now triggers ConfirmDialog instead of browser confirm
+  // UPDATED 15-Jan-2025: Now uses useConfirm hook for confirmation dialog
   const handleDelete = (transaction) => {
-    if (setShowDeleteConfirm && onDeleteConfirm) {
-      onDeleteConfirm(() => deleteMutation.mutate(transaction));
-      setShowDeleteConfirm(true);
-    } else {
-      // Fallback for components not using ConfirmDialog yet
-      if (window.confirm('Are you sure you want to delete this transaction?')) {
-        deleteMutation.mutate(transaction);
-      }
-    }
+    confirmAction(
+      "Delete Transaction",
+      "Are you sure you want to delete this transaction? This action cannot be undone.",
+      () => deleteMutation.mutate(transaction),
+      { destructive: true }
+    );
   };
 
   return {
@@ -325,9 +323,10 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
 };
 
 // Hook for category actions (CRUD operations)
-// UPDATED 13-Jan-2025: Added showDeleteConfirm state and onDeleteConfirm callback for ConfirmDialog integration
-export const useCategoryActions = (setShowForm, setEditingCategory, showDeleteConfirm, setShowDeleteConfirm, onDeleteConfirm) => {
+// UPDATED 15-Jan-2025: Removed ConfirmDialog state management, now uses useConfirm hook
+export const useCategoryActions = (setShowForm, setEditingCategory) => {
   const queryClient = useQueryClient();
+  const { confirmAction } = useConfirm();
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Category.create(data),
@@ -403,17 +402,14 @@ export const useCategoryActions = (setShowForm, setEditingCategory, showDeleteCo
     if (setShowForm) setShowForm(true);
   };
 
-  // UPDATED 13-Jan-2025: Now triggers ConfirmDialog instead of browser confirm
+  // UPDATED 15-Jan-2025: Now uses useConfirm hook for confirmation dialog
   const handleDelete = (id) => {
-    if (setShowDeleteConfirm && onDeleteConfirm) {
-      onDeleteConfirm(() => deleteMutation.mutate(id));
-      setShowDeleteConfirm(true);
-    } else {
-      // Fallback for components not using ConfirmDialog yet
-      if (window.confirm('Are you sure you want to delete this category? This will not delete associated transactions.')) {
-        deleteMutation.mutate(id);
-      }
-    }
+    confirmAction(
+      "Delete Category",
+      "Are you sure you want to delete this category? This will not delete associated transactions.",
+      () => deleteMutation.mutate(id),
+      { destructive: true }
+    );
   };
 
   return {
@@ -499,6 +495,7 @@ export const useGoalActions = (user, goals) => {
 // CRITICAL ENHANCEMENT (2025-01-12): Intelligent status setting for new budgets
 export const useCustomBudgetActions = (user, transactions, cashWallet) => {
   const queryClient = useQueryClient();
+  const { confirmAction } = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
 
@@ -733,8 +730,14 @@ export const useCustomBudgetActions = (user, transactions, cashWallet) => {
     setShowForm(true);
   };
 
+  // UPDATED 15-Jan-2025: Now uses useConfirm hook for confirmation dialog
   const handleDelete = (id) => {
-    deleteMutation.mutate(id);
+    confirmAction(
+      "Delete Budget",
+      "Are you sure you want to delete this budget? This will also delete all associated transactions and return cash allocations to your wallet.",
+      () => deleteMutation.mutate(id),
+      { destructive: true }
+    );
   };
 
   const handleStatusChange = (id, newStatus) => {
@@ -754,197 +757,10 @@ export const useCustomBudgetActions = (user, transactions, cashWallet) => {
   };
 };
 
-// DEPRECATED: This hook is scheduled to be removed. Use useCustomBudgetActions instead.
-// This hook lacks cash allocation logic and should not be used for budget management.
-// Keeping for now to avoid breaking changes, but all usages should be migrated to useCustomBudgetActions.
-/*
-export const useBudgetActions = (user, transactions) => {
-  console.warn('DEPRECATED: useBudgetActions is deprecated. Use useCustomBudgetActions instead for proper cash allocation handling.');
-  
-  const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [editingBudget, setEditingBudget] = useState(null);
-
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.CustomBudget.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
-      setShowForm(false);
-      setEditingBudget(null);
-      showToast({
-        title: "Success",
-        description: "Budget created successfully",
-      });
-    },
-    onError: (error) => {
-      console.error('Error creating budget:', error);
-      showToast({
-        title: "Error",
-        description: error?.message || "Failed to create budget. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.CustomBudget.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
-      setShowForm(false);
-      setEditingBudget(null);
-      showToast({
-        title: "Success",
-        description: "Budget updated successfully",
-      });
-    },
-    onError: (error) => {
-      console.error('Error updating budget:', error);
-      showToast({
-        title: "Error",
-        description: error?.message || "Failed to update budget. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const budgetTransactions = transactions.filter(t => t.customBudgetId === id);
-      
-      for (const transaction of budgetTransactions) {
-        await base44.entities.Transaction.delete(transaction.id);
-      }
-      
-      await base44.entities.CustomBudget.delete(id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-      showToast({
-        title: "Success",
-        description: "Budget deleted successfully",
-      });
-    },
-    onError: (error) => {
-      console.error('Error deleting budget:', error);
-      showToast({
-        title: "Error",
-        description: error?.message || "Failed to delete budget. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.CustomBudget.update(id, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
-      showToast({
-        title: "Success",
-        description: "Budget status updated successfully",
-      });
-    },
-    onError: (error) => {
-      console.error('Error updating budget status:', error);
-      showToast({
-        title: "Error",
-        description: error?.message || "Failed to update budget status. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (data) => {
-    const budgetData = {
-      ...data,
-      user_email: user.email,
-      isSystemBudget: false
-    };
-
-    if (editingBudget) {
-      updateMutation.mutate({ id: editingBudget.id, data: budgetData });
-    } else {
-      createMutation.mutate(budgetData);
-    }
-  };
-
-  const handleEdit = (budget) => {
-    setEditingBudget(budget);
-    setShowForm(true);
-  };
-
-  const handleDelete = (id) => {
-    deleteMutation.mutate(id);
-  };
-
-  const handleStatusChange = (id, newStatus) => {
-    updateStatusMutation.mutate({ id, status: newStatus });
-  };
-
-  return {
-    showForm,
-    setShowForm,
-    editingBudget,
-    setEditingBudget,
-    handleSubmit,
-    handleEdit,
-    handleDelete,
-    handleStatusChange,
-    isSubmitting: createMutation.isPending || updateMutation.isPending,
-  };
-};
-*/
-
-// Hook for settings form state and submission
-export const useSettingsForm = (settings, updateSettings) => {
-  const [formData, setFormData] = useState(settings);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    setFormData(settings);
-  }, [settings]);
-
-  const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveSuccess(false);
-
-    try {
-      await updateSettings(formData);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-      showToast({
-        title: "Success",
-        description: "Settings saved successfully",
-      });
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      showToast({
-        title: "Error",
-        description: error?.message || "Failed to save settings. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return {
-    formData,
-    handleFormChange,
-    handleSubmit,
-    isSaving,
-    saveSuccess,
-  };
-};
-
-// UPDATED 13-Jan-2025: Modified useTransactionActions and useCategoryActions to support ConfirmDialog integration
-// - Added showDeleteConfirm, setShowDeleteConfirm, and onDeleteConfirm parameters
-// - handleDelete now triggers ConfirmDialog state instead of browser confirm()
-// - Maintained backward compatibility with fallback to window.confirm for components not yet using ConfirmDialog
+// UPDATED 15-Jan-2025: Major refactoring to use centralized useConfirm hook
+// - Removed all showDeleteConfirm, setShowDeleteConfirm, and onDeleteConfirm parameters
+// - All handleDelete functions now use confirmAction from useConfirm hook
+// - Removed window.confirm() fallback logic (no longer needed with global provider)
+// - All confirmation dialogs now use consistent UI and behavior across the app
+// - useTransactionActions, useCategoryActions, and useCustomBudgetActions updated
 // UPDATED 11-Nov-2025: Changed parseDate import from budgetCalculations.js to dateUtils.js

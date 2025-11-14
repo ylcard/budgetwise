@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Wallet } from "lucide-react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
+import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
 import {
   Sidebar,
@@ -98,7 +99,14 @@ LayoutContent.displayName = 'LayoutContent';
 export default function Layout({ children, currentPageName }) {
   return (
     <SettingsProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <ConfirmDialogProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </ConfirmDialogProvider>
     </SettingsProvider>
   );
 }
+
+// UPDATED 15-Jan-2025: Integrated ConfirmDialogProvider into Layout
+// This provides global access to the custom confirmation dialog across the entire app
+// All components can now use the useConfirm() hook to trigger confirmations
+// The provider wraps LayoutContent to ensure all pages have access to the confirmation functionality
