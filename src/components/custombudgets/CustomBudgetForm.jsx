@@ -31,7 +31,7 @@ export default function CustomBudgetForm({
 
   const [formData, setFormData] = useState({
     name: '',
-    allocatedAmount: '',
+    allocatedAmount: null,
     cashAllocations: [],
     startDate: monthStart,
     endDate: monthEnd,
@@ -50,7 +50,7 @@ export default function CustomBudgetForm({
     if (budget) {
       setFormData({
         name: budget.name || '',
-        allocatedAmount: budget.allocatedAmount?.toString() || '',
+        allocatedAmount: budget.allocatedAmount?.toString() || null,
         cashAllocations: budget.cashAllocations || [],
         startDate: budget.startDate || monthStart,
         endDate: budget.endDate || monthEnd,
@@ -185,7 +185,7 @@ export default function CustomBudgetForm({
           <AmountInput
             id="allocatedAmount"
             value={formData.allocatedAmount}
-            onChange={(e) => setFormData({ ...formData, allocatedAmount: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, allocatedAmount: value })}
             placeholder="0.00"
             required
           />
