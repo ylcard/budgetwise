@@ -141,12 +141,15 @@ export default function CustomBudgetForm({
       return;
     }
     
-    onSubmit({
+    const submissionPromise = onSubmit({
       ...formData,
       allocatedAmount: parseFloat(normalizedAmount),
       cashAllocations: processedCashAllocations,
       status: budget?.status || 'active'
     });
+
+    submissionPromise.then(() => onCancel());
+    
   };
 
   return (
