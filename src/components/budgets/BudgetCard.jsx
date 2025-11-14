@@ -1,16 +1,30 @@
-
 import React, { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 // UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
 import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils";
+import { parseDate } from "../utils/dateUtils";
 import { motion } from "framer-motion";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
 
-export default function BudgetCard({ budget, stats, settings }) {
+export default function BudgetCard({ budget, stats, settings, onActivateBudget }) {
   const baseCurrency = settings?.baseCurrency || 'USD';
   const isSystemBudget = budget.isSystemBudget || false;
+
+  // ADDED 17-Jan-2025: Check if planned budget's start date has arrived
+  const shouldActivate = useMemo(() => {
+    if (isSystemBudget || budget.status !== 'planned') return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const startDate = parseDate(budget.startDate);
+    
+    // Return true if start date has arrived (today or in the past)
+    return startDate <= today;
+  }, [budget.status, budget.startDate, isSystemBudget]);
 
   // Calculate percentage and amounts based on budget type
   const { percentageUsed, paidAmounts, unpaidAmount } = useMemo(() => {
@@ -115,13 +129,39 @@ export default function BudgetCard({ budget, stats, settings }) {
                   {budget.status === 'completed' && (
                     <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
                   )}
-                  {(budget.status === 'active' || budget.status === 'planned') && (
+                  {budget.status === 'active' && (
                     <Clock className="w-3 h-3 text-orange-500 flex-shrink-0" />
+                  )}
+                  {/* ADDED 17-Jan-2025: Alert icon for planned budgets */}
+                  {budget.status === 'planned' && !shouldActivate && (
+                    <Clock className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                  )}
+                  {/* ADDED 17-Jan-2025: Warning icon for planned budgets that should be activated */}
+                  {shouldActivate && (
+                    <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0 animate-pulse" />
                   )}
                 </>
               )}
             </div>
           </Link>
+
+          {/* ADDED 17-Jan-2025: Activation prompt for planned budgets */}
+          {shouldActivate && onActivateBudget && (
+            <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-md">
+              <p className="text-xs text-amber-800 mb-2">This budget's start date has arrived</p>
+              <CustomButton
+                variant="warning"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onActivateBudget(budget.id);
+                }}
+                className="w-full text-xs"
+              >
+                Activate Now
+              </CustomButton>
+            </div>
+          )}
 
           {/* Circular Progress */}
           <div className="flex items-center justify-center mb-3 flex-1">
@@ -222,3 +262,9 @@ export default function BudgetCard({ budget, stats, settings }) {
 // 3. Removed icons (CheckCircle, Clock) for system budgets
 // 4. Maintains consistent card height with min-h-[240px] and flex layout
 // 5. FIXED: Center-aligned text for both paid and unpaid sections (Screenshot #7)
+// ADDED 17-Jan-2025: Hybrid budget activation feature
+// - Detects when a planned budget's start date has arrived (today or in the past)
+// - Shows amber-colored activation prompt with "Activate Now" button
+// - Alert triangle icon animates with pulse to draw attention
+// - Button uses warning variant and calls onActivateBudget callback
+// - Manual activation ensures user control while providing helpful reminder

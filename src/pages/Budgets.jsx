@@ -152,6 +152,11 @@ export default function Budgets() {
     }
   };
 
+  // ADDED 17-Jan-2025: Handler for activating planned budgets
+  const handleActivateBudget = (budgetId) => {
+    customBudgetActions.handleStatusChange(budgetId, 'active');
+  };
+
   const sortedCustomBudgets = (() => {
     const now = new Date();
     
@@ -244,38 +249,6 @@ export default function Budgets() {
                 <Plus className="w-4 h-4 mr-2" />
                 Create Custom Budget
               </CustomButton>
-              {/* COMMENTED OUT 16-Jan-2025: Removed Popover-based budget creation in favor of Dialog-based QuickAddBudget
-              <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
-                <PopoverTrigger asChild>
-                  <CustomButton variant="create">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Custom Budget
-                  </CustomButton>
-                </PopoverTrigger>
-                <PopoverContent 
-                  className="w-[600px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto z-50" 
-                  align="center"
-                  side="top"
-                  sideOffset={0}
-                >
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">Create Custom Budget</h3>
-                    <CustomBudgetForm
-                      budget={customBudgetActions.editingBudget}
-                      onSubmit={customBudgetActions.handleSubmit}
-                      onCancel={() => {
-                        customBudgetActions.setShowForm(false);
-                        customBudgetActions.setEditingBudget(null);
-                      }}
-                      isSubmitting={customBudgetActions.isSubmitting}
-                      cashWallet={cashWallet}
-                      baseCurrency={settings.baseCurrency}
-                      settings={settings}
-                    />
-                  </div>
-                </PopoverContent>
-              </Popover>
-              */}
             </CardHeader>
             <CardContent>
               <div className="h-40 flex items-center justify-center text-gray-400">
@@ -302,42 +275,11 @@ export default function Budgets() {
                 <Plus className="w-4 h-4 mr-2" />
                 Create Custom Budget
               </CustomButton>
-              {/* COMMENTED OUT 16-Jan-2025: Removed Popover-based budget creation in favor of Dialog-based QuickAddBudget
-              <Popover open={customBudgetActions.showForm} onOpenChange={customBudgetActions.setShowForm}>
-                <PopoverTrigger asChild>
-                  <CustomButton variant="create">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Custom Budget
-                  </CustomButton>
-                </PopoverTrigger>
-                <PopoverContent 
-                  className="w-[600px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto z-50" 
-                  align="center"
-                  side="top"
-                  sideOffset={0}
-                >
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">Create Custom Budget</h3>
-                    <CustomBudgetForm
-                      budget={customBudgetActions.editingBudget}
-                      onSubmit={customBudgetActions.handleSubmit}
-                      onCancel={() => {
-                        customBudgetActions.setShowForm(false);
-                        customBudgetActions.setEditingBudget(null);
-                      }}
-                      isSubmitting={customBudgetActions.isSubmitting}
-                      cashWallet={cashWallet}
-                      baseCurrency={settings.baseCurrency}
-                      settings={settings}
-                    />
-                  </div>
-                </PopoverContent>
-              </Popover>
-              */}
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {/* UPDATED 13-Jan-2025: Pass monthStart and monthEnd to getCustomBudgetStats */}
+                {/* ADDED 17-Jan-2025: Pass onActivateBudget handler to BudgetCard */}
                 {sortedCustomBudgets.map((budget) => {
                   const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
                   
@@ -347,6 +289,7 @@ export default function Budgets() {
                       budget={budget}
                       stats={stats}
                       settings={settings}
+                      onActivateBudget={handleActivateBudget}
                     />
                   );
                 })}
@@ -405,3 +348,8 @@ export default function Budgets() {
 // - Changed confirmDelete to call customBudgetActions.handleDeleteDirect instead of handleDelete
 // - This bypasses the generic hook's confirmation since AlertDialog already shows confirmation
 // - Resolves the "double confirmation" bug that prevented budget deletion from completing
+// ADDED 17-Jan-2025: Hybrid budget activation feature
+// - Added handleActivateBudget function that calls handleStatusChange to activate budgets
+// - Passes onActivateBudget handler to BudgetCard component
+// - BudgetCard now displays activation prompt for planned budgets when start date arrives
+// - Manual activation with helpful reminder provides best UX for budget management
