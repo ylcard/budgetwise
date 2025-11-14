@@ -45,7 +45,7 @@ export default function QuickAddBudget({
                     <DialogTitle>Create Budget</DialogTitle>
                 </DialogHeader>
                 <CustomBudgetForm
-                    onSubmit={customBudgetActions.handleSubmit}
+                    onSubmit={budgetActions.handleSubmit}
                     onCancel={() => onOpenChange(false)}
                     isSubmitting={isSubmitting}
                     cashWallet={cashWallet}
