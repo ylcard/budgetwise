@@ -1,32 +1,10 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Circle } from "lucide-react";
 import { iconMap } from "../utils/iconMapConfig";
-// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
 import { formatCurrency } from "../utils/currencyUtils";
 import { useSettings } from "../utils/SettingsContext";
-
-/*
- * ⚠️ DEPRECATION NOTICE ⚠️
- * This component is currently DEPRECATED and scheduled for removal.
- * 
- * Reason: 
- * - Uses pie charts which are obsolete in this app (we use bars/progress bars)
- * - NOT rendered in Dashboard.js or any other active page
- * - Functionality duplicated by MonthlyBreakdown.jsx (used in Reports page)
- * - Uses undefined `calculateMonthlyAmount` prop that doesn't exist anywhere
- * 
- * MonthlyBreakdown.jsx should be used instead - it uses:
- * - Progress bars (correct visualization)
- * - Direct t.amount (no undefined functions)
- * - Proper currency formatting with user settings
- * - iconMap from utils (no duplication)
- * 
- * TODO: Verify no pages use this component, then delete this file entirely.
- * Date commented: 2025-11-06
- */
 
 export default function BudgetOverview({ transactions, categories, /* calculateMonthlyAmount, */ isLoading }) {
   const { settings } = useSettings();
