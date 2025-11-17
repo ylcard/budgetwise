@@ -30,9 +30,9 @@ export const useExchangeRates = () => {
      * @returns {Promise<Object>} { success: boolean, message: string, rates?: Object }
      */
     const refreshRates = async (sourceCurrency, targetCurrency, date) => {
-        // if (sourceCurrency === targetCurrency) {
-        //     return { success: true, message: 'Same currency', alreadyFresh: true };
-        // }
+        if (sourceCurrency === targetCurrency) {
+            return { success: true, silent: true };
+        }
 
         setIsRefreshing(true);
 
@@ -64,8 +64,7 @@ export const useExchangeRates = () => {
                 setIsRefreshing(false);
                 return {
                     success: true,
-                    message: 'No exchange rates needed (both currencies are USD)',
-                    alreadyFresh: true
+                    silent: true
                 };
             }
 
