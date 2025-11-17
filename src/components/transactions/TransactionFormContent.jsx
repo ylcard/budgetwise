@@ -20,8 +20,7 @@ import { useExchangeRates } from "../hooks/useExchangeRates";
 import { getCurrencyBalance, getRemainingAllocatedCash } from "../utils/cashAllocationUtils";
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate } from "../utils/currencyCalculations";
-import SUPPORTED_CURRENCIES from "../utils/constants";
-// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js
+import { SUPPORTED_CURRENCIES } from "../utils/constants";
 import { formatDateString } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 
