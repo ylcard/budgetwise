@@ -30,14 +30,20 @@ export const useExchangeRates = () => {
      * @returns {Promise<Object>} { success: boolean, message: string, rates?: Object }
      */
     const refreshRates = async (sourceCurrency, targetCurrency, date) => {
+        // if (sourceCurrency === targetCurrency) {
+        //     return { success: true, message: 'Same currency', alreadyFresh: true };
+        // }
+
         setIsRefreshing(true);
 
         try {
-            // Log for debugging
-            console.log(`Checking freshness for ${sourceCurrency}->${targetCurrency} on ${date} with ${exchangeRates.length} rates.`);
-            
-            // Check if rates are already fresh (within 14 days)
-            const isFresh = areRatesFresh(exchangeRates, sourceCurrency, targetCurrency, date, 14);
+            // FIX RACE CONDITION: Peek directly into cache. 
+            // The 'exchangeRates' variable from useQuery might be empty on first render/mount.
+            const cachedData = queryClient.getQueryData([QUERY_KEYS.EXCHANGE_RATES]) || [];
+            const ratesToCheck = cachedData.length > 0 ? cachedData : exchangeRates;
+
+            // Check freshness using the best available data
+            const isFresh = areRatesFresh(ratesToCheck, sourceCurrency, targetCurrency, date, 14);
 
             if (isFresh) {
                 setIsRefreshing(false);
@@ -155,7 +161,7 @@ Only include the rates for the currencies I listed above.`;
 
             // Invalidate the query to refresh the data
             if (ratesToCreate.length > 0 || ratesToUpdate.length > 0) {
-                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXCHANGE_RATES] });
+                await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXCHANGE_RATES] }); // Await the invalidation
 
                 return {
                     success: true,
