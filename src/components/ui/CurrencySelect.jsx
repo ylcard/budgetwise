@@ -6,7 +6,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import SUPPORTED_CURRENCIES from "../utils/constants";
+import { SUPPORTED_CURRENCIES } from "../utils/constants";
 
 export default function CurrencySelect({ value, onValueChange, filterCurrencies = null, limitToCurrencies = null }) {
     // UPDATED 13-Jan-2025: Support both filterCurrencies (legacy) and limitToCurrencies (new preferred name)
