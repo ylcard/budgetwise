@@ -1,14 +1,7 @@
 import React, { useState } from "react";
-// UPDATED 15-Jan-2025: Changed Button import to CustomButton
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// COMMENTED OUT 16-Jan-2025: Removed Popover imports as we now use Dialog-based QuickAddBudget
-// import {
-//   Popover,
-//   PopoverContent,
-//   PopoverTrigger,
-// } from "@/components/ui/popover";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -20,26 +13,14 @@ import {
 } from "../components/hooks/useBase44Entities";
 import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { parseDate } from "../components/utils/dateUtils";
-
-// COMMENTED OUT 16-Jan-2025: No longer directly embedding CustomBudgetForm in Popover
-// import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import BudgetCard from "../components/budgets/BudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
-// ADDED 16-Jan-2025: Import QuickAddBudget for standardized Dialog-based budget creation
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 
-// UPDATED 13-Jan-2025: Added monthStart and monthEnd parameters to filter paid expenses by selected month
+/**
+ * Calculates statistics for a custom budget, filtering expenses based on the selected month.
+ */
 const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) => {
   const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
 
@@ -61,13 +42,13 @@ const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) 
     .filter(t => {
       if (t.type !== 'expense') return false;
       if (!t.isPaid || !t.paidDate) return false;
-      
+
       // Filter by paidDate within selected month
       const paidDate = parseDate(t.paidDate);
       return paidDate >= monthStartDate && paidDate <= monthEndDate;
     })
     .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
-  
+
   const digitalUnpaid = digitalTransactions
     .filter(t => t.type === 'expense' && !t.isPaid)
     .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
@@ -75,23 +56,23 @@ const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) 
   // Calculate cash stats by currency - ONLY include paid expenses that were paid within the selected month
   const cashByCurrency = {};
   const cashAllocations = customBudget.cashAllocations || [];
-  
+
   cashAllocations.forEach(allocation => {
     const currencyCode = allocation.currencyCode;
     const allocated = allocation.amount || 0;
-    
+
     const spent = cashTransactions
       .filter(t => {
         if (t.type !== 'expense') return false;
         if (t.cashCurrency !== currencyCode) return false;
         if (!t.isPaid || !t.paidDate) return false;
-        
+
         // Filter by paidDate within selected month
         const paidDate = parseDate(t.paidDate);
         return paidDate >= monthStartDate && paidDate <= monthEndDate;
       })
       .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
-    
+
     cashByCurrency[currencyCode] = {
       allocated,
       spent,
@@ -121,19 +102,14 @@ const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) 
 
 export default function Budgets() {
   const { user, settings } = useSettings();
-  const [budgetToDelete, setBudgetToDelete] = useState(null);
-  // ADDED 16-Jan-2025: State for controlling QuickAddBudget dialog visibility
   const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-
   const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
-
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { allCustomBudgets } = useCustomBudgetsAll(user);
-  const { systemBudgets, isLoading: loadingSystemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+  const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
   const { cashWallet } = useCashWallet(user);
-
-  const { customBudgets, systemBudgetsWithStats, groupedCustomBudgets } = useBudgetsAggregates(
+  const { customBudgets, systemBudgetsWithStats } = useBudgetsAggregates(
     transactions,
     categories,
     allCustomBudgets,
@@ -141,42 +117,29 @@ export default function Budgets() {
     selectedMonth,
     selectedYear
   );
-
   const customBudgetActions = useCustomBudgetActions(user, transactions, cashWallet);
-
-  // UPDATED 17-Jan-2025: Use handleDeleteDirect to avoid nested confirmation
-  const confirmDelete = () => {
-    if (budgetToDelete) {
-      customBudgetActions.handleDeleteDirect(budgetToDelete);
-      setBudgetToDelete(null);
-    }
-  };
-
-  // ADDED 17-Jan-2025: Handler for activating planned budgets
   const handleActivateBudget = (budgetId) => {
     customBudgetActions.handleStatusChange(budgetId, 'active');
   };
-
-  const sortedCustomBudgets = (() => {
+  const sortedCustomBudgets = useMemo(() => {
     const now = new Date();
-    
     return [...customBudgets].sort((a, b) => {
       const statusPriority = { active: 1, planned: 2, completed: 3 };
       const aPriority = statusPriority[a.status] || 999;
       const bPriority = statusPriority[b.status] || 999;
-      
+
       if (aPriority !== bPriority) {
         return aPriority - bPriority;
       }
-      
+
       const aStart = new Date(a.startDate);
       const bStart = new Date(b.startDate);
       const aDistance = Math.abs(aStart - now);
       const bDistance = Math.abs(bStart - now);
-      
+
       return aDistance - bDistance;
     });
-  })();
+  }, [customBudgets]);
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -220,7 +183,7 @@ export default function Budgets() {
                     status: 'active',
                     isSystemBudget: true
                   };
-                  
+
                   return (
                     <BudgetCard
                       key={budget.id}
@@ -244,7 +207,6 @@ export default function Budgets() {
                   Custom Budgets
                 </span>
               </div>
-              {/* UPDATED 16-Jan-2025: Replaced Popover with CustomButton triggering QuickAddBudget dialog */}
               <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Custom Budget
@@ -270,7 +232,6 @@ export default function Budgets() {
                   Custom budgets containing wants expenses, sorted by status and date
                 </p>
               </div>
-              {/* UPDATED 16-Jan-2025: Replaced Popover with CustomButton triggering QuickAddBudget dialog */}
               <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Custom Budget
@@ -278,11 +239,9 @@ export default function Budgets() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {/* UPDATED 13-Jan-2025: Pass monthStart and monthEnd to getCustomBudgetStats */}
-                {/* ADDED 17-Jan-2025: Pass onActivateBudget handler to BudgetCard */}
                 {sortedCustomBudgets.map((budget) => {
                   const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
-                  
+
                   return (
                     <BudgetCard
                       key={budget.id}
@@ -298,7 +257,6 @@ export default function Budgets() {
           </Card>
         )}
 
-        {/* ADDED 16-Jan-2025: QuickAddBudget Dialog for standardized budget creation UI */}
         <QuickAddBudget
           open={showQuickAddBudget}
           onOpenChange={setShowQuickAddBudget}
@@ -311,45 +269,7 @@ export default function Budgets() {
           allBudgets={allCustomBudgets}
         />
 
-        <AlertDialog open={!!budgetToDelete} onOpenChange={(open) => !open && setBudgetToDelete(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will delete the budget and all associated transactions. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </div>
   );
 }
-
-// REFACTORED 13-Jan-2025: Updated getCustomBudgetStats to filter paid expenses by selected month's paidDate
-// - Added monthStart and monthEnd parameters to getCustomBudgetStats
-// - Paid expenses now filtered by paidDate within selected month boundaries
-// - This excludes "prepaid" expenses from budget calculations for display purposes
-// UPDATED 15-Jan-2025: Replaced Button with CustomButton, using create variant for "Create Custom Budget" buttons
-// REFACTORED 16-Jan-2025: Standardized budget creation UI to use Dialog-based QuickAddBudget component
-// - Removed Popover-based budget creation form (lines 235-265 and 287-317)
-// - Added showQuickAddBudget state to control QuickAddBudget dialog visibility
-// - Replaced both Popover instances with simple CustomButton triggers
-// - Now uses the same QuickAddBudget component as Dashboard for consistency
-// - Adheres to UI modality guidelines (Dialog for major forms, not Popover)
-// - Eliminates code duplication and improves maintainability
-// CRITICAL FIX 17-Jan-2025: Fixed nested confirmation issue for budget deletion
-// - Changed confirmDelete to call customBudgetActions.handleDeleteDirect instead of handleDelete
-// - This bypasses the generic hook's confirmation since AlertDialog already shows confirmation
-// - Resolves the "double confirmation" bug that prevented budget deletion from completing
-// ADDED 17-Jan-2025: Hybrid budget activation feature
-// - Added handleActivateBudget function that calls handleStatusChange to activate budgets
-// - Passes onActivateBudget handler to BudgetCard component
-// - BudgetCard now displays activation prompt for planned budgets when start date arrives
-// - Manual activation with helpful reminder provides best UX for budget management
