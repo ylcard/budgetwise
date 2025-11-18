@@ -10,7 +10,7 @@ const priorityConfig = {
     savings: { label: "Savings", color: "#10B981", description: "Savings and investments" }
 };
 
-export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving }) {
+export default function GoalSettings({ goals, onGoalUpdate, onSaveComplete, isLoading, isSaving }) {
     // We track two split points (0-100).
     // Split 1: Boundary between Needs/Wants
     // Split 2: Boundary between Wants/Savings
