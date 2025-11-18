@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +12,9 @@ import GoalSettings from "../components/reports/GoalSettings";
 import { formatCurrency } from "../components/utils/currencyUtils";
 import { Settings as SettingsIcon, Check } from "lucide-react";
 import { CURRENCY_OPTIONS } from "../components/utils/constants";
-import { useToast, showToast } from "@/components/ui/use-toast";
 
 export default function Settings() {
     const { settings, updateSettings, user } = useSettings();
-    const { toast } = useToast();
 
     // Form state and submission logic from hook
     const { formData, handleFormChange, handleSubmit, isSaving, saveSuccess } = useSettingsForm(
@@ -26,18 +25,6 @@ export default function Settings() {
     // Goals Logic (Moved from Reports)
     const { goals, isLoading: loadingGoals } = useGoals(user);
     const { handleGoalUpdate, isSaving: isGoalSaving } = useGoalActions(user, goals);
-
-    const handleGoalSaveComplete = (status) => {
-        if (status === 'success') {
-            toast({
-                title: "Success",
-                description: "All goal targets were saved successfully.",
-                variant: "success",
-            });
-        } else {
-            toast({ variant: "destructive", title: "Goal Save Failed", description: "One or more goal updates failed to complete." });
-        }
-    };
 
     const handleCurrencyChange = (code) => {
         const selectedCurrency = CURRENCY_OPTIONS.find(c => c.code === code);
@@ -199,7 +186,6 @@ export default function Settings() {
                                 <GoalSettings
                                     goals={goals}
                                     onGoalUpdate={handleGoalUpdate}
-                                    onSaveComplete={handleGoalSaveComplete}
                                     isLoading={loadingGoals}
                                     isSaving={isGoalSaving}
                                 />
