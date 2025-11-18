@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { showToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 // ADDED 16-Jan-2025: Import new generic CRUD hooks
 import { useCreateEntity } from "./useCreateEntity";
 import { useUpdateEntity } from "./useUpdateEntity";
