@@ -5,19 +5,25 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSettings } from "../components/utils/SettingsContext";
-import { useSettingsForm } from "../components/hooks/useActions";
+import { useSettingsForm, useGoalActions } from "../components/hooks/useActions";
+import { useGoals } from "../components/hooks/useBase44Entities";
+import GoalSettings from "../components/reports/GoalSettings";
 import { formatCurrency } from "../components/utils/currencyUtils";
 import { Settings as SettingsIcon, Check } from "lucide-react";
 import { CURRENCY_OPTIONS } from "../components/utils/constants";
 
 export default function Settings() {
-    const { settings, updateSettings } = useSettings();
+    const { settings, updateSettings, user } = useSettings();
 
     // Form state and submission logic from hook
     const { formData, handleFormChange, handleSubmit, isSaving, saveSuccess } = useSettingsForm(
         settings,
         updateSettings
     );
+
+    // Goals Logic (Moved from Reports)
+    const { goals, isLoading: loadingGoals } = useGoals(user);
+    const { handleGoalUpdate, isSaving: isGoalSaving } = useGoalActions(user, goals);
 
     const handleCurrencyChange = (code) => {
         const selectedCurrency = CURRENCY_OPTIONS.find(c => c.code === code);
@@ -276,13 +282,23 @@ export default function Settings() {
 
                             {/* Goal Sum Validation (User Feedback) */}
                             <p className={`mt-4 text-sm font-semibold ${(formData.needsGoal || 0) + (formData.wantsGoal || 0) + (formData.savingsGoal || 0) === 100
-                                    ? 'text-emerald-600' : 'text-rose-600'
+                                ? 'text-emerald-600' : 'text-rose-600'
                                 }`}>
                                 Total Allocation: {(formData.needsGoal || 0) + (formData.wantsGoal || 0) + (formData.savingsGoal || 0)}% (Target: 100%)
                             </p>
                         </CardContent>
                     </Card>
                 </form>
+                {/* MOVED COMPONENT: Category Level Goal Settings */}
+                <div className="pt-6 border-t border-gray-200">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Category Budgets</h2>
+                    <GoalSettings
+                        goals={goals}
+                        onGoalUpdate={handleGoalUpdate}
+                        isLoading={loadingGoals}
+                        isSaving={isGoalSaving}
+                    />
+                </div>
             </div>
         </div>
     );
