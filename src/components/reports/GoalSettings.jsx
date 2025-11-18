@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Target, Save, GripVertical } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { showToast } from "@/components/ui/use-toast";
 
 const priorityConfig = {
     needs: { label: "Needs", color: "#EF4444", description: "Essential expenses" },
@@ -39,8 +40,27 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
     };
 
     const handleSave = async () => {
-        for (const [priority, percentage] of Object.entries(currentValues)) {
-            await onGoalUpdate(priority, percentage);
+        try {
+            // Execute all goal updates
+            const promises = Object.entries(currentValues).map(([priority, percentage]) => 
+                onGoalUpdate(priority, percentage)
+            );
+            
+            // Wait for all updates to complete
+            await Promise.all(promises);
+            
+            // Show single success toast after all updates complete
+            showToast({
+                title: "Success",
+                description: "Goals updated successfully",
+            });
+        } catch (error) {
+            console.error('Error saving goals:', error);
+            showToast({
+                title: "Error",
+                description: error?.message || "Failed to update goals. Please try again.",
+                variant: "destructive",
+            });
         }
     };
 
