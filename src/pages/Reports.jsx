@@ -44,7 +44,7 @@ export default function Reports() {
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Financial Reports</h1>
             <p className="text-gray-500 mt-1">
