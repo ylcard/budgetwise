@@ -29,7 +29,7 @@ export const isCashExpense = (transaction) => {
 const isWithinDateRange = (transaction, startDate, endDate) => {
   const start = parseDate(startDate);
   const end = parseDate(endDate);
-  
+
   if (transaction.isPaid && transaction.paidDate) {
     const paidDate = parseDate(transaction.paidDate);
     return paidDate >= start && paidDate <= end;
@@ -37,7 +37,7 @@ const isWithinDateRange = (transaction, startDate, endDate) => {
     const transactionDate = parseDate(transaction.date);
     return transactionDate >= start && transactionDate <= end;
   }
-  
+
   return false;
 };
 
@@ -73,7 +73,7 @@ const filterExpenses = (transaction, categories, startDate, endDate, allCustomBu
     priority = undefined,
     isCustomBudget = undefined
   } = options;
-  
+
   if (transaction.type !== 'expense') return false;
   if (isCashExpense(transaction)) return false;
 
@@ -82,7 +82,7 @@ const filterExpenses = (transaction, categories, startDate, endDate, allCustomBu
     if (isPaid && (!transaction.isPaid || !transaction.paidDate)) return false;
     if (!isPaid && transaction.isPaid) return false;
   }
-  
+
   // Filter by custom budget assignment
   const actualCustomBudget = isActualCustomBudget(transaction.customBudgetId, allCustomBudgets);
   if (isCustomBudget !== undefined) {
@@ -113,8 +113,8 @@ const filterExpenses = (transaction, categories, startDate, endDate, allCustomBu
 export const getPaidNeedsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
   return transactions
     .filter(t => {
-      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, { 
-        isPaid: true, 
+      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, {
+        isPaid: true,
         priority: 'needs',
         isCustomBudget: false
       });
@@ -135,8 +135,8 @@ export const getPaidNeedsExpenses = (transactions, categories, startDate, endDat
 export const getUnpaidNeedsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
   return transactions
     .filter(t => {
-      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, { 
-        isPaid: false, 
+      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, {
+        isPaid: false,
         priority: 'needs',
         isCustomBudget: false
       });
@@ -157,8 +157,8 @@ export const getUnpaidNeedsExpenses = (transactions, categories, startDate, endD
 export const getDirectPaidWantsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
   return transactions
     .filter(t => {
-      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, { 
-        isPaid: true, 
+      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, {
+        isPaid: true,
         priority: 'wants',
         isCustomBudget: false
       });
@@ -179,8 +179,8 @@ export const getDirectPaidWantsExpenses = (transactions, categories, startDate, 
 export const getDirectUnpaidWantsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
   return transactions
     .filter(t => {
-      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, { 
-        isPaid: false, 
+      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, {
+        isPaid: false,
         priority: 'wants',
         isCustomBudget: false
       });
@@ -200,9 +200,9 @@ export const getDirectUnpaidWantsExpenses = (transactions, categories, startDate
 export const getPaidCustomBudgetExpenses = (transactions, allCustomBudgets, startDate, endDate) => {
   return transactions
     .filter(t => {
-      return filterExpenses(t, null, startDate, endDate, allCustomBudgets, { 
-        isPaid: true, 
-        isCustomBudget: true 
+      return filterExpenses(t, null, startDate, endDate, allCustomBudgets, {
+        isPaid: true,
+        isCustomBudget: true
       });
     })
     .reduce((sum, t) => sum + t.amount, 0);
@@ -220,9 +220,9 @@ export const getPaidCustomBudgetExpenses = (transactions, allCustomBudgets, star
 export const getUnpaidCustomBudgetExpenses = (transactions, allCustomBudgets, startDate, endDate) => {
   return transactions
     .filter(t => {
-      return filterExpenses(t, null, startDate, endDate, allCustomBudgets, { 
-        isPaid: false, 
-        isCustomBudget: true 
+      return filterExpenses(t, null, startDate, endDate, allCustomBudgets, {
+        isPaid: false,
+        isCustomBudget: true
       });
     })
     .reduce((sum, t) => sum + t.amount, 0);
@@ -241,8 +241,8 @@ export const getUnpaidCustomBudgetExpenses = (transactions, allCustomBudgets, st
 export const getPaidSavingsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
   return transactions
     .filter(t => {
-      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, { 
-        isPaid: true, 
+      return filterExpenses(t, categories, startDate, endDate, allCustomBudgets, {
+        isPaid: true,
         priority: 'savings',
         isCustomBudget: false
       });
@@ -279,7 +279,7 @@ export const getCashExpenses = (transactions, startDate, endDate) => {
  * @returns {number} The total sum of non-cash expenses.
  */
 export const getTotalMonthExpenses = (transactions, categories, allCustomBudgets, startDate, endDate) => {
-  const allExpenses = transactions.filter(t => 
+  const allExpenses = transactions.filter(t =>
     t.type === 'expense' && !isCashExpense(t) && isWithinDateRange(t, startDate, endDate)
   );
   return allExpenses.reduce((sum, t) => {
@@ -319,6 +319,27 @@ export const getMonthlyPaidExpenses = (transactions, startDate, endDate) => {
       });
     })
     .reduce((sum, t) => sum + t.amount, 0);
+};
+
+/**
+ * Calculates total monthly income and paid expenses within a date range.
+ * This summary is optimized for use in trend visualizations.
+ * @param {Array<object>} transactions - List of all transaction objects.
+ * @param {string} startDate - The start date of the range.
+ * @param {string} endDate - The end date of the range.
+ * @returns {{income: number, expense: number}} Object containing total income and total paid expenses (as a positive number).
+ */
+export const getMonthlyFinancialSummary = (transactions, startDate, endDate) => {
+  const income = getMonthlyIncome(transactions, startDate, endDate);
+
+  // Note: getMonthlyPaidExpenses returns a negative number for total expenses.
+  const expenseSum = getMonthlyPaidExpenses(transactions, startDate, endDate);
+
+  return {
+    income: income,
+    // Return absolute value for expense so it's ready for subtraction/comparison in the chart component
+    expense: Math.abs(expenseSum),
+  };
 };
 
 // New function needed in financialCalculations.js:
