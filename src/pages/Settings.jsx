@@ -180,6 +180,16 @@ export default function Settings() {
                                 </p>
                             </div>
 
+                            <div className="pt-6 border-t border-gray-200">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-4">Category Budgets</h2>
+                                <GoalSettings
+                                    goals={goals}
+                                    onGoalUpdate={handleGoalUpdate}
+                                    isLoading={loadingGoals}
+                                    isSaving={isGoalSaving}
+                                />
+                            </div>
+
                             <div className="flex justify-end gap-3 pt-4">
                                 <CustomButton
                                     type="submit"
@@ -196,15 +206,6 @@ export default function Settings() {
                             </div>
                         </CardContent>
                     </Card>
-                    <div className="pt-6 border-t border-gray-200">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Category Budgets</h2>
-                        <GoalSettings
-                            goals={goals}
-                            onGoalUpdate={handleGoalUpdate}
-                            isLoading={loadingGoals}
-                            isSaving={isGoalSaving}
-                        />
-                    </div>
                 </form>
             </div>
         </div>
