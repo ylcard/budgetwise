@@ -27,6 +27,17 @@ export default function Settings() {
     const { goals, isLoading: loadingGoals } = useGoals(user);
     const { handleGoalUpdate, isSaving: isGoalSaving } = useGoalActions(user, goals);
 
+    const handleGoalSaveComplete = (status) => {
+        if (status === 'success') {
+            toast({
+                title: "Goal Settings Saved",
+                description: "All goal targets were updated successfully.",
+            });
+        } else {
+            toast({ variant: "destructive", title: "Goal Save Failed", description: "One or more goal updates failed to complete." });
+        }
+    };
+
     const handleCurrencyChange = (code) => {
         const selectedCurrency = CURRENCY_OPTIONS.find(c => c.code === code);
         if (selectedCurrency) {
