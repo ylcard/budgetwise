@@ -397,33 +397,28 @@ export const useGoalActions = (user, goals) => {
 
         try {
             if (existingGoal) {
-                const result = await updateGoalMutation.mutateAsync({
+                // Return the promise directly, allowing the caller (GoalSettings) to handle resolution status
+                return updateGoalMutation.mutateAsync({
                     id: existingGoal.id,
                     data: { target_percentage: percentage }
                 });
-                // Return the result to allow external checks
-                return result;
             } else if (user) {
-                const result = await createGoalMutation.mutateAsync({
+                // Return the promise directly
+                return createGoalMutation.mutateAsync({
                     priority,
                     target_percentage: percentage,
                     user_email: user.email
                 });
-                // Return the result to allow external checks
-                return result;
             }
 
-            // If we reach here, the operation succeeded (no error thrown)
-            showToast({ title: "Success", description: "Goals updated successfully." });
         } catch (error) {
             console.error('Error in handleGoalUpdate:', error);
-            showToast({ title: "Error", description: error?.message || "Failed to update goals. Please try again.", variant: "destructive" });
             // Re-throw the error so any Promise.allSettled wrapper knows it failed
             throw error;
         }
 
         // If no action was taken (e.g., no existing goal and no user), return gracefully
-        return Promise.resolve(null);
+        return Promise.resolve();
     };
 
     return {
