@@ -243,6 +243,37 @@ export default function Settings() {
                                 </div>
                             </div>
 
+                            {/* NEW: Dynamic Allocation Visualization */}
+                            <div className="flex flex-col mt-6 pt-4 border-t border-gray-100">
+                                <div className="flex w-full h-3 rounded-full overflow-hidden bg-gray-200 shadow-inner">
+                                    {/* Needs (Red/Error) */}
+                                    <div
+                                        style={{ width: `${formData.needsGoal || 0}%` }}
+                                        className="bg-red-500 transition-all duration-300"
+                                        title={`Needs: ${formData.needsGoal || 0}%`}
+                                    />
+                                    {/* Wants (Amber/Warning) */}
+                                    <div
+                                        style={{ width: `${formData.wantsGoal || 0}%` }}
+                                        className="bg-amber-500 transition-all duration-300"
+                                        title={`Wants: ${formData.wantsGoal || 0}%`}
+                                    />
+                                    {/* Savings (Green/Success) */}
+                                    <div
+                                        style={{ width: `${formData.savingsGoal || 0}%` }}
+                                        className="bg-emerald-500 transition-all duration-300"
+                                        title={`Savings: ${formData.savingsGoal || 0}%`}
+                                    />
+                                </div>
+
+                                {/* Visualization Legend */}
+                                <div className="flex justify-between text-xs mt-2 text-gray-600">
+                                    <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1"></span>Needs</span>
+                                    <span><span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Wants</span>
+                                    <span><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Savings</span>
+                                </div>
+                            </div>
+
                             {/* Goal Sum Validation (User Feedback) */}
                             <p className={`mt-4 text-sm font-semibold ${(formData.needsGoal || 0) + (formData.wantsGoal || 0) + (formData.savingsGoal || 0) === 100
                                     ? 'text-emerald-600' : 'text-rose-600'
