@@ -198,6 +198,7 @@ export default function Settings() {
                                 <GoalSettings
                                     goals={goals}
                                     onGoalUpdate={handleGoalUpdate}
+                                    onSaveComplete={handleGoalSaveComplete}
                                     isLoading={loadingGoals}
                                     isSaving={isGoalSaving}
                                 />
