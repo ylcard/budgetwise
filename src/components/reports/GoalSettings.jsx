@@ -38,11 +38,31 @@ export default function GoalSettings({ goals, onGoalUpdate, onSaveComplete, isLo
         savings: 100 - splits.split2
     };
 
-    const handleSave = async () => {
-        for (const [priority, percentage] of Object.entries(currentValues)) {
-            await onGoalUpdate(priority, percentage);
+    // const handleSave = async () => {
+    //     for (const [priority, percentage] of Object.entries(currentValues)) {
+    //         await onGoalUpdate(priority, percentage);
+    //     }
+    // };
+
+    const handleSave = useCallback(async () => {
+        const updatePromises = Object.entries(currentValues).map(([priority, percentage]) =>
+            onGoalUpdate(priority, percentage)
+        );
+
+        const results = await Promise.allSettled(updatePromises);
+
+        const failedUpdates = results.filter(result => result.status === 'rejected');
+
+        if (failedUpdates.length === 0) {
+            // All updates successful
+            onSaveComplete('success');
+        } else {
+            // One or more updates failed
+            onSaveComplete('error');
         }
-    };
+    }, [currentValues, onGoalUpdate, onSaveComplete]);
+
+    // Pointer event handlers for dragging
 
     // Pointer event handlers for dragging
     const handlePointerDown = (e, thumbIndex) => {
