@@ -8,9 +8,10 @@ import { parseCSV } from "@/components/utils/simpleCsvParser";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Upload } from "lucide-react"; // Check, ArrowLeft removed
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { createPageUrl } from "@/utils";
+import { useNavigate } from "react-router-dom";
 
 const STEPS = [
     { id: 1, label: "Upload" },
@@ -28,6 +29,7 @@ export default function ImportWizard() {
     const [isProcessing, setIsProcessing] = useState(false);
     const { user } = useSettings();
     const { categories } = useCategories();
+    const navigate = useNavigate();
 
     const handleFileSelect = async (selectedFile) => {
         setFile(selectedFile);
@@ -104,7 +106,7 @@ export default function ImportWizard() {
             await base44.entities.Transaction.bulkCreate(transactionsToCreate);
 
             showToast({ title: "Success", description: `Imported ${transactionsToCreate.length} transactions.` });
-            window.location.href = createPageUrl("Transactions");
+            navigate(createPageUrl("Transactions"));
         } catch (error) {
             console.error(error);
             showToast({ title: "Error", description: "Failed to import transactions.", variant: "destructive" });

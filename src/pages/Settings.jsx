@@ -12,6 +12,7 @@ import { formatCurrency } from "../components/utils/currencyUtils";
 import { Settings as SettingsIcon, Check, Upload } from "lucide-react";
 import { CURRENCY_OPTIONS } from "../components/utils/constants";
 import { createPageUrl } from "@/utils";
+import { Link } from "react-router-dom";
 
 export default function Settings() {
     const { settings, updateSettings, user } = useSettings();
@@ -201,10 +202,12 @@ export default function Settings() {
                                     </div>
                                     <CustomButton 
                                         variant="outline" 
-                                        onClick={() => window.location.href = createPageUrl("ImportData")}
+                                        asChild
                                     >
-                                        <Upload className="w-4 h-4 mr-2" />
-                                        Import CSV
+                                        <Link to={createPageUrl("ImportData")}>
+                                            <Upload className="w-4 h-4 mr-2" />
+                                            Import CSV
+                                        </Link>
                                     </CustomButton>
                                 </div>
                             </div>
