@@ -10,8 +10,8 @@ import { useGoals } from "../components/hooks/useBase44Entities";
 import GoalSettings from "../components/reports/GoalSettings";
 import { formatCurrency } from "../components/utils/currencyUtils";
 import { Settings as SettingsIcon, Check, Upload } from "lucide-react";
-import { createPageUrl } from "@/utils";
 import { CURRENCY_OPTIONS } from "../components/utils/constants";
+import { createPageUrl } from "@/utils";
 
 export default function Settings() {
     const { settings, updateSettings, user } = useSettings();
@@ -189,6 +189,24 @@ export default function Settings() {
                                     isLoading={loadingGoals}
                                     isSaving={isGoalSaving}
                                 />
+                            </div>
+
+                            {/* Data Management Section */}
+                            <div className="pt-6 border-t border-gray-200">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-4">Data Management</h2>
+                                <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900">Import Data</h3>
+                                        <p className="text-sm text-gray-500 mt-1">Import transactions from CSV files</p>
+                                    </div>
+                                    <CustomButton 
+                                        variant="outline" 
+                                        onClick={() => window.location.href = createPageUrl("ImportData")}
+                                    >
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Import CSV
+                                    </CustomButton>
+                                </div>
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4">
