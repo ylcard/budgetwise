@@ -14,7 +14,6 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 const LayoutContent = React.memo(({ children }) => {
@@ -73,28 +72,33 @@ const LayoutContent = React.memo(({ children }) => {
           </SidebarContent>
         </Sidebar>
 
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col relative">
           <div className="flex-1 overflow-auto pb-20 md:pb-0">
             {children}
           </div>
           
           {/* Mobile Bottom Navigation */}
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-            <div className="flex justify-around items-center px-2 py-2">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.title}
-                  to={item.url}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors duration-200 ${
-                    location.pathname === item.url
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-xs font-medium">{item.title}</span>
-                </Link>
-              ))}
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[100] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+            <div className="flex justify-around items-center px-2 py-3 pb-safe-4">
+              {navigationItems.map((item) => {
+                const isActive = location.pathname === item.url;
+                return (
+                  <Link
+                    key={item.title}
+                    to={item.url}
+                    className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'text-blue-600 scale-105'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                    <span className={`text-[10px] font-medium ${isActive ? 'font-semibold' : ''}`}>
+                      {item.title}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </nav>
         </main>
@@ -114,14 +118,3 @@ export default function Layout({ children, currentPageName }) {
     </SettingsProvider>
   );
 }
-
-// UPDATED 15-Jan-2025: Integrated ConfirmDialogProvider into Layout
-// This provides global access to the custom confirmation dialog across the entire app
-// All components can now use the useConfirm() hook to trigger confirmations
-// The provider wraps LayoutContent to ensure all pages have access to the confirmation functionality
-
-// UPDATED 19-Nov-2025: Implemented responsive navigation
-// - Sidebar now hidden on mobile (hidden md:flex)
-// - Removed mobile header with SidebarTrigger
-// - Added sticky bottom navigation bar for mobile with icons and text
-// - Content area has bottom padding on mobile to prevent overlap with bottom nav
