@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Trash2 } from "lucide-react";
-import { formatCurrency } from "@/components/utils/formatCurrency";
+import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 
 export default function ImportReview({ data, onDeleteRow }) {
