@@ -109,7 +109,11 @@ export default function ImportWizard() {
             showToast({ title: "Success", description: `Extracted ${processed.length} transactions from PDF.` });
         } catch (error) {
             console.error('PDF Processing Error:', error);
-            showToast({ title: "Error", description: "Failed to process PDF. Please try again.", variant: "destructive" });
+            showToast({ 
+                title: "PDF Processing Failed", 
+                description: `Error: ${error.message || "Unknown error"}. Check console for full details.`, 
+                variant: "destructive" 
+            });
             setFile(null);
         } finally {
             setIsLoadingPdf(false);
