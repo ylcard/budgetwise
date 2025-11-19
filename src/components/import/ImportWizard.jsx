@@ -27,6 +27,7 @@ export default function ImportWizard() {
     const [mappings, setMappings] = useState({});
     const [processedData, setProcessedData] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [error, setError] = useState(null); // CREATED 19-Nov-2025: Error state for permanent display
     const { user, settings } = useSettings();
     const { categories } = useCategories();
     const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function ImportWizard() {
 
     const handleFileSelect = async (selectedFile) => {
         setFile(selectedFile);
+        setError(null); // Clear previous errors on new file select
 
         if (selectedFile.name.toLowerCase().endsWith('.pdf') || selectedFile.type === 'application/pdf') {
             await handlePdfProcessing(selectedFile);
