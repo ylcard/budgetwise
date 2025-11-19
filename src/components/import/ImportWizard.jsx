@@ -59,23 +59,30 @@ export default function ImportWizard() {
             const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
                 file_url: file_url,
                 json_schema: {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
-                            "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
-                            "reason": { "type": "string", "description": "Merchant or description" },
-                            "amount": { "type": "number", "description": "Transaction amount. Negative for expenses, positive for income." }
-                        },
-                        "required": ["date", "reason", "amount"]
-                    }
+                    "type": "object",
+                    "properties": {
+                        "transactions": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
+                                    "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
+                                    "reason": { "type": "string", "description": "Merchant or description" },
+                                    "amount": { "type": "number", "description": "Transaction amount. Negative for expenses, positive for income." }
+                                },
+                                "required": ["date", "reason", "amount"]
+                            }
+                        }
+                    },
+                    "required": ["transactions"]
                 }
             });
 
             if (result.status === 'error') throw new Error(result.details);
             
-            const extractedData = result.output || [];
+            // Updated 19-Nov-2025: Handle new schema structure with root object
+            const extractedData = result.output?.transactions || [];
             
             const processed = extractedData.map(item => {
                 const amountClean = parseFloat(item.amount);
