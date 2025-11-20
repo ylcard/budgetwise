@@ -6,10 +6,11 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
-import { useTransactions, useCategories, useCashWallet } from "../components/hooks/useBase44Entities";
+import { useTransactions, useCategories, useCashWallet, useCustomBudgetsAll } from "../components/hooks/useBase44Entities";
 import { useTransactionFiltering } from "../components/hooks/useDerivedData";
 import { useTransactionActions } from "../components/hooks/useActions";
 import { useSettings } from "../components/utils/SettingsContext";
+import { usePeriod } from "../components/hooks/usePeriod";
 import { chunkArray } from "../components/utils/generalUtils";
 import TransactionForm from "../components/transactions/TransactionForm";
 import TransactionList from "../components/transactions/TransactionList";
@@ -20,11 +21,15 @@ export default function Transactions() {
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
     const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
+    
+    // ADDED 20-Jan-2025: Fetch period for cross-period detection
+    const { monthStart, monthEnd } = usePeriod();
 
     // Data fetching
     const { transactions, isLoading } = useTransactions();
     const { categories } = useCategories();
     const { cashWallet } = useCashWallet(user);
+    const { allCustomBudgets } = useCustomBudgetsAll(user); // ADDED 20-Jan-2025
 
     // Filtering logic
     const { filters, setFilters, filteredTransactions } = useTransactionFiltering(transactions);
@@ -115,6 +120,9 @@ export default function Transactions() {
                     isLoading={isLoading}
                     onSubmit={handleSubmit}
                     isSubmitting={isSubmitting}
+                    customBudgets={allCustomBudgets}
+                    monthStart={monthStart}
+                    monthEnd={monthEnd}
                 />
             </div>
         </div>
