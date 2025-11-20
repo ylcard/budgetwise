@@ -16,7 +16,7 @@ import TransactionFilters from "../components/transactions/TransactionFilters";
 
 export default function Transactions() {
     const { user } = useSettings();
-    const confirm = useConfirm();
+    const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
     const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
 
@@ -37,10 +37,10 @@ export default function Transactions() {
     const handleBulkDelete = async () => {
         if (filteredTransactions.length === 0) return;
 
-        confirm({
-            title: "Delete Transactions",
-            message: `Are you sure you want to delete all ${filteredTransactions.length} currently filtered transactions? This action cannot be undone.`,
-            onConfirm: async () => {
+        confirmAction(
+            "Delete Transactions",
+            `Are you sure you want to delete all ${filteredTransactions.length} currently filtered transactions? This action cannot be undone.`,
+            async () => {
                 setIsBulkDeleting(true);
                 try {
                     const deletePromises = filteredTransactions.map(t => base44.entities.Transaction.delete(t.id));
@@ -54,8 +54,9 @@ export default function Transactions() {
                 } finally {
                     setIsBulkDeleting(false);
                 }
-            }
-        });
+            },
+            { destructive: true }
+        );
     };
 
     return (
