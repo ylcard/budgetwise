@@ -60,13 +60,13 @@ const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) 
         .filter(t => {
             if (t.type !== 'expense') return false;
             if (!t.isPaid || !t.paidDate) return false;
-            
+
             // Filter by paidDate within selected month
             const paidDate = parseDate(t.paidDate);
             return paidDate >= monthStartDate && paidDate <= monthEndDate;
         })
         .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
-    
+
     const digitalUnpaid = digitalTransactions
         .filter(t => t.type === 'expense' && !t.isPaid)
         .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
@@ -85,7 +85,7 @@ const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) 
                 if (t.type !== 'expense') return false;
                 if (t.cashCurrency !== currencyCode) return false;
                 if (!t.isPaid || !t.paidDate) return false;
-                
+
                 // Filter by paidDate within selected month
                 const paidDate = parseDate(t.paidDate);
                 return paidDate >= monthStartDate && paidDate <= monthEndDate;
@@ -211,7 +211,7 @@ export default function BudgetDetail() {
     const location = useLocation();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const { confirmAction } = useConfirm();
-    
+
     const { selectedMonth, selectedYear, monthStart, monthEnd } = usePeriod();
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -383,8 +383,17 @@ export default function BudgetDetail() {
         if (!budget) return [];
 
         if (budget.isSystemBudget) {
-            const budgetStart = new Date(budget.startDate);
-            const budgetEnd = new Date(budget.endDate);
+            // const budgetStart = new Date(budget.startDate);
+            // const budgetEnd = new Date(budget.endDate);
+
+            // FIX: System Budgets don't have intrinsic dates. 
+            // We must use the global selected period (monthStart/monthEnd).
+            // We also set the time to cover the full day (00:00 to 23:59).
+            const budgetStart = new Date(monthStart || budget.startDate);
+            budgetStart.setHours(0, 0, 0, 0);
+
+            const budgetEnd = new Date(monthEnd || budget.endDate);
+            budgetEnd.setHours(23, 59, 59, 999);
 
             const allCustomBudgetIds = allCustomBudgets.map(cb => cb.id);
 
@@ -413,7 +422,7 @@ export default function BudgetDetail() {
         } else {
             return transactions.filter(t => t.customBudgetId === budgetId);
         }
-    }, [transactions, budgetId, budget, categories, allCustomBudgets]);
+    }, [transactions, budgetId, budget, categories, allCustomBudgets, monthStart, monthEnd]);
 
     const relatedCustomBudgetsForDisplay = useMemo(() => {
         if (!budget || !budget.isSystemBudget) return [];
