@@ -6,8 +6,6 @@
 
 import React, { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-// UPDATED 16-Jan-2025: Replaced Button with CustomButton for consistency
-// import { Button } from "@/components/ui/button";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -15,8 +13,81 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useSettings } from "../utils/SettingsContext";
 import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
+import { useDayPicker } from "react-day-picker";
+import { setMonth, setYear, startOfMonth } from "date-fns";
+
+/**
+ * Custom Caption Label component for the Calendar.
+ * Replaces the default caption with interactive Month and Year selectors
+ * that look like plain text but open dropdowns on click.
+ */
+function CalendarCaptionLabel({ displayMonth }) {
+  const { goToMonth } = useDayPicker();
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  // Generate a range of years (e.g., 2000 - 2050)
+  const startYear = 2000;
+  const endYear = 2050;
+  const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+
+  const handleMonthChange = (value) => {
+    const newMonth = parseInt(value);
+    goToMonth(setMonth(startOfMonth(displayMonth), newMonth));
+  };
+
+  const handleYearChange = (value) => {
+    const newYear = parseInt(value);
+    goToMonth(setYear(startOfMonth(displayMonth), newYear));
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Select
+        value={displayMonth.getMonth().toString()}
+        onValueChange={handleMonthChange}
+      >
+        <SelectTrigger className="h-auto p-0 border-none shadow-none font-medium hover:bg-transparent hover:text-primary focus:ring-0 [&>svg]:hidden bg-transparent">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {months.map((month, index) => (
+            <SelectItem key={month} value={index.toString()}>
+              {month}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={displayMonth.getFullYear().toString()}
+        onValueChange={handleYearChange}
+      >
+        <SelectTrigger className="h-auto p-0 border-none shadow-none font-medium hover:bg-transparent hover:text-primary focus:ring-0 [&>svg]:hidden bg-transparent">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {years.map((year) => (
+            <SelectItem key={year} value={year.toString()}>
+              {year}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 /**
  * A reusable single-date picker component using a popover calendar.
@@ -75,16 +146,11 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
           initialFocus
           className="w-fit rounded-md border"
           fixedWeeks
-          captionLayout="dropdown-buttons"
-          fromYear={2010}
-          toYear={2030}
+          components={{
+            CaptionLabel: CalendarCaptionLabel
+          }}
         />
       </PopoverContent>
     </Popover>
   );
 }
-
-// UPDATED 16-Jan-2025: Replaced shadcn Button with CustomButton
-// - Trigger button now uses CustomButton with variant="outline"
-// - Calendar component (internal date selection UI) remains unchanged (external library component)
-// - All functionality preserved, consistent styling applied
