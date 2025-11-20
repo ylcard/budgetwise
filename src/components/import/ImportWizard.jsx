@@ -3,13 +3,15 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Steps } from "@/components/ui/steps"; // Assuming Steps component exists or I'll mimic it
 import FileUploader from "./FileUploader";
 import ColumnMapper from "./ColumnMapper";
-import ImportReview from "./ImportReview";
+import CategorizeReview from "./CategorizeReview";
+// import ImportReview from "./ImportReview"; // OBSOLETE: Replaced by CategorizeReview
 import { parseCSV } from "@/components/utils/simpleCsvParser";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
-import { ArrowRight, Loader2, Upload } from "lucide-react"; // Check, ArrowLeft removed
-import { useCategories } from "@/components/hooks/useBase44Entities";
+import { ArrowRight, Loader2, Upload } from "lucide-react";
+import { useCategories, useCategoryRules } from "@/components/hooks/useBase44Entities";
+import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -30,6 +32,7 @@ export default function ImportWizard() {
     const [error, setError] = useState(null); // CREATED 19-Nov-2025: Error state for permanent display
     const { user, settings } = useSettings();
     const { categories } = useCategories();
+    const { rules } = useCategoryRules(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
@@ -88,16 +91,12 @@ export default function ImportWizard() {
                 const amountClean = parseFloat(item.amount);
                 const type = amountClean >= 0 ? 'income' : 'expense';
                 
-                // Basic category matching by name
-                let categoryName = 'Uncategorized';
-                let categoryId = null;
-                const matchedCat = categories.find(c => 
-                    (item.reason || '').toLowerCase().includes(c.name.toLowerCase())
+                // Enhanced categorization using rules and patterns
+                const catResult = categorizeTransaction(
+                    { title: item.reason },
+                    rules,
+                    categories
                 );
-                if (matchedCat) {
-                    categoryName = matchedCat.name;
-                    categoryId = matchedCat.id;
-                }
 
                 return {
                     date: item.date,
@@ -106,8 +105,8 @@ export default function ImportWizard() {
                     originalAmount: amountClean,
                     originalCurrency: settings?.baseCurrency || 'USD',
                     type,
-                    category: categoryName,
-                    categoryId,
+                    category: catResult.categoryName || 'Uncategorized',
+                    categoryId: catResult.categoryId || null,
                     isPaid: !!item.valueDate,
                     paidDate: item.valueDate || null,
                     originalData: item
@@ -144,16 +143,25 @@ export default function ImportWizard() {
                 type = amountClean >= 0 ? 'income' : 'expense';
             }
 
-            // Category matching logic
-            let categoryName = 'Uncategorized';
-            let categoryId = null;
+            // Enhanced categorization
+            // First check if CSV has an explicit category column
+            let catResult = { categoryId: null, categoryName: 'Uncategorized' };
+            
             if (mappings.category && row[mappings.category]) {
-                const csvCat = row[mappings.category].toLowerCase();
-                const matchedCat = categories.find(c => c.name.toLowerCase() === csvCat);
+                const csvCat = row[mappings.category];
+                const matchedCat = categories.find(c => c.name.toLowerCase() === csvCat.toLowerCase());
                 if (matchedCat) {
-                    categoryName = matchedCat.name;
-                    categoryId = matchedCat.id;
+                    catResult = { categoryId: matchedCat.id, categoryName: matchedCat.name };
                 }
+            }
+            
+            // If no explicit mapping or not found, run auto-categorization
+            if (!catResult.categoryId) {
+                catResult = categorizeTransaction(
+                    { title: row[mappings.title] },
+                    rules,
+                    categories
+                );
             }
 
             return {
@@ -163,8 +171,8 @@ export default function ImportWizard() {
                 originalAmount: amountClean,
                 originalCurrency: settings?.baseCurrency || 'USD',
                 type,
-                category: categoryName,
-                categoryId,
+                category: catResult.categoryName || 'Uncategorized',
+                categoryId: catResult.categoryId || null,
                 isPaid: false, // CSV usually doesn't imply paid status unless specified, default false
                 paidDate: null,
                 originalData: row
@@ -204,6 +212,14 @@ export default function ImportWizard() {
 
     const handleDeleteRow = (index) => {
         setProcessedData(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleUpdateRow = (index, updates) => {
+        setProcessedData(prev => {
+            const newData = [...prev];
+            newData[index] = { ...newData[index], ...updates };
+            return newData;
+        });
     };
 
     return (
@@ -265,7 +281,12 @@ export default function ImportWizard() {
                 )}
                 {step === 3 && (
                     <div className="space-y-6">
-                        <ImportReview data={processedData} onDeleteRow={handleDeleteRow} />
+                        <CategorizeReview 
+                            data={processedData} 
+                            categories={categories}
+                            onUpdateRow={handleUpdateRow}
+                            onDeleteRow={handleDeleteRow} 
+                        />
                         <div className="flex justify-end gap-4">
                             <CustomButton variant="outline" onClick={() => setStep(2)}>Back</CustomButton>
                             <CustomButton variant="primary" onClick={handleImport} disabled={isProcessing}>
