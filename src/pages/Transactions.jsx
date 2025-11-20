@@ -10,6 +10,7 @@ import { useTransactions, useCategories, useCashWallet } from "../components/hoo
 import { useTransactionFiltering } from "../components/hooks/useDerivedData";
 import { useTransactionActions } from "../components/hooks/useActions";
 import { useSettings } from "../components/utils/SettingsContext";
+import { chunkArray } from "../components/utils/generalUtils";
 import TransactionForm from "../components/transactions/TransactionForm";
 import TransactionList from "../components/transactions/TransactionList";
 import TransactionFilters from "../components/transactions/TransactionFilters";
@@ -43,8 +44,13 @@ export default function Transactions() {
             async () => {
                 setIsBulkDeleting(true);
                 try {
-                    const deletePromises = filteredTransactions.map(t => base44.entities.Transaction.delete(t.id));
-                    await Promise.all(deletePromises);
+                    // Batch deletions to avoid API limits
+                    const chunks = chunkArray(filteredTransactions, 50); // Process 50 at a time
+                    
+                    for (const chunk of chunks) {
+                        const deletePromises = chunk.map(t => base44.entities.Transaction.delete(t.id));
+                        await Promise.all(deletePromises);
+                    }
 
                     queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
                     showToast({ title: "Success", description: `Deleted ${filteredTransactions.length} transactions.` });

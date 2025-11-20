@@ -1,4 +1,3 @@
-
 /**
  * @file General Utilities
  * @description General, domain-agnostic utility functions.
@@ -33,4 +32,18 @@ export const createEntityMap = (entities, keyField = 'id', valueExtractor = null
 export const normalizeAmount = (amount) => {
     if (!amount) return '';
     return amount.toString().replace(/[^\d.,]/g, '').replace(',', '.');
+};
+
+/**
+ * Chunks an array into smaller arrays of a specified size.
+ * @param {Array} array - The array to chunk.
+ * @param {number} chunkSize - The size of each chunk.
+ * @returns {Array<Array>} An array of chunks.
+ */
+export const chunkArray = (array, chunkSize) => {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
 };
