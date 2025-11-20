@@ -21,6 +21,40 @@ export const isCashExpense = (transaction) => {
 };
 
 /**
+ * ADDED 20-Jan-2025: Get effective financial priority for a transaction
+ * Hierarchy: (1) Custom Budget -> 'wants', (2) transaction.financial_priority, (3) category.priority
+ * 
+ * @param {object} transaction - The transaction object
+ * @param {Array} categories - All categories
+ * @param {Array} allCustomBudgets - All custom budgets
+ * @returns {string} 'needs', 'wants', 'savings', or null
+ */
+export const getTransactionEffectivePriority = (transaction, categories = [], allCustomBudgets = []) => {
+  // If assigned to a Custom Budget (non-system), always treat as 'wants'
+  if (transaction.customBudgetId) {
+    const customBudget = allCustomBudgets.find(cb => cb.id === transaction.customBudgetId);
+    if (customBudget && !customBudget.isSystemBudget) {
+      return 'wants';
+    }
+  }
+
+  // Check transaction-specific priority (new field)
+  if (transaction.financial_priority) {
+    return transaction.financial_priority;
+  }
+
+  // Fallback to category priority (legacy)
+  if (transaction.category_id) {
+    const category = categories.find(c => c.id === transaction.category_id);
+    if (category && category.priority) {
+      return category.priority;
+    }
+  }
+
+  return null;
+};
+
+/**
  * COMMITMENT VIEW: Calculate budget usage based on commitment date (transactionDate)
  * Used in Custom Budget cards and Category views
  * 
