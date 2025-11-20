@@ -45,13 +45,14 @@ export const categorizeTransaction = (transaction, userRules = [], categories = 
 
     let categoryId = null;
     let categoryName = 'Uncategorized';
+    let priority = 'wants';
 
     // Helper to find category by ID or Name
     const resolveCategory = (idOrName, isId = false) => {
         const cat = categories.find(c =>
             isId ? c.id === idOrName : c.name.toUpperCase() === idOrName.toUpperCase()
         );
-        return cat ? { categoryId: cat.id, categoryName: cat.name } : null;
+        return cat ? { categoryId: cat.id, categoryName: cat.name,priority: cat.priority || 'wants' } : null;
     };
 
     // 1. User Rules Check (Highest Priority)
