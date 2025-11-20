@@ -42,13 +42,13 @@ const FALLBACK_REGEX = [
  */
 export const categorizeTransaction = (transaction, userRules = [], categories = []) => {
     const description = (transaction.title || transaction.description || '').toUpperCase();
-    
+
     let categoryId = null;
     let categoryName = 'Uncategorized';
 
     // Helper to find category by ID or Name
     const resolveCategory = (idOrName, isId = false) => {
-        const cat = categories.find(c => 
+        const cat = categories.find(c =>
             isId ? c.id === idOrName : c.name.toUpperCase() === idOrName.toUpperCase()
         );
         return cat ? { categoryId: cat.id, categoryName: cat.name } : null;
@@ -90,12 +90,12 @@ export const categorizeTransaction = (transaction, userRules = [], categories = 
             if (resolved) return resolved;
         }
     }
-    
+
     // 4. Existing Basic Matching (from original ImportWizard logic, preserved as fallback)
     // This tries to find the category name directly in the description
     for (const cat of categories) {
         if (description.includes(cat.name.toUpperCase())) {
-            return { categoryId: cat.id, categoryName: cat.name };
+            return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority || 'wants' };
         }
     }
 
