@@ -73,7 +73,11 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
           selected={dateValue}
           onSelect={handleSelect}
           initialFocus
-          className="rounded-md border"
+          className="w-fit rounded-md border"
+          fixedWeeks
+          captionLayout="dropdown-buttons"
+          fromYear={2010}
+          toYear={2030}
         />
       </PopoverContent>
     </Popover>
