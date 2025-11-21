@@ -10,29 +10,29 @@ export default function PriorityChart({ transactions, categories, goals, monthly
 
     if (isLoading) {
         return (
-            <Card className="border-none shadow-lg">
+            <Card className="border-none shadow-lg h-full">
                 <CardHeader>
                     <CardTitle>Actual vs Target by Priority</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-80 w-full" />
+                <CardContent className="h-full pb-6">
+                    <Skeleton className="h-full w-full" />
                 </CardContent>
             </Card>
         );
     }
 
     return (
-        <Card className="border-none shadow-lg">
+        <Card className="border-none shadow-lg h-full flex flex-col">
             <CardHeader>
                 <CardTitle>Actual vs Target by Priority</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 min-h-0 pb-6">
                 {chartData.length === 0 ? (
-                    <div className="h-80 flex items-center justify-center text-gray-400">
+                    <div className="h-full flex items-center justify-center text-gray-400">
                         <p>No expenses to show yet</p>
                     </div>
                 ) : (
-                    <ResponsiveContainer width="100%" height={350}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                             <XAxis dataKey="name" />
