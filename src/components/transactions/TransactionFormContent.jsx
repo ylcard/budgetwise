@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
-// import { Button } from "@/components/ui/button";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -109,16 +107,39 @@ export default function TransactionFormContent({
         c => c.code === formData.originalCurrency
     )?.symbol || getCurrencySymbol(formData.originalCurrency);
 
-    // ADDED 20-Jan-2025: Auto-update financial_priority when category changes
-    // But only if no custom budget is selected (custom budgets override priority)
+    // LOGIC UPDATE: Auto-set Priority based on Category
     useEffect(() => {
-        if (formData.category_id && !formData.customBudgetId) {
+        if (formData.category_id) {
             const selectedCategory = categories.find(c => c.id === formData.category_id);
             if (selectedCategory && selectedCategory.priority) {
                 setFormData(prev => ({ ...prev, financial_priority: selectedCategory.priority }));
             }
         }
-    }, [formData.category_id, formData.customBudgetId, categories]);
+    }, [formData.category_id, categories]);
+
+    // LOGIC UPDATE: Auto-select System Budget based on Priority
+    // If priority changes to 'wants', try to find a budget named 'Wants'
+    useEffect(() => {
+        if (formData.financial_priority && allBudgets.length > 0) {
+            // Find a matching system budget (case-insensitive)
+            const matchingSystemBudget = allBudgets.find(b =>
+                b.isSystemBudget &&
+                b.name.toLowerCase() === formData.financial_priority.toLowerCase()
+            );
+
+            if (matchingSystemBudget) {
+                // Only auto-switch if we currently have NO budget selected, 
+                // or if the currently selected budget is also a system budget.
+                // We don't want to kick the user out of a specific custom budget (e.g., "Trip 2025").
+                const currentBudget = allBudgets.find(b => b.id === formData.customBudgetId);
+                const canAutoSwitch = !formData.customBudgetId || (currentBudget && currentBudget.isSystemBudget);
+
+                if (canAutoSwitch) {
+                    setFormData(prev => ({ ...prev, customBudgetId: matchingSystemBudget.id }));
+                }
+            }
+        }
+    }, [formData.financial_priority, allBudgets]);
 
     // ENHANCEMENT (2025-01-11): Filter budgets to show active + planned statuses
     // This allows linking expenses to future/past budgets while keeping the list manageable
@@ -430,10 +451,9 @@ export default function TransactionFormContent({
             </div>
 
             {/* Category, Budget Assignment, and Budget (grid layout) */}
-            {/* UPDATED 20-Jan-2025: Added Budget Assignment selector for manual priority override */}
             {formData.type === 'expense' && (
                 <div className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                         {/* Category */}
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
@@ -444,39 +464,15 @@ export default function TransactionFormContent({
                             />
                         </div>
 
-                        {/* Budget (REQUIRED for expenses) */}
+                        {/* Financial Priority */}
                         <div className="space-y-2">
-                            <Label htmlFor="customBudget">Budget</Label>
-                            <Select
-                                value={formData.customBudgetId || ''}
-                                onValueChange={(value) => setFormData({ ...formData, customBudgetId: value || '' })}
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a budget" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {filteredBudgets.map((budget) => (
-                                        <SelectItem key={budget.id} value={budget.id}>
-                                            {budget.isSystemBudget && <span className="text-blue-600 mr-1">★</span>}
-                                            {budget.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Budget Assignment (only visible when no custom budget selected) */}
-                    {!formData.customBudgetId && (
-                        <div className="space-y-2">
-                            <Label htmlFor="financial_priority">Budget Assignment (Optional Override)</Label>
+                            <Label htmlFor="financial_priority">Financial Priority</Label>
                             <Select
                                 value={formData.financial_priority || ''}
                                 onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Auto-selected from category" />
+                                    <SelectValue placeholder="Select priority" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="needs">Needs</SelectItem>
@@ -484,11 +480,29 @@ export default function TransactionFormContent({
                                     <SelectItem value="savings">Savings</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <p className="text-xs text-gray-500">
-                                Override category default. Leave empty to use category's priority.
-                            </p>
                         </div>
-                    )}
+                    </div>
+                    {/* Budget (REQUIRED for expenses) */}
+                    <div className="space-y-2">
+                        <Label htmlFor="customBudget">Budget Allocation</Label>
+                        <Select
+                            value={formData.customBudgetId || ''}
+                            onValueChange={(value) => setFormData({ ...formData, customBudgetId: value || '' })}
+                            required
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a budget" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {filteredBudgets.map((budget) => (
+                                    <SelectItem key={budget.id} value={budget.id}>
+                                        {budget.isSystemBudget && <span className="text-blue-600 mr-1">★</span>}
+                                        {budget.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             )}
 
@@ -520,21 +534,3 @@ export default function TransactionFormContent({
         </form>
     );
 }
-
-// ENHANCEMENT (2025-01-11): Updated budget filtering to show active + planned budgets
-// Removed date-based filtering (filterBudgetsByTransactionDate) in favor of status-based filtering
-// This allows users to link transactions to future events (planned budgets) or current events (active budgets)
-// Pre-selected budget for editing is always included regardless of status
-// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js instead of budgetCalculations.js
-// UPDATED 16-Jan-2025: Replaced Button with CustomButton for form actions
-// - Cancel button uses variant="outline"
-// - Submit button uses variant="primary" (gradient blue-purple)
-// - Refresh rates button uses variant="ghost" size="sm"
-// ADDED 17-Jan-2025: Disabled browser autocomplete for transaction title input
-// - Added autoComplete="off" to prevent browser from showing history of previous transaction titles
-// - Addresses unwanted autocomplete suggestions when entering transaction details
-// ADDED 20-Jan-2025: Transaction-specific financial priority system
-// - Added financial_priority field to form state and submission data
-// - Auto-updates priority when category changes (only if no custom budget selected)
-// - Budget Assignment selector allows manual override of category default
-// - Hidden when custom budget is selected (CBs always treat as 'wants')
