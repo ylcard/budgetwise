@@ -24,17 +24,17 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
             </div>
 
             {/* Content - Middle */}
-            <div className="flex-1 min-w-0">
-                <h2 className="font-bold text-gray-900 text-sm truncate">{category.name}</h2>
+            <div className="flex-1 min-w-0 pr-8">
+                <h2 className="font-bold text-gray-900 text-sm truncate select-none">{category.name}</h2>
             </div>
 
             {/* Actions - Right Side (Horizontal now) */}
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm">
                 <CustomButton
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => onEdit(category)}
-                    className="h-4 w-4 hover:bg-blue-50 hover:text-blue-600"
+                    className="h-6 w-6 hover:bg-blue-50 hover:text-blue-600"
                 >
                     <Pencil className="w-4 h-4" />
                 </CustomButton>
@@ -42,11 +42,11 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => onDelete(category.id)}
-                    className="h-4 w-4 hover:bg-red-50 hover:text-red-600"
+                    className="h-6 w-6 hover:bg-red-50 hover:text-red-600"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                 </CustomButton>
             </div>
-        </motion.div>
+        </motion.div >
     );
 }
