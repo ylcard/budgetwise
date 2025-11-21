@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MonthYearPickerPopover from "./MonthYearPickerPopover";
 
-export default function MonthNavigator({ currentMonth, currentYear, onMonthChange }) {
+export default function MonthNavigator({ currentMonth, currentYear, onMonthChange, horizontal = false }) {
     const now = new Date();
     const isCurrentMonth = currentMonth === now.getMonth() && currentYear === now.getFullYear();
 
@@ -34,7 +34,10 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
     ];
 
     return (
-        <div className="flex flex-col items-center gap-2 w-fit">
+        // Dynamic classes:
+        // - Default: flex-col (Picker Top, Reset Bottom)
+        // - Horizontal: flex-row-reverse (Reset Left, Picker Right)
+        <div className={`flex items-center gap-2 w-fit ${horizontal ? "flex-row-reverse" : "flex-col"}`}>
             <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
                 <CustomButton
                     variant="ghost"
@@ -70,15 +73,16 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
             <AnimatePresence>
                 {!isCurrentMonth && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.8, height: 0 }}
-                        animate={{ opacity: 1, scale: 1, height: "auto" }}
-                        exit={{ opacity: 0, scale: 0.8, height: 0 }}
+                        // Animate width for horizontal, height for vertical
+                        initial={{ opacity: 0, scale: 0.8, [horizontal ? "width" : "height"]: 0 }}
+                        animate={{ opacity: 1, scale: 1, [horizontal ? "width" : "height"]: "auto" }}
+                        exit={{ opacity: 0, scale: 0.8, [horizontal ? "width" : "height"]: 0 }}
                     >
                         <CustomButton
                             variant="ghost"
                             size="icon"
                             onClick={goToCurrentMonth}
-                            className="h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 mt-1"
+                            className={`h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 ${horizontal ? "mr-1" : "mt-1"}`}
                             title="Reset to Current Month"
                         >
                             <RotateCcw className="w-3 h-3" />
@@ -89,4 +93,5 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
         </div>
     );
 }
+
 
