@@ -23,7 +23,6 @@ import {
 } from "../components/hooks/useActions";
 import { useCashWalletActions } from "../components/cashwallet/useCashWalletActions";
 import { useExchangeRates } from "../components/hooks/useExchangeRates";
-
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
 import BudgetBars from "../components/dashboard/BudgetBars";
@@ -34,17 +33,13 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import CashWalletCard from "../components/cashwallet/CashWalletCard";
 import CashWithdrawDialog from "../components/cashwallet/CashWithdrawDialog";
 import CashDepositDialog from "../components/cashwallet/CashDepositDialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CustomButton } from "@/components/ui/CustomButton";
-import { Upload } from "lucide-react";
-import ImportWizard from "../components/import/ImportWizard";
+import { ImportWizardDialog } from "../components/import/ImportWizard";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-    const [showImportWizard, setShowImportWizard] = useState(false);
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
@@ -152,15 +147,11 @@ export default function Dashboard() {
                                 />
                             }
                             importDataButton={
-                                <CustomButton
-                                    variant="glass"
-                                    size="sm"
-                                    className="w-full justify-start"
-                                    onClick={() => setShowImportWizard(true)}
-                                >
-                                    <Upload className="w-4 h-4 mr-2" />
-                                    Import Data
-                                </CustomButton>
+                                <ImportWizardDialog
+                                    triggerVariant="glass"
+                                    triggerSize="sm"
+                                    triggerClassName="w-full justify-start"
+                                />
                             }
                         />
                     </div>
@@ -230,16 +221,6 @@ export default function Dashboard() {
                     baseCurrency={settings.baseCurrency}
                     settings={settings}
                 />
-
-                <Dialog open={showImportWizard} onOpenChange={setShowImportWizard}>
-                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Import Data</DialogTitle>
-                            <DialogDescription>Upload and import transactions from CSV files</DialogDescription>
-                        </DialogHeader>
-                        <ImportWizard onSuccess={() => setShowImportWizard(false)} />
-                    </DialogContent>
-                </Dialog>
             </div>
         </div>
     );
