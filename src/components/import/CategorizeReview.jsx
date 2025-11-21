@@ -7,7 +7,7 @@ import { Trash2 } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Kept for Priority selector
-import { CategorySelect } from "@/components/ui/CustomButton";
+import { CategorySelect } from "@/components/ui/CategorySelect";
 
 // Replaces the old ImportReview component
 export default function CategorizeReview({ data, categories, onUpdateRow, onDeleteRow }) {
