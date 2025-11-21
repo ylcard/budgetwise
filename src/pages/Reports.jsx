@@ -33,6 +33,12 @@ export default function Reports() {
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
+    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+    const prevMonthlyTransactions = useMonthlyTransactions(transactions, prevMonth, prevYear);
+    const prevMonthlyIncome = useMonthlyIncome(transactions, prevMonth, prevYear);
+
+
     const isLoading = loadingTransactions || loadingCategories || loadingGoals;
 
     // Calculate the "Safe Baseline" using your existing logic
@@ -55,6 +61,8 @@ export default function Reports() {
                 <ReportStats
                     transactions={monthlyTransactions}
                     monthlyIncome={monthlyIncome}
+                    prevTransactions={prevMonthlyTransactions}
+                    prevMonthlyIncome={prevMonthlyIncome}
                     isLoading={isLoading}
                     settings={settings}
                     safeBaseline={projectionData.totalProjectedMonthly}
