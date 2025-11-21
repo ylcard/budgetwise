@@ -1,177 +1,241 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
-// import { Button } from "@/components/ui/button";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Circle } from "lucide-react";
+import { X, Circle, ChevronDown, Search, Check } from "lucide-react"; // Added Icons
 import { motion } from "framer-motion";
 import { iconMap, POPULAR_ICONS } from "../utils/iconMapConfig";
 
 const PRIORITY_OPTIONS = [
-  { value: 'needs', label: 'Needs', description: 'Essential expenses' },
-  { value: 'wants', label: 'Wants', description: 'Discretionary spending' },
-  { value: 'savings', label: 'Savings', description: 'Savings and investments' }
+    { value: 'needs', label: 'Needs', description: 'Essential expenses' },
+    { value: 'wants', label: 'Wants', description: 'Discretionary spending' },
+    { value: 'savings', label: 'Savings', description: 'Savings and investments' }
 ];
 
 const PRESET_COLORS = [
-  '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6',
-  '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#6366F1'
+    '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6',
+    '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#6366F1'
 ];
 
 export default function CategoryForm({ category, onSubmit, onCancel, isSubmitting }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    icon: 'Circle',
-    color: '#3B82F6',
-    priority: 'needs'
-  });
+    const [formData, setFormData] = useState({
+        name: '',
+        icon: 'Circle',
+        color: '#3B82F6',
+        priority: 'needs'
+    });
 
-  useEffect(() => {
-    if (category) {
-      setFormData({
-        name: category.name || '',
-        icon: category.icon || 'Circle',
-        color: category.color || '#3B82F6',
-        priority: category.priority || 'needs'
-      });
-    }
-  }, [category]);
+    // State for the custom icon picker
+    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+    const [iconSearchQuery, setIconSearchQuery] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
+    useEffect(() => {
+        if (category) {
+            setFormData({
+                name: category.name || '',
+                icon: category.icon || 'Circle',
+                color: category.color || '#3B82F6',
+                priority: category.priority || 'needs'
+            });
+        }
+    }, [category]);
 
-  const IconComponent = iconMap[formData.icon] || Circle;
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(formData);
+    };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-    >
-      <Card className="border-none shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{category ? 'Edit' : 'Create'} Category</CardTitle>
-          <CustomButton variant="ghost" size="icon" onClick={onCancel}>
-            <X className="w-4 h-4" />
-          </CustomButton>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex justify-center">
-              <div
-                className="w-24 h-24 rounded-2xl flex items-center justify-center shadow-lg"
-                style={{ backgroundColor: `${formData.color}20` }}
-              >
-                <IconComponent className="w-12 h-12" style={{ color: formData.color }} />
-              </div>
-            </div>
+    const IconComponent = iconMap[formData.icon] || Circle;
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Category Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Groceries, Entertainment"
-                required
-              />
-            </div>
+    // Filter icons based on search query
+    const filteredIcons = ICON_OPTIONS.filter(option => {
+        const searchLower = iconSearchQuery.toLowerCase();
+        return (
+            option.label.toLowerCase().includes(searchLower) ||
+            option.tags.some(tag => tag.toLowerCase().includes(searchLower))
+        );
+    });
 
-            <div className="space-y-2">
-              <Label>Icon</Label>
-              <div className="grid grid-cols-6 md:grid-cols-8 gap-2">
-                {POPULAR_ICONS.map((iconName) => {
-                  const Icon = iconMap[iconName];
-                  return (
-                    <button
-                      key={iconName}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, icon: iconName })}
-                      className={`p-3 rounded-lg border-2 transition-all hover:scale-110 ${
-                        formData.icon === iconName
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+        >
+            <Card className="border-none shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>{category ? 'Edit' : 'Create'} Category</CardTitle>
+                    <CustomButton variant="ghost" size="icon" onClick={onCancel}>
+                        <X className="w-4 h-4" />
+                    </CustomButton>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="flex justify-center">
+                            <div
+                                className="w-24 h-24 rounded-2xl flex items-center justify-center shadow-lg"
+                                style={{ backgroundColor: `${formData.color}20` }}
+                            >
+                                <IconComponent className="w-12 h-12" style={{ color: formData.color }} />
+                            </div>
+                        </div>
 
-            <div className="space-y-2">
-              <Label>Color</Label>
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                {PRESET_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, color })}
-                    className={`w-full aspect-square rounded-lg border-2 transition-all hover:scale-110 ${
-                      formData.color === color ? 'border-gray-900' : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-              <Input
-                type="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-full h-12"
-              />
-            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Category Name</Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="e.g., Groceries, Entertainment"
+                                required
+                            />
+                        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) => setFormData({ ...formData, priority: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div>
-                        <p className="font-medium">{option.label}</p>
-                        <p className="text-xs text-gray-500">{option.description}</p>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                        <div className="space-y-2">
+                            <Label>Icon Selection</Label>
 
-            <div className="flex justify-end gap-3 pt-4">
-              <CustomButton type="button" variant="outline" onClick={onCancel}>
-                Cancel
-              </CustomButton>
-              <CustomButton
-                type="submit"
-                disabled={isSubmitting}
-                variant="primary"
-              >
-                {isSubmitting ? 'Saving...' : category ? 'Update' : 'Create'}
-              </CustomButton>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+                            {/* Custom Searchable Dropdown Trigger */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsIconPickerOpen(!isIconPickerOpen)}
+                                    className="w-full flex items-center justify-between px-3 py-2 border rounded-md bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1 bg-gray-100 rounded-md">
+                                            <IconComponent className="w-5 h-5 text-gray-700" />
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {ICON_OPTIONS.find(opt => opt.value === formData.icon)?.label || formData.icon}
+                                        </span>
+                                    </div>
+                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isIconPickerOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Dropdown Content */}
+                                <AnimatePresence>
+                                    {isIconPickerOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="absolute z-50 w-full mt-2 bg-white rounded-lg border shadow-xl overflow-hidden"
+                                        >
+                                            {/* Search Bar */}
+                                            <div className="p-2 border-b bg-gray-50">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2 top-2.5 w-4 h-4 text-gray-400" />
+                                                    <Input
+                                                        autoFocus
+                                                        placeholder="Search icons (e.g. food, home)..."
+                                                        className="pl-8 h-9 bg-white"
+                                                        value={iconSearchQuery}
+                                                        onChange={(e) => setIconSearchQuery(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Icon List */}
+                                            <div className="max-h-60 overflow-y-auto p-1">
+                                                <div className="grid grid-cols-1 gap-1">
+                                                    {filteredIcons.length > 0 ? (
+                                                        filteredIcons.map((option) => {
+                                                            const OptionIcon = iconMap[option.value];
+                                                            const isSelected = formData.icon === option.value;
+                                                            return (
+                                                                <button
+                                                                    key={option.value}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setFormData({ ...formData, icon: option.value });
+                                                                        setIsIconPickerOpen(false);
+                                                                        setIconSearchQuery("");
+                                                                    }}
+                                                                    className={`flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <OptionIcon className="w-5 h-5 opacity-70" />
+                                                                        <span>{option.label}</span>
+                                                                    </div>
+                                                                    {isSelected && <Check className="w-4 h-4" />}
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="p-4 text-center text-gray-500 text-sm">
+                                                            No icons found for "{iconSearchQuery}"
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Color</Label>
+                            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                                {PRESET_COLORS.map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, color })}
+                                        className={`w-full aspect-square rounded-lg border-2 transition-all hover:scale-110 ${formData.color === color ? 'border-gray-900' : 'border-transparent'
+                                            }`}
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                            <Input
+                                type="color"
+                                value={formData.color}
+                                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                                className="w-full h-12"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="priority">Priority</Label>
+                            <Select
+                                value={formData.priority}
+                                onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {PRIORITY_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            <div>
+                                                <p className="font-medium">{option.label}</p>
+                                                <p className="text-xs text-gray-500">{option.description}</p>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4">
+                            <CustomButton type="button" variant="outline" onClick={onCancel}>
+                                Cancel
+                            </CustomButton>
+                            <CustomButton
+                                type="submit"
+                                disabled={isSubmitting}
+                                variant="primary"
+                            >
+                                {isSubmitting ? 'Saving...' : category ? 'Update' : 'Create'}
+                            </CustomButton>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+        </motion.div>
+    );
 }
-
-// UPDATED 16-Jan-2025: Replaced Button with CustomButton for form actions
-// - Close button (X) uses variant="ghost" size="icon"
-// - Cancel button uses variant="outline"
-// - Submit button uses variant="primary" (gradient blue-purple)
-// - Native <button>s for icon/color selection intentionally kept as they need specific inline styling
-// - All functionality preserved with consistent purpose-based styling
