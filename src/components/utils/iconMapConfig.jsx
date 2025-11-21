@@ -12,7 +12,7 @@ export const iconMap = {
     Tv, Pizza, Fuel, Bus, HandCoins, Beer, Popcorn, Gamepad2, Wifi, Droplets, Podcast, Hotel, Banknote
 };
 
-// Popular icons list for category creation
+// Legacy support if needed, but we prefer ICON_OPTIONS now
 export const POPULAR_ICONS = [
     'Home', 'ShoppingCart', 'Coffee', 'Car', 'Plane', 'Utensils',
     'Shirt', 'Heart', 'Zap', 'Gift', 'Music', 'Dumbbell',
