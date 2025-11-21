@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Circle, ChevronDown, Search, Check } from "lucide-react"; // Added Icons
 import { motion } from "framer-motion";
-import { iconMap } from "../utils/iconMapConfig";
+import { iconMap, ICON_OPTIONS } from "../utils/iconMapConfig";
 
 const PRIORITY_OPTIONS = [
     { value: 'needs', label: 'Needs', description: 'Essential expenses' },
