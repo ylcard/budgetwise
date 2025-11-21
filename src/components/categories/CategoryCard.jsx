@@ -3,9 +3,11 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Pencil, Trash2, Circle } from "lucide-react";
 import { motion } from "framer-motion";
 import { iconMap } from "../utils/iconMapConfig";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
 export default function CategoryCard({ category, onEdit, onDelete }) {
     const IconComponent = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
+    const priorityConfig = FINANCIAL_PRIORITIES[category.priority] || { label: category.priority, color: '#6b7280' };
 
     return (
         <motion.div
@@ -26,6 +28,9 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
             {/* Content - Middle */}
             <div className="flex-1 min-w-0">
                 <h2 className="font-bold text-gray-900 text-sm truncate select-none">{category.name}</h2>
+                <p className="text-xs font-medium truncate" style={{ color: priorityConfig.color }}>
+                    {priorityConfig.label}
+                </p>
             </div>
 
             {/* Actions - Right Side (Horizontal now) */}
