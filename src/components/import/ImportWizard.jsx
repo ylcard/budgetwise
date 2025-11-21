@@ -13,6 +13,7 @@ import { useCategories, useCategoryRules } from "@/components/hooks/useBase44Ent
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 
 const STEPS = [
     { id: 1, label: "Upload" },
@@ -304,5 +305,39 @@ export default function ImportWizard({ onSuccess }) {
                 )}
             </div>
         </div>
+    );
+}
+
+export function ImportWizardDialog({
+    triggerVariant = "default",
+    triggerSize = "default",
+    triggerClassName = "",
+    renderTrigger = true
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            {renderTrigger && (
+                <DialogTrigger asChild>
+                    <CustomButton
+                        variant={triggerVariant}
+                        size={triggerSize}
+                        className={triggerClassName}
+                    >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Import CSV
+                    </CustomButton>
+                </DialogTrigger>
+            )}
+
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Import Data</DialogTitle>
+                    <DialogDescription>Upload and import transactions from CSV files</DialogDescription>
+                </DialogHeader>
+                <ImportWizard onSuccess={() => setOpen(false)} />
+            </DialogContent>
+        </Dialog>
     );
 }
