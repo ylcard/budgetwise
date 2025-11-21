@@ -99,18 +99,6 @@ export default function Reports() {
               isLoading={isLoading}
             />
           </div>
-
-          {/* Right Column: Goal Management */}
-          <div className="space-y-6">
-            <div className="sticky top-8">
-              <GoalSettings
-                goals={goals}
-                onGoalUpdate={handleGoalUpdate}
-                isLoading={isLoading}
-                isSaving={isSaving}
-              />
-            </div>
-          </div>
         </div>
       </div>
     </div>
