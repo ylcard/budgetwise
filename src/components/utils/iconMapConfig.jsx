@@ -37,7 +37,7 @@ export const ICON_OPTIONS = [
     { value: 'Bus', label: 'Public Transport', tags: ['metro', 'train', 'commute'] },
     { value: 'Plane', label: 'Travel', tags: ['flight', 'vacation', 'trip'] },
     { value: 'Utensils', label: 'Dining Out', tags: ['restaurant', 'eat', 'dinner', 'lunch'] },
-    { value: 'Beer', label: 'Alcohol', tags: ['drink', 'bar', 'party', 'wine'] },
+    { value: 'Beer', label: 'Alcohol', tags: ['drink', 'bar', 'party', 'wine', 'beer'] },
     { value: 'Pizza', label: 'Fast Food', tags: ['delivery', 'eat', 'snack'] },
     { value: 'Shirt', label: 'Clothing', tags: ['shopping', 'apparel', 'fashion'] },
     { value: 'Store', label: 'Shopping', tags: ['retail', 'mall', 'buy', 'stuff'] },
