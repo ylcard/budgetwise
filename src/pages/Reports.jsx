@@ -35,7 +35,7 @@ export default function Reports() {
     const isLoading = loadingTransactions || loadingCategories || loadingGoals;
 
     return (
-        <div className="min-h-screen px-4 md:px-8 pb-4 md:pb-8 pt-2 md:pt-4">
+        <div className="min-h-screen px-4 md:px-8 pb-4 md:pb-8 -mt-12 md:-mt-14">
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
