@@ -42,12 +42,12 @@ export default function MonthlyBreakdown({ transactions, categories, monthlyInco
 
                             {/* The "Fancier" Summary Section */}
                             <div className="flex items-center gap-6 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-                                <div className="text-right">
+                                <div className="text-center">
                                     <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Income</p>
                                     <p className="text-sm font-bold text-gray-900">{formatCurrency(monthlyIncome, settings)}</p>
                                 </div>
                                 <div className="h-8 w-px bg-gray-300"></div>
-                                <div className="text-right">
+                                <div className="text-center">
                                     <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Expenses</p>
                                     <p className="text-sm font-bold text-gray-900">{formatCurrency(totalExpenses, settings)}</p>
                                 </div>
