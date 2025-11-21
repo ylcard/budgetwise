@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Target, Calculator } from "lucide-react";
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
@@ -19,8 +19,8 @@ export default function ReportStats({
 }) {
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2].map((i) => (
                     <div key={i} className="h-32 bg-gray-100 animate-pulse rounded-xl" />
                 ))}
             </div>
@@ -40,8 +40,6 @@ export default function ReportStats({
     const prevSavingsRate = prevMonthlyIncome > 0
         ? ((prevMonthlyIncome - prevPaidExpenses) / prevMonthlyIncome) * 100
         : 0;
-
-    const avgDailySpend = totalPaidExpenses / 30;
 
     // --- Analysis & Projection Logic ---
     const today = new Date();
@@ -72,7 +70,7 @@ export default function ReportStats({
         : <ArrowDownRight className="w-3 h-3" />;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="border-none shadow-sm">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
@@ -120,7 +118,7 @@ export default function ReportStats({
                         {isCurrentMonth ? (
                             <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${projectedNetFlow >= 0 ? 'text-blue-600' : 'text-rose-500'}`}>
                                 <Target className="w-3 h-3" />
-                                <span>Est. {formatCurrency(projectedNetFlow, settings)}</span>
+                                <span>Proj. End of Month: {formatCurrency(projectedNetFlow, settings)}</span>
                             </div>
                         ) : (
                             <div className="flex items-center gap-1 mt-2 text-xs font-medium text-gray-400">
@@ -131,32 +129,6 @@ export default function ReportStats({
                     <div className="mt-4 flex justify-center">
                         <div className="p-3 rounded-full bg-blue-100 text-blue-600">
                             <Wallet className="w-5 h-5" />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm">
-                <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium text-gray-500">Avg. Daily Spend</p>
-                        <motion.h3
-                            initial={{ y: 5, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.2, duration: 0.5 }}
-                            className="text-2xl font-bold mt-1 text-gray-900"
-                        >
-                            {formatCurrency(avgDailySpend, settings)}
-                        </motion.h3>
-                        {/* Projection Badge (Total Monthly Spend) */}
-                        <div className="flex items-center gap-1 mt-2 text-xs font-medium text-gray-500">
-                            <Calculator className="w-3 h-3" />
-                            <span>Proj. Spend: {formatCurrency(projectedExpenses, settings)}</span>
-                        </div>
-                    </div>
-                    <div className="mt-4 flex justify-center">
-                        <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                            <TrendingDown className="w-5 h-5" />
                         </div>
                     </div>
                 </CardContent>
