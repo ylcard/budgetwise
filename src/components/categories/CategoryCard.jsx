@@ -12,7 +12,7 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.02 }}
-            className="relative p-4 rounded-xl border border-gray-100 hover:shadow-md transition-all group flex items-center gap-4"
+            className="relative h-24 px-4 rounded-xl border border-gray-100 hover:shadow-md transition-all group flex items-center gap-4"
             style={{ backgroundColor: `${category.color}05` }}
         >
             {/* Compact Icon - Left Side */}
@@ -29,7 +29,7 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
             </div>
 
             {/* Actions - Right Side (Horizontal now) */}
-            <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm">
+            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm">
                 <CustomButton
                     variant="ghost"
                     size="icon-sm"
