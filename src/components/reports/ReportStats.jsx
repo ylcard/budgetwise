@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Target, Calculator } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
+import { estimateCurrentMonth } from "../utils/projectionUtils";
 import { motion } from "framer-motion";
 
 export default function ReportStats({
