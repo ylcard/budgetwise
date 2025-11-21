@@ -5,7 +5,7 @@ import { useTransactions, useCategories, useGoals } from "../components/hooks/us
 import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/useDerivedData";
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import PriorityChart from "../components/reports/PriorityChart";
-import TrendChart from "../components/reports/TrendChart";
+import MonthNavigator from "../components/ui/MonthNavigator";
 import ProjectionChart from "../components/reports/ProjectionChart";
 import ReportStats from "../components/reports/ReportStats";
 import { calculateProjection } from "../components/utils/projectionUtils";
@@ -55,6 +55,16 @@ export default function Reports() {
                             Performance analysis for {displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </p>
                     </div>
+
+                    {/* Global Month Navigator */}
+                    <div className="bg-white p-1.5 rounded-xl shadow-sm border border-gray-100">
+                        <MonthNavigator
+                            currentMonth={selectedMonth}
+                            currentYear={selectedYear}
+                            onMonthChange={(m, y) => { setSelectedMonth(m); setSelectedYear(y); }}
+                            alignReset="inline"
+                        />
+                    </div>
                 </div>
 
                 {/* 1. High-Level KPIs (New) */}
@@ -71,15 +81,7 @@ export default function Reports() {
                 />
 
                 {/* 2. Historical Context & Future Projection */}
-                <div className="grid lg:grid-cols-2 gap-8">
-                    <TrendChart
-                        allTransactions={transactions}
-                        currentMonth={selectedMonth}
-                        currentYear={selectedYear}
-                        settings={settings}
-                        setSelectedMonth={setSelectedMonth}
-                        setSelectedYear={setSelectedYear}
-                    />
+                <div className="w-full">
                     <ProjectionChart
                         transactions={transactions}
                         categories={categories}
