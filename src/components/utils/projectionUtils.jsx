@@ -4,8 +4,6 @@
  * for more accurate forecasting.
  */
 
-import { getMonthlyPaidExpenses } from "./financialCalculations";
-
 /**
  * Helper to get a list of month keys (YYYY-MM) for the last N months.
  */
@@ -66,7 +64,7 @@ export const calculateProjection = (transactions, categories, historicalMonths =
     // 1. Group transactions by Category and Month
     // Structure: { categoryId: { 'YYYY-MM': totalAmount, ... } }
     const categoryHistory = {};
-    
+
     // Initialize categories
     categories.forEach(cat => {
         categoryHistory[cat.id] = {};
@@ -89,13 +87,13 @@ export const calculateProjection = (transactions, categories, historicalMonths =
     relevantTransactions.forEach(t => {
         const catId = t.category_id || 'uncategorized';
         if (!categoryHistory[catId]) categoryHistory[catId] = {};
-        
+
         const dateStr = t.isPaid && t.paidDate ? t.paidDate : t.date;
         const d = new Date(dateStr);
         const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        
+
         if (monthKeys.includes(monthKey)) {
-             categoryHistory[catId][monthKey] = (categoryHistory[catId][monthKey] || 0) + (Number(t.amount) || 0);
+            categoryHistory[catId][monthKey] = (categoryHistory[catId][monthKey] || 0) + (Number(t.amount) || 0);
         }
     });
 
@@ -107,14 +105,14 @@ export const calculateProjection = (transactions, categories, historicalMonths =
         const monthData = categoryHistory[catId];
         // Create array of values for the analyzed months (filling 0 for empty months)
         const values = monthKeys.map(key => monthData[key] || 0);
-        
+
         // Skip if no spend at all in history
         if (values.every(v => v === 0)) return;
 
         const adjustedAvg = calculateAdjustedAverage(values);
-        
+
         totalProjectedMonthly += adjustedAvg;
-        
+
         const category = categories.find(c => c.id === catId);
         categoryProjections.push({
             categoryId: catId,
@@ -128,5 +126,29 @@ export const calculateProjection = (transactions, categories, historicalMonths =
     return {
         totalProjectedMonthly,
         categoryProjections: categoryProjections.sort((a, b) => b.averageSpend - a.averageSpend)
+    };
+};
+
+/**
+ * Estimates the remaining spend for the current month based on the Safe Baseline.
+ */
+export const estimateCurrentMonth = (currentMonthTransactions, safeMonthlyBaseline) => {
+    const today = new Date();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysPassed = Math.max(1, today.getDate());
+    const daysRemaining = daysInMonth - daysPassed;
+
+    const actualSpent = currentMonthTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    // We predict the remaining days using the "Safe Average" daily rate, not the current volatile rate
+    const dailyRate = safeMonthlyBaseline / daysInMonth;
+    const projectedRemaining = dailyRate * daysRemaining;
+
+    return {
+        actual: actualSpent,
+        remaining: projectedRemaining,
+        total: actualSpent + projectedRemaining
     };
 };
