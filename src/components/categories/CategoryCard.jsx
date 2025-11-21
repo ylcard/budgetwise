@@ -35,7 +35,7 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => onEdit(category)}
-                    className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600"
+                    className="h-4 w-4 hover:bg-blue-50 hover:text-blue-600"
                 >
                     <Pencil className="w-4 h-4" />
                 </CustomButton>
@@ -43,7 +43,7 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => onDelete(category.id)}
-                    className="h-8 w-8 hover:bg-red-50 hover:text-red-600"
+                    className="h-4 w-4 hover:bg-red-50 hover:text-red-600"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                 </CustomButton>
