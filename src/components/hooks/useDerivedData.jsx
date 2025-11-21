@@ -15,7 +15,7 @@ import {
   getPaidSavingsExpenses,
   isCashExpense,
 } from "../utils/financialCalculations";
-import { PRIORITY_ORDER, PRIORITY_CONFIG } from "../utils/constants";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { Banknote } from "lucide-react";
 
@@ -483,7 +483,9 @@ export const useBudgetBarsData = (
 ) => {
   return useMemo(() => {
     const system = systemBudgets.sort((a, b) => {
-      return PRIORITY_ORDER[a.systemBudgetType] - PRIORITY_ORDER[b.systemBudgetType];
+      const orderA = FINANCIAL_PRIORITIES[a.systemBudgetType]?.order ?? 99;
+      const orderB = FINANCIAL_PRIORITIES[b.systemBudgetType]?.order ?? 99;
+      return orderA - orderB;
     });
 
     const custom = customBudgets;
@@ -746,7 +748,7 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
         return acc;
       }, {});
 
-    const chartData = Object.entries(PRIORITY_CONFIG)
+    const chartData = Object.entries(FINANCIAL_PRIORITIES)
       .map(([key, config]) => {
         const amount = expensesByPriority[key] || 0;
         const actual = monthlyIncome > 0 ? (amount / monthlyIncome) * 100 : 0;
