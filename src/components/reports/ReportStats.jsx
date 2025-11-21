@@ -45,7 +45,9 @@ export default function ReportStats({
 
     // --- Analysis & Projection Logic ---
     const today = new Date();
-    const isCurrentMonth = today.getMonth() === startDate.getMonth() && today.getFullYear() === startDate.getFullYear();
+    // Ensure startDate is a real Date object before reading properties
+    const start = new Date(startDate);
+    const isCurrentMonth = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
 
     // 1. Get projection for the current month using the Safe Baseline
     const estimate = estimateCurrentMonth(transactions, safeBaseline);
@@ -162,3 +164,4 @@ export default function ReportStats({
         </div>
     );
 }
+
