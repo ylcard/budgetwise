@@ -619,7 +619,7 @@ export const useBudgetBarsData = (
         });
       }
 
-      let paidAmount = digitalSpent; // Corrected: digitalSpent already represents paid transactions
+      let paidAmount = digitalSpent;
       if (cashByCurrency) {
         Object.values(cashByCurrency).forEach(cashData => {
           paidAmount += cashData?.spent || 0;
