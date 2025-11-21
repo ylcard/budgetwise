@@ -12,7 +12,6 @@ export default function MonthlyBreakdown({
     categories,
     monthlyIncome,
     isLoading,
-    allCustomBudgets,
     selectedMonth,
     selectedYear
 }) {
@@ -20,7 +19,7 @@ export default function MonthlyBreakdown({
 
     // Use the extracted hook which now calculates needs/wants internally using financialCalculations
     const { categoryBreakdown, totalExpenses, needsTotal, wantsTotal } = useMonthlyBreakdown(
-        transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear
+        transactions, categories, monthlyIncome, selectedMonth, selectedYear
     );
 
     // SORTING: Ensure highest expenses are first (Top Left)
