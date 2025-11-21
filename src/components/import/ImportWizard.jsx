@@ -326,7 +326,7 @@ export function ImportWizardDialog({
                         className={triggerClassName}
                     >
                         <Upload className="w-4 h-4 mr-2" />
-                        Import CSV
+                        Import Data
                     </CustomButton>
                 </DialogTrigger>
             )}
