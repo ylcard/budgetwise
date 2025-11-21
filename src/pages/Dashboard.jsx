@@ -161,7 +161,7 @@ export default function Dashboard() {
                                     onClick={() => setShowImportWizard(true)}
                                 >
                                     <Upload className="w-4 h-4 mr-2" />
-                                    Import CSV
+                                    Import Data
                                 </CustomButton>
                             }
                         />
