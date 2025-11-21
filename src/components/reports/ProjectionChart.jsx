@@ -1,172 +1,165 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "../utils/currencyUtils";
-import { calculateProjection } from "../utils/projectionUtils";
-import { TrendingUp } from "lucide-react";
+import { estimateCurrentMonth } from "../utils/projectionUtils";
+import { CalendarClock } from "lucide-react";
 
 export default function ProjectionChart({
     transactions = [],
-    categories = [],
     settings,
+    projectionData
 }) {
-    const [monthsToProject, setMonthsToProject] = useState(3); // 3 or 6 months projection view
 
-    const projectionData = useMemo(() => {
-        // Calculate baseline monthly projection based on last 6 months of history
-        return calculateProjection(transactions, categories, 6);
-    }, [transactions, categories]);
+    // Extract the safe baseline calculated in parent (Reports.js)
+    const safeMonthlyAverage = projectionData?.totalProjectedMonthly || 0;
 
-    // Calculate Seasonality Factors
-    // This analyzes history to see if specific months (e.g., December) typically have higher spend
-    const seasonalityMap = useMemo(() => {
-        if (!transactions.length) return {};
-
-        // 1. Group transactions by actual month (e.g., "2023-11": 500, "2023-12": 1000)
-        const monthlyTotals = {};
-        transactions.filter(t => t.type === 'expense').forEach(t => {
-            const d = new Date(t.isPaid && t.paidDate ? t.paidDate : t.date);
-            const key = `${d.getFullYear()}-${d.getMonth()}`; // Group by Year-Month
-            monthlyTotals[key] = (monthlyTotals[key] || 0) + t.amount;
-        });
-
-        // 2. Group those totals by Month Index (0-11) to find averages
-        const indexSums = {};
-        const indexCounts = {};
-        let totalSum = 0;
-        let totalCount = 0;
-
-        Object.entries(monthlyTotals).forEach(([key, amount]) => {
-            const monthIndex = parseInt(key.split('-')[1]);
-            indexSums[monthIndex] = (indexSums[monthIndex] || 0) + amount;
-            indexCounts[monthIndex] = (indexCounts[monthIndex] || 0) + 1;
-            totalSum += amount;
-            totalCount++;
-        });
-
-        const globalAvg = totalCount > 0 ? totalSum / totalCount : 0;
-        const factors = {};
-
-        // 3. Calculate deviation factor for each month vs global average
-        for (let i = 0; i < 12; i++) {
-            if (indexCounts[i] && globalAvg > 0) {
-                const monthAvg = indexSums[i] / indexCounts[i];
-                // Example: If Dec avg is 1500 and Global is 1000, factor is 1.5
-                factors[i] = monthAvg / globalAvg;
-            } else {
-                factors[i] = 1.0; // No data = Baseline
-            }
-        }
-        return factors;
-    }, [transactions]);
-
-
-    // Generate future data points
-    const chartData = useMemo(() => {
-        const data = [];
+    const { chartData, evolution } = useMemo(() => {
         const today = new Date();
-        const baseAmount = projectionData.totalProjectedMonthly;
+        const data = [];
 
-        for (let i = 1; i <= monthsToProject; i++) {
-            const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-            const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            const monthIndex = d.getMonth();
+        // 1. PAST: Generate last 6 months of ACTUAL history
+        let pastSum = 0;
+        let pastCount = 0;
 
-            let amount = baseAmount;
+        for (let i = 6; i > 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
 
-            // Apply seasonality if we have a distinct factor for this month
-            // We blend it (50% baseline, 50% seasonal) to smooth out extreme outliers from limited history
-            if (seasonalityMap[monthIndex] && seasonalityMap[monthIndex] !== 1.0) {
-                const seasonalAmount = baseAmount * seasonalityMap[monthIndex];
-                amount = (baseAmount * 0.5) + (seasonalAmount * 0.5);
-            } else {
-                // Fallback: Add tiny random noise (±2%) + slight inflation so chart looks organic
-                const noise = 0.98 + (Math.random() * 0.04);
-                const inflation = 1 + (i * 0.002); // 0.2% monthly inflation assumption
-                amount = baseAmount * noise * inflation;
-            }
+            // Simple sum for the history bar (Reality)
+            const monthTotal = transactions
+                .filter(t => {
+                    const tDate = new Date(t.isPaid && t.paidDate ? t.paidDate : t.date);
+                    return t.type === 'expense' &&
+                        tDate.getMonth() === d.getMonth() &&
+                        tDate.getFullYear() === d.getFullYear();
+                })
+                .reduce((sum, t) => sum + Number(t.amount), 0);
 
             data.push({
-                label,
-                amount: amount
+                label: d.toLocaleDateString('en-US', { month: 'short' }),
+                amount: monthTotal,
+                type: 'history'
+            });
+
+            pastSum += monthTotal;
+            pastCount++;
+        }
+
+        // 2. PRESENT: Current Month (Hybrid)
+        const currentMonthTransactions = transactions.filter(t => {
+            const tDate = new Date(t.date);
+            return tDate.getMonth() === today.getMonth() &&
+                tDate.getFullYear() === today.getFullYear();
+        });
+
+        // Use the utility to estimate end-of-month based on safe baseline
+        const currentEst = estimateCurrentMonth(currentMonthTransactions, safeMonthlyAverage);
+
+        data.push({
+            label: 'Now',
+            amount: currentEst.total, // Total projected height
+            actualPart: currentEst.actual,
+            projectedPart: currentEst.remaining,
+            type: 'current'
+        });
+
+        // 3. FUTURE: Next 3 Months (Baseline)
+        for (let i = 1; i <= 3; i++) {
+            const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+
+            // We use the "Safe Baseline" here (cleaned of outliers)
+            data.push({
+                label: d.toLocaleDateString('en-US', { month: 'short' }),
+                amount: safeMonthlyAverage,
+                type: 'future'
             });
         }
-        return data;
-    }, [monthsToProject, projectionData, seasonalityMap]);
 
-    const maxVal = Math.max(...chartData.map(d => d.amount), 100) * 1.1; // 10% headroom
+        // 4. Evolution Stat: Compare Future Baseline vs Past Average
+        const averagePast = pastCount > 0 ? pastSum / pastCount : 0;
+        const diffPercent = averagePast > 0
+            ? ((safeMonthlyAverage - averagePast) / averagePast) * 100
+            : 0;
+
+        return { chartData: data, evolution: diffPercent };
+    }, [transactions, safeMonthlyAverage]);
+
+    // Scaling for the chart
+    const maxVal = Math.max(...chartData.map(d => d.amount), safeMonthlyAverage) * 1.15;
 
     return (
-        <Card className="border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="flex items-center gap-4">
-                    <CardTitle className="text-lg font-semibold text-gray-800">Future Projection</CardTitle>
-                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                        <button
-                            onClick={() => setMonthsToProject(3)}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${monthsToProject === 3 ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            3M
-                        </button>
-                        <button
-                            onClick={() => setMonthsToProject(6)}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${monthsToProject === 6 ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            6M
-                        </button>
+        <Card className="border-none shadow-sm h-full flex flex-col">
+            <CardHeader className="pb-2 flex-none">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-semibold text-gray-800">Forecast</CardTitle>
+
+                    {/* Evolution Badge */}
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${evolution > 5 ? 'bg-rose-100 text-rose-700' : evolution < -5 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {evolution > 0 ? '↑' : '↓'} {Math.abs(evolution).toFixed(1)}% vs 6M Avg
                     </div>
                 </div>
+                <p className="text-sm text-gray-500">Timeline: Actuals → Today → Safe Baseline</p>
             </CardHeader>
+            <CardContent className="flex-1 min-h-0">
+                <div className="h-full min-h-[200px] flex flex-col justify-end">
+                    <div className="flex items-end justify-between h-full gap-2 pt-6">
+                        {chartData.map((item, idx) => {
+                            const height = Math.max((item.amount / maxVal) * 100, 2);
 
-            <CardContent>
-                <div className="flex flex-col gap-6">
-                    {/* Summary Stats */}
-                    <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                        <div className="p-3 bg-blue-100 rounded-full">
-                            <TrendingUp className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-blue-600 font-medium">Estimated Monthly Spend</p>
-                            <p className="text-2xl font-bold text-blue-900">
-                                {formatCurrency(projectionData.totalProjectedMonthly, settings)}
-                            </p>
-                            <p className="text-xs text-blue-500 mt-1">
-                                Based on 6-month outlier-adjusted history
-                            </p>
-                        </div>
-                    </div>
+                            return (
+                                <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative h-full justify-end">
 
-                    {/* Chart */}
-                    <div className="relative h-48 mt-2">
-                        <div className="flex items-end justify-between h-full gap-4">
-                            {chartData.map((item, idx) => {
-                                const heightPercent = (item.amount / maxVal) * 100;
 
-                                return (
-                                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative h-full justify-end">
-                                        {/* Bar */}
-                                        <div className="w-full max-w-[60px] relative flex items-end justify-center h-full">
-                                            <div
-                                                className="w-full rounded-t-lg bg-gradient-to-t from-blue-500 to-blue-400 opacity-90 group-hover:opacity-100 transition-all duration-300"
-                                                style={{ height: `${heightPercent}%` }}
-                                            />
-
-                                            {/* Dashed Line for Average */}
-                                            <div className="absolute top-0 w-full border-t-2 border-dashed border-blue-300/50 -mt-[1px]" />
-                                        </div>
-
-                                        {/* Label */}
-                                        <span className="text-xs font-medium text-gray-500">
-                                            {item.label}
-                                        </span>
-
-                                        {/* Tooltip */}
-                                        <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs p-2 rounded shadow-lg z-10 whitespace-nowrap pointer-events-none">
-                                            Projected: {formatCurrency(item.amount, settings)}
-                                        </div>
+                                    {/* Tooltip */}
+                                    <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs p-2 rounded shadow-lg z-10 whitespace-nowrap pointer-events-none">
+                                        <p className="font-bold mb-1">{item.label}</p>
+                                        <p>{formatCurrency(item.amount, settings)}</p>
+                                        {item.type === 'current' && (
+                                            <p className="text-gray-400 text-[10px] mt-1">
+                                                Spent: {formatCurrency(item.actualPart, settings)}<br />
+                                                Est. Rem: {formatCurrency(item.projectedPart, settings)}
+                                            </p>
+                                        )}
                                     </div>
-                                );
-                            })}
-                        </div>
+                                    {/* Bar Visuals */}
+                                    <div className="w-full max-w-[32px] md:max-w-[44px] relative h-full flex items-end">
+
+                                        {item.type === 'current' ? (
+                                            // CURRENT (Stacked: Striped + Solid)
+                                            <div className="w-full relative flex flex-col-reverse justify-start h-full" style={{ height: `${height}%` }}>
+                                                {/* Projected Remaining */}
+                                                <div
+                                                    className="w-full bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes-light.png')] bg-blue-300 opacity-50 rounded-t-sm border-t border-x border-blue-300"
+                                                    style={{ height: `${(item.projectedPart / item.amount) * 100}%` }}
+                                                />
+                                                {/* Actual Spent */}
+                                                <div
+                                                    className="w-full bg-blue-600 rounded-b-sm"
+                                                    style={{ height: `${(item.actualPart / item.amount) * 100}%` }}
+                                                />
+                                                {/* "Today" Icon */}
+                                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full pb-1">
+                                                    <CalendarClock className="w-3 h-3 text-blue-600" />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // HISTORY or FUTURE
+                                            <div
+                                                className={`w-full rounded-t-sm transition-all duration-300 
+                                                        ${item.type === 'history' ? 'bg-gray-300 hover:bg-gray-400' : ''}
+                                                        ${item.type === 'future' ? 'bg-blue-50 border border-blue-200 border-dashed' : ''}
+                                                    `}
+                                                style={{ height: `${height}%` }}
+                                            />
+                                        )}
+                                    </div>
+
+                                    {/* Label */}
+                                    <span className={`text-[10px] md:text-xs font-medium ${item.type === 'current' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>
+                                        {item.label}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </CardContent>
