@@ -1,9 +1,8 @@
 import React from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
-import { useTransactions, useCategories, useGoals } from "../components/hooks/useBase44Entities";
+import { useTransactions, useCategories, useGoals, useBudgets } from "../components/hooks/useBase44Entities";
 import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/useDerivedData";
-import { useGoalActions } from "../components/hooks/useActions";
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import PriorityChart from "../components/reports/PriorityChart";
 import TrendChart from "../components/reports/TrendChart";
@@ -28,12 +27,13 @@ export default function Reports() {
     const { transactions, isLoading: loadingTransactions } = useTransactions();
     const { categories, isLoading: loadingCategories } = useCategories();
     const { goals, isLoading: loadingGoals } = useGoals(user);
+    const { customBudgets, isLoading: loadingBudgets } = useBudgets();
 
     // Derived data
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
-    const isLoading = loadingTransactions || loadingCategories || loadingGoals;
+    const isLoading = loadingTransactions || loadingCategories || loadingGoals || loadingBudgets;
 
     return (
         <div className="min-h-screen p-4 md:p-8">
@@ -76,17 +76,19 @@ export default function Reports() {
                 </div>
 
                 {/* 3. Detailed Breakdown & Goals */}
-                <div className="grid lg:grid-cols-3 gap-8 items-start">
-                    <div className="lg:col-span-2">
-
+                <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 h-full">
                         <MonthlyBreakdown
                             transactions={monthlyTransactions}
                             categories={categories}
                             monthlyIncome={monthlyIncome}
                             isLoading={isLoading}
+                            allCustomBudgets={customBudgets}
+                            selectedMonth={selectedMonth}
+                            selectedYear={selectedYear}
                         />
                     </div>
-                    <div className="lg:col-span-1 lg:sticky lg:top-8">
+                    <div className="lg:col-span-1 h-full">
                         <PriorityChart
                             transactions={monthlyTransactions}
                             categories={categories}
