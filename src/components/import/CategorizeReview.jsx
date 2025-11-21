@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +6,25 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Trash2 } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Kept for Priority selector
+import { CategorySelect } from "@/components/ui/CustomButton";
 
 // Replaces the old ImportReview component
 export default function CategorizeReview({ data, categories, onUpdateRow, onDeleteRow }) {
     const { settings } = useSettings();
+
+    // SORTING LOGIC: Needs (A-Z) -> Wants (A-Z) -> Savings (A-Z) -> Others
+    const sortedCategories = useMemo(() => {
+        const priorityOrder = { needs: 1, wants: 2, savings: 3 };
+
+        return [...categories].sort((a, b) => {
+            const pA = priorityOrder[a.priority] || 4;
+            const pB = priorityOrder[b.priority] || 4;
+
+            if (pA !== pB) return pA - pB;
+            return a.name.localeCompare(b.name);
+        });
+    }, [categories]);
 
     return (
         <Card>
@@ -44,8 +58,9 @@ export default function CategorizeReview({ data, categories, onUpdateRow, onDele
                                     <TableCell>{row.title}</TableCell>
                                     <TableCell>
                                         {row.type === 'expense' ? (
-                                            <Select
-                                                value={row.categoryId || "uncategorized"}
+                                            <CategorySelect
+                                                value={row.categoryId}
+                                                categories={sortedCategories}
                                                 onValueChange={(value) => {
                                                     const cat = categories.find(c => c.id === value);
                                                     onUpdateRow(index, {
@@ -54,22 +69,7 @@ export default function CategorizeReview({ data, categories, onUpdateRow, onDele
                                                         financial_priority: cat ? (cat.priority || 'wants') : row.financial_priority
                                                     });
                                                 }}
-                                            >
-                                                <SelectTrigger className="w-full h-8">
-                                                    <SelectValue placeholder="Select Category" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="uncategorized">Uncategorized</SelectItem>
-                                                    {categories.map((cat) => (
-                                                        <SelectItem key={cat.id} value={cat.id}>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color || '#ccc' }}></span>
-                                                                {cat.name}
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            />
                                         ) : (
                                             <span className="text-gray-400 text-xs">-</span>
                                         )}
