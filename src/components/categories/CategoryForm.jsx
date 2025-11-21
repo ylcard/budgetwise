@@ -72,7 +72,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
                 onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the form itself
             >
                 <Card className="border-none shadow-2xl max-h-[90vh] overflow-y-auto">
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader className="sticky top-0 z-10 bg-white border-b flex flex-row items-center justify-between">
                         <CardTitle>{category ? 'Edit' : 'Create'} Category</CardTitle>
                         <CustomButton variant="ghost" size="icon" onClick={onCancel}>
                             <X className="w-4 h-4" />
@@ -149,7 +149,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isSubmittin
                                                     <div className="grid grid-cols-1 gap-1">
                                                         {filteredIcons.length > 0 ? (
                                                             filteredIcons.map((option) => {
-                                                                const OptionIcon = iconMap[option.value];
+                                                                const OptionIcon = iconMap[option.value] || Circle;
                                                                 const isSelected = formData.icon === option.value;
                                                                 return (
                                                                     <button
