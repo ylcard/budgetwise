@@ -34,7 +34,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
     ];
 
     return (
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-left gap-2">
             <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
                 <CustomButton
                     variant="ghost"
