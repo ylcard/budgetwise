@@ -24,8 +24,8 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
             </div>
 
             {/* Content - Middle */}
-            <div className="flex-1 min-w-0 pr-14">
-                <p className="font-bold text-gray-900 text-sm truncate select-none">{category.name}</p>
+            <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-gray-900 text-sm truncate select-none">{category.name}</h2>
             </div>
 
             {/* Actions - Right Side (Horizontal now) */}
