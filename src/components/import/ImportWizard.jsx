@@ -188,18 +188,21 @@ export default function ImportWizard({ onSuccess }) {
     const handleImport = async () => {
         setIsProcessing(true);
         try {
-            const transactionsToCreate = processedData.map(item => ({
-                title: item.title,
-                amount: item.amount,
-                type: item.type,
-                date: new Date(item.date).toISOString().split('T')[0],
-                category_id: item.categoryId || categories.find(c => c.name === 'Uncategorized')?.id,
-                financial_priority: item.financial_priority,
-                originalAmount: item.originalAmount,
-                originalCurrency: item.originalCurrency,
-                isPaid: item.isPaid || false,
-                paidDate: item.paidDate ? new Date(item.paidDate).toISOString().split('T')[0] : null
-            }));
+            const transactionsToCreate = processedData.map(item => {
+                const isExpense = item.type === 'expense';
+                return {
+                    title: item.title,
+                    amount: item.amount,
+                    type: item.type,
+                    date: new Date(item.date).toISOString().split('T')[0],
+                    category_id: isExpense ? (item.categoryId || categories.find(c => c.name === 'Uncategorized')?.id) : null,
+                    financial_priority: isExpense ? item.financial_priority : null,
+                    originalAmount: item.originalAmount,
+                    originalCurrency: item.originalCurrency,
+                    isPaid: isExpense ? (item.isPaid || false) : null,
+                    paidDate: (isExpense && item.paidDate) ? new Date(item.paidDate).toISOString().split('T')[0] : null
+                };
+            });
 
             await base44.entities.Transaction.bulkCreate(transactionsToCreate);
 
