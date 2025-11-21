@@ -662,8 +662,15 @@ export const useBudgetBarsData = (
 };
 
 // Hook for monthly breakdown calculations
-export const useMonthlyBreakdown = (transactions, categories, monthlyIncome) => {
+export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, allCustomBudgets = [], selectedMonth, selectedYear) => {
     return useMemo(() => {
+        // 1. Get Date Boundaries for financial calculations
+        // Default to current month if not provided (safeguard)
+        const safeMonth = selectedMonth ?? new Date().getMonth();
+        const safeYear = selectedYear ?? new Date().getFullYear();
+        const { monthStart, monthEnd } = getMonthBoundaries(safeMonth, safeYear);
+
+        // 2. Calculate Category Breakdown (Existing Logic)
         const categoryMap = createEntityMap(categories);
 
         const expensesByCategory = transactions
@@ -693,11 +700,26 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome) => 
             })
             .sort((a, b) => b.amount - a.amount);
 
+        // 3. Calculate Needs & Wants using centralized financialCalculations
+        // Needs = Paid + Unpaid Needs
+        const paidNeeds = getPaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        const unpaidNeeds = getUnpaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        const needsTotal = paidNeeds + unpaidNeeds;
+
+        // Wants = Direct Paid/Unpaid Wants + Custom Budgets (Paid/Unpaid)
+        const directPaidWants = getDirectPaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        const directUnpaidWants = getDirectUnpaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
+        const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
+        const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
+        const wantsTotal = directPaidWants + directUnpaidWants + customPaid + customUnpaid;
+
         return {
             categoryBreakdown,
-            totalExpenses
+            totalExpenses,
+            needsTotal,
+            wantsTotal
         };
-    }, [transactions, categories, monthlyIncome]);
+    }, [transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear]);
 };
 
 // Hook for priority chart data calculations
