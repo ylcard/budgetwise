@@ -133,9 +133,8 @@ export default function Dashboard() {
                                     onSubmit={transactionActions.handleSubmit}
                                     isSubmitting={transactionActions.isSubmitting}
                                     renderTrigger={true}
-                                    triggerVariant="ghost"
+                                    triggerVariant="glass"
                                     triggerSize="sm"
-                                    triggerClassName="text-white border-white/30 hover:bg-white/20 hover:border-white/50"
                                 />
                             }
                             addExpenseButton={
@@ -148,16 +147,15 @@ export default function Dashboard() {
                                     isSubmitting={transactionActions.isSubmitting}
                                     transactions={transactions}
                                     renderTrigger={true}
-                                    triggerVariant="ghost"
+                                    triggerVariant="glass"
                                     triggerSize="sm"
-                                    triggerClassName="text-white border-white/30 hover:bg-white/20 hover:border-white/50"
                                 />
                             }
                             importDataButton={
                                 <CustomButton
-                                    variant="ghost"
+                                    variant="glass"
                                     size="sm"
-                                    className="text-white border-white/30 hover:bg-white/20 hover:border-white/50 w-full justify-start"
+                                    className="w-full justify-start"
                                     onClick={() => setShowImportWizard(true)}
                                 >
                                     <Upload className="w-4 h-4 mr-2" />
