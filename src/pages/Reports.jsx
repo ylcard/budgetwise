@@ -6,8 +6,6 @@ import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/us
 import { useGoalActions } from "../components/hooks/useActions";
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import PriorityChart from "../components/reports/PriorityChart";
-import GoalSettings from "../components/reports/GoalSettings";
-import MonthNavigator from "../components/ui/MonthNavigator";
 import TrendChart from "../components/reports/TrendChart";
 import ProjectionChart from "../components/reports/ProjectionChart";
 import ReportStats from "../components/reports/ReportStats";
@@ -22,8 +20,8 @@ export default function Reports() {
         selectedYear,
         setSelectedYear,
         displayDate,
-        monthStart, // Required for ReportStats calculation
-        monthEnd  // Required for ReportStats calculation
+        monthStart,
+        monthEnd
     } = usePeriod();
 
     // Data fetching
@@ -34,9 +32,6 @@ export default function Reports() {
     // Derived data
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
-
-    // Goal mutations and actions
-    const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
 
     const isLoading = loadingTransactions || loadingCategories || loadingGoals;
 
@@ -81,10 +76,7 @@ export default function Reports() {
                 </div>
 
                 {/* 3. Detailed Breakdown & Goals */}
-                {/* LAYOUT FIX: Use items-start to align tops, distinct columns for mismatched heights */}
                 <div className="grid lg:grid-cols-3 gap-8 items-start">
-
-                    {/* Main Column (2/3): Detailed List needs the width */}
                     <div className="lg:col-span-2">
 
                         <MonthlyBreakdown
@@ -94,10 +86,7 @@ export default function Reports() {
                             isLoading={isLoading}
                         />
                     </div>
-                    +
-                    {/* Sidebar Column (1/3): Chart + Goals */}
-                    {/* 'sticky' keeps it in view while you scroll down the long breakdown list */}
-                    <div className="space-y-8 lg:sticky lg:top-8">
+                    <div className="lg:col-span-1 lg:sticky lg:top-8">
                         <PriorityChart
                             transactions={monthlyTransactions}
                             categories={categories}
@@ -106,12 +95,6 @@ export default function Reports() {
                             isLoading={isLoading}
                         />
 
-                        {/* Added Goals here to balance the height against the long breakdown list */}
-                        <GoalSettings
-                            goals={goals}
-                            onUpdate={handleGoalUpdate}
-                            isSaving={isSaving}
-                        />
                     </div>
                 </div>
             </div>
