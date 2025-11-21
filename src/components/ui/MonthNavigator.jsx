@@ -1,6 +1,6 @@
 import React from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MonthYearPickerPopover from "./MonthYearPickerPopover";
 
@@ -70,18 +70,18 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
             <AnimatePresence>
                 {!isCurrentMonth && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.8, height: 0 }}
+                        animate={{ opacity: 1, scale: 1, height: "auto" }}
+                        exit={{ opacity: 0, scale: 0.8, height: 0 }}
                     >
                         <CustomButton
-                            variant="outline"
-                            size="sm"
+                            variant="ghost"
+                            size="icon"
                             onClick={goToCurrentMonth}
-                            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                            className="h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 mt-1"
+                            title="Reset to Current Month"
                         >
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Current Month
+                            <RotateCcw className="w-3 h-3" />
                         </CustomButton>
                     </motion.div>
                 )}
@@ -89,3 +89,4 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
         </div>
     );
 }
+
