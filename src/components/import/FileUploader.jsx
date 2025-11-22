@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Upload, FileText, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,9 +49,8 @@ export default function FileUploader({ onFileSelect }) {
     return (
         <div className="space-y-4">
             <div
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                    dragActive ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
-                }`}
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragActive ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                    }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -88,7 +87,7 @@ export default function FileUploader({ onFileSelect }) {
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
-            
+
             <Card className="bg-gray-50 border-none">
                 <CardContent className="pt-6">
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Format Requirements:</h4>
