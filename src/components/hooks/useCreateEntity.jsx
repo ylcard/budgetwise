@@ -43,69 +43,55 @@ import { showToast } from "@/components/ui/use-toast";
  * });
  */
 export const useCreateEntity = ({
-  entityName,
-  queryKeysToInvalidate = [],
-  successMessage,
-  onBeforeCreate,
-  onAfterSuccess,
+    entityName,
+    queryKeysToInvalidate = [],
+    successMessage,
+    onBeforeCreate,
+    onAfterSuccess,
 }) => {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      // Execute preprocessing logic if provided
-      let processedData = data;
-      if (onBeforeCreate) {
-        processedData = await onBeforeCreate(data);
-      }
+    const createMutation = useMutation({
+        mutationFn: async (data) => {
+            // Execute preprocessing logic if provided
+            let processedData = data;
+            if (onBeforeCreate) {
+                processedData = await onBeforeCreate(data);
+            }
 
-      // Perform the entity creation via the base44 API
-      const result = await base44.entities[entityName].create(processedData);
-      return result;
-    },
-    onSuccess: (createdData) => {
-      // Invalidate all specified query keys to trigger refetches
-      queryKeysToInvalidate.forEach(key => {
-        queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
-      });
+            // Perform the entity creation via the base44 API
+            const result = await base44.entities[entityName].create(processedData);
+            return result;
+        },
+        onSuccess: (createdData) => {
+            // Invalidate all specified query keys to trigger refetches
+            queryKeysToInvalidate.forEach(key => {
+                queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
+            });
 
-      // Execute post-success callback if provided
-      if (onAfterSuccess) {
-        onAfterSuccess(createdData);
-      }
+            // Execute post-success callback if provided
+            if (onAfterSuccess) {
+                onAfterSuccess(createdData);
+            }
 
-      // Show success toast notification
-      showToast({
-        title: "Success",
-        description: successMessage || `${entityName} created successfully`,
-      });
-    },
-    onError: (error) => {
-      // Log error for debugging
-      console.error(`Error creating ${entityName}:`, error);
+            // Show success toast notification
+            showToast({
+                title: "Success",
+                description: successMessage || `${entityName} created successfully`,
+            });
+        },
+        onError: (error) => {
+            // Log error for debugging
+            console.error(`Error creating ${entityName}:`, error);
 
-      // Show error toast notification
-      showToast({
-        title: "Error",
-        description: error?.message || `Failed to create ${entityName}. Please try again.`,
-        variant: "destructive",
-      });
-    },
-  });
+            // Show error toast notification
+            showToast({
+                title: "Error",
+                description: error?.message || `Failed to create ${entityName}. Please try again.`,
+                variant: "destructive",
+            });
+        },
+    });
 
-  return createMutation;
+    return createMutation;
 };
-
-// CREATED 16-Jan-2025: Generic entity creation hook
-// This hook centralizes the common pattern for creating entities:
-// 1. Optional preprocessing via onBeforeCreate
-// 2. API call to base44.entities[entityName].create()
-// 3. Query invalidation for cache updates
-// 4. Optional post-success callback
-// 5. Consistent success/error toast notifications
-// 
-// Benefits:
-// - Reduces code duplication across entity-specific action hooks
-// - Ensures consistent error handling and user feedback
-// - Makes preprocessing and post-processing logic explicit and testable
-// - Simplifies maintenance (single source of truth for creation logic)
