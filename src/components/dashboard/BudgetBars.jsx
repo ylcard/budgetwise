@@ -1,9 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// UPDATED 15-Jan-2025: Changed Button import to CustomButton
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
-// UPDATED 12-Jan-2025: Changed import from formatCurrency.jsx to currencyUtils.js
 import { formatCurrency } from "../utils/currencyUtils";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
@@ -14,14 +12,10 @@ export default function BudgetBars({
     allCustomBudgets = [],
     transactions,
     categories,
-    currentMonth,
-    currentYear,
     settings,
     goals,
     monthlyIncome,
-    baseCurrency, // Added baseCurrency prop
-    onDeleteBudget,
-    onCompleteBudget,
+    baseCurrency,
     onCreateBudget
 }) {
     const [customStartIndex, setCustomStartIndex] = useState(0);
@@ -94,7 +88,6 @@ export default function BudgetBars({
                         <div className="flex items-center gap-2">
                             {customBudgetsData.length > barsPerPage && (
                                 <>
-                                    {/* UPDATED 15-Jan-2025: Changed to CustomButton */}
                                     <CustomButton
                                         variant="outline"
                                         size="icon"
@@ -113,7 +106,6 @@ export default function BudgetBars({
                                     </CustomButton>
                                 </>
                             )}
-                            {/* UPDATED 15-Jan-2025: Changed to CustomButton with create variant */}
                             <CustomButton
                                 variant="create"
                                 size="sm"
@@ -143,8 +135,8 @@ export default function BudgetBars({
                                     <div
                                         key={idx}
                                         className={`h-2 rounded-full transition-all ${Math.floor(customStartIndex / barsPerPage) === idx
-                                                ? 'w-8 bg-purple-600'
-                                                : 'w-2 bg-gray-300'
+                                            ? 'w-8 bg-purple-600'
+                                            : 'w-2 bg-gray-300'
                                             }`}
                                     />
                                 ))}
@@ -156,7 +148,3 @@ export default function BudgetBars({
         </div>
     );
 }
-
-// UPDATED 15-Jan-2025: Replaced Button with CustomButton
-// - Navigation buttons (ChevronLeft/Right) use outline variant
-// - "New Budget" button uses create variant for visual consistency
