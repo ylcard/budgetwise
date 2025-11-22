@@ -5,7 +5,7 @@
  * @updated 15-Nov-2025 - Exported isCashExpense helper function for use in other modules
  */
 
-import { parseDate } from "./dateUtils";
+import { isDateInRange } from "./dateUtils";
 
 /**
  * Helper function to identify cash expenses to be excluded from budget calculations.
@@ -25,16 +25,11 @@ export const isCashExpense = (transaction) => {
  * @param {string} endDate - The end date of the range (inclusive).
  * @returns {boolean} True if the transaction falls within the range.
  */
-const isWithinDateRange = (transaction, startDate, endDate) => {
-    const start = parseDate(startDate);
-    const end = parseDate(endDate);
-
+export const isTransactionInDateRange = (transaction, startDate, endDate) => {
     if (transaction.isPaid && transaction.paidDate) {
-        const paidDate = parseDate(transaction.paidDate);
-        return paidDate >= start && paidDate <= end;
+        return isDateInRange(transaction.paidDate, startDate, endDate);
     } else if (!transaction.isPaid) {
-        const transactionDate = parseDate(transaction.date);
-        return transactionDate >= start && transactionDate <= end;
+        return isDateInRange(transaction.date, startDate, endDate);
     }
 
     return false;
@@ -96,7 +91,7 @@ const filterExpenses = (transaction, categories, startDate, endDate, allCustomBu
         if (!category || category.priority !== priority) return false;
     }
 
-    return isWithinDateRange(transaction, startDate, endDate);
+    return isTransactionInDateRange(transaction, startDate, endDate);
 };
 
 /**
@@ -262,7 +257,7 @@ export const getCashExpenses = (transactions, startDate, endDate) => {
         .filter(t => {
             if (t.type !== 'expense') return false;
             if (!isCashExpense(t)) return false;
-            return isWithinDateRange(t, startDate, endDate);
+            return isTransactionInDateRange(t, startDate, endDate);
         })
         .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
 };
@@ -279,7 +274,7 @@ export const getCashExpenses = (transactions, startDate, endDate) => {
  */
 export const getTotalMonthExpenses = (transactions, categories, allCustomBudgets, startDate, endDate) => {
     const allExpenses = transactions.filter(t =>
-        t.type === 'expense' && !isCashExpense(t) && isWithinDateRange(t, startDate, endDate)
+        t.type === 'expense' && !isCashExpense(t) && isTransactionInDateRange(t, startDate, endDate)
     );
     return allExpenses.reduce((sum, t) => {
         return sum + t.amount;
@@ -297,7 +292,7 @@ export const getMonthlyIncome = (transactions, startDate, endDate) => {
     return transactions
         .filter(t => {
             if (t.type !== 'income') return false;
-            return isWithinDateRange(t, startDate, endDate);
+            return isTransactionInDateRange(t, startDate, endDate);
         })
         .reduce((sum, t) => sum + t.amount, 0);
 };
