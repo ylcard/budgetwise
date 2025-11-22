@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Trash, Loader2, Plus, ArrowDown } from "lucide-react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
@@ -22,7 +22,7 @@ export default function Transactions() {
     const { user } = useSettings();
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
-    const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [showAddIncome, setShowAddIncome] = useState(false);
     const [showAddExpense, setShowAddExpense] = useState(false);
 
