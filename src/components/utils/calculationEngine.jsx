@@ -1,5 +1,5 @@
 /**
- * CREATED 20-Jan-2025: Dual-Timeline Calculation Engine
+ * CREATED 20-Nov-2025: Dual-Timeline Calculation Engine
  * Implements "Commitment View" and "Settlement View" as per refactored specs
  * 
  * KEY CONCEPTS:
@@ -17,11 +17,11 @@ import { parseDate } from "./dateUtils";
  * @returns {boolean} True if this is a cash wallet expense
  */
 export const isCashExpense = (transaction) => {
-  return transaction.isCashTransaction && transaction.cashTransactionType === 'expense_from_wallet';
+    return transaction.isCashTransaction && transaction.cashTransactionType === 'expense_from_wallet';
 };
 
 /**
- * ADDED 20-Jan-2025: Get effective financial priority for a transaction
+ * Get effective financial priority for a transaction
  * Hierarchy: (1) Custom Budget -> 'wants', (2) transaction.financial_priority, (3) category.priority
  * 
  * @param {object} transaction - The transaction object
@@ -30,28 +30,28 @@ export const isCashExpense = (transaction) => {
  * @returns {string} 'needs', 'wants', 'savings', or null
  */
 export const getTransactionEffectivePriority = (transaction, categories = [], allCustomBudgets = []) => {
-  // If assigned to a Custom Budget (non-system), always treat as 'wants'
-  if (transaction.customBudgetId) {
-    const customBudget = allCustomBudgets.find(cb => cb.id === transaction.customBudgetId);
-    if (customBudget && !customBudget.isSystemBudget) {
-      return 'wants';
+    // If assigned to a Custom Budget (non-system), always treat as 'wants'
+    if (transaction.customBudgetId) {
+        const customBudget = allCustomBudgets.find(cb => cb.id === transaction.customBudgetId);
+        if (customBudget && !customBudget.isSystemBudget) {
+            return 'wants';
+        }
     }
-  }
 
-  // Check transaction-specific priority (new field)
-  if (transaction.financial_priority) {
-    return transaction.financial_priority;
-  }
-
-  // Fallback to category priority (legacy)
-  if (transaction.category_id) {
-    const category = categories.find(c => c.id === transaction.category_id);
-    if (category && category.priority) {
-      return category.priority;
+    // Check transaction-specific priority (new field)
+    if (transaction.financial_priority) {
+        return transaction.financial_priority;
     }
-  }
 
-  return null;
+    // Fallback to category priority (legacy)
+    if (transaction.category_id) {
+        const category = categories.find(c => c.id === transaction.category_id);
+        if (category && category.priority) {
+            return category.priority;
+        }
+    }
+
+    return null;
 };
 
 /**
@@ -63,11 +63,11 @@ export const getTransactionEffectivePriority = (transaction, categories = [], al
  * @returns {number} Total committed amount
  */
 export const calculateCommitmentView = (bucketId, expenses) => {
-  if (!bucketId || !expenses) return 0;
-  
-  return expenses
-    .filter(e => e.bucketId === bucketId || e.customBudgetId === bucketId)
-    .reduce((sum, e) => sum + (e.amount || 0), 0);
+    if (!bucketId || !expenses) return 0;
+
+    return expenses
+        .filter(e => e.bucketId === bucketId || e.customBudgetId === bucketId)
+        .reduce((sum, e) => sum + (e.amount || 0), 0);
 };
 
 /**
@@ -85,29 +85,29 @@ export const calculateCommitmentView = (bucketId, expenses) => {
  * @returns {number} Total settled amount in this period
  */
 export const calculateSettlementView = (transactions, startDate, endDate, options = {}) => {
-  const { type = 'expense', excludeCash = true } = options;
-  const start = parseDate(startDate);
-  const end = parseDate(endDate);
-  
-  return transactions
-    .filter(t => {
-      // Filter by type
-      if (t.type !== type) return false;
-      
-      // Exclude cash expenses if requested
-      if (excludeCash && isCashExpense(t)) return false;
-      
-      // Determine effective date
-      const effectiveDate = (t.isPaid && t.paidDate) 
-        ? parseDate(t.paidDate) 
-        : parseDate(t.date);
-      
-      if (!effectiveDate) return false;
-      
-      // Check if effective date falls within period
-      return effectiveDate >= start && effectiveDate <= end;
-    })
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
+    const { type = 'expense', excludeCash = true } = options;
+    const start = parseDate(startDate);
+    const end = parseDate(endDate);
+
+    return transactions
+        .filter(t => {
+            // Filter by type
+            if (t.type !== type) return false;
+
+            // Exclude cash expenses if requested
+            if (excludeCash && isCashExpense(t)) return false;
+
+            // Determine effective date
+            const effectiveDate = (t.isPaid && t.paidDate)
+                ? parseDate(t.paidDate)
+                : parseDate(t.date);
+
+            if (!effectiveDate) return false;
+
+            // Check if effective date falls within period
+            return effectiveDate >= start && effectiveDate <= end;
+        })
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
 };
 
 /**
@@ -120,48 +120,48 @@ export const calculateSettlementView = (transactions, startDate, endDate, option
  * @returns {object} { isCrossPeriod, originalPeriod, bucketName }
  */
 export const detectCrossPeriodSettlement = (transaction, currentPeriodStart, currentPeriodEnd, allBudgets = []) => {
-  // Only check expenses
-  if (transaction.type !== 'expense') {
+    // Only check expenses
+    if (transaction.type !== 'expense') {
+        return { isCrossPeriod: false };
+    }
+
+    // Only check paid transactions with Custom Budget assignment
+    if (!transaction.isPaid || !transaction.paidDate || !transaction.customBudgetId) {
+        return { isCrossPeriod: false };
+    }
+
+    const transactionDate = parseDate(transaction.date);
+    const paidDate = parseDate(transaction.paidDate);
+    const periodStart = parseDate(currentPeriodStart);
+    const periodEnd = parseDate(currentPeriodEnd);
+
+    if (!transactionDate || !paidDate || !periodStart || !periodEnd) {
+        return { isCrossPeriod: false };
+    }
+
+    // Check if paid in current period but transaction date is outside
+    const paidInCurrentPeriod = paidDate >= periodStart && paidDate <= periodEnd;
+    const transactionOutsidePeriod = transactionDate < periodStart || transactionDate > periodEnd;
+
+    if (paidInCurrentPeriod && transactionOutsidePeriod) {
+        // Find the budget
+        const budget = allBudgets.find(b => b.id === transaction.customBudgetId);
+
+        // Determine original period (month/year of transaction date)
+        const originalPeriod = transactionDate.toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric'
+        });
+
+        return {
+            isCrossPeriod: true,
+            originalPeriod,
+            bucketName: budget ? budget.name : 'Unknown Budget',
+            bucketType: 'CB'
+        };
+    }
+
     return { isCrossPeriod: false };
-  }
-  
-  // Only check paid transactions with Custom Budget assignment
-  if (!transaction.isPaid || !transaction.paidDate || !transaction.customBudgetId) {
-    return { isCrossPeriod: false };
-  }
-  
-  const transactionDate = parseDate(transaction.date);
-  const paidDate = parseDate(transaction.paidDate);
-  const periodStart = parseDate(currentPeriodStart);
-  const periodEnd = parseDate(currentPeriodEnd);
-  
-  if (!transactionDate || !paidDate || !periodStart || !periodEnd) {
-    return { isCrossPeriod: false };
-  }
-  
-  // Check if paid in current period but transaction date is outside
-  const paidInCurrentPeriod = paidDate >= periodStart && paidDate <= periodEnd;
-  const transactionOutsidePeriod = transactionDate < periodStart || transactionDate > periodEnd;
-  
-  if (paidInCurrentPeriod && transactionOutsidePeriod) {
-    // Find the budget
-    const budget = allBudgets.find(b => b.id === transaction.customBudgetId);
-    
-    // Determine original period (month/year of transaction date)
-    const originalPeriod = transactionDate.toLocaleDateString('en-US', { 
-      month: 'short', 
-      year: 'numeric' 
-    });
-    
-    return {
-      isCrossPeriod: true,
-      originalPeriod,
-      bucketName: budget ? budget.name : 'Unknown Budget',
-      bucketType: 'CB'
-    };
-  }
-  
-  return { isCrossPeriod: false };
 };
 
 /**
@@ -174,41 +174,41 @@ export const detectCrossPeriodSettlement = (transaction, currentPeriodStart, cur
  * @returns {object} Updated expense data with new bucketId
  */
 export const migrateSystemBudgetOnDateChange = (expense, newPaidDate, allSystemBudgets) => {
-  // Only apply to expenses with System Budget assignment
-  if (!expense.customBudgetId) {
-    return { customBudgetId: expense.customBudgetId }; // No change
-  }
-  
-  // Find current bucket to determine its priority
-  const currentBucket = allSystemBudgets.find(b => b.id === expense.customBudgetId);
-  
-  // If not a system budget, don't migrate (Custom Budget - Context Sticky)
-  if (!currentBucket || currentBucket.isSystemBudget === false) {
-    return { customBudgetId: expense.customBudgetId }; // No change
-  }
-  
-  // Find target System Budget matching priority and the new paid date's month
-  const newDate = parseDate(newPaidDate);
-  if (!newDate) {
-    return { customBudgetId: expense.customBudgetId }; // Invalid date, no change
-  }
-  
-  const targetBucket = allSystemBudgets.find(b => {
-    if (!b.systemBudgetType) return false;
-    if (b.systemBudgetType !== currentBucket.systemBudgetType) return false;
-    
-    const bucketStart = parseDate(b.startDate);
-    const bucketEnd = parseDate(b.endDate);
-    
-    if (!bucketStart || !bucketEnd) return false;
-    
-    // Check if new date falls within this bucket's period
-    return newDate >= bucketStart && newDate <= bucketEnd;
-  });
-  
-  return {
-    customBudgetId: targetBucket ? targetBucket.id : expense.customBudgetId // Fallback to current if not found
-  };
+    // Only apply to expenses with System Budget assignment
+    if (!expense.customBudgetId) {
+        return { customBudgetId: expense.customBudgetId }; // No change
+    }
+
+    // Find current bucket to determine its priority
+    const currentBucket = allSystemBudgets.find(b => b.id === expense.customBudgetId);
+
+    // If not a system budget, don't migrate (Custom Budget - Context Sticky)
+    if (!currentBucket || currentBucket.isSystemBudget === false) {
+        return { customBudgetId: expense.customBudgetId }; // No change
+    }
+
+    // Find target System Budget matching priority and the new paid date's month
+    const newDate = parseDate(newPaidDate);
+    if (!newDate) {
+        return { customBudgetId: expense.customBudgetId }; // Invalid date, no change
+    }
+
+    const targetBucket = allSystemBudgets.find(b => {
+        if (!b.systemBudgetType) return false;
+        if (b.systemBudgetType !== currentBucket.systemBudgetType) return false;
+
+        const bucketStart = parseDate(b.startDate);
+        const bucketEnd = parseDate(b.endDate);
+
+        if (!bucketStart || !bucketEnd) return false;
+
+        // Check if new date falls within this bucket's period
+        return newDate >= bucketStart && newDate <= bucketEnd;
+    });
+
+    return {
+        customBudgetId: targetBucket ? targetBucket.id : expense.customBudgetId // Fallback to current if not found
+    };
 };
 
 /**
@@ -219,11 +219,11 @@ export const migrateSystemBudgetOnDateChange = (expense, newPaidDate, allSystemB
  * @returns {boolean}
  */
 export const isDateInPeriod = (date, startDate, endDate) => {
-  const d = parseDate(date);
-  const start = parseDate(startDate);
-  const end = parseDate(endDate);
-  
-  if (!d || !start || !end) return false;
-  
-  return d >= start && d <= end;
+    const d = parseDate(date);
+    const start = parseDate(startDate);
+    const end = parseDate(endDate);
+
+    if (!d || !start || !end) return false;
+
+    return d >= start && d <= end;
 };
