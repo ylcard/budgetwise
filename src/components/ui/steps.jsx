@@ -1,6 +1,4 @@
-import React from "react";
 import { Check } from "lucide-react";
-// import { cn } from "@/lib/utils";
 
 export function Steps({ steps, currentStep, className }) {
     return (
@@ -11,10 +9,9 @@ export function Steps({ steps, currentStep, className }) {
                 const isCompleted = s.id < currentStep;
                 return (
                     <div key={s.id} className="flex flex-col items-center bg-white px-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                            isActive ? "bg-blue-600 text-white" :
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${isActive ? "bg-blue-600 text-white" :
                             isCompleted ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500"
-                        }`}>
+                            }`}>
                             {isCompleted ? <Check className="w-4 h-4" /> : s.id}
                         </div>
                         <span className={`text-xs mt-1 font-medium ${isActive ? "text-blue-600" : "text-gray-500"}`}>
