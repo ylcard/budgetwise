@@ -160,7 +160,7 @@ export default function AllocationForm({
                         value={formData.allocatedAmount}
                         onChange={(value) => setFormData({ ...formData, allocatedAmount: value })}
                         placeholder="0.00"
-                        currencySymbol={formData.allocationType === 'digital' ? settings?.currencySymbol : getCurrencySymbol(formData.currency)}
+                        // currencySymbol={formData.allocationType === 'digital' ? settings?.currencySymbol : getCurrencySymbol(formData.currency)}
                         required
                     />
                 </div>
