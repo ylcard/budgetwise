@@ -19,7 +19,7 @@ import { getCurrencyBalance, getRemainingAllocatedCash } from "../utils/cashAllo
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate } from "../utils/currencyCalculations";
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
-import { parseDate, getTodayString } from "../utils/dateUtils";
+import { formatDateString, parseDate, isDateInRange } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 
 export default function TransactionFormContent({
@@ -43,7 +43,7 @@ export default function TransactionFormContent({
         type: 'expense',
         category_id: '',
         financial_priority: '',
-        date: getTodayString(),
+        date: formatDateString(new Date()),
         isPaid: false,
         paidDate: '',
         customBudgetId: '',
@@ -62,8 +62,8 @@ export default function TransactionFormContent({
                 originalCurrency: initialTransaction.originalCurrency || settings?.baseCurrency || 'USD',
                 type: initialTransaction.type || 'expense',
                 category_id: initialTransaction.category_id || '',
-                financial_priority: initialTransaction.financial_priority || '',
-                date: initialTransaction.date || getTodayString(),
+                financial_priority: initialTransaction.financial_priority || '', // ADDED 20-Jan-2025
+                date: initialTransaction.date || formatDateString(new Date()),
                 isPaid: initialTransaction.type === 'expense' ? (initialTransaction.isPaid || false) : false,
                 paidDate: initialTransaction.paidDate || '',
                 customBudgetId: initialTransaction.customBudgetId || '',
@@ -79,7 +79,7 @@ export default function TransactionFormContent({
                 type: 'expense',
                 category_id: '',
                 financial_priority: '',
-                date: getTodayString(),
+                date: formatDateString(new Date()),
                 isPaid: false,
                 paidDate: '',
                 customBudgetId: '',
@@ -144,24 +144,19 @@ export default function TransactionFormContent({
     // Filter budgets to show active + planned statuses
     // This allows linking expenses to future/past budgets while keeping the list manageable
     const filteredBudgets = (() => {
-        const txDate = parseDate(formData.date);
+        const txDate = new Date(formData.date);
         // Filter for active and planned budgets
         let statusFiltered = allBudgets.filter(b => {
-
-            // 1. SYSTEM BUDGETS: STRICT MONTH MATCH
-            // You cannot spend from "December Groceries" in November.
+            // 1. SYSTEM BUDGETS: DATE RANGE MATCH
+            // Check if the transaction date falls within the system budget's period
             if (b.isSystemBudget) {
-                const bDate = parseDate(b.startDate || b.date);
-                if (!bDate || !txDate) return false;
-                return (
-                    bDate.getMonth() === txDate.getMonth() &&
-                    bDate.getFullYear() === txDate.getFullYear()
-                );
+                return isDateInRange(formData.date, b.startDate, b.endDate);
             }
 
-            // 2. CUSTOM BUDGETS: STATUS BASED (Allows Pre-booking & Late payments)
-            // If it's 'planned' (future) or 'active' (current), allow assignment regardless of date.
-            return b.status === 'active' || b.status === 'planned';
+            // 2. CUSTOM BUDGETS: STATUS BASED
+            // Include active, planned, AND completed budgets
+            // This allows adding expenses to past trips or projects that are technically "completed"
+            return b.status === 'active' || b.status === 'planned' || b.status === 'completed';
         });
 
         // If editing and the transaction has a budget, ensure it's always in the list
