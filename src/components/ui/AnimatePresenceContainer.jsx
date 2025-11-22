@@ -1,4 +1,3 @@
-import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
@@ -13,27 +12,27 @@ import { motion, AnimatePresence } from "framer-motion";
  * @param {ReactNode} children - Content to animate
  */
 export default function AnimatePresenceContainer({
-  show = true,
-  initial = { opacity: 0, height: 0 },
-  animate = { opacity: 1, height: "auto" },
-  exit = { opacity: 0, height: 0 },
-  duration = 0.2,
-  children,
-  ...props
+    show = true,
+    initial = { opacity: 0, height: 0 },
+    animate = { opacity: 1, height: "auto" },
+    exit = { opacity: 0, height: 0 },
+    duration = 0.2,
+    children,
+    ...props
 }) {
-  return (
-    <AnimatePresence mode="wait">
-      {show && (
-        <motion.div
-          initial={initial}
-          animate={animate}
-          exit={exit}
-          transition={{ duration }}
-          {...props}
-        >
-          {children}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+    return (
+        <AnimatePresence mode="wait">
+            {show && (
+                <motion.div
+                    initial={initial}
+                    animate={animate}
+                    exit={exit}
+                    transition={{ duration }}
+                    {...props}
+                >
+                    {children}
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
 }
