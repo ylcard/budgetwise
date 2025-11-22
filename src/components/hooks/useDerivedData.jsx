@@ -391,13 +391,7 @@ export const useBudgetsAggregates = (
 // Hook for transaction filtering
 export const useTransactionFiltering = (transactions) => {
     const now = new Date();
-
-    // Calculate the first and last day of the current month (local time)
-    const currentMonthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthStart = formatDateString(currentMonthStartDate);
-
-    const currentMonthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const currentMonthEnd = formatDateString(currentMonthEndDate);
+    const { monthStart: currentMonthStart, monthEnd: currentMonthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
 
     const [filters, setFilters] = useState({
         type: 'all',
