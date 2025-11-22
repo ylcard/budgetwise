@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { useCreateEntity } from "./useCreateEntity";
 import { useUpdateEntity } from "./useUpdateEntity";
@@ -18,7 +18,6 @@ import { createPageUrl } from "@/utils";
 
 // Hook for transaction actions (CRUD operations - Transactions page)
 export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet, options = {}) => {
-    const queryClient = useQueryClient();
 
     // CREATE: Use generic hook with cash wallet preprocessing
     const createMutation = useCreateEntity({
@@ -88,7 +87,7 @@ export const useTransactionActions = (setShowForm, setEditingTransaction, cashWa
     });
 
     // DELETE: Use generic hook with cash wallet reversal
-    const { handleDelete: handleDeleteTransaction, isDeleting } = useDeleteEntity({
+    const { handleDelete: handleDeleteTransaction } = useDeleteEntity({
         entityName: 'Transaction',
         queryKeysToInvalidate: [QUERY_KEYS.TRANSACTIONS, QUERY_KEYS.CASH_WALLET],
         confirmTitle: "Delete Transaction",
@@ -162,7 +161,7 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
     });
 
     // DELETE: Use generic hook (no dependencies to handle)
-    const { handleDelete: handleDeleteCategory, isDeleting } = useDeleteEntity({
+    const { handleDelete: handleDeleteCategory } = useDeleteEntity({
         entityName: 'Category',
         queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
         confirmTitle: "Delete Category",
@@ -250,7 +249,7 @@ export const useGoalActions = (user, goals) => {
 };
 
 // Hook for custom budget actions (CRUD operations)
-export const useCustomBudgetActions = (user, transactions, cashWallet, options = {}) => {
+export const useCustomBudgetActions = (user, transactions, options = {}) => {
     const [showForm, setShowForm] = useState(false);
     const [editingBudget, setEditingBudget] = useState(null);
 
@@ -446,7 +445,7 @@ export const useCustomBudgetActions = (user, transactions, cashWallet, options =
         handleDelete: handleDeleteBudget,
         handleDeleteDirect: deleteDirect,
         handleStatusChange,
-        isSubmitting: createMutation.isPending || updateMutation.isPending,
+        isSubmitting: createMutation.isPending || updateMutation.isPending || isDeleting,
     };
 };
 
