@@ -3,7 +3,7 @@
  * Handles display, synchronization, and parsing of localized currency strings based on user settings.
  */
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency, unformatCurrency } from "../utils/currencyUtils";
@@ -25,7 +25,7 @@ export default function AmountInput({
     onChange,
     placeholder = "0.00",
     className = "",
-    currencySymbol = null, // New prop to override default symbol
+    currencySymbol = null,
     ...props
 }) {
     const { settings } = useSettings();
@@ -37,9 +37,9 @@ export default function AmountInput({
      * @type {[string, function(string)]} Internal state for the formatted string visible in the input field.
      */
     const [displayValue, setDisplayValue] = useState(
-        // UPDATED 17-Jan-2025: Use empty string instead of formatted "0" for zero/null values
-        value !== null && value !== undefined && !isNaN(value) && value !== 0 
-            ? formatCurrency(value, settings) 
+        // Use empty string instead of formatted "0" for zero/null values
+        value !== null && value !== undefined && !isNaN(value) && value !== 0
+            ? formatCurrency(value, settings)
             : ''
     );
 
@@ -53,7 +53,7 @@ export default function AmountInput({
         const currentNumericValue = parseFloat(unformatCurrency(displayValue || '', settings));
 
         if (value === null || value === undefined || isNaN(value) || value === 0) {
-            // UPDATED 17-Jan-2025: Set to empty string to show placeholder instead of "0"
+            // Set to empty string to show placeholder instead of "0"
             if (displayValue !== '') setDisplayValue('');
         } else if (value !== currentNumericValue) {
             setDisplayValue(formatCurrency(value, settings));
@@ -77,7 +77,7 @@ export default function AmountInput({
         const numericRegex = /^-?\d*\.?\d*$/;
 
         if (numericString === '') {
-            // UPDATED 17-Jan-2025: Set displayValue to empty string to show placeholder
+            // Set displayValue to empty string to show placeholder
             setDisplayValue('');
             onChange(null);
         } else if (numericRegex.test(numericString)) {
@@ -103,13 +103,13 @@ export default function AmountInput({
             <Input
                 type="text"
                 inputMode="decimal"
-                // UPDATED 17-Jan-2025: Empty string when displayValue is empty to show placeholder "0"
+                // Empty string when displayValue is empty to show placeholder "0"
                 value={displayValue}
                 onChange={handleChange}
-                // UPDATED 17-Jan-2025: Always show placeholder when input is empty
+                // Always show placeholder when input is empty
                 placeholder={placeholder}
                 className={`${settings.currencyPosition === 'before' ? 'pl-8' : 'pr-8'} ${className}`}
-                // ADDED 17-Jan-2025: Disable browser autocomplete for amount fields
+                // Disable browser autocomplete for amount fields
                 autoComplete="off"
                 {...props}
             />
@@ -123,14 +123,3 @@ export default function AmountInput({
         </div>
     );
 }
-
-// UPDATED 17-Jan-2025: Fixed zero/null value handling to show placeholder instead of "0" text
-// - When value is 0, null, or undefined, displayValue is now set to empty string ''
-// - This allows the placeholder="0" to be visible without interfering with user input
-// - Users no longer need to delete "0" before entering their own amount
-// - The external onChange handler still receives null when the field is empty
-
-// ADDED 17-Jan-2025: Disabled browser autocomplete
-// - Added autoComplete="off" to prevent browser from showing history of previous amounts
-// - This addresses the unwanted "history" popup showing previously entered values like "69.24"
-// - Users will no longer see suggestions from previous entries when typing amounts
