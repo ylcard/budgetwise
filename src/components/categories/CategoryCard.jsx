@@ -1,4 +1,3 @@
-import React from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Pencil, Trash2, Circle } from "lucide-react";
 import { motion } from "framer-motion";
