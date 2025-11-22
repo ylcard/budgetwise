@@ -9,21 +9,6 @@
 import { format } from "date-fns";
 
 /**
- * Format a date according to a specified format
- * @param {string|Date} date - The date to format
- * @param {string} dateFormat - The desired format string
- * @returns {string} The formatted date string
- */
-export const formatDate = (date, dateFormat = "MMM dd, yyyy") => {
-    if (!date) return "";
-
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    const fnsFormat = dateFormat || "MMM dd, yyyy";
-
-    return format(dateObj, fnsFormat);
-};
-
-/**
  * Create a timezone-safe local date from YYYY-MM-DD string
  * @param {string} dateString - Date string in YYYY-MM-DD format
  * @returns {Date|null} Date object (set to local midnight) or null if invalid
@@ -33,6 +18,34 @@ export const parseDate = (dateString) => {
     const [year, month, day] = dateString.split('-').map(Number);
     return new Date(year, month - 1, day);
 };
+
+/**
+ * Format a date according to a specified format
+ * @param {string|Date} date - The date to format
+ * @param {string} dateFormat - The desired format string
+ * @returns {string} The formatted date string
+ */
+export const formatDate = (date, dateFormat = "MMM dd, yyyy") => {
+    if (!date) return "";
+
+    let dateObj;
+    if (typeof date === 'string') {
+        // Try to use parseDate for YYYY-MM-DD strings to ensure local time
+        if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            dateObj = parseDate(date);
+        } else {
+            dateObj = new Date(date);
+        }
+    } else {
+        dateObj = date;
+    }
+
+    const fnsFormat = dateFormat || "MMM dd, yyyy";
+
+    return format(dateObj, fnsFormat);
+};
+
+
 
 /**
  * Format date as YYYY-MM-DD (timezone-agnostic, local midnight).
@@ -48,13 +61,16 @@ export const formatDateString = (date) => {
     let inputDate;
     if (date instanceof Date) {
         inputDate = date;
+    } else if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        inputDate = parseDate(date);
     } else {
-        // Handle string or timestamp input
+        // Handle other string formats or timestamp input
         inputDate = new Date(date);
-        if (isNaN(inputDate)) {
-            // Return empty string for invalid dates
-            return '';
-        }
+    }
+
+    if (isNaN(inputDate)) {
+        // Return empty string for invalid dates
+        return '';
     }
 
     // CRITICAL STEP: Construct a NEW Date object using the input's LOCAL year, month, and day.
@@ -168,4 +184,3 @@ export const doDateRangesOverlap = (start1, end1, start2, end2) => {
     if (!s1 || !e1 || !s2 || !e2) return false;
     return s1 <= e2 && e1 >= s2;
 };
-
