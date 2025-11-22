@@ -118,3 +118,54 @@ export const getMonthName = (monthIndex, locale = 'en-US') => {
     const date = new Date(2000, monthIndex, 1); // Year doesn't matter
     return date.toLocaleString(locale, { month: 'long' });
 };
+
+/**
+ * Normalizes a date input to a Date object at local midnight.
+ * @param {string|Date} dateInput - The date to normalize.
+ * @returns {Date|null} Date object at midnight or null if invalid.
+ */
+export const normalizeToMidnight = (dateInput) => {
+    if (!dateInput) return null;
+    if (typeof dateInput === 'string') {
+        return parseDate(dateInput);
+    }
+    if (dateInput instanceof Date) {
+        return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+    }
+    return null;
+};
+
+/**
+ * Checks if a date is within a start and end date range (inclusive).
+ * @param {string|Date} date - The date to check.
+ * @param {string|Date} startDate - The start of the range.
+ * @param {string|Date} endDate - The end of the range.
+ * @returns {boolean} True if date is within range.
+ */
+export const isDateInRange = (date, startDate, endDate) => {
+    const d = normalizeToMidnight(date);
+    const start = normalizeToMidnight(startDate);
+    const end = normalizeToMidnight(endDate);
+
+    if (!d || !start || !end) return false;
+    return d >= start && d <= end;
+};
+
+/**
+ * Checks if two date ranges overlap.
+ * @param {string|Date} start1 - Start of first range.
+ * @param {string|Date} end1 - End of first range.
+ * @param {string|Date} start2 - Start of second range.
+ * @param {string|Date} end2 - End of second range.
+ * @returns {boolean} True if ranges overlap.
+ */
+export const doDateRangesOverlap = (start1, end1, start2, end2) => {
+    const s1 = normalizeToMidnight(start1);
+    const e1 = normalizeToMidnight(end1);
+    const s2 = normalizeToMidnight(start2);
+    const e2 = normalizeToMidnight(end2);
+
+    if (!s1 || !e1 || !s2 || !e2) return false;
+    return s1 <= e2 && e1 >= s2;
+};
+
