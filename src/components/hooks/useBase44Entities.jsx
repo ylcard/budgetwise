@@ -1,272 +1,270 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
-// UPDATED 13-Jan-2025: Changed to explicitly use .jsx extension for financialCalculations
 import { getMonthlyIncome } from "../utils/financialCalculations";
-import { getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
 
 // Hook to fetch transactions
 export const useTransactions = () => {
-  const { data: transactions = [], isLoading, error } = useQuery({
-    queryKey: [QUERY_KEYS.TRANSACTIONS],
-    queryFn: () => base44.entities.Transaction.list('date', 1000), // Oldest first (ascending order)
-    initialData: [],
-  });
+    const { data: transactions = [], isLoading, error } = useQuery({
+        queryKey: [QUERY_KEYS.TRANSACTIONS],
+        queryFn: () => base44.entities.Transaction.list('date', 1000),
+        initialData: [],
+    });
 
-  return { transactions, isLoading, error };
+    return { transactions, isLoading, error };
 };
 
 // Hook for fetching categories
 export const useCategories = () => {
-  const { data: categories = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.CATEGORIES],
-    queryFn: () => base44.entities.Category.list(),
-    initialData: [],
-  });
+    const { data: categories = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.CATEGORIES],
+        queryFn: () => base44.entities.Category.list(),
+        initialData: [],
+    });
 
-  return { categories, isLoading };
+    return { categories, isLoading };
 };
 
 // Hook for fetching budget goals
 export const useGoals = (user) => {
-  const { data: goals = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.GOALS],
-    queryFn: async () => {
-      if (!user) return [];
-      const allGoals = await base44.entities.BudgetGoal.list();
-      return allGoals.filter(g => g.user_email === user.email);
-    },
-    initialData: [],
-    enabled: !!user,
-  });
+    const { data: goals = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.GOALS],
+        queryFn: async () => {
+            if (!user) return [];
+            const allGoals = await base44.entities.BudgetGoal.list();
+            return allGoals.filter(g => g.user_email === user.email);
+        },
+        initialData: [],
+        enabled: !!user,
+    });
 
-  return { goals, isLoading };
+    return { goals, isLoading };
 };
 
 // Hook for fetching all custom budgets for a user
 export const useCustomBudgetsAll = (user) => {
-  const { data: allCustomBudgets = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.CUSTOM_BUDGETS],
-    queryFn: async () => {
-      if (!user) return [];
-      const all = await base44.entities.CustomBudget.list('-startDate');
-      return all.filter(cb => cb.user_email === user.email);
-    },
-    initialData: [],
-    enabled: !!user,
-  });
+    const { data: allCustomBudgets = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.CUSTOM_BUDGETS],
+        queryFn: async () => {
+            if (!user) return [];
+            const all = await base44.entities.CustomBudget.list('-startDate');
+            return all.filter(cb => cb.user_email === user.email);
+        },
+        initialData: [],
+        enabled: !!user,
+    });
 
-  return { allCustomBudgets, isLoading };
+    return { allCustomBudgets, isLoading };
 };
 
 // Hook for fetching all system budgets for a user
 export const useSystemBudgetsAll = (user) => {
-  const { data: allSystemBudgets = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS],
-    queryFn: async () => {
-      if (!user) return [];
-      const all = await base44.entities.SystemBudget.list();
-      return all.filter(sb => sb.user_email === user.email);
-    },
-    initialData: [],
-    enabled: !!user,
-  });
+    const { data: allSystemBudgets = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS],
+        queryFn: async () => {
+            if (!user) return [];
+            const all = await base44.entities.SystemBudget.list();
+            return all.filter(sb => sb.user_email === user.email);
+        },
+        initialData: [],
+        enabled: !!user,
+    });
 
-  return { allSystemBudgets, isLoading };
+    return { allSystemBudgets, isLoading };
 };
 
 // Hook for fetching system budgets for a specific period
 export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
-  const { data: systemBudgets = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, monthStart, monthEnd],
-    queryFn: async () => {
-      if (!user) return [];
-      const all = await base44.entities.SystemBudget.list();
-      return all.filter(sb => 
-        sb.user_email === user.email &&
-        sb.startDate === monthStart && 
-        sb.endDate === monthEnd
-      );
-    },
-    initialData: [],
-    enabled: !!user && !!monthStart && !!monthEnd,
-  });
+    const { data: systemBudgets = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, monthStart, monthEnd],
+        queryFn: async () => {
+            if (!user) return [];
+            const all = await base44.entities.SystemBudget.list();
+            return all.filter(sb =>
+                sb.user_email === user.email &&
+                sb.startDate === monthStart &&
+                sb.endDate === monthEnd
+            );
+        },
+        initialData: [],
+        enabled: !!user && !!monthStart && !!monthEnd,
+    });
 
-  return { systemBudgets, isLoading };
+    return { systemBudgets, isLoading };
 };
 
 // Hook for fetching allocations for a budget
 export const useAllocations = (budgetId) => {
-  const { data: allocations = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.ALLOCATIONS, budgetId],
-    queryFn: async () => {
-      const all = await base44.entities.CustomBudgetAllocation.list();
-      return all.filter(a => a.customBudgetId === budgetId);
-    },
-    initialData: [],
-    enabled: !!budgetId,
-  });
+    const { data: allocations = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.ALLOCATIONS, budgetId],
+        queryFn: async () => {
+            const all = await base44.entities.CustomBudgetAllocation.list();
+            return all.filter(a => a.customBudgetId === budgetId);
+        },
+        initialData: [],
+        enabled: !!budgetId,
+    });
 
-  return { allocations, isLoading };
+    return { allocations, isLoading };
 };
 
 // Hook for fetching all budgets (custom + system) for a user
 export const useAllBudgets = (user) => {
-  const { data: allBudgets = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.ALL_BUDGETS],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const customBudgets = await base44.entities.CustomBudget.list();
-      const systemBudgets = await base44.entities.SystemBudget.list();
-      
-      // Include ALL custom budgets (both active and completed) - removed status filter
-      const userCustomBudgets = customBudgets.filter(cb => cb.user_email === user.email);
-      const userSystemBudgets = systemBudgets
-        .filter(sb => sb.user_email === user.email)
-        .map(sb => ({
-          ...sb,
-          isSystemBudget: true,
-          allocatedAmount: sb.budgetAmount
-        }));
-      
-      return [...userSystemBudgets, ...userCustomBudgets];
-    },
-    initialData: [],
-    enabled: !!user,
-  });
+    const { data: allBudgets = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.ALL_BUDGETS],
+        queryFn: async () => {
+            if (!user) return [];
 
-  return { allBudgets, isLoading };
+            const customBudgets = await base44.entities.CustomBudget.list();
+            const systemBudgets = await base44.entities.SystemBudget.list();
+
+            // Include ALL custom budgets (both active and completed) - removed status filter
+            const userCustomBudgets = customBudgets.filter(cb => cb.user_email === user.email);
+            const userSystemBudgets = systemBudgets
+                .filter(sb => sb.user_email === user.email)
+                .map(sb => ({
+                    ...sb,
+                    isSystemBudget: true,
+                    allocatedAmount: sb.budgetAmount
+                }));
+
+            return [...userSystemBudgets, ...userCustomBudgets];
+        },
+        initialData: [],
+        enabled: !!user,
+    });
+
+    return { allBudgets, isLoading };
 };
 
 // Hook for fetching cash wallet
 export const useCashWallet = (user) => {
-  const { data: cashWallet, isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.CASH_WALLET],
-    queryFn: async () => {
-      if (!user) return null;
-      const wallets = await base44.entities.CashWallet.list();
-      return wallets.find(w => w.user_email === user.email) || null;
-    },
-    initialData: null,
-    enabled: !!user,
-  });
+    const { data: cashWallet, isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.CASH_WALLET],
+        queryFn: async () => {
+            if (!user) return null;
+            const wallets = await base44.entities.CashWallet.list();
+            return wallets.find(w => w.user_email === user.email) || null;
+        },
+        initialData: null,
+        enabled: !!user,
+    });
 
-  return { cashWallet, isLoading };
+    return { cashWallet, isLoading };
 };
 
 // Hook for fetching category rules
 export const useCategoryRules = (user) => {
-  const { data: rules = [], isLoading } = useQuery({
-    queryKey: ['CATEGORY_RULES'],
-    queryFn: async () => {
-      if (!user) return [];
-      const allRules = await base44.entities.CategoryRule.list();
-      // Filter by user and sort by priority (ascending)
-      return allRules
-        .filter(r => r.user_email === user.email)
-        .sort((a, b) => (a.priority || 0) - (b.priority || 0));
-    },
-    initialData: [],
-    enabled: !!user,
-  });
+    const { data: rules = [], isLoading } = useQuery({
+        queryKey: ['CATEGORY_RULES'],
+        queryFn: async () => {
+            if (!user) return [];
+            const allRules = await base44.entities.CategoryRule.list();
+            // Filter by user and sort by priority (ascending)
+            return allRules
+                .filter(r => r.user_email === user.email)
+                .sort((a, b) => (a.priority || 0) - (b.priority || 0));
+        },
+        initialData: [],
+        enabled: !!user,
+    });
 
-  return { rules, isLoading };
+    return { rules, isLoading };
 };
 
 // Hook for managing system budgets (create/update logic)
 // IMPORTANT: This hook's duplicate detection logic must NOT be modified
 export const useSystemBudgetManagement = (
-  user,
-  selectedMonth,
-  selectedYear,
-  goals,
-  transactions,
-  systemBudgets,
-  monthStart,
-  monthEnd
+    user,
+    selectedMonth,
+    selectedYear,
+    goals,
+    transactions,
+    systemBudgets,
+    monthStart,
+    monthEnd
 ) => {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const ensureSystemBudgets = async () => {
-      if (!user || goals.length === 0) return;
-      
-      // CRITICAL FIX (2025-01-12): Only create system budgets for the CURRENT month/year
-      const now = new Date();
-      const currentMonth = now.getMonth(); 
-      const currentYear = now.getFullYear();
-      
-      // UPDATED 20-Jan-2025: Allow CREATION for past months if missing, but restrict UPDATES to current month
-      // This ensures historical data exists but preserves history from being overwritten by current goal changes
-      const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
-      
-      try {
-        const systemTypes = ['needs', 'wants', 'savings'];
-        const colors = { needs: '#EF4444', wants: '#F59E0B', savings: '#10B981' };
-        
-        // UPDATED 12-Jan-2025: Use getMonthlyIncome from financialCalculations
-        const currentMonthIncome = getMonthlyIncome(transactions, monthStart, monthEnd);
+    useEffect(() => {
+        const ensureSystemBudgets = async () => {
+            if (!user || goals.length === 0) return;
 
-        const goalMap = goals.reduce((acc, goal) => {
-          acc[goal.priority] = goal.target_percentage;
-          return acc;
-        }, {});
-        
-        let needsInvalidation = false;
+            // CRITICAL: Only create system budgets for the CURRENT month/year
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
 
-        for (const type of systemTypes) {
-          const existingBudget = systemBudgets.find(sb => sb.systemBudgetType === type);
-          const percentage = goalMap[type] || 0;
-          const amount = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
-          
-          if (existingBudget) {
-            // Only update if the calculated amount significantly differs to avoid unnecessary writes
-            // AND only if it's the current month (preserve history)
-            if (isCurrentMonth && Math.abs(existingBudget.budgetAmount - amount) > 0.01) { 
-              await base44.entities.SystemBudget.update(existingBudget.id, {
-                budgetAmount: amount
-              });
-              needsInvalidation = true;
+            // Allow CREATION for past months if missing, but restrict UPDATES to current month
+            // This ensures historical data exists but preserves history from being overwritten by current goal changes
+            const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
+
+            try {
+                const systemTypes = ['needs', 'wants', 'savings'];
+                const colors = { needs: '#EF4444', wants: '#F59E0B', savings: '#10B981' };
+
+                // Use getMonthlyIncome from financialCalculations
+                const currentMonthIncome = getMonthlyIncome(transactions, monthStart, monthEnd);
+
+                const goalMap = goals.reduce((acc, goal) => {
+                    acc[goal.priority] = goal.target_percentage;
+                    return acc;
+                }, {});
+
+                let needsInvalidation = false;
+
+                for (const type of systemTypes) {
+                    const existingBudget = systemBudgets.find(sb => sb.systemBudgetType === type);
+                    const percentage = goalMap[type] || 0;
+                    const amount = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
+
+                    if (existingBudget) {
+                        // Only update if the calculated amount significantly differs to avoid unnecessary writes
+                        // AND only if it's the current month (preserve history)
+                        if (isCurrentMonth && Math.abs(existingBudget.budgetAmount - amount) > 0.01) {
+                            await base44.entities.SystemBudget.update(existingBudget.id, {
+                                budgetAmount: amount
+                            });
+                            needsInvalidation = true;
+                        }
+                    } else {
+                        // Check for duplicates before creating to prevent race conditions or multiple creations
+                        const allSystemBudgetsCheck = await base44.entities.SystemBudget.list();
+                        const duplicateCheck = allSystemBudgetsCheck.find(sb =>
+                            sb.user_email === user.email &&
+                            sb.systemBudgetType === type &&
+                            sb.startDate === monthStart &&
+                            sb.endDate === monthEnd
+                        );
+
+                        if (!duplicateCheck) {
+                            await base44.entities.SystemBudget.create({
+                                name: type.charAt(0).toUpperCase() + type.slice(1),
+                                budgetAmount: amount,
+                                startDate: monthStart,
+                                endDate: monthEnd,
+                                color: colors[type],
+                                user_email: user.email,
+                                systemBudgetType: type
+                            });
+                            needsInvalidation = true;
+                        }
+                    }
+                }
+
+                if (needsInvalidation) {
+                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
+                }
+            } catch (error) {
+                console.error('Error in ensureSystemBudgets:', error);
             }
-          } else {
-            // Check for duplicates before creating to prevent race conditions or multiple creations
-            const allSystemBudgetsCheck = await base44.entities.SystemBudget.list();
-            const duplicateCheck = allSystemBudgetsCheck.find(sb => 
-              sb.user_email === user.email &&
-              sb.systemBudgetType === type &&
-              sb.startDate === monthStart &&
-              sb.endDate === monthEnd
-            );
-            
-            if (!duplicateCheck) {
-              await base44.entities.SystemBudget.create({
-                name: type.charAt(0).toUpperCase() + type.slice(1),
-                budgetAmount: amount,
-                startDate: monthStart,
-                endDate: monthEnd,
-                color: colors[type],
-                user_email: user.email,
-                systemBudgetType: type
-              });
-              needsInvalidation = true;
-            }
-          }
+        };
+
+        // Only run if user, goals are loaded, and systemBudgets data has been fetched (not undefined)
+        if (user && goals.length > 0 && systemBudgets !== undefined) {
+            ensureSystemBudgets();
         }
-        
-        if (needsInvalidation) {
-          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
-        }
-      } catch (error) {
-        console.error('Error in ensureSystemBudgets:', error);
-      }
-    };
-    
-    // Only run if user, goals are loaded, and systemBudgets data has been fetched (not undefined)
-    if (user && goals.length > 0 && systemBudgets !== undefined) {
-      ensureSystemBudgets();
-    }
-  }, [user, selectedMonth, selectedYear, goals, systemBudgets, monthStart, monthEnd, queryClient, transactions]);
+    }, [user, selectedMonth, selectedYear, goals, systemBudgets, monthStart, monthEnd, queryClient, transactions]);
 };
