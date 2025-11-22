@@ -19,7 +19,7 @@ import { getCurrencyBalance, getRemainingAllocatedCash } from "../utils/cashAllo
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate } from "../utils/currencyCalculations";
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
-import { formatDateString } from "../utils/dateUtils";
+import { formatDateString, parseDate, getTodayString } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 
 export default function TransactionFormContent({
@@ -43,7 +43,7 @@ export default function TransactionFormContent({
         type: 'expense',
         category_id: '',
         financial_priority: '',
-        date: formatDateString(new Date()),
+        date: getTodayString(),
         isPaid: false,
         paidDate: '',
         customBudgetId: '',
@@ -62,8 +62,8 @@ export default function TransactionFormContent({
                 originalCurrency: initialTransaction.originalCurrency || settings?.baseCurrency || 'USD',
                 type: initialTransaction.type || 'expense',
                 category_id: initialTransaction.category_id || '',
-                financial_priority: initialTransaction.financial_priority || '', // ADDED 20-Jan-2025
-                date: initialTransaction.date || formatDateString(new Date()),
+                financial_priority: initialTransaction.financial_priority || '',
+                date: initialTransaction.date || getTodayString(),
                 isPaid: initialTransaction.type === 'expense' ? (initialTransaction.isPaid || false) : false,
                 paidDate: initialTransaction.paidDate || '',
                 customBudgetId: initialTransaction.customBudgetId || '',
@@ -79,7 +79,7 @@ export default function TransactionFormContent({
                 type: 'expense',
                 category_id: '',
                 financial_priority: '',
-                date: formatDateString(new Date()),
+                date: getTodayString(),
                 isPaid: false,
                 paidDate: '',
                 customBudgetId: '',
@@ -144,14 +144,15 @@ export default function TransactionFormContent({
     // Filter budgets to show active + planned statuses
     // This allows linking expenses to future/past budgets while keeping the list manageable
     const filteredBudgets = (() => {
-        const txDate = new Date(formData.date);
+        const txDate = parseDate(formData.date);
         // Filter for active and planned budgets
         let statusFiltered = allBudgets.filter(b => {
 
             // 1. SYSTEM BUDGETS: STRICT MONTH MATCH
             // You cannot spend from "December Groceries" in November.
             if (b.isSystemBudget) {
-                const bDate = new Date(b.startDate || b.date);
+                const bDate = parseDate(b.startDate || b.date);
+                if (!bDate || !txDate) return false;
                 return (
                     bDate.getMonth() === txDate.getMonth() &&
                     bDate.getFullYear() === txDate.getFullYear()
