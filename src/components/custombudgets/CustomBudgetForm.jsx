@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-// COMMENTED OUT 16-Jan-2025: Replaced with CustomButton for consistency
-// import { Button } from "@/components/ui/button";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Trash2, Plus } from "lucide-react";
@@ -10,9 +8,7 @@ import AmountInput from "../ui/AmountInput";
 import DateRangePicker from "../ui/DateRangePicker";
 import CurrencySelect from "../ui/CurrencySelect";
 import { PRESET_COLORS } from "../utils/constants";
-// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js
 import { normalizeAmount } from "../utils/generalUtils";
-import { parseDate } from "../utils/dateUtils";
 import { getCurrencyBalance, validateCashAllocations } from "../utils/cashAllocationUtils";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCurrencySymbol } from "../utils/currencyUtils";
@@ -127,22 +123,22 @@ export default function CustomBudgetForm({
             }))
             .filter(alloc => alloc.amount > 0);
 
-        // UPDATED 17-Jan-2025: Smart validation - only validate NEW allocations when editing
+        // Smart validation - only validate NEW allocations when editing
         let allocationsToValidate = processedCashAllocations;
-        
+
         if (budget && budget.cashAllocations) {
             // When editing, calculate the NET CHANGE in allocations
             const oldAllocationsMap = {};
             budget.cashAllocations.forEach(alloc => {
                 oldAllocationsMap[alloc.currencyCode] = alloc.amount;
             });
-            
+
             // Only validate amounts that are INCREASES from the original allocation
             allocationsToValidate = processedCashAllocations
                 .map(newAlloc => {
                     const oldAmount = oldAllocationsMap[newAlloc.currencyCode] || 0;
                     const increase = newAlloc.amount - oldAmount;
-                    
+
                     // Only validate if there's an increase (requesting MORE cash)
                     if (increase > 0) {
                         return {
@@ -330,28 +326,3 @@ export default function CustomBudgetForm({
         </form>
     );
 }
-
-// MAJOR ENHANCEMENTS (2025-01-12):
-// 1. Fixed field alignment: grid-cols-2 items-end for Budget Name + Date Range
-// 2. Card Budget narrowed to 200px width (grid-cols-[200px_1fr])
-// 3. Cash allocation UI refactored:
-//    - Removed toggle/hide behavior
-//    - "Add Cash" button directly adds allocation fields
-//    - Toast notification if no cash available in wallet
-//    - Allocations appear in collapsible green-themed section
-//    - Filtered currencies to only show available wallet balances
-// 4. Dynamic display of available cash balance for selected currency
-// UPDATED 12-Jan-2025: Changed imports to use dateUtils.js and generalUtils.js instead of budgetCalculations.jsx
-// UPDATED 16-Jan-2025: Replaced Button with CustomButton for form actions
-// - "Add Cash" button uses variant="outline"
-// - Remove cash allocation button uses variant="ghost" size="icon"
-// - Cancel button uses variant="outline"
-// - Submit button uses variant="primary" (gradient blue-purple)
-// - Color selection buttons intentionally kept as native <button>s for inline styling
-// UPDATED 17-Jan-2025: Fixed cash allocation validation logic for budget editing
-// - When editing an existing budget, only validate NET INCREASES in cash allocations
-// - Existing allocations are already deducted from wallet, so they shouldn't be re-validated
-// - Calculate delta (increase) per currency and only validate those increases against available wallet balance
-// - This fixes the "Insufficient balance" error when editing budgets with existing cash allocations
-// ADDED 17-Jan-2025: Disabled browser autocomplete for budget name input
-// - Added autoComplete="off" to prevent browser from showing history of previous budget names
