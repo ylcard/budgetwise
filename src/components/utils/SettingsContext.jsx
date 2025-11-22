@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 
 const SettingsContext = createContext();
@@ -50,7 +50,7 @@ export const SettingsProvider = ({ children }) => {
             const currentUser = await base44.auth.me();
             setUser(currentUser);
 
-            // IMPROVEMENT: Filter by email directly to avoid fetching ALL user settings
+            // Filter by email directly to avoid fetching ALL user settings
             const userSettingsArray = await base44.entities.UserSettings.filter({ user_email: currentUser.email });
             const userSettings = userSettingsArray[0];
 
