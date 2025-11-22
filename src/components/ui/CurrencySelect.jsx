@@ -1,4 +1,3 @@
-import React from "react";
 import {
     Select,
     SelectContent,
@@ -9,10 +8,10 @@ import {
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
 
 export default function CurrencySelect({ value, onValueChange, filterCurrencies = null, limitToCurrencies = null }) {
-    // UPDATED 13-Jan-2025: Support both filterCurrencies (legacy) and limitToCurrencies (new preferred name)
+    // Support both filterCurrencies (legacy) and limitToCurrencies (new preferred name)
     const currencyLimit = limitToCurrencies || filterCurrencies;
 
-    // ENHANCEMENT (2025-01-12): Filter currencies if currencyLimit array is provided
+    // Filter currencies if currencyLimit array is provided
     const displayCurrencies = currencyLimit && currencyLimit.length > 0
         ? SUPPORTED_CURRENCIES.filter(c => currencyLimit.includes(c.code))
         : SUPPORTED_CURRENCIES;
