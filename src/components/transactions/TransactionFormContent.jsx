@@ -19,6 +19,7 @@ import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
 import { SUPPORTED_CURRENCIES, FINANCIAL_PRIORITIES } from "../utils/constants";
 import { formatDateString, isDateInRange, formatDate } from "../utils/dateUtils";
+import { differenceInDays, parseISO, startOfDay } from "date-fns";
 import { normalizeAmount } from "../utils/generalUtils";
 import { useCategoryRules } from "../hooks/useBase44Entities";
 import { categorizeTransaction } from "../utils/transactionCategorization";
@@ -454,9 +455,17 @@ export default function TransactionFormContent({
                             {(() => {
                                 const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date);
                                 if (rateDetails) {
+                                    const rateDate = startOfDay(parseISO(rateDetails.date));
+                                    const txDate = startOfDay(parseISO(formData.date));
+                                    const age = Math.abs(differenceInDays(txDate, rateDate));
+                                    const isOld = age > 14;
+
                                     return (
-                                        <span className="text-xs text-gray-500" title={`Rate: ${rateDetails.rate} (from ${formatDate(rateDetails.date)})`}>
-                                            Rate: {rateDetails.rate} ({formatDate(rateDetails.date, 'MMM d')})
+                                        <span
+                                            className={`text-xs ${isOld ? 'text-amber-600' : 'text-gray-500'}`}
+                                            title={`Rate: ${rateDetails.rate} (from ${formatDate(rateDetails.date)}) - ${age} days diff`}
+                                        >
+                                            Rate: {rateDetails.rate} ({formatDate(rateDetails.date, 'MMM d')}{isOld ? ', Old' : ''})
                                         </span>
                                     );
                                 }
