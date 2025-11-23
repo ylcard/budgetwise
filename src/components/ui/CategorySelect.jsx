@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Check, ChevronsUpDown, Circle, X } from "lucide-react";
+import { Check, Circle } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import {
     Command,
@@ -14,7 +14,6 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { iconMap } from "../utils/iconMapConfig";
-import { Badge } from "@/components/ui/badge";
 
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
