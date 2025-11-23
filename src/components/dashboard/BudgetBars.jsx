@@ -21,7 +21,8 @@ export default function BudgetBars({
 }) {
     const [viewMode, setViewMode] = useState('bars'); // 'bars' | 'cards'
     const [customStartIndex, setCustomStartIndex] = useState(0);
-    const barsPerPage = 7;
+    // const barsPerPage = 7;
+    const barsPerPage = viewMode === 'cards' ? 4 : 7;
 
     // Use the extracted hook for all calculations
     const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
@@ -78,7 +79,7 @@ export default function BudgetBars({
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className={`flex flex-wrap ${viewMode === 'cards' ? 'justify-start' : 'justify-center'} gap-4`}>
+                        <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                             {systemBudgetsData.map((budget) => (
                                 viewMode === 'bars' ? (
                                     <BudgetBar
@@ -90,7 +91,7 @@ export default function BudgetBars({
                                         hideActions={true}
                                     />
                                 ) : (
-                                    <div key={budget.id} className="w-full sm:w-[280px]">
+                                    <div key={budget.id} className="flex-1 min-w-0">
                                         <BudgetCard
                                             budget={{ ...budget, isSystemBudget: true }}
                                             stats={budget.stats}
@@ -146,7 +147,7 @@ export default function BudgetBars({
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className={`flex flex-wrap ${viewMode === 'cards' ? 'justify-start' : 'justify-center'} gap-4`}>
+                        <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                             {visibleCustomBudgets.map((budget) => (
                                 viewMode === 'bars' ? (
                                     <BudgetBar
@@ -157,7 +158,7 @@ export default function BudgetBars({
                                         hideActions={true}
                                     />
                                 ) : (
-                                    <div key={budget.id} className="w-full sm:w-[280px]">
+                                    <div key={budget.id} className="flex-1 min-w-0">
                                         <BudgetCard
                                             budget={budget}
                                             stats={budget.stats}
