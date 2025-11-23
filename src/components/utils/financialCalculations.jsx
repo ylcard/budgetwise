@@ -414,7 +414,10 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
     });
 
     // Calculate unit-based totals
-    const totalAllocatedUnits = digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+    // const totalAllocatedUnits = digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+    // If originalAllocatedAmount exists (completed budget), use it as the total budget target.
+    // Otherwise, sum the current digital and cash allocations.
+    const totalAllocatedUnits = customBudget.originalAllocatedAmount || (digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0));
     const totalSpentUnits = digitalSpent + Object.values(cashByCurrency).reduce((sum, cashData) => sum + cashData.spent, 0);
     const totalUnpaidUnits = digitalUnpaid;
 
