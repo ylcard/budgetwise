@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -16,7 +17,6 @@ export default function QuickAddTransaction({
     onOpenChange,
     transaction = null, // If provided, edit mode; if null, add mode
     categories,
-    customBudgets,
     defaultCustomBudgetId = '',
     onSubmit,
     isSubmitting,
@@ -31,15 +31,28 @@ export default function QuickAddTransaction({
     const { cashWallet } = useCashWallet(user);
     const { allBudgets } = useAllBudgets(user);
 
+    // Hybrid State Manager
+    // This ensures the modal opens even if 'open' prop is undefined
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isControlled = open !== undefined;
+    const showDialog = isControlled ? open : internalOpen;
+
     const isEditMode = !!transaction;
+
+    const handleOpenChange = (isOpen) => {
+        if (!isControlled) setInternalOpen(isOpen);
+        // Safety check: only call prop if it exists
+        if (onOpenChange) onOpenChange(isOpen);
+    };
+
 
     const handleSubmit = (data) => {
         onSubmit(data);
-        onOpenChange(false);
+        handleOpenChange(false);
     };
 
     const handleCancel = () => {
-        onOpenChange(false);
+        handleOpenChange(false);
     };
 
     // Determine default trigger based on mode
@@ -59,7 +72,7 @@ export default function QuickAddTransaction({
     );
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={showDialog} onOpenChange={handleOpenChange}>
             {renderTrigger && (
                 <DialogTrigger asChild>
                     {trigger || defaultTrigger}
