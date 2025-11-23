@@ -168,7 +168,7 @@ export default function Budgets() {
                                 <span className="px-3 py-1 rounded-lg text-sm bg-blue-50 text-blue-600">
                                     System Budgets
                                 </span>
-                                <span className="text-gray-400">({systemBudgetsWithStats.length})</span>
+                                // <span className="text-gray-400">({systemBudgetsWithStats.length})</span>
                             </CardTitle>
                             <p className="text-sm text-gray-500 mt-2">
                                 Automatically managed based on your budget goals. These update based on your monthly income.
@@ -226,7 +226,7 @@ export default function Budgets() {
                                     <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
                                         Custom Budgets
                                     </span>
-                                    <span className="text-gray-400">({sortedCustomBudgets.length})</span>
+                                    // <span className="text-gray-400">({sortedCustomBudgets.length})</span>
                                 </div>
                                 <p className="text-sm text-gray-500">
                                     Custom budgets containing wants expenses, sorted by status and date
