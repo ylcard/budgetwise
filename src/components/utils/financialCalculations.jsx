@@ -5,7 +5,7 @@
  * @updated 15-Nov-2025 - Exported isCashExpense helper function for use in other modules
  */
 
-import { isDateInRange } from "./dateUtils";
+import { isDateInRange, parseDate } from "./dateUtils";
 
 /**
  * Helper function to identify cash expenses to be excluded from budget calculations.
@@ -334,4 +334,166 @@ export const getMonthlyFinancialSummary = (transactions, startDate, endDate) => 
         // Return absolute value for expense so it's ready for subtraction/comparison in the chart component
         expense: Math.abs(expenseSum),
     };
+};
+
+/**
+ * Calculates statistics for a single custom budget, filtering paid expenses by the selected month.
+ * Unpaid expenses are totaled regardless of date (encumbrance view).
+ * @param {object} customBudget - The custom budget object.
+ * @param {Array<object>} transactions - List of all transactions.
+ * @param {string|Date} monthStart - Start of the month (YYYY-MM-DD or Date).
+ * @param {string|Date} monthEnd - End of the month (YYYY-MM-DD or Date).
+ * @returns {object} Detailed statistics including allocated, spent, unpaid, and currency breakdown.
+ */
+export const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) => {
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+
+    // Parse month boundaries for filtering paid expenses
+    const monthStartDate = parseDate(monthStart);
+    const monthEndDate = parseDate(monthEnd);
+
+    // Separate digital and cash transactions
+    const digitalTransactions = budgetTransactions.filter(
+        t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet'
+    );
+    const cashTransactions = budgetTransactions.filter(
+        t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
+    );
+
+    // Calculate digital stats - ONLY include paid expenses that were paid within the selected month
+    const digitalAllocated = customBudget.allocatedAmount || 0;
+    const digitalSpent = digitalTransactions
+        .filter(t => {
+            if (t.type !== 'expense') return false;
+            if (!t.isPaid || !t.paidDate) return false;
+
+            // Filter by paidDate within selected month
+            if (monthStartDate && monthEndDate) {
+                const paidDate = parseDate(t.paidDate);
+                return paidDate >= monthStartDate && paidDate <= monthEndDate;
+            }
+            return true;
+        })
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+
+    const digitalUnpaid = digitalTransactions
+        .filter(t => t.type === 'expense' && !t.isPaid)
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+    const digitalRemaining = digitalAllocated - digitalSpent;
+
+    // Calculate cash stats by currency - ONLY include paid expenses that were paid within the selected month
+    const cashByCurrency = {};
+    const cashAllocations = customBudget.cashAllocations || [];
+
+    cashAllocations.forEach(allocation => {
+        const currencyCode = allocation.currencyCode;
+        const allocated = allocation.amount || 0;
+
+        const spent = cashTransactions
+            .filter(t => {
+                if (t.type !== 'expense') return false;
+                if (t.cashCurrency !== currencyCode) return false;
+                if (!t.isPaid || !t.paidDate) return false;
+
+                // Filter by paidDate within selected month
+                if (monthStartDate && monthEndDate) {
+                    const paidDate = parseDate(t.paidDate);
+                    return paidDate >= monthStartDate && paidDate <= monthEndDate;
+                }
+                return true;
+            })
+            .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
+
+        const remaining = allocated - spent;
+
+        cashByCurrency[currencyCode] = {
+            allocated,
+            spent,
+            remaining
+        };
+    });
+
+    // Calculate unit-based totals
+    const totalAllocatedUnits = digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+    const totalSpentUnits = digitalSpent + Object.values(cashByCurrency).reduce((sum, cashData) => sum + cashData.spent, 0);
+    const totalUnpaidUnits = digitalUnpaid;
+
+    return {
+        digital: {
+            allocated: digitalAllocated,
+            spent: digitalSpent,
+            unpaid: digitalUnpaid,
+            remaining: digitalRemaining
+        },
+        cashByCurrency,
+        totalAllocatedUnits,
+       totalSpentUnits,
+        totalUnpaidUnits,
+        totalTransactionCount: budgetTransactions.length
+    };
+};
+
+/**
+ * Calculates statistics for a system budget.
+ * Leverages existing granular functions (getPaidNeedsExpenses, etc.) for consistency.
+ */
+export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate) => {
+    let paidAmount = 0;
+    let unpaidAmount = 0;
+
+    if (systemBudget.systemBudgetType === 'needs') {
+        paidAmount = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        unpaidAmount = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+    } else if (systemBudget.systemBudgetType === 'wants') {
+        const directPaid = getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+        paidAmount = directPaid + customPaid;
+
+        const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+        unpaidAmount = directUnpaid + customUnpaid;
+    } else if (systemBudget.systemBudgetType === 'savings') {
+        paidAmount = getPaidSavingsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        unpaidAmount = 0;
+    }
+
+    const totalBudget = systemBudget.budgetAmount || 0;
+    const totalSpent = paidAmount + unpaidAmount;
+    const remaining = totalBudget - totalSpent;
+    const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+    return {
+        paid: {
+            totalBaseCurrencyAmount: paidAmount,
+            foreignCurrencyDetails: []
+        },
+        unpaid: {
+            totalBaseCurrencyAmount: unpaidAmount,
+            foreignCurrencyDetails: []
+        },
+        totalSpent,
+        paidAmount,
+        unpaidAmount,
+        remaining,
+        percentageUsed,
+        transactionCount: 0
+    };
+};
+
+/**
+ * Calculates allocation statistics for a custom budget's categories.
+ */
+export const getCustomBudgetAllocationStats = (customBudget, allocations, transactions) => {
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+    const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
+    const unallocated = customBudget.allocatedAmount - totalAllocated;
+    const categorySpending = {};
+    allocations.forEach(allocation => {
+        const spent = budgetTransactions.filter(t => t.type === 'expense' && t.category_id === allocation.categoryId).reduce((sum, t) => sum + t.amount, 0);
+        const remaining = allocation.allocatedAmount - spent;
+        categorySpending[allocation.categoryId] = { allocated: allocation.allocatedAmount, spent, remaining, percentageUsed: allocation.allocatedAmount > 0 ? (spent / allocation.allocatedAmount) * 100 : 0 };
+    });
+    const allocatedCategoryIds = allocations.map(a => a.categoryId);
+    const unallocatedSpent = budgetTransactions.filter(t => t.type === 'expense' && (!t.category_id || !allocatedCategoryIds.includes(t.category_id))).reduce((sum, t) => sum + t.amount, 0);
+    return { totalAllocated, unallocated, unallocatedSpent, unallocatedRemaining: unallocated - unallocatedSpent, categorySpending };
 };
