@@ -427,7 +427,7 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
         },
         cashByCurrency,
         totalAllocatedUnits,
-       totalSpentUnits,
+        totalSpentUnits,
         totalUnpaidUnits,
         totalTransactionCount: budgetTransactions.length
     };
@@ -437,7 +437,8 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
  * Calculates statistics for a system budget.
  * Leverages existing granular functions (getPaidNeedsExpenses, etc.) for consistency.
  */
-export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate) => {
+// export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate) => {
+export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0) => {
     let paidAmount = 0;
     let unpaidAmount = 0;
 
@@ -453,7 +454,23 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
         const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
         unpaidAmount = directUnpaid + customUnpaid;
     } else if (systemBudget.systemBudgetType === 'savings') {
-        paidAmount = getPaidSavingsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        // paidAmount = getPaidSavingsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+        // SAVINGS LOGIC REFACTOR:
+        // Savings is now calculated as (Income - Total Expenses)
+        // This represents "Net Cash Flow" or "Potential Savings" rather than manually tracked transactions.
+
+        const totalNeeds =
+            getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets) +
+            getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+
+        const totalWants =
+            getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets) +
+            getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets) +
+            getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate) +
+            getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+
+        // "Paid" in this context means "Actual Savings Achieved"
+        paidAmount = Math.max(0, monthlyIncome - totalNeeds - totalWants);
         unpaidAmount = 0;
     }
 
