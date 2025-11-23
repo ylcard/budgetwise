@@ -14,6 +14,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { iconMap } from "../utils/iconMapConfig";
+import { Badge } from "@/components/ui/badge";
 
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
@@ -71,7 +72,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-full justify-between min-h-[2.5rem] h-auto"
+                    className="w-full justify-between h-9 px-3 font-normal"
                 >
                     {multiple ? (
                         selectedCategories.length > 0 ? (
@@ -83,10 +84,10 @@ export default function CategorySelect({ value, onValueChange, categories, place
                         selectedCategory ? (
                             <div className="flex items-center gap-2">
                                 <div
-                                    className="w-5 h-5 rounded flex items-center justify-center"
+                                    className="w-4 h-4 rounded flex items-center justify-center"
                                     style={{ backgroundColor: `${selectedCategory.color}20` }}
                                 >
-                                    <IconComponent className="w-3 h-3" style={{ color: selectedCategory.color }} />
+                                    <IconComponent className="w-2.5 h-2.5" style={{ color: selectedCategory.color }} />
                                 </div>
                                 <span>{selectedCategory.name}</span>
                             </div>
@@ -94,15 +95,6 @@ export default function CategorySelect({ value, onValueChange, categories, place
                             <span className="text-muted-foreground">{placeholder}</span>
                         )
                     )}
-                    <div className="flex items-center">
-                        {(multiple ? (Array.isArray(value) && value.length > 0) : value) && (
-                            <X
-                                className="mr-2 h-4 w-4 shrink-0 opacity-50 hover:opacity-100 cursor-pointer"
-                                onClick={handleClear}
-                            />
-                        )}
-                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-                    </div>
                 </CustomButton>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
