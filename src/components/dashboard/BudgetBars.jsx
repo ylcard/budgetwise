@@ -51,7 +51,7 @@ export default function BudgetBars({
         //      };
         // }
 
-        if (item.stats) return item.stats; 
+        if (item.stats) return item.stats;
         if (item.preCalculatedStats) return item.preCalculatedStats;
 
         // 3. Fallback for legacy/flat objects
@@ -131,7 +131,12 @@ export default function BudgetBars({
                             {systemBudgetsData.map((budget) => (
                                 viewMode === 'card' ? (
                                     <div key={budget.id} className="h-full w-full md:w-[250px]">
-                                        <BudgetCard budget={{ ...budget, budgetAmount: budget.allocated || budget.budgetAmount }} stats={getCardStats(budget)} settings={settings} size="md" />
+                                        <BudgetCard
+                                            budget={{ ...budget, budgetAmount: budget.allocated || budget.budgetAmount }}
+                                            stats={budget.preCalculatedStats || getCardStats(budget)}
+                                            settings={settings}
+                                            size="md"
+                                        />
                                     </div>
                                 ) : (
                                     <div key={budget.id} className="h-full">
@@ -196,7 +201,12 @@ export default function BudgetBars({
                             {visibleCustomBudgets.map((budget) => (
                                 viewMode === 'card' ? (
                                     <div key={budget.id} className="h-full w-full md:w-[250px]">
-                                        <BudgetCard budget={budget} stats={getCardStats(budget)} settings={settings} size="md" />
+                                        <BudgetCard
+                                            budget={budget}
+                                            stats={budget.stats || getCardStats(budget)}
+                                            settings={settings}
+                                            size="md"
+                                        />
                                     </div>
                                 ) : (
                                     <div key={budget.id} className="h-full">
