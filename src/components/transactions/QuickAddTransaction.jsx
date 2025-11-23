@@ -77,7 +77,7 @@ export default function QuickAddTransaction({
             {renderTrigger && (
                 <DialogTrigger asChild>
                     {/* Wrap in span to guarantee event capture, mimicking simple DOM behavior */}
-                    <span className="inline-block cursor-pointer" tabIndex={-1}>
+                    <span className="inline-block cursor-pointer" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
                         {trigger || defaultTrigger}
                     </span>
                 </DialogTrigger>
