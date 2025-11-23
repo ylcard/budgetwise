@@ -297,13 +297,14 @@ export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, select
 export const useBudgetsAggregates = (
     transactions,
     categories,
-    allCustomBudgets,
+    allCustomBudgets = [],
     systemBudgets,
     selectedMonth,
     selectedYear
 ) => {
     // Filter custom budgets based on date overlap
     const customBudgets = useMemo(() => {
+        if (!allCustomBudgets) return [];
         const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
         const monthStartDate = parseDate(monthStart);
         const monthEndDate = parseDate(monthEnd);
