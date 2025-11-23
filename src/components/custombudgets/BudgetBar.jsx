@@ -1,5 +1,5 @@
 import { CustomButton } from "@/components/ui/CustomButton";
-import { CheckCircle, Trash2 } from "lucide-react";
+import { CheckCircle, Trash2, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { formatCurrency } from "../utils/currencyUtils";
@@ -18,47 +18,69 @@ export default function BudgetBar({
         targetAmount,
         expectedAmount = 0,
         maxHeight,
-        isOverBudget,
         actualSavings,
         savingsTarget
     } = budget;
 
     const isCompleted = budget.status === 'completed';
-
-    // Get the color for the vertical bar
     const barColor = budget.color || '#3B82F6';
 
-    // Calculate budget amount for display
-    let budgetAmount = 0;
-    if (isCustom && stats) {
-        budgetAmount = stats.totalBudget || 0;
+    // --- Unified Data Calculation ---
+    let allocated = 0;
+    let paidAmount = 0;
+    let unpaidAmount = 0;
+
+    if (isSystemSavings) {
+        allocated = savingsTarget || 0;
+        paidAmount = actualSavings || 0;
+        unpaidAmount = 0;
+    } else if (isCustom && stats) {
+        allocated = stats.totalBudget || 0;
+        paidAmount = stats.paidAmount || 0;
+        unpaidAmount = expectedAmount;
     } else {
-        budgetAmount = targetAmount || budget.budgetAmount || budget.allocatedAmount || 0;
+        allocated = targetAmount || budget.budgetAmount || budget.allocatedAmount || 0;
+        paidAmount = stats?.paidAmount || 0;
+        unpaidAmount = expectedAmount;
     }
 
-    // Calculate paid amount
-    const paidAmount = stats?.paidAmount || 0;
+    // Recalculate Over/Surplus logic locally
+    const used = paidAmount + unpaidAmount;
+    const isOver = used > allocated;
 
-    // Calculate heights as percentages of maxHeight
-    const paidHeightPct = maxHeight > 0 ? (paidAmount / maxHeight) * 100 : 0;
-    const expectedHeightPct = maxHeight > 0 ? (expectedAmount / maxHeight) * 100 : 0;
-    const targetLinePosition = maxHeight > 0 && budgetAmount ? (budgetAmount / maxHeight) * 100 : 100;
+    // Heights
+    // If allocated is 0, prevent division by zero. Use maxHeight from prop if available.
+    const safeMaxHeight = maxHeight > 0 ? maxHeight : (Math.max(allocated, used) || 1);
 
-    // Calculate remaining for display
-    let remaining = 0;
+    const paidHeightPct = (paidAmount / safeMaxHeight) * 100;
+    const expectedHeightPct = (unpaidAmount / safeMaxHeight) * 100;
+    const targetLinePosition = allocated > 0 ? (allocated / safeMaxHeight) * 100 : 0;
+
+    // Labels & Colors
+    let remainingDisplay = 0;
+    let statusLabel = '';
+    let statusColor = '';
+
     if (isSystemSavings) {
-        remaining = savingsTarget - actualSavings;
-    } else if (isCustom && stats) {
-        // For custom budgets, sum digital and cash remaining
-        remaining = stats?.digital?.remaining || 0;
-        if (stats?.cashByCurrency) {
-            Object.values(stats.cashByCurrency).forEach(cashData => {
-                remaining += cashData?.remaining || 0;
-            });
+        if (isOver) {
+            remainingDisplay = used - allocated;
+            statusLabel = 'Surplus';
+            statusColor = 'text-emerald-600';
+        } else {
+            remainingDisplay = allocated - used;
+            statusLabel = 'Shortfall';
+            statusColor = 'text-amber-600';
         }
     } else {
-        // For system budgets
-        remaining = targetAmount - expectedAmount - paidAmount;
+        if (isOver) {
+            remainingDisplay = used - allocated;
+            statusLabel = 'Over by';
+            statusColor = 'text-red-600';
+        } else {
+            remainingDisplay = allocated - used;
+            statusLabel = 'Remaining';
+            statusColor = 'text-emerald-600';
+        }
     }
 
     return (
@@ -66,172 +88,124 @@ export default function BudgetBar({
             to={createPageUrl(`BudgetDetail?id=${budget.id}`)}
             className="flex-shrink-0 w-40"
         >
-            <div className="flex flex-col items-center gap-3 group cursor-pointer">
-                <div className={`relative w-full bg-gray-100 rounded-xl h-64 overflow-hidden hover:shadow-lg transition-all ${isOverBudget && !isSystemSavings ? 'border-2 border-red-500' : ''
-                    }`}>
-                    {isSystemSavings ? (
-                        /* Savings bar - show actual savings vs target */
-                        <>
-                            <div
-                                className="absolute bottom-0 w-full rounded-b-xl transition-all duration-300"
-                                style={{
-                                    height: `${savingsTarget > 0 ? Math.min((actualSavings / savingsTarget) * 100, 100) : 0}%`,
-                                    backgroundColor: barColor
-                                }}
-                            />
+            <div className="flex flex-col items-center gap-2 group cursor-pointer">
+                {/* Bar Graph */}
+                <div className={`relative w-full bg-gray-100 rounded-xl h-48 overflow-hidden hover:shadow-lg transition-all ${isOver && !isSystemSavings ? 'border-2 border-red-500' : ''}`}>
+                    {/* Paid Bar */}
+                    <div
+                        className="absolute bottom-0 w-full rounded-b-xl transition-all duration-300"
+                        style={{
+                            height: `${paidHeightPct}%`,
+                            backgroundColor: barColor
+                        }}
+                    />
 
-                            {/* Target line */}
-                            <div
-                                className="absolute w-full border-t-2 border-dashed border-gray-800 z-10"
-                                style={{ bottom: '100%' }}
-                            />
-                        </>
-                    ) : (
-                        /* Regular budget bars (both system and custom) */
-                        <>
-                            {/* Paid amount - solid color */}
-                            <div
-                                className="absolute bottom-0 w-full rounded-b-xl transition-all duration-300"
-                                style={{
-                                    height: `${paidHeightPct}%`,
-                                    backgroundColor: barColor
-                                }}
-                            />
-
-                            {/* Unpaid amount (on top of paid) - semi-transparent */}
-                            {expectedAmount > 0 && (
-                                <div
-                                    className="absolute w-full transition-all duration-300"
-                                    style={{
-                                        bottom: `${paidHeightPct}%`,
-                                        height: `${expectedHeightPct}%`,
-                                        backgroundColor: `${barColor}40`
-                                    }}
-                                />
-                            )}
-
-                            {/* Target line (budget limit) - dashed line showing allocated budget */}
-                            {budgetAmount > 0 && (
-                                <div
-                                    className="absolute w-full border-t-2 border-dashed border-gray-800 z-10"
-                                    style={{ bottom: `${targetLinePosition}%` }}
-                                />
-                            )}
-                        </>
+                    {/* Unpaid Bar (Stacked) */}
+                    {unpaidAmount > 0 && (
+                        <div
+                            className="absolute w-full transition-all duration-300"
+                            style={{
+                                bottom: `${paidHeightPct}%`,
+                                height: `${expectedHeightPct}%`,
+                                backgroundColor: `${barColor}40`
+                            }}
+                        />
                     )}
 
-                    {/* Completed badge - centered */}
+                    {/* Target Line */}
+                    {allocated > 0 && (
+                        <div
+                            className="absolute w-full border-t-2 border-dashed border-gray-800 z-10 opacity-50"
+                            style={{ bottom: `${Math.min(targetLinePosition, 100)}%` }}
+                        />
+                    )}
+
+                    {/* Completed badge */}
                     {isCompleted && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-white/50">
+                            <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1 shadow-sm">
                                 <CheckCircle className="w-3 h-3" />
                                 Done
                             </div>
                         </div>
                     )}
 
-                    {/* Action buttons for custom budgets only */}
-                    {!hideActions && isCustom && !isCompleted && onDelete && onComplete && (
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            <CustomButton
-                                variant="success"
-                                size="icon-sm"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    onComplete(budget.id);
-                                }}
-                            >
-                                <CheckCircle className="w-4 h-4" />
-                            </CustomButton>
-                            <CustomButton
-                                variant="delete"
-                                size="icon-sm"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (confirm('Are you sure you want to delete this budget? All associated transactions will also be deleted.')) {
-                                        onDelete(budget.id);
-                                    }
-                                }}
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </CustomButton>
+                    {/* Action buttons */}
+                    {!hideActions && isCustom && !isCompleted && (
+                        <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                            {onComplete && (
+                                <CustomButton
+                                    variant="success"
+                                    size="icon-sm"
+                                    className="h-6 w-6"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onComplete(budget.id);
+                                    }}
+                                >
+                                    <CheckCircle className="w-3 h-3" />
+                                </CustomButton>
+                            )}
+                            {onDelete && (
+                                <CustomButton
+                                    variant="delete"
+                                    size="icon-sm"
+                                    className="h-6 w-6"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (confirm('Delete budget?')) onDelete(budget.id);
+                                    }}
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </CustomButton>
+                            )}
                         </div>
                     )}
                 </div>
 
-                {/* Conditionally hide "Paid: 0" labels */}
-                <div className="text-center w-full px-2">
-                    <p className="font-bold text-gray-900 text-sm truncate mb-1">{budget.name}</p>
-                    {isSystemSavings ? (
-                        <>
-                            <p className="text-xs text-gray-600">
-                                Target: {formatCurrency(savingsTarget, settings)}
+                {/* Data Grid */}
+                <div className="w-full px-1">
+                    <p className="font-bold text-gray-900 text-xs truncate mb-2 text-center" title={budget.name}>{budget.name}</p>
+
+                    <div className="grid grid-cols-2 gap-y-1 gap-x-1 text-[10px] leading-tight">
+                        {/* Row 1 */}
+                        <div className="text-left">
+                            <p className="text-gray-400">{isSystemSavings ? 'Target' : 'Budget'}</p>
+                            <p className="font-semibold text-gray-700 truncate" title={formatCurrency(allocated, settings)}>
+                                {formatCurrency(allocated, settings)}
                             </p>
-                            <p className="text-xs text-gray-600">
-                                Actual: {formatCurrency(actualSavings, settings)}
+                        </div>
+                        <div className="text-right">
+                            <p className="text-gray-400">{statusLabel}</p>
+                            <p className={`font-semibold truncate ${statusColor}`} title={formatCurrency(remainingDisplay, settings)}>
+                                {formatCurrency(remainingDisplay, settings)}
                             </p>
-                            {remaining > 0 ? (
-                                <p className="text-xs text-orange-600 font-bold mt-1">
-                                    Short by {formatCurrency(remaining, settings)}
-                                </p>
+                        </div>
+
+                        {/* Row 2 */}
+                        <div className="text-left">
+                            <p className="text-gray-400">{isSystemSavings ? 'Actual' : 'Paid'}</p>
+                            <p className="font-semibold text-gray-900 truncate" title={formatCurrency(paidAmount, settings)}>
+                                {formatCurrency(paidAmount, settings)}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            {!isSystemSavings ? (
+                                <>
+                                    <p className="text-gray-400">Unpaid</p>
+                                    <p className={`font-semibold truncate ${unpaidAmount > 0 ? 'text-amber-600' : 'text-gray-300'}`} title={formatCurrency(unpaidAmount, settings)}>
+                                        {formatCurrency(unpaidAmount, settings)}
+                                    </p>
+                                </>
                             ) : (
-                                <p className="text-xs text-green-600 font-bold mt-1">
-                                    Target met! 🎉
-                                </p>
-                            )}
-                        </>
-                    ) : !isCustom ? (
-                        /* System budget labels */
-                        <>
-                            <p className="text-xs text-gray-600">
-                                Budget: {formatCurrency(targetAmount, settings)}
-                            </p>
-                            {expectedAmount > 0 && (
-                                <div className="text-xs text-orange-600">
-                                    <span>Unpaid: {formatCurrency(expectedAmount, settings)}</span>
+                                <div className="h-full flex items-end justify-end">
+                                    <span className="text-[9px] text-gray-300 italic">Net Flow</span>
                                 </div>
                             )}
-                            {/* Only show "Paid" if amount is greater than 0 */}
-                            {paidAmount > 0 && (
-                                <p className="text-xs text-gray-600">
-                                    Paid: {formatCurrency(paidAmount, settings)}
-                                </p>
-                            )}
-                            <p className={`text-sm font-medium mt-1 ${remaining < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                {remaining < 0 ? `Over by ${formatCurrency(Math.abs(remaining), settings)}` : `Remaining: ${formatCurrency(remaining, settings)}`}
-                            </p>
-                        </>
-                    ) : isCompleted ? (
-                        /* Completed custom budget labels */
-                        <>
-                            <p className="text-xs text-gray-600">
-                                Spent: {formatCurrency(stats?.digital?.spent || 0, settings)}
-                            </p>
-                        </>
-                    ) : (
-                        /* Active custom budget labels */
-                        <>
-                            <p className="text-xs text-gray-600">
-                                Budget: {formatCurrency(budgetAmount, settings)}
-                            </p>
-                            {expectedAmount > 0 && (
-                                <p className="text-xs text-orange-600">
-                                    Unpaid: {formatCurrency(expectedAmount, settings)}
-                                </p>
-                            )}
-                            {/* Only show "Paid" if amount is greater than 0 */}
-                            {paidAmount > 0 && (
-                                <p className="text-xs text-gray-600">
-                                    Paid: {formatCurrency(paidAmount, settings)}
-                                </p>
-                            )}
-                            <p className={`text-sm font-medium mt-1 ${remaining < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                {remaining < 0 ? `Over by ${formatCurrency(Math.abs(remaining), settings)}` : `Remaining: ${formatCurrency(remaining, settings)}`}
-                            </p>
-                        </>
-                    )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </Link>
