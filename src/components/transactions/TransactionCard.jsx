@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
-import TransactionForm from "./TransactionForm";
+import QuickAddTransaction from "./QuickAddTransaction";
 import { useTransactions, useCategories } from "../hooks/useBase44Entities";
 import { CustomButton } from "@/components/ui/CustomButton";
 
@@ -31,13 +31,16 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
                 <CardContent className="p-6 flex flex-col h-full min-h-[180px]">
                     {/* Action buttons */}
                     <div className="flex justify-end gap-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <TransactionForm
+                        <QuickAddTransaction
+                            open={false}
+                            onOpenChange={() => { }}
                             transaction={transaction}
                             categories={categories}
+                            customBudgets={[]}
                             onSubmit={(data) => onEdit(transaction, data)}
-                            onCancel={() => { }}
                             isSubmitting={false}
                             transactions={transactions}
+                            renderTrigger={true}
                         />
                         <CustomButton
                             variant="ghost"
