@@ -6,7 +6,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
 import { useCashWallet, useAllBudgets } from "../hooks/useBase44Entities";
 import TransactionFormContent from "./TransactionFormContent";
@@ -14,12 +14,15 @@ import TransactionFormContent from "./TransactionFormContent";
 export default function QuickAddTransaction({
     open,
     onOpenChange,
+    transaction = null, // If provided, edit mode; if null, add mode
     categories,
+    customBudgets,
     defaultCustomBudgetId = '',
     onSubmit,
     isSubmitting,
     transactions = [],
     renderTrigger = true,
+    trigger = null, // Custom trigger element
     triggerVariant = "default",
     triggerSize = "default",
     triggerClassName = ""
@@ -28,33 +31,55 @@ export default function QuickAddTransaction({
     const { cashWallet } = useCashWallet(user);
     const { allBudgets } = useAllBudgets(user);
 
+    const isEditMode = !!transaction;
+
+    const handleSubmit = (data) => {
+        onSubmit(data);
+        onOpenChange(false);
+    };
+
+    const handleCancel = () => {
+        onOpenChange(false);
+    };
+
+    // Determine default trigger based on mode
+    const defaultTrigger = isEditMode ? (
+        <CustomButton variant="ghost" size="icon" className="hover:bg-blue-50 hover:text-blue-600 h-7 w-7">
+            <Pencil className="w-4 h-4" />
+        </CustomButton>
+    ) : (
+        <CustomButton
+            variant={triggerVariant}
+            size={triggerSize}
+            className={triggerClassName}
+        >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Expense
+        </CustomButton>
+    );
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             {renderTrigger && (
                 <DialogTrigger asChild>
-                    <CustomButton
-                        variant={triggerVariant}
-                        size={triggerSize}
-                        className={triggerClassName}
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Expense
-                    </CustomButton>
+                    {trigger || defaultTrigger}
                 </DialogTrigger>
             )}
             <DialogContent className="sm:max-w-[500px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                 <DialogHeader>
-                    <DialogTitle>Quick Add Expense</DialogTitle>
+                    <DialogTitle>
+                        {isEditMode ? 'Edit Transaction' : 'Quick Add Expense'}
+                    </DialogTitle>
                 </DialogHeader>
                 <TransactionFormContent
-                    initialTransaction={defaultCustomBudgetId ? {
+                    initialTransaction={isEditMode ? transaction : (defaultCustomBudgetId ? {
                         amount: null,
                         customBudgetId: defaultCustomBudgetId
-                    } : null}
+                    } : null)}
                     categories={categories}
                     allBudgets={allBudgets}
-                    onSubmit={onSubmit}
-                    onCancel={() => onOpenChange(false)}
+                    onSubmit={handleSubmit}
+                    onCancel={handleCancel}
                     isSubmitting={isSubmitting}
                     cashWallet={cashWallet}
                     transactions={transactions}
