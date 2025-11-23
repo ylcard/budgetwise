@@ -14,7 +14,6 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { iconMap } from "../utils/iconMapConfig";
-import { Badge } from "@/components/ui/badge";
 
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
@@ -75,24 +74,11 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     className="w-full justify-between min-h-[2.5rem] h-auto"
                 >
                     {multiple ? (
-                        <div className="flex flex-wrap gap-1 items-center">
-                            {selectedCategories.length > 0 ? (
-                                selectedCategories.map(cat => (
-                                    <Badge key={cat.id} variant="secondary" className="mr-1 mb-1">
-                                        {cat.name}
-                                        <X
-                                            className="ml-1 h-3 w-3 cursor-pointer hover:text-destructive"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleSelect(cat.id);
-                                            }}
-                                        />
-                                    </Badge>
-                                ))
-                            ) : (
-                                <span className="text-muted-foreground">{placeholder}</span>
-                            )}
-                        </div>
+                        selectedCategories.length > 0 ? (
+                            <span>{selectedCategories.length} selected</span>
+                        ) : (
+                            <span className="text-muted-foreground">{placeholder}</span>
+                        )
                     ) : (
                         selectedCategory ? (
                             <div className="flex items-center gap-2">
