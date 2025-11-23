@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
-import CategorySelect from "../ui/CategorySelect";
+import CurrencySelect from "../ui/CurrencySelect";
 import AnimatePresenceContainer from "../ui/AnimatePresenceContainer";
 import { useSettings } from "../utils/SettingsContext";
 import { useExchangeRates } from "../hooks/useExchangeRates";
@@ -382,33 +382,41 @@ export default function TransactionFormContent({
                 />
             </div>
 
-            {/* Amount and Currency (Combined) */}
-            <div className="space-y-2">
-                <div className="flex justify-between items-center">
+            {/* Amount and Currency (side by side with proper alignment) */}
+            <div className="flex gap-4 items-end">
+                <div className="flex-1 space-y-2">
                     <Label htmlFor="amount">Amount</Label>
-                    {isForeignCurrency && !formData.isCashExpense && (
-                        <CustomButton
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleRefreshRates}
-                            disabled={isRefreshing}
-                            className="h-6 px-2 text-blue-600 hover:text-blue-700"
-                        >
-                            <RefreshCw className={`w-3 h-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            <span className="text-xs">Refresh Rates</span>
-                        </CustomButton>
-                    )}
+                    <AmountInput
+                        id="amount"
+                        value={formData.amount}
+                        onChange={(value) => setFormData({ ...formData, amount: value })}
+                        placeholder="0.00"
+                        currencySymbol={selectedCurrencySymbol}
+                        required
+                    />
                 </div>
-                <AmountInput
-                    id="amount"
-                    value={formData.amount}
-                    onChange={(value) => setFormData({ ...formData, amount: value })}
-                    placeholder="0.00"
-                    currency={formData.originalCurrency}
-                    onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
-                    required
-                />
+
+                <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="currency">Currency</Label>
+                        {isForeignCurrency && !formData.isCashExpense && (
+                            <CustomButton
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleRefreshRates}
+                                disabled={isRefreshing}
+                                className="h-6 px-2 text-blue-600 hover:text-blue-700"
+                            >
+                                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            </CustomButton>
+                        )}
+                    </div>
+                    <CurrencySelect
+                        value={formData.originalCurrency}
+                        onValueChange={(value) => setFormData({ ...formData, originalCurrency: value })}
+                    />
+                </div>
             </div>
 
             {/* Paid with cash checkbox - right below amount/currency */}
