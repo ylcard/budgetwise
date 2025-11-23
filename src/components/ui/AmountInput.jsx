@@ -7,7 +7,6 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency, unformatCurrency } from "../utils/currencyUtils";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import {
     Command,
@@ -130,15 +129,14 @@ export default function AmountInput({
                         className="h-full rounded-r-none border-r border-gray-200 px-3 hover:bg-gray-50 text-gray-600 font-medium"
                     >
                         <span className="mr-1">{selectedCurrency?.symbol || displaySymbol}</span>
-                        <span className="mr-1">{currency}</span>
-                        <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                        <span>{currency}</span>
                     </CustomButton>
                 </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0" align="start">
+                <PopoverContent className="w-[120px] p-0" align="start">
                     <Command>
-                        <CommandInput placeholder="Search currency..." />
-                        <CommandEmpty>No currency found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto">
+                        <CommandInput placeholder="Search..." className="h-8 text-xs" />
+                        <CommandEmpty>No currency.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
                             {SUPPORTED_CURRENCIES.map((c) => (
                                 <CommandItem
                                     key={c.code}
@@ -147,13 +145,10 @@ export default function AmountInput({
                                         onCurrencyChange(c.code);
                                         setOpen(false);
                                     }}
+                                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${currency === c.code ? 'bg-blue-50 text-blue-700' : ''}`}
                                 >
-                                    <Check
-                                        className={`mr-2 h-4 w-4 ${currency === c.code ? "opacity-100" : "opacity-0"}`}
-                                    />
-                                    <span className="w-6 text-center mr-2 text-gray-500">{c.symbol}</span>
-                                    <span>{c.code}</span>
-                                    <span className="ml-auto text-xs text-gray-400">{c.name}</span>
+                                    <span className="w-4 text-center text-gray-500 font-medium text-xs">{c.symbol}</span>
+                                    <span className="font-medium text-sm">{c.code}</span>
                                 </CommandItem>
                             ))}
                         </CommandGroup>
