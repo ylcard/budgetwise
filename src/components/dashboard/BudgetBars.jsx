@@ -83,7 +83,7 @@ export default function BudgetBars({
                             <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
                                 Custom Budgets
                             </span>
-                            <span className="text-gray-400">({customBudgetsData.length})</span>
+                            {/* <span className="text-gray-400">({customBudgetsData.length})</span> */}
                         </div>
                         <div className="flex items-center gap-2">
                             {customBudgetsData.length > barsPerPage && (
