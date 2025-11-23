@@ -29,7 +29,7 @@ export const useExchangeRates = () => {
      * @param {string} date - Transaction date in YYYY-MM-DD format
      * @returns {Promise<Object>} { success: boolean, message: string, rates?: Object }
      */
-    const refreshRates = async (sourceCurrency, targetCurrency, date) => {
+    const refreshRates = async (sourceCurrency, targetCurrency, date, force = false) => {
         if (sourceCurrency === targetCurrency) {
             return { success: true, silent: true };
         }
@@ -44,15 +44,19 @@ export const useExchangeRates = () => {
             });
 
             // Check freshness using the best available data
-            const isFresh = areRatesFresh(ratesToCheck, sourceCurrency, targetCurrency, date, 14);
+            // If force is true, we skip this check and fetch anyway
+            if (!force) {
+                const isFresh = areRatesFresh(ratesToCheck, sourceCurrency, targetCurrency, date, 14);
 
-            if (isFresh) {
-                setIsRefreshing(false);
-                return {
-                    success: true,
-                    message: 'Exchange rates are already up to date!',
-                    silent: true
-                };
+                if (isFresh) {
+                    setIsRefreshing(false);
+                    return {
+                        success: true,
+                        message: 'Exchange rates are already up to date!',
+                        silent: true,
+                        alreadyFresh: true
+                    };
+                }
             }
 
             // Build the list of currencies we need rates for (excluding USD)
@@ -151,6 +155,7 @@ Only include the rates for the currencies I listed above.`;
             if (ratesToCreate.length > 0 || ratesToUpdate.length > 0) {
                 await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXCHANGE_RATES] });
 
+                setIsRefreshing(false); // Ensure loading state is cleared
                 return {
                     success: true,
                     message: `Exchange rates updated successfully! (${ratesToCreate.length} created, ${ratesToUpdate.length} updated)`,
@@ -158,6 +163,7 @@ Only include the rates for the currencies I listed above.`;
                 };
             }
 
+            setIsRefreshing(false);
             return {
                 success: true,
                 message: 'Rates fetched, but DB write skipped (Fresh rates found during processing).',
