@@ -9,7 +9,7 @@ import BudgetCard from "../budgets/BudgetCard";
 
 export default function BudgetBars({
     systemBudgets,
-    customBudgets,
+    customBudgets = [],
     allCustomBudgets = [],
     transactions,
     categories,
