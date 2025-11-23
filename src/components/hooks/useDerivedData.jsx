@@ -461,7 +461,7 @@ export const useBudgetBarsData = (
             return orderA - orderB;
         });
 
-        const custom = customBudgets;
+        const custom = customBudgets || [];
 
         const goalMap = createEntityMap(goals, 'priority', (goal) => goal.target_percentage);
 
