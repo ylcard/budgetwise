@@ -21,6 +21,8 @@ import { calculateConvertedAmount, getRateForDate } from "../utils/currencyCalcu
 import { SUPPORTED_CURRENCIES, FINANCIAL_PRIORITIES } from "../utils/constants";
 import { formatDateString, isDateInRange, formatDate } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
+import { useCategoryRules } from "../hooks/useBase44Entities";
+import { categorizeTransaction } from "../utils/transactionCategorization";
 
 export default function TransactionFormContent({
     initialTransaction = null,
@@ -32,9 +34,10 @@ export default function TransactionFormContent({
     cashWallet = null,
     transactions = []
 }) {
-    const { settings } = useSettings();
+    const { settings, user } = useSettings();
     const { toast } = useToast();
     const { exchangeRates, refreshRates, isRefreshing } = useExchangeRates();
+    const { rules } = useCategoryRules(user);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -116,6 +119,20 @@ export default function TransactionFormContent({
             }
         }
     }, [formData.category_id, categories]);
+
+    // Auto-Categorize based on Title
+    useEffect(() => {
+        if (formData.title && !formData.category_id && !initialTransaction) {
+            const result = categorizeTransaction({ title: formData.title }, rules, categories);
+            if (result.categoryId) {
+                setFormData(prev => ({
+                    ...prev,
+                    category_id: result.categoryId
+                    // Priority will be set by the useEffect above when category_id changes
+                }));
+            }
+        }
+    }, [formData.title, rules, categories, initialTransaction, formData.category_id]);
 
     // Auto-select System Budget based on Priority
     // If priority changes to 'wants', try to find a budget named 'Wants'
