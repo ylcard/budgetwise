@@ -75,7 +75,9 @@ export default function BudgetBars({
                             </span>
                         </CardTitle>
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="view-mode" className="text-sm text-gray-500 cursor-pointer">Card View</Label>
+                            <Label htmlFor="view-mode" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
+                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
+                            </Label>
                             <Switch
                                 id="view-mode"
                                 checked={viewMode === 'cards'}
