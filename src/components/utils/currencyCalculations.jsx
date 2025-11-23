@@ -63,6 +63,22 @@ export function getRateForDate(exchangeRates, currencyCode, date) {
         return 1.0;
     }
 
+    const freshRates = getRateDetailsForDate(exchangeRates, currencyCode, date);
+    return freshRates ? freshRates.rate : null;
+}
+
+/**
+ * Retrieve the full exchange rate object for a specific currency pair and date.
+ * 
+ * @param {Array} exchangeRates - Array of ExchangeRate entities
+ * @param {string} currencyCode - The currency code to look up
+ * @param {string} date - The target date in YYYY-MM-DD format
+ * @returns {Object|null} The ExchangeRate entity or null
+ */
+export function getRateDetailsForDate(exchangeRates, currencyCode, date) {
+    // Handle USD case
+    if (currencyCode === 'USD') return null;
+
     // Find all rates within the freshness window (0 to 14 days)
     const targetDateObj = startOfDay(parseISO(date));
     const windowDays = 14;
@@ -84,7 +100,7 @@ export function getRateForDate(exchangeRates, currencyCode, date) {
 
     // Return the most recent fresh rate
     freshRates.sort((a, b) => new Date(b.date) - new Date(a.date));
-    return freshRates[0].rate;
+    return freshRates[0];
 }
 
 /**
