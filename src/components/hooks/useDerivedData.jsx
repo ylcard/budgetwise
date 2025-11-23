@@ -317,6 +317,9 @@ export const useBudgetsAggregates = (
         });
     }, [allCustomBudgets, selectedMonth, selectedYear]);
 
+    // Get monthly income for savings calculation
+    const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
+
     const systemBudgetsWithStats = useMemo(() => {
         const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
@@ -342,7 +345,8 @@ export const useBudgetsAggregates = (
                 unpaidAmount = 0; // Savings typically doesn't have unpaid expenses
             }*/
             // Use centralized calculation
-            const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd);
+            // const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd);
+            const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome);
 
             /* const totalSpent = paidAmount + unpaidAmount;
             const totalBudget = sb.budgetAmount;
@@ -374,7 +378,8 @@ export const useBudgetsAggregates = (
                 preCalculatedStats: stats
             };
         });
-    }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear]);
+        // }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear]);
+    }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear, monthlyIncome]);
 
     // Group custom budgets by status
     const groupedCustomBudgets = useMemo(() => {
@@ -482,7 +487,8 @@ export const useBudgetBarsData = (
             const targetAmount = sb.budgetAmount;
 
             // Use centralized calculation
-            const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate);
+            // const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate);
+            const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome);
 
             /* let paidAmount = 0;
             let expectedAmount = 0;
