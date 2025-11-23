@@ -11,6 +11,7 @@ import { CheckCircle, Clock, AlertTriangle, AlertCircle } from "lucide-react";
 export default function BudgetCard({ budget, stats, settings, onActivateBudget, size = 'md' }) {
     const baseCurrency = settings?.baseCurrency || 'USD';
     const isSystemBudget = budget.isSystemBudget || false;
+    const isSavings = isSystemBudget && budget.systemBudgetType === 'savings';
 
     // Check if planned budget's start date has arrived
     const shouldActivate = useMemo(() => {
@@ -26,7 +27,8 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
     }, [budget.status, budget.startDate, isSystemBudget]);
 
     // Unified Data Calculation
-    const { allocated, paid, unpaid, percentage, isOverBudget, remaining, overAmount } = useMemo(() => {
+    // const { allocated, paid, unpaid, percentage, isOverBudget, remaining, overAmount } = useMemo(() => {
+    const { allocated, paid, unpaid, percentage, isOverBudget, remaining, overAmount, statusLabel, statusColor } = useMemo(() => {
         let alloc = 0;
         let pd = 0;
         let unpd = 0;
@@ -45,9 +47,28 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
         let pct = alloc > 0 ? (used / alloc) * 100 : 0;
         if (isNaN(pct)) pct = 0;
 
-        const isOver = used > alloc;
-        const rem = Math.max(0, alloc - used);
-        const over = Math.max(0, used - alloc);
+        // const isOver = used > alloc;
+        // const rem = Math.max(0, alloc - used);
+        // const over = Math.max(0, used - alloc);
+
+        let isOver = used > alloc;
+        let rem = Math.max(0, alloc - used);
+        let over = Math.max(0, used - alloc);
+
+        // SAVINGS LOGIC INVERSION:
+        // For savings, "Allocated" is the Target. "Used" is Actual Savings.
+        // "Over Budget" means we exceeded our savings target (GOOD).
+        // "Remaining" means we are short of our target (BAD).
+
+        let statColor = isOver ? 'text-red-500' : 'text-emerald-600';
+        let statLabel = isOver ? 'Over by' : 'Remaining';
+
+        if (isSavings) {
+            // If savings (actual) > target (alloc), we have a surplus (GOOD - Green)
+            // If savings (actual) < target (alloc), we have a shortfall (BAD - Orange)
+            statColor = isOver ? 'text-emerald-600' : 'text-amber-600';
+            statLabel = isOver ? 'Surplus' : 'Shortfall';
+        }
 
         return {
             allocated: alloc,
@@ -56,9 +77,12 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
             percentage: pct,
             isOverBudget: isOver,
             remaining: rem,
-            overAmount: over
+            overAmount: over,
+            statusColor: statColor,
+            statusLabel: statLabel
         };
-    }, [stats, isSystemBudget, budget]);
+        // }, [stats, isSystemBudget, budget]);
+    }, [stats, isSystemBudget, budget, isSavings]);
 
     // Visual Theme Helper
     const theme = useMemo(() => {
@@ -197,11 +221,24 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
                                     className="transition-all duration-1000 ease-out"
                                 />
 
-                                {/* Overlay Ring (if > 100%) */}
-                                {isOverBudget && (
+                                {/* Overlay Ring (if > 100%) - Green for Savings, Red for Expenses */}
+                                {isOverBudget && !isSavings && (
                                     <circle
                                         cx="50%" cy="50%" r={normalizedRadius}
                                         stroke={theme.overlay}
+                                        strokeWidth={currentStyle.stroke}
+                                        fill="none"
+                                        strokeDasharray={circumference}
+                                        strokeDashoffset={overlayOffset}
+                                        strokeLinecap="round"
+                                        className="transition-all duration-1000 ease-out opacity-90"
+                                    />
+                                )}
+                                {/* Savings Overlay (Surplus) - Use main theme color or distinct surplus color */}
+                                {isOverBudget && isSavings && (
+                                    <circle
+                                        cx="50%" cy="50%" r={normalizedRadius}
+                                        stroke="#059669" // Emerald 600 for surplus
                                         strokeWidth={currentStyle.stroke}
                                         fill="none"
                                         strokeDasharray={circumference}
@@ -217,9 +254,14 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
                                 <span className={`font-bold ${theme.text} ${currentStyle.circleText}`}>
                                     {Math.round(percentage)}%
                                 </span>
-                                {isOverBudget && (
+                                {isOverBudget && !isSavings && (
                                     <span className={`font-bold text-white bg-red-500 rounded uppercase shadow-sm ${currentStyle.overText}`}>
                                         Over
+                                    </span>
+                                )}
+                                {isOverBudget && isSavings && (
+                                    <span className={`font-bold text-white bg-emerald-500 rounded uppercase shadow-sm ${currentStyle.overText}`}>
+                                        +{(percentage - 100).toFixed(0)}%
                                     </span>
                                 )}
                             </div>
@@ -230,16 +272,17 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
                     <div className={`grid grid-cols-2 mt-auto ${currentStyle.gap}`}>
                         {/* Row 1: Budget & Remaining */}
                         <div>
-                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Budget</p>
+                            {/* <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Budget</p> */}
+                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>{isSavings ? 'Target' : 'Budget'}</p>
                             <p className={`font-semibold text-gray-700 truncate ${currentStyle.statVal}`}>
                                 {formatCurrency(allocated, settings)}
                             </p>
                         </div>
                         <div className="text-right">
                             <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>
-                                {isOverBudget ? 'Over by' : 'Remaining'}
+                                {statusLabel}
                             </p>
-                            <p className={`font-semibold truncate ${isOverBudget ? 'text-red-500' : 'text-emerald-600'} ${currentStyle.statVal}`}>
+                            <p className={`font-semibold truncate ${statusColor} ${currentStyle.statVal}`}>
                                 {/* {isOverBudget ? '+' : ''} */}
                                 {formatCurrency(isOverBudget ? overAmount : remaining, settings)}
                             </p>
@@ -250,19 +293,29 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
 
                         {/* Row 2: Paid & Unpaid */}
                         <div>
-                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Paid</p>
+                            {/* <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Paid</p> */}
+                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>{isSavings ? 'Actual' : 'Paid'}</p>
                             <p className={`font-semibold text-gray-900 truncate ${currentStyle.statVal}`}>
                                 {formatCurrency(paid, settings)}
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Unpaid</p>
-                            <div className="flex items-center justify-end gap-1">
-                                {/* {unpaid > 0 && <AlertCircle className="w-3 h-3 text-amber-500" />} */}
-                                <p className={`font-semibold truncate ${unpaid > 0 ? 'text-amber-600' : 'text-gray-300'} ${currentStyle.statVal}`}>
-                                    {formatCurrency(unpaid, settings)}
-                                </p>
-                            </div>
+                            {/* Hide Unpaid for Savings as it doesn't apply */}
+                            {!isSavings ? (
+                                <>
+                                    <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Unpaid</p>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <p className={`font-semibold truncate ${unpaid > 0 ? 'text-amber-600' : 'text-gray-300'} ${currentStyle.statVal}`}>
+                                            {formatCurrency(unpaid, settings)}
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-full flex items-end justify-end">
+                                    {/* Optional: Put something else here for savings, or leave blank */}
+                                    <span className="text-xs text-gray-300 italic">Net Flow</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </CardContent>
