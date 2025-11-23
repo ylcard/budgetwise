@@ -16,7 +16,6 @@ import {
     useMonthlyIncome,
     useDashboardSummary,
     useActiveBudgets,
-    useBudgetsAggregates,
 } from "../components/hooks/useDerivedData";
 import {
     useTransactionActions,
@@ -76,16 +75,6 @@ export default function Dashboard() {
     const { activeCustomBudgets } = useActiveBudgets(
         allCustomBudgets,
         allSystemBudgets,
-        selectedMonth,
-        selectedYear
-    );
-
-    // Use useBudgetsAggregates to get data with stats calculated (via financialCalculations)
-    const { systemBudgetsWithStats, customBudgetsData } = useBudgetsAggregates(
-        transactions,
-        categories,
-        allCustomBudgets || [],
-        systemBudgets,
         selectedMonth,
         selectedYear
     );
