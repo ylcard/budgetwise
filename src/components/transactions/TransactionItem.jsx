@@ -113,8 +113,6 @@ export default function TransactionItem({
 
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <QuickAddTransaction
-                        open={false}
-                        onOpenChange={() => { }}
                         transaction={transaction}
                         categories={categories}
                         customBudgets={customBudgets}
