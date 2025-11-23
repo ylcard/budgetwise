@@ -241,7 +241,6 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
                             </p>
                             <p className={`font-semibold truncate ${isOverBudget ? 'text-red-500' : 'text-emerald-600'} ${currentStyle.statVal}`}>
                                 {isOverBudget ? '+' : ''}
-                                {isOverBudget ? '+' : ''}
                                 {formatCurrency(isOverBudget ? overAmount : remaining, settings)}
                             </p>
                         </div>
