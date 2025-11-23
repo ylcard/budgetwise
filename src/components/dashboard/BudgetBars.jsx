@@ -73,7 +73,7 @@ export default function BudgetBars({
 
     // Responsive Grid Layout
     const containerClass = viewMode === 'card'
-        ? "flex flex-wrap justify-center gap-6"
+        ? "flex flex-wrap justify-center gap-4"
         : "grid grid-cols-1 md:grid-cols-2 gap-3";
 
 
@@ -112,7 +112,7 @@ export default function BudgetBars({
                         <div className={containerClass}>
                             {systemBudgetsData.map((budget) => (
                                 viewMode === 'card' ? (
-                                    <div key={budget.id} className="h-full w-full sm:w-[300px]">
+                                    <div key={budget.id} className="h-full w-full sm:w-auto sm:min-w-[260px] sm:max-w-[320px] flex-1">
                                         <BudgetCard budget={{ ...budget, budgetAmount: budget.allocated || budget.budgetAmount }} stats={getCardStats(budget)} settings={settings} size="md" />
                                     </div>
                                 ) : (
@@ -177,7 +177,7 @@ export default function BudgetBars({
                         <div className={containerClass}>
                             {visibleCustomBudgets.map((budget) => (
                                 viewMode === 'card' ? (
-                                    <div key={budget.id} className="h-full w-full sm:w-[300px]">
+                                    <div key={budget.id} className="h-full w-full sm:w-auto sm:min-w-[260px] sm:max-w-[320px] flex-1">
                                         <BudgetCard budget={budget} stats={getCardStats(budget)} settings={settings} size="md" />
                                     </div>
                                 ) : (
