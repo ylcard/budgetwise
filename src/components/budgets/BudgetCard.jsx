@@ -258,7 +258,7 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
                         <div className="text-right">
                             <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Unpaid</p>
                             <div className="flex items-center justify-end gap-1">
-                                {unpaid > 0 && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                                {/* {unpaid > 0 && <AlertCircle className="w-3 h-3 text-amber-500" />} */}
                                 <p className={`font-semibold truncate ${unpaid > 0 ? 'text-amber-600' : 'text-gray-300'} ${currentStyle.statVal}`}>
                                     {formatCurrency(unpaid, settings)}
                                 </p>
