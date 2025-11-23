@@ -1,3 +1,17 @@
+/**
+ * DEPRECATED: This component has been replaced by QuickAddTransaction.jsx
+ * 
+ * QuickAddTransaction now handles both add and edit modes, eliminating the need
+ * for this separate component. This consolidation ensures consistent behavior
+ * across all transaction dialogs.
+ * 
+ * Migration: Use QuickAddTransaction with the `transaction` prop to enable edit mode.
+ * 
+ * Last used: 2025-11-23
+ * Replaced by: QuickAddTransaction.jsx
+ */
+
+/*
 import { useState } from "react";
 import {
     Dialog,
@@ -67,3 +81,4 @@ export default function TransactionForm({
         </Dialog>
     );
 }
+*/
