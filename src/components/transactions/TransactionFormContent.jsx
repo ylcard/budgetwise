@@ -135,6 +135,35 @@ export default function TransactionFormContent({
         }
     }, [formData.title, rules, categories, initialTransaction, formData.category_id]);
 
+    // Smart Date for Custom Budgets
+    // If a custom budget is selected and the current date is outside its range, default to the start date.
+    useEffect(() => {
+        if (formData.budget_id) {
+            const selectedBudget = allBudgets.find(b => b.id === formData.budget_id);
+            if (selectedBudget && selectedBudget.type === 'custom' && selectedBudget.start_date && selectedBudget.end_date) {
+                const txDate = new Date(formData.date);
+                const startDate = new Date(selectedBudget.start_date);
+                const endDate = new Date(selectedBudget.end_date);
+
+                // Reset times for comparison
+                txDate.setHours(0, 0, 0, 0);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(0, 0, 0, 0);
+
+                if (txDate < startDate || txDate > endDate) {
+                    setFormData(prev => ({
+                        ...prev,
+                        date: formatDateString(startDate)
+                    }));
+                    toast({
+                        title: "Date Updated",
+                        description: `Date adjusted to match "${selectedBudget.name}" period.`,
+                    });
+                }
+            }
+        }
+    }, [formData.budget_id, allBudgets, formData.date]);
+
     // Auto-select System Budget based on Priority
     // If priority changes to 'wants', try to find a budget named 'Wants'
     useEffect(() => {
@@ -245,7 +274,7 @@ export default function TransactionFormContent({
 
     const handleRefreshRates = async () => {
         // Check if rate already exists
-        const existingRateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date);
+        const existingRateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
 
         let force = false;
         if (existingRateDetails) {
@@ -453,7 +482,7 @@ export default function TransactionFormContent({
                     {isForeignCurrency && !formData.isCashExpense && (
                         <div className="flex items-center gap-2">
                             {(() => {
-                                const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date);
+                                const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
                                 if (rateDetails) {
                                     const rateDate = startOfDay(parseISO(rateDetails.date));
                                     const txDate = startOfDay(parseISO(formData.date));
