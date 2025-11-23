@@ -345,12 +345,18 @@ export default function BudgetDetail() {
                 }
             }
 
+            // Calculate the TOTAL original budget (Digital + All Cash Allocations) before we wipe them
+            const currentDigitalAllocation = budgetToComplete.allocatedAmount || 0;
+            const currentCashAllocation = (budgetToComplete.cashAllocations || []).reduce((sum, a) => sum + (a.amount || 0), 0);
+            const totalOriginalBudget = currentDigitalAllocation + currentCashAllocation;
+
             const actualSpent = getCustomBudgetStats(budgetToComplete, transactions, monthStart, monthEnd).totalSpentUnits;
 
             await base44.entities.CustomBudget.update(id, {
                 status: 'completed',
                 allocatedAmount: actualSpent,
-                originalAllocatedAmount: budgetToComplete.originalAllocatedAmount || budgetToComplete.allocatedAmount,
+                // originalAllocatedAmount: budgetToComplete.originalAllocatedAmount || budgetToComplete.allocatedAmount,
+                originalAllocatedAmount: budgetToComplete.originalAllocatedAmount || totalOriginalBudget,
                 cashAllocations: []
             });
         },
