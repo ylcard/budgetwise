@@ -169,6 +169,13 @@ export default function TransactionFormContent({
     // Auto-select System Budget based on Priority
     // If priority changes to 'wants', try to find a budget named 'Wants'
     useEffect(() => {
+        // Prevent auto-switching when editing an existing transaction unless the user actually changes the priority.
+        if (initialTransaction && 
+            formData.customBudgetId === initialTransaction.customBudgetId && 
+            formData.financial_priority === (initialTransaction.financial_priority || '')) {
+            return;
+        }
+
         if (formData.financial_priority && allBudgets.length > 0) {
             // Find a matching system budget (case-insensitive)
             const matchingSystemBudget = allBudgets.find(b =>
