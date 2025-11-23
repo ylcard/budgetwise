@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -16,6 +16,7 @@ import {
     useMonthlyIncome,
     useDashboardSummary,
     useActiveBudgets,
+    useBudgetsAggregates
 } from "../components/hooks/useDerivedData";
 import {
     useTransactionActions,
@@ -23,9 +24,11 @@ import {
 } from "../components/hooks/useActions";
 import { useCashWalletActions } from "../components/cashwallet/useCashWalletActions";
 import { useExchangeRates } from "../components/hooks/useExchangeRates";
+import { getCustomBudgetStats } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
-import BudgetBars from "../components/dashboard/BudgetBars";
+// import BudgetBars from "../components/dashboard/BudgetBars";
+import BudgetCard from "../components/budgets/BudgetCard";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
@@ -34,6 +37,9 @@ import CashWalletCard from "../components/cashwallet/CashWalletCard";
 import CashWithdrawDialog from "../components/cashwallet/CashWithdrawDialog";
 import CashDepositDialog from "../components/cashwallet/CashDepositDialog";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+import { CustomButton } from "@/components/ui/CustomButton";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -79,6 +85,21 @@ export default function Dashboard() {
         selectedYear
     );
 
+    // Use aggregates for BudgetCards
+    const { systemBudgetsWithStats, customBudgets } = useBudgetsAggregates(
+        transactions,
+        categories,
+        allCustomBudgets,
+        systemBudgets,
+        selectedMonth,
+        selectedYear
+    );
+
+    // Filter only active/relevant custom budgets for dashboard
+    const dashboardCustomBudgets = useMemo(() => {
+        return customBudgets.filter(cb => cb.status === 'active' || cb.status === 'planned');
+    }, [customBudgets]);
+
     const transactionActions = useTransactionActions(null, null, cashWallet, {
         onSuccess: () => {
             setShowQuickAdd(false);
@@ -93,6 +114,10 @@ export default function Dashboard() {
     });
 
     const cashWalletActions = useCashWalletActions(user, cashWallet, settings, exchangeRates);
+
+    const handleActivateBudget = (budgetId) => {
+        budgetActions.handleStatusChange(budgetId, 'active');
+    };
 
     return (
         <div className="min-h-screen p-4 md:p-8">
@@ -165,8 +190,70 @@ export default function Dashboard() {
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 flex flex-col">
-                        <BudgetBars
+                    <div className="lg:col-span-2 flex flex-col space-y-6">
+                        {/* System Budgets */}
+                        {systemBudgetsWithStats.length > 0 && (
+                            <Card className="border-none shadow-lg">
+                                <CardHeader>
+                                    <CardTitle className="text-lg">System Budgets</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {systemBudgetsWithStats.map((budget) => {
+                                            const adaptedBudget = {
+                                                ...budget,
+                                                allocatedAmount: budget.budgetAmount,
+                                                status: 'active',
+                                                isSystemBudget: true
+                                            };
+                                            return (
+                                                <BudgetCard
+                                                    key={budget.id}
+                                                    budget={adaptedBudget}
+                                                    stats={budget.preCalculatedStats}
+                                                    settings={settings}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Custom Budgets */}
+                        <Card className="border-none shadow-lg">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-lg">Custom Budgets</CardTitle>
+                                <CustomButton variant="ghost" size="sm" onClick={() => setShowQuickAddBudget(true)}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    New
+                                </CustomButton>
+                            </CardHeader>
+                            <CardContent>
+                                {dashboardCustomBudgets.length > 0 ? (
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {dashboardCustomBudgets.map((budget) => {
+                                            const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
+                                            return (
+                                                <BudgetCard
+                                                    key={budget.id}
+                                                    budget={budget}
+                                                    stats={stats}
+                                                    settings={settings}
+                                                    onActivateBudget={handleActivateBudget}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-gray-500">
+                                        No active custom budgets.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* <BudgetBars
                             systemBudgets={systemBudgets}
                             customBudgets={activeCustomBudgets}
                             allCustomBudgets={allCustomBudgets}
@@ -181,7 +268,7 @@ export default function Dashboard() {
                             onDeleteBudget={budgetActions.handleDelete}
                             onCompleteBudget={(id) => budgetActions.handleStatusChange(id, 'completed')}
                             onCreateBudget={() => setShowQuickAddBudget(true)}
-                        />
+                        /> */}
                     </div>
 
                     <div className="lg:col-span-1 flex flex-col">
