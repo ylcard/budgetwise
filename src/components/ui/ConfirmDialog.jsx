@@ -12,7 +12,7 @@ export default function ConfirmDialog({
     open,
     onOpenChange,
     title,
-    message,
+    description,
     onConfirm,
     destructive = false
 }) {
@@ -26,7 +26,7 @@ export default function ConfirmDialog({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{message}</DialogDescription>
+                    <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                     <CustomButton
