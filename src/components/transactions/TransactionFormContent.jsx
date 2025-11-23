@@ -35,8 +35,15 @@ export default function TransactionFormContent({
 }) {
     const { settings, user } = useSettings();
     const { toast } = useToast();
-    const { exchangeRates, refreshRates, isRefreshing } = useExchangeRates();
+    const { exchangeRates, refreshRates, isRefreshing, refetch, isLoading } = useExchangeRates();
     const { rules } = useCategoryRules(user);
+
+    // Force fetch rates on mount if empty
+    useEffect(() => {
+        if (exchangeRates.length === 0) {
+            refetch();
+        }
+    }, [exchangeRates.length, refetch]);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -113,21 +120,17 @@ export default function TransactionFormContent({
         }
     }, [formData.category_id, categories]);
 
-    // Auto-Categorize based on Title (Debounced)
+    // Auto-Categorize based on Title
     useEffect(() => {
         if (formData.title && !formData.category_id && !initialTransaction) {
-            const timer = setTimeout(() => {
-                const result = categorizeTransaction({ title: formData.title }, rules, categories);
-                if (result.categoryId) {
-                    setFormData(prev => ({
-                        ...prev,
-                        category_id: result.categoryId
-                        // Priority will be set by the useEffect above when category_id changes
-                    }));
-                }
-            }, 500); // 500ms debounce
-
-            return () => clearTimeout(timer);
+            const result = categorizeTransaction({ title: formData.title }, rules, categories);
+            if (result.categoryId) {
+                setFormData(prev => ({
+                    ...prev,
+                    category_id: result.categoryId
+                    // Priority will be set by the useEffect above when category_id changes
+                }));
+            }
         }
     }, [formData.title, rules, categories, initialTransaction, formData.category_id]);
 
@@ -450,14 +453,7 @@ export default function TransactionFormContent({
                     {isForeignCurrency && !formData.isCashExpense && (
                         <div className="flex items-center gap-2">
                             {(() => {
-                                console.log('Debug Rate Lookup:', {
-                                    currency: formData.originalCurrency,
-                                    date: formData.date,
-                                    ratesCount: exchangeRates?.length,
-                                    sampleRate: exchangeRates?.[0]
-                                });
                                 const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date);
-                                console.log('Debug Rate Result:', rateDetails);
                                 if (rateDetails) {
                                     return (
                                         <span className="text-xs text-gray-500" title={`Rate: ${rateDetails.rate} (from ${formatDate(rateDetails.date)})`}>
@@ -465,6 +461,7 @@ export default function TransactionFormContent({
                                         </span>
                                     );
                                 }
+                                if (isLoading) return <span className="text-xs text-gray-400">Loading...</span>;
                                 return <span className="text-xs text-amber-600">No rate</span>;
                             })()}
                             <CustomButton
@@ -472,7 +469,7 @@ export default function TransactionFormContent({
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleRefreshRates}
-                                disabled={isRefreshing}
+                                disabled={isRefreshing || isLoading}
                                 className="h-6 px-2 text-blue-600 hover:text-blue-700"
                             >
                                 <RefreshCw className={`w-3 h-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
