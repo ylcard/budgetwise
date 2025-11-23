@@ -758,3 +758,104 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
         return chartData;
     }, [transactions, categories, goals, monthlyIncome]);
 };
+
+/**
+ * Hook for advanced transaction filtering including search, cash status, and multi-category.
+ * @param {Array<Object>} transactions - The source array of all transactions.
+ * @returns {{
+ * filters: Object,
+ * setFilters: Function,
+ * filteredTransactions: Array<Object>
+ * }}
+ */
+export const useAdvancedTransactionFiltering = (transactions) => {
+    const now = new Date();
+    const { monthStart: currentMonthStart, monthEnd: currentMonthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
+
+    const [filters, setFilters] = useState({
+        search: '',
+        type: 'all',
+        category: [], // Array for multi-select
+        paymentStatus: 'all',
+        cashStatus: 'all', // 'all', 'cash_only', 'exclude_cash'
+        financialPriority: 'all', // 'all', 'needs', 'wants', 'savings'
+        customBudgetId: 'all',
+        startDate: currentMonthStart,
+        endDate: currentMonthEnd
+    });
+
+    const filteredTransactions = useMemo(() => {
+        let startFilterDate = null;
+        let endFilterDate = null;
+
+        if (filters.startDate && filters.endDate) {
+            startFilterDate = new Date(filters.startDate);
+            startFilterDate.setHours(0, 0, 0, 0);
+
+            endFilterDate = new Date(filters.endDate);
+            endFilterDate.setHours(0, 0, 0, 0);
+        }
+
+        const searchTerm = filters.search.toLowerCase().trim();
+
+        return transactions.filter(t => {
+            // 1. Search (Title)
+            if (searchTerm && !t.title.toLowerCase().includes(searchTerm)) {
+                return false;
+            }
+
+            // 2. Type
+            if (filters.type !== 'all' && t.type !== filters.type) {
+                return false;
+            }
+
+            // 3. Category (Multi-select)
+            if (filters.category && filters.category.length > 0) {
+                if (!filters.category.includes(t.category_id)) {
+                    return false;
+                }
+            }
+
+            // 4. Payment Status
+            if (filters.paymentStatus !== 'all') {
+                const isPaid = t.isPaid;
+                if (filters.paymentStatus === 'paid' && !isPaid) return false;
+                if (filters.paymentStatus === 'unpaid' && isPaid) return false;
+            }
+
+            // 5. Cash Status
+            if (filters.cashStatus !== 'all') {
+                const isCash = t.isCashTransaction;
+                if (filters.cashStatus === 'cash_only' && !isCash) return false;
+                if (filters.cashStatus === 'exclude_cash' && isCash) return false;
+            }
+
+            // 6. Financial Priority
+            if (filters.financialPriority !== 'all') {
+                if (t.financial_priority !== filters.financialPriority) return false;
+            }
+
+            // 7. Custom Budget
+            if (filters.customBudgetId !== 'all') {
+                if (t.customBudgetId !== filters.customBudgetId) return false;
+            }
+
+            // 8. Date Range
+            if (startFilterDate && endFilterDate) {
+                const transactionDate = new Date(t.date);
+                transactionDate.setHours(0, 0, 0, 0);
+                if (transactionDate < startFilterDate || transactionDate > endFilterDate) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }, [transactions, filters]);
+
+    return {
+        filters,
+        setFilters,
+        filteredTransactions,
+    };
+};
