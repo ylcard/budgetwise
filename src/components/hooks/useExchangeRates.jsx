@@ -12,10 +12,9 @@ export const useExchangeRates = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Fetch all exchange rates for the current user
-    const { data: exchangeRates = [], isLoading } = useQuery({
+    const { data: exchangeRates = [], isLoading, refetch } = useQuery({
         queryKey: [QUERY_KEYS.EXCHANGE_RATES],
         queryFn: () => base44.entities.ExchangeRate.list('-date'),
-        initialData: [],
         staleTime: 1000 * 60 * 10, // OPTIMIZATION: Trust the cache for 10 minutes to prevent DB reads on window focus
     });
 
@@ -186,5 +185,6 @@ Only include the rates for the currencies I listed above.`;
         isLoading,
         refreshRates,
         isRefreshing,
+        refetch
     };
 };
