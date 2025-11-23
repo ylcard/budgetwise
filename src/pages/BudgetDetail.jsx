@@ -24,7 +24,6 @@ import {
     getPaidCustomBudgetExpenses,
     getUnpaidCustomBudgetExpenses,
     getPaidSavingsExpenses,
-    calculateCustomBudgetStats,
 } from "../components/utils/financialCalculations";
 import { useCashWallet } from "../components/hooks/useBase44Entities";
 import { useTransactionActions } from "../components/hooks/useActions";
@@ -38,6 +37,89 @@ import BudgetCard from "../components/budgets/BudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
+
+// Filters paid expenses by selected month
+const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd) => {
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+
+    // Parse month boundaries for filtering paid expenses
+    const monthStartDate = parseDate(monthStart);
+    const monthEndDate = parseDate(monthEnd);
+
+    // Separate digital and cash transactions
+    const digitalTransactions = budgetTransactions.filter(
+        t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet'
+    );
+    const cashTransactions = budgetTransactions.filter(
+        t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
+    );
+
+    // Calculate digital stats - ONLY include paid expenses that were paid within the selected month
+    const digitalAllocated = customBudget.allocatedAmount || 0;
+    const digitalSpent = digitalTransactions
+        .filter(t => {
+            if (t.type !== 'expense') return false;
+            if (!t.isPaid || !t.paidDate) return false;
+
+            // Filter by paidDate within selected month
+            const paidDate = parseDate(t.paidDate);
+            return paidDate >= monthStartDate && paidDate <= monthEndDate;
+        })
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+
+    const digitalUnpaid = digitalTransactions
+        .filter(t => t.type === 'expense' && !t.isPaid)
+        .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
+    const digitalRemaining = digitalAllocated - digitalSpent;
+
+    // Calculate cash stats by currency - ONLY include paid expenses that were paid within the selected month
+    const cashByCurrency = {};
+    const cashAllocations = customBudget.cashAllocations || [];
+
+    cashAllocations.forEach(allocation => {
+        const currencyCode = allocation.currencyCode;
+        const allocated = allocation.amount || 0;
+
+        const spent = cashTransactions
+            .filter(t => {
+                if (t.type !== 'expense') return false;
+                if (t.cashCurrency !== currencyCode) return false;
+                if (!t.isPaid || !t.paidDate) return false;
+
+                // Filter by paidDate within selected month
+                const paidDate = parseDate(t.paidDate);
+                return paidDate >= monthStartDate && paidDate <= monthEndDate;
+            })
+            .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
+
+        const remaining = allocated - spent;
+
+        cashByCurrency[currencyCode] = {
+            allocated,
+            spent,
+            remaining
+        };
+    });
+
+    // Calculate unit-based totals
+    const totalAllocatedUnits = digitalAllocated + cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+    const totalSpentUnits = digitalSpent + Object.values(cashByCurrency).reduce((sum, cashData) => sum + cashData.spent, 0);
+    const totalUnpaidUnits = digitalUnpaid;
+
+    return {
+        digital: {
+            allocated: digitalAllocated,
+            spent: digitalSpent,
+            unpaid: digitalUnpaid,
+            remaining: digitalRemaining
+        },
+        cashByCurrency,
+        totalAllocatedUnits,
+        totalSpentUnits,
+        totalUnpaidUnits,
+        totalTransactionCount: budgetTransactions.length
+    };
+};
 
 // Helper to calculate system budget stats using expenseCalculations functions
 const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate) => {
@@ -262,7 +344,7 @@ export default function BudgetDetail() {
                 }
             }
 
-            const actualSpent = calculateCustomBudgetStats(budgetToComplete, transactions, monthStart, monthEnd).totalSpentUnits;
+            const actualSpent = getCustomBudgetStats(budgetToComplete, transactions, monthStart, monthEnd).totalSpentUnits;
 
             await base44.entities.CustomBudget.update(id, {
                 status: 'completed',
@@ -387,7 +469,7 @@ export default function BudgetDetail() {
         if (budget.isSystemBudget) {
             return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate);
         } else {
-            return calculateCustomBudgetStats(budget, transactions, monthStart, monthEnd);
+            return getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
         }
     }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd]);
 
