@@ -15,7 +15,6 @@ export default function QuickAddTransaction({
     open,
     onOpenChange,
     categories,
-    customBudgets,
     defaultCustomBudgetId = '',
     onSubmit,
     isSubmitting,
@@ -50,8 +49,7 @@ export default function QuickAddTransaction({
                 <TransactionFormContent
                     initialTransaction={defaultCustomBudgetId ? {
                         amount: null,
-                        customBudgetId: defaultCustomBudgetId,
-                        date: allBudgets.find(b => b.id === defaultCustomBudgetId)?.startDate
+                        customBudgetId: defaultCustomBudgetId
                     } : null}
                     categories={categories}
                     allBudgets={allBudgets}
