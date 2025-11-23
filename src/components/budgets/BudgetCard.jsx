@@ -32,17 +32,19 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
         let unpd = 0;
 
         if (isSystemBudget) {
-            alloc = stats?.totalAllocatedUnits || budget.budgetAmount || 0;
-            pd = stats?.paid?.totalBaseCurrencyAmount || stats?.paid || 0;
-            unpd = stats?.unpaid?.totalBaseCurrencyAmount || stats?.unpaid || 0;
+            alloc = Number(stats?.totalAllocatedUnits ?? budget.budgetAmount ?? 0);
+            pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? stats?.paid ?? 0);
+            unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
         } else {
-            alloc = stats?.totalAllocatedUnits || 0;
-            pd = stats?.totalSpentUnits || 0;
-            unpd = stats?.totalUnpaidUnits || 0;
+            alloc = Number(stats?.totalAllocatedUnits ?? 0);
+            pd = Number(stats?.totalSpentUnits ?? 0);
+            unpd = Number(stats?.totalUnpaidUnits ?? 0);
         }
 
         const used = pd + unpd;
-        const pct = alloc > 0 ? (used / alloc) * 100 : 0;
+        let pct = alloc > 0 ? (used / alloc) * 100 : 0;
+        if (isNaN(pct)) pct = 0;
+
         const isOver = used > alloc;
         const rem = Math.max(0, alloc - used);
         const over = Math.max(0, used - alloc);
@@ -90,12 +92,12 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
         },
         md: {
             radius: 42, stroke: 8, p: 'p-5', title: 'text-sm', mb: 'mb-4',
-            circleText: 'text-2xl', overText: 'text-[10px] px-1.5 py-0.5 mt-0.5',
+            circleText: 'text-xl', overText: 'text-[10px] px-1.5 py-0.5 mt-0.5',
             statLabel: 'text-xs', statVal: 'text-sm', gap: 'gap-x-4 gap-y-3'
         },
         lg: {
             radius: 56, stroke: 10, p: 'p-6', title: 'text-lg', mb: 'mb-6',
-            circleText: 'text-3xl', overText: 'text-xs px-2 py-1 mt-1',
+            circleText: 'text-2xl', overText: 'text-xs px-2 py-1 mt-1',
             statLabel: 'text-sm', statVal: 'text-base', gap: 'gap-x-6 gap-y-4'
         }
     };
