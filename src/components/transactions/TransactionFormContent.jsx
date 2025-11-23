@@ -450,7 +450,14 @@ export default function TransactionFormContent({
                     {isForeignCurrency && !formData.isCashExpense && (
                         <div className="flex items-center gap-2">
                             {(() => {
+                                console.log('Debug Rate Lookup:', {
+                                    currency: formData.originalCurrency,
+                                    date: formData.date,
+                                    ratesCount: exchangeRates?.length,
+                                    sampleRate: exchangeRates?.[0]
+                                });
                                 const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date);
+                                console.log('Debug Rate Result:', rateDetails);
                                 if (rateDetails) {
                                     return (
                                         <span className="text-xs text-gray-500" title={`Rate: ${rateDetails.rate} (from ${formatDate(rateDetails.date)})`}>
