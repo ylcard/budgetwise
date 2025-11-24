@@ -13,7 +13,8 @@ const defaultSettings = {
     decimalSeparator: '.',
     decimalPlaces: 2,
     hideTrailingZeros: false,
-    dateFormat: 'MMM dd, yyyy'
+    dateFormat: 'MMM dd, yyyy',
+    budgetViewMode: 'bars'
 };
 
 export const useSettings = () => {
@@ -63,7 +64,8 @@ export const SettingsProvider = ({ children }) => {
                     decimalSeparator: userSettings.decimalSeparator || '.',
                     decimalPlaces: userSettings.decimalPlaces || 2,
                     hideTrailingZeros: userSettings.hideTrailingZeros || false,
-                    dateFormat: userSettings.dateFormat || 'MMM dd, yyyy'
+                    dateFormat: userSettings.dateFormat || 'MMM dd, yyyy',
+                    budgetViewMode: userSettings.budgetViewMode || 'bars'
                 };
 
                 // Update state and localStorage
