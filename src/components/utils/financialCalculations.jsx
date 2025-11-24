@@ -386,11 +386,11 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
             if (t.type !== 'expense') return false;
             if (!t.isPaid || !t.paidDate) return false;
 
-            // Filter by paidDate within selected month
-            if (monthStartDate && monthEndDate) {
-                const paidDate = parseDate(t.paidDate);
-                return paidDate >= monthStartDate && paidDate <= monthEndDate;
-            }
+            // TESTING TO SEE IF DEPRECATED: Filter by paidDate within selected month
+            // if (monthStartDate && monthEndDate) {
+            //     const paidDate = parseDate(t.paidDate);
+            //     return paidDate >= monthStartDate && paidDate <= monthEndDate;
+            // }
             return true;
         })
         .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
@@ -420,12 +420,12 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
 
     // 2. Iterate through ALL cash transactions to calculate actual spending
     cashTransactions.forEach(t => {
-        // Filter by date if range is provided
-        if (monthStartDate && monthEndDate) {
-            // Cash expenses might not have paidDate set, fallback to date
-            const paidDate = parseDate(t.paidDate || t.date);
-            if (paidDate < monthStartDate || paidDate > monthEndDate) return;
-        }
+        // TESTING TO SEE IF DEPRECATED: Filter by date if range is provided
+        // if (monthStartDate && monthEndDate) {
+        //     // Cash expenses might not have paidDate set, fallback to date
+        //     const paidDate = parseDate(t.paidDate || t.date);
+        //     if (paidDate < monthStartDate || paidDate > monthEndDate) return;
+        // }
 
         const currencyCode = t.cashCurrency;
         const amount = t.cashAmount || 0;
