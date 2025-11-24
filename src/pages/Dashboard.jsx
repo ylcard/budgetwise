@@ -35,79 +35,11 @@ import CashWithdrawDialog from "../components/cashwallet/CashWithdrawDialog";
 import CashDepositDialog from "../components/cashwallet/CashDepositDialog";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 
-// Temporary fix to address negative numbers in the database
-import { Wrench } from "lucide-react"; // Import icon
-import { chunkArray } from "../components/utils/generalUtils"; // Ensure this import exists
-import { CustomButton } from "@/components/ui/CustomButton";
-import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
-import { showToast } from "@/components/ui/use-toast";
-import { QUERY_KEYS } from "../components/hooks/queryKeys";
-
 export default function Dashboard() {
     const { user, settings } = useSettings();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-
-    const queryClient = useQueryClient();
-    // --- ADHOC FIX TOOL START ---
-    const [isFixing, setIsFixing] = useState(false);
-    
-    const handleFixNegativeAmounts = async () => {
-        setIsFixing(true);
-        try {
-            // Fetch all transactions to scan for bad data
-            const allTransactions = await base44.entities.Transaction.list({ limit: 5000 });
-            
-            // DEBUG: Log first record to ensure we are targeting the right field names
-            if (allTransactions.length > 0) {
-                console.log("DEBUG: Transaction Structure:", allTransactions[0]);
-            }
-
-            // Helper: Detect negativity via string to catch currency formats (e.g. "$-50")
-            const isDirty = (val) => val && val.toString().includes('-');
-            // Helper: Strip everything except digits and dots
-            const cleanVal = (val) => {
-                if (!val) return 0;
-                return parseFloat(val.toString().replace(/[^0-9.]/g, ""));
-            };
-
-            // Find records where amount OR originalAmount (any casing) has a negative sign
-            const badRecords = allTransactions.filter(t => {
-                const oa = t.originalAmount !== undefined ? t.originalAmount : t.original_amount;
-                return isDirty(t.amount) || isDirty(oa);
-            });
- 
-             if (badRecords.length === 0) {
-                showToast({ title: "Data Clean", description: "No negative signs found in any fields." });
-             } else {
-                 const chunks = chunkArray(badRecords, 20); // Process in batches
-                 for (const chunk of chunks) {
-                    await Promise.all(chunk.map(t => {
-                        // Determine which key holds the original amount
-                        const oaKey = t.originalAmount !== undefined ? 'originalAmount' : 'original_amount';
-                        const currentOA = t[oaKey];
-
-                        return base44.entities.Transaction.update(t.id, { 
-                            amount: cleanVal(t.amount),
-                            // Only update OA if it exists, using the correct key
-                            ...(currentOA !== undefined ? { [oaKey]: cleanVal(currentOA) } : {})
-                        });
-                    }));
-                 }
-                 showToast({ title: "Fix Complete", description: `Normalized ${badRecords.length} records to positive numbers.` });
-                 queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-            }
-        } catch (error) {
-            console.error("Fix failed", error);
-            showToast({ title: "Error", description: "Check console", variant: "destructive" });
-        } finally {
-            setIsFixing(false);
-        }
-    };
-    // --- ADHOC FIX TOOL END ---
-
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
