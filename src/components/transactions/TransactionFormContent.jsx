@@ -251,7 +251,9 @@ export default function TransactionFormContent({
     // If searching, show ALL matches. If not searching, show only top 5 recommended.
     const visibleOptions = useMemo(() => {
         if (budgetSearchTerm && budgetSearchTerm.length > 0) {
-            return smartSortedBudgets;
+            return smartSortedBudgets.filter(b =>
+                b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
+            );
         }
         return smartSortedBudgets.slice(0, 5);
     }, [smartSortedBudgets, budgetSearchTerm]);
