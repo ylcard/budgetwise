@@ -588,12 +588,13 @@ export default function BudgetDetail() {
     } else {
         totalBudget = stats?.totalAllocatedUnits || 0;
 
-        totalRemaining = stats?.digital?.remaining || 0;
-        if (stats?.cashByCurrency) {
-            Object.values(stats.cashByCurrency).forEach(cashData => {
-                totalRemaining += cashData?.remaining || 0;
-            });
-        }
+        // totalRemaining = stats?.digital?.remaining || 0;
+        // if (stats?.cashByCurrency) {
+        //     Object.values(stats.cashByCurrency).forEach(cashData => {
+        //         totalRemaining += cashData?.remaining || 0;
+        //     });
+        // }
+        totalRemaining = totalBudget - (stats?.totalSpentUnits || 0);
     }
 
     const hasBothDigitalAndCash = !budget.isSystemBudget &&
