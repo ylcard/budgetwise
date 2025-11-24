@@ -99,9 +99,14 @@ const filterExpenses = (transaction, categories, startDate, endDate, allCustomBu
 
     // Filter by category priority (only if not a custom budget transaction)
     if (priority !== undefined && !actualCustomBudget) {
-        if (!categories) return false;
-        const category = categories.find(c => c.id === transaction.category_id);
-        if (!category || category.priority !== priority) return false;
+        // if (!categories) return false;
+        // const category = categories.find(c => c.id === transaction.category_id);
+        // if (!category || category.priority !== priority) return false;
+        // CHECK TRANSACTION PRIORITY FIRST (Override), then fallback to Category default
+        const category = categories ? categories.find(c => c.id === transaction.category_id) : null;
+        const effectivePriority = transaction.financial_priority || category?.priority;
+        
+        if (effectivePriority !== priority) return false;
     }
 
     return isTransactionInDateRange(transaction, startDate, endDate);
