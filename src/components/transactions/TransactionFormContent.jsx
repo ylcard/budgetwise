@@ -174,8 +174,8 @@ export default function TransactionFormContent({
     // If priority changes to 'wants', try to find a budget named 'Wants'
     useEffect(() => {
         // Prevent auto-switching when editing an existing transaction unless the user actually changes the priority.
-        if (initialTransaction &&
-            formData.customBudgetId === initialTransaction.customBudgetId &&
+        if (initialTransaction && 
+            formData.customBudgetId === initialTransaction.customBudgetId && 
             formData.financial_priority === (initialTransaction.financial_priority || '')) {
             return;
         }
@@ -231,7 +231,7 @@ export default function TransactionFormContent({
             // This helps surface the budget that is happening NOW or SOON
             const startDate = parseISO(b.startDate);
             const distanceToNow = Math.abs(differenceInDays(userRealNow, startDate));
-
+            
             return { ...b, distanceToNow };
         }).sort((a, b) => {
             // Always float the currently selected budget to the top if editing
@@ -251,7 +251,7 @@ export default function TransactionFormContent({
     // If searching, show ALL matches. If not searching, show only top 5 recommended.
     const visibleOptions = useMemo(() => {
         if (budgetSearchTerm && budgetSearchTerm.length > 0) {
-            return smartSortedBudgets.filter(b =>
+            return smartSortedBudgets.filter(b => 
                 b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
             );
         }
@@ -638,7 +638,7 @@ export default function TransactionFormContent({
                     <div className="space-y-2">
                         <Label htmlFor="customBudget">Budget Allocation</Label>
                         <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen}>
-                            <PopoverTrigger asChild>
+                           <PopoverTrigger asChild>
                                 <CustomButton
                                     variant="outline"
                                     role="combobox"
@@ -653,13 +653,13 @@ export default function TransactionFormContent({
                             </PopoverTrigger>
                             <PopoverContent className="w-[300px] p-0" align="start">
                                 <Command shouldFilter={false}>
-                                    <CommandInput
-                                        placeholder="Search budgets..."
+                                    <CommandInput 
+                                        placeholder="Search budgets..." 
                                         onValueChange={setBudgetSearchTerm}
                                     />
                                     <CommandList>
                                         <CommandEmpty>No relevant budget found.</CommandEmpty>
-                                        <CommandGroup heading={budgetSearchTerm ? "Search Results" : "Suggested (Closest Date)"}>
+                                        <CommandGroup heading={budgetSearchTerm ? "Search Results" : undefined}>
                                             {visibleOptions.map((budget) => (
                                                 <CommandItem
                                                     key={budget.id}
