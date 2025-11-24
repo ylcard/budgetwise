@@ -477,7 +477,8 @@ export default function BudgetDetail() {
             // return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate);
             return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome)
         } else {
-            return getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
+            // return getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
+            return getCustomBudgetStats(budget, transactions, null, null);
         }
         // }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd]);
     }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome]);
