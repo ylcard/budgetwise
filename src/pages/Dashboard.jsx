@@ -35,11 +35,55 @@ import CashWithdrawDialog from "../components/cashwallet/CashWithdrawDialog";
 import CashDepositDialog from "../components/cashwallet/CashDepositDialog";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 
+// Temporary fix to address negative numbers in the database
+import { Wrench } from "lucide-react"; // Import icon
+import { chunkArray } from "../components/utils/generalUtils"; // Ensure this import exists
+import { CustomButton } from "@/components/ui/CustomButton";
+import { base44 } from "@/api/base44Client";
+import { useQueryClient } from "@tanstack/react-query";
+import { showToast } from "@/components/ui/use-toast";
+import { QUERY_KEYS } from "../components/hooks/queryKeys";
+
 export default function Dashboard() {
     const { user, settings } = useSettings();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
+
+    const queryClient = useQueryClient();
+    // --- ADHOC FIX TOOL START ---
+    const [isFixing, setIsFixing] = useState(false);
+    
+    const handleFixNegativeAmounts = async () => {
+        setIsFixing(true);
+        try {
+            // Fetch all transactions to scan for bad data
+            const allTransactions = await base44.entities.Transaction.list({ limit: 5000 });
+            
+            // Find records where 'amount' is negative (it should be absolute/positive)
+            const badRecords = allTransactions.filter(t => t.amount < 0);
+
+            if (badRecords.length === 0) {
+                showToast({ title: "Data Clean", description: "No negative amounts found in 'amount' field." });
+            } else {
+                const chunks = chunkArray(badRecords, 20); // Process in batches
+                for (const chunk of chunks) {
+                    await Promise.all(chunk.map(t => 
+                        base44.entities.Transaction.update(t.id, { amount: Math.abs(t.amount) })
+                    ));
+                }
+                showToast({ title: "Fix Complete", description: `Normalized ${badRecords.length} records to positive numbers.` });
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            }
+        } catch (error) {
+            console.error("Fix failed", error);
+            showToast({ title: "Error", description: "Check console", variant: "destructive" });
+        } finally {
+            setIsFixing(false);
+        }
+    };
+    // --- ADHOC FIX TOOL END ---
+
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
@@ -102,6 +146,16 @@ export default function Dashboard() {
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
                         <p className="text-gray-500 mt-1">Welcome back, {user?.full_name || 'User'}!</p>
                     </div>
+                    {/* ADHOC FIX BUTTON */}
+                    <CustomButton 
+                        variant="outline" 
+                        onClick={handleFixNegativeAmounts} 
+                        disabled={isFixing}
+                        className="border-yellow-400 bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                    >
+                        <Wrench className={`w-4 h-4 mr-2 ${isFixing ? 'animate-spin' : ''}`} />
+                        {isFixing ? 'Fixing DB...' : 'Fix Negative Amounts'}
+                    </CustomButton>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
