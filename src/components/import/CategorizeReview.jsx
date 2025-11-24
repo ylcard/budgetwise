@@ -6,11 +6,12 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Trash2 } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Kept for Priority selector
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import CategorySelect from "@/components/ui/CategorySelect";
 
 // Replaces the old ImportReview component
-export default function CategorizeReview({ data, categories, onUpdateRow, onDeleteRow }) {
+// export default function CategorizeReview({ data, categories, onUpdateRow, onDeleteRow }) {
+export default function CategorizeReview({ data, categories, customBudgets = [], onUpdateRow, onDeleteRow }) {
     const { settings } = useSettings();
 
     // SORTING LOGIC: Needs (A-Z) -> Wants (A-Z) -> Savings (A-Z) -> Others
@@ -25,6 +26,13 @@ export default function CategorizeReview({ data, categories, onUpdateRow, onDele
             return a.name.localeCompare(b.name);
         });
     }, [categories]);
+
+    // Filter active custom budgets for the dropdown
+    // Requires refactor to allow intelligent filter, not just "active" CBs. For back-filling.
+    const activeCustomBudgets = useMemo(() => {
+        return customBudgets.filter(cb => cb.status === 'active' || cb.status === 'planned');
+    }, [customBudgets]);
+
 
     return (
         <Card>
@@ -45,7 +53,8 @@ export default function CategorizeReview({ data, categories, onUpdateRow, onDele
                                 <TableHead>Date</TableHead>
                                 <TableHead>Title</TableHead>
                                 <TableHead className="w-[200px]">Category</TableHead>
-                                <TableHead className="w-[120px]">Budget</TableHead>
+                                {/* <TableHead className="w-[120px]">Budget</TableHead> */}
+                                <TableHead className="w-[160px]">Budget</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead>Type</TableHead>
                                 <TableHead className="w-[50px]"></TableHead>
@@ -77,16 +86,35 @@ export default function CategorizeReview({ data, categories, onUpdateRow, onDele
                                     <TableCell>
                                         {row.type === 'expense' ? (
                                             <Select
-                                                value={row.financial_priority || 'wants'}
-                                                onValueChange={(val) => onUpdateRow(index, { financial_priority: val })}
+                                                value={row.customBudgetId || row.financial_priority || 'wants'}
+                                                onValueChange={(val) => {
+                                                    if (['needs', 'wants', 'savings'].includes(val)) {
+                                                        // Selected a System Priority
+                                                        onUpdateRow(index, { financial_priority: val, customBudgetId: null });
+                                                    } else {
+                                                        // Selected a Custom Budget
+                                                        onUpdateRow(index, { customBudgetId: val, financial_priority: 'wants' });
+                                                    }
+                                                }}
                                             >
                                                 <SelectTrigger className="w-full h-8">
-                                                    <SelectValue />
+                                                    <SelectValue placeholder="Select Budget" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="needs">Needs</SelectItem>
-                                                    <SelectItem value="wants">Wants</SelectItem>
-                                                    <SelectItem value="savings">Savings</SelectItem>
+                                                    <SelectGroup>
+                                                        <SelectLabel>System</SelectLabel>
+                                                        <SelectItem value="needs">Needs</SelectItem>
+                                                        <SelectItem value="wants">Wants</SelectItem>
+                                                        <SelectItem value="savings">Savings</SelectItem>
+                                                    </SelectGroup>
+                                                    {activeCustomBudgets.length > 0 && (
+                                                        <SelectGroup>
+                                                            <SelectLabel>Custom Budgets</SelectLabel>
+                                                            {activeCustomBudgets.map(cb => (
+                                                                <SelectItem key={cb.id} value={cb.id}>{cb.name}</SelectItem>
+                                                            ))}
+                                                        </SelectGroup>
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         ) : (
