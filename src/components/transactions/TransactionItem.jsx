@@ -39,7 +39,7 @@ export default function TransactionItem({
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: -80 }}
+            initial={{ opacity: 0, x: 0 }}
             animate={{ opacity: 1, x: 0 }}
             className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-all border border-gray-100 group ${!isIncome && !isPaid ? 'opacity-60' : ''
                 }`}
