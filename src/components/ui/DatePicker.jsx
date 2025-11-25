@@ -164,6 +164,7 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
                     mode="single"
                     selected={dateValue}
                     onSelect={handleSelect}
+                    defaultMonth={dateValue}
                     initialFocus
                     className="w-fit rounded-md border"
                     weekStartsOn={1}
