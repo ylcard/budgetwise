@@ -7,6 +7,7 @@ import {
     CommandGroup,
     CommandInput,
     CommandItem,
+    CommandList,
 } from "@/components/ui/command";
 import {
     Popover,
@@ -99,34 +100,36 @@ export default function CategorySelect({ value, onValueChange, categories, place
             <PopoverContent className="w-full p-0" align="start">
                 <Command>
                     <CommandInput placeholder="Search category..." />
-                    <CommandEmpty>No category found.</CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-auto">
-                        {sortedCategories.map((category) => {
-                            const Icon = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
-                            const isSelected = multiple
-                                ? (Array.isArray(value) && value.includes(category.id))
-                                : value === category.id;
+                    <CommandList className="max-h-64">
+                        <CommandEmpty>No category found.</CommandEmpty>
+                        <CommandGroup>
+                            {sortedCategories.map((category) => {
+                                const Icon = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
+                                const isSelected = multiple
+                                    ? (Array.isArray(value) && value.includes(category.id))
+                                    : value === category.id;
 
-                            return (
-                                <CommandItem
-                                    key={category.id}
-                                    value={category.name}
-                                    onSelect={() => handleSelect(category.id)}
-                                >
-                                    <Check
-                                        className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
-                                    />
-                                    <div
-                                        className="w-5 h-5 rounded flex items-center justify-center mr-2"
-                                        style={{ backgroundColor: `${category.color}20` }}
+                                return (
+                                    <CommandItem
+                                        key={category.id}
+                                        value={category.name}
+                                        onSelect={() => handleSelect(category.id)}
                                     >
-                                        <Icon className="w-3 h-3" style={{ color: category.color }} />
-                                    </div>
-                                    {category.name}
-                                </CommandItem>
-                            );
-                        })}
-                    </CommandGroup>
+                                        <Check
+                                            className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
+                                        />
+                                        <div
+                                            className="w-5 h-5 rounded flex items-center justify-center mr-2"
+                                            style={{ backgroundColor: `${category.color}20` }}
+                                        >
+                                            <Icon className="w-3 h-3" style={{ color: category.color }} />
+                                        </div>
+                                        {category.name}
+                                    </CommandItem>
+                                );
+                            })}
+                        </CommandGroup>
+                    </CommandList>
                 </Command>
             </PopoverContent>
         </Popover>
