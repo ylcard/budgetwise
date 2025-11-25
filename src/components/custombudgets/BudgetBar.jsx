@@ -85,7 +85,9 @@ export default function BudgetBar({
 
     return (
         <Link
-            to={createPageUrl(`BudgetDetail?id=${budget.id}`)}
+            // to={createPageUrl(`BudgetDetail?id=${budget.id}`)}
+            to={`/BudgetDetail?id=${budget.id}`}
+            state={{ from: '/Dashboard' }}
             className="flex-shrink-0"
         >
             <div className="flex flex-col items-center gap-2 group cursor-pointer">
