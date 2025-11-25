@@ -178,18 +178,6 @@ export default function Transactions() {
                             transactions={transactions}
                             renderTrigger={false}
                         />
-                        {selectedIds.size > 0 && (
-                            <div className="animate-in fade-in slide-in-from-top-1">
-                                <CustomButton
-                                    variant="destructive"
-                                    onClick={handleDeleteSelected}
-                                    disabled={isBulkDeleting}
-                                >
-                                    {isBulkDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash className="w-4 h-4 mr-2" />}
-                                    Delete Selected ({selectedIds.size})
-                                </CustomButton>
-                            </div>
-                        )}
                     </div>
                 </div>
 
@@ -221,6 +209,8 @@ export default function Transactions() {
                     onToggleSelection={handleToggleSelection}
                     onSelectAll={handleSelectAllPage}
                     onClearSelection={handleClearSelection}
+                    onDeleteSelected={handleDeleteSelected}
+                    isBulkDeleting={isBulkDeleting}
                 />
             </div>
         </div>
