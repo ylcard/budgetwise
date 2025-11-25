@@ -131,7 +131,7 @@ export default function TransactionList({
             </CardHeader>
             <CardContent>
                 {transactions.length > 0 && (
-                    <div className="flex items-center justify-between gap-2 mb-4 px-4 pb-2 border-b border-gray-100">
+                    <div className="flex items-center justify-between gap-2 mb-4 px-4 h-11 border-b border-gray-100">
                         <div className="flex items-center gap-2">
                             <Checkbox
                                 checked={isAllSelected}
