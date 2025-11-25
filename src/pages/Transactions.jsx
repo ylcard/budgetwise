@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Trash, Loader2, Plus, ArrowDown } from "lucide-react";
+import { Trash, Loader2, Plus, ArrowDown, X } from "lucide-react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -80,6 +80,10 @@ export default function Transactions() {
             newSelected.delete(id);
         }
         setSelectedIds(newSelected);
+    };
+
+    const handleClearSelection = () => {
+        setSelectedIds(new Set());
     };
 
     const handleSelectAllPage = (ids, isSelected) => {
@@ -175,14 +179,24 @@ export default function Transactions() {
                             renderTrigger={false}
                         />
                         {selectedIds.size > 0 && (
-                            <CustomButton
-                                variant="destructive"
-                                onClick={handleDeleteSelected}
-                                disabled={isBulkDeleting}
-                            >
-                                {isBulkDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash className="w-4 h-4 mr-2" />}
-                                Delete Selected ({selectedIds.size})
-                            </CustomButton>
+                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                                <CustomButton
+                                    variant="ghost"
+                                    onClick={handleClearSelection}
+                                    className="text-gray-500 hover:text-gray-900"
+                                >
+                                    <X className="w-4 h-4 mr-2" />
+                                    Clear Selection
+                                </CustomButton>
+                                <CustomButton
+                                    variant="destructive"
+                                    onClick={handleDeleteSelected}
+                                    disabled={isBulkDeleting}
+                                >
+                                    {isBulkDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash className="w-4 h-4 mr-2" />}
+                                    Delete Selected ({selectedIds.size})
+                                </CustomButton>
+                            </div>
                         )}
                     </div>
                 </div>
