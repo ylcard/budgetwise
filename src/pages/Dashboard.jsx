@@ -115,6 +115,7 @@ export default function Dashboard() {
                                 <MonthNavigator
                                     currentMonth={selectedMonth}
                                     currentYear={selectedYear}
+                                    resetPosition="right"
                                     onMonthChange={(month, year) => {
                                         setSelectedMonth(month);
                                         setSelectedYear(year);
