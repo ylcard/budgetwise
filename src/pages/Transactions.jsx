@@ -95,10 +95,6 @@ export default function Transactions() {
         setSelectedIds(newSelected);
     };
 
-    const handleClearSelection = () => {
-        setSelectedIds(new Set());
-    };
-
     const handleDeleteSelected = async () => {
         if (selectedIds.size === 0) return;
 
@@ -183,15 +179,7 @@ export default function Transactions() {
                             renderTrigger={false}
                         />
                         {selectedIds.size > 0 && (
-                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                                <CustomButton
-                                    variant="ghost"
-                                    onClick={handleClearSelection}
-                                    className="text-gray-500 hover:text-gray-900"
-                                >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Clear Selection
-                                </CustomButton>
+                            <div className="animate-in fade-in slide-in-from-top-1">
                                 <CustomButton
                                     variant="destructive"
                                     onClick={handleDeleteSelected}
