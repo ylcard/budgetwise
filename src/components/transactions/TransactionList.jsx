@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionItem from "./TransactionItem";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -25,7 +25,8 @@ export default function TransactionList({
     totalItems = 0,
     selectedIds = new Set(),
     onToggleSelection,
-    onSelectAll
+    onSelectAll,
+    onClearSelection
 }) {
     const categoryMap = categories.reduce((acc, cat) => {
         acc[cat.id] = cat;
@@ -137,9 +138,20 @@ export default function TransactionList({
                             <label htmlFor="select-all" className="text-sm font-medium text-gray-600 cursor-pointer select-none">Select All on Page</label>
                         </div>
                         {selectedIds.size > 0 && (
-                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                {selectedIds.size} Selected Total
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    {selectedIds.size} Selected Total
+                                </span>
+                                <CustomButton
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={onClearSelection}
+                                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+                                    title="Clear Selection"
+                                >
+                                    <X className="w-3 h-3" />
+                                </CustomButton>
+                            </div>
                         )}
                     </div>
                 )}
