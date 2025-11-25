@@ -102,7 +102,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     <CommandInput placeholder="Search category..." />
                     <CommandList className="max-h-64 overflow-y-auto overflow-x-hidden">
                         <CommandEmpty>No category found.</CommandEmpty>
-                        <CommandGroup>
+                        <CommandGroup className="overflow-visible">
                             {sortedCategories.map((category) => {
                                 const Icon = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
                                 const isSelected = multiple
