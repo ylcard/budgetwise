@@ -4,9 +4,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import MonthYearPickerPopover from "./MonthYearPickerPopover";
 import { getMonthName } from "../utils/dateUtils";
 
-export default function MonthNavigator({ currentMonth, currentYear, onMonthChange, horizontal = false }) {
+export default function MonthNavigator({ currentMonth, currentYear, onMonthChange, resetPosition = "bottom" }) {
     const now = new Date();
     const isCurrentMonth = currentMonth === now.getMonth() && currentYear === now.getFullYear();
+
+    // Configuration map for dynamic positioning
+    const positionConfig = {
+        bottom: { container: "flex-col", margin: "mt-1", isHorizontal: false },
+        top: { container: "flex-col-reverse", margin: "mb-1", isHorizontal: false },
+        left: { container: "flex-row-reverse", margin: "mr-1", isHorizontal: true },
+        right: { container: "flex-row", margin: "ml-1", isHorizontal: true },
+    };
+
+    // Fallback to 'bottom' if an invalid prop is passed
+    const config = positionConfig[resetPosition] || positionConfig.bottom;
+
+    // Used for animation direction (width vs height)
+    const { isHorizontal } = config;
 
     const goToPreviousMonth = () => {
         if (currentMonth === 0) {
@@ -29,10 +43,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
     };
 
     return (
-        // Dynamic classes:
-        // - Default: flex-col (Picker Top, Reset Bottom)
-        // - Horizontal: flex-row-reverse (Reset Left, Picker Right)
-        <div className={`flex items-center gap-2 w-fit ${horizontal ? "flex-row-reverse" : "flex-col"}`}>
+        <div className={`flex items-center gap-2 w-fit ${config.container}`}>
             <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
                 <CustomButton
                     variant="ghost"
@@ -69,15 +80,15 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
                 {!isCurrentMonth && (
                     <motion.div
                         // Animate width for horizontal, height for vertical
-                        initial={{ opacity: 0, scale: 0.8, [horizontal ? "width" : "height"]: 0 }}
-                        animate={{ opacity: 1, scale: 1, [horizontal ? "width" : "height"]: "auto" }}
-                        exit={{ opacity: 0, scale: 0.8, [horizontal ? "width" : "height"]: 0 }}
+                        initial={{ opacity: 0, scale: 0.8, [isHorizontal ? "width" : "height"]: 0 }}
+                        animate={{ opacity: 1, scale: 1, [isHorizontal ? "width" : "height"]: "auto" }}
+                        exit={{ opacity: 0, scale: 0.8, [isHorizontal ? "width" : "height"]: 0 }}
                     >
                         <CustomButton
                             variant="ghost"
                             size="icon"
                             onClick={goToCurrentMonth}
-                            className={`h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 ${horizontal ? "mr-1" : "mt-1"}`}
+                            className={`h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 ${config.margin}`}
                             title="Reset to Current Month"
                         >
                             <RotateCcw className="w-3 h-3" />
