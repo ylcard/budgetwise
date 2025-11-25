@@ -14,6 +14,7 @@ import {
     SidebarHeader,
     SidebarProvider,
 } from "@/components/ui/sidebar";
+import { PeriodProvider } from "./components/hooks/usePeriod";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
@@ -86,8 +87,8 @@ const LayoutContent = ({ children }) => {
                                         key={item.title}
                                         to={item.url}
                                         className={`flex flex-1 flex-col items-center justify-center gap-1 py-1 rounded-lg transition-all duration-200 min-w-0 ${isActive
-                                                ? 'text-blue-600 bg-blue-50/50'
-                                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                            ? 'text-blue-600 bg-blue-50/50'
+                                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
@@ -108,9 +109,11 @@ const LayoutContent = ({ children }) => {
 export default function Layout({ children }) {
     return (
         <SettingsProvider>
-            <ConfirmDialogProvider>
-                <LayoutContent>{children}</LayoutContent>
-            </ConfirmDialogProvider>
+            <PeriodProvider>
+                <ConfirmDialogProvider>
+                    <LayoutContent>{children}</LayoutContent>
+                </ConfirmDialogProvider>
+            </PeriodProvider>
         </SettingsProvider>
     );
 }
