@@ -70,11 +70,6 @@ export default function CategorizeReview({ data, categories, customBudgets = [],
         setSelectedIndices(new Set());
     };
 
-    // --- Filter Active Budgets ---
-    // const activeCustomBudgets = useMemo(() => {
-    //     return customBudgets.filter(cb => cb.status === 'active' || cb.status === 'planned');
-    // }, [customBudgets]);
-    // --- Sort Custom Budgets for Dropdown ---
     // Show ALL budgets, but sort by relevance to the import dates.
     const sortedCustomBudgets = useMemo(() => {
         if (data.length === 0) return customBudgets;
@@ -178,11 +173,9 @@ export default function CategorizeReview({ data, categories, customBudgets = [],
                                         {row.type === 'expense' ? (
                                             <CategorySelect
                                                 value={row.categoryId}
-                                                // categories={sortedCategories}
                                                 categories={categories}
                                                 onValueChange={(value) => {
                                                     const cat = categories.find(c => c.id === value);
-                                                    // onUpdateRow(index, {
                                                     onUpdateRow(row.originalIndex, {
                                                         categoryId: value,
                                                         category: cat ? cat.name : 'Uncategorized',
@@ -197,14 +190,12 @@ export default function CategorizeReview({ data, categories, customBudgets = [],
                                     <TableCell>
                                         {row.type === 'expense' ? (
                                             <Select
-                                                // value={row.customBudgetId || row.financial_priority || 'wants'}
                                                 value={row.customBudgetId || "system"}
                                                 onValueChange={(val) => {
                                                     if (val === "system") {
                                                         onUpdateRow(row.originalIndex, { customBudgetId: null });
                                                     } else {
                                                         // Selected a Custom Budget
-                                                        // onUpdateRow(index, { customBudgetId: val, financial_priority: 'wants' });
                                                         // When assigning to a custom budget, default to 'wants' but allow override later
                                                         onUpdateRow(row.originalIndex, {
                                                             customBudgetId: val,
