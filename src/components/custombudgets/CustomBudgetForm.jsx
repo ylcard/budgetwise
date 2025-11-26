@@ -3,34 +3,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Trash2, Plus } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import AmountInput from "../ui/AmountInput";
 import DateRangePicker from "../ui/DateRangePicker";
-// import CurrencySelect from "../ui/CurrencySelect";
 import { PRESET_COLORS } from "../utils/constants";
 import { normalizeAmount } from "../utils/generalUtils";
-// import { getCurrencyBalance, validateCashAllocations } from "../utils/cashAllocationUtils";
-import { formatCurrency } from "../utils/currencyUtils";
-// import { getCurrencySymbol } from "../utils/currencyUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { showToast } from "@/components/ui/use-toast";
 
 export default function CustomBudgetForm({
     budget,
     onSubmit,
     onCancel,
     isSubmitting,
-    // cashWallet,
-    baseCurrency,
-    settings
+    baseCurrency
 }) {
     const { monthStart, monthEnd } = usePeriod();
 
     const [formData, setFormData] = useState({
         name: '',
         allocatedAmount: null,
-        // cashAllocations: [],
         startDate: monthStart,
         endDate: monthEnd,
         description: '',
@@ -38,11 +30,6 @@ export default function CustomBudgetForm({
     });
 
     const [validationError, setValidationError] = useState(null);
-
-    // // Get available currencies from wallet
-    // const availableCurrencies = cashWallet?.balances
-    //     ?.filter(b => b.amount > 0)
-    //     .map(b => b.currencyCode) || [];
 
     useEffect(() => {
         if (budget) {
@@ -60,47 +47,9 @@ export default function CustomBudgetForm({
                 ...prev,
                 startDate: monthStart,
                 endDate: monthEnd
-                // cashAllocations: []
             }));
         }
     }, [budget, monthStart, monthEnd]);
-
-    // const handleAddCashAllocation = () => {
-    //     // Check if there's cash available
-    //     if (availableCurrencies.length === 0) {
-    //         showToast({
-    //             title: "No cash available",
-    //             description: "There's no cash in your wallet to allocate.",
-    //             variant: "destructive"
-    //         });
-    //         return;
-    //     }
-
-    //     const defaultCurrency = availableCurrencies[0] || baseCurrency || 'USD';
-    //     setFormData(prev => ({
-    //         ...prev,
-    //         cashAllocations: [
-    //             ...prev.cashAllocations,
-    //             { currencyCode: defaultCurrency, amount: null }
-    //         ]
-    //     }));
-    // };
-
-    // const handleRemoveCashAllocation = (index) => {
-    //     setFormData(prev => ({
-    //         ...prev,
-    //         cashAllocations: prev.cashAllocations.filter((_, i) => i !== index)
-    //     }));
-    // };
-
-    // const handleCashAllocationChange = (index, field, value) => {
-    //     setFormData(prev => ({
-    //         ...prev,
-    //         cashAllocations: prev.cashAllocations.map((alloc, i) =>
-    //             i === index ? { ...alloc, [field]: value } : alloc
-    //         )
-    //     }));
-    // };
 
     const handleDateRangeChange = (start, end) => {
         setFormData(prev => ({
@@ -171,7 +120,6 @@ export default function CustomBudgetForm({
         return onSubmit({
             ...formData,
             allocatedAmount: parseFloat(normalizedAmount),
-            // cashAllocations: processedCashAllocations,
             status: budget?.status || 'active'
         });
     };
@@ -209,10 +157,8 @@ export default function CustomBudgetForm({
                 </div>
             </div>
 
-            {/* <div className="grid grid-cols-[200px_1fr] gap-3 items-end"> */}
             <div className="grid grid-cols-1 gap-3 items-end">
                 <div className="space-y-2">
-                    {/* <Label htmlFor="allocatedAmount">Card Budget</Label> */}
                     <Label htmlFor="allocatedAmount">Budget Limit</Label>
                     <AmountInput
                         id="allocatedAmount"
@@ -222,68 +168,7 @@ export default function CustomBudgetForm({
                         required
                     />
                 </div>
-
-                {/* <CustomButton
-                    type="button"
-                    variant="outline"
-                    onClick={handleAddCashAllocation}
-                    className="h-10"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Cash
-                </CustomButton> */}
             </div>
-
-            {/* {formData.cashAllocations.length > 0 && (
-                <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                    <Label className="text-sm font-semibold text-green-900">Cash Allocations</Label>
-
-                    <div className="space-y-2">
-                        {formData.cashAllocations.map((alloc, index) => {
-                            const available = getCurrencyBalance(cashWallet, alloc.currencyCode);
-                            return (
-                                <div key={index} className="grid grid-cols-[120px_1fr_auto] gap-2 items-end bg-white p-2 rounded border border-green-200">
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Currency</Label>
-                                        <CurrencySelect
-                                            value={alloc.currencyCode}
-                                            onValueChange={(value) =>
-                                                handleCashAllocationChange(index, 'currencyCode', value)
-                                            }
-                                            filterCurrencies={availableCurrencies}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs flex items-center justify-between">
-                                            <span>Amount</span>
-                                            <span className="text-gray-500 font-normal">
-                                                Available: {settings ? formatCurrency(available, { ...settings, currencySymbol: getCurrencySymbol(alloc.currencyCode) }) : `${getCurrencySymbol(alloc.currencyCode)}${available.toFixed(2)}`}
-                                            </span>
-                                        </Label>
-                                        <AmountInput
-                                            value={alloc.amount}
-                                            onChange={(value) =>
-                                                handleCashAllocationChange(index, 'amount', value)
-                                            }
-                                            placeholder="0.00"
-                                            currencySymbol={getCurrencySymbol(alloc.currencyCode)}
-                                        />
-                                    </div>
-                                    <CustomButton
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleRemoveCashAllocation(index)}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </CustomButton>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )} */}
 
             <div className="space-y-2">
                 <Label className="text-sm">Color</Label>
