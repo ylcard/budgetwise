@@ -1,12 +1,8 @@
-// import { useState, useEffect, useMemo } from "react";
 import { useState, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import AmountInput from "../ui/AmountInput";
 import CategorySelect from "../ui/CategorySelect";
-// import CurrencySelect from "../ui/CurrencySelect";
-// import { normalizeAmount } from "../utils/generalUtils";
-// import { getCurrencySymbol, formatCurrency } from "../utils/currencyUtils";
 import { formatCurrency } from "../utils/currencyUtils";
 
 export default function AllocationForm({
@@ -17,23 +13,12 @@ export default function AllocationForm({
     onCancel,
     isSubmitting,
     settings
-    // cashWallet
 }) {
     const baseCurrency = settings?.baseCurrency || 'USD';
-    // const hasCashAllocations = customBudget?.cashAllocations && customBudget.cashAllocations.length > 0;
-
-    // Extract available currencies from customBudget.cashAllocations
-    // const availableCashCurrencies = useMemo(() => {
-    //     return hasCashAllocations
-    //         ? customBudget.cashAllocations.map(alloc => alloc.currencyCode)
-    //         : [];
-    // }, [customBudget, hasCashAllocations]);
 
     const [formData, setFormData] = useState({
         categoryId: '',
         allocatedAmount: null
-        // allocationType: 'digital',
-        // currency: availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency
     });
 
     useEffect(() => {
@@ -41,49 +26,23 @@ export default function AllocationForm({
             setFormData({
                 categoryId: allocation.categoryId || '',
                 allocatedAmount: allocation.allocatedAmount || null
-                // allocationType: allocation.allocationType || 'digital',
-                // currency: allocation.currency || (availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency)
             });
         } else {
             setFormData({
                 categoryId: '',
                 allocatedAmount: null
-                // allocationType: 'digital',
-                // currency: availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency
             });
         }
-        // }, [allocation, baseCurrency, availableCashCurrencies]);
     }, [allocation]);
 
-    // Calculate available funds
-    // const availableDigital = customBudget?.allocatedAmount || 0;
-
-    // const availableCashByCurrency = {};
-    // if (hasCashAllocations) {
-    //     customBudget.cashAllocations.forEach(alloc => {
-    //         availableCashByCurrency[alloc.currencyCode] = alloc.amount;
-    //     });
-    // }
-
-    // Get wallet cash (for display only - not for validation since allocations come from budget)
-    // const walletCashByCurrency = {};
-    // if (cashWallet?.balances) {
-    //     cashWallet.balances.forEach(balance => {
-    //         walletCashByCurrency[balance.currencyCode] = balance.amount;
-    //     });
-    // }
     const totalBudgetLimit = customBudget?.allocatedAmount || 0;
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // const normalizedAmount = normalizeAmount(formData.allocatedAmount);
-
         onSubmit({
             ...formData,
             allocatedAmount: formData.allocatedAmount,
-            // currency: formData.allocationType === 'digital' ? baseCurrency : formData.currency
-            // Legacy compatibility fields (can be removed if backend doesn't require them)
             allocationType: 'digital',
             currency: baseCurrency
         });
@@ -118,7 +77,6 @@ export default function AllocationForm({
                         value={formData.allocatedAmount}
                         onChange={(value) => setFormData({ ...formData, allocatedAmount: value })}
                         placeholder="0.00"
-                        // currencySymbol={formData.allocationType === 'digital' ? settings?.currencySymbol : getCurrencySymbol(formData.currency)}
                         required
                     />
                 </div>
