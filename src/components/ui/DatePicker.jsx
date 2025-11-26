@@ -29,27 +29,17 @@ function CalendarCaptionLabel({ displayMonth }) {
     const [monthOpen, setMonthOpen] = useState(false);
     const [yearOpen, setYearOpen] = useState(false);
 
-    // Generate a range of years (e.g., 2000 - 2050)
-    // const startYear = 2000;
-    // const endYear = 2050;
-    // const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
     // Generate ranges
     const months = Array.from({ length: 12 }, (_, i) => getMonthName(i));
     const currentYear = new Date().getFullYear();
     // Range: Current Year - 50 to + 50
     const years = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i);
 
-    // const handleMonthChange = (value) => {
-    //     const newMonth = parseInt(value);
-    //     goToMonth(setMonth(startOfMonth(displayMonth), newMonth));
     const handleMonthSelect = (index) => {
         goToMonth(setMonth(displayMonth, index));
         setMonthOpen(false);
     };
 
-    // const handleYearChange = (value) => {
-    //     const newYear = parseInt(value);
-    //     goToMonth(setYear(startOfMonth(displayMonth), newYear));
     const handleYearSelect = (year) => {
         goToMonth(setYear(displayMonth, year));
         setYearOpen(false);
