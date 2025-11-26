@@ -136,12 +136,33 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
 
 
     // Main progress (capped at 100% for the base ring)
-    const mainProgress = Math.min(percentage, 100);
-    const mainOffset = circumference - (mainProgress / 100) * circumference;
+    // const mainProgress = Math.min(percentage, 100);
+    // const mainOffset = circumference - (mainProgress / 100) * circumference;
+    // REVERSE LOGIC for Needs/Wants
+    let displayPercentage = 0;
+    let mainOffset = 0;
+    
+    if (isSystemSavings) {
+        // Savings: Grow from 0 -> 100%
+        displayPercentage = Math.min(percentage, 100);
+        mainOffset = circumference - (displayPercentage / 100) * circumference;
+    } else {
+        // Needs/Wants: Shrink from 100% -> 0%
+        // If percentage (used) is 20%, we want to show 80% full.
+        // If percentage is 110%, we show 0% full (empty).
+        const remainingPct = Math.max(0, 100 - percentage);
+        displayPercentage = remainingPct;
+        mainOffset = circumference - (remainingPct / 100) * circumference;
+    }
 
     // Overlay progress (amount over 100%, capped purely for visual sanity if needed)
-    const overlayProgress = Math.max(0, percentage - 100);
+    // const overlayProgress = Math.max(0, percentage - 100);
+    // For Needs/Wants, if overbudget, we might want a red ring? 
+    // For now, let's stick to the empty bucket + red text.
+
     // We map the overlay to the circle. If it's 150% total, overlay is 50%.
+    // const overlayOffset = circumference - (Math.min(overlayProgress, 100) / 100) * circumference;
+    const overlayProgress = Math.max(0, percentage - 100);
     const overlayOffset = circumference - (Math.min(overlayProgress, 100) / 100) * circumference;
 
     return (
@@ -228,14 +249,17 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
                                 />
 
                                 {/* Overlay Ring (if > 100%) - Green for Savings, Red for Expenses */}
+                                {/* For Needs/Wants, if overbudget, maybe show a thin red warning ring? */}
                                 {isOverBudget && !isSavings && (
                                     <circle
                                         cx="50%" cy="50%" r={normalizedRadius}
                                         stroke={theme.overlay}
-                                        strokeWidth={currentStyle.stroke}
+                                        // strokeWidth={currentStyle.stroke}
+                                        strokeWidth={2} // Thin warning line
                                         fill="none"
                                         strokeDasharray={circumference}
-                                        strokeDashoffset={overlayOffset}
+                                        // strokeDashoffset={overlayOffset}
+                                        strokeDashoffset={0} // Full circle red border
                                         strokeLinecap="round"
                                         className="transition-all duration-1000 ease-out opacity-90"
                                     />
