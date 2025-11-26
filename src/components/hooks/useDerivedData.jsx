@@ -13,6 +13,7 @@ import {
     getMonthlyPaidExpenses,
     getSystemBudgetStats,
     getCustomBudgetStats,
+    calculateBonusSavingsPotential
 } from "../utils/financialCalculations";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
@@ -197,10 +198,18 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
         return getTotalMonthExpenses(transactions, monthStartStr, monthEndStr);
     }, [transactions, allCustomBudgets, categories, monthStartStr, monthEndStr, getTotalMonthExpenses]);
 
+    // NEW: Calculate the behavioral "Bonus Savings" (Unspent Needs + Unspent Wants)
+    // This is distinct from actual bank account remaining; it's the amount "saved by budgeting".
+    const bonusSavingsPotential = useMemo(() => {
+        if (!monthStartStr || !monthEndStr || !systemBudgets) return 0;
+        return calculateBonusSavingsPotential(systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr);
+    }, [systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr]);
+
     return {
         remainingBudget,
         currentMonthIncome,
         currentMonthExpenses,
+        bonusSavingsPotential
     };
 };
 
