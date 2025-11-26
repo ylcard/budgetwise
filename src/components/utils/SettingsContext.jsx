@@ -15,7 +15,9 @@ const defaultSettings = {
     hideTrailingZeros: false,
     dateFormat: 'MMM dd, yyyy',
     budgetViewMode: 'bars',
-    fixedLifestyleMode: false
+    fixedLifestyleMode: false,
+    goalAllocationMode: 'percentage', // 'percentage' or 'absolute'
+    absoluteGoals: { needs: 0, wants: 0, savings: 0 } // Store absolute amounts
 };
 
 export const useSettings = () => {
@@ -67,7 +69,9 @@ export const SettingsProvider = ({ children }) => {
                     hideTrailingZeros: userSettings.hideTrailingZeros || false,
                     dateFormat: userSettings.dateFormat || 'MMM dd, yyyy',
                     budgetViewMode: userSettings.budgetViewMode || 'bars',
-                    fixedLifestyleMode: userSettings.fixedLifestyleMode || false
+                    fixedLifestyleMode: userSettings.fixedLifestyleMode || false,
+                    goalAllocationMode: userSettings.goalAllocationMode || 'percentage',
+                    absoluteGoals: userSettings.absoluteGoals || { needs: 0, wants: 0, savings: 0 }
                 };
 
                 // Update state and localStorage
