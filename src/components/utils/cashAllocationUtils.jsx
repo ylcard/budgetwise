@@ -1,4 +1,6 @@
-import { base44 } from "@/api/base44Client";
+// File deprecated, moving on to consumption model, no need for cash
+
+// import { base44 } from "@/api/base44Client";
 
 /**
  * Get balance for a specific currency from the cash wallet.
@@ -6,11 +8,12 @@ import { base44 } from "@/api/base44Client";
  * @param {string} currencyCode - The ISO currency code (e.g., 'USD').
  * @returns {number} The available amount for that currency, or 0 if not found.
  */
-export const getCurrencyBalance = (cashWallet, currencyCode) => {
+/* export const getCurrencyBalance = (cashWallet, currencyCode) => {
     if (!cashWallet || !cashWallet.balances) return 0;
     const balance = cashWallet.balances.find(b => b.currencyCode === currencyCode);
     return balance ? balance.amount : 0;
 };
+*/
 
 /**
  * Helper function to filter transactions for cash expenses related to a specific budget.
@@ -19,13 +22,14 @@ export const getCurrencyBalance = (cashWallet, currencyCode) => {
  * @param {Array<object>} transactions - All relevant transaction objects.
  * @returns {Array<object>} Filtered list of cash expense transactions.
  */
-const getBudgetCashExpenses = (budgetId, transactions) => {
+/* const getBudgetCashExpenses = (budgetId, transactions) => {
     return transactions.filter(
         t => t.customBudgetId === budgetId &&
             t.isCashTransaction &&
             t.cashTransactionType === 'expense_from_wallet'
     );
 }
+*/
 
 /**
  * Helper function to calculate total cash spent for a budget, grouped by currency.
@@ -34,7 +38,7 @@ const getBudgetCashExpenses = (budgetId, transactions) => {
  * @param {Array<object>} transactions - All relevant transaction objects.
  * @returns {object} Map of currencyCode to total spent amount.
  */
-const calculateSpentByCurrency = (budgetId, transactions) => {
+/* const calculateSpentByCurrency = (budgetId, transactions) => {
     const cashExpenses = getBudgetCashExpenses(budgetId, transactions);
     const spentByCurrency = {};
 
@@ -47,6 +51,7 @@ const calculateSpentByCurrency = (budgetId, transactions) => {
 
     return spentByCurrency;
 }
+*/
 
 /**
  * Update balance for a specific currency in a balances array.
@@ -56,7 +61,7 @@ const calculateSpentByCurrency = (budgetId, transactions) => {
  * @param {number} amountChange - The amount to add (positive) or deduct (negative).
  * @returns {Array<object>} The updated array of balances, filtered for non-zero amounts.
  */
-export const updateCurrencyBalance = (balances, currencyCode, amountChange) => {
+/* export const updateCurrencyBalance = (balances, currencyCode, amountChange) => {
     const existingBalanceIndex = balances.findIndex(b => b.currencyCode === currencyCode);
 
     if (existingBalanceIndex !== -1) {
@@ -76,16 +81,18 @@ export const updateCurrencyBalance = (balances, currencyCode, amountChange) => {
     }
     return balances;
 };
+*/
 
 /**
  * Get total cash allocated across all currencies for a budget.
  * @param {Array<object>} cashAllocations - List of allocation objects ({ currencyCode, amount }).
  * @returns {number} The total sum of all allocated amounts (summed without currency conversion).
  */
-export const getTotalCashAllocated = (cashAllocations) => {
+/* export const getTotalCashAllocated = (cashAllocations) => {
     if (!cashAllocations || cashAllocations.length === 0) return 0;
     return cashAllocations.reduce((sum, alloc) => sum + alloc.amount, 0);
 };
+*/
 
 /**
  * Validate that the cash wallet has sufficient balance for requested allocations.
@@ -94,7 +101,7 @@ export const getTotalCashAllocated = (cashAllocations) => {
  * @param {string} baseCurrency - The base currency code (not strictly used here, but kept for context).
  * @returns {{ valid: boolean, errors: Array<object> }} Validation result object.
  */
-export const validateCashAllocations = (cashWallet, requestedAllocations, baseCurrency) => {
+/* export const validateCashAllocations = (cashWallet, requestedAllocations, baseCurrency) => {
     if (!requestedAllocations || requestedAllocations.length === 0) {
         return { valid: true, errors: [] };
     }
@@ -117,6 +124,7 @@ export const validateCashAllocations = (cashWallet, requestedAllocations, baseCu
         errors
     };
 };
+*/
 
 /**
  * Allocate cash from wallet (deduct from wallet balance and update database).
@@ -125,7 +133,7 @@ export const validateCashAllocations = (cashWallet, requestedAllocations, baseCu
  * @returns {Promise<void>}
  * @throws {Error} If the cash wallet is not found.
  */
-export const allocateCashFromWallet = async (userEmail, allocations) => {
+/* export const allocateCashFromWallet = async (userEmail, allocations) => {
     if (!allocations || allocations.length === 0) return;
 
     // Fetch the user's wallet using filter by user_email
@@ -151,6 +159,7 @@ export const allocateCashFromWallet = async (userEmail, allocations) => {
         balances: updatedBalances
     });
 };
+*/
 
 /**
  * Return cash to wallet (add back to wallet balance and update database).
@@ -159,7 +168,7 @@ export const allocateCashFromWallet = async (userEmail, allocations) => {
  * @returns {Promise<void>}
  * @throws {Error} If the cash wallet is not found.
  */
-export const returnCashToWallet = async (userEmail, allocations) => {
+/* export const returnCashToWallet = async (userEmail, allocations) => {
     if (!allocations || allocations.length === 0) return;
 
     // Fetch the user's wallet using filter by user_email
@@ -185,6 +194,7 @@ export const returnCashToWallet = async (userEmail, allocations) => {
         balances: updatedBalances
     });
 };
+*/
 
 /**
  * Calculate remaining cash allocations for a budget after expenses.
@@ -192,7 +202,7 @@ export const returnCashToWallet = async (userEmail, allocations) => {
  * @param {Array<object>} transactions - All relevant transaction objects.
  * @returns {Array<object>} List of remaining cash allocations ({ currencyCode, amount }).
  */
-export const calculateRemainingCashAllocations = (budget, transactions) => {
+/* export const calculateRemainingCashAllocations = (budget, transactions) => {
     if (!budget.cashAllocations || budget.cashAllocations.length === 0) {
         return [];
     }
@@ -219,6 +229,7 @@ export const calculateRemainingCashAllocations = (budget, transactions) => {
 
     return remaining;
 };
+*/
 
 /**
  * Get remaining allocated cash for a specific budget and currency.
@@ -228,7 +239,7 @@ export const calculateRemainingCashAllocations = (budget, transactions) => {
  * @param {string} currencyCode - The specific currency code to check.
  * @returns {number} The remaining allocated cash amount for that currency.
  */
-export const getRemainingAllocatedCash = (budget, transactions, currencyCode) => {
+/* export const getRemainingAllocatedCash = (budget, transactions, currencyCode) => {
     if (!budget || !budget.cashAllocations || budget.cashAllocations.length === 0) {
         return 0;
     }
@@ -250,6 +261,7 @@ export const getRemainingAllocatedCash = (budget, transactions, currencyCode) =>
     return remaining > 0.0001 ? remaining : 0;
 
 };
+*/
 
 /**
  * Calculate changes in cash allocations (for budget updates).
@@ -257,7 +269,7 @@ export const getRemainingAllocatedCash = (budget, transactions, currencyCode) =>
  * @param {Array<object>} newAllocations - The new list of allocations.
  * @returns {Array<object>} List of changes ({ currencyCode, amount, isIncrease }).
  */
-export const calculateAllocationChanges = (oldAllocations, newAllocations) => {
+/* export const calculateAllocationChanges = (oldAllocations, newAllocations) => {
     const changes = [];
 
     // Create maps for easier comparison
@@ -298,3 +310,4 @@ export const calculateAllocationChanges = (oldAllocations, newAllocations) => {
 
     return changes;
 };
+*/
