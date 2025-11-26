@@ -56,7 +56,8 @@ export default function Dashboard() {
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
     // Dashboard summary with categories parameter for granular expense calculations
-    const { remainingBudget, currentMonthIncome, currentMonthExpenses } = useDashboardSummary(
+    // const { remainingBudget, currentMonthIncome, currentMonthExpenses } = useDashboardSummary(
+    const { remainingBudget, currentMonthIncome, currentMonthExpenses, bonusSavingsPotential } = useDashboardSummary(
         transactions,
         selectedMonth,
         selectedYear,
@@ -100,6 +101,7 @@ export default function Dashboard() {
                     <div className="md:col-span-3">
                         <RemainingBudgetCard
                             remainingBudget={remainingBudget}
+                            bonusSavingsPotential={bonusSavingsPotential}
                             currentMonthIncome={currentMonthIncome}
                             currentMonthExpenses={currentMonthExpenses}
                             settings={settings}
