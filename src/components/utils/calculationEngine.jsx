@@ -17,7 +17,10 @@ import { parseDate } from "./dateUtils";
  * @returns {boolean} True if this is a cash wallet expense
  */
 export const isCashExpense = (transaction) => {
-    return transaction.isCashTransaction && transaction.cashTransactionType === 'expense_from_wallet';
+    // return transaction.isCashTransaction && transaction.cashTransactionType === 'expense_from_wallet';
+    // REFACTOR: In the Consumption Model, we treat cash expenses as normal expenses.
+    // We return false to ensure they are NOT excluded from calculations.
+    return false;
 };
 
 /**
@@ -84,8 +87,10 @@ export const calculateCommitmentView = (bucketId, expenses) => {
  * @param {object} options - Filtering options
  * @returns {number} Total settled amount in this period
  */
+// export const calculateSettlementView = (transactions, startDate, endDate, options = {}) => {
+// const { type = 'expense', excludeCash = true } = options;
 export const calculateSettlementView = (transactions, startDate, endDate, options = {}) => {
-    const { type = 'expense', excludeCash = true } = options;
+    const { type = 'expense' } = options;
     const start = parseDate(startDate);
     const end = parseDate(endDate);
 
@@ -95,7 +100,7 @@ export const calculateSettlementView = (transactions, startDate, endDate, option
             if (t.type !== type) return false;
 
             // Exclude cash expenses if requested
-            if (excludeCash && isCashExpense(t)) return false;
+            // if (excludeCash && isCashExpense(t)) return false;
 
             // Determine effective date
             const effectiveDate = (t.isPaid && t.paidDate)
