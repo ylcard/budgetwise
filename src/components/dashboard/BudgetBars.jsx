@@ -85,7 +85,7 @@ export default function BudgetBars({
                                         key={budget.id}
                                         budget={budget}
                                         isCustom={false}
-                                        isSystemSavings={budget.systemBudgetType === 'savings'}
+                                        isSavings={budget.systemBudgetType === 'savings'}
                                         settings={settings}
                                         hideActions={true}
                                     />
