@@ -50,10 +50,38 @@ export default function BudgetBar({
     // Heights
     // If allocated is 0, prevent division by zero. Use maxHeight from prop if available.
     const safeMaxHeight = maxHeight > 0 ? maxHeight : (Math.max(allocated, used) || 1);
+    const safeAllocated = allocated > 0 ? allocated : 1;
 
-    const paidHeightPct = (paidAmount / safeMaxHeight) * 100;
+    // const paidHeightPct = (paidAmount / safeMaxHeight) * 100;
+    // const expectedHeightPct = (unpaidAmount / safeMaxHeight) * 100;
+    // const targetLinePosition = allocated > 0 ? (allocated / safeMaxHeight) * 100 : 0;
+
+    // VISUAL LOGIC FLIP:
+    // Savings: Bar grows from 0 -> Target (Standard Progress)
+    // Needs/Wants: Bar starts Full -> Shrinks to 0 (Depleting Bucket)
+    let primaryBarHeightPct = 0;
+    
+    if (isSystemSavings) {
+        primaryBarHeightPct = (paidAmount / safeMaxHeight) * 100;
+    } else {
+        // For Needs/Wants, the bar represents REMAINING capacity.
+        // If overbudget, remaining is 0.
+        const remaining = Math.max(0, allocated - used);
+        primaryBarHeightPct = (remaining / safeAllocated) * 100;
+    }
+
+    // Unpaid/Expected is tricky in reverse mode. 
+    // In "Fill" mode: it stacks on top of paid.
+    // In "Drain" mode: it "eats into" the remaining bar from the top? 
+    // Let's keep it simple: In Drain mode, we just show the liquid level dropping. 
+    // We can show "Unpaid" as a "Ghost" section at the top of the liquid if we want, 
+    // but for now let's stick to the "Available Liquid" metaphor.
     const expectedHeightPct = (unpaidAmount / safeMaxHeight) * 100;
-    const targetLinePosition = allocated > 0 ? (allocated / safeMaxHeight) * 100 : 0;
+    
+    // Target line is only needed for Savings (to show where 100% is if we go over)
+    // For Needs/Wants, the "Top" of the container is naturally the limit.
+    const showTargetLine = isSystemSavings && allocated > 0;
+    const targetLinePosition = (allocated / safeMaxHeight) * 100;
 
     // Labels & Colors
     let remainingDisplay = 0;
@@ -90,24 +118,34 @@ export default function BudgetBar({
         >
             <div className="flex flex-col items-center gap-2 group cursor-pointer">
                 {/* Bar Graph */}
-                <div className={`relative w-16 bg-gray-100 rounded-xl h-48 overflow-hidden hover:shadow-lg transition-all ${isOver && !isSystemSavings ? 'border-2 border-red-500' : ''}`}>
+                {/* Background: For Savings, it's empty (gray). For Needs/Wants, it's "Empty Space" (which implies used budget) */}
+                <div className={`relative w-16 bg-gray-100 rounded-xl h-48 overflow-hidden hover:shadow-lg transition-all ${isOver && !isSystemSavings ? 'border-2 border-red-100 bg-red-50' : ''}`}>
                     {/* Paid Bar */}
                     <div
                         className="absolute bottom-0 w-full rounded-b-xl transition-all duration-300"
                         style={{
-                            height: `${paidHeightPct}%`,
-                            backgroundColor: barColor
+                            // height: `${paidHeightPct}%`,
+                            // backgroundColor: barColor
+                            height: `${primaryBarHeightPct}%`,
+                            backgroundColor: isSystemSavings ? barColor : `${barColor}`, // Keep color consistent or dim it?
+                            opacity: isSystemSavings ? 1 : 0.8 // Slight transparency for liquid effect?
                         }}
                     />
 
-                    {/* Unpaid Bar (Stacked) */}
-                    {unpaidAmount > 0 && !isSystemSavings && (
+                    {/* Unpaid "Ghost" Load - Only show for Savings or if we want to show encumbrance */}
+                    {/* For the "Emptying Bucket" metaphor, unpaid bills "reserve" part of the liquid. */}
+                    {/* Let's render it INSIDE the remaining bar (at the top) to show it's "spoken for" but not gone? */}
+                    {/* Actually, to simplify: Unpaid reduces the "Available" bar just like Paid does. */}
+                    {/* So we don't need a separate bar for Needs/Wants unless we want to distinguish "Gone" vs "Reserved". */}
+                    
+                    {unpaidAmount > 0 && isSystemSavings && (
                         <div
                             className="absolute w-full transition-all duration-300"
                             style={{
-                                bottom: `${paidHeightPct}%`,
+                                // bottom: `${paidHeightPct}%`,
+                                bottom: `${primaryBarHeightPct}%`,
                                 height: `${expectedHeightPct}%`,
-                                backgroundColor: barColor,
+                                // backgroundColor: barColor,
                                 opacity: 0.6,
                                 backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
                                 backgroundSize: '8px 8px',
@@ -117,7 +155,8 @@ export default function BudgetBar({
                     )}
 
                     {/* Target Line */}
-                    {allocated > 0 && (
+                    {/* {allocated > 0 && ( */}
+                    {showTargetLine && (
                         <div
                             className="absolute w-full border-t-2 border-dashed border-gray-800 z-10 opacity-50"
                             style={{ bottom: `${Math.min(targetLinePosition, 100)}%` }}
