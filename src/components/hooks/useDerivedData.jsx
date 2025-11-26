@@ -11,7 +11,6 @@ import {
     getUnpaidCustomBudgetExpenses,
     getMonthlyIncome,
     getMonthlyPaidExpenses,
-    // isCashExpense,
     getSystemBudgetStats,
     getCustomBudgetStats,
 } from "../utils/financialCalculations";
