@@ -11,7 +11,6 @@ import {
     getUnpaidCustomBudgetExpenses,
     getMonthlyIncome,
     getMonthlyPaidExpenses,
-    getPaidSavingsExpenses,
     isCashExpense,
     getSystemBudgetStats,
     getCustomBudgetStats,
@@ -325,60 +324,18 @@ export const useBudgetsAggregates = (
         const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
         return systemBudgets.map(sb => {
-            /* let paidAmount = 0;
-            let unpaidAmount = 0;
-      
-            // Calculate paid and unpaid amounts using granular financialCalculations functions
-            if (sb.systemBudgetType === 'needs') {
-                paidAmount = getPaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-                unpaidAmount = getUnpaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-            } else if (sb.systemBudgetType === 'wants') {
-                const directPaid = getDirectPaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-                const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
-                paidAmount = directPaid + customPaid;
-      
-                const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-                const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
-                unpaidAmount = directUnpaid + customUnpaid;
-            } else if (sb.systemBudgetType === 'savings') {
-                paidAmount = getPaidSavingsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-                unpaidAmount = 0; // Savings typically doesn't have unpaid expenses
-            }*/
             // Use centralized calculation
-            // const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd);
             const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome);
 
-            /* const totalSpent = paidAmount + unpaidAmount;
-            const totalBudget = sb.budgetAmount;
-            const remaining = totalBudget - totalSpent;
-            const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
-      
-            const preCalculatedStats = {
-                paidAmount,
-                unpaidAmount,
-                totalSpent,
-                remaining,
-                percentageUsed,
-                paid: {
-                    totalBaseCurrencyAmount: paidAmount,
-                    foreignCurrencyDetails: []
-                },
-                unpaid: {
-                    totalBaseCurrencyAmount: unpaidAmount,
-                    foreignCurrencyDetails: []
-                }
-            }; */
             // Extract values for backward compatibility if needed, or just pass the whole stats object
             const { paidAmount, unpaidAmount, totalSpent, remaining, percentageUsed } = stats;
 
             return {
                 ...sb,
                 allocatedAmount: sb.budgetAmount,
-                // preCalculatedStats
                 preCalculatedStats: stats
             };
         });
-        // }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear]);
     }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear, monthlyIncome]);
 
     // Group custom budgets by status
@@ -487,47 +444,13 @@ export const useBudgetBarsData = (
             const targetAmount = sb.budgetAmount;
 
             // Use centralized calculation
-            // const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate);
             const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome);
-
-            /* let paidAmount = 0;
-            let expectedAmount = 0;
-      
-            // Calculate using granular financialCalculations functions
-            if (sb.systemBudgetType === 'wants') {
-                const directPaid = getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-                const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
-                paidAmount = directPaid + customPaid;
-      
-                const directUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-                const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
-                expectedAmount = directUnpaid + customUnpaid;
-            } else if (sb.systemBudgetType === 'needs') {
-                paidAmount = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-                expectedAmount = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-            } else if (sb.systemBudgetType === 'savings') {
-                paidAmount = getPaidSavingsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-                expectedAmount = 0;
-            }
-      
-            const actualTotal = expectedAmount + paidAmount;
-            const maxHeight = Math.max(targetAmount, actualTotal);
-            const isOverBudget = actualTotal > targetAmount;
-            const overBudgetAmount = isOverBudget ? actualTotal - targetAmount : 0;
-      
-            const stats = {
-                paidAmount,
-                unpaidAmount: expectedAmount,
-                totalSpent: actualTotal,
-                remaining: targetAmount - actualTotal
-            }; */
             const maxHeight = Math.max(targetAmount, stats.totalSpent);
             const isOverBudget = stats.totalSpent > targetAmount;
             const overBudgetAmount = isOverBudget ? stats.totalSpent - targetAmount : 0;
 
             return {
                 ...sb,
-                // stats,
                 stats: {
                     ...stats,
                     // Map keys to match BudgetBar expectations if different
@@ -535,7 +458,6 @@ export const useBudgetBarsData = (
                 },
                 targetAmount,
                 targetPercentage,
-                // expectedAmount,
                 expectedAmount: stats.unpaidAmount,
                 expectedSeparateCash: [],
                 maxHeight,
@@ -546,84 +468,7 @@ export const useBudgetBarsData = (
 
         // Custom budgets calculation - UPDATED to filter expenses by selected month's paidDate
         const customBudgetsData = custom.map(cb => {
-            /* const budgetTransactions = transactions.filter(t => t.customBudgetId === cb.id);
-      
-            const digitalTransactions = budgetTransactions.filter(
-                t => !t.isCashTransaction || t.cashTransactionType !== 'expense_from_wallet'
-            );
-            const cashTransactions = budgetTransactions.filter(
-                t => t.isCashTransaction && t.cashTransactionType === 'expense_from_wallet'
-            );
-      
-            const digitalAllocated = cb.allocatedAmount || 0;
-      
-            // Filter by paidDate within selected month for paid expenses
-            const digitalSpent = digitalTransactions
-                .filter(t => {
-                    if (t.type !== 'expense') return false;
-                    if (!t.isPaid || !t.paidDate) return false;
-      
-                    // Filter by paidDate within selected month
-                    if (monthStartDate && monthEndDate) {
-                        const paidDate = parseDate(t.paidDate);
-                        return paidDate >= monthStartDate && paidDate <= monthEndDate;
-                    }
-                    return true;
-                })
-                .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
-      
-            const digitalUnpaid = digitalTransactions
-                .filter(t => t.type === 'expense' && !t.isPaid)
-                .reduce((sum, t) => sum + (t.originalAmount || t.amount), 0);
-      
-            const cashByCurrency = {};
-            const cashAllocations = cb.cashAllocations || [];
-      
-            cashAllocations.forEach(allocation => {
-                const currencyCode = allocation.currencyCode;
-                const allocated = allocation.amount || 0;
-      
-                // Filter by paidDate within selected month for paid expenses
-                const spent = cashTransactions
-                    .filter(t => {
-                        if (t.type !== 'expense') return false;
-                        if (t.cashCurrency !== currencyCode) return false;
-                        if (!t.isPaid || !t.paidDate) return false;
-      
-                        // Filter by paidDate within selected month
-                        if (monthStartDate && monthEndDate) {
-                            const paidDate = parseDate(t.paidDate);
-                            return paidDate >= monthStartDate && paidDate <= monthEndDate;
-                        }
-                        return true;
-                    })
-                    .reduce((sum, t) => sum + (t.cashAmount || 0), 0);
-      
-                cashByCurrency[currencyCode] = {
-                    allocated,
-                    spent,
-                    remaining: allocated - spent
-                };
-            });
-      
-            let totalBudget = digitalAllocated;
-            if (cashByCurrency) {
-                Object.values(cashByCurrency).forEach(cashData => {
-                    totalBudget += cashData?.allocated || 0;
-                });
-            }
-      
-            let paidAmount = digitalSpent;
-            if (cashByCurrency) {
-                Object.values(cashByCurrency).forEach(cashData => {
-                    paidAmount += cashData?.spent || 0;
-                });
-            }
-      
-            const expectedAmount = digitalUnpaid;
-            const totalSpent = paidAmount + expectedAmount; */
             // Use centralized calculation
-            // const stats = getCustomBudgetStats(cb, transactions, monthStartDate, monthEndDate);
             const stats = getCustomBudgetStats(cb, transactions, monthStartDate, monthEndDate, baseCurrency);
 
             // Calculate totals for BudgetBars
@@ -654,12 +499,6 @@ export const useBudgetBarsData = (
                 stats: {
                     paidAmount,
                     totalBudget,
-                    /* digital: {
-                        allocated: digitalAllocated,
-                        spent: digitalSpent,
-                        unpaid: digitalUnpaid
-                    },
-                    cashByCurrency */
                     totalAllocatedUnits: stats.totalAllocatedUnits,
                     totalSpentUnits: stats.totalSpentUnits,
                     totalUnpaidUnits: stats.totalUnpaidUnits,
@@ -676,23 +515,6 @@ export const useBudgetBarsData = (
 
         const savingsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'savings');
         const savingsTargetAmount = savingsBudget ? savingsBudget.targetAmount : 0;
-
-        // const needsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'needs');
-        // const wantsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'wants');
-
-        // const totalSpent =
-        //     (needsBudget ? needsBudget.stats.paidAmount + needsBudget.expectedAmount : 0) +
-        //     (wantsBudget ? wantsBudget.stats.paidAmount + wantsBudget.expectedAmount : 0);
-
-        // const automaticSavings = Math.max(0, monthlyIncome - totalSpent);
-        // const manualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
-        // const totalActualSavings = automaticSavings + manualSavings;
-
-        // FIX: Double counting removed. 
-        // `getSystemBudgetStats` (called above) already calculates Savings as (Income - Expenses).
-        // Previously, this block was calculating it AGAIN locally and adding it to the value from stats,
-        // resulting in exactly double the actual savings.
-
         const totalActualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
         const savingsShortfall = Math.max(0, savingsTargetAmount - totalActualSavings);
 
@@ -701,13 +523,6 @@ export const useBudgetBarsData = (
             savingsBudget.actualSavings = totalActualSavings;
             savingsBudget.savingsTarget = savingsTargetAmount;
             savingsBudget.maxHeight = Math.max(savingsTargetAmount, totalActualSavings);
-
-            // CRITICAL: Update stats.paidAmount to reflect total actual savings (automatic + manual)
-            // This ensures the BudgetBar component renders the correct bar height and "Actual" label
-            // savingsBudget.stats.paidAmount = totalActualSavings;
-            // savingsBudget.stats.totalSpent = totalActualSavings;
-            // Note: savingsBudget.stats.paidAmount is already correct, so we don't need to overwrite it.
-            // Overwriting it here was part of the issue (propelling the doubled value into the UI).
         }
 
         return {
