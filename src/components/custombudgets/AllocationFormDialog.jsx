@@ -14,8 +14,8 @@ export default function AllocationFormDialog({
     categories,
     onSubmit,
     isSubmitting,
-    settings,
-    cashWallet
+    settings
+    // cashWallet
 }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,7 +31,7 @@ export default function AllocationFormDialog({
                     onCancel={() => onOpenChange(false)}
                     isSubmitting={isSubmitting}
                     settings={settings}
-                    cashWallet={cashWallet}
+                    // cashWallet={cashWallet}
                 />
             </DialogContent>
         </Dialog>
