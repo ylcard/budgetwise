@@ -11,7 +11,7 @@ import {
     getUnpaidCustomBudgetExpenses,
     getMonthlyIncome,
     getMonthlyPaidExpenses,
-    isCashExpense,
+    // isCashExpense,
     getSystemBudgetStats,
     getCustomBudgetStats,
 } from "../utils/financialCalculations";
@@ -179,7 +179,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
             .filter(t => {
                 if (t.type !== 'expense') return false;
                 if (t.isPaid) return false;
-                if (isCashExpense(t)) return false;
+                // if (isCashExpense(t)) return false;
 
                 const transactionDate = parseDate(t.date);
                 return transactionDate >= monthStartDate && transactionDate <= monthEndDate;
