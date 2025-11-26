@@ -256,10 +256,8 @@ export const getPaidSavingsExpenses = (transactions, categories, startDate, endD
  * @returns {number} The total sum of non-cash expenses.
  */
 export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
-    console.log(`[EXPENSE CALC DEBUG] Start Date: ${startDate}, End Date: ${endDate}. Total records received: ${transactions?.length || 0}`);
     const allExpenses = transactions.filter(t =>
         t.type === 'expense' &&
-        // t.cashTransactionType !== 'withdrawal_to_wallet' &&
         isTransactionInDateRange(t, startDate, endDate)
     );
     return allExpenses.reduce((sum, t) => {
