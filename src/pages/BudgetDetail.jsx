@@ -231,7 +231,11 @@ export default function BudgetDetail() {
                 if (t.type !== 'expense' || !t.category_id) return false;
 
                 const category = categories.find(c => c.id === t.category_id);
-                if (!category || category.priority !== budget.systemBudgetType) return false;
+                
+                // Use transaction priority if available, otherwise fallback to category default
+                const effectivePriority = t.financial_priority || (category ? category.priority : null);
+
+                if (effectivePriority !== budget.systemBudgetType) return false;
 
                 if (t.customBudgetId && allCustomBudgetIds.includes(t.customBudgetId)) {
                     return false;
