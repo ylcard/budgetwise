@@ -206,9 +206,11 @@ export const useSystemBudgetManagement = (
                 systemTypes.forEach(type => {
                     // const percentage = goalMap[type] || 0;
                     // amounts[type] = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
-                    // ABSOLUTE MODE OVERRIDE
-                    if (settings?.goalAllocationMode === 'absolute' && settings?.absoluteGoals) {
-                        amounts[type] = parseFloat(settings.absoluteGoals[type] || 0);
+                    const goal = goals.find(g => g.priority === type);
+                    
+                    // ABSOLUTE MODE CHECK (From Entity)
+                    if (goal && goal.is_absolute) {
+                        amounts[type] = parseFloat(goal.target_amount || 0);
                     } else {
                         // STANDARD PERCENTAGE MODE
                         const percentage = goalMap[type] || 0;
@@ -218,8 +220,9 @@ export const useSystemBudgetManagement = (
 
                 // If Mode is ON, check if we should cap 'needs' and move surplus to 'savings'
                 // if (settings?.fixedLifestyleMode && systemBudgets) {
-                // Only applies in 'percentage' mode
-                if (settings?.goalAllocationMode !== 'absolute' && settings?.fixedLifestyleMode && systemBudgets) {
+                // Only applies if 'needs' is NOT absolute
+                const needsGoal = goals.find(g => g.priority === 'needs');
+                if ((!needsGoal || !needsGoal.is_absolute) && settings?.fixedLifestyleMode && systemBudgets) {
                     const existingNeeds = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
                     
                     // Only apply logic if we have a previous budget to compare against and income > 0
