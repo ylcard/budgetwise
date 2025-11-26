@@ -1,7 +1,6 @@
 import { CustomButton } from "@/components/ui/CustomButton";
-import { CheckCircle, Trash2, AlertTriangle } from "lucide-react";
+import { CheckCircle, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { formatCurrency } from "../utils/currencyUtils";
 
 export default function BudgetBar({
@@ -85,7 +84,6 @@ export default function BudgetBar({
 
     return (
         <Link
-            // to={createPageUrl(`BudgetDetail?id=${budget.id}`)}
             to={`/BudgetDetail?id=${budget.id}`}
             state={{ from: '/Dashboard' }}
             className="flex-shrink-0"
@@ -103,14 +101,12 @@ export default function BudgetBar({
                     />
 
                     {/* Unpaid Bar (Stacked) */}
-                    {/* CHANGED: Added distinct border and striped background pattern for better visibility */}
                     {unpaidAmount > 0 && !isSystemSavings && (
                         <div
                             className="absolute w-full transition-all duration-300"
                             style={{
                                 bottom: `${paidHeightPct}%`,
                                 height: `${expectedHeightPct}%`,
-                                // backgroundColor: `${barColor}40`
                                 backgroundColor: barColor,
                                 opacity: 0.6,
                                 backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
