@@ -187,7 +187,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
             .reduce((sum, t) => sum + t.amount, 0);
 
         return income - paidExpenses - unpaidExpenses;
-    }, [transactions, currentMonthIncome, monthStartStr, monthEndStr, monthStartDate, monthEndDate, getMonthlyPaidExpenses, parseDate, isCashExpense]);
+    }, [transactions, currentMonthIncome, monthStartStr, monthEndStr, monthStartDate, monthEndDate, getMonthlyPaidExpenses, parseDate]);
 
     const currentMonthExpenses = useMemo(() => {
         if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
