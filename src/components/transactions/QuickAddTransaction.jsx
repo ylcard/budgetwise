@@ -9,7 +9,6 @@ import {
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
-// import { useCashWallet, useAllBudgets } from "../hooks/useBase44Entities";
 import { useAllBudgets } from "../hooks/useBase44Entities";
 import TransactionFormContent from "./TransactionFormContent";
 
@@ -29,7 +28,6 @@ export default function QuickAddTransaction({
     triggerClassName = ""
 }) {
     const { user } = useSettings();
-    // const { cashWallet } = useCashWallet(user);
     const { allBudgets } = useAllBudgets(user);
 
     // We rely on internal state UNLESS the parent explicitly passes a boolean 'open' prop
