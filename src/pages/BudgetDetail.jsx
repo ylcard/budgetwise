@@ -21,9 +21,9 @@ import {
     getSystemBudgetStats,
     getCustomBudgetAllocationStats,
 } from "../components/utils/financialCalculations";
-import { useCashWallet } from "../components/hooks/useBase44Entities";
+// import { useCashWallet } from "../components/hooks/useBase44Entities";
 import { useTransactionActions } from "../components/hooks/useActions";
-import { calculateRemainingCashAllocations, returnCashToWallet } from "../components/utils/cashAllocationUtils";
+// import { calculateRemainingCashAllocations, returnCashToWallet } from "../components/utils/cashAllocationUtils";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useMonthlyIncome } from "../components/hooks/useDerivedData";
@@ -48,7 +48,7 @@ export default function BudgetDetail() {
     const urlParams = new URLSearchParams(location.search);
     const budgetId = urlParams.get('id');
 
-    const { cashWallet } = useCashWallet(user);
+    // const { cashWallet } = useCashWallet(user);
 
     useEffect(() => {
         if (budgetId) {
@@ -129,15 +129,17 @@ export default function BudgetDetail() {
         enabled: !!budgetId && budget && !budget.isSystemBudget,
     });
 
-    const budgetActions = useCustomBudgetActions(user, transactions, cashWallet);
+    // const budgetActions = useCustomBudgetActions(user, transactions, cashWallet);
+    const budgetActions = useCustomBudgetActions(user, transactions, null);
 
-    const transactionActions = useTransactionActions(null, null, cashWallet);
+    // const transactionActions = useTransactionActions(null, null, cashWallet);
+    const transactionActions = useTransactionActions(null, null, null);
 
     const createTransactionMutation = useMutation({
         mutationFn: (data) => base44.entities.Transaction.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
+            // queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
             setShowQuickAdd(false);
         },
     });
@@ -168,7 +170,7 @@ export default function BudgetDetail() {
             const budgetToComplete = budget;
             if (!budgetToComplete) return;
 
-            if (budgetToComplete.cashAllocations && budgetToComplete.cashAllocations.length > 0 && user) {
+            /* if (budgetToComplete.cashAllocations && budgetToComplete.cashAllocations.length > 0 && user) {
                 const remaining = calculateRemainingCashAllocations(budgetToComplete, transactions);
                 if (remaining.length > 0) {
                     await returnCashToWallet(
@@ -176,19 +178,17 @@ export default function BudgetDetail() {
                         remaining
                     );
                 }
-            }
+            } */
 
             await base44.entities.CustomBudget.update(id, {
                 status: 'completed'
-                // We DO NOT wipe allocations anymore. 
-                // This preserves the "Budget vs Actual" comparison for historical viewing.
             });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
             queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
-            queryClient.invalidateQueries({ queryKey: ['cashWallet'] });
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
+            // queryClient.invalidateQueries({ queryKey: ['cashWallet'] });
+            // queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CASH_WALLET] });
         },
     });
 
@@ -231,7 +231,7 @@ export default function BudgetDetail() {
                 if (t.type !== 'expense' || !t.category_id) return false;
 
                 const category = categories.find(c => c.id === t.category_id);
-                
+
                 // Use transaction priority if available, otherwise fallback to category default
                 const effectivePriority = t.financial_priority || (category ? category.priority : null);
 
@@ -414,11 +414,11 @@ export default function BudgetDetail() {
         totalRemaining = totalBudget - (stats?.totalSpentUnits || 0);
     }
 
-    const hasBothDigitalAndCash = !budget.isSystemBudget &&
-        stats?.digital !== undefined &&
-        stats?.cashByCurrency &&
-        Object.keys(stats.cashByCurrency).length > 0 &&
-        (stats.digital.allocated > 0 || Object.values(stats.cashByCurrency).some(cashData => cashData.allocated > 0));
+    // const hasBothDigitalAndCash = !budget.isSystemBudget &&
+    //     stats?.digital !== undefined &&
+    //     stats?.cashByCurrency &&
+    //     Object.keys(stats.cashByCurrency).length > 0 &&
+    //     (stats.digital.allocated > 0 || Object.values(stats.cashByCurrency).some(cashData => cashData.allocated > 0));
 
     return (
         <div className="min-h-screen p-4 md:p-8">
@@ -467,7 +467,7 @@ export default function BudgetDetail() {
                                             onSubmit={handleEditBudget}
                                             onCancel={() => budgetActions.setShowForm(false)}
                                             isSubmitting={budgetActions.isSubmitting}
-                                            cashWallet={cashWallet}
+                                            // cashWallet={cashWallet}
                                             baseCurrency={settings.baseCurrency}
                                             settings={settings}
                                         />
@@ -513,7 +513,7 @@ export default function BudgetDetail() {
                             <DollarSign className="w-4 h-4 text-blue-500" />
                         </CardHeader>
                         <CardContent>
-                            {hasBothDigitalAndCash ? (
+                            {/* {hasBothDigitalAndCash ? (
                                 <div className="space-y-3">
                                     <div className="text-center pb-2 border-b">
                                         <p className="text-sm text-gray-500 mb-1">Total</p>
@@ -544,7 +544,12 @@ export default function BudgetDetail() {
                                         {formatCurrency(totalBudget, settings)}
                                     </div>
                                 </div>
-                            )}
+                            )} */}
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-gray-900">
+                                    {formatCurrency(totalBudget, settings)}
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -564,7 +569,7 @@ export default function BudgetDetail() {
                             <CheckCircle className="w-4 h-4 text-green-500" />
                         </CardHeader>
                         <CardContent>
-                            {hasBothDigitalAndCash ? (
+                            {/* {hasBothDigitalAndCash ? (
                                 <div className="space-y-3">
                                     <div className="text-center pb-2 border-b">
                                         <p className="text-sm text-gray-500 mb-1">Total</p>
@@ -595,7 +600,12 @@ export default function BudgetDetail() {
                                         {formatCurrency(totalRemaining, settings)}
                                     </div>
                                 </div>
-                            )}
+                            )} */}
+                            <div className="text-center">
+                                <div className={`text-lg font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {formatCurrency(totalRemaining, settings)}
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
