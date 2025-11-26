@@ -1,10 +1,15 @@
+// Deprecated, no longer using cash
+
+/*
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { calculateConvertedAmount, getRateForDate } from "../utils/currencyCalculations";
+*/
 
+/*
 export const useCashWalletActions = (user, cashWallet, settings, exchangeRates) => {
     const queryClient = useQueryClient();
     const [depositCashDialogOpen, setDepositCashDialogOpen] = useState(false);
@@ -204,3 +209,4 @@ export const useCashWalletActions = (user, cashWallet, settings, exchangeRates) 
         isReturningCash: returnCashMutation.isPending,
     };
 };
+*/
