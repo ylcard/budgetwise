@@ -194,7 +194,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
 
         if (!monthStartStr || !monthEndStr) return 0;
 
-        return getTotalMonthExpenses(transactions, categories, allCustomBudgets, monthStartStr, monthEndStr);
+        return getTotalMonthExpenses(transactions, monthStartStr, monthEndStr);
     }, [transactions, allCustomBudgets, categories, monthStartStr, monthEndStr, getTotalMonthExpenses]);
 
     return {
