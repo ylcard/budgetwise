@@ -677,16 +677,23 @@ export const useBudgetBarsData = (
         const savingsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'savings');
         const savingsTargetAmount = savingsBudget ? savingsBudget.targetAmount : 0;
 
-        const needsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'needs');
-        const wantsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'wants');
+        // const needsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'needs');
+        // const wantsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'wants');
 
-        const totalSpent =
-            (needsBudget ? needsBudget.stats.paidAmount + needsBudget.expectedAmount : 0) +
-            (wantsBudget ? wantsBudget.stats.paidAmount + wantsBudget.expectedAmount : 0);
+        // const totalSpent =
+        //     (needsBudget ? needsBudget.stats.paidAmount + needsBudget.expectedAmount : 0) +
+        //     (wantsBudget ? wantsBudget.stats.paidAmount + wantsBudget.expectedAmount : 0);
 
-        const automaticSavings = Math.max(0, monthlyIncome - totalSpent);
-        const manualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
-        const totalActualSavings = automaticSavings + manualSavings;
+        // const automaticSavings = Math.max(0, monthlyIncome - totalSpent);
+        // const manualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
+        // const totalActualSavings = automaticSavings + manualSavings;
+
+        // FIX: Double counting removed. 
+        // `getSystemBudgetStats` (called above) already calculates Savings as (Income - Expenses).
+        // Previously, this block was calculating it AGAIN locally and adding it to the value from stats,
+        // resulting in exactly double the actual savings.
+
+        const totalActualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
         const savingsShortfall = Math.max(0, savingsTargetAmount - totalActualSavings);
 
         // Properly integrate totalActualSavings into savingsBudget for BudgetBar rendering
@@ -697,8 +704,10 @@ export const useBudgetBarsData = (
 
             // CRITICAL: Update stats.paidAmount to reflect total actual savings (automatic + manual)
             // This ensures the BudgetBar component renders the correct bar height and "Actual" label
-            savingsBudget.stats.paidAmount = totalActualSavings;
-            savingsBudget.stats.totalSpent = totalActualSavings;
+            // savingsBudget.stats.paidAmount = totalActualSavings;
+            // savingsBudget.stats.totalSpent = totalActualSavings;
+            // Note: savingsBudget.stats.paidAmount is already correct, so we don't need to overwrite it.
+            // Overwriting it here was part of the issue (propelling the doubled value into the UI).
         }
 
         return {
