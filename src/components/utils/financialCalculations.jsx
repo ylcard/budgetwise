@@ -439,3 +439,32 @@ export const getCustomBudgetAllocationStats = (customBudget, allocations, transa
     const unallocatedSpent = budgetTransactions.filter(t => t.type === 'expense' && (!t.category_id || !allocatedCategoryIds.includes(t.category_id))).reduce((sum, t) => sum + t.amount, 0);
     return { totalAllocated, unallocated, unallocatedSpent, unallocatedRemaining: unallocated - unallocatedSpent, categorySpending };
 };
+
+
+/**
+ * Calculates the net "Bonus Savings Potential" by aggregating unspent budget
+ * from the Needs and Wants categories (treating them as ceilings).
+ * + * @param {Array<object>} systemBudgets - List of system budgets.
+ * @param {Array<object>} transactions - List of all transactions.
+ * @param {Array<object>} categories - List of categories.
+ * @param {Array<object>} allCustomBudgets - List of all custom budgets.
+ * @param {string} startDate - Range start date (YYYY-MM-DD).
+ * @param {string} endDate - Range end date (YYYY-MM-DD).
+ * @returns {number} The net unspent amount (can be negative if overspent).
+ */
+export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate) => {
+    let netPotential = 0;
+
+    // Only consider Needs and Wants (Savings is a floor, not a ceiling)
+    const limitBudgets = systemBudgets.filter(sb => 
+        sb.systemBudgetType === 'needs' || sb.systemBudgetType === 'wants'
+    );
+
+    limitBudgets.forEach(budget => {
+        // 0 passed for monthlyIncome as it's irrelevant for Needs/Wants stats calculation
+        const stats = getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, startDate, endDate, 0);
+        netPotential += stats.remaining;
+    });
+
+    return netPotential;
+};
