@@ -108,8 +108,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
-                    {/* <div className="md:col-span-2"> */}
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-3">
                         <RemainingBudgetCard
                             remainingBudget={remainingBudget}
                             currentMonthIncome={currentMonthIncome}
