@@ -130,10 +130,10 @@ export default function BudgetDetail() {
     });
 
     // const budgetActions = useCustomBudgetActions(user, transactions, cashWallet);
-    const budgetActions = useCustomBudgetActions(user, transactions, null);
+    const budgetActions = useCustomBudgetActions({ transactions });
 
     // const transactionActions = useTransactionActions(null, null, cashWallet);
-    const transactionActions = useTransactionActions(null, null, null);
+    const transactionActions = useTransactionActions();
 
     const createTransactionMutation = useMutation({
         mutationFn: (data) => base44.entities.Transaction.create(data),
