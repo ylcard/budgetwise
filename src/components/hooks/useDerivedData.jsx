@@ -220,7 +220,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
  */
 export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear) => {
     // 1. Memoize Month Boundaries (string and Date objects)
-    const { monthStartStr, monthEndStr, monthStartDate, monthEndDate } = useMemo(() => {
+    const { monthStartDate, monthEndDate } = useMemo(() => {
         if (selectedMonth === undefined || selectedYear === undefined) {
             return { monthStartStr: null, monthEndStr: null, monthStartDate: null, monthEndDate: null };
         }
