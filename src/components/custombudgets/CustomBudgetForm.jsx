@@ -15,8 +15,7 @@ export default function CustomBudgetForm({
     budget,
     onSubmit,
     onCancel,
-    isSubmitting,
-    baseCurrency
+    isSubmitting
 }) {
     const { monthStart, monthEnd } = usePeriod();
 
@@ -36,7 +35,6 @@ export default function CustomBudgetForm({
             setFormData({
                 name: budget.name || '',
                 allocatedAmount: budget.allocatedAmount?.toString() || null,
-                // cashAllocations: budget.cashAllocations || [],
                 startDate: budget.startDate || monthStart,
                 endDate: budget.endDate || monthEnd,
                 description: budget.description || '',
@@ -64,58 +62,6 @@ export default function CustomBudgetForm({
         setValidationError(null);
 
         const normalizedAmount = normalizeAmount(formData.allocatedAmount);
-
-        const processedCashAllocations = formData.cashAllocations
-            .map(alloc => ({
-                currencyCode: alloc.currencyCode,
-                amount: parseFloat(normalizeAmount(alloc.amount || '0'))
-            }))
-            .filter(alloc => alloc.amount > 0);
-
-        // Smart validation - only validate NEW allocations when editing
-        let allocationsToValidate = processedCashAllocations;
-
-        if (budget && budget.cashAllocations) {
-            // When editing, calculate the NET CHANGE in allocations
-            const oldAllocationsMap = {};
-            budget.cashAllocations.forEach(alloc => {
-                oldAllocationsMap[alloc.currencyCode] = alloc.amount;
-            });
-
-            // Only validate amounts that are INCREASES from the original allocation
-            allocationsToValidate = processedCashAllocations
-                .map(newAlloc => {
-                    const oldAmount = oldAllocationsMap[newAlloc.currencyCode] || 0;
-                    const increase = newAlloc.amount - oldAmount;
-
-                    // Only validate if there's an increase (requesting MORE cash)
-                    if (increase > 0) {
-                        return {
-                            currencyCode: newAlloc.currencyCode,
-                            amount: increase
-                        };
-                    }
-                    return null;
-                })
-                .filter(alloc => alloc !== null);
-        }
-
-        // Validate only the net new allocations (or all allocations if creating new budget)
-        if (allocationsToValidate.length > 0) {
-            const validation = validateCashAllocations(
-                cashWallet,
-                allocationsToValidate,
-                baseCurrency
-            );
-
-            if (!validation.valid) {
-                const errorMessages = validation.errors.map(err =>
-                    `${err.currency}: Requested ${err.requested.toFixed(2)}, Available ${err.available.toFixed(2)}`
-                ).join('; ');
-                setValidationError(`Insufficient balance: ${errorMessages}`);
-                return;
-            }
-        }
 
         return onSubmit({
             ...formData,
