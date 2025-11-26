@@ -2,7 +2,6 @@ import React, { useState, useMemo, createContext, useContext } from "react";
 import { getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
 
 // Unified hook for managing month/year selection and derived date values
-// export const usePeriod = () => {
 const PeriodContext = createContext(null);
 
 export const PeriodProvider = ({ children }) => {
