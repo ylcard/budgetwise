@@ -6,7 +6,7 @@ import { formatCurrency } from "../utils/currencyUtils";
 export default function BudgetBar({
     budget,
     isCustom = false,
-    isSystemSavings = false,
+    isSavings = false,
     settings,
     onDelete,
     onComplete,
@@ -29,7 +29,7 @@ export default function BudgetBar({
     let paidAmount = 0;
     let unpaidAmount = 0;
 
-    if (isSystemSavings) {
+    if (isSavings) {
         allocated = savingsTarget || 0;
         paidAmount = actualSavings || 0;
         unpaidAmount = 0;
@@ -61,7 +61,7 @@ export default function BudgetBar({
     // Needs/Wants: Bar starts Full -> Shrinks to 0 (Depleting Bucket)
     let primaryBarHeightPct = 0;
     
-    if (isSystemSavings) {
+    if (isSavings) {
         primaryBarHeightPct = (paidAmount / safeMaxHeight) * 100;
     } else {
         // For Needs/Wants, the bar represents REMAINING capacity.
@@ -80,7 +80,7 @@ export default function BudgetBar({
     
     // Target line is only needed for Savings (to show where 100% is if we go over)
     // For Needs/Wants, the "Top" of the container is naturally the limit.
-    const showTargetLine = isSystemSavings && allocated > 0;
+    const showTargetLine = isSavings && allocated > 0;
     const targetLinePosition = (allocated / safeMaxHeight) * 100;
 
     // Labels & Colors
@@ -88,7 +88,7 @@ export default function BudgetBar({
     let statusLabel = '';
     let statusColor = '';
 
-    if (isSystemSavings) {
+    if (isSavings) {
         if (isOver) {
             remainingDisplay = used - allocated;
             statusLabel = 'Surplus';
@@ -119,7 +119,7 @@ export default function BudgetBar({
             <div className="flex flex-col items-center gap-2 group cursor-pointer">
                 {/* Bar Graph */}
                 {/* Background: For Savings, it's empty (gray). For Needs/Wants, it's "Empty Space" (which implies used budget) */}
-                <div className={`relative w-16 bg-gray-100 rounded-xl h-48 overflow-hidden hover:shadow-lg transition-all ${isOver && !isSystemSavings ? 'border-2 border-red-100 bg-red-50' : ''}`}>
+                <div className={`relative w-16 bg-gray-100 rounded-xl h-48 overflow-hidden hover:shadow-lg transition-all ${isOver && !isSavings ? 'border-2 border-red-100 bg-red-50' : ''}`}>
                     {/* Paid Bar */}
                     <div
                         className="absolute bottom-0 w-full rounded-b-xl transition-all duration-300"
@@ -127,8 +127,8 @@ export default function BudgetBar({
                             // height: `${paidHeightPct}%`,
                             // backgroundColor: barColor
                             height: `${primaryBarHeightPct}%`,
-                            backgroundColor: isSystemSavings ? barColor : `${barColor}`, // Keep color consistent or dim it?
-                            opacity: isSystemSavings ? 1 : 0.8 // Slight transparency for liquid effect?
+                            backgroundColor: isSavings ? barColor : `${barColor}`, // Keep color consistent or dim it?
+                            opacity: isSavings ? 1 : 0.8 // Slight transparency for liquid effect?
                         }}
                     />
 
@@ -138,7 +138,7 @@ export default function BudgetBar({
                     {/* Actually, to simplify: Unpaid reduces the "Available" bar just like Paid does. */}
                     {/* So we don't need a separate bar for Needs/Wants unless we want to distinguish "Gone" vs "Reserved". */}
                     
-                    {unpaidAmount > 0 && isSystemSavings && (
+                    {unpaidAmount > 0 && isSavings && (
                         <div
                             className="absolute w-full transition-all duration-300"
                             style={{
@@ -215,7 +215,7 @@ export default function BudgetBar({
                     <div className="grid grid-cols-2 gap-y-1 gap-x-1 text-[10px] leading-tight">
                         {/* Row 1 */}
                         <div className="text-left">
-                            <p className="text-gray-400">{isSystemSavings ? 'Target' : 'Budget'}</p>
+                            <p className="text-gray-400">{isSavings ? 'Target' : 'Budget'}</p>
                             <p className="font-semibold text-gray-700 truncate" title={formatCurrency(allocated, settings)}>
                                 {formatCurrency(allocated, settings)}
                             </p>
@@ -226,7 +226,7 @@ export default function BudgetBar({
                                 {formatCurrency(remainingDisplay, settings)}
                             </p>
                             {/* Subliminal reinforcement: Remind user this is potential savings */}
-                            {!isSystemSavings && !isOver && (
+                            {!isSavings && !isOver && (
                                 <p className="text-[8px] text-emerald-600/80 leading-none mt-0.5 transform scale-90 origin-right font-medium">
                                     (Save it!)
                                 </p>
@@ -235,13 +235,13 @@ export default function BudgetBar({
 
                         {/* Row 2 */}
                         <div className="text-left">
-                            <p className="text-gray-400">{isSystemSavings ? 'Actual' : 'Paid'}</p>
+                            <p className="text-gray-400">{isSavings ? 'Actual' : 'Paid'}</p>
                             <p className="font-semibold text-gray-900 truncate" title={formatCurrency(paidAmount, settings)}>
                                 {formatCurrency(paidAmount, settings)}
                             </p>
                         </div>
                         <div className="text-right">
-                            {!isSystemSavings ? (
+                            {!isSavings ? (
                                 <>
                                     <p className="text-gray-400">Unpaid</p>
                                     <p className={`font-semibold truncate ${unpaidAmount > 0 ? 'text-amber-600' : 'text-gray-300'}`} title={formatCurrency(unpaidAmount, settings)}>
