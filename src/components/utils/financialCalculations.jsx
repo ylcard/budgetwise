@@ -380,10 +380,6 @@ export const getMonthlyFinancialSummary = (transactions, startDate, endDate) => 
 export const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd, baseCurrency = 'USD') => {
     const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
 
-    // Parse month boundaries for filtering paid expenses
-    const monthStartDate = parseDate(monthStart);
-    const monthEndDate = parseDate(monthEnd);
-
     // REFACTOR: Unified Stats (No more Cash vs Digital split)
     const expenses = budgetTransactions.filter(t => t.type === 'expense');
 
