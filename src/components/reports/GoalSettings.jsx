@@ -7,7 +7,6 @@ import { showToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "../utils/SettingsContext";
 import AmountInput from "../ui/AmountInput";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const priorityConfig = {
@@ -220,16 +219,13 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
                                     {config.label}
                                 </Label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                                        {settings.currencySymbol || '$'}
-                                    </span>
-                                    <Input
-                                        type="number"
+                                <div>
+                                    <AmountInput
                                         value={absoluteValues[key]}
-                                        onChange={(e) => setAbsoluteValues(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                                        onChange={(val) => setAbsoluteValues(prev => ({ ...prev, [key]: val || 0 }))}
                                         className="pl-8 font-mono"
                                         placeholder="0.00"
+                                        className="font-mono"
                                     />
                                 </div>
                             </div>
