@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank } from "lucide-react";
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank, Activity, TrendingDown, ShieldCheck } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
@@ -158,5 +158,111 @@ export default function ReportStats({
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+
+// --- Financial Health Score Component (Appended to existing file) ---
+export function FinancialHealthScore({
+    monthlyIncome,
+    transactions,
+    prevMonthlyIncome,
+    prevTransactions,
+    startDate,
+    endDate,
+    isLoading,
+    settings
+}) {
+    if (isLoading) return null;
+
+    // 1. Current Month Data
+    const currentExpenses = Math.abs(getMonthlyPaidExpenses(transactions, startDate, endDate));
+    const currentNet = monthlyIncome - currentExpenses;
+    const currentSavingsRate = monthlyIncome > 0 ? (currentNet / monthlyIncome) : 0;
+
+    // 2. Previous Month Data (Approximate using available prevTransactions)
+    const prevExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
+
+    // --- SCORING ALGORITHM (Max 100) ---
+    // A. Savings Score (Max 50)
+    let savingsScore = 0;
+    if (currentSavingsRate > 0) {
+        savingsScore = Math.min(50, (currentSavingsRate / 0.20) * 50);
+    }
+
+    // B. Efficiency Score (Max 30) - Rewards staying under budget ceilings
+    let efficiencyScore = 0;
+    if (currentNet >= 0) {
+        efficiencyScore = 15; // Base solvency
+        // Bonus for every 1% saved
+        efficiencyScore += Math.min(15, (currentSavingsRate * 100) * 0.5);
+    } else {
+        const overspendRatio = monthlyIncome > 0 ? (Math.abs(currentNet) / monthlyIncome) : 1;
+        efficiencyScore = Math.max(0, 15 - (overspendRatio * 100));
+    }
+
+    // C. Trend Score (Max 20)
+    let trendScore = 0;
+    if (currentExpenses < prevExpenses) trendScore += 10;
+    if (currentNet > (prevMonthlyIncome - prevExpenses)) trendScore += 10;
+
+    const totalScore = Math.round(savingsScore + efficiencyScore + trendScore);
+
+    // Visuals
+    let color = '#10B981'; // Green
+    let label = 'Excellent';
+    if (totalScore < 80) { color = '#3B82F6'; label = 'Good'; }
+    if (totalScore < 60) { color = '#F59E0B'; label = 'Fair'; }
+    if (totalScore < 40) { color = '#EF4444'; label = 'Needs Work'; }
+
+    return (
+        <Card className="border-none shadow-sm h-full overflow-hidden relative mt-6">
+            <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
+                {/* Score Circle */}
+                <div className="relative w-32 h-32 flex-shrink-0">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="#F3F4F6" strokeWidth="10" />
+                        <motion.circle
+                            initial={{ strokeDashoffset: 314 }}
+                            animate={{ strokeDashoffset: 314 - (totalScore / 100) * 314 }}
+                            transition={{ duration: 1 }}
+                            cx="60" cy="60" r="50"
+                            fill="none"
+                            stroke={color}
+                            strokeWidth="10"
+                            strokeLinecap="round"
+                            strokeDasharray="314"
+                        />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-3xl font-bold text-gray-900">{totalScore}</span>
+                        <span className="text-xs font-medium" style={{ color }}>{label}</span>
+                    </div>
+                </div>
+                {/* Text Summary */}
+                <div className="flex-1">
+                    <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-blue-600" /> Financial Health
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Your score is based on your {Math.round(currentSavingsRate * 100)}% savings rate, budget efficiency, and month-over-month improvement.
+                    </p>
+                    <div className="flex gap-4 mt-4">
+                        <div className="text-xs">
+                            <span className="block text-gray-400">Savings</span>
+                            <span className="font-semibold">{Math.round(savingsScore)}/50</span>
+                        </div>
+                        <div className="text-xs">
+                            <span className="block text-gray-400">Efficiency</span>
+                            <span className="font-semibold">{Math.round(efficiencyScore)}/30</span>
+                        </div>
+                        <div className="text-xs">
+                            <span className="block text-gray-400">Trend</span>
+                            <span className="font-semibold">{Math.round(trendScore)}/20</span>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
