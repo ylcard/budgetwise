@@ -17,7 +17,9 @@ import { parseDate } from "../utils/dateUtils";
 import { createPageUrl } from "@/utils";
 
 // Hook for transaction actions (CRUD operations - Transactions page)
-export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet, options = {}) => {
+// export const useTransactionActions = (setShowForm, setEditingTransaction, cashWallet, options = {}) => {
+export const useTransactionActions = (config = {}) => {
+    const { setShowForm, setEditingTransaction, ...options } = config;
 
     // CREATE: Use generic hook with cash wallet preprocessing
     const createMutation = useCreateEntity({
@@ -253,7 +255,9 @@ export const useGoalActions = (user, goals) => {
 };
 
 // Hook for custom budget actions (CRUD operations)
-export const useCustomBudgetActions = (user, transactions, options = {}) => {
+// export const useCustomBudgetActions = (user, transactions, options = {}) => {
+export const useCustomBudgetActions = (config = {}) => {
+    const { transactions, ...options } = config;
     const [showForm, setShowForm] = useState(false);
     const [editingBudget, setEditingBudget] = useState(null);
 
