@@ -139,7 +139,7 @@ export const useAllBudgets = (user) => {
 };
 
 // Hook for fetching cash wallet
-export const useCashWallet = (user) => {
+/* export const useCashWallet = (user) => {
     const { data: cashWallet, isLoading } = useQuery({
         queryKey: [QUERY_KEYS.CASH_WALLET],
         queryFn: async () => {
@@ -152,7 +152,7 @@ export const useCashWallet = (user) => {
     });
 
     return { cashWallet, isLoading };
-};
+}; */
 
 // Hook for fetching category rules
 export const useCategoryRules = (user) => {
