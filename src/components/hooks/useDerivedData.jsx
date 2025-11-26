@@ -188,13 +188,15 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
     }, [transactions, currentMonthIncome, monthStartStr, monthEndStr, monthStartDate, monthEndDate, getMonthlyPaidExpenses, parseDate]);
 
     const currentMonthExpenses = useMemo(() => {
-        console.log(selectedMonth)
-        console.log(selectedYear)
-        console.log(!Array.isArray(transactions))
+        // console.log(selectedMonth)
+        // console.log(selectedYear)
+        // console.log(!Array.isArray(transactions))
         if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
             return 0;
         }
 
+        console.log(!monthStartStr)
+        console.log(!monthEndStr)
         if (!monthStartStr || !monthEndStr) return 0;
 
         return getTotalMonthExpenses(transactions, categories, allCustomBudgets, monthStartStr, monthEndStr);
