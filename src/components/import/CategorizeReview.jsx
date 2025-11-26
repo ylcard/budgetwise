@@ -9,7 +9,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import CategorySelect from "@/components/ui/CategorySelect";
-import { parseDate } from "@/components/utils/dateUtils";
+import { parseDate, formatDate } from "@/components/utils/dateUtils";
 
 export default function CategorizeReview({ data, categories, customBudgets = [], onUpdateRow, onDeleteRows }) {
     const { settings } = useSettings();
@@ -220,7 +220,15 @@ export default function CategorizeReview({ data, categories, customBudgets = [],
                                                     <SelectItem value="system">
                                                         <div className="flex items-center">
                                                             <Star className="w-3 h-3 text-blue-600 mr-2" />
-                                                            <span>{row.financial_priority ? row.financial_priority.charAt(0).toUpperCase() + row.financial_priority.slice(1) : 'System Budget'}</span>
+                                                            <span>
+                                                                {row.financial_priority ? row.financial_priority.charAt(0).toUpperCase() + row.financial_priority.slice(1) : 'System Budget'}
+                                                                {(() => {
+                                                                    const d = parseDate(row.date);
+                                                                    if (!d) return null;
+                                                                    const isCurr = d.getFullYear() === new Date().getFullYear();
+                                                                    return <span className="ml-1 text-gray-400 font-normal">({formatDate(d, isCurr ? "MMM" : "MMM yyyy")})</span>;
+                                                                })()}
+                                                            </span>
                                                         </div>
                                                     </SelectItem>
                                                     {sortedCustomBudgets.length > 0 && (
