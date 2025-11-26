@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+// import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import AmountInput from "../ui/AmountInput";
 import CategorySelect from "../ui/CategorySelect";
-import CurrencySelect from "../ui/CurrencySelect";
-import { normalizeAmount } from "../utils/generalUtils";
-import { getCurrencySymbol, formatCurrency } from "../utils/currencyUtils";
+// import CurrencySelect from "../ui/CurrencySelect";
+// import { normalizeAmount } from "../utils/generalUtils";
+// import { getCurrencySymbol, formatCurrency } from "../utils/currencyUtils";
+import { formatCurrency } from "../utils/currencyUtils";
 
 export default function AllocationForm({
     allocation,
@@ -14,61 +16,63 @@ export default function AllocationForm({
     onSubmit,
     onCancel,
     isSubmitting,
-    settings,
-    cashWallet
+    settings
+    // cashWallet
 }) {
     const baseCurrency = settings?.baseCurrency || 'USD';
-    const hasCashAllocations = customBudget?.cashAllocations && customBudget.cashAllocations.length > 0;
+    // const hasCashAllocations = customBudget?.cashAllocations && customBudget.cashAllocations.length > 0;
 
     // Extract available currencies from customBudget.cashAllocations
-    const availableCashCurrencies = useMemo(() => {
-        return hasCashAllocations
-            ? customBudget.cashAllocations.map(alloc => alloc.currencyCode)
-            : [];
-    }, [customBudget, hasCashAllocations]);
+    // const availableCashCurrencies = useMemo(() => {
+    //     return hasCashAllocations
+    //         ? customBudget.cashAllocations.map(alloc => alloc.currencyCode)
+    //         : [];
+    // }, [customBudget, hasCashAllocations]);
 
     const [formData, setFormData] = useState({
         categoryId: '',
-        allocatedAmount: null,
-        allocationType: 'digital',
-        currency: availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency
+        allocatedAmount: null
+        // allocationType: 'digital',
+        // currency: availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency
     });
 
     useEffect(() => {
         if (allocation) {
             setFormData({
                 categoryId: allocation.categoryId || '',
-                allocatedAmount: allocation.allocatedAmount || null,
-                allocationType: allocation.allocationType || 'digital',
-                currency: allocation.currency || (availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency)
+                allocatedAmount: allocation.allocatedAmount || null
+                // allocationType: allocation.allocationType || 'digital',
+                // currency: allocation.currency || (availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency)
             });
         } else {
             setFormData({
                 categoryId: '',
-                allocatedAmount: null,
-                allocationType: 'digital',
-                currency: availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency
+                allocatedAmount: null
+                // allocationType: 'digital',
+                // currency: availableCashCurrencies.length > 0 ? availableCashCurrencies[0] : baseCurrency
             });
         }
-    }, [allocation, baseCurrency, availableCashCurrencies]);
+        // }, [allocation, baseCurrency, availableCashCurrencies]);
+    }, [allocation]);
 
     // Calculate available funds
-    const availableDigital = customBudget?.allocatedAmount || 0;
+    // const availableDigital = customBudget?.allocatedAmount || 0;
 
-    const availableCashByCurrency = {};
-    if (hasCashAllocations) {
-        customBudget.cashAllocations.forEach(alloc => {
-            availableCashByCurrency[alloc.currencyCode] = alloc.amount;
-        });
-    }
+    // const availableCashByCurrency = {};
+    // if (hasCashAllocations) {
+    //     customBudget.cashAllocations.forEach(alloc => {
+    //         availableCashByCurrency[alloc.currencyCode] = alloc.amount;
+    //     });
+    // }
 
     // Get wallet cash (for display only - not for validation since allocations come from budget)
-    const walletCashByCurrency = {};
-    if (cashWallet?.balances) {
-        cashWallet.balances.forEach(balance => {
-            walletCashByCurrency[balance.currencyCode] = balance.amount;
-        });
-    }
+    // const walletCashByCurrency = {};
+    // if (cashWallet?.balances) {
+    //     cashWallet.balances.forEach(balance => {
+    //         walletCashByCurrency[balance.currencyCode] = balance.amount;
+    //     });
+    // }
+    const totalBudgetLimit = customBudget?.allocatedAmount || 0;
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -78,68 +82,21 @@ export default function AllocationForm({
         onSubmit({
             ...formData,
             allocatedAmount: formData.allocatedAmount,
-            currency: formData.allocationType === 'digital' ? baseCurrency : formData.currency
+            // currency: formData.allocationType === 'digital' ? baseCurrency : formData.currency
+            // Legacy compatibility fields (can be removed if backend doesn't require them)
+            allocationType: 'digital',
+            currency: baseCurrency
         });
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Allocation Type - Only show if cash allocations exist */}
-            {hasCashAllocations && (
-                <div className="space-y-2">
-                    <Label>Allocation Type</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                        <CustomButton
-                            type="button"
-                            variant={formData.allocationType === 'digital' ? 'default' : 'outline'}
-                            onClick={() => setFormData({ ...formData, allocationType: 'digital', currency: baseCurrency })}
-                            className="w-full"
-                        >
-                            Card
-                        </CustomButton>
-                        <CustomButton
-                            type="button"
-                            variant={formData.allocationType === 'cash' ? 'default' : 'outline'}
-                            onClick={() => setFormData({ ...formData, allocationType: 'cash', currency: availableCashCurrencies[0] || baseCurrency })}
-                            className="w-full"
-                        >
-                            Cash
-                        </CustomButton>
-                    </div>
-                </div>
-            )}
-
             {/* Available Funds Display */}
             <div className="p-3 bg-blue-50 rounded-lg space-y-1">
-                <p className="text-sm font-medium text-gray-700">Available to Allocate:</p>
-                {formData.allocationType === 'digital' ? (
-                    <p className="text-lg font-bold text-blue-600">
-                        {formatCurrency(availableDigital, settings)}
-                    </p>
-                ) : (
-                    <div className="space-y-1">
-                        {Object.entries(availableCashByCurrency).map(([currency, amount]) => (
-                            <p key={currency} className="text-sm font-semibold text-blue-600">
-                                {currency}: {formatCurrency(amount, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
-                            </p>
-                        ))}
-                        {Object.keys(availableCashByCurrency).length === 0 && (
-                            <p className="text-sm text-gray-500">No cash allocated to this budget</p>
-                        )}
-                    </div>
-                )}
-
-                {/* Also show wallet cash for reference */}
-                {formData.allocationType === 'cash' && Object.keys(walletCashByCurrency).length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-blue-200">
-                        <p className="text-xs text-gray-600 mb-1">Wallet Cash (for reference):</p>
-                        {Object.entries(walletCashByCurrency).map(([currency, amount]) => (
-                            <p key={currency} className="text-xs text-gray-600">
-                                {currency}: {formatCurrency(amount, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
-                            </p>
-                        ))}
-                    </div>
-                )}
+                <p className="text-sm font-medium text-gray-700">Total Budget Limit:</p>
+                <p className="text-lg font-bold text-blue-600">
+                    {formatCurrency(totalBudgetLimit, settings)}
+                </p>
             </div>
 
             {/* Category Selection */}
@@ -152,8 +109,8 @@ export default function AllocationForm({
                 />
             </div>
 
-            {/* Amount and Currency */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Amount */}
+            <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="allocatedAmount">Amount</Label>
                     <AmountInput
@@ -165,18 +122,6 @@ export default function AllocationForm({
                         required
                     />
                 </div>
-
-                {/* Currency - Only show for cash allocations and limited to available currencies */}
-                {formData.allocationType === 'cash' && availableCashCurrencies.length > 0 && (
-                    <div className="space-y-2">
-                        <Label htmlFor="currency">Currency</Label>
-                        <CurrencySelect
-                            value={formData.currency}
-                            onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                            limitToCurrencies={availableCashCurrencies}
-                        />
-                    </div>
-                )}
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
