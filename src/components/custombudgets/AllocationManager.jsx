@@ -6,8 +6,9 @@ import AllocationFormDialog from "./AllocationFormDialog";
 import AllocationCard from "./AllocationCard";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import { useSettings } from "../utils/SettingsContext";
-import { useCashWallet } from "../hooks/useBase44Entities";
-import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils";
+// import { useCashWallet } from "../hooks/useBase44Entities";
+// import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils";
+import { formatCurrency } from "../utils/currencyUtils";
 
 export default function AllocationManager({
     customBudget,
@@ -20,7 +21,7 @@ export default function AllocationManager({
     isSubmitting
 }) {
     const { settings, user } = useSettings();
-    const { cashWallet } = useCashWallet(user);
+    // const { cashWallet } = useCashWallet(user);
     const [showForm, setShowForm] = useState(false);
     const [editingAllocation, setEditingAllocation] = useState(null);
     const [deleteAllocationId, setDeleteAllocationId] = useState(null);
@@ -56,7 +57,7 @@ export default function AllocationManager({
 
     // Calculate remaining funds purely based on allocations (no expenses)
     // Card remaining = customBudget.allocatedAmount - sum of digital allocations
-    const digitalAllocations = allocations.filter(a => a.allocationType === 'digital');
+    /* const digitalAllocations = allocations.filter(a => a.allocationType === 'digital');
     const totalDigitalAllocated = digitalAllocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
     const remainingCard = customBudget.allocatedAmount - totalDigitalAllocated;
 
@@ -71,7 +72,12 @@ export default function AllocationManager({
 
             remainingCashByCurrency[cashAlloc.currencyCode] = cashAlloc.amount - totalAllocatedForCurrency;
         });
-    }
+    } */
+
+    // REFACTOR: Unified Consumption Model
+    // Remaining funds = Total Budget - Sum of ALL allocations
+    const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
+    const remainingFunds = customBudget.allocatedAmount - totalAllocated;
 
     return (
         <Card className="border-none shadow-lg">
@@ -94,40 +100,12 @@ export default function AllocationManager({
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="max-w-xs p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
-                    <p className="text-lg text-center font-bold text-gray-600 mb-4">Remaining Funds</p>
+                    <p className="text-lg text-center font-bold text-gray-600 mb-4">Unallocated Funds</p>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        {/* Card Remaining */}
-                        <div className="flex flex-col items-center">
-                            <p className="text-sm text-gray-500 mb-2">Card</p>
-                            <p className="text-3xl font-bold text-gray-900">
-                                {formatCurrency(remainingCard, settings)}
-                            </p>
-                        </div>
-
-                        {/* Cash Remaining by Currency */}
-                        {Object.keys(remainingCashByCurrency).length > 0 && (
-                            <div className="flex flex-col items-center">
-                                <p className="text-sm text-gray-500 mb-2">Cash</p>
-                                <div className="space-y-2">
-                                    {Object.entries(remainingCashByCurrency).map(([currency, amount]) => (
-                                        <div key={currency}>
-                                            <p className="text-3xl font-bold text-gray-900">
-                                                {formatCurrency(amount, { ...settings, currencySymbol: getCurrencySymbol(currency) })}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Show placeholder if no cash allocations */}
-                        {Object.keys(remainingCashByCurrency).length === 0 && (
-                            <div className="flex flex-col items-center">
-                                <p className="text-sm text-gray-500 mb-2">Cash</p>
-                                <p className="text-sm text-gray-400 italic">No cash allocated</p>
-                            </div>
-                        )}
+                    <div className="flex flex-col items-center">
+                        <p className={`text-3xl font-bold ${remainingFunds < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                            {formatCurrency(remainingFunds, settings)}
+                        </p>
                     </div>
                 </div>
 
@@ -140,7 +118,7 @@ export default function AllocationManager({
                     onSubmit={handleSubmit}
                     isSubmitting={isSubmitting}
                     settings={settings}
-                    cashWallet={cashWallet}
+                // cashWallet={cashWallet}
                 />
 
                 {/* Allocations List */}
