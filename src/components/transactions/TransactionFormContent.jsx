@@ -17,7 +17,7 @@ import CategorySelect from "../ui/CategorySelect";
 import AnimatePresenceContainer from "../ui/AnimatePresenceContainer";
 import { useSettings } from "../utils/SettingsContext";
 import { useExchangeRates } from "../hooks/useExchangeRates";
-import { getCurrencyBalance, getRemainingAllocatedCash } from "../utils/cashAllocationUtils";
+// import { getCurrencyBalance, getRemainingAllocatedCash } from "../utils/cashAllocationUtils";
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
@@ -34,7 +34,7 @@ export default function TransactionFormContent({
     onSubmit,
     onCancel,
     isSubmitting = false,
-    cashWallet = null,
+    // cashWallet = null,
     transactions = []
 }) {
     const { settings, user } = useSettings();
@@ -270,7 +270,7 @@ export default function TransactionFormContent({
 
 
     // Calculate available cash balance dynamically
-    const availableBalance = (() => {
+    /* const availableBalance = (() => {
         if (!formData.isCashExpense) return 0;
 
         const currency = formData.originalCurrency;
@@ -285,7 +285,7 @@ export default function TransactionFormContent({
 
         // Get total cash wallet balance for the selected currency
         return getCurrencyBalance(cashWallet, currency);
-    })();
+    })(); */
 
     const executeRefresh = async (force) => {
         const result = await refreshRates(
@@ -340,20 +340,21 @@ export default function TransactionFormContent({
         }
 
         // Check if sufficient cash for cash expenses
-        if (formData.isCashExpense && originalAmount > availableBalance) {
+        /* if (formData.isCashExpense && originalAmount > availableBalance) {
             setValidationError(
                 formData.customBudgetId
                     ? "You don't have enough allocated cash in this budget for this expense."
                     : "You don't have enough cash in your wallet for this expense."
             );
             return;
-        }
+        } */
 
         let finalAmount = originalAmount;
         let exchangeRateUsed = null;
 
         // Perform currency conversion if needed
-        if (isForeignCurrency && !formData.isCashExpense) {
+        // if (isForeignCurrency && !formData.isCashExpense) {
+        if (isForeignCurrency) {
             let sourceRate = getRateForDate(exchangeRates, formData.originalCurrency, formData.date);
             let targetRate = getRateForDate(exchangeRates, settings?.baseCurrency || 'USD', formData.date);
 
@@ -394,22 +395,22 @@ export default function TransactionFormContent({
                 finalAmount = conversion.convertedAmount;
                 exchangeRateUsed = conversion.exchangeRateUsed;
             }
-        } else if (formData.isCashExpense && isForeignCurrency) {
-            // For cash expenses in foreign currency, convert to base currency
-            const sourceRate = getRateForDate(exchangeRates, formData.originalCurrency, formData.date);
-            const targetRate = getRateForDate(exchangeRates, settings?.baseCurrency || 'USD', formData.date);
-
-            if (sourceRate && targetRate) {
-                const conversion = calculateConvertedAmount(
-                    originalAmount,
-                    formData.originalCurrency,
-                    settings?.baseCurrency || 'USD',
-                    { sourceToUSD: sourceRate, targetToUSD: targetRate }
-                );
-
-                finalAmount = conversion.convertedAmount;
-                exchangeRateUsed = conversion.exchangeRateUsed;
-            }
+            /* } else if (formData.isCashExpense && isForeignCurrency) {
+                // For cash expenses in foreign currency, convert to base currency
+                const sourceRate = getRateForDate(exchangeRates, formData.originalCurrency, formData.date);
+                const targetRate = getRateForDate(exchangeRates, settings?.baseCurrency || 'USD', formData.date);
+    
+                if (sourceRate && targetRate) {
+                    const conversion = calculateConvertedAmount(
+                        originalAmount,
+                        formData.originalCurrency,
+                        settings?.baseCurrency || 'USD',
+                        { sourceToUSD: sourceRate, targetToUSD: targetRate }
+                    );
+    
+                    finalAmount = conversion.convertedAmount;
+                    exchangeRateUsed = conversion.exchangeRateUsed;
+                } */
         }
 
         const submitData = {
@@ -430,9 +431,10 @@ export default function TransactionFormContent({
             submitData.paidDate = formData.isCashExpense ? formData.date : (formData.isPaid ? (formData.paidDate || formData.date) : null);
             submitData.customBudgetId = formData.customBudgetId || null;
             submitData.isCashTransaction = formData.isCashExpense;
-            submitData.cashTransactionType = formData.isCashExpense ? 'expense_from_wallet' : null;
-            submitData.cashAmount = formData.isCashExpense ? originalAmount : null;
-            submitData.cashCurrency = formData.isCashExpense ? formData.originalCurrency : null;
+            // submitData.cashTransactionType = formData.isCashExpense ? 'expense_from_wallet' : null;
+            // submitData.cashAmount = formData.isCashExpense ? originalAmount : null;
+            // submitData.cashCurrency = formData.isCashExpense ? formData.originalCurrency : null;
+            submitData.cashTransactionType = null;
         } else {
             submitData.isPaid = false;
             submitData.paidDate = null;
@@ -473,7 +475,8 @@ export default function TransactionFormContent({
             <div className="space-y-2">
                 <div className="flex justify-between items-center">
                     <Label htmlFor="amount">Amount</Label>
-                    {isForeignCurrency && !formData.isCashExpense && (
+                    {/* {isForeignCurrency && !formData.isCashExpense && ( */}
+                    {isForeignCurrency && (
                         <div className="flex items-center gap-2">
                             {(() => {
                                 const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
@@ -534,11 +537,6 @@ export default function TransactionFormContent({
                     />
                     <Label htmlFor="isCashExpense" className="cursor-pointer flex items-center gap-2">
                         Paid with cash
-                        {formData.isCashExpense && (
-                            <span className="text-xs text-gray-500">
-                                (Available: {selectedCurrencySymbol}{availableBalance.toFixed(2)})
-                            </span>
-                        )}
                     </Label>
                 </div>
             )}
