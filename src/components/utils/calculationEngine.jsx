@@ -16,12 +16,12 @@ import { parseDate } from "./dateUtils";
  * @param {object} transaction - The transaction object
  * @returns {boolean} True if this is a cash wallet expense
  */
-export const isCashExpense = (transaction) => {
+/* export const isCashExpense = (transaction) => {
     // return transaction.isCashTransaction && transaction.cashTransactionType === 'expense_from_wallet';
     // REFACTOR: In the Consumption Model, we treat cash expenses as normal expenses.
     // We return false to ensure they are NOT excluded from calculations.
     return false;
-};
+}; */
 
 /**
  * Get effective financial priority for a transaction
