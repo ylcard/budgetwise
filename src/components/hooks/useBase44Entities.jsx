@@ -221,11 +221,9 @@ export const useSystemBudgetManagement = (
 
                     if (existingBudget) {
                         // Only update if the calculated amount significantly differs to avoid unnecessary writes
-                        // DEPRECATED: AND only if it's the current month (preserve history)
-                        // if (isCurrentMonth && Math.abs(existingBudget.budgetAmount - amount) > 0.01) {
                         // AND only if it's the current month (preserve history), OR if the existing amount is 0 (fix uninitialized history)
                         const shouldUpdate = (isCurrentMonth || existingBudget.budgetAmount === 0) && Math.abs(existingBudget.budgetAmount - amount) > 0.01;
-                        
+
                         if (shouldUpdate) {
                             await base44.entities.SystemBudget.update(existingBudget.id, {
                                 budgetAmount: amount
