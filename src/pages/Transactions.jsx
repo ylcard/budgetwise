@@ -6,7 +6,6 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
-// import { useTransactions, useCategories, useCashWallet, useCustomBudgetsAll } from "../components/hooks/useBase44Entities";
 import { useTransactions, useCategories, useCustomBudgetsAll } from "../components/hooks/useBase44Entities";
 import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedData";
 import { useTransactionActions } from "../components/hooks/useActions";
@@ -37,7 +36,6 @@ export default function Transactions() {
     // Data fetching
     const { transactions, isLoading } = useTransactions();
     const { categories } = useCategories();
-    // const { cashWallet } = useCashWallet(user);
     const { allCustomBudgets } = useCustomBudgetsAll(user);
 
     // Advanced Filtering logic
@@ -65,8 +63,6 @@ export default function Transactions() {
         }
     });
 
-    // const handleBulkDelete = async () => {
-    //     if (filteredTransactions.length === 0) return;
     // Selection Handlers
     const handleToggleSelection = (id, isSelected) => {
         const newSelected = new Set(selectedIds);
@@ -100,9 +96,6 @@ export default function Transactions() {
             async () => {
                 setIsBulkDeleting(true);
                 try {
-                    // DEPRECATED: Batch deletions to avoid API limits, proccesses 50 at a time
-                    // const chunks = chunkArray(filteredTransactions, 50);
-
                     // Convert Set to Array
                     const idsToDelete = Array.from(selectedIds);
                     // Batch deletions to avoid API limits, processes 50 at a time
@@ -110,7 +103,6 @@ export default function Transactions() {
 
 
                     for (const chunk of chunks) {
-                        // const deletePromises = chunk.map(t => base44.entities.Transaction.delete(t.id));
                         const deletePromises = chunk.map(id => base44.entities.Transaction.delete(id));
                         await Promise.all(deletePromises);
                     }
