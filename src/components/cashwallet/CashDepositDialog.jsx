@@ -1,3 +1,6 @@
+// Deprecated, no longer using cash
+
+/*
 import { useState } from "react";
 import {
     Dialog,
@@ -16,7 +19,9 @@ import { formatDateString } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 import { getCurrencyBalance } from "../utils/cashAllocationUtils";
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
+*/
 
+/*
 export default function CashReturnDialog({
     open,
     onOpenChange,
@@ -143,3 +148,4 @@ export default function CashReturnDialog({
         </Dialog>
     );
 }
+*/
