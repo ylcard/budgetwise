@@ -58,18 +58,12 @@ export default function Transactions() {
         setSelectedIds(new Set()); // Clear selection on filter change
     }, [filters]);
 
-    const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useTransactionActions(
-        null,
-        null,
-        // cashWallet,
-        null,
-        {
-            onSuccess: () => {
-                setShowAddIncome(false);
-                setShowAddExpense(false);
-            }
+    const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useTransactionActions({
+        onSuccess: () => {
+            setShowAddIncome(false);
+            setShowAddExpense(false);
         }
-    );
+    });
 
     // const handleBulkDelete = async () => {
     //     if (filteredTransactions.length === 0) return;
