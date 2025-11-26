@@ -54,6 +54,7 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
         // "Remaining" means we are short of our target (BAD).
 
         // Refactoring Nov 26
+        // CEILING LOGIC: For Needs/Wants, being "under" is neutral/good (Blue), not "Success" (Green).
         // let statColor = isOver ? 'text-red-500' : 'text-emerald-600';
         // let statLabel = isOver ? 'Over by' : 'Remaining';
         let statColor = isOver ? 'text-red-500' : 'text-blue-600';
@@ -291,7 +292,7 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
                             </p>
                             {/* Subliminal reinforcement: If it's not a savings budget and we are under limit, hint that this is savings */}
                             {!isSavings && !isOverBudget && (
-                                <p className="text-[10px] text-emerald-600/80 font-medium mt-0.5">
+                                <p className="text-[9px] md:text-[10px] text-emerald-600/80 font-medium mt-0.5 text-right">
                                     (Potential Savings)
                                 </p>
                             )}
