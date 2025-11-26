@@ -258,7 +258,7 @@ export const getPaidSavingsExpenses = (transactions, categories, startDate, endD
 export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
     const allExpenses = transactions.filter(t =>
         t.type === 'expense' &&
-        t.cashTransactionType !== 'withdrawal_to_wallet' &&
+        // t.cashTransactionType !== 'withdrawal_to_wallet' &&
         isTransactionInDateRange(t, startDate, endDate)
     );
     return allExpenses.reduce((sum, t) => {
