@@ -170,7 +170,7 @@ export default function Dashboard() {
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
                         <BudgetBars
-                            // systemBudgets={systemBudgets}
+                            systemBudgets={systemBudgets}
                             // customBudgets={activeCustomBudgets}
                             // allCustomBudgets={allCustomBudgets}
                             // Pass pre-calculated data to avoid double calculation
