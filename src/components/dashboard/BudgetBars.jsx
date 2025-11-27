@@ -23,7 +23,8 @@ export default function BudgetBars({
     // New props for pre-calculated data
     preCalculatedSystemData,
     preCalculatedCustomData,
-    preCalculatedSavings
+    preCalculatedSavings,
+    showSystem = true
 }) {
 
     // Initialize state from global settings, defaulting to 'bars'
@@ -70,7 +71,7 @@ export default function BudgetBars({
                 </Card>
             )}
 
-            {systemBudgetsData.length > 0 && (
+            {showSystem && systemBudgetsData.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="flex items-center gap-2">
