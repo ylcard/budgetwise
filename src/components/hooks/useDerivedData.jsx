@@ -3,19 +3,12 @@ import { parseDate, getFirstDayOfMonth, getLastDayOfMonth, getMonthBoundaries } 
 import { createEntityMap } from "../utils/generalUtils";
 import {
     getTotalMonthExpenses,
-    getPaidNeedsExpenses,
-    getUnpaidNeedsExpenses,
-    getDirectPaidWantsExpenses,
-    getDirectUnpaidWantsExpenses,
-    getPaidCustomBudgetExpenses,
-    getUnpaidCustomBudgetExpenses,
+    getFinancialBreakdown,
     getMonthlyIncome,
     getMonthlyPaidExpenses,
     getSystemBudgetStats,
     getCustomBudgetStats,
     calculateBonusSavingsPotential,
-    getTotalWantsExpenses,
-    getTotalNeedsExpenses
 } from "../utils/financialCalculations";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
@@ -585,31 +578,19 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
             })
             .sort((a, b) => b.amount - a.amount);
 
-        // 3. Calculate Needs & Wants using centralized financialCalculations
-        // Needs = Paid + Unpaid Needs
-        const paidNeeds = getPaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-        const unpaidNeeds = getUnpaidNeedsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-        const needsTotal = paidNeeds + unpaidNeeds;
-
-        // Wants = Direct Paid/Unpaid Wants + Custom Budgets (Paid/Unpaid)
-        const directPaidWants = getDirectPaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-        const directUnpaidWants = getDirectUnpaidWantsExpenses(transactions, categories, monthStart, monthEnd, allCustomBudgets);
-        const customPaid = getPaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
-        const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
-        const wantsTotal = directPaidWants + directUnpaidWants + customPaid + customUnpaid;
-
-        // New simplified aggregate calculations
-        // Uses the new functions that rely solely on transaction.financial_priority
-        const aggregateNeedsTotal = getTotalNeedsExpenses(transactions, monthStart, monthEnd);
-        const aggregateWantsTotal = getTotalWantsExpenses(transactions, monthStart, monthEnd);
+        // 3. Calculate Aggregates in ONE PASS using the new optimizer
+        const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd);
 
         return {
             categoryBreakdown,
             totalExpenses,
-            needsTotal,
-            wantsTotal,
-            aggregateNeedsTotal,
-            aggregateWantsTotal
+            needsTotal: breakdown.needs.total,
+            wantsTotal: breakdown.wants.total,
+            // The aggregate totals are now identical to the breakdown totals
+            aggregateNeedsTotal: breakdown.needs.total,
+            aggregateWantsTotal: breakdown.wants.total,
+            // We can also return the detailed breakdown if the UI needs it later
+            detailedBreakdown: breakdown
         };
     }, [transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear]);
 };
