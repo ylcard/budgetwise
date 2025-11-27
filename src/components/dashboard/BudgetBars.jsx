@@ -6,7 +6,6 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
 import BudgetCard from "../budgets/BudgetCard";
-import { useSettings } from "../utils/SettingsContext";
 
 export default function BudgetBars({
     systemBudgets,
@@ -25,14 +24,10 @@ export default function BudgetBars({
     showSystem = true
 }) {
 
-    // Get the updater from context
-    const { updateSettings } = useSettings();
-
-    // 1. Initialize local state with global setting
+    // 1. Initialize local state with global setting (Default to 'bars' if undefined)
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
 
-    // 2. Sync local state when global settings load/change
-    // This ensures if the DB takes a second to load 'cards', the UI updates to match.
+    // 2. Sync local state when global settings update (e.g. from Settings page or DB load)
     useEffect(() => {
         if (settings.budgetViewMode) {
             setViewMode(settings.budgetViewMode);
@@ -54,16 +49,11 @@ export default function BudgetBars({
     const canScrollLeft = customStartIndex > 0;
     const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
 
-    // 3. Local-only toggle handler (Does NOT write to DB)
+    // 3. Local-only toggle handler
+    // This allows the user to temporarily switch views without affecting their saved preference
     const handleViewModeChange = (checked) => {
         const newMode = checked ? 'cards' : 'bars';
         setViewMode(newMode);
-    };
-
-    // Wrapper to update local state AND persist to settings
-    const handleViewModeChange = (checked) => {
-        const newMode = checked ? 'cards' : 'bars';
-        updateSettings({ budgetViewMode: newMode });
     };
 
     return (
