@@ -579,11 +579,18 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
         const customUnpaid = getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, monthStart, monthEnd);
         const wantsTotal = directPaidWants + directUnpaidWants + customPaid + customUnpaid;
 
+        // New simplified aggregate calculations
+        // Uses the new functions that rely solely on transaction.financial_priority
+        const aggregateNeedsTotal = getTotalNeedsExpenses(transactions, monthStart, monthEnd);
+        const aggregateWantsTotal = getTotalWantsExpenses(transactions, monthStart, monthEnd);
+
         return {
             categoryBreakdown,
             totalExpenses,
             needsTotal,
-            wantsTotal
+            wantsTotal,
+            aggregateNeedsTotal,
+            aggregateWantsTotal
         };
     }, [transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear]);
 };
