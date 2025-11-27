@@ -1,9 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { formatCurrency } from "../utils/currencyUtils";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
@@ -30,7 +28,16 @@ export default function BudgetBars({
     // Get the updater from context
     const { updateSettings } = useSettings();
 
-    const viewMode = settings.budgetViewMode || 'bars';
+    // 1. Initialize local state with global setting
+    const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
+
+    // 2. Sync local state when global settings load/change
+    // This ensures if the DB takes a second to load 'cards', the UI updates to match.
+    useEffect(() => {
+        if (settings.budgetViewMode) {
+            setViewMode(settings.budgetViewMode);
+        }
+    }, [settings.budgetViewMode]);
 
     const [customStartIndex, setCustomStartIndex] = useState(0);
     const barsPerPage = viewMode === 'cards' ? 4 : 7;
@@ -46,6 +53,12 @@ export default function BudgetBars({
     const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
     const canScrollLeft = customStartIndex > 0;
     const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
+
+    // 3. Local-only toggle handler (Does NOT write to DB)
+    const handleViewModeChange = (checked) => {
+        const newMode = checked ? 'cards' : 'bars';
+        setViewMode(newMode);
+    };
 
     // Wrapper to update local state AND persist to settings
     const handleViewModeChange = (checked) => {
@@ -84,6 +97,16 @@ export default function BudgetBars({
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
+                        <div className="flex items-center justify-end gap-2 mb-4">
+                            <Label htmlFor="view-mode-custom" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
+                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
+                            </Label>
+                            <Switch
+                                id="view-mode-custom"
+                                checked={viewMode === 'cards'}
+                                onCheckedChange={handleViewModeChange}
+                            />
+                        </div>
                         <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                             {systemBudgetsData.map((budget) => (
                                 viewMode === 'bars' ? (
