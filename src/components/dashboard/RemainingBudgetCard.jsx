@@ -41,8 +41,22 @@ export default function RemainingBudgetCard({
     // Actual Spend (from pre-calculated stats)
     // const needsSpent = needsBudget?.stats?.paidAmount || 0;
     // const wantsSpent = wantsBudget?.stats?.paidAmount || 0;
-    const needsSpent = aggregateNeedsTotal;
-    const wantsSpent = aggregateWantsTotal;
+    // Refactoring to differentiate between paid and unpaid
+    // const needsSpent = aggregateNeedsTotal;
+    // const wantsSpent = aggregateWantsTotal;
+
+    // Needs Breakdown
+    const needsPaid = needsBudget?.stats?.paidAmount || 0;
+    const needsUnpaid = needsBudget?.expectedAmount || 0;
+    const needsTotal = needsPaid + needsUnpaid;
+    const needsPaidPct = needsTotal > 0 ? (needsPaid / needsTotal) * 100 : 0;
+
+    // Wants Breakdown
+    const wantsPaid = wantsBudget?.stats?.paidAmount || 0;
+    const wantsUnpaid = wantsBudget?.expectedAmount || 0;
+    const wantsTotal = wantsPaid + wantsUnpaid;
+    const wantsPaidPct = wantsTotal > 0 ? (wantsPaid / wantsTotal) * 100 : 0;
+
     const totalSpent = currentMonthExpenses;
 
     // Goals (Limits) - Use budgetAmount as the ceiling
@@ -60,17 +74,30 @@ export default function RemainingBudgetCard({
     // Define a small, fixed minimum width for clickability, preventing segments from becoming un-selectable.
     const CLICKABLE_MIN_PCT = 5; // 5% minimum width if spending is > 0
 
-    const rawNeedsPct = (needsSpent / safeIncome) * 100;
+    // Refatoring to differentiate between paid and unpaid
+    // const rawNeedsPct = (needsSpent / safeIncome) * 100;
+
     // const needsPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISIBILITY_PCT) : 0;
     // 1. Calculate Needs Visual Width (Min 15%)
     // const MIN_VISUAL_PCT = 15;
     // const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISUAL_PCT) : 0;
-    const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
 
-    const rawWantsPct = (wantsSpent / safeIncome) * 100;
+    // Refatoring to differentiate between paid and unpaid
+    // const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
+
+    // Refatoring to differentiate between paid and unpaid
+    // const rawWantsPct = (wantsSpent / safeIncome) * 100;
+
     // const wantsPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISIBILITY_PCT) : 0;
     // const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISUAL_PCT) : 0;
-    const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
+    // Refatoring to differentiate between paid and unpaid
+    // const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
+
+    const rawNeedsPct = (needsTotal / safeIncome) * 100;
+    const needsVisualPct = needsTotal > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
+
+    const rawWantsPct = (wantsTotal / safeIncome) * 100;
+    const wantsVisualPct = wantsTotal > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
 
     // Calculate the total space required by the inflated visual bars
     const totalVisualOccupied = Math.min(100, needsVisualPct + wantsVisualPct);
@@ -89,10 +116,19 @@ export default function RemainingBudgetCard({
     const totalLimitPct = ((needsLimit + wantsLimit) / safeIncome) * 100;
 
     // Status Logic
-    const isNeedsOver = needsSpent > needsLimit;
-    const isWantsOver = wantsSpent > wantsLimit;
+    // Refactoring to differentiate between paid and unpaid
+    // const isNeedsOver = needsSpent > needsLimit;
+    // const isWantsOver = wantsSpent > wantsLimit;
+    const isNeedsOver = needsTotal > needsLimit;
+    const isWantsOver = wantsTotal > wantsLimit;
     // const isTotalOver = totalSpent > income;
     const isTotalOver = totalSpent > currentMonthIncome; // Check against real income
+
+    // Stripe Pattern
+    const stripePattern = {
+        backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
+        backgroundSize: '8px 8px'
+    };
 
     return (
         <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
@@ -164,9 +200,25 @@ export default function RemainingBudgetCard({
                             {/* Essentials Segment (Blue/Red) */}
                             <Link
                                 to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
-                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20`}
-                                style={{ width: `${needsVisualPct}%`, backgroundColor: isNeedsOver ? '#EF4444' : '#3B82F6' }}
+                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
+                                style={{ width: `${needsVisualPct}%` }}
                             >
+                                {/* Paid Portion */}
+                                <div 
+                                    className="h-full transition-all duration-500" 
+                                    style={{ width: `${needsPaidPct}%`, backgroundColor: isNeedsOver ? '#EF4444' : '#3B82F6' }} 
+                                />
+                                {/* Unpaid Portion (Striped) */}
+                                <div 
+                                    className="h-full transition-all duration-500" 
+                                    style={{ 
+                                        width: `${100 - needsPaidPct}%`, 
+                                        backgroundColor: isNeedsOver ? '#EF4444' : '#3B82F6',
+                                        opacity: 0.6,
+                                        ...stripePattern
+                                    }} 
+                                />
+
                                 {/* Show label always if bar is wide enough (>10%), otherwise hover only */}
                                 <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     Needs
@@ -175,11 +227,22 @@ export default function RemainingBudgetCard({
 
                             {/* Lifestyle Segment (Amber/Red) */}
                             {/* Stacks directly after Essentials */}
+                            {/* Lifestyle Segment (Amber/Red) - Stacks directly after Essentials */}
                             <Link
                                 to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
-                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20`}
-                                style={{ width: `${wantsVisualPct}%`, backgroundColor: isWantsOver ? '#ec8d1fff' : '#e6b42dff' }}
+                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
+                                style={{ width: `${wantsVisualPct}%` }}
                             >
+                                {/* Paid Portion */}
+                                <div className="h-full transition-all duration-500" style={{ width: `${wantsPaidPct}%`, backgroundColor: isWantsOver ? '#ec8d1fff' : '#e6b42dff' }} />
+                                {/* Unpaid Portion (Striped) */}
+                                <div className="h-full transition-all duration-500" style={{ 
+                                    width: `${100 - wantsPaidPct}%`, 
+                                    backgroundColor: isWantsOver ? '#ec8d1fff' : '#e6b42dff',
+                                    opacity: 0.6,
+                                    ...stripePattern
+                                }} />
+
                                 <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     Lifestyle
                                 </div>
@@ -220,11 +283,11 @@ export default function RemainingBudgetCard({
                             <div className="flex gap-4">
                                 <span className="flex items-center gap-1.5">
                                     <div className={`w-2 h-2 rounded-full ${isNeedsOver ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-                                    Essentials: {formatCurrency(needsSpent, settings)}
+                                    Essentials: {formatCurrency(needsTotal, settings)}
                                 </span>
                                 <span className="flex items-center gap-1.5">
                                     <div className={`w-2 h-2 rounded-full ${isWantsOver ? 'bg-red-400' : 'bg-amber-400'}`}></div>
-                                    Lifestyle: {formatCurrency(wantsSpent, settings)}
+                                    Lifestyle: {formatCurrency(wantsTotal, settings)}
                                 </span>
                             </div>
 
