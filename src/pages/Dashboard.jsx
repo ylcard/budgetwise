@@ -139,7 +139,7 @@ export default function Dashboard() {
                                     onSubmit={transactionActions.handleSubmit}
                                     isSubmitting={transactionActions.isSubmitting}
                                     renderTrigger={true}
-                                    triggerVariant="seamless"
+                                    triggerVariant="primary"
                                     triggerSize="sm"
                                 />
                             }
@@ -153,13 +153,13 @@ export default function Dashboard() {
                                     isSubmitting={transactionActions.isSubmitting}
                                     transactions={transactions}
                                     renderTrigger={true}
-                                    triggerVariant="seamless"
+                                    triggerVariant="warning"
                                     triggerSize="sm"
                                 />
                             }
                             importDataButton={
                                 <ImportWizardDialog
-                                    triggerVariant="seamless"
+                                    triggerVariant="glass"
                                     triggerSize="sm"
                                     triggerClassName="w-full justify-start"
                                 />
