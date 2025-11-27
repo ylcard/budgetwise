@@ -19,7 +19,11 @@ export default function BudgetBars({
     goals,
     monthlyIncome,
     baseCurrency,
-    onCreateBudget
+    onCreateBudget,
+    // New props for pre-calculated data
+    preCalculatedSystemData,
+    preCalculatedCustomData,
+    preCalculatedSavings
 }) {
 
     // Initialize state from global settings, defaulting to 'bars'
@@ -30,8 +34,16 @@ export default function BudgetBars({
     const barsPerPage = viewMode === 'cards' ? 4 : 7;
 
     // Use the extracted hook for all calculations
-    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
-        useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency); // Pass baseCurrency to hook
+    // const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
+    //     useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency); // Pass baseCurrency to hook
+    // Use passed data OR calculate if not provided (backward compatibility)
+    const calculatedData = useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency);
+
+    const systemBudgetsData = preCalculatedSystemData || calculatedData.systemBudgetsData;
+    const customBudgetsData = preCalculatedCustomData || calculatedData.customBudgetsData;
+    const totalActualSavings = preCalculatedSavings?.totalActualSavings ?? calculatedData.totalActualSavings;
+    const savingsTarget = preCalculatedSavings?.savingsTarget ?? calculatedData.savingsTarget;
+    const savingsShortfall = preCalculatedSavings?.savingsShortfall ?? calculatedData.savingsShortfall;
 
     const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
     const canScrollLeft = customStartIndex > 0;
