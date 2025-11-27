@@ -300,6 +300,39 @@ export const getMonthlyPaidExpenses = (transactions, startDate, endDate) => {
 };
 
 /**
+ * Calculates total "needs" expenses (paid + unpaid).
+ * Excludes cash expenses and expenses assigned to custom budgets.
+ * @param {Array<object>} transactions - List of all transaction objects.
+ * @param {Array<object>} categories - List of all category objects.
+ * @param {string} startDate - The start date of the range.
+ * @param {string} endDate - The end date of the range.
+ * @param {Array<object>} [allCustomBudgets=[]] - List of all custom budget objects.
+ * @returns {number} The total sum of needs expenses (paid + unpaid).
+ */
+export const getTotalNeedsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
+    const paid = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+    const unpaid = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
+    return paid + unpaid;
+};
+
+/**
+ * Calculates total "wants" expenses (paid + unpaid), including custom budget expenses.
+ * This aggregates all expenses categorized as 'wants' or assigned to a custom budget.
+ * Excludes cash expenses.
+ * @param {Array<object>} transactions - List of all transaction objects.
+ * @param {Array<object>} categories - List of all category objects.
+ * @param {string} startDate - The start date of the range.
+ * @param {string} endDate - The end date of the range.
+ * @param {Array<object>} allCustomBudgets - List of all custom budget objects.
+ * @returns {number} The total sum of wants expenses (paid + unpaid, including custom budgets).
+ */
+export const getTotalWantsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets) => {
+    const totalPaid = getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets) + getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+    const totalUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets) + getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
+    return totalPaid + totalUnpaid;
+};
+
+/**
  * Calculates total monthly income and paid expenses within a date range.
  * This summary is optimized for use in trend visualizations.
  * @param {Array<object>} transactions - List of all transaction objects.
