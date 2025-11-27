@@ -2,12 +2,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, AlertCircle, Target } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export default function RemainingBudgetCard({
     bonusSavingsPotential,
@@ -18,19 +12,16 @@ export default function RemainingBudgetCard({
     addIncomeButton,
     addExpenseButton,
     importDataButton,
-    systemBudgets = [], // Expects budgets WITH stats (from useBudgetBarsData)
+    systemBudgets = [],
     goals = [],
-    aggregateNeedsTotal = 0,
-    aggregateWantsTotal = 0
+    breakdown = null // Now expecting the granular breakdown object
 }) {
     if (!settings) return null;
 
-    // 1. Extract Data
-    // const income = currentMonthIncome || 1; // Prevent division by zero
-    // Use 'safeIncome' for calculations to avoid NaN (division by zero), but use 'currentMonthIncome' for display
+    // 1. Safe Income Calculation (Prevent Division by Zero)
     const safeIncome = currentMonthIncome || 1;
 
-    // Goal Summary Logic
+    // 2. Goal Summary Text (Top Right)
     const isAbsolute = settings.goalAllocationMode === 'absolute';
     const needsGoal = goals.find(g => g.priority === 'needs');
     const wantsGoal = goals.find(g => g.priority === 'wants');
@@ -40,154 +31,94 @@ export default function RemainingBudgetCard({
         ? `${formatCurrency(needsGoal?.target_amount || 0, settings)} / ${formatCurrency(wantsGoal?.target_amount || 0, settings)} / ${formatCurrency(savingsGoal?.target_amount || 0, settings)}`
         : `${needsGoal?.target_percentage || 50}% / ${wantsGoal?.target_percentage || 30}% / ${savingsGoal?.target_percentage || 20}%`;
 
-    // Find specific budgets (Essentials/Lifestyle) to visualize the "stack"
+    // 3. Extract Budget Limits & Colors
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
 
-    // Dynamic Colors (Fallbacks provided just in case)
     const needsColor = needsBudget?.color || '#3B82F6'; // Default Blue
     const wantsColor = wantsBudget?.color || '#F59E0B'; // Default Amber
 
-    // Actual Spend (from pre-calculated stats)
-    // const needsSpent = needsBudget?.stats?.paidAmount || 0;
-    // const wantsSpent = wantsBudget?.stats?.paidAmount || 0;
-    // Refactoring to differentiate between paid and unpaid
-    // const needsSpent = aggregateNeedsTotal;
-    // const wantsSpent = aggregateWantsTotal;
+    const needsLimit = needsBudget?.budgetAmount || 0;
+    const wantsLimit = wantsBudget?.budgetAmount || 0;
 
-    // Needs Breakdown
-    // const needsPaid = needsBudget?.stats?.paidAmount || 0;
-    // const needsUnpaid = needsBudget?.expectedAmount || 0;
-    // const needsTotal = needsPaid + needsUnpaid;
-    // const needsPaidPct = needsTotal > 0 ? (needsPaid / needsTotal) * 100 : 0;
+    // 4. Extract Actual Spending (Paid vs Unpaid)
+    // Fallback to 0s if breakdown isn't ready yet
+    const needsData = breakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
+    const wantsData = breakdown?.wants || { total: 0, directPaid: 0, directUnpaid: 0, customPaid: 0, customUnpaid: 0 };
 
-    // Wants Breakdown
-    // const wantsPaid = wantsBudget?.stats?.paidAmount || 0;
-    // const wantsUnpaid = wantsBudget?.expectedAmount || 0;
-    // const wantsTotal = wantsPaid + wantsUnpaid;
-    // const wantsPaidPct = wantsTotal > 0 ? (wantsPaid / wantsTotal) * 100 : 0;
+    // Aggregate Wants (Direct + Custom)
+    const wantsPaidTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0);
+    const wantsUnpaidTotal = (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
 
-    // Helper to calculate segment splits (Safe Paid, Safe Unpaid, Overflow)
+    /**
+     * CORE LOGIC: Calculate Bar Segments
+     * Splits spending into: 
+     * 1. Safe Paid (Solid)
+     * 2. Safe Unpaid (Striped)
+     * 3. Overflow (Red Striped)
+     */
     const calculateSegments = (paid, unpaid, limit) => {
         const total = paid + unpaid;
 
-        // FIX: If limit is 0 or missing, treat as "Safe" (Unbudgeted) instead of "Overflow"
+        // If no limit is set (0), treat everything as "Safe" spending (no overflow possible)
         if (!limit || limit <= 0) {
             return { safePaid: paid, safeUnpaid: unpaid, overflow: 0, total };
         }
 
-        // If limit is 0 (no budget), everything is overflow
-        const overflow = limit > 0 ? Math.max(0, total - limit) : total;
+        // Calculate Overflow
+        const overflow = Math.max(0, total - limit);
+
+        // Calculate what fits inside the Limit
         const safeTotal = total - overflow;
 
-        // Within safe limit, prioritize showing 'Paid' first, then 'Unpaid'
+        // Within the safe limit, fill with Paid first, then Unpaid
         const safePaid = Math.min(paid, safeTotal);
         const safeUnpaid = Math.max(0, safeTotal - safePaid);
 
         return { safePaid, safeUnpaid, overflow, total };
     };
 
-    const needsLimit = needsBudget?.budgetAmount || 0;
-    const wantsLimit = wantsBudget?.budgetAmount || 0;
+    const needsSegs = calculateSegments(needsData.paid, needsData.unpaid, needsLimit);
+    const wantsSegs = calculateSegments(wantsPaidTotal, wantsUnpaidTotal, wantsLimit);
 
-    const needsSegs = calculateSegments(needsBudget?.stats?.paidAmount || 0, needsBudget?.expectedAmount || 0, needsLimit);
-    const wantsSegs = calculateSegments(wantsBudget?.stats?.paidAmount || 0, wantsBudget?.expectedAmount || 0, wantsLimit);
+    // 5. Visual Calculations
+    // We inflate very small bars to be clickable (min 5%), but this distorts the "Savings" bar slightly.
+    // This is a trade-off for usability.
+    const CLICKABLE_MIN_PCT = 5;
 
-    const totalSpent = currentMonthExpenses;
-
-    // Goals (Limits) - Use budgetAmount as the ceiling
-    // const needsLimit = needsBudget?.budgetAmount || 0;
-    // const wantsLimit = wantsBudget?.budgetAmount || 0;
-
-    // Percentages for the Bar (Relative to INCOME)
-    // This visualizes: "How much of my Income have I given to Needs?"
-    // const needsPct = (needsSpent / income) * 100;
-    // const wantsPct = (wantsSpent / income) * 100;
-    // const needsPct = (needsSpent / safeIncome) * 100;
-    // const wantsPct = (wantsSpent / safeIncome) * 100;
-    // VISUAL TWEAK: Enforce a minimum width for segments with data so they remain visible/clickable
-    // const MIN_VISIBILITY_PCT = 4; // 4% width minimum
-
-    // Visual Width Calculation (Container Size)
-    // Define a small, fixed minimum width for clickability, preventing segments from becoming un-selectable.
-    const CLICKABLE_MIN_PCT = 5; // 5% minimum width if spending is > 0
-
-    // Refatoring to differentiate between paid and unpaid
-    // const rawNeedsPct = (needsSpent / safeIncome) * 100;
-
-    // const needsPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISIBILITY_PCT) : 0;
-    // 1. Calculate Needs Visual Width (Min 15%)
-    // const MIN_VISUAL_PCT = 15;
-    // const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISUAL_PCT) : 0;
-
-    // Refatoring to differentiate between paid and unpaid
-    // const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
-
-    // Refatoring to differentiate between paid and unpaid
-    // const rawWantsPct = (wantsSpent / safeIncome) * 100;
-
-    // const wantsPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISIBILITY_PCT) : 0;
-    // const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISUAL_PCT) : 0;
-    // Refatoring to differentiate between paid and unpaid
-    // const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
-
-    // const rawNeedsPct = (needsTotal / safeIncome) * 100;
-    // const needsVisualPct = needsTotal > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
     const rawNeedsPct = (needsSegs.total / safeIncome) * 100;
     const needsVisualPct = needsSegs.total > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
 
-    // const rawWantsPct = (wantsTotal / safeIncome) * 100;
-    // const wantsVisualPct = wantsTotal > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
     const rawWantsPct = (wantsSegs.total / safeIncome) * 100;
     const wantsVisualPct = wantsSegs.total > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
 
-    // Calculate the total space required by the inflated visual bars
-    // const totalVisualOccupied = Math.min(100, needsVisualPct + wantsVisualPct);
+    const totalSpent = currentMonthExpenses;
+    const isTotalOver = totalSpent > currentMonthIncome;
 
-    // Calculate Limits
+    // 6. Savings Bars Logic
+    // We calculate two "phantom" bars for the empty space:
+    // A. Efficiency Bar: The gap between Actual Spending and the Budget Limit.
+    // B. Target Bar: The gap between Budget Limit and 100% Income.
+
     const needsLimitPct = (needsLimit / safeIncome) * 100;
-    const totalLimitPct = ((needsLimit + wantsLimit) / safeIncome) * 100;
-
-    // Calculate the true remaining space (used for Savings visual bar calculation)
-    // const trueSavingsSpace = Math.max(0, 100 - totalVisualOccupied);
-
-    // --- SAVINGS SEGMENT CALCULATIONS ---
-    // We calculate two types of savings:
-    // 1. Efficiency: The gap between Spending and the Budget Cap (The "Notch")
-    // 2. Target: The space beyond the Budget Cap (The "Planned" Savings)
+    const wantsLimitPct = (wantsLimit / safeIncome) * 100;
+    const totalLimitPct = needsLimitPct + wantsLimitPct;
 
     const visualSpendingEnd = needsVisualPct + wantsVisualPct;
 
-    // Efficiency: Amount saved by spending LESS than budget (Gap between spending and notch)
+    // "Efficiency": Amount budget that was allocated but NOT spent.
+    // Logic: BudgetLimit - ActualVisualSpend
     const efficiencyBarPct = Math.max(0, totalLimitPct - visualSpendingEnd);
 
-    // Target: The pure savings allocated beyond the budget (Gap between notch and 100%)
-    // If spending > limit, spending eats into this bar.
+    // "Target": Pure unallocated savings
+    // Logic: 100% - Max(BudgetLimit, ActualVisualSpend)
+    // If we overspend, we eat into this bar.
     const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
 
-    // Text Percentage for display
-    // Savings is strictly "Income minus Spending"
-    // const savingsPct = Math.max(0, 100 - (totalSpent / income) * 100);
+    // Display Percentage (Strict Math, ignore visual inflation)
     const savingsPct = Math.max(0, 100 - (totalSpent / safeIncome) * 100);
 
-    // Limit Markers (Where the ceilings sit relative to Income)
-    // const needsLimitPct = (needsLimit / income) * 100;
-    // const totalLimitPct = ((needsLimit + wantsLimit) / income) * 100;
-    // const needsLimitPct = (needsLimit / safeIncome) * 100;
-    // const totalLimitPct = ((needsLimit + wantsLimit) / safeIncome) * 100;
-
-    // Status Logic
-    // Refactoring to differentiate between paid and unpaid
-    // const isNeedsOver = needsSpent > needsLimit;
-    // const isWantsOver = wantsSpent > wantsLimit;
-    // const isNeedsOver = needsTotal > needsLimit;
-    // const isWantsOver = wantsTotal > wantsLimit;
-    // const isNeedsOver = needsSegs.total > needsLimit;
-    // const isWantsOver = wantsSegs.total > wantsLimit;
-    // const isTotalOver = totalSpent > income;
-    const isTotalOver = totalSpent > currentMonthIncome; // Check against real income
-
-    // Stripe Pattern
+    // CSS Pattern for "Unpaid" or "Overflow"
     const stripePattern = {
         backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
         backgroundSize: '8px 8px'
@@ -197,7 +128,7 @@ export default function RemainingBudgetCard({
         <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
             <CardContent className="p-5 flex-1 flex flex-col">
 
-                {/* Header / Controls */}
+                {/* --- Header / Controls --- */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex-1">
                         {monthNavigator}
@@ -209,7 +140,7 @@ export default function RemainingBudgetCard({
                     </div>
                 </div>
 
-                {/* Main Content Grid */}
+                {/* --- Main Content Grid --- */}
                 <div className="flex flex-col gap-6">
 
                     {/* 1. The Verdict (Text) */}
@@ -255,55 +186,53 @@ export default function RemainingBudgetCard({
                         )}
                     </div>
 
-                    {/* 2. The Unified Income Bar (The Visualization) */}
+                    {/* 2. The Visualization Bar */}
                     <div className="space-y-2">
-                        {/* The Bar Container */}
                         <div className="relative h-8 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
 
-                            {/* Essentials Segment (Blue/Red) */}
+                            {/* --- NEEDS SEGMENT --- */}
                             <Link
                                 to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
                                 className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
                                 style={{ width: `${needsVisualPct}%` }}
                             >
-                                {/* 1. Safe Paid (Solid) */}
+                                {/* A. Safe Paid (Solid) */}
                                 {needsSegs.safePaid > 0 && (
                                     <div className="h-full" style={{ width: `${(needsSegs.safePaid / needsSegs.total) * 100}%`, backgroundColor: needsColor }} />
                                 )}
 
-                                {/* 2. Safe Unpaid (Striped) */}
+                                {/* B. Safe Unpaid (Striped) */}
                                 {needsSegs.safeUnpaid > 0 && (
                                     <div className="h-full bg-blue-500 opacity-60" style={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%`, ...stripePattern }} />
                                 )}
 
-                                {/* 3. Overflow (Striped Red) */}
+                                {/* C. Overflow (Red Striped) */}
                                 {needsSegs.overflow > 0 && (
-                                    <div className="h-full opacity-60" style={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%`, backgroundColor: needsColor, ...stripePattern }} />
+                                    <div className="h-full opacity-60" style={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%`, backgroundColor: 'red', ...stripePattern }} />
                                 )}
 
-                                {/* Show label always if bar is wide enough (>10%), otherwise hover only */}
                                 <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     Needs
                                 </div>
                             </Link>
 
-                            {/* Lifestyle Segment (Amber/Red) */}
+                            {/* --- WANTS SEGMENT --- */}
                             <Link
                                 to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
                                 className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
                                 style={{ width: `${wantsVisualPct}%` }}
                             >
-                                {/* 1. Safe Paid (Solid) */}
+                                {/* A. Safe Paid (Solid) */}
                                 {wantsSegs.safePaid > 0 && (
                                     <div className="h-full" style={{ width: `${(wantsSegs.safePaid / wantsSegs.total) * 100}%`, backgroundColor: wantsColor }} />
                                 )}
 
-                                {/* 2. Safe Unpaid (Striped) */}
+                                {/* B. Safe Unpaid (Striped) */}
                                 {wantsSegs.safeUnpaid > 0 && (
                                     <div className="h-full opacity-60" style={{ width: `${(wantsSegs.safeUnpaid / wantsSegs.total) * 100}%`, backgroundColor: wantsColor, ...stripePattern }} />
                                 )}
 
-                                {/* 3. Overflow (Striped Red) */}
+                                {/* C. Overflow (Red Striped) */}
                                 {wantsSegs.overflow > 0 && (
                                     <div className="h-full bg-red-500" style={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%`, ...stripePattern }} />
                                 )}
@@ -313,34 +242,32 @@ export default function RemainingBudgetCard({
                                 </div>
                             </Link>
 
-                            {/* EFFICIENCY SAVINGS (Bright Green) */}
-                            {/* Represents money saved by staying UNDER budget */}
+                            {/* --- EFFICIENCY SAVINGS SEGMENT (Gap between Actual & Budget) --- */}
                             {efficiencyBarPct > 0 && (
                                 <div
                                     className="h-full bg-emerald-300 relative group border-r border-white/20"
                                     style={{ width: `${efficiencyBarPct}%` }}
                                 >
-                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity">
-                                        Extra Savings
+                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+                                        Extra
                                     </div>
                                 </div>
                             )}
 
-                            {/* TARGET SAVINGS (Solid Emerald) */}
-                            {/* Represents planned savings (Income - Budget) */}
+                            {/* --- TARGET SAVINGS SEGMENT (Gap between Budget & Income) --- */}
                             {targetSavingsBarPct > 0 && (
                                 <div
                                     className="h-full bg-emerald-500 relative group"
                                     style={{ width: `${targetSavingsBarPct}%` }}
                                 >
-                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100">
-                                        Target Savings
+                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
+                                        Target
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Legend Row */}
+                        {/* --- Legend Row --- */}
                         <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-400 pt-1 gap-2">
                             {/* Amounts Legend */}
                             <div className="flex gap-4 items-center">
