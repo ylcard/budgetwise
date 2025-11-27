@@ -13,7 +13,9 @@ import {
     getMonthlyPaidExpenses,
     getSystemBudgetStats,
     getCustomBudgetStats,
-    calculateBonusSavingsPotential
+    calculateBonusSavingsPotential,
+    getTotalWantsExpenses,
+    getTotalNeedsExpenses
 } from "../utils/financialCalculations";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
