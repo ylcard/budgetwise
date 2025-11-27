@@ -127,16 +127,6 @@ export default function BudgetBars({
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="view-mode" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
-                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
-                            </Label>
-                            <Switch
-                                id="view-mode"
-                                checked={viewMode === 'cards'}
-                                onCheckedChange={(checked) => setViewMode(checked ? 'cards' : 'bars')}
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
                             {customBudgetsData.length > barsPerPage && (
                                 <>
                                     <CustomButton
@@ -168,6 +158,16 @@ export default function BudgetBars({
                         </div>
                     </CardHeader>
                     <CardContent>
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="view-mode" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
+                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
+                            </Label>
+                            <Switch
+                                id="view-mode"
+                                checked={viewMode === 'cards'}
+                                onCheckedChange={(checked) => setViewMode(checked ? 'cards' : 'bars')}
+                            />
+                        </div>
                         <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                             {visibleCustomBudgets.map((budget) => (
                                 viewMode === 'bars' ? (
