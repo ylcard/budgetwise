@@ -300,36 +300,48 @@ export const getMonthlyPaidExpenses = (transactions, startDate, endDate) => {
 };
 
 /**
- * Calculates total "needs" expenses (paid + unpaid).
- * Excludes cash expenses and expenses assigned to custom budgets.
- * @param {Array<object>} transactions - List of all transaction objects.
- * @param {Array<object>} categories - List of all category objects.
- * @param {string} startDate - The start date of the range.
- * @param {string} endDate - The end date of the range.
- * @param {Array<object>} [allCustomBudgets=[]] - List of all custom budget objects.
- * @returns {number} The total sum of needs expenses (paid + unpaid).
+ * Helper to calculate total expenses for a specific priority (needs/wants) within a date range.
+ * Strictly uses transaction-level priority and ignores custom budget assignment.
+ * @private
  */
-export const getTotalNeedsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets = []) => {
-    const paid = getPaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-    const unpaid = getUnpaidNeedsExpenses(transactions, categories, startDate, endDate, allCustomBudgets);
-    return paid + unpaid;
+const calculateTotalExpensesByPriority = (transactions, startDate, endDate, priority) => {
+    return transactions
+        .filter(t => {
+            // Must be an expense
+            if (t.type !== 'expense') return false;
+            
+            // Exclude cash wallet expenses (unless user wants them, but standard is to exclude)
+            if (isCashExpense(t)) return false;
+
+            // Check priority directly on transaction (No category fallback needed)
+            if (t.financial_priority !== priority) return false;
+
+            // Check date range (handles paidDate vs date logic)
+            return isTransactionInDateRange(t, startDate, endDate);
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
 };
 
 /**
- * Calculates total "wants" expenses (paid + unpaid), including custom budget expenses.
- * This aggregates all expenses categorized as 'wants' or assigned to a custom budget.
- * Excludes cash expenses.
+ * Calculates total "needs" expenses (paid + unpaid).
+ * Relies solely on transaction.financial_priority.
  * @param {Array<object>} transactions - List of all transaction objects.
- * @param {Array<object>} categories - List of all category objects.
- * @param {string} startDate - The start date of the range.
- * @param {string} endDate - The end date of the range.
- * @param {Array<object>} allCustomBudgets - List of all custom budget objects.
- * @returns {number} The total sum of wants expenses (paid + unpaid, including custom budgets).
+ * @param {string} startDate - The start date.
+ * @param {string} endDate - The end date.
  */
-export const getTotalWantsExpenses = (transactions, categories, startDate, endDate, allCustomBudgets) => {
-    const totalPaid = getDirectPaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets) + getPaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
-    const totalUnpaid = getDirectUnpaidWantsExpenses(transactions, categories, startDate, endDate, allCustomBudgets) + getUnpaidCustomBudgetExpenses(transactions, allCustomBudgets, startDate, endDate);
-    return totalPaid + totalUnpaid;
+export const getTotalNeedsExpenses = (transactions, startDate, endDate = []) => {
+    return calculateTotalExpensesByPriority(transactions, startDate, endDate, 'needs');
+};
+
+/**
+ * Calculates total "wants" expenses (paid + unpaid).
+ * Relies solely on transaction.financial_priority.
+ * @param {Array<object>} transactions - List of all transaction objects.
+ * @param {string} startDate - The start date.
+ * @param {string} endDate - The end date.
+ */
+export const getTotalWantsExpenses = (transactions, startDate, endDate) => {
+    return calculateTotalExpensesByPriority(transactions, startDate, endDate, 'wants');
 };
 
 /**
