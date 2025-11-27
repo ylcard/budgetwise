@@ -50,8 +50,16 @@ export default function RemainingBudgetCard({
     // This visualizes: "How much of my Income have I given to Needs?"
     // const needsPct = (needsSpent / income) * 100;
     // const wantsPct = (wantsSpent / income) * 100;
-    const needsPct = (needsSpent / safeIncome) * 100;
-    const wantsPct = (wantsSpent / safeIncome) * 100;
+    // const needsPct = (needsSpent / safeIncome) * 100;
+    // const wantsPct = (wantsSpent / safeIncome) * 100;
+    // VISUAL TWEAK: Enforce a minimum width for segments with data so they remain visible/clickable
+    const MIN_VISIBILITY_PCT = 4; // 4% width minimum
+
+    const rawNeedsPct = (needsSpent / safeIncome) * 100;
+    const needsPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISIBILITY_PCT) : 0;
+
+    const rawWantsPct = (wantsSpent / safeIncome) * 100;
+    const wantsPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISIBILITY_PCT) : 0;
 
     // Savings is strictly "Income minus Spending"
     // const savingsPct = Math.max(0, 100 - (totalSpent / income) * 100);
@@ -139,10 +147,11 @@ export default function RemainingBudgetCard({
                             {/* Essentials Segment (Blue/Red) */}
                             <Link
                                 to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
-                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer ${isNeedsOver ? 'bg-red-500' : 'bg-blue-500'}`}
+                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 ${isNeedsOver ? 'bg-red-500' : 'bg-blue-500'}`}
                                 style={{ width: `${Math.min(needsPct, 100)}%` }}
                             >
-                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* Show label always if bar is wide enough (>15%), otherwise hover only */}
+                                <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsPct > 15 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     Needs
                                 </div>
                             </Link>
@@ -151,10 +160,10 @@ export default function RemainingBudgetCard({
                             {/* Stacks directly after Essentials */}
                             <Link
                                 to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
-                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer ${isWantsOver ? 'bg-red-400' : 'bg-amber-400'}`}
+                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 ${isWantsOver ? 'bg-red-400' : 'bg-amber-400'}`}
                                 style={{ width: `${Math.min(wantsPct, 100 - needsPct)}%` }}
                             >
-                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsPct > 15 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     Lifestyle
                                 </div>
                             </Link>
