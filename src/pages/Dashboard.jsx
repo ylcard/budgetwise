@@ -15,7 +15,8 @@ import {
     useMonthlyIncome,
     useDashboardSummary,
     useActiveBudgets,
-    useBudgetBarsData
+    useBudgetBarsData,
+    useMonthlyBreakdown
 } from "../components/hooks/useDerivedData";
 import {
     useTransactionActions,
@@ -64,6 +65,16 @@ export default function Dashboard() {
         allCustomBudgets,
         systemBudgets,
         categories
+    );
+
+    // NEW: Calculate the aggregated "Needs" and "Wants" totals using the new simplified logic
+    const { aggregateNeedsTotal, aggregateWantsTotal } = useMonthlyBreakdown(
+        transactions,
+        categories,
+        monthlyIncome,
+        allCustomBudgets,
+        selectedMonth,
+        selectedYear
     );
 
     const { activeCustomBudgets } = useActiveBudgets(
@@ -121,6 +132,8 @@ export default function Dashboard() {
                             currentMonthExpenses={currentMonthExpenses}
                             goals={goals}
                             settings={settings}
+                            aggregateNeedsTotal={aggregateNeedsTotal}
+                            aggregateWantsTotal={aggregateWantsTotal}
                             monthNavigator={
                                 <MonthNavigator
                                     currentMonth={selectedMonth}
