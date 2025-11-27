@@ -196,7 +196,7 @@ export const useSystemBudgetManagement = (
 
             try {
                 const systemTypes = ['needs', 'wants', 'savings'];
-                const colors = { needs: '#EF4444', wants: '#F59E0B', savings: '#10B981' };
+                const colors = { needs: '#448eefff', wants: '#F59E0B', savings: '#10B981' };
 
                 // Use getMonthlyIncome from financialCalculations
                 const currentMonthIncome = getMonthlyIncome(transactions, monthStart, monthEnd);
