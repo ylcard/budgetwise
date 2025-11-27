@@ -43,6 +43,7 @@ export const SettingsProvider = ({ children }) => {
     });
 
     const [user, setUser] = useState(null);
+    const [settingsId, setSettingsId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -59,6 +60,7 @@ export const SettingsProvider = ({ children }) => {
             const userSettings = userSettingsArray[0];
 
             if (userSettings) {
+                setSettingsId(userSettings.id);
                 const newSettings = {
                     baseCurrency: userSettings.baseCurrency || 'USD',
                     currencySymbol: userSettings.currencySymbol || '$',
@@ -96,17 +98,16 @@ export const SettingsProvider = ({ children }) => {
             setSettings(updatedSettings);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSettings));
 
-            // Then sync to database. Filter by email again to get the record ID
-            const userSettingsArray = await base44.entities.UserSettings.filter({ user_email: user.email });
-            const userSettings = userSettingsArray[0];
-
-            if (userSettings) {
-                await base44.entities.UserSettings.update(userSettings.id, newSettings);
+            // Then sync to database using the stored ID
+            if (settingsId) {
+                await base44.entities.UserSettings.update(settingsId, newSettings);
             } else {
-                await base44.entities.UserSettings.create({
+                // Fallback: If no ID exists yet, create the record
+                const created = await base44.entities.UserSettings.create({
                     ...updatedSettings, // CRITICAL: Use full, merged settings for creation
                     user_email: user.email
                 });
+                if (created) setSettingsId(created.id);
             }
         } catch (error) {
             console.error('Error updating settings:', error);
