@@ -2,7 +2,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, AlertCircle, Target } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
-import { useMonthlyBreakdown } from "../hooks/useDerivedData";
 
 export default function RemainingBudgetCard({
     bonusSavingsPotential,
@@ -14,13 +13,11 @@ export default function RemainingBudgetCard({
     addExpenseButton,
     importDataButton,
     systemBudgets = [], // Expects budgets WITH stats (from useBudgetBarsData)
-    goals = []
+    goals = [],
+    aggregateNeedsTotal = 0,
+    aggregateWantsTotal = 0
 }) {
     if (!settings) return null;
-
-    const { aggregateNeedsTotal, aggregateWantsTotal } = useMonthlyBreakdown(
-        transactions, selectedMonth, selectedYear, priority
-    );
 
     // 1. Extract Data
     // const income = currentMonthIncome || 1; // Prevent division by zero
