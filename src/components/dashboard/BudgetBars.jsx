@@ -158,7 +158,7 @@ export default function BudgetBars({
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-center gap-2 ml-auto">
                             <Label htmlFor="view-mode" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
                                 {viewMode === 'cards' ? 'Card View' : 'Bar View'}
                             </Label>
