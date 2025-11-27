@@ -143,7 +143,7 @@ export const useGoalActions = (user, goals) => {
         },
     });
 
-    const handleGoalUpdate = async (priority, percentage, extraData ={}) => {
+    const handleGoalUpdate = async (priority, percentage, extraData = {}) => {
         const existingGoal = goals.find(g => g.priority === priority);
 
         try {
