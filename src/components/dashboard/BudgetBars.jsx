@@ -79,16 +79,6 @@ export default function BudgetBars({
                                 System Budgets
                             </span>
                         </CardTitle>
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="view-mode" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
-                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
-                            </Label>
-                            <Switch
-                                id="view-mode"
-                                checked={viewMode === 'cards'}
-                                onCheckedChange={(checked) => setViewMode(checked ? 'cards' : 'bars')}
-                            />
-                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
@@ -158,12 +148,12 @@ export default function BudgetBars({
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center gap-2 ml-auto">
-                            <Label htmlFor="view-mode" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
+                        <div className="flex items-center justify-end gap-2 mb-4">
+                            <Label htmlFor="view-mode-custom" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
                                 {viewMode === 'cards' ? 'Card View' : 'Bar View'}
                             </Label>
                             <Switch
-                                id="view-mode"
+                                id="view-mode-custom"
                                 checked={viewMode === 'cards'}
                                 onCheckedChange={(checked) => setViewMode(checked ? 'cards' : 'bars')}
                             />
