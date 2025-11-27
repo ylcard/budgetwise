@@ -4,7 +4,7 @@ export const FINANCIAL_PRIORITIES = {
     needs: {
         label: "Needs",
         description: "Essential expenses",
-        color: "#EF4444",
+        color: "#448eefff",
         bg: "bg-red-50",
         order: 0
     },
