@@ -311,7 +311,7 @@ const calculateTotalExpensesByPriority = (transactions, startDate, endDate, prio
             if (t.type !== 'expense') return false;
             
             // Exclude cash wallet expenses (unless user wants them, but standard is to exclude)
-            if (isCashExpense(t)) return false;
+            // if (isCashExpense(t)) return false;
 
             // Check priority directly on transaction (No category fallback needed)
             if (t.financial_priority !== priority) return false;
