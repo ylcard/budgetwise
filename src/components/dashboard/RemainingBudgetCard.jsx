@@ -103,9 +103,19 @@ export default function RemainingBudgetCard({
                                 </h2>
                             )}
 
-                            <p className="text-sm text-gray-500 mt-1">
-                                You've spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>{formatCurrency(totalSpent, settings)}</strong> of your <strong>{formatCurrency(currentMonthIncome, settings)}</strong> income.
-                            </p>
+                            <div className="text-sm text-gray-500 mt-1">
+                                {currentMonthIncome > 0 ? (
+                                    <>
+                                        You've spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>{formatCurrency(totalSpent, settings)}</strong> of your <strong>{formatCurrency(currentMonthIncome, settings)}</strong> income.
+                                    </>
+                                ) : totalSpent > 0 ? (
+                                    <>
+                                        You've spent <strong className="text-red-600">{formatCurrency(totalSpent, settings)}</strong>, but have no income recorded.
+                                    </>
+                                ) : (
+                                    "No income or expenses recorded."
+                                )}
+                            </div>
                         </div>
 
                         {/* Efficiency Bonus Badge */}
