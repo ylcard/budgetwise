@@ -6,6 +6,7 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
 import BudgetCard from "../budgets/BudgetCard";
+import { Label } from "@/components/ui/label";
 
 export default function BudgetBars({
     systemBudgets,
