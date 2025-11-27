@@ -2,6 +2,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, AlertCircle, Target } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function RemainingBudgetCard({
     bonusSavingsPotential,
@@ -46,22 +52,42 @@ export default function RemainingBudgetCard({
     // const wantsSpent = aggregateWantsTotal;
 
     // Needs Breakdown
-    const needsPaid = needsBudget?.stats?.paidAmount || 0;
-    const needsUnpaid = needsBudget?.expectedAmount || 0;
-    const needsTotal = needsPaid + needsUnpaid;
-    const needsPaidPct = needsTotal > 0 ? (needsPaid / needsTotal) * 100 : 0;
+    // const needsPaid = needsBudget?.stats?.paidAmount || 0;
+    // const needsUnpaid = needsBudget?.expectedAmount || 0;
+    // const needsTotal = needsPaid + needsUnpaid;
+    // const needsPaidPct = needsTotal > 0 ? (needsPaid / needsTotal) * 100 : 0;
 
     // Wants Breakdown
-    const wantsPaid = wantsBudget?.stats?.paidAmount || 0;
-    const wantsUnpaid = wantsBudget?.expectedAmount || 0;
-    const wantsTotal = wantsPaid + wantsUnpaid;
-    const wantsPaidPct = wantsTotal > 0 ? (wantsPaid / wantsTotal) * 100 : 0;
+    // const wantsPaid = wantsBudget?.stats?.paidAmount || 0;
+    // const wantsUnpaid = wantsBudget?.expectedAmount || 0;
+    // const wantsTotal = wantsPaid + wantsUnpaid;
+    // const wantsPaidPct = wantsTotal > 0 ? (wantsPaid / wantsTotal) * 100 : 0;
+
+    // Helper to calculate segment splits (Safe Paid, Safe Unpaid, Overflow)
+    const calculateSegments = (paid, unpaid, limit) => {
+        const total = paid + unpaid;
+        // If limit is 0 (no budget), everything is overflow
+        const overflow = limit > 0 ? Math.max(0, total - limit) : total;
+        const safeTotal = total - overflow;
+
+        // Within safe limit, prioritize showing 'Paid' first, then 'Unpaid'
+        const safePaid = Math.min(paid, safeTotal);
+        const safeUnpaid = Math.max(0, safeTotal - safePaid);
+
+        return { safePaid, safeUnpaid, overflow, total };
+    };
+
+    const needsLimit = needsBudget?.budgetAmount || 0;
+    const wantsLimit = wantsBudget?.budgetAmount || 0;
+
+    const needsSegs = calculateSegments(needsBudget?.stats?.paidAmount || 0, needsBudget?.expectedAmount || 0, needsLimit);
+    const wantsSegs = calculateSegments(wantsBudget?.stats?.paidAmount || 0, wantsBudget?.expectedAmount || 0, wantsLimit);
 
     const totalSpent = currentMonthExpenses;
 
     // Goals (Limits) - Use budgetAmount as the ceiling
-    const needsLimit = needsBudget?.budgetAmount || 0;
-    const wantsLimit = wantsBudget?.budgetAmount || 0;
+    // const needsLimit = needsBudget?.budgetAmount || 0;
+    // const wantsLimit = wantsBudget?.budgetAmount || 0;
 
     // Percentages for the Bar (Relative to INCOME)
     // This visualizes: "How much of my Income have I given to Needs?"
@@ -71,6 +97,8 @@ export default function RemainingBudgetCard({
     // const wantsPct = (wantsSpent / safeIncome) * 100;
     // VISUAL TWEAK: Enforce a minimum width for segments with data so they remain visible/clickable
     // const MIN_VISIBILITY_PCT = 4; // 4% width minimum
+
+    // Visual Width Calculation (Container Size)
     // Define a small, fixed minimum width for clickability, preventing segments from becoming un-selectable.
     const CLICKABLE_MIN_PCT = 5; // 5% minimum width if spending is > 0
 
@@ -93,11 +121,15 @@ export default function RemainingBudgetCard({
     // Refatoring to differentiate between paid and unpaid
     // const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
 
-    const rawNeedsPct = (needsTotal / safeIncome) * 100;
-    const needsVisualPct = needsTotal > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
+    // const rawNeedsPct = (needsTotal / safeIncome) * 100;
+    // const needsVisualPct = needsTotal > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
+    const rawNeedsPct = (needsSegs.total / safeIncome) * 100;
+    const needsVisualPct = needsSegs.total > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
 
-    const rawWantsPct = (wantsTotal / safeIncome) * 100;
-    const wantsVisualPct = wantsTotal > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
+    // const rawWantsPct = (wantsTotal / safeIncome) * 100;
+    // const wantsVisualPct = wantsTotal > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
+    const rawWantsPct = (wantsSegs.total / safeIncome) * 100;
+    const wantsVisualPct = wantsSegs.total > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
 
     // Calculate the total space required by the inflated visual bars
     const totalVisualOccupied = Math.min(100, needsVisualPct + wantsVisualPct);
@@ -119,8 +151,10 @@ export default function RemainingBudgetCard({
     // Refactoring to differentiate between paid and unpaid
     // const isNeedsOver = needsSpent > needsLimit;
     // const isWantsOver = wantsSpent > wantsLimit;
-    const isNeedsOver = needsTotal > needsLimit;
-    const isWantsOver = wantsTotal > wantsLimit;
+    // const isNeedsOver = needsTotal > needsLimit;
+    // const isWantsOver = wantsTotal > wantsLimit;
+    const isNeedsOver = needsSegs.total > needsLimit;
+    const isWantsOver = wantsSegs.total > wantsLimit;
     // const isTotalOver = totalSpent > income;
     const isTotalOver = totalSpent > currentMonthIncome; // Check against real income
 
@@ -203,21 +237,20 @@ export default function RemainingBudgetCard({
                                 className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
                                 style={{ width: `${needsVisualPct}%` }}
                             >
-                                {/* Paid Portion */}
-                                <div 
-                                    className="h-full transition-all duration-500" 
-                                    style={{ width: `${needsPaidPct}%`, backgroundColor: isNeedsOver ? '#EF4444' : '#3B82F6' }} 
-                                />
-                                {/* Unpaid Portion (Striped) */}
-                                <div 
-                                    className="h-full transition-all duration-500" 
-                                    style={{ 
-                                        width: `${100 - needsPaidPct}%`, 
-                                        backgroundColor: isNeedsOver ? '#EF4444' : '#3B82F6',
-                                        opacity: 0.6,
-                                        ...stripePattern
-                                    }} 
-                                />
+                                {/* 1. Safe Paid (Solid Blue) */}
+                                {needsSegs.safePaid > 0 && (
+                                    <div className="h-full bg-blue-500" style={{ width: `${(needsSegs.safePaid / needsSegs.total) * 100}%` }} />
+                                )}
+
+                                {/* 2. Safe Unpaid (Striped Blue) */}
+                                {needsSegs.safeUnpaid > 0 && (
+                                    <div className="h-full bg-blue-500 opacity-60" style={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%`, ...stripePattern }} />
+                                )}
+
+                                {/* 3. Overflow (Striped Red) */}
+                                {needsSegs.overflow > 0 && (
+                                    <div className="h-full bg-red-500" style={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%`, ...stripePattern }} />
+                                )}
 
                                 {/* Show label always if bar is wide enough (>10%), otherwise hover only */}
                                 <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -226,22 +259,25 @@ export default function RemainingBudgetCard({
                             </Link>
 
                             {/* Lifestyle Segment (Amber/Red) */}
-                            {/* Stacks directly after Essentials */}
-                            {/* Lifestyle Segment (Amber/Red) - Stacks directly after Essentials */}
                             <Link
                                 to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
                                 className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
                                 style={{ width: `${wantsVisualPct}%` }}
                             >
-                                {/* Paid Portion */}
-                                <div className="h-full transition-all duration-500" style={{ width: `${wantsPaidPct}%`, backgroundColor: isWantsOver ? '#ec8d1fff' : '#e6b42dff' }} />
-                                {/* Unpaid Portion (Striped) */}
-                                <div className="h-full transition-all duration-500" style={{ 
-                                    width: `${100 - wantsPaidPct}%`, 
-                                    backgroundColor: isWantsOver ? '#ec8d1fff' : '#e6b42dff',
-                                    opacity: 0.6,
-                                    ...stripePattern
-                                }} />
+                                {/* 1. Safe Paid (Solid Amber) */}
+                                {wantsSegs.safePaid > 0 && (
+                                    <div className="h-full bg-amber-400" style={{ width: `${(wantsSegs.safePaid / wantsSegs.total) * 100}%` }} />
+                                )}
+
+                                {/* 2. Safe Unpaid (Striped Amber) */}
+                                {wantsSegs.safeUnpaid > 0 && (
+                                    <div className="h-full bg-amber-400 opacity-60" style={{ width: `${(wantsSegs.safeUnpaid / wantsSegs.total) * 100}%`, ...stripePattern }} />
+                                )}
+
+                                {/* 3. Overflow (Striped Red) */}
+                                {wantsSegs.overflow > 0 && (
+                                    <div className="h-full bg-red-500" style={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%`, ...stripePattern }} />
+                                )}
 
                                 <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     Lifestyle
@@ -266,14 +302,23 @@ export default function RemainingBudgetCard({
                                     {/* The visual line */}
                                     <div className="h-full w-0.5 border-l-2 border-red-400/60 border-dashed" />
 
-                                    {/* The warning label */}
-                                    <div className="absolute -top-6 flex flex-col items-center">
-                                        <div className="px-1.5 py-0.5 bg-red-50 border border-red-200 rounded text-[9px] font-bold text-red-600 shadow-sm whitespace-nowrap flex items-center gap-1">
-                                            <span>🛡️ Savings Barrier</span>
-                                        </div>
-                                        {/* Little pointer triangle */}
-                                        <div className="w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-red-200" />
-                                    </div>
+                                    {/* The warning label with Tooltip */}
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="absolute -top-6 flex flex-col items-center cursor-help hover:scale-105 transition-transform">
+                                                    <div className="px-1.5 py-0.5 bg-red-50 border border-red-200 rounded text-[9px] font-bold text-red-600 shadow-sm whitespace-nowrap flex items-center gap-1">
+                                                        <span>🛡️ Savings Barrier</span>
+                                                    </div>
+                                                    {/* Little pointer triangle */}
+                                                    <div className="w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-red-200" />
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[200px] text-xs">
+                                                <p>This line represents your Total Budget limit. Spending past this line means you are dipping into your planned savings.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
                                 </div>
                             )}
                         </div>
@@ -283,11 +328,11 @@ export default function RemainingBudgetCard({
                             <div className="flex gap-4">
                                 <span className="flex items-center gap-1.5">
                                     <div className={`w-2 h-2 rounded-full ${isNeedsOver ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-                                    Essentials: {formatCurrency(needsTotal, settings)}
+                                    Essentials: {formatCurrency(needsSegs.total, settings)}
                                 </span>
                                 <span className="flex items-center gap-1.5">
                                     <div className={`w-2 h-2 rounded-full ${isWantsOver ? 'bg-red-400' : 'bg-amber-400'}`}></div>
-                                    Lifestyle: {formatCurrency(wantsTotal, settings)}
+                                    Lifestyle: {formatCurrency(wantsSegs.total, settings)}
                                 </span>
                             </div>
 
