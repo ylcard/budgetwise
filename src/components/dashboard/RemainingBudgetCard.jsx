@@ -52,17 +52,21 @@ export default function RemainingBudgetCard({
     // const needsPct = (needsSpent / safeIncome) * 100;
     // const wantsPct = (wantsSpent / safeIncome) * 100;
     // VISUAL TWEAK: Enforce a minimum width for segments with data so they remain visible/clickable
-    const MIN_VISIBILITY_PCT = 4; // 4% width minimum
+    // const MIN_VISIBILITY_PCT = 4; // 4% width minimum
+    // Define a small, fixed minimum width for clickability, preventing segments from becoming un-selectable.
+    const CLICKABLE_MIN_PCT = 5; // 5% minimum width if spending is > 0
 
     const rawNeedsPct = (needsSpent / safeIncome) * 100;
     // const needsPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISIBILITY_PCT) : 0;
     // 1. Calculate Needs Visual Width (Min 15%)
-    const MIN_VISUAL_PCT = 15;
-    const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISUAL_PCT) : 0;
+    // const MIN_VISUAL_PCT = 15;
+    // const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, MIN_VISUAL_PCT) : 0;
+    const needsVisualPct = needsSpent > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
 
     const rawWantsPct = (wantsSpent / safeIncome) * 100;
     // const wantsPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISIBILITY_PCT) : 0;
-    const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISUAL_PCT) : 0;
+    // const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, MIN_VISUAL_PCT) : 0;
+    const wantsVisualPct = wantsSpent > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
 
     // Calculate the total space required by the inflated visual bars
     const totalVisualOccupied = Math.min(100, needsVisualPct + wantsVisualPct);
