@@ -15,6 +15,7 @@ import {
     useMonthlyIncome,
     useDashboardSummary,
     useActiveBudgets,
+    useBudgetBarsData
 } from "../components/hooks/useDerivedData";
 import {
     useTransactionActions,
@@ -72,6 +73,19 @@ export default function Dashboard() {
         selectedYear
     );
 
+    // LIFTED STATE: Calculate budget stats here so we can pass them to RemainingBudgetCard
+    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
+        useBudgetBarsData(
+            systemBudgets,
+            activeCustomBudgets,
+            allCustomBudgets,
+            transactions,
+            categories,
+            goals,
+            monthlyIncome,
+            settings.baseCurrency
+        );
+
     const transactionActions = useTransactionActions({
         onSuccess: () => {
             setShowQuickAdd(false);
@@ -99,8 +113,9 @@ export default function Dashboard() {
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-3">
                         <RemainingBudgetCard
-                            systemBudgets={systemBudgets}
-                            remainingBudget={remainingBudget}
+                            // systemBudgets={systemBudgets}
+                            // remainingBudget={remainingBudget}
+                            systemBudgets={systemBudgetsData} // NEW: Budgets with calculated stats
                             bonusSavingsPotential={bonusSavingsPotential}
                             currentMonthIncome={currentMonthIncome}
                             currentMonthExpenses={currentMonthExpenses}
@@ -155,9 +170,13 @@ export default function Dashboard() {
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
                         <BudgetBars
-                            systemBudgets={systemBudgets}
-                            customBudgets={activeCustomBudgets}
-                            allCustomBudgets={allCustomBudgets}
+                            // systemBudgets={systemBudgets}
+                            // customBudgets={activeCustomBudgets}
+                            // allCustomBudgets={allCustomBudgets}
+                            // Pass pre-calculated data to avoid double calculation
+                            preCalculatedSystemData={systemBudgetsData}
+                            preCalculatedCustomData={customBudgetsData}
+                            preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
                             transactions={transactions}
                             categories={categories}
                             currentMonth={selectedMonth}
