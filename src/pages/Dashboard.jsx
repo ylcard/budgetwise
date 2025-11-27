@@ -77,18 +77,6 @@ export default function Dashboard() {
         selectedYear
     );
 
-    // Calculate detailed budget stats for the breakdown (Paid vs Unpaid)
-    const { systemBudgetsData } = useBudgetBarsData(
-        systemBudgets,
-        activeCustomBudgets,
-        allCustomBudgets,
-        transactions,
-        categories,
-        goals,
-        monthlyIncome,
-        settings.baseCurrency
-    );
-
     const { activeCustomBudgets } = useActiveBudgets(
         allCustomBudgets,
         allSystemBudgets,
