@@ -20,7 +20,6 @@ import {
     useTransactionActions,
     useCustomBudgetActions,
 } from "../components/hooks/useActions";
-import { useExchangeRates } from "../components/hooks/useExchangeRates";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
 import BudgetBars from "../components/dashboard/BudgetBars";
@@ -100,6 +99,7 @@ export default function Dashboard() {
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-3">
                         <RemainingBudgetCard
+                            systemBudgets={systemBudgets}
                             remainingBudget={remainingBudget}
                             bonusSavingsPotential={bonusSavingsPotential}
                             currentMonthIncome={currentMonthIncome}
