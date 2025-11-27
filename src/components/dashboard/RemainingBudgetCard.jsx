@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, AlertCircle, Target } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
+import { useSettings } from "../utils/SettingsContext";
 
 export default function RemainingBudgetCard({
     bonusSavingsPotential,
@@ -12,12 +13,23 @@ export default function RemainingBudgetCard({
     addIncomeButton,
     addExpenseButton,
     importDataButton,
-    systemBudgets = [] // Expects budgets WITH stats (from useBudgetBarsData)
+    systemBudgets = [], // Expects budgets WITH stats (from useBudgetBarsData)
+    goals = []
 }) {
     if (!settings) return null;
 
     // 1. Extract Data
     const income = currentMonthIncome || 1; // Prevent division by zero
+
+    // Goal Summary Logic
+    const isAbsolute = settings.goalAllocationMode === 'absolute';
+    const needsGoal = goals.find(g => g.priority === 'needs');
+    const wantsGoal = goals.find(g => g.priority === 'wants');
+    const savingsGoal = goals.find(g => g.priority === 'savings');
+
+    const goalSummary = isAbsolute
+        ? `${formatCurrency(needsGoal?.target_amount || 0, settings)} / ${formatCurrency(wantsGoal?.target_amount || 0, settings)} / ${formatCurrency(savingsGoal?.target_amount || 0, settings)}`
+        : `${needsGoal?.target_percentage || 50}% / ${wantsGoal?.target_percentage || 30}% / ${savingsGoal?.target_percentage || 20}%`;
 
     // Find specific budgets (Needs/Wants) to visualize the "stack"
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
@@ -107,25 +119,27 @@ export default function RemainingBudgetCard({
                         <div className="relative h-8 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
 
                             {/* NEEDS Segment (Blue/Red) */}
-                            <div
-                                className={`h-full transition-all duration-500 relative group ${isNeedsOver ? 'bg-red-500' : 'bg-blue-500'}`}
+                            <Link
+                                to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
+                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer ${isNeedsOver ? 'bg-red-500' : 'bg-blue-500'}`}
                                 style={{ width: `${Math.min(needsPct, 100)}%` }}
                             >
                                 <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                     Needs
                                 </div>
-                            </div>
+                            </Link>
 
                             {/* WANTS Segment (Amber/Red) */}
                             {/* Stacks directly after Needs */}
-                            <div
-                                className={`h-full transition-all duration-500 relative group ${isWantsOver ? 'bg-red-400' : 'bg-amber-400'}`}
+                            <Link
+                                to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
+                                className={`h-full transition-all duration-500 relative group hover:brightness-110 cursor-pointer ${isWantsOver ? 'bg-red-400' : 'bg-amber-400'}`}
                                 style={{ width: `${Math.min(wantsPct, 100 - needsPct)}%` }}
                             >
                                 <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                     Wants
                                 </div>
-                            </div>
+                            </Link>
 
                             {/* SAVINGS Segment (The Empty Space) */}
                             <div className="flex-1 h-full bg-emerald-50/50 flex items-center justify-center relative">
@@ -170,10 +184,13 @@ export default function RemainingBudgetCard({
                                 </span>
                             </div>
 
-                            <Link to="/Settings" className="flex items-center gap-1 hover:text-blue-600 transition-colors">
-                                <Target size={12} />
-                                <span>Adjust Goals</span>
-                            </Link>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-400 font-medium hidden sm:inline">{goalSummary}</span>
+                                <Link to="/Settings" className="flex items-center gap-1 text-[10px] hover:text-blue-600 transition-colors">
+                                    <Target size={12} />
+                                    <span>Adjust</span>
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
