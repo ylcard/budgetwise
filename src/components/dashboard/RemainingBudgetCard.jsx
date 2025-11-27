@@ -12,38 +12,42 @@ export default function RemainingBudgetCard({
     addIncomeButton,
     addExpenseButton,
     importDataButton,
-    systemBudgets = []
+    systemBudgets = [] // Expects budgets WITH stats (from useBudgetBarsData)
 }) {
     if (!settings) return null;
 
-    // 1. Extract & Calculate Data
+    // 1. Extract Data
     const income = currentMonthIncome || 1; // Prevent division by zero
 
+    // Find specific budgets (Needs/Wants) to visualize the "stack"
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
 
-    // Actual Spend
+    // Actual Spend (from pre-calculated stats)
     const needsSpent = needsBudget?.stats?.paidAmount || 0;
     const wantsSpent = wantsBudget?.stats?.paidAmount || 0;
-    const totalSpent = currentMonthExpenses; // Should roughly equal needs + wants + other
+    const totalSpent = currentMonthExpenses;
 
-    // Goals (Limits)
+    // Goals (Limits) - Use budgetAmount as the ceiling
     const needsLimit = needsBudget?.budgetAmount || 0;
     const wantsLimit = wantsBudget?.budgetAmount || 0;
 
     // Percentages for the Bar (Relative to INCOME)
+    // This visualizes: "How much of my Income have I given to Needs?"
     const needsPct = (needsSpent / income) * 100;
     const wantsPct = (wantsSpent / income) * 100;
+
+    // Savings is strictly "Income minus Spending"
     const savingsPct = Math.max(0, 100 - (totalSpent / income) * 100);
 
-    // Percentages for the Limit Markers (Relative to INCOME)
+    // Limit Markers (Where the ceilings sit relative to Income)
     const needsLimitPct = (needsLimit / income) * 100;
     const totalLimitPct = ((needsLimit + wantsLimit) / income) * 100;
 
     // Status Logic
     const isNeedsOver = needsSpent > needsLimit;
     const isWantsOver = wantsSpent > wantsLimit;
-    const isTotalOver = totalSpent > income; // <--- NOW USED
+    const isTotalOver = totalSpent > income;
 
     return (
         <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
@@ -67,7 +71,6 @@ export default function RemainingBudgetCard({
                     {/* 1. The Verdict (Text) */}
                     <div className="flex items-end justify-between">
                         <div>
-                            {/* CHANGED: Use isTotalOver to switch headline state */}
                             {isTotalOver ? (
                                 <h2 className="text-3xl font-bold text-red-600 flex items-center gap-2">
                                     Over Limit
@@ -81,7 +84,6 @@ export default function RemainingBudgetCard({
                             )}
 
                             <p className="text-sm text-gray-500 mt-1">
-                                {/* CHANGED: Highlight spent amount in red if over total income */}
                                 You've spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>{formatCurrency(totalSpent, settings)}</strong> of your <strong>{formatCurrency(income, settings)}</strong> income.
                             </p>
                         </div>
@@ -104,18 +106,18 @@ export default function RemainingBudgetCard({
                         {/* The Bar Container */}
                         <div className="relative h-8 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
 
-                            {/* NEEDS Segment */}
+                            {/* NEEDS Segment (Blue/Red) */}
                             <div
                                 className={`h-full transition-all duration-500 relative group ${isNeedsOver ? 'bg-red-500' : 'bg-blue-500'}`}
                                 style={{ width: `${Math.min(needsPct, 100)}%` }}
                             >
-                                {/* Tooltip-ish Label */}
                                 <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                     Needs
                                 </div>
                             </div>
 
-                            {/* WANTS Segment */}
+                            {/* WANTS Segment (Amber/Red) */}
+                            {/* Stacks directly after Needs */}
                             <div
                                 className={`h-full transition-all duration-500 relative group ${isWantsOver ? 'bg-red-400' : 'bg-amber-400'}`}
                                 style={{ width: `${Math.min(wantsPct, 100 - needsPct)}%` }}
@@ -125,7 +127,7 @@ export default function RemainingBudgetCard({
                                 </div>
                             </div>
 
-                            {/* SAVINGS Segment (The rest) */}
+                            {/* SAVINGS Segment (The Empty Space) */}
                             <div className="flex-1 h-full bg-emerald-50/50 flex items-center justify-center relative">
                                 {savingsPct > 5 && (
                                     <span className="text-xs font-medium text-emerald-600/70 animate-pulse">Savings</span>
@@ -134,28 +136,28 @@ export default function RemainingBudgetCard({
 
                             {/* --- LIMIT MARKERS (The Ceilings) --- */}
 
-                            {/* Needs Limit Line (e.g. 50%) */}
-                            <div
-                                className="absolute top-0 bottom-0 w-px bg-gray-800/30 z-10 border-r border-white/50"
-                                style={{ left: `${Math.min(needsLimitPct, 100)}%` }}
-                            >
-                                <div className="absolute -top-3 -left-3 text-[9px] text-gray-400 font-medium">
-                                    Needs
+                            {/* Needs Limit Line */}
+                            {needsLimitPct < 100 && (
+                                <div
+                                    className="absolute top-0 bottom-0 w-px bg-gray-800/30 z-10 border-r border-white/50"
+                                    style={{ left: `${needsLimitPct}%` }}
+                                >
+                                    <div className="absolute -top-3 -left-3 text-[9px] text-gray-400 font-medium">Needs</div>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* Total Spending Limit Line (e.g. 80%) */}
-                            <div
-                                className="absolute top-0 bottom-0 w-px bg-gray-800/30 z-10 border-r border-white/50"
-                                style={{ left: `${Math.min(totalLimitPct, 100)}%` }}
-                            >
-                                <div className="absolute -top-3 -left-3 text-[9px] text-gray-400 font-medium">
-                                    Limit
+                            {/* Total Spending Limit Line (Needs + Wants) */}
+                            {totalLimitPct < 100 && (
+                                <div
+                                    className="absolute top-0 bottom-0 w-px bg-gray-800/30 z-10 border-r border-white/50"
+                                    style={{ left: `${totalLimitPct}%` }}
+                                >
+                                    <div className="absolute -top-3 -left-3 text-[9px] text-gray-400 font-medium">Limit</div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        {/* Legend / Legend Row */}
+                        {/* Legend Row */}
                         <div className="flex justify-between text-xs text-gray-400 pt-1">
                             <div className="flex gap-4">
                                 <span className="flex items-center gap-1.5">
