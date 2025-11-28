@@ -28,6 +28,11 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
     const [localGoalMode, setLocalGoalMode] = useState(settings.goalMode ?? true);
     const isAbsoluteMode = !localGoalMode;
 
+    // FIX: Update local state when settings finish loading from DB
+    useEffect(() => {
+        setLocalGoalMode(settings.goalMode ?? true);
+    }, [settings.goalMode]);
+
     // Local state for Absolute Mode inputs
     // Initialize from the goals prop (which comes from DB)
     // const needsGoal = goals.find(g => g.priority === 'needs');
