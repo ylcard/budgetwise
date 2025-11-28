@@ -104,5 +104,19 @@ export const SETTINGS_KEYS = [
     'decimalSeparator',
     'decimalPlaces',
     'hideTrailingZeros',
-    'fixedLifestyleMode'
+    'fixedLifestyleMode',
+    'goalMode'
 ];
+
+// Default "Factory" Settings
+export const DEFAULT_SETTINGS = {
+    baseCurrency: 'USD',
+    currencyPosition: 'before',
+    budgetViewMode: 'bars',
+    thousandSeparator: ',',
+    decimalSeparator: '.',
+    decimalPlaces: 2,
+    hideTrailingZeros: false,
+    fixedLifestyleMode: false,
+    goalMode: true // true = Percentage, false = Absolute
+};
