@@ -441,7 +441,7 @@ export default function RemainingBudgetCard({
                             </div>
                             <div className="flex items-center gap-2">
                                 <GoalSummary />
-                                <Link to="/Settings" className="flex items-center gap-1 text-[10px] hover:text-blue-600 transition-colors">
+                                <Link to="/Settings" className="flex items-center gap-1 text-xs hover:text-blue-600 transition-colors">
                                     <Target size={12} />
                                     <span>Goals</span>
                                 </Link>
