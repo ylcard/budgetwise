@@ -3,9 +3,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePriorityChartData } from "../hooks/useDerivedData";
 
-export default function PriorityChart({ transactions, categories, goals, monthlyIncome, isLoading }) {
+export default function PriorityChart({ transactions, categories, goals, monthlyIncome, isLoading, settings }) {
     // Use the extracted hook for calculations
-    const chartData = usePriorityChartData(transactions, categories, goals, monthlyIncome);
+    const chartData = usePriorityChartData(transactions, categories, goals, monthlyIncome, settings);
 
     if (isLoading) {
         return (
