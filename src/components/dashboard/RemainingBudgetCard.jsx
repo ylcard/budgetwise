@@ -247,9 +247,9 @@ export default function RemainingBudgetCard({
     // Low stiffness + mass = "Weighted/Fluid" feel
     const fluidSpring = {
         type: "spring",
-        stiffness: 300,
-        damping: 25,
-        mass: 1.2
+        stiffness: 200,
+        damping: 10,
+        mass: 1.8
     };
 
     // --- RENDER: VIEW TOGGLE (Segmented Control) ---
