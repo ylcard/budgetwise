@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm, useGoalActions } from "../components/hooks/useActions";
@@ -13,7 +14,8 @@ import { Settings as SettingsIcon, Target, GripVertical, Lock, Save, AlertCircle
 import {
     CURRENCY_OPTIONS,
     FINANCIAL_PRIORITIES,
-    SETTINGS_KEYS
+    SETTINGS_KEYS,
+    DEFAULT_SETTINGS
 } from "../components/utils/constants";
 import AmountInput from "../components/ui/AmountInput";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +25,7 @@ export default function Settings() {
     const { settings, updateSettings, user } = useSettings();
 
     // --- 1. GENERAL SETTINGS LOGIC ---
-    const { formData, handleFormChange } = useSettingsForm(
+    const { formData, handleFormChange, resetForm } = useSettingsForm(
         settings,
         updateSettings
     );
@@ -59,8 +61,8 @@ export default function Settings() {
         setLocalGoalMode(settings.goalMode ?? true);
     }, [settings.goalMode]);
 
-    // Sync values when Goals load
-    useEffect(() => {
+    // Helper to sync local state with DB goals
+    const syncLocalGoalsWithDb = () => {
         if (goals.length > 0) {
             // 1. Sync Absolute Values
             setAbsoluteValues({
@@ -77,6 +79,11 @@ export default function Settings() {
                 split2: (map.needs || 50) + (map.wants || 30)
             });
         }
+    };
+
+    // Sync values when Goals load
+    useEffect(() => {
+        syncLocalGoalsWithDb();
     }, [goals]);
 
     // Derived Percentages
@@ -110,6 +117,18 @@ export default function Settings() {
         e.target.releasePointerCapture(e.pointerId);
     };
 
+    // --- NAVIGATION GUARD (Browser Level) ---
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (hasChanges) {
+                e.preventDefault();
+                e.returnValue = ''; // Chrome requires this
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasChanges]);
+
     // --- 3. SMART SAVE LOGIC ---
     // Dirty Check: Compare current state vs DB state
     const hasChanges = useMemo(() => {
@@ -134,6 +153,33 @@ export default function Settings() {
     }, [formData, settings, localGoalMode, absoluteValues, currentValues, goals]);
 
     const [isGlobalSaving, setIsGlobalSaving] = useState(false);
+
+    // --- ACTIONS ---
+    const handleDiscard = () => {
+        // 1. Reset General Form
+        resetForm(settings);
+        // 2. Reset Mode
+        setLocalGoalMode(settings.goalMode ?? true);
+        // 3. Reset Goals
+        syncLocalGoalsWithDb();
+
+        showToast({ title: "Changes Discarded", description: "Settings reverted to last saved state." });
+    };
+
+    const handleResetToDefaults = () => {
+        if (!window.confirm("Are you sure you want to reset all settings to factory defaults?")) return;
+
+        // 1. Reset General Form to CONSTANT defaults
+        resetForm(DEFAULT_SETTINGS);
+        // 2. Reset Mode
+        setLocalGoalMode(true); // Default is Percentage
+        // 3. Reset Sliders to 50/30/20
+        setSplits({ split1: 50, split2: 80 });
+        // 4. Clear Absolute Values (since we are switching to percentage default)
+        setAbsoluteValues({ needs: '', wants: '', savings: '' });
+
+        showToast({ title: "Reset Applied", description: "Settings reset to defaults. Click Save to apply." });
+    };
 
     const handleGlobalSave = async () => {
         setIsGlobalSaving(true);
@@ -411,17 +457,38 @@ export default function Settings() {
                         )}
                     </CardContent>
                 </Card>
-            </div>
-            {/* --- STICKY SAVE FOOTER --- */}
-            <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 transform ${hasChanges ? 'translate-y-0' : 'translate-y-full'}`}>
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-amber-600">
-                        <AlertCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">You have unsaved changes</span>
-                    </div>
-                    <CustomButton onClick={handleGlobalSave} disabled={isGlobalSaving} variant="primary" size="lg">
-                        {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
+                {/* --- STATIC ACTION BUTTONS --- */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                    <CustomButton
+                        onClick={handleResetToDefaults}
+                        variant="outline"
+                        className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    >
+                        Reset to Defaults
                     </CustomButton>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        {hasChanges && (
+                            <div className="flex items-center gap-3 w-full sm:w-auto animate-in fade-in slide-in-from-right-4 duration-300">
+                                <CustomButton
+                                    onClick={handleDiscard}
+                                    variant="ghost"
+                                    className="w-full sm:w-auto"
+                                >
+                                    Discard Changes
+                                </CustomButton>
+                            </div>
+                        )}
+
+                        <CustomButton
+                            onClick={handleGlobalSave}
+                            disabled={isGlobalSaving || !hasChanges}
+                            variant="primary"
+                            className="w-full sm:w-auto min-w-[140px]"
+                        >
+                            {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Settings</>}
+                        </CustomButton>
+                    </div>
                 </div>
             </div>
         </div>
