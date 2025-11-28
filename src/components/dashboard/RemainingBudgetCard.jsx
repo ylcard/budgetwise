@@ -676,7 +676,7 @@ export default function RemainingBudgetCard({
                         {monthNavigator}
                     </div>
                     <div className="flex flex-col-reverse sm:flex-row items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                        <ViewToggle />
+                        {!isEmptyMonth && <ViewToggle />}
                         <div className="flex items-center gap-2">
                             {importDataButton}
                             {addExpenseButton}
