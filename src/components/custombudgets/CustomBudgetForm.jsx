@@ -93,7 +93,7 @@ export default function CustomBudgetForm({
                     />
                 </div>
 
-                <div className="space-y-2">
+                <div className="flex flex-col space-y-2">
                     <Label>Date Range</Label>
                     <DateRangePicker
                         startDate={formData.startDate}
