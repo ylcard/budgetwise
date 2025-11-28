@@ -133,6 +133,8 @@ export default function Dashboard() {
                             currentMonthExpenses={currentMonthExpenses}
                             goals={goals}
                             settings={settings}
+                            selectedMonth={selectedMonth}
+                            selectedYear={selectedYear}
                             // aggregateNeedsTotal={aggregateNeedsTotal}
                             // aggregateWantsTotal={aggregateWantsTotal}
                             monthNavigator={
