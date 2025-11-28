@@ -231,7 +231,9 @@ export default function RemainingBudgetCard({
     systemBudgets = [],
     goals = [],
     breakdown = null,
-    historicalAverage = 0
+    historicalAverage = 0,
+    selectedMonth,
+    selectedYear
 }) {
     // Refactoring to add quick goal change to page
     // const { updateSettings } = useSettings();
@@ -358,10 +360,15 @@ export default function RemainingBudgetCard({
     // Date Context
     const now = new Date();
     const isCurrentMonth =
-        now.getMonth() === (settings.selectedMonth ?? now.getMonth()) &&
-        now.getFullYear() === (settings.selectedYear ?? now.getFullYear());
+        // now.getMonth() === (settings.selectedMonth ?? now.getMonth()) &&
+        // now.getFullYear() === (settings.selectedYear ?? now.getFullYear());
+        now.getMonth() === selectedMonth &&
+        now.getFullYear() === selectedYear;
 
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    // const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    // Calculate days based strictly on the selected props
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
     const currentDay = now.getDate();
     const isEndOfMonth = currentDay >= (daysInMonth - 3);
 
@@ -369,8 +376,10 @@ export default function RemainingBudgetCard({
     const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
 
     // Get explicit month name for the empty state message
-    const safeMonth = settings.selectedMonth ?? now.getMonth();
-    const monthName = getMonthName(safeMonth);
+    // safeMonth no longer required
+    // const safeMonth = settings.selectedMonth ?? now.getMonth();
+    // const monthName = getMonthName(safeMonth);
+    const monthName = getMonthName(selectedMonth);
 
     // --- CONFETTI LOGIC ---
     // We track the previous income to detect the specific transition from 0 -> Amount
