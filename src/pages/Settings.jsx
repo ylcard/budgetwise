@@ -410,8 +410,8 @@ export default function Settings() {
                                                         </div>
                                                     ))}
                                             </div>
-                                            <div className="flex justify-right items-center pt-2 border-t border-gray-100">
-                                                <span className="text-sm font-medium text-gray-500">Total Allocated</span>
+                                            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                                                <span className="text-sm justify-right font-medium text-gray-500">Total Allocated</span>
                                                 <span className="text-lg font-bold text-gray-900">
                                                     {formData.currencySymbol} {Object.values(absoluteValues).reduce((acc, val) => acc + (Number(val) || 0), 0).toLocaleString()}
                                                 </span>
