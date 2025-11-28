@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
-import { getMonthlyIncome } from "../utils/financialCalculations";
+import { getMonthlyIncome, resolveBudgetLimit } from "../utils/financialCalculations";
 import { useSettings } from "../utils/SettingsContext";
 
 // Hook to fetch transactions
@@ -201,36 +201,45 @@ export const useSystemBudgetManagement = (
                 // Use getMonthlyIncome from financialCalculations
                 const currentMonthIncome = getMonthlyIncome(transactions, monthStart, monthEnd);
 
-                const goalMap = goals.reduce((acc, goal) => {
-                    acc[goal.priority] = goal.target_percentage;
-                    return acc;
-                }, {});
+                // DEPRECATED
+                // const goalMap = goals.reduce((acc, goal) => {
+                //     acc[goal.priority] = goal.target_percentage;
+                //     return acc;
+                // }, {});
 
                 let needsInvalidation = false;
 
                 // --- Fixed Lifestyle Logic ---
-                // Calculate raw amounts based on percentages
+                // Calculate raw amounts based on current Settings Mode (Absolute vs Percentage)
                 let amounts = {};
                 systemTypes.forEach(type => {
-                    // const percentage = goalMap[type] || 0;
-                    // amounts[type] = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
                     const goal = goals.find(g => g.priority === type);
 
+                    // DEPRECATED BLOCK
                     // ABSOLUTE MODE CHECK (From Entity)
-                    if (goal && goal.is_absolute) {
-                        amounts[type] = parseFloat(goal.target_amount || 0);
-                    } else {
-                        // STANDARD PERCENTAGE MODE
-                        const percentage = goalMap[type] || 0;
-                        amounts[type] = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
-                    }
+                    // if (goal && goal.is_absolute) {
+                    //     amounts[type] = parseFloat(goal.target_amount || 0);
+                    // } else {
+                    //     // STANDARD PERCENTAGE MODE
+                    //     const percentage = goalMap[type] || 0;
+                    //     amounts[type] = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
+                    // }
+
+                    // Use centralized helper to determine the amount based on settings.goalMode
+                    const rawAmount = resolveBudgetLimit(goal, currentMonthIncome, settings.goalMode);
+                    amounts[type] = parseFloat(rawAmount.toFixed(2));
                 });
 
+                // DEPRECATED BLOCK
                 // If Mode is ON, check if we should cap 'needs' and move surplus to 'savings'
                 // if (settings?.fixedLifestyleMode && systemBudgets) {
                 // Only applies if 'needs' is NOT absolute
-                const needsGoal = goals.find(g => g.priority === 'needs');
-                if ((!needsGoal || !needsGoal.is_absolute) && settings?.fixedLifestyleMode && systemBudgets) {
+                // const needsGoal = goals.find(g => g.priority === 'needs');
+                // if ((!needsGoal || !needsGoal.is_absolute) && settings?.fixedLifestyleMode && systemBudgets) {
+
+                // This logic ONLY applies in Percentage Mode. In Absolute Mode, the budget is already fixed by definition.
+                const isPercentageMode = settings.goalMode !== false; // Default to true
+                if (isPercentageMode && settings?.fixedLifestyleMode && systemBudgets) {
                     const existingNeeds = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
 
                     // Only apply logic if we have a previous budget to compare against and income > 0
