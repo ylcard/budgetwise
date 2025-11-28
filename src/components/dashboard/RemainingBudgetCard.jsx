@@ -96,7 +96,7 @@ export default function RemainingBudgetCard({
         };
 
         return (
-            <div className="flex items-center gap-1 text-xs font-medium hidden sm:flex">
+            <div className="flex items-center gap-1 text-sm font-medium hidden sm:flex">
                 <span style={{ color: needsColor }}>{getValue('needs')}</span>
                 <span className="text-gray-300">/</span>
                 <span style={{ color: wantsColor }}>{getValue('wants')}</span>
@@ -441,7 +441,7 @@ export default function RemainingBudgetCard({
                             </div>
                             <div className="flex items-center gap-2">
                                 <GoalSummary />
-                                <Link to="/Settings" className="flex items-center gap-1 text-xs hover:text-blue-600 transition-colors">
+                                <Link to="/Settings" className="flex items-center gap-1 text-sm hover:text-blue-600 transition-colors">
                                     <Target size={12} />
                                     <span>Goals</span>
                                 </Link>
