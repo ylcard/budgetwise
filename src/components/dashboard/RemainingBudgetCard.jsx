@@ -25,7 +25,7 @@ export default function RemainingBudgetCard({
     if (!settings) return null;
 
     const safeIncome = currentMonthIncome || 1;
-    const isSimpleView = settings.simpleBudgetView;
+    const isSimpleView = settings.barViewMode;
 
     // --- DATA EXTRACTION ---
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
@@ -69,7 +69,7 @@ export default function RemainingBudgetCard({
 
     // --- VIEW TOGGLE HANDLER ---
     const handleViewToggle = (checked) => {
-        updateSettings({ simpleBudgetView: checked });
+        updateSettings({ barViewMode: checked });
     };
 
     // --- RENDER: SIMPLE BAR ---
