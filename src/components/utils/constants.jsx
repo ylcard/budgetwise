@@ -2,22 +2,22 @@
 // Unified Source of Truth for Financial Priorities
 export const FINANCIAL_PRIORITIES = {
     needs: {
-        label: "Needs",
+        label: "Essentials",
         description: "Essential expenses",
-        color: "#448eefff",
+        color: "#3B82F6",
         bg: "bg-blue-50",
         order: 0
     },
     wants: {
-        label: "Wants",
-        description: "Discretionary spending",
+        label: "Lifestyle",
+        description: "Lifestyle expenses",
         color: "#F59E0B",
         bg: "bg-orange-50",
         order: 1
     },
     savings: {
         label: "Savings",
-        description: "Savings and investments",
+        description: "Savings after expenses",
         color: "#10B981",
         bg: "bg-green-50",
         order: 2
