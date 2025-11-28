@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
-import { formatDateString } from "../utils/dateUtils";
+import { formatDateString, getFirstDayOfMonth } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 
 export default function QuickAddIncome({
@@ -36,7 +36,7 @@ export default function QuickAddIncome({
             return formatDateString(now);
         }
         // Otherwise default to the 1st of the selected month
-        return formatDateString(new Date(selectedYear, selectedMonth, 1));
+        return getFirstDayOfMonth(selectedMonth, selectedYear);
     };
    
 
@@ -47,6 +47,13 @@ export default function QuickAddIncome({
         // date: formatDateString(new Date())
         date: getInitialDate()
     });
+    
+    // CRITICAL: Ensure form date updates when the component opens or the selected month changes
+    useEffect(() => {
+        if (open) {
+            setFormData(prev => ({ ...prev, date: getInitialDate() }));
+        }
+    }, [open, selectedMonth, selectedYear]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
