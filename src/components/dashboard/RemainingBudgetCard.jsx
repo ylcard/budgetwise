@@ -114,7 +114,7 @@ export default function RemainingBudgetCard({
 
         return (
             // STANDARDIZED HEIGHT: h-10
-            <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
+            <div className="relative h-10 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner border border-gray-200">
                 {/* NEEDS */}
                 <div
                     className="h-full flex items-center justify-center transition-all duration-500 relative group cursor-default border-r border-white/10"
