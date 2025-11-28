@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
@@ -9,7 +9,7 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm, useGoalActions } from "../components/hooks/useActions";
 import { useGoals } from "../components/hooks/useBase44Entities";
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { Settings as SettingsIcon, Check, Target, GripVertical, Lock, Save } from "lucide-react";
+import { Settings as SettingsIcon, Target, GripVertical, Lock, Save, AlertCircle } from "lucide-react";
 import { CURRENCY_OPTIONS } from "../components/utils/constants";
 import AmountInput from "../components/ui/AmountInput";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,7 +25,7 @@ export default function Settings() {
     const { settings, updateSettings, user } = useSettings();
 
     // --- 1. GENERAL SETTINGS LOGIC ---
-    const { formData, handleFormChange, handleSubmit: handleGeneralSubmit, isSaving: isGeneralSaving, saveSuccess } = useSettingsForm(
+    const { formData, handleFormChange } = useSettingsForm(
         settings,
         updateSettings
     );
@@ -112,38 +112,86 @@ export default function Settings() {
         e.target.releasePointerCapture(e.pointerId);
     };
 
-    // --- 3. GOAL SAVING LOGIC ---
-    const handleSaveGoals = async () => {
-        try {
-            // Save Mode
-            await updateSettings({ goalMode: localGoalMode });
+    // --- 3. SMART SAVE LOGIC ---
+    // Dirty Check: Compare current state vs DB state
+    const hasChanges = useMemo(() => {
+        if (!settings || goals.length === 0) return false;
 
-            // Save Goals
-            const promises = Object.keys(priorityConfig).map((priority) => {
+        // 1. General Settings
+        const settingsKeys = ['baseCurrency', 'currencyPosition', 'budgetViewMode', 'thousandSeparator', 'decimalSeparator', 'decimalPlaces', 'hideTrailingZeros', 'fixedLifestyleMode'];
+        if (settingsKeys.some(k => formData[k] !== settings[k])) return true;
+        if (localGoalMode !== (settings.goalMode ?? true)) return true;
+
+        // 2. Goals
+        return Object.keys(priorityConfig).some(p => {
+            const goal = goals.find(g => g.priority === p);
+            if (!localGoalMode) { // Absolute
+                return (Number(absoluteValues[p]) || 0) !== (goal?.target_amount || 0);
+            } else { // Percentage
+                // Allow small float tolerance
+                return Math.abs(currentValues[p] - (goal?.target_percentage || 0)) > 0.5;
+            }
+        });
+    }, [formData, settings, localGoalMode, absoluteValues, currentValues, goals]);
+
+    const [isGlobalSaving, setIsGlobalSaving] = useState(false);
+
+    const handleGlobalSave = async () => {
+        setIsGlobalSaving(true);
+        try {
+            const promises = [];
+
+            // A. Settings Update (if changed)
+            const settingsKeys = ['baseCurrency', 'currencyPosition', 'budgetViewMode', 'thousandSeparator', 'decimalSeparator', 'decimalPlaces', 'hideTrailingZeros', 'fixedLifestyleMode'];
+            const settingsChanged = settingsKeys.some(k => formData[k] !== settings[k]);
+            const modeChanged = localGoalMode !== (settings.goalMode ?? true);
+
+            if (settingsChanged || modeChanged) {
+                promises.push(updateSettings({
+                    ...formData,
+                    goalMode: localGoalMode
+                }));
+            }
+
+            // B. Goal Updates (if changed)
+            Object.keys(priorityConfig).forEach((priority) => {
                 const existingGoal = goals.find(g => g.priority === priority);
                 let payload = {};
+                let hasGoalChanged = false;
 
-                if (isAbsoluteMode) {
-                    // Absolute: Update Amount, preserve Percentage
-                    payload = {
-                        target_amount: absoluteValues[priority] === '' ? 0 : Number(absoluteValues[priority]),
-                        target_percentage: existingGoal?.target_percentage || 0
-                    };
+                if (!localGoalMode) {
+                    // ABSOLUTE MODE
+                    const newAmt = absoluteValues[priority] === '' ? 0 : Number(absoluteValues[priority]);
+                    if (newAmt !== (existingGoal?.target_amount || 0)) {
+                        hasGoalChanged = true;
+                        payload = {
+                            target_amount: newAmt,
+                            target_percentage: existingGoal?.target_percentage || 0
+                        };
+                    }
                 } else {
-                    // Percentage: Update Percentage, preserve Amount
-                    payload = {
-                        target_amount: existingGoal?.target_amount || 0,
-                        target_percentage: currentValues[priority]
-                    };
+                    // PERCENTAGE MODE
+                    const newPct = currentValues[priority];
+                    if (Math.abs(newPct - (existingGoal?.target_percentage || 0)) > 0.01) {
+                        hasGoalChanged = true;
+                        payload = {
+                            target_amount: existingGoal?.target_amount || 0,
+                            target_percentage: newPct
+                        };
+                    }
                 }
-                return handleGoalUpdate(priority, payload.target_percentage, payload);
+                if (hasGoalChanged) {
+                    promises.push(handleGoalUpdate(priority, payload.target_percentage, payload));
+                }
             });
 
             await Promise.all(promises);
-            showToast({ title: "Success", description: "Goals updated successfully" });
+            showToast({ title: "Success", description: "All changes saved successfully" });
         } catch (error) {
-            console.error('Error saving goals:', error);
-            showToast({ title: "Error", description: "Failed to update goals.", variant: "destructive" });
+            console.error('Save error:', error);
+            showToast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+        } finally {
+            setIsGlobalSaving(false);
         }
     };
 
@@ -151,7 +199,7 @@ export default function Settings() {
     const previewAmount = 1234567.89;
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
+        <div className="min-h-screen p-4 md:p-8 pb-24">
             <div className="max-w-4xl mx-auto space-y-8">
                 <div>
                     <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Settings</h1>
@@ -159,7 +207,7 @@ export default function Settings() {
                 </div>
 
                 {/* CARD 1: GENERAL APP SETTINGS */}
-                <form onSubmit={handleGeneralSubmit} className="space-y-6">
+                <div className="space-y-6">
                     <Card className="border-none shadow-lg">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -249,15 +297,9 @@ export default function Settings() {
                                 <p className="text-xs text-gray-500 mb-1">Preview</p>
                                 <p className="text-2xl font-bold text-gray-900">{formatCurrency(previewAmount, formData)}</p>
                             </div>
-
-                            <div className="flex justify-end pt-4 border-t">
-                                <CustomButton type="submit" disabled={isGeneralSaving} variant="primary">
-                                    {isGeneralSaving ? 'Saving...' : saveSuccess ? <><Check className="w-4 h-4 mr-2" />Saved!</> : 'Save Preferences'}
-                                </CustomButton>
-                            </div>
                         </CardContent>
                     </Card>
-                </form>
+                </div>
 
                 {/* CARD 2: BUDGET GOALS (Logic moved here) */}
                 <Card className="border-none shadow-lg">
@@ -362,16 +404,22 @@ export default function Settings() {
                                         ))}
                                     </div>
                                 )}
-
-                                <div className="flex justify-end pt-4 border-t">
-                                    <CustomButton onClick={handleSaveGoals} disabled={isGoalSaving} variant="primary">
-                                        {isGoalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Goals</>}
-                                    </CustomButton>
-                                </div>
                             </>
                         )}
                     </CardContent>
                 </Card>
+            </div>
+            {/* --- STICKY SAVE FOOTER --- */}
+            <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 transform ${hasChanges ? 'translate-y-0' : 'translate-y-full'}`}>
+                <div className="max-w-4xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-600">
+                        <AlertCircle className="w-5 h-5" />
+                        <span className="text-sm font-medium">You have unsaved changes</span>
+                    </div>
+                    <CustomButton onClick={handleGlobalSave} disabled={isGlobalSaving} variant="primary" size="lg">
+                        {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
+                    </CustomButton>
+                </div>
             </div>
         </div>
     );
