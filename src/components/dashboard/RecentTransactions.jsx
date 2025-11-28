@@ -106,12 +106,11 @@ export default function RecentTransactions({ transactions, categories, customBud
                                             {customBudget && !crossPeriodInfo.isCrossPeriod && (
                                                 <>
                                                     <span className="text-gray-300">•</span>
-                                                    <Badge variant="secondary" className="text-xs bg-gray-100/80 text-gray-600 hover:bg-gray-200 border border-gray-200 transition-colors cursor-pointer">
-                                                        <Link
-                                                            to={`/BudgetDetail?id=${customBudget.id}`}
-                                                            className="hover:text-gray-900 flex items-center gap-1"
-                                                        >
+                                                    {/* Standard Badge: Gray Theme (Exact same structure as Orange) */}
+                                                    <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer px-2 py-0.5 font-medium">
+                                                        <Link to={`/BudgetDetail?id=${customBudget.id}`} className="flex items-center gap-1">
                                                             {customBudget.name}
+                                                            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                                                         </Link>
                                                     </Badge>
                                                 </>
@@ -119,18 +118,15 @@ export default function RecentTransactions({ transactions, categories, customBud
                                             {crossPeriodInfo.isCrossPeriod && (
                                                 <>
                                                     <span className="text-gray-300">•</span>
-                                                    <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                                                        Linked to{' '}
+                                                    {/* Cross-Period Badge: Orange Theme */}
+                                                    <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors cursor-pointer px-2 py-0.5 font-medium">
                                                         {crossPeriodInfo.bucketId ? (
-                                                            <Link
-                                                                to={`/BudgetDetail?id=${crossPeriodInfo.bucketId}`}
-                                                                className="hover:underline hover:text-orange-900 inline-flex items-center ml-1"
-                                                            >
-                                                                {crossPeriodInfo.bucketName}
-                                                                <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-70" />
+                                                            <Link to={`/BudgetDetail?id=${crossPeriodInfo.bucketId}`} className="flex items-center gap-1">
+                                                                Linked to {crossPeriodInfo.bucketName}
+                                                                <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                                                             </Link>
                                                         ) : (
-                                                            crossPeriodInfo.bucketName
+                                                            <span>{crossPeriodInfo.bucketName}</span>
                                                         )}
                                                     </Badge>
                                                 </>
