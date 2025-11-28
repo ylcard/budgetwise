@@ -346,6 +346,10 @@ export const useSettingsForm = (settings, updateSettings) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const resetForm = (newValues) => {
+        setFormData(newValues);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSaving(true);
@@ -374,6 +378,7 @@ export const useSettingsForm = (settings, updateSettings) => {
     return {
         formData,
         handleFormChange,
+        resetForm,
         handleSubmit,
         isSaving,
         saveSuccess,
