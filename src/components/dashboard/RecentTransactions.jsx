@@ -102,7 +102,7 @@ export default function RecentTransactions({ transactions, categories, customBud
                                                     </p>
                                                 </>
                                             )}
-                                            {/* Standard Budget Badge: Show ONLY if not a cross-period settlement */}
+                                            {/* Standard Budget Badge: Gray Theme (Exact same structure as Orange) */}
                                             {customBudget && !crossPeriodInfo.isCrossPeriod && (
                                                 <>
                                                     <span className="text-gray-300">•</span>
@@ -122,7 +122,7 @@ export default function RecentTransactions({ transactions, categories, customBud
                                                     <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors cursor-pointer px-2 py-0.5 font-medium">
                                                         {crossPeriodInfo.bucketId ? (
                                                             <Link to={`/BudgetDetail?id=${crossPeriodInfo.bucketId}`} className="flex items-center gap-1">
-                                                                Linked to {crossPeriodInfo.bucketName}
+                                                                {crossPeriodInfo.bucketName}
                                                                 <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                                                             </Link>
                                                         ) : (
