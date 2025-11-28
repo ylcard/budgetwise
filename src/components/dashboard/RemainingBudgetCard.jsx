@@ -37,8 +37,27 @@ export default function RemainingBudgetCard({
     // --- DATA EXTRACTION ---
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
-    const needsLimit = needsBudget?.budgetAmount || 0;
-    const wantsLimit = wantsBudget?.budgetAmount || 0;
+
+    // Nov 28 - bugfix wrong bar values
+    // const needsLimit = needsBudget?.budgetAmount || 0;
+    // const wantsLimit = wantsBudget?.budgetAmount || 0;
+
+    // Helper to resolve the actual limit for the month based on Goal Mode
+    const resolveLimit = (type) => {
+        const budget = systemBudgets.find(sb => sb.systemBudgetType === type);
+        // 1. Prefer pre-calculated targetAmount if available (from useBudgetBarsData)
+        if (budget && typeof budget.targetAmount === 'number') return budget.targetAmount;
+
+        // 2. Fallback: Calculate from goals based on settings
+        const goal = goals.find(g => g.priority === type);
+        if (!goal) return 0;
+
+        if (settings.goalMode === false) return goal.target_amount || 0; // Absolute Mode
+        return (safeIncome * (goal.target_percentage || 0)) / 100;       // Percentage Mode
+    };
+
+    const needsLimit = resolveLimit('needs');
+    const wantsLimit = resolveLimit('wants');
 
     // Use breakdown for granular segments
     const needsData = breakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
@@ -233,7 +252,12 @@ export default function RemainingBudgetCard({
                         {needsSegs.overflow > 0 && (
                             <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: 'red', ...stripePattern }} />
                         )}
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>{FINANCIAL_PRIORITIES.needs.label}</div>
+                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            <span className="truncate px-1">
+                                {formatCurrency(needsTotal, settings)}
+                                <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
+                            </span>
+                        </div>
                     </Link>
                 </motion.div>
 
@@ -257,7 +281,12 @@ export default function RemainingBudgetCard({
                         {wantsSegs.overflow > 0 && (
                             <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-red-500" style={stripePattern} />
                         )}
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>{FINANCIAL_PRIORITIES.wants.label}</div>
+                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            <span className="truncate px-1">
+                                {formatCurrency(wantsTotal, settings)}
+                                <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
+                            </span>
+                        </div>
                     </Link>
                 </motion.div>
 
