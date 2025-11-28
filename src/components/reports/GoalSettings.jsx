@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Target, Save, GripVertical, Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { showToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { useSettings } from "../utils/SettingsContext";
 import AmountInput from "../ui/AmountInput";
 import { Label } from "@/components/ui/label";
 
@@ -15,96 +13,35 @@ const priorityConfig = {
     savings: { label: "Savings", color: "#10B981", description: "Savings and investments" }
 };
 
-export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving }) {
-    const { settings, updateSettings } = useSettings();
+export default function GoalSettings({
+    // State Props
+    isLoading,
+    isSaving,
+    goalMode,           // boolean (true = Percentage, false = Absolute)
+    setGoalMode,        // function
+    splits,             // object { split1, split2 }
+    setSplits,          // function
+    absoluteValues,     // object { needs, wants, savings }
+    setAbsoluteValues,  // function
+    fixedLifestyleMode, // boolean
+    setFixedLifestyleMode, // function
 
-    // --- MODE STATE ---
-    // Initialize from settings (default to True/Percentage if undefined)
-    const [localGoalMode, setLocalGoalMode] = useState(settings.goalMode ?? true);
-    const isAbsoluteMode = !localGoalMode;
-
-    // Sync local state when DB settings finish loading
-    useEffect(() => {
-        setLocalGoalMode(settings.goalMode ?? true);
-    }, [settings.goalMode]);
-
-    // --- SLIDER STATE (Percentage Mode) ---
-    const [splits, setSplits] = useState({ split1: 50, split2: 80 });
+    // Actions
+    onSave              // function
+}) {
     const containerRef = useRef(null);
     const [activeThumb, setActiveThumb] = useState(null);
 
-    // --- INPUT STATE (Absolute Mode) ---
-    const [absoluteValues, setAbsoluteValues] = useState({
-        needs: goals.find(g => g.priority === 'needs')?.target_amount ?? '',
-        wants: goals.find(g => g.priority === 'wants')?.target_amount ?? '',
-        savings: goals.find(g => g.priority === 'savings')?.target_amount ?? ''
-    });
+    const isAbsoluteMode = !goalMode;
 
-    // Update Slider positions when goals load from DB
-    useEffect(() => {
-        const map = { needs: 0, wants: 0, savings: 0 };
-        goals.forEach(goal => {
-            map[goal.priority] = goal.target_percentage;
-        });
-        setSplits({
-            split1: map.needs || 50,
-            split2: (map.needs || 50) + (map.wants || 30)
-        });
-    }, [goals]);
-
-    // Calculate current percentages based on slider thumbs
+    // Derived percentages for display (Percentage Mode)
     const currentValues = {
         needs: splits.split1,
         wants: splits.split2 - splits.split1,
         savings: 100 - splits.split2
     };
 
-    const handleSave = async () => {
-        try {
-            // 1. Explicitly save the Mode preference
-            await updateSettings({
-                goalMode: localGoalMode
-            });
-
-            // 2. Save Goals (Non-destructive: preserves the inactive mode's values in DB)
-            const promises = Object.keys(priorityConfig).map((priority) => {
-                const existingGoal = goals.find(g => g.priority === priority);
-                let payload = {};
-
-                if (isAbsoluteMode) {
-                    // ABSOLUTE MODE: Update Amount, keep old Percentage
-                    payload = {
-                        target_amount: absoluteValues[priority] === '' ? 0 : Number(absoluteValues[priority]),
-                        target_percentage: existingGoal?.target_percentage || 0
-                    };
-                } else {
-                    // PERCENTAGE MODE: Update Percentage, keep old Amount
-                    payload = {
-                        target_amount: existingGoal?.target_amount || 0,
-                        target_percentage: currentValues[priority]
-                    };
-                }
-
-                return onGoalUpdate(priority, payload.target_percentage, payload);
-            });
-
-            await Promise.all(promises);
-
-            showToast({
-                title: "Success",
-                description: "Goals updated successfully",
-            });
-        } catch (error) {
-            console.error('Error saving goals:', error);
-            showToast({
-                title: "Error",
-                description: error?.message || "Failed to update goals.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    // --- SLIDER EVENT HANDLERS ---
+    // --- SLIDER INTERACTION LOGIC (Kept local as it's UI interaction) ---
     const handlePointerDown = (e, thumbIndex) => {
         e.preventDefault();
         e.target.setPointerCapture(e.pointerId);
@@ -113,13 +50,19 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
 
     const handlePointerMove = (e) => {
         if (!activeThumb || !containerRef.current) return;
+
         const rect = containerRef.current.getBoundingClientRect();
         const rawPercent = ((e.clientX - rect.left) / rect.width) * 100;
+        // Snap to nearest integer
         const constrained = Math.round(Math.max(0, Math.min(100, rawPercent)));
 
+        // Update parent state
         setSplits(prev => {
-            if (activeThumb === 1) return { ...prev, split1: Math.min(constrained, prev.split2 - 5) };
-            else return { ...prev, split2: Math.max(constrained, prev.split1 + 5) };
+            if (activeThumb === 1) {
+                return { ...prev, split1: Math.min(constrained, prev.split2 - 5) };
+            } else {
+                return { ...prev, split2: Math.max(constrained, prev.split1 + 5) };
+            }
         });
     };
 
@@ -131,8 +74,12 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
     if (isLoading) {
         return (
             <Card className="border-none shadow-lg sticky top-6">
-                <CardHeader><CardTitle>Goal Settings</CardTitle></CardHeader>
-                <CardContent><Skeleton className="h-96 w-full" /></CardContent>
+                <CardHeader>
+                    <CardTitle>Goal Settings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-96 w-full" />
+                </CardContent>
             </Card>
         );
     }
@@ -142,7 +89,7 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Target className="w-5 h-5" />
-                    Goal Settings
+                    Goal Allocation
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -151,14 +98,14 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
                 <div className="flex items-center justify-center p-1 bg-gray-100 rounded-lg">
                     <button
                         type="button"
-                        onClick={() => setLocalGoalMode(true)}
+                        onClick={() => setGoalMode(true)}
                         className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${!isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         Percentage
                     </button>
                     <button
                         type="button"
-                        onClick={() => setLocalGoalMode(false)}
+                        onClick={() => setGoalMode(false)}
                         className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         Absolute Values
@@ -172,12 +119,29 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
                             ref={containerRef}
                             className="relative h-6 w-full bg-gray-100 rounded-full select-none touch-none"
                         >
-                            {/* Zones */}
-                            <div className="absolute top-0 left-0 h-full rounded-l-full" style={{ width: `${splits.split1}%`, backgroundColor: priorityConfig.needs.color }} />
-                            <div className="absolute top-0 h-full" style={{ left: `${splits.split1}%`, width: `${splits.split2 - splits.split1}%`, backgroundColor: priorityConfig.wants.color }} />
-                            <div className="absolute top-0 h-full rounded-r-full" style={{ left: `${splits.split2}%`, width: `${100 - splits.split2}%`, backgroundColor: priorityConfig.savings.color }} />
+                            {/* Visual Zones */}
+                            <div
+                                className="absolute top-0 left-0 h-full rounded-l-full transition-colors"
+                                style={{ width: `${splits.split1}%`, backgroundColor: priorityConfig.needs.color }}
+                            />
+                            <div
+                                className="absolute top-0 h-full transition-colors"
+                                style={{
+                                    left: `${splits.split1}%`,
+                                    width: `${splits.split2 - splits.split1}%`,
+                                    backgroundColor: priorityConfig.wants.color
+                                }}
+                            />
+                            <div
+                                className="absolute top-0 h-full rounded-r-full transition-colors"
+                                style={{
+                                    left: `${splits.split2}%`,
+                                    width: `${100 - splits.split2}%`,
+                                    backgroundColor: priorityConfig.savings.color
+                                }}
+                            />
 
-                            {/* Thumbs */}
+                            {/* Thumb 1 */}
                             <div
                                 onPointerDown={(e) => handlePointerDown(e, 1)}
                                 onPointerMove={handlePointerMove}
@@ -187,6 +151,8 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
                             >
                                 <GripVertical className="w-2.5 h-2.5 text-gray-400" />
                             </div>
+
+                            {/* Thumb 2 */}
                             <div
                                 onPointerDown={(e) => handlePointerDown(e, 2)}
                                 onPointerMove={handlePointerMove}
@@ -241,30 +207,39 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
                             </div>
                         </div>
                         <Switch
-                            checked={settings.fixedLifestyleMode}
-                            onCheckedChange={(checked) => updateSettings({ fixedLifestyleMode: checked })}
+                            checked={fixedLifestyleMode}
+                            onCheckedChange={setFixedLifestyleMode}
                         />
                     </div>
                 )}
 
-                {/* Percentage Values Legend */}
+                {/* Percentage Values Legend (Hidden in Absolute Mode) */}
                 {!isAbsoluteMode && (
                     <div className="grid grid-cols-3 gap-4 animate-in fade-in">
                         {Object.entries(priorityConfig).map(([key, config]) => (
                             <div key={key} className="text-center space-y-1">
                                 <div className="flex items-center justify-center gap-2 mb-1">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
-                                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{config.label}</span>
+                                    <div
+                                        className="w-2 h-2 rounded-full"
+                                        style={{ backgroundColor: config.color }}
+                                    />
+                                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                        {config.label}
+                                    </span>
                                 </div>
-                                <div className="text-2xl font-bold text-gray-900">{Math.round(currentValues[key])}%</div>
-                                <p className="text-[10px] text-gray-400 line-clamp-1 px-1">{config.description}</p>
+                                <div className="text-2xl font-bold text-gray-900">
+                                    {Math.round(currentValues[key])}%
+                                </div>
+                                <p className="text-[10px] text-gray-400 line-clamp-1 px-1">
+                                    {config.description}
+                                </p>
                             </div>
                         ))}
                     </div>
                 )}
 
                 <CustomButton
-                    onClick={handleSave}
+                    onClick={onSave}
                     disabled={isSaving}
                     variant="primary"
                     className="w-full"
