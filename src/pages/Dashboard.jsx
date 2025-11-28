@@ -212,6 +212,7 @@ export default function Dashboard() {
                             transactions={paidTransactions}
                             categories={categories}
                             settings={settings}
+                            customBudgets={allCustomBudgets}
                         />
                     </div>
                 </div>
