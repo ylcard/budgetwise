@@ -3,6 +3,7 @@ import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3 } from "luc
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext"; // Import context hook
+import { motion } from "framer-motion";
 
 export default function RemainingBudgetCard({
     bonusSavingsPotential,
@@ -244,19 +245,21 @@ export default function RemainingBudgetCard({
 
     // --- RENDER: VIEW TOGGLE (Segmented Control) ---
     const ViewToggle = () => (
-        <div className="flex bg-gray-100/80 p-1 rounded-lg border border-gray-200/50 relative">
-            {/* The Active Pill (Animated Background) */}
-            <div
-                className={`absolute inset-y-1 w-[50%] bg-white rounded shadow-sm transition-all duration-200 ease-out ${isSimpleView ? "left-1" : "left-[calc(50%-4px)] translate-x-1"
-                    }`}
-            />
+        <div className="flex bg-gray-100/80 p-1 rounded-lg border border-gray-200/50 relative isolate">
 
             {/* Simple Button */}
             <button
                 onClick={() => handleViewToggle(true)}
-                className={`relative z-10 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 ${isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
+                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
                     }`}
             >
+                {isSimpleView && (
+                    <motion.div
+                        layoutId="active-view-pill"
+                        className="absolute inset-0 bg-white rounded shadow-sm -z-10"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                )}
                 <LayoutList className="w-3.5 h-3.5" />
                 Simple
             </button>
@@ -264,9 +267,16 @@ export default function RemainingBudgetCard({
             {/* Detailed Button */}
             <button
                 onClick={() => handleViewToggle(false)}
-                className={`relative z-10 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 ${!isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
+                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${!isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
                     }`}
             >
+                {!isSimpleView && (
+                    <motion.div
+                        layoutId="active-view-pill"
+                        className="absolute inset-0 bg-white rounded shadow-sm -z-10"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                )}
                 <BarChart3 className="w-3.5 h-3.5" />
                 Detailed
             </button>
