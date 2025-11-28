@@ -24,13 +24,26 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
     const containerRef = useRef(null);
     const [activeThumb, setActiveThumb] = useState(null);
 
+    // HELPER: Strictly resolve the mode to boolean to avoid "false" string issues
+    const resolveMode = (val) => {
+        if (val === 'false') return false;
+        if (val === 'true') return true;
+        // If undefined/null, default to true (Percentage)
+        return val ?? true;
+    };
+
     // Determine initial mode from Settings (default to 'percentage')
-    const [localGoalMode, setLocalGoalMode] = useState(settings.goalMode ?? true);
+    const [localGoalMode, setLocalGoalMode] = useState(() => resolveMode(settings.goalMode));
     const isAbsoluteMode = !localGoalMode;
 
-    // FIX: Update local state when settings finish loading from DB
+    // Track if user has manually touched the toggle
+    const hasInteracted = useRef(false);
+
+    // FIX: Only sync with DB settings if user hasn't manually changed it yet.
     useEffect(() => {
-        setLocalGoalMode(settings.goalMode ?? true);
+        if (!hasInteracted.current) {
+            setLocalGoalMode(resolveMode(settings.goalMode));
+        }
     }, [settings.goalMode]);
 
     // Local state for Absolute Mode inputs
@@ -69,6 +82,11 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
     };
 
     // const isAbsoluteMode = settings.goalAllocationMode === 'absolute';
+
+    const handleModeChange = (isPercentage) => {
+        hasInteracted.current = true; // Mark as user-controlled so DB sync doesn't overwrite it
+        setLocalGoalMode(isPercentage);
+    };
 
     const handleSave = async () => {
         try {
@@ -110,6 +128,8 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
                 title: "Success",
                 description: "Goals updated successfully",
             });
+            // Optional: Reset interaction flag after successful save
+            hasInteracted.current = false;
         } catch (error) {
             console.error('Error saving goals:', error);
             showToast({
@@ -179,14 +199,14 @@ export default function GoalSettings({ goals, onGoalUpdate, isLoading, isSaving 
                 <div className="flex items-center justify-center p-1 bg-gray-100 rounded-lg">
                     <button
                         type="button"
-                        onClick={() => setLocalGoalMode(true)}
+                        onClick={() => handleModeChange(true)}
                         className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${!isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         Percentage
                     </button>
                     <button
                         type="button"
-                        onClick={() => setLocalGoalMode(false)}
+                        onClick={() => handleModeChange(false)}
                         className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         Absolute Values
