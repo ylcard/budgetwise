@@ -1,3 +1,4 @@
+
 /**
  * @file Financial Calculations Utilities
  * @description Centralized functions for calculating expenses, income, and budget statistics.
@@ -6,6 +7,7 @@
  */
 
 import { isDateInRange } from "./dateUtils";
+import { getMonthBoundaries } from "./dateUtils"; // Ensure this is imported
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -313,4 +315,29 @@ export const calculateBonusSavingsPotential = (systemBudgets, transactions, cate
     }
 
     return netPotential;
+};
+
+/**
+ * Calculates the average monthly income for the X months PRIOR to the current reference date.
+ * Used for "Inflation Protection" baseline.
+ */
+
+export const getHistoricalAverageIncome = (transactions, selectedMonth, selectedYear, lookbackMonths = 3) => {
+    if (!transactions || transactions.length === 0) return 0;
+
+    let totalIncome = 0;
+
+    // Iterate backwards from the previous month
+    for (let i = 1; i <= lookbackMonths; i++) {
+        // Create date for (Month - i)
+        // JS Date automatically handles year rollover (e.g., Month -1 becomes Dec of prev year)
+        const date = new Date(selectedYear, selectedMonth - i, 1);
+        const m = date.getMonth();
+        const y = date.getFullYear();
+
+        const { monthStart, monthEnd } = getMonthBoundaries(m, y);
+        totalIncome += getMonthlyIncome(transactions, monthStart, monthEnd);
+    }
+
+    return totalIncome / lookbackMonths;
 };
