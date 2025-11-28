@@ -3,12 +3,12 @@ import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3 } from "luc
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export default function RemainingBudgetCard({
     bonusSavingsPotential,
     currentMonthIncome,
-    currentMonthExpenses, // Used for headline total
+    currentMonthExpenses,
     settings,
     monthNavigator,
     addIncomeButton,
@@ -28,8 +28,8 @@ export default function RemainingBudgetCard({
     // --- ANIMATION CONFIG ---
     const fluidSpring = {
         type: "spring",
-        stiffness: 120, // Lower stiffness = softer movement
-        damping: 20,    // Lower damping = more slide/drift
+        stiffness: 120,
+        damping: 20,
         mass: 1
     };
 
@@ -46,8 +46,6 @@ export default function RemainingBudgetCard({
     // Aggregates
     const needsTotal = needsData.total;
     const wantsTotal = wantsData.total;
-
-    // Use the passed total prop for the headline to ensure consistency with other widgets
     const totalSpent = currentMonthExpenses;
 
     const needsColor = needsBudget?.color || '#3B82F6';
@@ -106,7 +104,6 @@ export default function RemainingBudgetCard({
         const ratio = used / limit;
         if (ratio > 1) return "text-red-100 font-extrabold flex items-center justify-center gap-1 animate-pulse shadow-sm";
 
-        // Wants Warning: >90% usage before end of month
         if (type === 'wants' && ratio > 0.90) {
             if (isCurrentMonth && isEndOfMonth) return "text-white/90 font-medium";
             return "text-amber-100 font-bold flex items-center justify-center gap-1";
@@ -114,14 +111,14 @@ export default function RemainingBudgetCard({
         return "text-white/90 font-medium";
     };
 
-    // Helper for animated segments to reduce repetition
-    const AnimatedSegment = ({ width, color, children, className = "" }) => (
+    // Helper for animated segments
+    const AnimatedSegment = ({ width, color, children, className = "", style = {} }) => (
         <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${width}%` }}
             transition={fluidSpring}
-            className={`h-full flex items-center justify-center relative group cursor-default ${className}`}
-            style={{ backgroundColor: color }}
+            className={`h-full flex items-center justify-center relative group cursor-default overflow-hidden ${className}`}
+            style={{ backgroundColor: color, ...style }}
         >
             {children}
         </motion.div>
@@ -134,36 +131,19 @@ export default function RemainingBudgetCard({
         const savingsLabel = `${Math.round(savingsPct)}%`;
 
         return (
-            // STANDARDIZED HEIGHT: h-10
-            <div className="relative h-10 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner border border-gray-200">
-                {/* NEEDS */}
-                <AnimatedSegment
-                    width={needsPct}
-                    color={needsColor}
-                    className="border-r border-white/10"
-                >
+            <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
+                <AnimatedSegment width={needsPct} color={needsColor} className="border-r border-white/10">
                     {needsPct > 8 && (
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                            className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}
-                        >
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
                             {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
                             Needs {needsLabel}
                         </motion.div>
                     )}
                 </AnimatedSegment>
 
-                {/* WANTS */}
-                <AnimatedSegment
-                    width={wantsPct}
-                    color={wantsColor}
-                    className="border-r border-white/10"
-                >
+                <AnimatedSegment width={wantsPct} color={wantsColor} className="border-r border-white/10">
                     {wantsPct > 8 && (
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                            className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}
-                        >
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
                             {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && (
                                 <Zap className="w-3 h-3 inline mr-1 fill-current" />
                             )}
@@ -172,14 +152,10 @@ export default function RemainingBudgetCard({
                     )}
                 </AnimatedSegment>
 
-                {/* SAVINGS */}
                 {savingsPct > 0 && (
                     <AnimatedSegment width={savingsPct} className="bg-emerald-500">
                         {savingsPct > 8 && (
-                            <motion.div
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                                className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap"
-                            >
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
                                 Save {savingsLabel}
                             </motion.div>
                         )}
@@ -211,66 +187,65 @@ export default function RemainingBudgetCard({
         };
 
         return (
-            // STANDARDIZED HEIGHT: h-10
             <div className="relative h-10 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
                 {/* NEEDS */}
-                <Link
-                    to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${needsVisualPct}%` }}
+                    transition={fluidSpring}
+                    className="h-full relative border-r border-white/20"
                 >
-                    <motion.div
-                        initial={{ width: 0 }} animate={{ width: `${needsVisualPct}%` }} transition={fluidSpring}
-                        className={`h-full relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
+                    <Link
+                        to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
+                        className="block h-full w-full relative group hover:brightness-110 overflow-hidden"
                     >
                         {needsSegs.safePaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safePaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: needsColor }} />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safePaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full float-left" style={{ backgroundColor: needsColor }} />
                         )}
                         {needsSegs.safeUnpaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-blue-500 opacity-60" style={stripePattern} />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full float-left bg-blue-500 opacity-60" style={stripePattern} />
                         )}
                         {needsSegs.overflow > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: 'red', ...stripePattern }} />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full float-left opacity-60" style={{ backgroundColor: 'red', ...stripePattern }} />
                         )}
                         <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>Needs</div>
-                    </motion.div>
-                </Link>
+                    </Link>
+                </motion.div>
 
                 {/* WANTS */}
-                <Link
-                    to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${wantsVisualPct}%` }}
+                    transition={fluidSpring}
+                    className="h-full relative border-r border-white/20"
                 >
-                    <motion.div
-                        initial={{ width: 0 }} animate={{ width: `${wantsVisualPct}%` }} transition={fluidSpring}
-                        className={`h-full relative group hover:brightness-110 cursor-pointer border-r border-white/20 overflow-hidden flex`}
+                    <Link
+                        to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
+                        className="block h-full w-full relative group hover:brightness-110 overflow-hidden"
                     >
                         {wantsSegs.safePaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safePaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: wantsColor }} />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safePaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full float-left" style={{ backgroundColor: wantsColor }} />
                         )}
                         {wantsSegs.safeUnpaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safeUnpaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: wantsColor, ...stripePattern }} />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safeUnpaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full float-left opacity-60" style={{ backgroundColor: wantsColor, ...stripePattern }} />
                         )}
                         {wantsSegs.overflow > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-red-500" style={stripePattern} />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full float-left bg-red-500" style={stripePattern} />
                         )}
                         <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>Lifestyle</div>
-                    </motion.div>
-                </Link>
+                    </Link>
+                </motion.div>
 
                 {/* SAVINGS */}
                 {efficiencyBarPct > 0 && (
-                    <motion.div
-                        initial={{ width: 0 }} animate={{ width: `${efficiencyBarPct}%` }} transition={fluidSpring}
-                        className="h-full bg-emerald-300 relative group border-r border-white/20"
-                    >
+                    <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-r border-white/20">
                         <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">Extra</div>
-                    </motion.div>
+                    </AnimatedSegment>
                 )}
                 {targetSavingsBarPct > 0 && (
-                    <motion.div
-                        initial={{ width: 0 }} animate={{ width: `${targetSavingsBarPct}%` }} transition={fluidSpring}
-                        className="h-full bg-emerald-500 relative group"
-                    >
+                    <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
                         <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">Target</div>
-                    </motion.div>
+                    </AnimatedSegment>
                 )}
             </div>
         );
@@ -280,8 +255,6 @@ export default function RemainingBudgetCard({
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
     const isTotalOver = totalSpent > currentMonthIncome;
 
-    // const fluidSpring = { type: "spring", stiffness: 150, damping: 25, mass: 1.4 };
-
     const ViewToggle = () => (
         <div className="flex bg-gray-100/80 p-1 rounded-lg border border-gray-200/50 relative isolate">
             <button
@@ -289,7 +262,7 @@ export default function RemainingBudgetCard({
                 className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
             >
                 {isSimpleView && (
-                    <motion.div layoutId="active-view-pill" className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10" transition={fluidSpring} />
+                    <motion.div layoutId="active-view-pill" className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10" transition={{ type: "spring", stiffness: 300, damping: 25, mass: 1.2 }} />
                 )}
                 <LayoutList className="w-3.5 h-3.5" />
                 Simple
@@ -299,7 +272,7 @@ export default function RemainingBudgetCard({
                 className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${!isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
             >
                 {!isSimpleView && (
-                    <motion.div layoutId="active-view-pill" className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10" transition={fluidSpring} />
+                    <motion.div layoutId="active-view-pill" className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10" transition={{ type: "spring", stiffness: 300, damping: 25, mass: 1.2 }} />
                 )}
                 <BarChart3 className="w-3.5 h-3.5" />
                 Detailed
@@ -364,7 +337,6 @@ export default function RemainingBudgetCard({
                     <div className="space-y-2">
                         {isSimpleView ? renderSimpleBar() : renderDetailedBar()}
 
-                        {/* --- Legend Row (NOW ALWAYS VISIBLE) --- */}
                         <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-400 pt-1 gap-2">
                             <div className="flex gap-4 items-center">
                                 <span className="flex items-center gap-1.5">
@@ -375,7 +347,6 @@ export default function RemainingBudgetCard({
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: wantsColor }}></div>
                                     Lifestyle
                                 </span>
-                                {/* Add Status Legend only for Detailed View if needed, or keep it generic */}
                                 {!isSimpleView && (
                                     <>
                                         <span className="flex items-center gap-1 ml-2">
@@ -388,7 +359,6 @@ export default function RemainingBudgetCard({
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                {/* GOAL SUMMARY TEXT */}
                                 <span className="hidden sm:inline font-medium text-gray-400/80">{goalSummary}</span>
                                 <Link to="/Settings" className="flex items-center gap-1 text-[10px] hover:text-blue-600 transition-colors">
                                     <Target size={12} />
