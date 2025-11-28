@@ -23,13 +23,29 @@ export default function QuickAddIncome({
     renderTrigger = true,
     triggerVariant = "default",
     triggerSize = "default",
-    triggerClassName = ""
+    triggerClassName = "",
+    selectedMonth,
+    selectedYear
 }) {
+
+    // Helper to determine initial date based on context
+    const getInitialDate = () => {
+        const now = new Date();
+        // If selected month/year matches current real-time, use today
+        if (selectedMonth === now.getMonth() && selectedYear === now.getFullYear()) {
+            return formatDateString(now);
+        }
+        // Otherwise default to the 1st of the selected month
+        return formatDateString(new Date(selectedYear, selectedMonth, 1));
+    };
+   
+
     const [formData, setFormData] = useState({
         title: '',
         amount: null,
         type: 'income',
-        date: formatDateString(new Date())
+        // date: formatDateString(new Date())
+        date: getInitialDate()
     });
 
     const handleSubmit = (e) => {
@@ -45,7 +61,8 @@ export default function QuickAddIncome({
             title: '',
             amount: null,
             type: 'income',
-            date: formatDateString(new Date())
+            // date: formatDateString(new Date())
+            date: getInitialDate()
         });
     };
 
