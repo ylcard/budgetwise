@@ -21,6 +21,18 @@ const priorityConfig = {
     savings: { label: "Savings", color: "#10B981", description: "Savings and investments" }
 };
 
+const SETTINGS_KEYS = [
+    'baseCurrency',
+    'currencyPosition',
+    'budgetViewMode',
+    'thousandSeparator',
+    'decimalSeparator',
+    'decimalPlaces',
+    'hideTrailingZeros',
+    'fixedLifestyleMode'
+];
+
+
 export default function Settings() {
     const { settings, updateSettings, user } = useSettings();
 
@@ -118,8 +130,9 @@ export default function Settings() {
         if (!settings || goals.length === 0) return false;
 
         // 1. General Settings
-        const settingsKeys = ['baseCurrency', 'currencyPosition', 'budgetViewMode', 'thousandSeparator', 'decimalSeparator', 'decimalPlaces', 'hideTrailingZeros', 'fixedLifestyleMode'];
-        if (settingsKeys.some(k => formData[k] !== settings[k])) return true;
+        // const settingsKeys = ['baseCurrency', 'currencyPosition', 'budgetViewMode', 'thousandSeparator', 'decimalSeparator', 'decimalPlaces', 'hideTrailingZeros', 'fixedLifestyleMode'];
+        // if (settingsKeys.some(k => formData[k] !== settings[k])) return true;
+        if (SETTINGS_KEYS.some(k => formData[k] !== settings[k])) return true;
         if (localGoalMode !== (settings.goalMode ?? true)) return true;
 
         // 2. Goals
@@ -142,11 +155,10 @@ export default function Settings() {
             const promises = [];
 
             // A. Settings Update (if changed)
-            const settingsKeys = ['baseCurrency', 'currencyPosition', 'budgetViewMode', 'thousandSeparator', 'decimalSeparator', 'decimalPlaces', 'hideTrailingZeros', 'fixedLifestyleMode'];
-            const settingsChanged = settingsKeys.some(k => formData[k] !== settings[k]);
+            // const settingsKeys = ['baseCurrency', 'currencyPosition', 'budgetViewMode', 'thousandSeparator', 'decimalSeparator', 'decimalPlaces', 'hideTrailingZeros', 'fixedLifestyleMode'];
+            // const settingsChanged = settingsKeys.some(k => formData[k] !== settings[k]);
+            const settingsChanged = SETTINGS_KEYS.some(k => formData[k] !== settings[k]);
             const modeChanged = localGoalMode !== (settings.goalMode ?? true);
-
-            console.log('DEBUG SAVE PAYLOAD:', { ...formData, goalMode: localGoalMode });
 
             if (settingsChanged || modeChanged) {
                 promises.push(updateSettings({
