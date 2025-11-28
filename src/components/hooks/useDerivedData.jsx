@@ -209,7 +209,9 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
         return getTotalMonthExpenses(transactions, monthStartStr, monthEndStr);
     }, [transactions, allCustomBudgets, categories, monthStartStr, monthEndStr, getTotalMonthExpenses]);
 
-    const goalMode = settings?.goalMode ?? true;
+    // POSSIBLE DEADCODE
+    // const goalMode = settings?.goalMode ?? true;
+
     // NEW: Calculate the behavioral "Bonus Savings" (Unspent Needs + Unspent Wants)
     // This is distinct from actual bank account remaining; it's the amount "saved by budgeting".
     const bonusSavingsPotential = useMemo(() => {
@@ -325,7 +327,9 @@ export const useBudgetsAggregates = (
     selectedYear,
     settings
 ) => {
-    const goalMode = settings?.goalMode ?? true;
+
+    // POSSIBLE DEADCODE
+    // const goalMode = settings?.goalMode ?? true;
 
     // Filter custom budgets based on date overlap
     const customBudgets = useMemo(() => {
