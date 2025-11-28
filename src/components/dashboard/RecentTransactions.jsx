@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowRight, Banknote } from "lucide-react";
+import { ArrowRight, Banknote, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createPageUrl } from "@/utils";
@@ -114,7 +115,18 @@ export default function RecentTransactions({ transactions, categories, customBud
                                                 <>
                                                     <span className="text-gray-300">•</span>
                                                     <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                                                        Linked to {crossPeriodInfo.bucketName}
+                                                        Linked to{' '}
+                                                        {crossPeriodInfo.bucketId ? (
+                                                            <Link
+                                                                to={`/BudgetDetail?id=${crossPeriodInfo.bucketId}`}
+                                                                className="hover:underline hover:text-orange-900 inline-flex items-center ml-1"
+                                                            >
+                                                                {crossPeriodInfo.bucketName}
+                                                                <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-70" />
+                                                            </Link>
+                                                        ) : (
+                                                            crossPeriodInfo.bucketName
+                                                        )}
                                                     </Badge>
                                                 </>
                                             )}
