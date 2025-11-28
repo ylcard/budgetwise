@@ -614,10 +614,16 @@ export default function RemainingBudgetCard({
                             {addExpenseButton}
                             {/* Conditionally highlight the Add Income button if the month is empty */}
                             {isEmptyMonth && addIncomeButton ? (
-                                <div className="relative group">
-                                    <div className="absolute -inset-0.5 bg-emerald-400 rounded-lg blur opacity-75 animate-pulse group-hover:opacity-100 transition duration-1000"></div>
+                                <motion.div
+                                    // "Breathing" animation: scales up to 10% larger and back down
+                                    animate={{ scale: [1, 1.1, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    className="relative z-10"
+                                >
+                                    {/* Stronger Glow: Negative inset makes it bleed out, blur makes it glow */}
+                                    <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
                                     <div className="relative">{addIncomeButton}</div>
-                                </div>
+                                </motion.div>
                             ) : (
                                 addIncomeButton
                             )}
