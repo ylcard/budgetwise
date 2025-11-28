@@ -119,7 +119,7 @@ export default function RecentTransactions({ transactions, categories, customBud
                                                 <>
                                                     <span className="text-gray-300">•</span>
                                                     {/* Cross-Period Badge: Orange Theme */}
-                                                    <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors cursor-pointer px-2 py-0.5 font-medium">
+                                                    <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-200 hover:border-orange-300 hover:text-orange-900 transition-all cursor-pointer px-2 py-0.5 font-medium">
                                                         {crossPeriodInfo.bucketId ? (
                                                             <Link to={`/BudgetDetail?id=${crossPeriodInfo.bucketId}`} className="flex items-center gap-1">
                                                                 {crossPeriodInfo.bucketName}
