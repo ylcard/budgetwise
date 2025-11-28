@@ -184,23 +184,26 @@ const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) =>
                 </div>
             ) : (
                 // --- INPUT VIEW ---
-                <div className="space-y-2">
+                <div className="flex items-end justify-between gap-2 pt-2">
                     {['needs', 'wants', 'savings'].map(key => (
-                        <div key={key} className="grid grid-cols-5 items-center gap-2">
-                            <div className="col-span-1 flex justify-center">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
-                            </div>
-                            <div className="col-span-4 relative">
+                        <div key={key} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                            {/* Dot Indicator */}
+                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
+
+                            {/* Compact Input */}
+                            <div className="relative w-full">
                                 <Input
                                     type="text"
                                     inputMode="decimal"
                                     value={absValues[key]}
                                     onChange={(e) => handleAmountChange(key, e.target.value)}
-                                    className="h-7 text-xs pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    placeholder="0"
+                                    className="h-7 text-xs px-1.5 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
-                                <span className="absolute right-2 top-1.5 text-[10px] text-muted-foreground pointer-events-none">
-                                    {settings.currencySymbol}
-                                </span>
+                                {/* Optional: Tiny currency hint outside or as placeholder if preferred, 
+                                    but for super-compact, relying on context + placeholder is cleaner 
+                                    or we can add a tiny label below if needed. 
+                                    Here I'm keeping it clean given the constraint. */}
                             </div>
                         </div>
                     ))}
