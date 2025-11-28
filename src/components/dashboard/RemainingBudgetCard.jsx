@@ -384,17 +384,24 @@ export default function RemainingBudgetCard({
     // --- CONFETTI LOGIC ---
     // We track the previous income to detect the specific transition from 0 -> Amount
     const prevIncomeRef = useRef(currentMonthIncome);
+    const prevMonthRef = useRef(selectedMonth);
+    const prevYearRef = useRef(selectedYear);
     const componentMountTime = useRef(Date.now());
 
     useEffect(() => {
         const prevIncome = prevIncomeRef.current;
         const currentIncome = currentMonthIncome || 0;
+        // Ensure we are detecting a change WITHIN the same month context, not a navigation event
+        const isSameContext = prevMonthRef.current === selectedMonth && prevYearRef.current === selectedYear;
+
 
         // Check if we went from 0 (or undefined) to having money
         // AND ensure this isn't just the page loading (wait 1s buffer)
         const isDataLoading = Date.now() - componentMountTime.current < 1000;
 
-        if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+        // fixing confetti being naughty
+        // if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+        if (!isDataLoading && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
             // Trigger Confetti!
             const duration = 3000;
             const end = Date.now() + duration;
@@ -426,7 +433,11 @@ export default function RemainingBudgetCard({
 
         // Update ref for next render
         prevIncomeRef.current = currentIncome;
-    }, [currentMonthIncome]);
+        // Fixing confetti being naughty
+        // }, [currentMonthIncome]);
+        prevMonthRef.current = selectedMonth;
+        prevYearRef.current = selectedYear;
+    }, [currentMonthIncome, selectedMonth, selectedYear]);
 
     const getStatusStyles = (used, limit, type) => {
         if (!limit || limit === 0) return "text-white/90 font-medium";
