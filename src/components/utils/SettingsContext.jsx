@@ -70,10 +70,10 @@ export const SettingsProvider = ({ children }) => {
                     thousandSeparator: userSettings.thousandSeparator || ',',
                     decimalSeparator: userSettings.decimalSeparator || '.',
                     decimalPlaces: userSettings.decimalPlaces || 2,
-                    hideTrailingZeros: userSettings.hideTrailingZeros || false,
+                    hideTrailingZeros: userSettings.hideTrailingZeros ?? false,
                     dateFormat: userSettings.dateFormat || 'MMM dd, yyyy',
                     budgetViewMode: userSettings.budgetViewMode || 'bars',
-                    fixedLifestyleMode: userSettings.fixedLifestyleMode || false,
+                    fixedLifestyleMode: userSettings.fixedLifestyleMode ?? false,
                     barViewMode: userSettings.barViewMode ?? true,
                     // goalAllocationMode: userSettings.goalAllocationMode || 'percentage',
                     // absoluteGoals: userSettings.absoluteGoals || { needs: 0, wants: 0, savings: 0 }
@@ -115,7 +115,8 @@ export const SettingsProvider = ({ children }) => {
             }
 
             if (targetId) {
-                await base44.entities.UserSettings.update(targetId, newSettings);
+                // await base44.entities.UserSettings.update(targetId, newSettings);
+                await base44.entities.UserSettings.update(targetId, updatedSettings);
             } else if (user?.email) {
                 // Only create if we genuinely couldn't find an existing record
                 const created = await base44.entities.UserSettings.create({
