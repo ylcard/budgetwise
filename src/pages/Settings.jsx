@@ -395,7 +395,7 @@ export default function Settings() {
                                                     .sort(([, a], [, b]) => a.order - b.order)
                                                     .map(([key, config]) => (
                                                         <div key={key} className="space-y-1.5">
-                                                            <Label className="text-xs text-center font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-2">
+                                                            <Label className="text-xs justify-center font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-2">
                                                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
                                                                 {config.label}
                                                             </Label>
