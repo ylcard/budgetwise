@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, Save, RotateCcw } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext";
@@ -9,39 +9,124 @@ import { resolveBudgetLimit } from "../utils/financialCalculations";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { useGoalActions } from "../hooks/useActions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // --- COMPACT GOAL EDITOR COMPONENT ---
 const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) => {
     const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
     const [mode, setMode] = useState(settings.goalMode ?? true); // true = %, false = $
-    const [values, setValues] = useState({ needs: '', wants: '', savings: '' });
+
+    // Refactoring goal setting feature
+    // const [values, setValues] = useState({ needs: '', wants: '', savings: '' });
+
+    // State for Absolute Mode
+    const [absValues, setAbsValues] = useState({ needs: '', wants: '', savings: '' });
+
+    // State for Percentage Mode (Slider)
+    const [splits, setSplits] = useState({ split1: 50, split2: 80 });
+    const containerRef = useRef(null);
+    const [activeThumb, setActiveThumb] = useState(null);
 
     // Initialize values based on current mode
     useEffect(() => {
         const map = {};
         goals.forEach(g => {
-            map[g.priority] = mode
-                ? (g.target_percentage || 0)
-                : (g.target_amount || 0);
+            // Refactoring goal setting feature
+            // map[g.priority] = mode
+            //     ? (g.target_percentage || 0)
+            //     : (g.target_amount || 0);
+            map[g.priority] = { pct: g.target_percentage, amt: g.target_amount };
         });
-        setValues({
-            needs: map.needs ?? (mode ? 50 : 0),
-            wants: map.wants ?? (mode ? 30 : 0),
-            savings: map.savings ?? (mode ? 20 : 0)
-        });
+        // Refactoring oal setting feature
+        //     setValues({
+        //         needs: map.needs ?? (mode ? 50 : 0),
+        //         wants: map.wants ?? (mode ? 30 : 0),
+        //         savings: map.savings ?? (mode ? 20 : 0)
+        //     });
+        // }, [goals, mode]);
+
+        if (mode) {
+            // Percentage: Setup splits
+            const n = map.needs?.pct ?? 50;
+            const w = map.wants?.pct ?? 30;
+            setSplits({ split1: n, split2: n + w });
+        } else {
+            // Absolute: Setup inputs
+            setAbsValues({
+                needs: map.needs?.amt ?? '',
+                wants: map.wants?.amt ?? '',
+                savings: map.savings?.amt ?? ''
+            });
+        }
     }, [goals, mode]);
+
+    // --- SLIDER HANDLERS ---
+    const handlePointerDown = (e, thumbIndex) => {
+        e.preventDefault();
+        e.target.setPointerCapture(e.pointerId);
+        setActiveThumb(thumbIndex);
+    };
+
+    const handlePointerMove = (e) => {
+        if (!activeThumb || !containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const rawPercent = ((e.clientX - rect.left) / rect.width) * 100;
+        const constrained = Math.round(Math.max(0, Math.min(100, rawPercent)));
+
+        setSplits(prev => {
+            if (activeThumb === 1) return { ...prev, split1: Math.min(constrained, prev.split2 - 5) };
+            else return { ...prev, split2: Math.max(constrained, prev.split1 + 5) };
+        });
+    };
+
+    const handlePointerUp = (e) => {
+        setActiveThumb(null);
+        e.target.releasePointerCapture(e.pointerId);
+    };
+
+    // --- INPUT HANDLER (Regex Filter) ---
+    const handleAmountChange = (key, val) => {
+        // Allow only numbers, dots, and commas
+        if (val === '' || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+            setAbsValues(prev => ({ ...prev, [key]: val }));
+        }
+    };
 
     const handleSave = async () => {
         // 1. Update Mode if changed
         if (mode !== (settings.goalMode ?? true)) {
             await updateSettings({ goalMode: mode });
         }
+
+        // Refactoring goal setting feature
         // 2. Update Goals
-        const promises = Object.entries(values).map(([priority, val]) => {
-            const numVal = Number(val) || 0;
+        // const promises = Object.entries(values).map(([priority, val]) => {
+
+        // 2. Prepare Data
+        let payloadMap = {};
+
+        if (mode) {
+            // Calc Pct from splits
+            payloadMap = {
+                needs: splits.split1,
+                wants: splits.split2 - splits.split1,
+                savings: 100 - splits.split2
+            };
+        } else {
+            // Clean inputs
+            payloadMap = {
+                needs: parseFloat(absValues.needs.toString().replace(',', '.')) || 0,
+                wants: parseFloat(absValues.wants.toString().replace(',', '.')) || 0,
+                savings: parseFloat(absValues.savings.toString().replace(',', '.')) || 0
+            };
+        }
+
+        // 3. Update Goals
+        const promises = Object.entries(payloadMap).map(([priority, numVal]) => {
+            // Refactoring goal setting feature
+            // const numVal = Number(val) || 0;
+
             const payload = mode
                 ? { target_percentage: numVal }
                 : { target_amount: numVal };
@@ -50,6 +135,13 @@ const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) =>
 
         await Promise.all(promises);
         if (onClose) onClose();
+    };
+
+    // Derived values for % display
+    const pctValues = {
+        needs: splits.split1,
+        wants: splits.split2 - splits.split1,
+        savings: 100 - splits.split2
     };
 
     return (
@@ -61,27 +153,60 @@ const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) =>
                     <button onClick={() => setMode(false)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${!mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>$</button>
                 </div>
             </div>
-            <div className="space-y-2">
-                {['needs', 'wants', 'savings'].map(key => (
-                    <div key={key} className="grid grid-cols-4 items-center gap-2">
-                        <Label className="text-xs col-span-1 capitalize flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
-                            {key.charAt(0)}
-                        </Label>
-                        <div className="col-span-3 relative">
-                            <Input
-                                type="number"
-                                value={values[key]}
-                                onChange={(e) => setValues(prev => ({ ...prev, [key]: e.target.value }))}
-                                className="h-7 text-xs pr-6"
-                            />
-                            <span className="absolute right-2 top-1.5 text-[10px] text-muted-foreground pointer-events-none">
-                                {mode ? '%' : settings.currencySymbol}
-                            </span>
+            {mode ? (
+                // --- SLIDER VIEW ---
+                <div className="pt-2 pb-1 space-y-4">
+                    <div ref={containerRef} className="relative h-4 w-full bg-gray-100 rounded-full select-none touch-none">
+                        {/* Zones */}
+                        <div className="absolute top-0 left-0 h-full rounded-l-full" style={{ width: `${splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.needs.color }} />
+                        <div className="absolute top-0 h-full" style={{ left: `${splits.split1}%`, width: `${splits.split2 - splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.wants.color }} />
+                        <div className="absolute top-0 h-full rounded-r-full" style={{ left: `${splits.split2}%`, width: `${100 - splits.split2}%`, backgroundColor: FINANCIAL_PRIORITIES.savings.color }} />
+
+                        {/* Thumb 1 */}
+                        <div onPointerDown={(e) => handlePointerDown(e, 1)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split1}%` }}>
+                            <GripVertical className="w-2 h-2 text-gray-400" />
+                        </div>
+                        {/* Thumb 2 */}
+                        <div onPointerDown={(e) => handlePointerDown(e, 2)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split2}%` }}>
+                            <GripVertical className="w-2 h-2 text-gray-400" />
                         </div>
                     </div>
-                ))}
-            </div>
+
+                    {/* Readout */}
+                    <div className="flex justify-between px-1">
+                        {['needs', 'wants', 'savings'].map(key => (
+                            <div key={key} className="flex flex-col items-center">
+                                <div className="w-1.5 h-1.5 rounded-full mb-0.5" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
+                                <span className="text-[10px] font-bold text-gray-700">{Math.round(pctValues[key])}%</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                // --- INPUT VIEW ---
+                <div className="space-y-2">
+                    {['needs', 'wants', 'savings'].map(key => (
+                        <div key={key} className="grid grid-cols-5 items-center gap-2">
+                            <div className="col-span-1 flex justify-center">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
+                            </div>
+                            <div className="col-span-4 relative">
+                                <Input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={absValues[key]}
+                                    onChange={(e) => handleAmountChange(key, e.target.value)}
+                                    className="h-7 text-xs pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <span className="absolute right-2 top-1.5 text-[10px] text-muted-foreground pointer-events-none">
+                                    {settings.currencySymbol}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <Button onClick={handleSave} disabled={isSaving} className="w-full h-7 text-xs mt-2">
                 {isSaving ? 'Saving...' : 'Update Targets'}
             </Button>
