@@ -145,7 +145,8 @@ export const detectCrossPeriodSettlement = (transaction, currentPeriodStart, cur
             isCrossPeriod: true,
             originalPeriod,
             bucketName: budget ? budget.name : 'Unknown Budget',
-            bucketType: 'CB'
+            bucketType: 'CB',
+            bucketId: budget ? budget.id : null
         };
     }
 
