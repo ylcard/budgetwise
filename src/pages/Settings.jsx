@@ -116,18 +116,6 @@ export default function Settings() {
         e.target.releasePointerCapture(e.pointerId);
     };
 
-    // --- NAVIGATION GUARD (Browser Level) ---
-    useEffect(() => {
-        const handleBeforeUnload = (e) => {
-            if (hasChanges) {
-                e.preventDefault();
-                e.returnValue = ''; // Chrome requires this
-            }
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasChanges]);
-
     // --- 3. SMART SAVE LOGIC ---
     // Dirty Check: Compare current state vs DB state
     const hasChanges = useMemo(() => {
@@ -150,6 +138,18 @@ export default function Settings() {
             }
         });
     }, [formData, settings, localGoalMode, absoluteValues, currentValues, goals]);
+
+    // --- NAVIGATION GUARD (Browser Level) ---
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (hasChanges) {
+                e.preventDefault();
+                e.returnValue = ''; // Chrome requires this
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasChanges]);
 
     const [isGlobalSaving, setIsGlobalSaving] = useState(false);
 
