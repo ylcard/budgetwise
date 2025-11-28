@@ -198,7 +198,7 @@ export default function RemainingBudgetCard({
         };
 
         return (
-            <div className="relative h-8 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
+            <div className="relative h-12 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
                 {/* NEEDS */}
                 <Link
                     to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
