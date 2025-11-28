@@ -8,6 +8,7 @@ import { useDeleteEntity } from "./useDeleteEntity";
 import { QUERY_KEYS } from "./queryKeys";
 import { parseDate } from "../utils/dateUtils";
 import { createPageUrl } from "@/utils";
+import { useSettings } from "../utils/SettingsContext";
 
 // Hook for transaction actions (CRUD operations - Transactions page)
 export const useTransactionActions = (config = {}) => {
@@ -185,6 +186,7 @@ export const useGoalActions = (user, goals) => {
 // Hook for custom budget actions (CRUD operations)
 // export const useCustomBudgetActions = (user, transactions, options = {}) => {
 export const useCustomBudgetActions = (config = {}) => {
+    const { user } = useSettings();
     const { transactions, ...options } = config;
     const [showForm, setShowForm] = useState(false);
     const [editingBudget, setEditingBudget] = useState(null);
