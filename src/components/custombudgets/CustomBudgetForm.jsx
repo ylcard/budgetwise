@@ -80,7 +80,7 @@ export default function CustomBudgetForm({
             )}
 
             <div className="grid grid-cols-2 gap-3 items-start">
-                <div className="space-y-2">
+                <div className="flex flex-col space-y-2">
                     <Label htmlFor="name">Budget Name</Label>
                     <Input
                         id="name"
