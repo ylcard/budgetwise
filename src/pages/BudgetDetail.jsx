@@ -20,6 +20,7 @@ import {
     getCustomBudgetStats,
     getSystemBudgetStats,
     getCustomBudgetAllocationStats,
+    getHistoricalAverageIncome
 } from "../components/utils/financialCalculations";
 import { useTransactionActions } from "../components/hooks/useActions";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
@@ -280,11 +281,18 @@ export default function BudgetDetail() {
         if (!budget) return null;
 
         if (budget.isSystemBudget) {
-            return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome)
+            // return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome)
+            // 1. Calculate Historical Average for this budget's specific timeframe
+            const bDate = new Date(budget.startDate);
+            const histAvg = getHistoricalAverageIncome(transactions, bDate.getMonth(), bDate.getFullYear());
+
+            // 2. Pass settings and histAvg
+            return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome, settings, histAvg);
         } else {
             return getCustomBudgetStats(budget, transactions, null, null, settings.baseCurrency);
         }
-    }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings.baseCurrency]);
+        // }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings.baseCurrency]);
+    }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
     const allocationStats = useMemo(() => {
         if (!budget || budget.isSystemBudget) return null;
