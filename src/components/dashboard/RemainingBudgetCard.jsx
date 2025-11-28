@@ -247,7 +247,7 @@ export default function RemainingBudgetCard({
     // Low stiffness + mass = "Weighted/Fluid" feel
     const fluidSpring = {
         type: "spring",
-        stiffness: 200,
+        stiffness: 1,
         damping: 10,
         mass: 1.2
     };
