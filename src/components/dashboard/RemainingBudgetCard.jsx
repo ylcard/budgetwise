@@ -58,6 +58,7 @@ export default function RemainingBudgetCard({
 
     const needsLimit = resolveLimit('needs');
     const wantsLimit = resolveLimit('wants');
+    const savingsLimit = resolveLimit('savings');
 
     // Use breakdown for granular segments
     const needsData = breakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
@@ -225,6 +226,9 @@ export default function RemainingBudgetCard({
         const efficiencyBarPct = Math.max(0, totalLimitPct - visualSpendingEnd);
         const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
 
+        // Calculate Savings Utilization (Actual vs Target)
+        const savingsUtil = savingsLimit > 0 ? (savingsAmount / savingsLimit) * 100 : 0;
+
         const stripePattern = {
             backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
             backgroundSize: '8px 8px'
@@ -298,7 +302,12 @@ export default function RemainingBudgetCard({
                 )}
                 {targetSavingsBarPct > 0 && (
                     <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">Target</div>
+                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
+                            <span className="truncate px-1">
+                                {formatCurrency(savingsAmount, settings)}
+                                {savingsLimit > 0 && <span className="opacity-80 ml-1">({Math.round(savingsUtil)}%)</span>}
+                            </span>
+                        </div>
                     </AnimatedSegment>
                 )}
             </div>
