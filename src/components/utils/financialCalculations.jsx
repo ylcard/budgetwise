@@ -68,15 +68,35 @@ export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
 /**
  * Helper: Resolves the budget limit (Goal) based on the active mode.
  * This centralizes the logic so we don't repeat (Income * %) everywhere.
- * + * @param {Object} goal - The budget goal (needs target_percentage and/or target_amount)
+ * @param {Object} goal - The budget goal (needs target_percentage and/or target_amount)
  * @param {number} monthlyIncome - The total monthly income
- * @param {boolean} goalMode - true = Percentage Mode, false = Absolute Mode
+ * @param {Object} settings - App settings (must include goalMode and fixedLifestyleMode)
+ * @param {number} historicalAverage - (Optional) Average income from previous months for Inflation Protection
  */
-export const resolveBudgetLimit = (goal, monthlyIncome, goalMode) => {
+export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historicalAverage = 0) => {
     if (!goal) return 0;
 
+    const goalMode = settings.goalMode ?? true; // Default to Percentage
     // If goalMode is False (Absolute), return the flat amount
     if (goalMode === false) return goal.target_amount || 0;
+
+    // --- INFLATION PROTECTION LOGIC ---
+    // If enabled AND we have history AND current income exceeds history
+    if (settings.fixedLifestyleMode && historicalAverage > 0 && monthlyIncome > historicalAverage) {
+        const basisIncome = historicalAverage;
+        const overflow = monthlyIncome - basisIncome;
+
+        // 1. Calculate the standard percentage based on the LOWER basis
+        const standardCalc = (basisIncome * (goal.target_percentage || 0)) / 100;
+
+        // 2. If this is SAVINGS, add the entire overflow
+        if (goal.priority === 'savings') {
+            return standardCalc + overflow;
+        }
+
+        // 3. For Needs/Wants, return the capped amount
+        return standardCalc;
+    }
 
     // Default to Percentage Mode (true or undefined)
     return (monthlyIncome * (goal.target_percentage || 0)) / 100;
@@ -183,9 +203,9 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
 /**
  * Calculates statistics for a system budget.
  * Optimized to use getFinancialBreakdown for single-pass calculation.
- * UPDATED: Accepts goalMode to correctly resolve the budget limit.
+ * UPDATED: Accepts settings and historicalAverage to correctly resolve the budget limit.
  */
-export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, goalMode = true) => {
+export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
     // Get the granular data in one pass
     const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, startDate, endDate);
 
@@ -207,7 +227,7 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
     }
 
     // Use the helper to resolve the limit based on mode
-    const totalBudget = resolveBudgetLimit(systemBudget, monthlyIncome, goalMode);
+    const totalBudget = resolveBudgetLimit(systemBudget, monthlyIncome, settings, historicalAverage);
 
     const totalSpent = paidAmount + unpaidAmount;
     const remaining = totalBudget - totalSpent;
@@ -271,9 +291,9 @@ export const getCustomBudgetAllocationStats = (customBudget, allocations, transa
 /**
  * Calculates the net "Bonus Savings Potential".
  * (Needs Limit + Wants Limit) - Actual Spending
- * UPDATED: Accepts goalMode to correctly resolve the limits.
+ * UPDATED: Accepts settings to correctly resolve the limits.
  */
-export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, goalMode = true) => {
+export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
     let netPotential = 0;
 
     // Calculate everything once
@@ -283,12 +303,12 @@ export const calculateBonusSavingsPotential = (systemBudgets, transactions, cate
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
 
     if (needsBudget) {
-        const limit = resolveBudgetLimit(needsBudget, monthlyIncome, goalMode);
+        const limit = resolveBudgetLimit(needsBudget, monthlyIncome, settings, historicalAverage);
         netPotential += limit - breakdown.needs.total;
     }
 
     if (wantsBudget) {
-        const limit = resolveBudgetLimit(wantsBudget, monthlyIncome, goalMode);
+        const limit = resolveBudgetLimit(wantsBudget, monthlyIncome, settings, historicalAverage);
         netPotential += limit - breakdown.wants.total;
     }
 
