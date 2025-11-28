@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useGoalActions } from "../hooks/useActions";
 import React, { useState, useEffect, useRef, cloneElement } from "react";
 import { getMonthName } from "../utils/dateUtils";
+import confetti from "canvas-confetti";
 
 // --- COMPACT GOAL EDITOR COMPONENT ---
 const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) => {
@@ -370,6 +371,53 @@ export default function RemainingBudgetCard({
     // Get explicit month name for the empty state message
     const safeMonth = settings.selectedMonth ?? now.getMonth();
     const monthName = getMonthName(safeMonth);
+
+    // --- CONFETTI LOGIC ---
+    // We track the previous income to detect the specific transition from 0 -> Amount
+    const prevIncomeRef = useRef(currentMonthIncome);
+    const componentMountTime = useRef(Date.now());
+
+    useEffect(() => {
+        const prevIncome = prevIncomeRef.current;
+        const currentIncome = currentMonthIncome || 0;
+
+        // Check if we went from 0 (or undefined) to having money
+        // AND ensure this isn't just the page loading (wait 1s buffer)
+        const isDataLoading = Date.now() - componentMountTime.current < 1000;
+
+        if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+            // Trigger Confetti!
+            const duration = 3000;
+            const end = Date.now() + duration;
+
+            const frame = () => {
+                // Launch particles from left edge
+                confetti({
+                    particleCount: 2,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#10B981', '#34D399', '#6EE7B7'] // Emerald greens
+                });
+                // Launch particles from right edge
+                confetti({
+                    particleCount: 2,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#10B981', '#34D399', '#6EE7B7']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            };
+            frame();
+        }
+
+        // Update ref for next render
+        prevIncomeRef.current = currentIncome;
+    }, [currentMonthIncome]);
 
     const getStatusStyles = (used, limit, type) => {
         if (!limit || limit === 0) return "text-white/90 font-medium";
