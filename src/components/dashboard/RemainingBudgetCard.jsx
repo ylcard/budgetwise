@@ -1,11 +1,93 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3 } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, Save, RotateCcw } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext";
 import { motion } from "framer-motion";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { resolveBudgetLimit } from "../utils/financialCalculations";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { useGoalActions } from "../hooks/useActions";
+import { useState, useEffect } from "react";
+
+// --- COMPACT GOAL EDITOR COMPONENT ---
+const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) => {
+    const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
+    const [mode, setMode] = useState(settings.goalMode ?? true); // true = %, false = $
+    const [values, setValues] = useState({ needs: '', wants: '', savings: '' });
+
+    // Initialize values based on current mode
+    useEffect(() => {
+        const map = {};
+        goals.forEach(g => {
+            map[g.priority] = mode
+                ? (g.target_percentage || 0)
+                : (g.target_amount || 0);
+        });
+        setValues({
+            needs: map.needs ?? (mode ? 50 : 0),
+            wants: map.wants ?? (mode ? 30 : 0),
+            savings: map.savings ?? (mode ? 20 : 0)
+        });
+    }, [goals, mode]);
+
+    const handleSave = async () => {
+        // 1. Update Mode if changed
+        if (mode !== (settings.goalMode ?? true)) {
+            await updateSettings({ goalMode: mode });
+        }
+        // 2. Update Goals
+        const promises = Object.entries(values).map(([priority, val]) => {
+            const numVal = Number(val) || 0;
+            const payload = mode
+                ? { target_percentage: numVal }
+                : { target_amount: numVal };
+            return handleGoalUpdate(priority, mode ? numVal : 0, payload);
+        });
+
+        await Promise.all(promises);
+        if (onClose) onClose();
+    };
+
+    return (
+        <div className="space-y-3 w-60">
+            <div className="flex items-center justify-between">
+                <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider">Target Goals</h4>
+                <div className="flex bg-muted p-0.5 rounded-md">
+                    <button onClick={() => setMode(true)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>%</button>
+                    <button onClick={() => setMode(false)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${!mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>$</button>
+                </div>
+            </div>
+            <div className="space-y-2">
+                {['needs', 'wants', 'savings'].map(key => (
+                    <div key={key} className="grid grid-cols-4 items-center gap-2">
+                        <Label className="text-xs col-span-1 capitalize flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
+                            {key.charAt(0)}
+                        </Label>
+                        <div className="col-span-3 relative">
+                            <Input
+                                type="number"
+                                value={values[key]}
+                                onChange={(e) => setValues(prev => ({ ...prev, [key]: e.target.value }))}
+                                className="h-7 text-xs pr-6"
+                            />
+                            <span className="absolute right-2 top-1.5 text-[10px] text-muted-foreground pointer-events-none">
+                                {mode ? '%' : settings.currencySymbol}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <Button onClick={handleSave} disabled={isSaving} className="w-full h-7 text-xs mt-2">
+                {isSaving ? 'Saving...' : 'Update Targets'}
+            </Button>
+        </div>
+    );
+};
 
 export default function RemainingBudgetCard({
     bonusSavingsPotential,
@@ -21,7 +103,10 @@ export default function RemainingBudgetCard({
     breakdown = null,
     historicalAverage = 0
 }) {
-    const { updateSettings } = useSettings();
+    // Refactoring to add quick goal change to page
+    // const { updateSettings } = useSettings();
+    const { updateSettings, user } = useSettings();
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     if (!settings) return null;
 
@@ -57,7 +142,7 @@ export default function RemainingBudgetCard({
         // implenting the logic for fixed mode
         // if (settings.goalMode === false) return goal.target_amount || 0; // Absolute Mode
         // return (safeIncome * (goal.target_percentage || 0)) / 100;       // Percentage Mode
-        
+
         // 3. Use centralized logic (Handles Absolute, Percentage AND Inflation Protection)
         // Note: 'safeIncome' here acts as the 'monthlyIncome' argument
         return resolveBudgetLimit(goal, safeIncome, settings, historicalAverage);
@@ -441,10 +526,23 @@ export default function RemainingBudgetCard({
                             </div>
                             <div className="flex items-center gap-2">
                                 <GoalSummary />
-                                <Link to="/Settings" className="flex items-center gap-1 text-sm hover:text-blue-600 transition-colors">
-                                    <Target size={12} />
-                                    <span>Goals</span>
-                                </Link>
+                                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                                    <PopoverTrigger asChild>
+                                        <button className="flex items-center gap-1 text-xs hover:text-blue-600 transition-colors outline-none">
+                                            <Target size={14} />
+                                            <span>Goals</span>
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-3" align="end">
+                                        <QuickGoalsEditor
+                                            goals={goals}
+                                            settings={settings}
+                                            updateSettings={updateSettings}
+                                            user={user}
+                                            onClose={() => setIsPopoverOpen(false)}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                         </div>
                     </div>
