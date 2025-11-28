@@ -683,6 +683,7 @@ export default function RemainingBudgetCard({
                                     <motion.div
                                         key="view-toggle"
                                         // key={`view-toggle-${selectedMonth}-${selectedYear}`}
+                                        key="view-toggle"
                                         initial={{ opacity: 0, scale: 0.8, x: 20 }}
                                         animate={{ opacity: 1, scale: 1, x: 0 }}
                                         exit={{ opacity: 0, scale: 0.8, x: 20 }}
