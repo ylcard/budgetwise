@@ -39,7 +39,7 @@ export default function BudgetBars({
     const [customStartIndex, setCustomStartIndex] = useState(0);
     const barsPerPage = viewMode === 'cards' ? 4 : 7;
 
-    const calculatedData = useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency);
+    const calculatedData = useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings);
 
     const systemBudgetsData = preCalculatedSystemData || calculatedData.systemBudgetsData;
     const customBudgetsData = preCalculatedCustomData || calculatedData.customBudgetsData;
