@@ -368,6 +368,7 @@ export default function RemainingBudgetCard({
     const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
 
     // Get explicit month name for the empty state message
+    const safeMonth = settings.selectedMonth ?? now.getMonth();
     const monthName = getMonthName(safeMonth);
 
     const getStatusStyles = (used, limit, type) => {
