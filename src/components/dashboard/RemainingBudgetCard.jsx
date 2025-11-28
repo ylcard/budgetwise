@@ -249,7 +249,7 @@ export default function RemainingBudgetCard({
         type: "spring",
         stiffness: 200,
         damping: 10,
-        mass: 1.8
+        mass: 1.2
     };
 
     // --- RENDER: VIEW TOGGLE (Segmented Control) ---
