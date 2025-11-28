@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useGoalActions } from "../hooks/useActions";
 import React, { useState, useEffect, useRef, cloneElement } from "react";
+import { getMonthName } from "../utils/dateUtils";
 
 // --- COMPACT GOAL EDITOR COMPONENT ---
 const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) => {
@@ -367,7 +368,7 @@ export default function RemainingBudgetCard({
     const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
 
     // Get explicit month name for the empty state message
-    const monthName = new Date(settings.selectedYear, settings.selectedMonth).toLocaleString('default', { month: 'long' });
+    const monthName = getMonthName(safeMonth);
 
     const getStatusStyles = (used, limit, type) => {
         if (!limit || limit === 0) return "text-white/90 font-medium";
