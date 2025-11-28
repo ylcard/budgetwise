@@ -376,15 +376,23 @@ export default function RemainingBudgetCard({
     };
 
     // Helper for animated segments
-    const AnimatedSegment = ({ width, color, children, className = "", style = {} }) => (
+    const AnimatedSegment = ({ width, color, children, className = "", style = {}, to }) => (
         <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${width}%` }}
             transition={fluidSpring}
-            className={`h-full flex items-center justify-center relative group cursor-default overflow-hidden ${className}`}
+            className={`h-full relative group cursor-default overflow-hidden ${className}`}
             style={{ backgroundColor: color, ...style }}
         >
-            {children}
+            {to ? (
+                <Link to={to} className="flex items-center justify-center h-full w-full hover:brightness-110 transition-all">
+                    {children}
+                </Link>
+            ) : (
+                <div className="flex items-center justify-center h-full w-full">
+                    {children}
+                </div>
+            )}
         </motion.div>
     );
 
@@ -398,7 +406,12 @@ export default function RemainingBudgetCard({
 
         return (
             <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
-                <AnimatedSegment width={needsPct} color={needsColor} className="border-r border-white/10">
+                <AnimatedSegment
+                    width={needsPct}
+                    color={needsColor}
+                    className="border-r border-white/10"
+                    to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : null}
+                >
                     {needsPct > 8 && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
                             {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
@@ -407,7 +420,12 @@ export default function RemainingBudgetCard({
                     )}
                 </AnimatedSegment>
 
-                <AnimatedSegment width={wantsPct} color={wantsColor} className="border-r border-white/10">
+                <AnimatedSegment
+                    width={wantsPct}
+                    color={wantsColor}
+                    className="border-r border-white/10"
+                    to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : null}
+                >
                     {wantsPct > 8 && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
                             {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && (
