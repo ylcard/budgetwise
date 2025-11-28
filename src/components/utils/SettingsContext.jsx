@@ -73,7 +73,7 @@ export const SettingsProvider = ({ children }) => {
                     hideTrailingZeros: userSettings.hideTrailingZeros ?? false,
                     dateFormat: userSettings.dateFormat || 'MMM dd, yyyy',
                     budgetViewMode: userSettings.budgetViewMode || 'bars',
-                    fixedLifestyleMode: userSettings.fixedLifestyleMode ?? false,
+                    fixedLifestyleMode: userSettings.fixedMode ?? false,
                     barViewMode: userSettings.barViewMode ?? true,
                     // goalAllocationMode: userSettings.goalAllocationMode || 'percentage',
                     // absoluteGoals: userSettings.absoluteGoals || { needs: 0, wants: 0, savings: 0 }
@@ -102,6 +102,14 @@ export const SettingsProvider = ({ children }) => {
             setSettings(updatedSettings);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSettings));
 
+            // Prepare payload for DB (Map frontend keys to DB keys)
+            const dbPayload = {
+                ...updatedSettings,
+                fixedMode: updatedSettings.fixedLifestyleMode // Map UI 'fixedLifestyleMode' to DB 'fixedMode'
+            };
+            // Remove the UI-only key to be clean (optional, but good practice if DB is strict)
+            delete dbPayload.fixedLifestyleMode;
+
             // --- DATABASE SYNC ---
             // Safety: Ensure we have an ID. If state is empty, fetch it one last time.
             let targetId = settingsId;
@@ -115,12 +123,14 @@ export const SettingsProvider = ({ children }) => {
             }
 
             if (targetId) {
-                // await base44.entities.UserSettings.update(targetId, newSettings);
-                await base44.entities.UserSettings.update(targetId, updatedSettings);
+                // Trying to apply a bug fix for the fixed mode not saving
+                // await base44.entities.UserSettings.update(targetId, updatedSettings);
+                await base44.entities.UserSettings.update(targetId, dbPayload);
             } else if (user?.email) {
                 // Only create if we genuinely couldn't find an existing record
                 const created = await base44.entities.UserSettings.create({
                     ...updatedSettings, // CRITICAL: Use full, merged settings for creation
+                    ...dbPayload,
                     user_email: user.email
                 });
                 if (created) setSettingsId(created.id);
