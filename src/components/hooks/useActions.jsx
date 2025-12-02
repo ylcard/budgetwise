@@ -7,6 +7,7 @@ import { useUpdateEntity } from "./useUpdateEntity";
 import { useDeleteEntity } from "./useDeleteEntity";
 import { QUERY_KEYS } from "./queryKeys";
 import { parseDate } from "../utils/dateUtils";
+import { snapshotFutureBudgets } from "../utils/financialCalculations";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../utils/SettingsContext";
 
@@ -123,11 +124,20 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
 // Hook for goal actions (mutations)
 export const useGoalActions = (user, goals) => {
     const queryClient = useQueryClient();
+    const { settings } = useSettings();
 
     const updateGoalMutation = useMutation({
         mutationFn: ({ id, data }) => base44.entities.BudgetGoal.update(id, data),
-        onSuccess: () => {
+        // Implementing snapshots
+        // onSuccess: () => {
+        onSuccess: async (data, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
+
+            // Trigger snapshot for current/future budgets using the new goal data
+            // variables.data contains the updated percentage/amount
+            // variables.priority is passed from handleGoalUpdate below
+            await snapshotFutureBudgets({ ...variables.data, priority: variables.priority }, settings);
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
         onError: (error) => {
             console.error('Error updating goal:', error);
@@ -136,8 +146,12 @@ export const useGoalActions = (user, goals) => {
 
     const createGoalMutation = useMutation({
         mutationFn: (data) => base44.entities.BudgetGoal.create(data),
-        onSuccess: () => {
+        // Implementing snapshots
+        // onSuccess: () => {
+        onSuccess: async (data, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
+            await snapshotFutureBudgets(variables, settings);
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
         onError: (error) => {
             console.error('Error creating goal:', error);
@@ -152,6 +166,7 @@ export const useGoalActions = (user, goals) => {
                 // Return the promise directly, allowing the caller (GoalSettings) to handle resolution status
                 return updateGoalMutation.mutateAsync({
                     id: existingGoal.id,
+                    priority, // Pass priority so onSuccess can verify which budget type to update
                     data: {
                         target_percentage: percentage,
                         ...extraData
