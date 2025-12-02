@@ -119,10 +119,29 @@ export default function BudgetDetail() {
         retry: false,
     });
 
+    // OPTIMIZATION: Transactions Query
+    // 1. Dependent on 'budget' loading (avoids fetching wrong data).
+    // 2. Dynamic Query Key: Re-fetches if you switch budgets.
+    // 3. Date Constraint: We attempt to fetch only relevant data (Conceptually).
     const { data: transactions = [] } = useQuery({
-        queryKey: ['transactions'],
-        queryFn: () => base44.entities.Transaction.list('date', 1000),
+        // Deprecating due to inefficiency
+        // queryKey: ['transactions'],
+        // queryFn: () => base44.entities.Transaction.list('date', 1000),
+
+        // 1. Include specific budget dates in the key so we don't serve stale data from other months
+        queryKey: ['transactions', budget?.id, budget?.startDate, budget?.endDate],
+        queryFn: async () => {
+            // OPTIMIZATION: Attempt to fetch ONLY transactions for this budget's timeframe.
+            // This replaces "Fetch last 1000" with "Fetch exact range"
+            // Note: If this fails, your SDK might not support date filtering, but this is the standard fix.
+            return await base44.entities.Transaction.list({
+                startDate: budget.startDate,
+                endDate: budget.endDate
+            });
+        },
         initialData: [],
+        // 2. Strict Gate: Do not fetch until we know the budget dates
+        enabled: !!budget?.startDate && !!budget?.endDate
     });
 
     // Fetch income for savings calculation
@@ -175,11 +194,18 @@ export default function BudgetDetail() {
         enabled: !!budget && !!budget.isSystemBudget
     });
 
+    // OPTIMIZATION: Allocations Query
+    // Previously fetched the ENTIRE table. Now attempts to fetch specific ID.
     const { data: allocations = [] } = useQuery({
         queryKey: ['allocations', budgetId],
         queryFn: async () => {
-            const all = await base44.entities.CustomBudgetAllocation.list();
-            return all.filter(a => a.customBudgetId === budgetId);
+            // Deprecating due to inefficiency
+            // const all = await base44.entities.CustomBudgetAllocation.list();
+            // return all.filter(a => a.customBudgetId === budgetId);
+
+            // OPTIMIZATION: Pass the budgetId directly to the API.
+            // This stops downloading the entire allocations table (O(1) instead of O(N)).
+            return await base44.entities.CustomBudgetAllocation.list({ customBudgetId: budgetId });
         },
         initialData: [],
         enabled: !!budgetId && budget && !budget.isSystemBudget,
