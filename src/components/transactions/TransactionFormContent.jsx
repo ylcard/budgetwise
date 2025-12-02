@@ -259,16 +259,28 @@ export default function TransactionFormContent({
     // 3. Filter Options (Search only)
     // We rely on the parent component to provide the correct order (System > Active > Planned)
     const visibleOptions = useMemo(() => {
+        let filtered = allBudgets;
+
+        // A. Mutual Exclusivity for System Budgets based on Priority
+        // If "Needs" is selected, hide "Wants" system budget, and vice versa.
+        if (formData.financial_priority) {
+            filtered = filtered.filter(b => {
+                if (!b.isSystemBudget) return true; // Always show Custom Budgets
+                // Only show the system budget that matches the selected priority
+                return b.systemBudgetType === formData.financial_priority;
+            });
+        }
+
+        // B. Search Filter
         if (budgetSearchTerm && budgetSearchTerm.length > 0) {
-            // DEPRECATED: return smartSortedBudgets.filter(b =>
-            return allBudgets.filter(b =>
+            filtered = filtered.filter(b =>
                 b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
             );
         }
         // DEPRECATED:     return smartSortedBudgets.slice(0, 5);
         // DEPRECATED: }, [smartSortedBudgets, budgetSearchTerm]);
-        return allBudgets;
-    }, [allBudgets, budgetSearchTerm]);
+        return filtered;
+    }, [allBudgets, budgetSearchTerm, formData.financial_priority]);
 
     const executeRefresh = async (force) => {
         const result = await refreshRates(
