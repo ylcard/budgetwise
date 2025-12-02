@@ -387,7 +387,10 @@ export default function RemainingBudgetCard({
     const prevIncomeRef = useRef(currentMonthIncome);
     const prevMonthRef = useRef(selectedMonth);
     const prevYearRef = useRef(selectedYear);
-    const componentMountTime = useRef(Date.now());
+    // fixing premature celebrations
+    // const componentMountTime = useRef(Date.now());
+    // Track when the month last changed to ignore "fetch-induced" income jumps
+    const lastContextChangeTime = useRef(Date.now());
 
     useEffect(() => {
         const prevIncome = prevIncomeRef.current;
@@ -398,11 +401,22 @@ export default function RemainingBudgetCard({
 
         // Check if we went from 0 (or undefined) to having money
         // AND ensure this isn't just the page loading (wait 1s buffer)
-        const isDataLoading = Date.now() - componentMountTime.current < 1000;
+        // fixing premature celerbations
+        // const isDataLoading = Date.now() - componentMountTime.current < 1000;
+        // If context (Month/Year) changed, reset the safety timer
+        if (!isSameContext) {
+            lastContextChangeTime.current = Date.now();
+        }
+
+        // Safety buffer: Don't fire confetti if we just switched months < 1 second ago
+        // This handles the delay where data goes 0 -> Amount during fetching
+        const isWarmupPeriod = Date.now() - lastContextChangeTime.current < 1000;
 
         // fixing confetti being naughty
         // if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
-        if (!isDataLoading && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+        // fixing premature celebrations
+        // if (!isDataLoading && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+        if (!isWarmupPeriod && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
             // Trigger Confetti!
             const duration = 3000;
             const end = Date.now() + duration;
