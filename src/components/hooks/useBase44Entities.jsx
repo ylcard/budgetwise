@@ -6,10 +6,20 @@ import { getMonthlyIncome, resolveBudgetLimit } from "../utils/financialCalculat
 import { useSettings } from "../utils/SettingsContext";
 
 // Hook to fetch transactions
-export const useTransactions = () => {
+// DEPRECATED: export const useTransactions = () => {
+// OPTIMIZATION: Accepts start/end date for server-side range filtering
+export const useTransactions = (startDate = null, endDate = null) => {
     const { data: transactions = [], isLoading, error } = useQuery({
-        queryKey: [QUERY_KEYS.TRANSACTIONS],
-        queryFn: () => base44.entities.Transaction.list('date', 1000),
+        // DEPRECATED: queryKey: [QUERY_KEYS.TRANSACTIONS],
+        // DEPRECATED: queryFn: () => base44.entities.Transaction.list('date', 1000),
+        queryKey: [QUERY_KEYS.TRANSACTIONS, startDate, endDate],
+        queryFn: async () => {
+            if (startDate && endDate) {
+                // Server-side date range filter
+                return await base44.entities.Transaction.filter({ date: { $gte: startDate, $lte: endDate } });
+            }
+            return await base44.entities.Transaction.list('date', 2000);
+        },
         initialData: [],
     });
 
@@ -33,8 +43,10 @@ export const useGoals = (user) => {
         queryKey: [QUERY_KEYS.GOALS],
         queryFn: async () => {
             if (!user) return [];
-            const allGoals = await base44.entities.BudgetGoal.list();
-            return allGoals.filter(g => g.user_email === user.email);
+            // DEPRECATED: const allGoals = await base44.entities.BudgetGoal.list();
+            // DEPRECATED: return allGoals.filter(g => g.user_email === user.email);
+            // OPTIMIZATION: Server-side email filter
+            return await base44.entities.BudgetGoal.filter({ user_email: user.email });
         },
         initialData: [],
         enabled: !!user,
@@ -44,13 +56,29 @@ export const useGoals = (user) => {
 };
 
 // Hook for fetching all custom budgets for a user
-export const useCustomBudgetsAll = (user) => {
+// DEPRECATED: export const useCustomBudgetsAll = (user) => {
+// OPTIMIZATION: Added date filtering for Dashboard overlap logic
+export const useCustomBudgetsAll = (user, monthStart = null, monthEnd = null) => {
     const { data: allCustomBudgets = [], isLoading } = useQuery({
-        queryKey: [QUERY_KEYS.CUSTOM_BUDGETS],
+        // DEPRECATED: queryKey: [QUERY_KEYS.CUSTOM_BUDGETS],
+        queryKey: [QUERY_KEYS.CUSTOM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            const all = await base44.entities.CustomBudget.list('-startDate');
-            return all.filter(cb => cb.user_email === user.email);
+            // DEPRECATED: const all = await base44.entities.CustomBudget.list('-startDate');
+            // DEPRECATED: return all.filter(cb => cb.user_email === user.email);
+
+            if (monthStart && monthEnd) {
+                // Overlap Logic: Start <= EndSelected AND End >= StartSelected
+                return await base44.entities.CustomBudget.filter({
+                    user_email: user.email,
+                    startDate: { $lte: monthEnd },
+                    endDate: { $gte: monthStart }
+                });
+            }
+
+            // Fallback for non-dated views
+            const all = await base44.entities.CustomBudget.list('-startDate', 100);
+            return all.filter(cb => cb.user_email === user.email); // Double check email client side if list used
         },
         initialData: [],
         enabled: !!user,
@@ -60,13 +88,27 @@ export const useCustomBudgetsAll = (user) => {
 };
 
 // Hook for fetching all system budgets for a user
-export const useSystemBudgetsAll = (user) => {
+// DEPRECATED: export const useSystemBudgetsAll = (user) => {
+// OPTIMIZATION: Added date filtering
+export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) => {
     const { data: allSystemBudgets = [], isLoading } = useQuery({
-        queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS],
+        // DEPRECATED: queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS],
+        queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            const all = await base44.entities.SystemBudget.list();
-            return all.filter(sb => sb.user_email === user.email);
+            // DEPRECATED: const all = await base44.entities.SystemBudget.list();
+            // DEPRECATED: return all.filter(sb => sb.user_email === user.email);
+
+            if (monthStart && monthEnd) {
+                return await base44.entities.SystemBudget.filter({
+                    user_email: user.email,
+                    startDate: { $lte: monthEnd },
+                    endDate: { $gte: monthStart }
+                });
+            }
+
+            // OPTIMIZATION: Server-side email filter
+            return await base44.entities.SystemBudget.filter({ user_email: user.email });
         },
         initialData: [],
         enabled: !!user,
@@ -81,12 +123,20 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
         queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            const all = await base44.entities.SystemBudget.list();
-            return all.filter(sb =>
-                sb.user_email === user.email &&
-                sb.startDate === monthStart &&
-                sb.endDate === monthEnd
-            );
+            // BLOCK DEPRECATED
+            // const all = await base44.entities.SystemBudget.list();
+            // return all.filter(sb =>
+            //     sb.user_email === user.email &&
+            //     sb.startDate === monthStart &&
+            //     sb.endDate === monthEnd
+            // );
+
+            // OPTIMIZATION: Exact match filter
+            return await base44.entities.SystemBudget.filter({
+                user_email: user.email,
+                startDate: monthStart,
+                endDate: monthEnd
+            });
         },
         initialData: [],
         enabled: !!user && !!monthStart && !!monthEnd,
@@ -100,8 +150,11 @@ export const useAllocations = (budgetId) => {
     const { data: allocations = [], isLoading } = useQuery({
         queryKey: [QUERY_KEYS.ALLOCATIONS, budgetId],
         queryFn: async () => {
-            const all = await base44.entities.CustomBudgetAllocation.list();
-            return all.filter(a => a.customBudgetId === budgetId);
+            // DEPRECATED: const all = await base44.entities.CustomBudgetAllocation.list();
+            // DEPRECATED: return all.filter(a => a.customBudgetId === budgetId);
+
+            // OPTIMIZATION: Server-side ID filter
+            return await base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId });
         },
         initialData: [],
         enabled: !!budgetId,
@@ -117,20 +170,29 @@ export const useAllBudgets = (user) => {
         queryFn: async () => {
             if (!user) return [];
 
-            const customBudgets = await base44.entities.CustomBudget.list();
-            const systemBudgets = await base44.entities.SystemBudget.list();
+            // DEPRECATED: const customBudgets = await base44.entities.CustomBudget.list();
+            // DEPRECATED: const systemBudgets = await base44.entities.SystemBudget.list();
 
+            // OPTIMIZATION: Filter by email at source
+            const customBudgets = await base44.entities.CustomBudget.filter({ user_email: user.email });
+            const systemBudgets = await base44.entities.SystemBudget.filter({ user_email: user.email });
+
+            // BLOCK DEPRECATED
             // Include ALL custom budgets (both active and completed) - removed status filter
-            const userCustomBudgets = customBudgets.filter(cb => cb.user_email === user.email);
-            const userSystemBudgets = systemBudgets
-                .filter(sb => sb.user_email === user.email)
-                .map(sb => ({
-                    ...sb,
-                    isSystemBudget: true,
-                    allocatedAmount: sb.budgetAmount
-                }));
+            // const userCustomBudgets = customBudgets.filter(cb => cb.user_email === user.email);
+            // const userSystemBudgets = systemBudgets
+            // .filter(sb => sb.user_email === user.email)
+            // .map(sb => ({
+            //     ...sb,
+            //     isSystemBudget: true,
+            //     allocatedAmount: sb.budgetAmount
+            // }));
 
-            return [...userSystemBudgets, ...userCustomBudgets];
+            const formattedSystem = systemBudgets.map(sb => ({
+                ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount
+            }));
+            // DEPRECATED: return [...userSystemBudgets, ...userCustomBudgets];
+            return [...formattedSystem, ...customBudgets];
         },
         initialData: [],
         enabled: !!user,
@@ -145,10 +207,14 @@ export const useCategoryRules = (user) => {
         queryKey: ['CATEGORY_RULES'],
         queryFn: async () => {
             if (!user) return [];
-            const allRules = await base44.entities.CategoryRule.list();
+            // DEPRECATED: const allRules = await base44.entities.CategoryRule.list();
             // Filter by user and sort by priority (ascending)
+
+            // OPTIMIZATION: Filter by email
+            const allRules = await base44.entities.CategoryRule.filter({ user_email: user.email })
+
             return allRules
-                .filter(r => r.user_email === user.email)
+                // DEPRECATED .filter(r => r.user_email === user.email)
                 .sort((a, b) => (a.priority || 0) - (b.priority || 0));
         },
         initialData: [],
@@ -275,15 +341,26 @@ export const useSystemBudgetManagement = (
                         }
                     } else {
                         // Check for duplicates before creating to prevent race conditions or multiple creations
-                        const allSystemBudgetsCheck = await base44.entities.SystemBudget.list();
-                        const duplicateCheck = allSystemBudgetsCheck.find(sb =>
-                            sb.user_email === user.email &&
-                            sb.systemBudgetType === type &&
-                            sb.startDate === monthStart &&
-                            sb.endDate === monthEnd
-                        );
 
-                        if (!duplicateCheck) {
+                        // BLOCK DEPRECATED
+                        // const allSystemBudgetsCheck = await base44.entities.SystemBudget.list();
+                        // const duplicateCheck = allSystemBudgetsCheck.find(sb =>
+                        //     sb.user_email === user.email &&
+                        //     sb.systemBudgetType === type &&
+                        //     sb.startDate === monthStart &&
+                        //     sb.endDate === monthEnd
+                        // );
+
+                        // OPTIMIZATION: Use .filter() instead of downloading list()
+                        const duplicates = await base44.entities.SystemBudget.filter({
+                            user_email: user.email,
+                            systemBudgetType: type,
+                            startDate: monthStart,
+                            endDate: monthEnd
+                        });
+
+                        // DEPRECATED: if (!duplicateCheck) {
+                        if (duplicates.length === 0) {
                             await base44.entities.SystemBudget.create({
                                 name: type.charAt(0).toUpperCase() + type.slice(1),
                                 budgetAmount: amount,
