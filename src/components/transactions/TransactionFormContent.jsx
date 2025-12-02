@@ -208,62 +208,67 @@ export default function TransactionFormContent({
         }
     }, [formData.financial_priority, allBudgets, formData.date]);
 
-    // Filter budgets to show active + planned statuses + relevant completed budgets
-    // This allows linking expenses to future/past budgets while keeping the list manageable
-    const smartSortedBudgets = useMemo(() => {
-        const userRealNow = startOfDay(new Date()); // User's actual current life date
-        const currentPriority = (formData.financial_priority || '').toLowerCase();
+    /* Removing Sorting Logic from the Form
+        // Filter budgets to show active + planned statuses + relevant completed budgets
+        // This allows linking expenses to future/past budgets while keeping the list manageable
+        const smartSortedBudgets = useMemo(() => {
+            const userRealNow = startOfDay(new Date()); // User's actual current life date
+            const currentPriority = (formData.financial_priority || '').toLowerCase();
+    
+            // 1. Intelligent Filtering
+            const relevantBudgets = allBudgets.filter(b => {
+                if (b.isSystemBudget) {
+                    // RULE: Never show Savings System Budgets (user preference)
+                    if (b.systemBudgetType === 'savings' || b.name.toLowerCase().includes('savings')) return false;
+    
+                    // RULE: If priority is NOT 'needs', don't show Needs System Budget
+                    if (currentPriority !== 'needs' && b.systemBudgetType === 'needs') return false;
+    
+                    // Only show system budgets relevant to the Transaction Date (otherwise list is huge)
+                    return isDateInRange(formData.date, b.startDate, b.endDate);
+                }
+    
+                // Custom Budgets: Keep them all available for search, 
+                // but we will prioritize them in the sort.
+                return true;
+            });
+    
+            // 2. Proximity Scoring & Sorting
+            return relevantBudgets.map(b => {
+                // Calculate distance from Real Life Today to Budget Start
+                // This helps surface the budget that is happening NOW or SOON
+                const startDate = parseISO(b.startDate);
+                const distanceToNow = Math.abs(differenceInDays(userRealNow, startDate));
+    
+                return { ...b, distanceToNow };
+            }).sort((a, b) => {
+                // Always float the currently selected budget to the top if editing
+                if (a.id === formData.customBudgetId) return -1;
+                if (b.id === formData.customBudgetId) return 1;
+    
+                // System budgets for the current priority usually go first
+                if (a.isSystemBudget && !b.isSystemBudget) return -1;
+                if (!a.isSystemBudget && b.isSystemBudget) return 1;
+    
+                // Sort by proximity to user's real today
+                return a.distanceToNow - b.distanceToNow;
+            });
+        }, [allBudgets, formData.date, formData.financial_priority, formData.customBudgetId]);
+    */
 
-        // 1. Intelligent Filtering
-        const relevantBudgets = allBudgets.filter(b => {
-            if (b.isSystemBudget) {
-                // RULE: Never show Savings System Budgets (user preference)
-                if (b.systemBudgetType === 'savings' || b.name.toLowerCase().includes('savings')) return false;
-
-                // RULE: If priority is NOT 'needs', don't show Needs System Budget
-                if (currentPriority !== 'needs' && b.systemBudgetType === 'needs') return false;
-
-                // Only show system budgets relevant to the Transaction Date (otherwise list is huge)
-                return isDateInRange(formData.date, b.startDate, b.endDate);
-            }
-
-            // Custom Budgets: Keep them all available for search, 
-            // but we will prioritize them in the sort.
-            return true;
-        });
-
-        // 2. Proximity Scoring & Sorting
-        return relevantBudgets.map(b => {
-            // Calculate distance from Real Life Today to Budget Start
-            // This helps surface the budget that is happening NOW or SOON
-            const startDate = parseISO(b.startDate);
-            const distanceToNow = Math.abs(differenceInDays(userRealNow, startDate));
-
-            return { ...b, distanceToNow };
-        }).sort((a, b) => {
-            // Always float the currently selected budget to the top if editing
-            if (a.id === formData.customBudgetId) return -1;
-            if (b.id === formData.customBudgetId) return 1;
-
-            // System budgets for the current priority usually go first
-            if (a.isSystemBudget && !b.isSystemBudget) return -1;
-            if (!a.isSystemBudget && b.isSystemBudget) return 1;
-
-            // Sort by proximity to user's real today
-            return a.distanceToNow - b.distanceToNow;
-        });
-    }, [allBudgets, formData.date, formData.financial_priority, formData.customBudgetId]);
-
-    // 3. View Limiter
-    // If searching, show ALL matches. If not searching, show only top 5 recommended.
+    // 3. Filter Options (Search only)
+    // We rely on the parent component to provide the correct order (System > Active > Planned)
     const visibleOptions = useMemo(() => {
         if (budgetSearchTerm && budgetSearchTerm.length > 0) {
-            return smartSortedBudgets.filter(b =>
+            // DEPRECATED: return smartSortedBudgets.filter(b =>
+            return allBudgets.filter(b =>
                 b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
             );
         }
-        return smartSortedBudgets.slice(0, 5);
-    }, [smartSortedBudgets, budgetSearchTerm]);
+        // DEPRECATED:     return smartSortedBudgets.slice(0, 5);
+        // DEPRECATED: }, [smartSortedBudgets, budgetSearchTerm]);
+        return allBudgets;
+    }, [allBudgets, budgetSearchTerm]);
 
     const executeRefresh = async (force) => {
         const result = await refreshRates(
