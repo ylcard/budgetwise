@@ -57,25 +57,60 @@ export default function BudgetDetail() {
         queryFn: async () => {
             if (!budgetId) return null;
 
-            const allCustomBudgets = await base44.entities.CustomBudget.list();
-            const customBudget = allCustomBudgets.find(cb => cb.id === budgetId);
+            // In deprecation - fixing inefficient fetching and undefined goals
+            // const allCustomBudgets = await base44.entities.CustomBudget.list();
+            // const customBudget = allCustomBudgets.find(cb => cb.id === budgetId);
 
-            if (customBudget) {
-                return { ...customBudget, isSystemBudget: customBudget.isSystemBudget || false };
+            // if (customBudget) {
+            //     return { ...customBudget, isSystemBudget: customBudget.isSystemBudget || false };
+            // }
+
+            // 1. Try to fetch as a Custom Budget first using specific ID
+            try {
+                const customBudget = await base44.entities.CustomBudget.get(budgetId);
+                if (customBudget) {
+                    return { ...customBudget, isSystemBudget: false };
+                }
+            } catch (error) {
+                // If 404 or error, proceed to check System Budgets
+                // (Assuming SDK throws on 404, if it returns null, the catch block won't trigger, 
+                // but the next block handles it)
             }
 
-            const allSystemBudgets = await base44.entities.SystemBudget.list();
-            const systemBudget = allSystemBudgets.find(sb => sb.id === budgetId);
+            // In deprecation - fixing inefficient fetching and undefined goals
+            // const allSystemBudgets = await base44.entities.SystemBudget.list();
+            // const systemBudget = allSystemBudgets.find(sb => sb.id === budgetId);
 
-            if (systemBudget) {
-                const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
-                return {
-                    ...systemBudget,
-                    isSystemBudget: true,
-                    allocatedAmount: systemBudget.budgetAmount,
-                    target_amount: systemBudget.budgetAmount,
-                    target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
-                };
+            // if (systemBudget) {
+            //     const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
+            //     return {
+            //         ...systemBudget,
+            //         isSystemBudget: true,
+            //         allocatedAmount: systemBudget.budgetAmount,
+            //         target_amount: systemBudget.budgetAmount,
+            //         target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
+            //     };
+            // }
+
+            // 2. Try System Budget
+            try {
+                const systemBudget = await base44.entities.SystemBudget.get(budgetId);
+
+                if (systemBudget) {
+                    // We need goals to calculate targets. Fetch them specifically here.
+                    const goals = await base44.entities.BudgetGoal.list();
+                    const relatedGoal = goals.find(g => g.priority === systemBudget.systemBudgetType);
+
+                    return {
+                        ...systemBudget,
+                        isSystemBudget: true,
+                        allocatedAmount: systemBudget.budgetAmount,
+                        target_amount: systemBudget.budgetAmount,
+                        target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
+                    };
+                }
+            } catch (error) {
+                console.warn("Budget not found in System or Custom tables");
             }
 
             return null;
@@ -107,6 +142,8 @@ export default function BudgetDetail() {
             return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         initialData: [],
+        // Only fetch this list if we are actually viewing a budget, otherwise it's wasted bandwidth
+        enabled: !!budget
     });
 
     const { data: allCustomBudgets = [] } = useQuery({
@@ -116,6 +153,8 @@ export default function BudgetDetail() {
             return all;
         },
         initialData: [],
+        // Only fetch related budgets if the main budget is loaded and is a System budget (needs logic)
+        enabled: !!budget && !!budget.isSystemBudget
     });
 
     const { data: allocations = [] } = useQuery({
