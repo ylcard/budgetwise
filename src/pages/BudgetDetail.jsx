@@ -97,9 +97,9 @@ export default function BudgetDetail() {
                 const systemBudget = await base44.entities.SystemBudget.get(budgetId);
 
                 if (systemBudget) {
-                    // We need goals to calculate targets. Fetch them specifically here.
-                    const goals = await base44.entities.BudgetGoal.list();
-                    const relatedGoal = goals.find(g => g.priority === systemBudget.systemBudgetType);
+                    // OPTIMIZATION: Use .filter() to fetch ONLY the relevant goal
+                    const goals = await base44.entities.BudgetGoal.filter({ priority: systemBudget.systemBudgetType });
+                    const relatedGoal = goals[0]; // .filter returns an array
 
                     return {
                         ...systemBudget,
