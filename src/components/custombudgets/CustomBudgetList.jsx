@@ -1,16 +1,21 @@
+/*
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomBudgetCard from "./CustomBudgetCard";
 import { useSettings } from "../utils/SettingsContext";
+*/
 
+/*
 const statusConfig = {
     active: { label: "Active", color: "text-green-600", bg: "bg-green-50" },
     completed: { label: "Completed", color: "text-blue-600", bg: "bg-blue-50" },
     archived: { label: "Archived", color: "text-gray-600", bg: "bg-gray-50" }
 };
+*/
 
+/*
 export default function CustomBudgetList({ customBudgets, onEdit, onDelete }) {
     const { settings } = useSettings();
     const queryClient = useQueryClient();
@@ -62,10 +67,14 @@ export default function CustomBudgetList({ customBudgets, onEdit, onDelete }) {
             </Card>
         );
     }
+*/
 
+/*
     return (
         <div className="space-y-6">
+        */
             {/* System Budgets */}
+            /*
             {groupedBudgets.systemBudgets.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader>
@@ -93,8 +102,9 @@ export default function CustomBudgetList({ customBudgets, onEdit, onDelete }) {
                     </CardContent>
                 </Card>
             )}
-
+*/
             {/* Custom Budgets by Status */}
+            /*
             {Object.entries(statusConfig).map(([status, config]) => {
                 const statusBudgets = groupedBudgets.customBudgets[status] || [];
                 if (statusBudgets.length === 0) return null;
@@ -130,3 +140,4 @@ export default function CustomBudgetList({ customBudgets, onEdit, onDelete }) {
         </div>
     );
 }
+*/
