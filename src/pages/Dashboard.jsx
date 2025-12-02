@@ -41,11 +41,15 @@ export default function Dashboard() {
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
 
     // Data fetching
-    const { transactions } = useTransactions();
+    // DEPRECATED: const { transactions } = useTransactions();
+    // OPTIMIZATION: Pass date range to fetch only relevant data
+    const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { allCustomBudgets } = useCustomBudgetsAll(user);
-    const { allSystemBudgets } = useSystemBudgetsAll(user);
+    // DEPRECATED: const { allCustomBudgets } = useCustomBudgetsAll(user);
+    // DEPRECATED: const { allSystemBudgets } = useSystemBudgetsAll(user);
+    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
+    const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
     // System budget management (auto-creation/update)
