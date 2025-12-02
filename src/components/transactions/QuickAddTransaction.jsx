@@ -111,11 +111,13 @@ export default function QuickAddTransaction({
     const getInitialDate = () => {
         const now = new Date();
         // If selected month/year matches current real-time, use today
-        if (selectedMonth === now.getMonth() && selectedYear === now.getFullYear()) {
+        // DEPRECATED: if (selectedMonth === now.getMonth() && selectedYear === now.getFullYear()) {
+        if (targetMonth === now.getMonth() && targetYear === now.getFullYear()) {
             return formatDateString(now);
         }
         // Otherwise default to the 1st of the selected month
-        return getFirstDayOfMonth(selectedMonth, selectedYear);
+        // DEPRECATED: return getFirstDayOfMonth(selectedMonth, selectedYear);
+        return getFirstDayOfMonth(targetMonth, targetYear);
     };
 
     return (
