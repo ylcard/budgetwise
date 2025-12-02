@@ -131,17 +131,20 @@ export default function BudgetDetail() {
         // 1. Include specific budget dates in the key so we don't serve stale data from other months
         queryKey: ['transactions', budget?.id, budget?.startDate, budget?.endDate],
         queryFn: async () => {
-            // OPTIMIZATION: Attempt to fetch ONLY transactions for this budget's timeframe.
-            // This replaces "Fetch last 1000" with "Fetch exact range"
-            // Note: If this fails, your SDK might not support date filtering, but this is the standard fix.
-            return await base44.entities.Transaction.list({
-                startDate: budget.startDate,
-                endDate: budget.endDate
-            });
+            // FIX: Use .filter() instead of .list()
+
+            // 1. For Custom Budgets, we can filter precisely by ID (fastest)
+            if (!budget.isSystemBudget) {
+                return await base44.entities.Transaction.filter({ customBudgetId: budgetId });
+            }
+
+            // 2. For System Budgets (Date Range), we still fetch recent history
+            // as the docs don't explicitly show date-range operators (like $gte).
+            // But we use the correct method signature now.
+            return await base44.entities.Transaction.list('date', 2000);
         },
         initialData: [],
-        // 2. Strict Gate: Do not fetch until we know the budget dates
-        enabled: !!budget?.startDate && !!budget?.endDate
+        enabled: !!budget
     });
 
     // Fetch income for savings calculation
@@ -199,13 +202,9 @@ export default function BudgetDetail() {
     const { data: allocations = [] } = useQuery({
         queryKey: ['allocations', budgetId],
         queryFn: async () => {
-            // Deprecating due to inefficiency
-            // const all = await base44.entities.CustomBudgetAllocation.list();
-            // return all.filter(a => a.customBudgetId === budgetId);
-
-            // OPTIMIZATION: Pass the budgetId directly to the API.
-            // This stops downloading the entire allocations table (O(1) instead of O(N)).
-            return await base44.entities.CustomBudgetAllocation.list({ customBudgetId: budgetId });
+            // FIX: Use .filter() to fetch ONLY allocations for this budget.
+            // This is the massive O(1) performance win.
+            return await base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId });
         },
         initialData: [],
         enabled: !!budgetId && budget && !budget.isSystemBudget,
