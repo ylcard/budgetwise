@@ -30,11 +30,12 @@ import QuickAddTransaction from "../components/transactions/QuickAddTransaction"
 import TransactionCard from "../components/transactions/TransactionCard";
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import BudgetCard from "../components/budgets/BudgetCard";
+
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
 
 export default function BudgetDetail() {
-    const { settings, user } = useSettings();
+    const { settings } = useSettings();
     const queryClient = useQueryClient();
     const location = useLocation();
     const navigate = useNavigate();
@@ -197,7 +198,8 @@ export default function BudgetDetail() {
             };
 
             const customB = await base44.entities.CustomBudget.filter(overlapFilter);
-            const sysB = await base44.entities.SystemBudget.list(); // System budgets usually persist, list is fine
+            // DEPRECATED: const sysB = await base44.entities.SystemBudget.list(); // System budgets usually persist, list is fine
+            const sysB = await base44.entities.SystemBudget.filter(overlapFilter);
 
             return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
