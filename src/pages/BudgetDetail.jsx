@@ -57,25 +57,62 @@ export default function BudgetDetail() {
         queryFn: async () => {
             if (!budgetId) return null;
 
-            const allCustomBudgets = await base44.entities.CustomBudget.list();
-            const customBudget = allCustomBudgets.find(cb => cb.id === budgetId);
+            // const allCustomBudgets = await base44.entities.CustomBudget.list();
+            // const customBudget = allCustomBudgets.find(cb => cb.id === budgetId);
 
-            if (customBudget) {
-                return { ...customBudget, isSystemBudget: customBudget.isSystemBudget || false };
+            // if (customBudget) {
+            //     return { ...customBudget, isSystemBudget: customBudget.isSystemBudget || false };
+            // }
+
+            // const allSystemBudgets = await base44.entities.SystemBudget.list();
+            // const systemBudget = allSystemBudgets.find(sb => sb.id === budgetId);
+
+            // if (systemBudget) {
+            //     const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
+            //     return {
+            //         ...systemBudget,
+            //         isSystemBudget: true,
+            //         allocatedAmount: systemBudget.budgetAmount,
+            //         target_amount: systemBudget.budgetAmount,
+            //         target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
+            //     };
+            // }
+
+            // return null;
+
+            // 1. Try fetching from CustomBudget table first (Surgical Read by ID)
+            try {
+                const customBudget = await base44.entities.CustomBudget.read(budgetId);
+                if (customBudget) {
+                    // It's a Custom Budget. It doesn't need global goal percentages.
+                    return { ...customBudget, isSystemBudget: false };
+                }
+            } catch (error) {
+                // Not found in Custom table, ignore and try System table.
             }
 
-            const allSystemBudgets = await base44.entities.SystemBudget.list();
-            const systemBudget = allSystemBudgets.find(sb => sb.id === budgetId);
+            // 2. Try fetching from SystemBudget table
+            try {
+                const systemBudget = await base44.entities.SystemBudget.read(budgetId);
+                
+                if (systemBudget) {
+                    // IT IS A SYSTEM BUDGET.
+                    // We need the "Goal" rules to get the target_percentage (e.g., 50%)
+                    // so the calculator can do its math correctly.
+                    const allGoals = await base44.entities.BudgetGoal.list();
+                    const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
 
-            if (systemBudget) {
-                const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
-                return {
-                    ...systemBudget,
-                    isSystemBudget: true,
-                    allocatedAmount: systemBudget.budgetAmount,
-                    target_amount: systemBudget.budgetAmount,
-                    target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
-                };
+                    return {
+                        ...systemBudget,
+                        isSystemBudget: true,
+                        allocatedAmount: systemBudget.budgetAmount,
+                        // Map variables for financialCalculations.js
+                        target_amount: systemBudget.budgetAmount,
+                        target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
+                    };
+                }
+            } catch (error) {
+                console.error("Budget ID not found in either table", error);
             }
 
             return null;
