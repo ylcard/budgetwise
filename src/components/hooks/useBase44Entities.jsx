@@ -76,9 +76,16 @@ export const useCustomBudgetsAll = (user, monthStart = null, monthEnd = null) =>
                 });
             }
 
+            // BLOCK DEPRECATED
             // Fallback for non-dated views
-            const all = await base44.entities.CustomBudget.list('-startDate', 100);
-            return all.filter(cb => cb.user_email === user.email); // Double check email client side if list used
+            // const all = await base44.entities.CustomBudget.list('-startDate', 100);
+            // return all.filter(cb => cb.user_email === user.email); // Double check email client side if list used
+
+            return await base44.entities.CustomBudget.filter(
+                { user_email: user.email },
+                '-startDate',
+                100
+            );
         },
         initialData: [],
         enabled: !!user,
