@@ -8,6 +8,8 @@
 
 import { isDateInRange } from "./dateUtils";
 import { getMonthBoundaries } from "./dateUtils"; // Ensure this is imported
+import { base44 } from "@/api/base44Client";
+import { parseDate, getFirstDayOfMonth } from "./dateUtils";
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -346,4 +348,73 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
     }
 
     return totalIncome / lookbackMonths;
+};
+
+/**
+ * Recalculates System Budgets for Current and Future months based on updated Goals.
+ * STRICTLY ignores past months to preserve history.
+ * @param {Object} updatedGoal - The specific goal updated (e.g., { priority: 'needs', target_percentage: 50 })
+ * @param {Object} settings - App settings (to determine if we are in 'absolute' or 'percentage' mode)
+ */
+export const snapshotFutureBudgets = async (updatedGoal, settings) => {
+    if (!updatedGoal || !settings) return;
+
+    // 1. Define the "Horizon" (The first day of the current month)
+    const now = new Date();
+    const currentMonthStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
+
+    // 2. Fetch all System Budgets
+    const allSystemBudgets = await base44.entities.SystemBudget.list();
+
+    // 3. Filter: Only budgets of this Type AND in the Future/Current
+    const budgetsToUpdate = allSystemBudgets.filter(sb => {
+        return sb.systemBudgetType === updatedGoal.priority &&
+            sb.startDate >= currentMonthStart;
+    });
+
+    if (budgetsToUpdate.length === 0) return;
+
+    // 4. Pre-fetch transactions if we are in Percentage mode (to calculate income)
+    let transactions = [];
+    if (settings.budgetSystem === 'percentage') {
+        // Fetch enough history to cover likely current month
+        transactions = await base44.entities.Transaction.list('date', 1000);
+    }
+
+    // 5. Process updates
+    const updatePromises = budgetsToUpdate.map(async (budget) => {
+        let newAmount = 0;
+
+        if (settings.budgetSystem === 'absolute') {
+            // SCENARIO A: Absolute Amount
+            newAmount = updatedGoal.target_amount || 0;
+        }
+        else {
+            // SCENARIO B: Percentage Based
+            const bDate = parseDate(budget.startDate);
+
+            // Calculate Income specifically for this budget's month
+            const monthIncome = transactions
+                .filter(t => {
+                    if (t.type !== 'income') return false;
+                    const tDate = parseDate(t.date);
+                    return tDate.getMonth() === bDate.getMonth() &&
+                        tDate.getFullYear() === bDate.getFullYear();
+                })
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            newAmount = (monthIncome * (updatedGoal.target_percentage / 100));
+        }
+
+        // Only update if the amount actually changed
+        if (Math.abs((budget.budgetAmount || 0) - newAmount) > 0.01) {
+            return base44.entities.SystemBudget.update(budget.id, {
+                budgetAmount: newAmount,
+                target_amount: settings.budgetSystem === 'absolute' ? updatedGoal.target_amount : 0,
+                target_percentage: settings.budgetSystem === 'percentage' ? updatedGoal.target_percentage : 0
+            });
+        }
+    });
+
+    await Promise.all(updatePromises);
 };
