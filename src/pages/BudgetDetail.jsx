@@ -80,25 +80,26 @@ export default function BudgetDetail() {
 
             // return null;
 
-            // 1. Try fetching from CustomBudget table first (Surgical Read by ID)
+            // STRATEGY: "Surgical" Fetching
+            // 1. Try fetching specific ID from CustomBudget table first.
+            // This is efficient because we ask the DB for exactly one row.
             try {
                 const customBudget = await base44.entities.CustomBudget.read(budgetId);
                 if (customBudget) {
-                    // It's a Custom Budget. It doesn't need global goal percentages.
                     return { ...customBudget, isSystemBudget: false };
                 }
             } catch (error) {
-                // Not found in Custom table, ignore and try System table.
+                // Not found in Custom table, ignore and proceed to System table.
             }
 
-            // 2. Try fetching from SystemBudget table
+            // 2. Try fetching specific ID from SystemBudget table
             try {
                 const systemBudget = await base44.entities.SystemBudget.read(budgetId);
-                
+
                 if (systemBudget) {
-                    // IT IS A SYSTEM BUDGET.
-                    // We need the "Goal" rules to get the target_percentage (e.g., 50%)
-                    // so the calculator can do its math correctly.
+                    // 3. Fetch the configuration rules (Goals)
+                    // This fetches 'all' goals, but since there are usually only ~3 (Needs/Wants/Savings),
+                    // this is extremely fast and lightweight.
                     const allGoals = await base44.entities.BudgetGoal.list();
                     const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
 
@@ -106,7 +107,7 @@ export default function BudgetDetail() {
                         ...systemBudget,
                         isSystemBudget: true,
                         allocatedAmount: systemBudget.budgetAmount,
-                        // Map variables for financialCalculations.js
+                        // Map variables so financialCalculations.js works correctly
                         target_amount: systemBudget.budgetAmount,
                         target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
                     };
