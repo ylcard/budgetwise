@@ -159,7 +159,8 @@ export default function BudgetDetail() {
             return all.filter(a => a.customBudgetId === budgetId);
         },
         initialData: [],
-        enabled: !!budgetId && budget && !budget.isSystemBudget,
+        // enabled: !!budgetId && budget && !budget.isSystemBudget,
+        enabled: !!budgetId && !!budget && !budget.isSystemBudget,
     });
 
     const budgetActions = useCustomBudgetActions({ transactions });
