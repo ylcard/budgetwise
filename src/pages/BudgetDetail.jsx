@@ -80,16 +80,14 @@ export default function BudgetDetail() {
 
             // return null;
 
-            // STRATEGY: "Surgical" Fetching
-            // 1. Try fetching specific ID from CustomBudget table first.
-            // This is efficient because we ask the DB for exactly one row.
+            // 1. Try fetching specific ID from CustomBudget table first (Surgical Read)
             try {
                 const customBudget = await base44.entities.CustomBudget.read(budgetId);
                 if (customBudget) {
                     return { ...customBudget, isSystemBudget: false };
                 }
             } catch (error) {
-                // Not found in Custom table, ignore and proceed to System table.
+                // Ignore error, try System Budget next
             }
 
             // 2. Try fetching specific ID from SystemBudget table
@@ -97,9 +95,7 @@ export default function BudgetDetail() {
                 const systemBudget = await base44.entities.SystemBudget.read(budgetId);
 
                 if (systemBudget) {
-                    // 3. Fetch the configuration rules (Goals)
-                    // This fetches 'all' goals, but since there are usually only ~3 (Needs/Wants/Savings),
-                    // this is extremely fast and lightweight.
+                    // 3. Fetch Goals (small table) to get the Target Percentage rule
                     const allGoals = await base44.entities.BudgetGoal.list();
                     const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
 
