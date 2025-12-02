@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -9,8 +9,10 @@ import {
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
-import { useAllBudgets } from "../hooks/useBase44Entities";
-import { formatDateString, getFirstDayOfMonth } from "../utils/dateUtils";
+// import { useAllBudgets } from "../hooks/useBase44Entities";
+// import { formatDateString, getFirstDayOfMonth } from "../utils/dateUtils";
+import { useCustomBudgetsAll, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
+import { formatDateString, getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
 import TransactionFormContent from "./TransactionFormContent";
 
 export default function QuickAddTransaction({
@@ -31,7 +33,39 @@ export default function QuickAddTransaction({
     selectedYear
 }) {
     const { user } = useSettings();
-    const { allBudgets } = useAllBudgets(user);
+    // DEPRECATED: const { allBudgets } = useAllBudgets(user);
+
+    // 1. Determine Date Context for System Budgets
+    // Default to current date if not provided (Global Add) or selected date (Dashboard)
+    const targetMonth = selectedMonth ?? new Date().getMonth();
+    const targetYear = selectedYear ?? new Date().getFullYear();
+    const monthStart = getFirstDayOfMonth(targetMonth, targetYear);
+    const monthEnd = getLastDayOfMonth(targetMonth, targetYear);
+
+    // 2. Fetch Data
+    // System: Constrained by Date (Strict)
+    const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+    // Custom: Unconstrained (Fetch "All" - handled by hook limit)
+    const { allCustomBudgets } = useCustomBudgetsAll(user, null, null);
+
+    // 3. Prepare & Sort the Dropdown List
+    const allBudgets = useMemo(() => {
+        // A. System Budgets: Filter out Savings, Format props
+        const formattedSystem = systemBudgets
+            .filter(sb => sb.systemBudgetType !== 'savings') // Rule: Savings is not for expenses
+            .map(sb => ({
+                ...sb,
+                isSystemBudget: true,
+                allocatedAmount: sb.budgetAmount
+            }));
+
+        // B. Custom Budgets: Sort by Priority (Active > Planned > Completed)
+        const statusOrder = { active: 0, planned: 1, completed: 2 };
+        const sortedCustom = [...allCustomBudgets].sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+
+        // C. Merge: System at the TOP
+        return [...formattedSystem, ...sortedCustom];
+    }, [systemBudgets, allCustomBudgets]);
 
     // We rely on internal state UNLESS the parent explicitly passes a boolean 'open' prop
     const [internalOpen, setInternalOpen] = useState(false);
