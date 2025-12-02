@@ -15,7 +15,7 @@ import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { formatDate, parseDate } from "../components/utils/dateUtils";
+import { formatDate, parseDate, doDateRangesOverlap } from "../components/utils/dateUtils";
 import {
     getCustomBudgetStats,
     getSystemBudgetStats,
@@ -135,11 +135,21 @@ export default function BudgetDetail() {
     });
 
     const { data: allBudgets = [] } = useQuery({
-        queryKey: ['allBudgets'],
+        // in deprecation, fixing inefficient fetching
+        // queryKey: ['allBudgets'],
+        queryKey: ['allBudgets', monthStart, monthEnd],
         queryFn: async () => {
             const customB = await base44.entities.CustomBudget.list();
             const sysB = await base44.entities.SystemBudget.list();
-            return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
+            // in deprecation, fixing inefficient fetching
+            // return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
+
+            // Constraint: Only show Custom Budgets active in the selected period using centralized Date Utils
+            const activeCustom = customB.filter(cb =>
+                doDateRangesOverlap(cb.startDate, cb.endDate, monthStart, monthEnd)
+            );
+
+            return [...activeCustom, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         initialData: [],
         // Only fetch this list if we are actually viewing a budget, otherwise it's wasted bandwidth
@@ -147,10 +157,18 @@ export default function BudgetDetail() {
     });
 
     const { data: allCustomBudgets = [] } = useQuery({
-        queryKey: ['allCustomBudgets'],
+        // in deprecation, fixing inefficient fetching
+        // queryKey: ['allCustomBudgets'],
+        queryKey: ['allCustomBudgets', monthStart, monthEnd],
         queryFn: async () => {
             const all = await base44.entities.CustomBudget.list();
-            return all;
+            // in deprecation, fixing inefficient fetching
+            // return all;
+
+            // Constraint: Filter for "Related Budgets" using centralized Date Utils
+            return all.filter(cb =>
+                doDateRangesOverlap(cb.startDate, cb.endDate, monthStart, monthEnd)
+            );
         },
         initialData: [],
         // Only fetch related budgets if the main budget is loaded and is a System budget (needs logic)
