@@ -112,7 +112,6 @@ export default function QuickAddTransaction({
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     isSubmitting={isSubmitting}
-                    // cashWallet={cashWallet}
                     transactions={transactions}
                 />
             </DialogContent>
