@@ -98,8 +98,14 @@ export default function BudgetDetail() {
 
                 if (systemBudget) {
                     // OPTIMIZATION: Use .filter() to fetch ONLY the relevant goal
+
+                    // testing down below
+                    // const goals = await base44.entities.BudgetGoal.filter({ priority: systemBudget.systemBudgetType });
+                    // const relatedGoal = goals[0]; // .filter returns an array
+
+                    // We assume standard JSON query syntax supports equality
                     const goals = await base44.entities.BudgetGoal.filter({ priority: systemBudget.systemBudgetType });
-                    const relatedGoal = goals[0]; // .filter returns an array
+                    const relatedGoal = goals[0];
 
                     return {
                         ...systemBudget,
@@ -141,7 +147,18 @@ export default function BudgetDetail() {
             // 2. For System Budgets (Date Range), we still fetch recent history
             // as the docs don't explicitly show date-range operators (like $gte).
             // But we use the correct method signature now.
-            return await base44.entities.Transaction.list('date', 2000);
+
+            // testing
+            // return await base44.entities.Transaction.list('date', 2000);
+
+            // 2. For System Budgets: Filter by Date Range (Range Match)
+            // We are betting on standard MongoDB-style operators ($gte, $lte)
+            return await base44.entities.Transaction.filter({
+                date: {
+                    $gte: budget.startDate,
+                    $lte: budget.endDate
+                }
+            });
         },
         initialData: [],
         enabled: !!budget
@@ -161,17 +178,28 @@ export default function BudgetDetail() {
         // queryKey: ['allBudgets'],
         queryKey: ['allBudgets', monthStart, monthEnd],
         queryFn: async () => {
-            const customB = await base44.entities.CustomBudget.list();
-            const sysB = await base44.entities.SystemBudget.list();
+            // const customB = await base44.entities.CustomBudget.list();
+            // const sysB = await base44.entities.SystemBudget.list();
             // in deprecation, fixing inefficient fetching
             // return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
 
             // Constraint: Only show Custom Budgets active in the selected period using centralized Date Utils
-            const activeCustom = customB.filter(cb =>
-                doDateRangesOverlap(cb.startDate, cb.endDate, monthStart, monthEnd)
-            );
+            // const activeCustom = customB.filter(cb =>
+            //     doDateRangesOverlap(cb.startDate, cb.endDate, monthStart, monthEnd)
+            // );
 
-            return [...activeCustom, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
+            // return [...activeCustom, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
+
+            // Overlap Logic: Start <= EndSelected AND End >= StartSelected
+            const overlapFilter = {
+                startDate: { $lte: monthEnd },
+                endDate: { $gte: monthStart }
+            };
+
+            const customB = await base44.entities.CustomBudget.filter(overlapFilter);
+            const sysB = await base44.entities.SystemBudget.list(); // System budgets usually persist, list is fine
+
+            return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         initialData: [],
         // Only fetch this list if we are actually viewing a budget, otherwise it's wasted bandwidth
@@ -183,14 +211,20 @@ export default function BudgetDetail() {
         // queryKey: ['allCustomBudgets'],
         queryKey: ['allCustomBudgets', monthStart, monthEnd],
         queryFn: async () => {
-            const all = await base44.entities.CustomBudget.list();
+            // const all = await base44.entities.CustomBudget.list();
             // in deprecation, fixing inefficient fetching
             // return all;
 
             // Constraint: Filter for "Related Budgets" using centralized Date Utils
-            return all.filter(cb =>
-                doDateRangesOverlap(cb.startDate, cb.endDate, monthStart, monthEnd)
-            );
+            // return all.filter(cb =>
+            //     doDateRangesOverlap(cb.startDate, cb.endDate, monthStart, monthEnd)
+            // );
+
+            // Overlap Logic: Start <= EndSelected AND End >= StartSelected
+            return await base44.entities.CustomBudget.filter({
+                startDate: { $lte: monthEnd },
+                endDate: { $gte: monthStart }
+            });
         },
         initialData: [],
         // Only fetch related budgets if the main budget is loaded and is a System budget (needs logic)
