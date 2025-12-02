@@ -99,7 +99,13 @@ export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historica
         // 3. For Needs/Wants, return the capped amount
         return standardCalc;
     }
-
+    console.log("--- resolveBudgetLimit DEBUG ---");
+    console.log("1. Monthly Income:", monthlyIncome);
+    console.log("2. Goal Object:", goal);
+    console.log("3. Target Percentage:", goal.target_percentage);
+    console.log("4. Fallback Amount Available?:", goal.target_amount);
+    console.log("5. Result of Calculation:", (monthlyIncome * (goal.target_percentage || 0)) / 100);
+    console.log("--------------------------------");
     // Default to Percentage Mode (true or undefined)
     return (monthlyIncome * (goal.target_percentage || 0)) / 100;
 };
