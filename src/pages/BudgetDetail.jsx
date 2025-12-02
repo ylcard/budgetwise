@@ -57,59 +57,25 @@ export default function BudgetDetail() {
         queryFn: async () => {
             if (!budgetId) return null;
 
-            // const allCustomBudgets = await base44.entities.CustomBudget.list();
-            // const customBudget = allCustomBudgets.find(cb => cb.id === budgetId);
+            const allCustomBudgets = await base44.entities.CustomBudget.list();
+            const customBudget = allCustomBudgets.find(cb => cb.id === budgetId);
 
-            // if (customBudget) {
-            //     return { ...customBudget, isSystemBudget: customBudget.isSystemBudget || false };
-            // }
-
-            // const allSystemBudgets = await base44.entities.SystemBudget.list();
-            // const systemBudget = allSystemBudgets.find(sb => sb.id === budgetId);
-
-            // if (systemBudget) {
-            //     const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
-            //     return {
-            //         ...systemBudget,
-            //         isSystemBudget: true,
-            //         allocatedAmount: systemBudget.budgetAmount,
-            //         target_amount: systemBudget.budgetAmount,
-            //         target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
-            //     };
-            // }
-
-            // return null;
-
-            // 1. Try fetching specific ID from CustomBudget table first (Surgical Read)
-            try {
-                const customBudget = await base44.entities.CustomBudget.read(budgetId);
-                if (customBudget) {
-                    return { ...customBudget, isSystemBudget: false };
-                }
-            } catch (error) {
-                // Ignore error, try System Budget next
+            if (customBudget) {
+                return { ...customBudget, isSystemBudget: customBudget.isSystemBudget || false };
             }
 
-            // 2. Try fetching specific ID from SystemBudget table
-            try {
-                const systemBudget = await base44.entities.SystemBudget.read(budgetId);
+            const allSystemBudgets = await base44.entities.SystemBudget.list();
+            const systemBudget = allSystemBudgets.find(sb => sb.id === budgetId);
 
-                if (systemBudget) {
-                    // 3. Fetch Goals (small table) to get the Target Percentage rule
-                    const allGoals = await base44.entities.BudgetGoal.list();
-                    const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
-
-                    return {
-                        ...systemBudget,
-                        isSystemBudget: true,
-                        allocatedAmount: systemBudget.budgetAmount,
-                        // Map variables so financialCalculations.js works correctly
-                        target_amount: systemBudget.budgetAmount,
-                        target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
-                    };
-                }
-            } catch (error) {
-                console.error("Budget ID not found in either table", error);
+            if (systemBudget) {
+                const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
+                return {
+                    ...systemBudget,
+                    isSystemBudget: true,
+                    allocatedAmount: systemBudget.budgetAmount,
+                    target_amount: systemBudget.budgetAmount,
+                    target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
+                };
             }
 
             return null;
@@ -159,8 +125,7 @@ export default function BudgetDetail() {
             return all.filter(a => a.customBudgetId === budgetId);
         },
         initialData: [],
-        // enabled: !!budgetId && budget && !budget.isSystemBudget,
-        enabled: !!budgetId && !!budget && !budget.isSystemBudget,
+        enabled: !!budgetId && budget && !budget.isSystemBudget,
     });
 
     const budgetActions = useCustomBudgetActions({ transactions });
