@@ -12,7 +12,7 @@ import { useSettings } from "../utils/SettingsContext";
 // import { useAllBudgets } from "../hooks/useBase44Entities";
 // import { formatDateString, getFirstDayOfMonth } from "../utils/dateUtils";
 import { useCustomBudgetsAll, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
-import { formatDateString, getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
+import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "../utils/dateUtils";
 import TransactionFormContent from "./TransactionFormContent";
 
 export default function QuickAddTransaction({
@@ -39,8 +39,7 @@ export default function QuickAddTransaction({
     // Default to current date if not provided (Global Add) or selected date (Dashboard)
     const targetMonth = selectedMonth ?? new Date().getMonth();
     const targetYear = selectedYear ?? new Date().getFullYear();
-    const monthStart = getFirstDayOfMonth(targetMonth, targetYear);
-    const monthEnd = getLastDayOfMonth(targetMonth, targetYear);
+    const { monthStart, monthEnd } = getMonthBoundaries(targetMonth, targetYear);
 
     // 2. Fetch Data
     // System: Constrained by Date (Strict)
