@@ -368,17 +368,20 @@ export default function BudgetDetail() {
         }
 
         if (budget.systemBudgetType === 'wants') {
-            const budgetStart = new Date(budget.startDate);
-            const budgetEnd = new Date(budget.endDate);
+            // DEPRECATED: const budgetStart = new Date(budget.startDate);
+            // DEPRECATED: const budgetEnd = new Date(budget.endDate);
             const now = new Date();
 
             const filtered = allCustomBudgets.filter(cb => {
                 if (cb.status !== 'active' && cb.status !== 'completed' && cb.status !== 'planned') return false;
                 if (cb.isSystemBudget) return false;
 
-                const cbStart = new Date(cb.startDate);
-                const cbEnd = new Date(cb.endDate);
-                return cbStart <= budgetEnd && cbEnd >= budgetStart;
+                // BLOCK DEPRECATED
+                // const cbStart = new Date(cb.startDate);
+                // const cbEnd = new Date(cb.endDate);
+                // return cbStart <= budgetEnd && cbEnd >= budgetStart;
+                // REFACTOR: Use the centralized utility for consistency
+                return doDateRangesOverlap(cb.startDate, cb.endDate, budget.startDate, budget.endDate);
             });
 
             return filtered.sort((a, b) => {
