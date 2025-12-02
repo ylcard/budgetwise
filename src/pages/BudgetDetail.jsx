@@ -68,13 +68,13 @@ export default function BudgetDetail() {
             const systemBudget = allSystemBudgets.find(sb => sb.id === budgetId);
 
             if (systemBudget) {
+                const relatedGoal = allGoals.find(g => g.priority === systemBudget.systemBudgetType);
                 return {
                     ...systemBudget,
                     isSystemBudget: true,
                     allocatedAmount: systemBudget.budgetAmount,
-                    // UNIFICATION: Map the DB property 'budgetAmount' to the
-                    // standard 'target_amount' expected by financialCalculations.js
-                    target_amount: systemBudget.budgetAmount
+                    target_amount: systemBudget.budgetAmount,
+                    target_percentage: relatedGoal ? relatedGoal.target_percentage : 0
                 };
             }
 
