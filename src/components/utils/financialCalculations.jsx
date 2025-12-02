@@ -80,7 +80,9 @@ export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historica
 
     const goalMode = settings.goalMode ?? true; // Default to Percentage
     // If goalMode is False (Absolute), return the flat amount
-    if (goalMode === false) return goal.target_amount || 0;
+    // if (goalMode === false) return goal.target_amount || 0;
+    // Fixing System Budgets not getting their budget amounts
+    if (goalMode === false) return goal.target_amount || goal.budgetAmount || 0;
 
     // --- INFLATION PROTECTION LOGIC ---
     // If enabled AND we have history AND current income exceeds history
