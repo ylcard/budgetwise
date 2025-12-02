@@ -71,7 +71,10 @@ export default function BudgetDetail() {
                 return {
                     ...systemBudget,
                     isSystemBudget: true,
-                    allocatedAmount: systemBudget.budgetAmount
+                    allocatedAmount: systemBudget.budgetAmount,
+                    // UNIFICATION: Map the DB property 'budgetAmount' to the
+                    // standard 'target_amount' expected by financialCalculations.js
+                    target_amount: systemBudget.budgetAmount
                 };
             }
 
