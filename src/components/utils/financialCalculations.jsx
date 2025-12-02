@@ -363,6 +363,9 @@ export const snapshotFutureBudgets = async (updatedGoal, settings) => {
     const now = new Date();
     const currentMonthStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
 
+    /*
+    // DEPRECATING THE USE OF .list()
+
     // 2. Fetch all System Budgets
     const allSystemBudgets = await base44.entities.SystemBudget.list();
 
@@ -371,6 +374,13 @@ export const snapshotFutureBudgets = async (updatedGoal, settings) => {
         return sb.systemBudgetType === updatedGoal.priority &&
             sb.startDate >= currentMonthStart;
     });
+    */
+
+    // 2. Optimization: Fetch only relevant future/current budgets directly
+    const budgetsToUpdate = await base44.entities.SystemBudget.filter({
+        systemBudgetType: updatedGoal.priority,
+        startDate: { $gte: currentMonthStart }
+    });
 
     if (budgetsToUpdate.length === 0) return;
 
@@ -378,7 +388,13 @@ export const snapshotFutureBudgets = async (updatedGoal, settings) => {
     let transactions = [];
     if (settings.budgetSystem === 'percentage') {
         // Fetch enough history to cover likely current month
-        transactions = await base44.entities.Transaction.list('date', 1000);
+        // DEPRECATING THE USE OF .list(): transactions = await base44.entities.Transaction.list('date', 1000);
+
+        // Optimization: Only fetch INCOME transactions from the horizon onwards
+        transactions = await base44.entities.Transaction.filter({
+            type: 'income',
+            date: { $gte: currentMonthStart }
+        });
     }
 
     // 5. Process updates
