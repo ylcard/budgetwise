@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings } from "lucide-react";
+import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 export const navigationItems = [
@@ -12,6 +12,11 @@ export const navigationItems = [
     title: "Transactions",
     url: createPageUrl("Transactions"),
     icon: Receipt,
+  },
+  {
+    title: "Recurring",
+    url: createPageUrl("RecurringTransactions"),
+    icon: RefreshCw,
   },
   {
     title: "Budgets",
