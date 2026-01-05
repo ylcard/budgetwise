@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
 import { PRESET_COLORS } from "../utils/constants";
-import { normalizeAmount } from "../utils/budgetCalculations";
+import { normalizeAmount } from "../utils/generalUtils";
 import { usePeriod } from "../hooks/usePeriod";
 
 export default function MiniBudgetForm({ budget, onSubmit, onCancel, isSubmitting, isQuickAdd = false }) {

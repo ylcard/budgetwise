@@ -559,7 +559,8 @@ export const useBudgetBarsData = (
                     paidAmount,
                     totalBudget,
                     totalAllocatedUnits: stats.allocated,
-                    totalSpentUnits: paidAmount,
+                    // COMMENTED 05-Jan-2026: Duplicate key 'totalSpentUnits' - keeping stats.spent as authoritative
+                    // totalSpentUnits: paidAmount,
                     totalSpentUnits: stats.spent,
                     // trying to fix 0% bug
                     // totalUnpaidUnits: stats.unpaid 

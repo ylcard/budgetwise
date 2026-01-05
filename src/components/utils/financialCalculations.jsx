@@ -1,4 +1,3 @@
-
 /**
  * @file Financial Calculations Utilities
  * @description Centralized functions for calculating expenses, income, and budget statistics.
@@ -199,10 +198,11 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
             totalBaseCurrencyAmount: paidBase,
             foreignCurrencyDetails: []
         },
-        unpaid: {
-            totalBaseCurrencyAmount: unpaid,
-            foreignCurrencyDetails: []
-        },
+        // COMMENTED 05-Jan-2026: Duplicate key 'unpaid' removed - value already captured in 'unpaid' variable above
+        // unpaid: {
+        //     totalBaseCurrencyAmount: unpaid,
+        //     foreignCurrencyDetails: []
+        // },
         totalAllocatedUnits: allocated,
         totalSpentUnits: spent,
         totalUnpaidUnits: unpaid,
