@@ -4,9 +4,13 @@ import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
-import { useTransactions, useMiniBudgetsAll } from "../components/hooks/useBase44Entities";
-import { useMiniBudgetsFiltered } from "../components/hooks/useDerivedData";
-import { useMiniBudgetActions } from "../components/hooks/useActions";
+// COMMENTED OUT 13-Jan-2026: MiniBudgets deprecated, replaced with CustomBudgets
+// import { useTransactions, useMiniBudgetsAll } from "../components/hooks/useBase44Entities";
+// import { useMiniBudgetsFiltered } from "../components/hooks/useDerivedData";
+// import { useMiniBudgetActions } from "../components/hooks/useActions";
+import { useTransactions, useCustomBudgetsAll } from "../components/hooks/useBase44Entities";
+import { useCustomBudgetsFiltered } from "../components/hooks/useDerivedData";
+import { useCustomBudgetActions } from "../components/hooks/useActions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,21 +40,23 @@ export default function MiniBudgets() {
 
   // Data fetching
   const { transactions } = useTransactions();
-  const { allMiniBudgets, isLoading } = useMiniBudgetsAll(user);
-  const miniBudgets = useMiniBudgetsFiltered(allMiniBudgets, selectedMonth, selectedYear);
+  // UPDATED 13-Jan-2026: Replaced useMiniBudgetsAll with useCustomBudgetsAll
+  const { allCustomBudgets: allMiniBudgets, isLoading } = useCustomBudgetsAll(user);
+  const miniBudgets = useCustomBudgetsFiltered(allMiniBudgets, selectedMonth, selectedYear);
 
-  // Actions (CRUD operations)
-  const {
-    showForm,
-    setShowForm,
-    editingBudget,
-    setEditingBudget,
-    handleSubmit,
-    handleEdit,
-    handleDelete,
-    handleStatusChange,
-    isSubmitting,
-  } = useMiniBudgetActions(user, transactions);
+  // Actions (CRUD operations) - UPDATED 13-Jan-2026: Use useCustomBudgetActions
+  const budgetActions = useCustomBudgetActions({ transactions });
+  const [showForm, setShowForm] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
+
+  const handleSubmit = (data) => budgetActions.handleSubmit(data, editingBudget);
+  const handleEdit = (budget) => {
+    setEditingBudget(budget);
+    setShowForm(true);
+  };
+  const handleDelete = (id) => budgetActions.handleDelete(id);
+  const handleStatusChange = (id, status) => budgetActions.handleStatusChange(id, status);
+  const isSubmitting = budgetActions.isSubmitting;
 
   // Confirm and execute delete
   const confirmDelete = () => {
