@@ -21,6 +21,7 @@ export default function QuickAddIncome({
     onSubmit,
     isSubmitting,
     renderTrigger = true,
+    transaction = null, // ADDED 13-Jan-2026: Support editing
     triggerVariant = "default",
     triggerSize = "default",
     triggerClassName = "",
@@ -44,16 +45,27 @@ export default function QuickAddIncome({
         title: '',
         amount: null,
         type: 'income',
-        // date: formatDateString(new Date())
         date: getInitialDate()
     });
     
-    // CRITICAL: Ensure form date updates when the component opens or the selected month changes
+    // UPDATED 13-Jan-2026: Initialize form with transaction data if editing
     useEffect(() => {
-        if (open) {
-            setFormData(prev => ({ ...prev, date: getInitialDate() }));
+        if (transaction) {
+            setFormData({
+                title: transaction.title || '',
+                amount: transaction.originalAmount || transaction.amount || null,
+                type: 'income',
+                date: transaction.date || getInitialDate()
+            });
+        } else if (open) {
+            setFormData({
+                title: '',
+                amount: null,
+                type: 'income',
+                date: getInitialDate()
+            });
         }
-    }, [open, selectedMonth, selectedYear]);
+    }, [open, transaction, selectedMonth, selectedYear]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -89,7 +101,7 @@ export default function QuickAddIncome({
             )}
             <DialogContent className="sm:max-w-md fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                 <DialogHeader>
-                    <DialogTitle>Quick Add Income</DialogTitle>
+                    <DialogTitle>{transaction ? 'Edit Income' : 'Quick Add Income'}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
@@ -135,7 +147,7 @@ export default function QuickAddIncome({
                             disabled={isSubmitting}
                             variant="success"
                         >
-                            {isSubmitting ? 'Adding...' : 'Add Income'}
+                            {isSubmitting ? 'Saving...' : (transaction ? 'Update Income' : 'Add Income')}
                         </CustomButton>
                     </div>
                 </form>
