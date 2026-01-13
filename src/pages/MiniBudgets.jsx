@@ -22,8 +22,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import MiniBudgetForm from "../components/minibudgets/MiniBudgetForm";
-import MiniBudgetCard from "../components/minibudgets/MiniBudgetCard";
+// UPDATED 13-Jan-2026: Replaced deprecated MiniBudget components with CustomBudget components
+import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
+import CustomBudgetCard from "../components/custombudgets/CustomBudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
 
 const statusConfig = {
@@ -109,7 +110,7 @@ export default function MiniBudgets() {
         />
 
         {showForm && (
-          <MiniBudgetForm
+          <CustomBudgetForm
             budget={editingBudget}
             onSubmit={handleSubmit}
             onCancel={() => {
@@ -155,7 +156,7 @@ export default function MiniBudgets() {
                 <CardContent>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {statusBudgets.map((budget) => (
-                      <MiniBudgetCard
+                      <CustomBudgetCard
                         key={budget.id}
                         budget={budget}
                         transactions={transactions}
