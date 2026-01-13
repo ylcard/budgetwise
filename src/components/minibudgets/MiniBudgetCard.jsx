@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +7,11 @@ import { Pencil, Trash2, Calendar, Receipt, CheckCircle, Archive } from "lucide-
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { getMiniBudgetStats } from "../utils/budgetCalculations";
-import { formatCurrency } from "../utils/formatCurrency";
+// COMMENTED OUT 13-Jan-2026: Replaced with centralized financialCalculations
+// import { getMiniBudgetStats } from "../utils/budgetCalculations";
+// import { formatCurrency } from "../utils/formatCurrency";
+import { getCustomBudgetStats } from "../utils/financialCalculations";
+import { formatCurrency } from "../utils/currencyUtils";
 import { motion } from "framer-motion";
 import { getProgressBarColor } from "../utils/progressBarColor";
 
@@ -19,8 +21,9 @@ export default function MiniBudgetCard({ budget, transactions, settings, onEdit,
     if (budget.preCalculatedStats) {
       return budget.preCalculatedStats;
     }
-    return getMiniBudgetStats(budget, transactions);
-  }, [budget, transactions]);
+    // UPDATED 13-Jan-2026: Use centralized calculation from financialCalculations
+    return getCustomBudgetStats(budget, transactions, null, null, settings?.baseCurrency);
+  }, [budget, transactions, settings]);
 
   const canDelete = !budget.isSystemBudget;
   const canEdit = !budget.isSystemBudget;
@@ -89,14 +92,14 @@ export default function MiniBudgetCard({ budget, transactions, settings, onEdit,
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Budget Used</span>
-                <Badge variant={stats.percentageUsed > 100 ? "destructive" : "default"}>
-                  {stats.percentageUsed.toFixed(0)}%
+                <Badge variant={(stats.spent / (budget.allocatedAmount || 1) * 100) > 100 ? "destructive" : "default"}>
+                  {((stats.spent / (budget.allocatedAmount || 1)) * 100).toFixed(0)}%
                 </Badge>
               </div>
               <Progress
-                value={Math.min(stats.percentageUsed, 100)}
+                value={Math.min((stats.spent / (budget.allocatedAmount || 1)) * 100, 100)}
                 className="h-2"
-                style={{ '--progress-background': getProgressBarColor(stats.percentageUsed) }}
+                style={{ '--progress-background': getProgressBarColor((stats.spent / (budget.allocatedAmount || 1)) * 100) }}
               />
             </div>
 
@@ -106,7 +109,7 @@ export default function MiniBudgetCard({ budget, transactions, settings, onEdit,
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Spent</p>
                     <p className="font-bold text-gray-900">
-                      {formatCurrency(stats.totalSpent, settings)}
+                      {formatCurrency(stats.spent, settings)}
                     </p>
                   </div>
                   <div>
@@ -137,11 +140,11 @@ export default function MiniBudgetCard({ budget, transactions, settings, onEdit,
             <div className="flex items-center justify-between pt-2 border-t">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Receipt className="w-4 h-4" />
-                <span>{stats.transactionCount} expenses</span>
+                <span>{stats.totalTransactionCount} expenses</span>
               </div>
-              {!isCompleted && stats.unpaidAmount > 0 && (
+              {!isCompleted && stats.unpaid > 0 && (
                 <Badge variant="outline" className="text-orange-600 border-orange-600">
-                  {formatCurrency(stats.unpaidAmount, settings)} unpaid
+                  {formatCurrency(stats.unpaid, settings)} unpaid
                 </Badge>
               )}
             </div>
