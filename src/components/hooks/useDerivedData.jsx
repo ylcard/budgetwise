@@ -533,7 +533,7 @@ export const useBudgetBarsData = (
             };
         });
 
-        // Custom budgets calculation - UPDATED to filter expenses by selected month's paidDate
+        // Custom budgets calculation - UPDATED 13-Jan-2026: Sort by date proximity to today
         const customBudgetsData = custom.map(cb => {
             // Use centralized calculation
             const stats = getCustomBudgetStats(cb, transactions, monthStartDate, monthEndDate, baseCurrency);
@@ -541,11 +541,8 @@ export const useBudgetBarsData = (
             // Calculate totals for BudgetBars
             const totalBudget = stats.allocated;
             const paidAmount = stats.paid.totalBaseCurrencyAmount;
+            const unpaidAmount = stats.unpaid; // FIXED 13-Jan-2026: Direct property, not nested
 
-            // trying to fix 0% bug
-            // const expectedAmount = stats.unpaid;
-            // const totalSpent = paidAmount + expectedAmount;
-            const unpaidAmount = stats.unpaid.totalBaseCurrencyAmount;  // Fixed: use nested property
             const totalSpent = paidAmount + unpaidAmount;
 
             const maxHeight = Math.max(totalBudget, totalSpent);
@@ -559,21 +556,23 @@ export const useBudgetBarsData = (
                     paidAmount,
                     totalBudget,
                     totalAllocatedUnits: stats.allocated,
-                    // COMMENTED 05-Jan-2026: Duplicate key 'totalSpentUnits' - keeping stats.spent as authoritative
-                    // totalSpentUnits: paidAmount,
                     totalSpentUnits: stats.spent,
-                    // trying to fix 0% bug
-                    // totalUnpaidUnits: stats.unpaid 
                     totalUnpaidUnits: unpaidAmount
                 },
                 targetAmount: totalBudget,
-                // trying to fix 0% bug
-                // expectedAmount,
                 expectedAmount: unpaidAmount,
                 maxHeight,
                 isOverBudget,
                 overBudgetAmount
             };
+        }).sort((a, b) => {
+            // ADDED 13-Jan-2026: Sort by date proximity to today
+            const now = new Date();
+            const aStart = new Date(a.startDate);
+            const bStart = new Date(b.startDate);
+            const aDistance = Math.abs(aStart - now);
+            const bDistance = Math.abs(bStart - now);
+            return aDistance - bDistance;
         });
 
         const savingsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'savings');

@@ -137,23 +137,24 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
         // Priority hierarchy: Transaction > Category > Default 'wants'
         const priority = t.financial_priority || category?.priority || 'wants';
 
-        // 1. NEEDS Logic
+        // CRITICAL FIX 13-Jan-2026: Expenses in CBs should NEVER appear in SB direct calculations
+        // If assigned to a CB, skip this transaction for system budget direct calculations
+        if (isCustom) {
+            // "Indirect" Wants (Vacations, etc.) - Only count in customPaid/customUnpaid
+            if (t.isPaid) result.wants.customPaid += t.amount;
+            else result.wants.customUnpaid += t.amount;
+            return; // CRITICAL: Exit early to prevent double-counting in direct
+        }
+
+        // 1. NEEDS Logic (Direct only - CBs never contain needs)
         if (priority === 'needs') {
-            // Needs are usually system-only, but if a custom budget is tagged 'needs', we count it here
             if (t.isPaid) result.needs.paid += t.amount;
             else result.needs.unpaid += t.amount;
         }
-        // 2. WANTS Logic
+        // 2. WANTS Logic (Direct only - CBs handled above)
         else if (priority === 'wants') {
-            if (isCustom) {
-                // "Indirect" Wants (Vacations, etc.)
-                if (t.isPaid) result.wants.customPaid += t.amount;
-                else result.wants.customUnpaid += t.amount;
-            } else {
-                // "Direct" Wants (Random shopping, dining)
-                if (t.isPaid) result.wants.directPaid += t.amount;
-                else result.wants.directUnpaid += t.amount;
-            }
+            if (t.isPaid) result.wants.directPaid += t.amount;
+            else result.wants.directUnpaid += t.amount;
         }
     });
 
@@ -184,28 +185,32 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
     const expenses = budgetTransactions.filter(t => t.type === 'expense');
     const allocated = customBudget.allocatedAmount || 0;
 
-    // Use t.amount (Base Currency) NOT t.originalAmount to avoid summing JPY + USD
-    const spent = expenses.reduce((sum, t) => sum + t.amount, 0);
-    const unpaid = expenses.filter(t => !t.isPaid).reduce((sum, t) => sum + t.amount, 0);
-    const paidBase = expenses.filter(t => t.isPaid).reduce((sum, t) => sum + t.amount, 0);
+    // CRITICAL FIX 13-Jan-2026: Calculate paid/unpaid in ONE pass to prevent double-counting
+    let paidBase = 0;
+    let unpaidBase = 0;
+
+    expenses.forEach(t => {
+        if (t.isPaid) {
+            paidBase += t.amount;
+        } else {
+            unpaidBase += t.amount;
+        }
+    });
+
+    const spent = paidBase + unpaidBase;
 
     return {
         allocated,
         spent,
-        unpaid,
+        unpaid: unpaidBase,
         remaining: allocated - spent,
         paid: {
             totalBaseCurrencyAmount: paidBase,
             foreignCurrencyDetails: []
         },
-        // COMMENTED 05-Jan-2026: Duplicate key 'unpaid' removed - value already captured in 'unpaid' variable above
-        // unpaid: {
-        //     totalBaseCurrencyAmount: unpaid,
-        //     foreignCurrencyDetails: []
-        // },
         totalAllocatedUnits: allocated,
         totalSpentUnits: spent,
-        totalUnpaidUnits: unpaid,
+        totalUnpaidUnits: unpaidBase,
         totalTransactionCount: expenses.length
     };
 };

@@ -223,6 +223,8 @@ export default function Dashboard() {
                             categories={categories}
                             settings={settings}
                             customBudgets={allCustomBudgets}
+                            onEdit={transactionActions.handleEdit}
+                            onDelete={transactionActions.handleDelete}
                         />
                     </div>
                 </div>

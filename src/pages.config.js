@@ -5,10 +5,10 @@ import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
 import MiniBudgets from './pages/MiniBudgets';
+import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Transactions from './pages/Transactions';
-import RecurringTransactions from './pages/RecurringTransactions';
 import __Layout from './Layout.jsx';
 
 
@@ -20,10 +20,10 @@ export const PAGES = {
     "Home": Home,
     "ImportData": ImportData,
     "MiniBudgets": MiniBudgets,
+    "RecurringTransactions": RecurringTransactions,
     "Reports": Reports,
     "Settings": Settings,
     "Transactions": Transactions,
-    "RecurringTransactions": RecurringTransactions,
 }
 
 export const pagesConfig = {

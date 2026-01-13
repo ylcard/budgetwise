@@ -1,18 +1,20 @@
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowRight, Banknote, ExternalLink } from "lucide-react";
+import { ArrowRight, Banknote, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { createPageUrl } from "@/utils";
 import { createEntityMap } from "../utils/generalUtils";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { useSettings } from "../utils/SettingsContext";
 import { usePeriod } from "../hooks/usePeriod";
-// Import cross-period detection for Settlement View indicators
 import { detectCrossPeriodSettlement } from "../utils/calculationEngine";
+import QuickAddTransaction from "../transactions/QuickAddTransaction";
+import QuickAddIncome from "../transactions/QuickAddIncome";
 
-export default function RecentTransactions({ transactions, categories, customBudgets }) {
+export default function RecentTransactions({ transactions, categories, customBudgets, onEdit, onDelete }) {
     const { settings } = useSettings();
     const { currentYear, monthStart, monthEnd } = usePeriod();
 
@@ -70,7 +72,7 @@ export default function RecentTransactions({ transactions, categories, customBud
                                 key={transaction.id}
                                 className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
                             >
-                                <div className="flex items-center gap-3 flex-1">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
                                     {isIncome ? (
                                         <div
                                             className="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
@@ -134,10 +136,57 @@ export default function RecentTransactions({ transactions, categories, customBud
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className={`font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
-                                    </p>
+                                <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                        <p className={`font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                                        </p>
+                                    </div>
+                                    
+                                    {/* ADDED 13-Jan-2026: Edit/Delete action buttons */}
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {isIncome ? (
+                                            <QuickAddIncome
+                                                transaction={transaction}
+                                                onSubmit={(data) => onEdit && onEdit(data, transaction)}
+                                                renderTrigger={true}
+                                                trigger={
+                                                    <CustomButton
+                                                        variant="ghost"
+                                                        size="icon-sm"
+                                                        className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
+                                                    >
+                                                        <Pencil className="w-3 h-3" />
+                                                    </CustomButton>
+                                                }
+                                            />
+                                        ) : (
+                                            <QuickAddTransaction
+                                                transaction={transaction}
+                                                categories={categories}
+                                                customBudgets={customBudgets}
+                                                onSubmit={(data) => onEdit && onEdit(data, transaction)}
+                                                renderTrigger={true}
+                                                trigger={
+                                                    <CustomButton
+                                                        variant="ghost"
+                                                        size="icon-sm"
+                                                        className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
+                                                    >
+                                                        <Pencil className="w-3 h-3" />
+                                                    </CustomButton>
+                                                }
+                                            />
+                                        )}
+                                        <CustomButton
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            onClick={() => onDelete && onDelete(transaction)}
+                                            className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </CustomButton>
+                                    </div>
                                 </div>
                             </div>
                         );
