@@ -6,7 +6,8 @@ import { Pencil, Trash2, Pause, Play, Calendar, ArrowDown, ArrowUp } from "lucid
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
 import { formatDate } from "../utils/dateUtils";
-import { getIconComponent } from "../utils/iconMapConfig";
+// UPDATED 13-Jan-2026: Changed getIconComponent to getCategoryIcon (correct function name)
+import { getCategoryIcon } from "../utils/iconMapConfig";
 
 const FREQUENCY_LABELS = {
     daily: "Daily",
@@ -26,7 +27,7 @@ const RecurringTransactionCard = memo(function RecurringTransactionCard({
 }) {
     const { settings } = useSettings();
 
-    const IconComponent = category ? getIconComponent(category.icon) : null;
+    const IconComponent = category ? getCategoryIcon(category.icon) : null;
     const isIncome = recurring.type === 'income';
     const isActive = recurring.isActive;
 
