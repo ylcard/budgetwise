@@ -205,31 +205,28 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
     const allocated = customBudget.allocatedAmount || 0;
 
     // Calculate paid/unpaid in ONE pass to prevent double-counting
-    let paidBase = 0;
-    let unpaidBase = 0;
+    let paid = 0;
+    let unpaid = 0;
 
     expenses.forEach(t => {
         if (t.isPaid) {
-            paidBase += t.amount;
+            paid += t.amount;
         } else {
-            unpaidBase += t.amount;
+            unpaid += t.amount;
         }
     });
 
-    const spent = paidBase + unpaidBase;
+    const spent = paid + unpaid;
 
     return {
         allocated,
         spent,
-        unpaid: unpaidBase,
+        unpaid,
         remaining: allocated - spent,
-        paid: {
-            totalBaseCurrencyAmount: paidBase,
-            foreignCurrencyDetails: []
-        },
+        paid,
         totalAllocatedUnits: allocated,
         totalSpentUnits: spent,
-        totalUnpaidUnits: unpaidBase,
+        totalUnpaidUnits: unpaid,
         totalTransactionCount: expenses.length
     };
 };
