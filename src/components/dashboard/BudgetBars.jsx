@@ -182,6 +182,7 @@ export default function BudgetBars({
                                     <BudgetBar
                                         key={budget.id}
                                         budget={budget}
+                                        stats={budget.stats}
                                         isCustom={true}
                                         settings={settings}
                                         hideActions={true}
