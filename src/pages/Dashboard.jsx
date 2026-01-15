@@ -99,16 +99,19 @@ export default function Dashboard() {
 
     // Direct Calculation: System Budgets (Month-Only Transactions)
     const systemBudgetsData = useMemo(() => {
-        return systemBudgets.map(sb => getSystemBudgetStats(
-            sb, 
-            transactions, 
-            categories, 
-            allCustomBudgets, 
-            monthStart, 
-            monthEnd, 
-            monthlyIncome, 
-            settings
-        ));
+        return systemBudgets.map(sb => ({
+            ...sb, // CRITICAL: Keep id, systemBudgetType, etc.
+            ...getSystemBudgetStats(
+                sb, 
+                transactions, 
+                categories, 
+                allCustomBudgets, 
+                monthStart, 
+                monthEnd, 
+                monthlyIncome, 
+                settings
+            )
+        }));
     }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
     // Direct Calculation: Custom Budgets (Bridged Transactions)
