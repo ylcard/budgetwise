@@ -136,12 +136,14 @@ export default function BudgetDetail() {
         // queryFn: () => base44.entities.Transaction.list('date', 1000),
 
         // 1. Include specific budget dates in the key so we don't serve stale data from other months
-        queryKey: ['transactions', budget?.id, budget?.startDate, budget?.endDate],
+        // queryKey: ['transactions', budget?.id, budget?.startDate, budget?.endDate],
+        queryKey: ['transactions', budget?.id, relatedCustomBudgetsForDisplay?.map(cb => cb.id)],
         queryFn: async () => {
             // FIX: Use .filter() instead of .list()
 
             // 1. For Custom Budgets, we can filter precisely by ID (fastest)
             if (!budget.isSystemBudget) {
+                // If viewing a Custom Budget directly, get ALL its transactions
                 return await base44.entities.Transaction.filter({ customBudgetId: budgetId });
             }
 
@@ -154,15 +156,25 @@ export default function BudgetDetail() {
 
             // 2. For System Budgets: Filter by Date Range (Range Match)
             // We are betting on standard MongoDB-style operators ($gte, $lte)
+            // return await base44.entities.Transaction.filter({
+            //     date: {
+            //         $gte: budget.startDate,
+            //         $lte: budget.endDate
+            //     }
+            // If viewing a System Budget, get its transactions AND related custom transactions
+            const relatedIds = relatedCustomBudgetsForDisplay.map(cb => cb.id);
+
             return await base44.entities.Transaction.filter({
-                date: {
-                    $gte: budget.startDate,
-                    $lte: budget.endDate
-                }
+                $or: [
+                    // Match date range for the System Budget
+                    { date: { $gte: budget.startDate, $lte: budget.endDate } },
+                    // Match specific IDs for related Custom Budgets shown on the page
+                    { customBudgetId: { $in: relatedIds } }
+                ]
             });
         },
         initialData: [],
-        enabled: !!budget
+        enabled: !!budget && (budget.isSystemBudget ? !!relatedCustomBudgetsForDisplay : true)
     });
 
     // Fetch income for savings calculation
