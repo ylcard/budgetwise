@@ -156,7 +156,7 @@ export default function Budgets() {
                         <CardContent>
                             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {sortedCustomBudgets.map((budget) => {
-                                    const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
+                                    const stats = getCustomBudgetStats(budget, transactions);
 
                                     return (
                                         <BudgetCard
