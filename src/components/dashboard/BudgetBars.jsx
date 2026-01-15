@@ -189,6 +189,7 @@ export default function BudgetBars({
                                 ) : (
                                     <div key={budget.id} className="flex-1 min-w-0">
                                         <BudgetCard
+                                            key={budget.id}
                                             budget={budget}
                                             stats={budget.stats}
                                             settings={settings}
