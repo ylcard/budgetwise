@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -41,16 +41,21 @@ export default function Dashboard() {
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
 
     // Data fetching
-    // DEPRECATED: const { transactions } = useTransactions();
-    // OPTIMIZATION: Pass date range to fetch only relevant data
+    // GLOBAL SET: Strictly transactions within this month's dates
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    // DEPRECATED: const { allCustomBudgets } = useCustomBudgetsAll(user);
-    // DEPRECATED: const { allSystemBudgets } = useSystemBudgetsAll(user);
     const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+
+    // BRIDGE SET: Fetch transactions linked to active custom budgets (regardless of date)
+    const activeCustomBudgetIds = useMemo(() => 
+        allCustomBudgets.map(cb => cb.id), 
+    [allCustomBudgets]);
+
+    // Fetching the second set specifically for budget bars
+    const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
 
     // System budget management (auto-creation/update)
     useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
@@ -72,7 +77,7 @@ export default function Dashboard() {
         settings
     );
 
-    // NEW: Calculate the aggregated "Needs" and "Wants" totals using the new simplified logic
+    // Global breakdown stays strictly Month-Only
     const { aggregateNeedsTotal, aggregateWantsTotal, detailedBreakdown } = useMonthlyBreakdown(
         transactions,
         categories,
@@ -89,14 +94,13 @@ export default function Dashboard() {
         selectedYear
     );
 
-    // UPDATED 15-Jan-2026: Only calculate system budgets data for RemainingBudgetCard
-    // BudgetBars now calculates its own stats internally
-    const { systemBudgetsData } =
+    // Budget Bars use the bridgedTransactions to catch "out-of-month" payments
+    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
         useBudgetBarsData(
             systemBudgets,
             activeCustomBudgets,
             allCustomBudgets,
-            transactions,
+            bridgedTransactions,
             categories,
             goals,
             monthlyIncome,
@@ -199,6 +203,10 @@ export default function Dashboard() {
                             systemBudgets={systemBudgets}
                             customBudgets={activeCustomBudgets}
                             allCustomBudgets={allCustomBudgets}
+                            // Pass pre-calculated data to avoid double calculation
+                            preCalculatedSystemData={systemBudgetsData}
+                            preCalculatedCustomData={customBudgetsData}
+                            preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
                             transactions={transactions}
                             showSystem={false}
                             categories={categories}
