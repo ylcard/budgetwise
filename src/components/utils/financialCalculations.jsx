@@ -196,7 +196,7 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
  * @param {string} baseCurrency - Base currency for display (default: 'USD')
  * @returns {Object} Budget statistics with paid, unpaid, spent, remaining amounts
  */
-export const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd, baseCurrency = 'USD') => {
+export const getCustomBudgetStats = (customBudget, transactions) => {
     // CRITICAL: Filter ONLY by customBudgetId - NO date filtering
     // Custom budgets show ALL expenses linked to them, regardless of when they were paid
     const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
