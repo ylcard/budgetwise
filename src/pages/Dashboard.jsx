@@ -15,7 +15,6 @@ import {
     useMonthlyIncome,
     useDashboardSummary,
     useActiveBudgets,
-    useBudgetBarsData,
     useMonthlyBreakdown
 } from "../components/hooks/useDerivedData";
 import {
