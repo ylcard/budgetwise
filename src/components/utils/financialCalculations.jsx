@@ -2,7 +2,7 @@
  * @file Financial Calculations Utilities
  * @description Centralized functions for calculating expenses, income, and budget statistics.
  * @created 11-Nov-2025
- * @updated 27-Nov-2025 - Optimized performance (single-pass reducers), removed legacy wallet logic, fixed currency math.
+ * @updated 15-Jan-2026 - Fixed getCustomBudgetStats to aggregate all linked transactions regardless of payment date.
  */
 
 import { isDateInRange } from "./dateUtils";
@@ -172,20 +172,19 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
 
 /**
  * Calculates statistics for a single custom budget.
- * FIX: Now uses t.amount (Base Currency) strictly to avoid currency mixing.
+ * FIXED 15-Jan-2026: Custom Budgets should aggregate ALL linked transactions, regardless of when they were paid.
+ * The monthStart/monthEnd parameters are kept for API compatibility but are now IGNORED for the budget's own stats.
+ * Date filtering is only relevant for System Budgets or monthly views, not for Custom Budget aggregation.
  */
 export const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd, baseCurrency = 'USD') => {
-    // If dates provided, filter by range, otherwise take all for that budget ID
-    const budgetTransactions = transactions.filter(t => {
-        if (t.customBudgetId !== customBudget.id) return false;
-        if (monthStart && monthEnd) return isTransactionInDateRange(t, monthStart, monthEnd);
-        return true;
-    });
+    // FIXED 15-Jan-2026: Filter ONLY by customBudgetId - no date filtering
+    // Custom budgets show all expenses linked to them, regardless of payment date
+    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
 
     const expenses = budgetTransactions.filter(t => t.type === 'expense');
     const allocated = customBudget.allocatedAmount || 0;
 
-    // CRITICAL FIX 13-Jan-2026: Calculate paid/unpaid in ONE pass to prevent double-counting
+    // Calculate paid/unpaid in ONE pass to prevent double-counting
     let paidBase = 0;
     let unpaidBase = 0;
 
