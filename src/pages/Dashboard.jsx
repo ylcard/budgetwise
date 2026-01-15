@@ -89,8 +89,9 @@ export default function Dashboard() {
         selectedYear
     );
 
-    // LIFTED STATE: Calculate budget stats here so we can pass them to RemainingBudgetCard
-    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
+    // UPDATED 15-Jan-2026: Only calculate system budgets data for RemainingBudgetCard
+    // BudgetBars now calculates its own stats internally
+    const { systemBudgetsData } =
         useBudgetBarsData(
             systemBudgets,
             activeCustomBudgets,
@@ -198,10 +199,6 @@ export default function Dashboard() {
                             systemBudgets={systemBudgets}
                             customBudgets={activeCustomBudgets}
                             allCustomBudgets={allCustomBudgets}
-                            // Pass pre-calculated data to avoid double calculation
-                            preCalculatedSystemData={systemBudgetsData}
-                            preCalculatedCustomData={customBudgetsData}
-                            preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
                             transactions={transactions}
                             showSystem={false}
                             categories={categories}

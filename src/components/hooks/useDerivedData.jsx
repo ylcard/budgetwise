@@ -444,6 +444,8 @@ export const useTransactionFiltering = (transactions) => {
     };
 };
 
+// UPDATED 15-Jan-2026: Simplified to use latest getCustomBudgetStats logic
+// Custom budgets now aggregate ALL linked transactions (no date filtering)
 export const useBudgetBarsData = (
     systemBudgets,
     customBudgets,
@@ -458,7 +460,7 @@ export const useBudgetBarsData = (
     return useMemo(() => {
         const goalMode = settings?.goalMode ?? true;
 
-        const historicalAverage = getHistoricalAverageIncome(transactions, (new Date().getMonth()), (new Date().getFullYear())); // Fallback if no month selected, though BudgetBars usually has context
+        const historicalAverage = getHistoricalAverageIncome(transactions, (new Date().getMonth()), (new Date().getFullYear()));
 
         const system = systemBudgets.sort((a, b) => {
             const orderA = FINANCIAL_PRIORITIES[a.systemBudgetType]?.order ?? 99;
@@ -468,38 +470,22 @@ export const useBudgetBarsData = (
 
         const custom = customBudgets;
 
-        // Map to full goal object so we can access percentage OR amount
         const goalMap = createEntityMap(goals, 'priority', (goal) => goal);
 
-        // Get date range from first system budget (they should all have the same range)
         const startDate = system.length > 0 ? system[0].startDate : null;
         const endDate = system.length > 0 ? system[0].endDate : null;
 
-        // Parse month boundaries for filtering
-        const monthStartDate = startDate ? parseDate(startDate) : null;
-        const monthEndDate = endDate ? parseDate(endDate) : null;
-
         const systemBudgetsData = system.map(sb => {
             const goal = goalMap[sb.systemBudgetType];
-
-            // 1. Resolve the Limit (Amount) based on mode
-            // const targetAmount = resolveBudgetLimit(goal, monthlyIncome, goalMode);
-
-            // Pass settings and historicalAverage
             const targetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
 
-            // 2. Resolve the Percentage for display
-            // If Absolute Mode: Calculate back-percentage (Amount / Income)
-            // If Percentage Mode: Use the stored percentage
             let targetPercentage = 0;
-            if (goalMode === false) { // Absolute
+            if (goalMode === false) {
                 targetPercentage = monthlyIncome > 0 ? (targetAmount / monthlyIncome) * 100 : 0;
-            } else { // Percentage
+            } else {
                 targetPercentage = goal?.target_percentage || 0;
             }
 
-            // Use centralized calculation
-            // const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome, goalMode);
             const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome, settings, historicalAverage);
 
             const maxHeight = Math.max(targetAmount, stats.totalSpent);
@@ -509,9 +495,6 @@ export const useBudgetBarsData = (
             return {
                 ...sb,
                 stats: {
-                    // Trying to fix showing 0%
-                    // ...stats,
-                    // Map keys to match BudgetBar expectations if different
                     totalAllocatedUnits: targetAmount,
                     paid: {
                         totalBaseCurrencyAmount: stats.paidAmount
@@ -533,15 +516,13 @@ export const useBudgetBarsData = (
             };
         });
 
-        // Custom budgets calculation - UPDATED 13-Jan-2026: Sort by date proximity to today
+        // UPDATED 15-Jan-2026: Uses latest getCustomBudgetStats (no date params)
         const customBudgetsData = custom.map(cb => {
-            // CRITICAL FIX 13-Jan-2026: Pass string dates, not Date objects
-            const stats = getCustomBudgetStats(cb, transactions, startDate, endDate, baseCurrency);
+            const stats = getCustomBudgetStats(cb, transactions);
 
-            // Calculate totals for BudgetBars
             const totalBudget = stats.allocated;
             const paidAmount = stats.paid.totalBaseCurrencyAmount;
-            const unpaidAmount = stats.unpaid; // FIXED 13-Jan-2026: Direct property, not nested
+            const unpaidAmount = stats.unpaid.totalBaseCurrencyAmount;
 
             const totalSpent = paidAmount + unpaidAmount;
 
@@ -556,6 +537,12 @@ export const useBudgetBarsData = (
                     paidAmount,
                     totalBudget,
                     totalAllocatedUnits: stats.allocated,
+                    paid: {
+                        totalBaseCurrencyAmount: paidAmount
+                    },
+                    unpaid: {
+                        totalBaseCurrencyAmount: unpaidAmount
+                    },
                     totalSpentUnits: stats.spent,
                     totalUnpaidUnits: unpaidAmount
                 },
@@ -566,7 +553,6 @@ export const useBudgetBarsData = (
                 overBudgetAmount
             };
         }).sort((a, b) => {
-            // ADDED 13-Jan-2026: Sort by date proximity to today
             const now = new Date();
             const aStart = new Date(a.startDate);
             const bStart = new Date(b.startDate);
@@ -580,7 +566,6 @@ export const useBudgetBarsData = (
         const totalActualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
         const savingsShortfall = Math.max(0, savingsTargetAmount - totalActualSavings);
 
-        // Properly integrate totalActualSavings into savingsBudget for BudgetBar rendering
         if (savingsBudget) {
             savingsBudget.actualSavings = totalActualSavings;
             savingsBudget.savingsTarget = savingsTargetAmount;
@@ -594,7 +579,6 @@ export const useBudgetBarsData = (
             savingsTarget: savingsTargetAmount,
             savingsShortfall
         };
-        // }, [systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings]);
     }, [systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings]);
 };
 

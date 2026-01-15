@@ -20,9 +20,10 @@ export default function BudgetBars({
     monthlyIncome,
     baseCurrency,
     onCreateBudget,
-    preCalculatedSystemData,
-    preCalculatedCustomData,
-    preCalculatedSavings,
+    // REMOVED 15-Jan-2026: Eliminated preCalculated props - BudgetBars now calculates its own stats
+    // preCalculatedSystemData,
+    // preCalculatedCustomData,
+    // preCalculatedSavings,
     showSystem = true
 }) {
 
@@ -39,13 +40,9 @@ export default function BudgetBars({
     const [customStartIndex, setCustomStartIndex] = useState(0);
     const barsPerPage = viewMode === 'cards' ? 4 : 7;
 
-    const calculatedData = useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings);
-
-    const systemBudgetsData = preCalculatedSystemData || calculatedData.systemBudgetsData;
-    const customBudgetsData = preCalculatedCustomData || calculatedData.customBudgetsData;
-    const totalActualSavings = preCalculatedSavings?.totalActualSavings ?? calculatedData.totalActualSavings;
-    const savingsTarget = preCalculatedSavings?.savingsTarget ?? calculatedData.savingsTarget;
-    const savingsShortfall = preCalculatedSavings?.savingsShortfall ?? calculatedData.savingsShortfall;
+    // UPDATED 15-Jan-2026: BudgetBars now always calculates its own stats using the latest getCustomBudgetStats
+    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } = 
+        useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings);
 
     const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
     const canScrollLeft = customStartIndex > 0;
