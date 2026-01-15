@@ -413,7 +413,7 @@ export default function BudgetDetail() {
             // 2. Pass settings and histAvg
             return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome, settings, histAvg);
         } else {
-            return getCustomBudgetStats(budget, transactions, null, null, settings.baseCurrency);
+            return getCustomBudgetStats(budget, transactions);
         }
         // }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings.baseCurrency]);
     }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
