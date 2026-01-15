@@ -176,7 +176,7 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
  * The monthStart/monthEnd parameters are kept for API compatibility but are now IGNORED for the budget's own stats.
  * Date filtering is only relevant for System Budgets or monthly views, not for Custom Budget aggregation.
  */
-export const getCustomBudgetStats = (customBudget, transactions) => {
+export const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd, baseCurrency = 'USD') => {
     // FIXED 15-Jan-2026: Filter ONLY by customBudgetId - no date filtering
     // Custom budgets show all expenses linked to them, regardless of payment date
     const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);

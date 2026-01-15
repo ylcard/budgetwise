@@ -9,34 +9,6 @@ import BudgetCard from "../budgets/BudgetCard";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-const CustomBudgetLoader = ({ budget, viewMode, settings }) => {
-    const { data: transactions = [] } = useQuery({
-        queryKey: ['budgetTransactions', budget.id],
-        queryFn: () => base44.entities.Transaction.filter({ customBudgetId: budget.id }),
-        staleTime: 1000 * 60 * 5,
-    });
-
-    const stats = useMemo(() => getCustomBudgetStats(budget, transactions), [budget, transactions]);
-
-    if (viewMode === 'bars') {
-        return (
-            <BudgetBar
-                budget={budget}
-                stats={stats}
-                isCustom={true}
-                settings={settings}
-                hideActions={true}
-            />
-        );
-    }
-
-    return (
-        <div className="flex-1 min-w-0">
-            <BudgetCard budget={budget} stats={stats} settings={settings} size="sm" />
-        </div>
-    );
-};
-
 export default function BudgetBars({
     systemBudgets,
     customBudgets,
@@ -70,19 +42,14 @@ export default function BudgetBars({
     const calculatedData = useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings);
 
     const systemBudgetsData = preCalculatedSystemData || calculatedData.systemBudgetsData;
-    // const customBudgetsData = preCalculatedCustomData || calculatedData.customBudgetsData;
-    // Use the raw customBudgets list for pagination; loaders will fetch stats individually
-    const customBudgetsList = customBudgets || [];
+    const customBudgetsData = preCalculatedCustomData || calculatedData.customBudgetsData;
     const totalActualSavings = preCalculatedSavings?.totalActualSavings ?? calculatedData.totalActualSavings;
     const savingsTarget = preCalculatedSavings?.savingsTarget ?? calculatedData.savingsTarget;
     const savingsShortfall = preCalculatedSavings?.savingsShortfall ?? calculatedData.savingsShortfall;
 
-    // const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
-    // const canScrollLeft = customStartIndex > 0;
-    // const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
-    const visibleCustomBudgets = customBudgetsList.slice(customStartIndex, customStartIndex + barsPerPage);
+    const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
     const canScrollLeft = customStartIndex > 0;
-    const canScrollRight = customStartIndex + barsPerPage < customBudgetsList.length;
+    const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
 
     // 3. Local-only toggle handler
     // This allows the user to temporarily switch views without affecting their saved preference
@@ -159,7 +126,7 @@ export default function BudgetBars({
                 </Card>
             )}
 
-            {customBudgetsList.length > 0 && (
+            {customBudgetsData.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -168,7 +135,7 @@ export default function BudgetBars({
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            {customBudgetsList.length > barsPerPage && (
+                            {customBudgetsData.length > barsPerPage && (
                                 <>
                                     <CustomButton
                                         variant="outline"
@@ -211,12 +178,24 @@ export default function BudgetBars({
                         </div>
                         <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                             {visibleCustomBudgets.map((budget) => (
-                                <CustomBudgetLoader
-                                    key={budget.id}
-                                    budget={budget}
-                                    viewMode={viewMode}
-                                    settings={settings}
-                                />
+                                viewMode === 'bars' ? (
+                                    <BudgetBar
+                                        key={budget.id}
+                                        budget={budget}
+                                        isCustom={true}
+                                        settings={settings}
+                                        hideActions={true}
+                                    />
+                                ) : (
+                                    <div key={budget.id} className="flex-1 min-w-0">
+                                        <BudgetCard
+                                            budget={budget}
+                                            stats={budget.stats}
+                                            settings={settings}
+                                            size="sm"
+                                        />
+                                    </div>
+                                )
                             ))}
                         </div>
 

@@ -1,6 +1,4 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,21 +16,6 @@ import { getCustomBudgetStats } from "../components/utils/financialCalculations"
 import BudgetCard from "../components/budgets/BudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
-
-// NEW: Helper component to fetch lifetime transactions for a specific custom budget
-function CustomBudgetCardLoader({ budget, settings, onActivateBudget }) {
-    const { data: transactions = [] } = useQuery({
-        queryKey: ['budgetTransactions', budget.id],
-        queryFn: () => base44.entities.Transaction.filter({ customBudgetId: budget.id }),
-        // Keep data fresh but don't spam the API on every hover
-        staleTime: 1000 * 60 * 5, 
-    });
-
-    // Calculate stats using the budget's specific lifetime transactions
-    const stats = useMemo(() => getCustomBudgetStats(budget, transactions), [budget, transactions]);
-
-    return <BudgetCard budget={budget} stats={stats} settings={settings} onActivateBudget={onActivateBudget} />;
-}
 
 export default function Budgets() {
     const { user, settings } = useSettings();
@@ -173,13 +156,13 @@ export default function Budgets() {
                         <CardContent>
                             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {sortedCustomBudgets.map((budget) => {
-                                    // const stats = getCustomBudgetStats(budget, transactions);
+                                    const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
 
                                     return (
-                                        <CustomBudgetCardLoader
+                                        <BudgetCard
                                             key={budget.id}
                                             budget={budget}
-                                            // stats={stats}
+                                            stats={stats}
                                             settings={settings}
                                             onActivateBudget={handleActivateBudget}
                                         />

@@ -410,12 +410,12 @@ export default function BudgetDetail() {
             const bDate = new Date(budget.startDate);
             const histAvg = getHistoricalAverageIncome(transactions, bDate.getMonth(), bDate.getFullYear());
 
+            // 2. Pass settings and histAvg
             return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome, settings, histAvg);
         } else {
-            // return getCustomBudgetStats(budget, transactions, null, null, settings.baseCurrency);
-            // Use the same updated signature as the loaders
-            return getCustomBudgetStats(budget, transactions, settings.baseCurrency);
+            return getCustomBudgetStats(budget, transactions, null, null, settings.baseCurrency);
         }
+        // }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings.baseCurrency]);
     }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
     const allocationStats = useMemo(() => {
@@ -689,10 +689,7 @@ export default function BudgetDetail() {
                         <CardContent>
                             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {relatedCustomBudgetsForDisplay.map((customBudget) => {
-                                    // const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
-                                    // FIX: Pass null for dates to get LIFETIME stats for Custom Budgets.
-                                    // Passing monthStart/End forces it to only show what you paid in the current month view.
-                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions);
+                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
 
                                     return (
                                         <BudgetCard

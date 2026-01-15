@@ -36,17 +36,8 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
             unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
         } else {
             alloc = Number(stats?.totalAllocatedUnits ?? 0);
-            // pd = Number(stats?.totalSpentUnits ?? 0);
-            // unpd = Number(stats?.totalUnpaidUnits ?? 0);
-            
-            // FIX: Prioritize 'paidAmount' (explicit paid) over 'totalSpentUnits' (which is often Paid + Unpaid)
-            // If we only have totalSpentUnits, we must subtract unpaid to get the actual paid portion
-            unpd = Number(stats?.totalUnpaidUnits ?? stats?.unpaidAmount ?? 0);
-            
-            pd = Number(
-                stats?.paidAmount ?? 
-                (stats?.totalSpentUnits ? stats.totalSpentUnits - unpd : 0)
-            );
+            pd = Number(stats?.totalSpentUnits ?? 0);
+            unpd = Number(stats?.totalUnpaidUnits ?? 0);
         }
 
         const used = pd + unpd;
