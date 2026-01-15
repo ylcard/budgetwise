@@ -114,6 +114,7 @@ export default function BudgetBars({
                                     <div key={budget.id} className="flex-1 min-w-0">
                                         <BudgetCard
                                             budget={{ ...budget, isSystemBudget: true }}
+                                            stats={budget.stats}
                                             settings={settings}
                                             size="sm"
                                         />
@@ -189,6 +190,7 @@ export default function BudgetBars({
                                     <div key={budget.id} className="flex-1 min-w-0">
                                         <BudgetCard
                                             budget={budget}
+                                            stats={budget.stats}
                                             settings={settings}
                                             size="sm"
                                         />

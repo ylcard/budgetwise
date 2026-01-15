@@ -7,7 +7,7 @@ import { parseDate } from "../utils/dateUtils";
 import { motion } from "framer-motion";
 import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
 
-export default function BudgetCard({ budget, settings, onActivateBudget, size = 'md' }) {
+export default function BudgetCard({ budget, stats, settings, onActivateBudget, size = 'md' }) {
     const isSystemBudget = budget.isSystemBudget || false;
     const isSavings = isSystemBudget && budget.systemBudgetType === 'savings';
 
@@ -26,9 +26,6 @@ export default function BudgetCard({ budget, settings, onActivateBudget, size = 
 
     // Unified Data Calculation
     const { allocated, paid, unpaid, percentage, isOverBudget, remaining, overAmount, statusLabel, statusColor } = useMemo(() => {
-        // Access stats from budget object directly (15-Jan-2026: Unified with BudgetBar pattern)
-        const stats = budget.stats;
-        
         let alloc = 0;
         let pd = 0;
         let unpd = 0;
@@ -88,7 +85,7 @@ export default function BudgetCard({ budget, settings, onActivateBudget, size = 
             statusColor: statColor,
             statusLabel: statLabel
         };
-    }, [budget, isSystemBudget, isSavings]);
+    }, [stats, isSystemBudget, budget, isSavings]);
 
     // Visual Theme Helper
     const theme = useMemo(() => {
