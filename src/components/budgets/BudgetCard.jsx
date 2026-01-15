@@ -32,13 +32,11 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
 
         if (isSystemBudget) {
             alloc = Number(stats?.totalAllocatedUnits ?? budget.budgetAmount ?? 0);
-            // pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? stats?.paid ?? 0);
-            pd = Number(stats?.paid ?? 0);
+            pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? stats?.paidAmount ?? 0);
             unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
         } else {
             alloc = Number(stats?.totalAllocatedUnits ?? 0);
-            // pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? stats?.paid ?? 0);
-            pd = Number(stats?.paid ?? 0);
+            pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? 0);
             unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
         }
 
