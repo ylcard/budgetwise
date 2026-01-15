@@ -540,7 +540,7 @@ export const useBudgetBarsData = (
 
             // Calculate totals for BudgetBars
             const totalBudget = stats.allocated;
-            const paidAmount = stats.paid.totalBaseCurrencyAmount;
+            const paidAmount = stats.paid;
             const unpaidAmount = stats.unpaid; // FIXED 13-Jan-2026: Direct property, not nested
 
             const totalSpent = paidAmount + unpaidAmount;
