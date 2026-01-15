@@ -209,10 +209,12 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
     let unpaid = 0;
 
     expenses.forEach(t => {
+        // Ensure we are working with numbers and using base currency if available
+        const amount = Number(t.baseCurrencyAmount || t.amount || 0);
         if (t.isPaid) {
-            paid += t.amount;
+            paid += amount;
         } else {
-            unpaid += t.amount;
+            unpaid += amount;
         }
     });
 
