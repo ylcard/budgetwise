@@ -221,7 +221,6 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
     return {
         allocated,
         spent,
-        // unpaid: unpaidBase,
         unpaid: {
             totalBaseCurrencyAmount: unpaidBase,
             foreignCurrencyDetails: []
