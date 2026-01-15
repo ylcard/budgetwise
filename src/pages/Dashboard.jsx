@@ -233,7 +233,8 @@ export default function Dashboard() {
                             preCalculatedSystemData={systemBudgetsData}
                             preCalculatedCustomData={customBudgetsData}
                             preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
-                            transactions={transactions}
+                            // transactions={transactions}
+                            bridgedTransactions={bridgedTransactions}
                             showSystem={false}
                             categories={categories}
                             currentMonth={selectedMonth}
