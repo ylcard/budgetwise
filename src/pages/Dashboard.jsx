@@ -94,19 +94,42 @@ export default function Dashboard() {
         selectedYear
     );
 
-    // Budget Bars use the bridgedTransactions to catch "out-of-month" payments
-    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
-        useBudgetBarsData(
-            systemBudgets,
-            activeCustomBudgets,
-            allCustomBudgets,
-            bridgedTransactions,
-            categories,
-            goals,
-            monthlyIncome,
-            settings.baseCurrency,
+    // Direct Calculation: System Budgets (Month-Only Transactions)
+    const systemBudgetsData = useMemo(() => {
+        return systemBudgets.map(sb => getSystemBudgetStats(
+            sb, 
+            transactions, 
+            categories, 
+            allCustomBudgets, 
+            monthStart, 
+            monthEnd, 
+            monthlyIncome, 
             settings
-        );
+        ));
+    }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
+
+    // Direct Calculation: Custom Budgets (Bridged Transactions)
+    const customBudgetsData = useMemo(() => {
+        return activeCustomBudgets.map(cb => {
+            // Filter bridged set specifically for this budget's ID
+            const budgetTransactions = bridgedTransactions.filter(t => t.customBudgetId === cb.id);
+            return getCustomBudgetStats(cb, budgetTransactions);
+        });
+    }, [activeCustomBudgets, bridgedTransactions]);
+
+    // Savings Logic (Month-Only Transactions)
+    const savingsTarget = useMemo(() => {
+        const savingsGoal = goals.find(g => g.priority === 'savings');
+        return savingsGoal ? (monthlyIncome * (savingsGoal.target_percentage / 100)) : 0;
+    }, [goals, monthlyIncome]);
+
+    const totalActualSavings = useMemo(() => {
+        return transactions
+            .filter(t => t.type === 'savings' || (categories.find(c => c.id === t.category_id)?.priority === 'savings'))
+            .reduce((sum, t) => sum + (t.amount || 0), 0);
+    }, [transactions, categories]);
+
+    const savingsShortfall = useMemo(() => Math.max(0, savingsTarget - totalActualSavings), [savingsTarget, totalActualSavings]);
 
     const transactionActions = useTransactionActions({
         onSuccess: () => {
