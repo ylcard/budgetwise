@@ -1,8 +1,9 @@
 import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils";
 
 export default function ExpensesCardContent({ budget, stats, settings }) {
-    const hasPaid = stats.paid.totalBaseCurrencyAmount > 0 || stats.paid.foreignCurrencyDetails.length > 0;
-    const hasUnpaid = stats.unpaid.totalBaseCurrencyAmount > 0 || stats.unpaid.foreignCurrencyDetails.length > 0;
+    // FIXED 15-Jan-2026: Added safety checks for undefined foreignCurrencyDetails
+    const hasPaid = stats.paid.totalBaseCurrencyAmount > 0 || (stats.paid.foreignCurrencyDetails?.length > 0);
+    const hasUnpaid = stats.unpaid.totalBaseCurrencyAmount > 0 || (stats.unpaid.foreignCurrencyDetails?.length > 0);
 
     if (hasPaid && hasUnpaid) {
         return (
@@ -14,7 +15,7 @@ export default function ExpensesCardContent({ budget, stats, settings }) {
                             {formatCurrency(stats.paid.totalBaseCurrencyAmount, settings)}
                         </div>
                     )}
-                    {stats.paid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                    {stats.paid.foreignCurrencyDetails?.map(({ currencyCode, amount }, index) => (
                         <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-gray-700 mt-1">
                             {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
                         </div>
@@ -27,7 +28,7 @@ export default function ExpensesCardContent({ budget, stats, settings }) {
                             {formatCurrency(stats.unpaid.totalBaseCurrencyAmount, settings)}
                         </div>
                     )}
-                    {stats.unpaid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                    {stats.unpaid.foreignCurrencyDetails?.map(({ currencyCode, amount }, index) => (
                         <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-orange-500 mt-1">
                             {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
                         </div>
@@ -44,7 +45,7 @@ export default function ExpensesCardContent({ budget, stats, settings }) {
                         {formatCurrency(stats.paid.totalBaseCurrencyAmount, settings)}
                     </div>
                 )}
-                {stats.paid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                {stats.paid.foreignCurrencyDetails?.map(({ currencyCode, amount }, index) => (
                     <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-gray-700 mt-1">
                         {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
                     </div>
@@ -60,7 +61,7 @@ export default function ExpensesCardContent({ budget, stats, settings }) {
                         {formatCurrency(stats.unpaid.totalBaseCurrencyAmount, settings)}
                     </div>
                 )}
-                {stats.unpaid.foreignCurrencyDetails.map(({ currencyCode, amount }, index) => (
+                {stats.unpaid.foreignCurrencyDetails?.map(({ currencyCode, amount }, index) => (
                     <div key={`${currencyCode}-${index}`} className="text-sm font-semibold text-orange-500 mt-1">
                         {getCurrencySymbol(currencyCode)}{amount.toFixed(2)}
                     </div>
