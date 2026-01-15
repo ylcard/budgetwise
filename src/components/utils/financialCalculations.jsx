@@ -221,12 +221,18 @@ export const getCustomBudgetStats = (customBudget, transactions, monthStart, mon
     return {
         allocated,
         spent,
-        unpaid: unpaidBase,
+        // unpaid: unpaidBase,
+        unpaid: {
+            totalBaseCurrencyAmount: unpaidBase,
+            foreignCurrencyDetails: []
+        },
         remaining: allocated - spent,
         paid: {
             totalBaseCurrencyAmount: paidBase,
             foreignCurrencyDetails: []
         },
+        paidAmount: paidBase,
+        unpaidAmount: unpaidBase,
         totalAllocatedUnits: allocated,
         totalSpentUnits: spent,
         totalUnpaidUnits: unpaidBase,
