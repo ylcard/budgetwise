@@ -2,7 +2,7 @@
  * @file Financial Calculations Utilities
  * @description Centralized functions for calculating expenses, income, and budget statistics.
  * @created 11-Nov-2025
- * @updated 15-Jan-2026 - Fixed getCustomBudgetStats to aggregate all linked transactions regardless of payment date.
+ * @updated 15-Jan-2026 - CRITICAL FIX: Custom Budget calculations now unified across all views (Dashboard, BudgetDetail). Paid and unpaid amounts aggregate ALL linked transactions regardless of payment date or transaction date. Only customBudgetId filtering is applied.
  */
 
 import { isDateInRange } from "./dateUtils";
@@ -171,14 +171,34 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
 };
 
 /**
- * Calculates statistics for a single custom budget.
- * FIXED 15-Jan-2026: Custom Budgets should aggregate ALL linked transactions, regardless of when they were paid.
- * The monthStart/monthEnd parameters are kept for API compatibility but are now IGNORED for the budget's own stats.
- * Date filtering is only relevant for System Budgets or monthly views, not for Custom Budget aggregation.
+ * CRITICAL FIX 15-Jan-2026: Calculates statistics for a single custom budget.
+ * 
+ * UNIFIED CALCULATION LOGIC:
+ * - Aggregates ALL transactions linked to the custom budget (by customBudgetId)
+ * - IGNORES payment dates and transaction dates completely
+ * - Paid amount = Sum of all paid expenses linked to this budget (t.isPaid === true)
+ * - Unpaid amount = Sum of all unpaid expenses linked to this budget (t.isPaid === false)
+ * - This ensures CONSISTENT results across:
+ *   1. Dashboard > Custom Budgets section (Card View)
+ *   2. Dashboard > Custom Budgets section (Bar View)
+ *   3. BudgetDetail > Custom Budgets section (when viewing Wants SB)
+ *   4. BudgetDetail > Individual Custom Budget view
+ * 
+ * IMPORTANT: The monthStart/monthEnd parameters are kept for API compatibility
+ * but are completely IGNORED for custom budget calculations. Date filtering is
+ * only relevant for System Budgets or monthly aggregate views, NOT for individual
+ * custom budget statistics.
+ * 
+ * @param {Object} customBudget - The custom budget entity
+ * @param {Array} transactions - ALL transactions (will be filtered by customBudgetId)
+ * @param {string} monthStart - IGNORED (kept for API compatibility)
+ * @param {string} monthEnd - IGNORED (kept for API compatibility)
+ * @param {string} baseCurrency - Base currency for display (default: 'USD')
+ * @returns {Object} Budget statistics with paid, unpaid, spent, remaining amounts
  */
 export const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd, baseCurrency = 'USD') => {
-    // FIXED 15-Jan-2026: Filter ONLY by customBudgetId - no date filtering
-    // Custom budgets show all expenses linked to them, regardless of payment date
+    // CRITICAL: Filter ONLY by customBudgetId - NO date filtering
+    // Custom budgets show ALL expenses linked to them, regardless of when they were paid
     const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
 
     const expenses = budgetTransactions.filter(t => t.type === 'expense');
