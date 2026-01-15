@@ -689,8 +689,11 @@ export default function BudgetDetail() {
                         <CardContent>
                             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {relatedCustomBudgetsForDisplay.map((customBudget) => {
-                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
-
+                                    // const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
+                                    // FIX: Pass null for dates to get LIFETIME stats for Custom Budgets.
+                                    // Passing monthStart/End forces it to only show what you paid in the current month view.
+                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions, null, null);
+                                    
                                     return (
                                         <BudgetCard
                                             key={customBudget.id}
