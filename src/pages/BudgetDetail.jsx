@@ -692,7 +692,7 @@ export default function BudgetDetail() {
                                     // const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
                                     // FIX: Pass null for dates to get LIFETIME stats for Custom Budgets.
                                     // Passing monthStart/End forces it to only show what you paid in the current month view.
-                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions, null, null);
+                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions);
                                     
                                     return (
                                         <BudgetCard
