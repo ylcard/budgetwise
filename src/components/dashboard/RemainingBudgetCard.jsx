@@ -472,11 +472,11 @@ export default function RemainingBudgetCard({
             initial={{ width: 0 }}
             animate={{ width: `${width}%` }}
             transition={fluidSpring}
-            className={`h-full relative group cursor-default overflow-hidden ${className}`}
+            className={`h-full relative group ${to ? 'cursor-pointer' : 'cursor-default'} overflow-hidden ${className}`}
             style={{ backgroundColor: color, ...style }}
         >
             {to ? (
-                <Link to={to} className="flex items-center justify-center h-full w-full hover:brightness-110 transition-all">
+                <Link to={to} className="flex items-center justify-center h-full w-full hover:brightness-110 transition-all z-20">
                     {children}
                 </Link>
             ) : (
@@ -574,7 +574,7 @@ export default function RemainingBudgetCard({
                     className="h-full relative border-r border-white/20"
                 >
                     <Link
-                        to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : '#'}
+                        to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
                         className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
                     >
                         {needsSegs.safePaid > 0 && (
@@ -603,7 +603,7 @@ export default function RemainingBudgetCard({
                     className="h-full relative border-r border-white/20"
                 >
                     <Link
-                        to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : '#'}
+                        to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
                         className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
                     >
                         {wantsSegs.safePaid > 0 && (
