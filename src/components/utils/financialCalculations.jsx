@@ -196,7 +196,7 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
  * @param {string} baseCurrency - Base currency for display (default: 'USD')
  * @returns {Object} Budget statistics with paid, unpaid, spent, remaining amounts
  */
-export const getCustomBudgetStats = (customBudget, transactions) => {
+export const getCustomBudgetStats = (customBudget, transactions, monthStart, monthEnd, baseCurrency = 'USD') => {
     // CRITICAL: Filter ONLY by customBudgetId - NO date filtering
     // Custom budgets show ALL expenses linked to them, regardless of when they were paid
     const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
@@ -205,30 +205,31 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
     const allocated = customBudget.allocatedAmount || 0;
 
     // Calculate paid/unpaid in ONE pass to prevent double-counting
-    let paid = 0;
-    let unpaid = 0;
+    let paidBase = 0;
+    let unpaidBase = 0;
 
     expenses.forEach(t => {
-        // Ensure we are working with numbers and using base currency if available
-        const amount = Number(t.baseCurrencyAmount || t.amount || 0);
         if (t.isPaid) {
-            paid += amount;
+            paidBase += t.amount;
         } else {
-            unpaid += amount;
+            unpaidBase += t.amount;
         }
     });
 
-    const spent = paid + unpaid;
+    const spent = paidBase + unpaidBase;
 
     return {
         allocated,
         spent,
-        unpaid,
+        unpaid: unpaidBase,
         remaining: allocated - spent,
-        paid,
+        paid: {
+            totalBaseCurrencyAmount: paidBase,
+            foreignCurrencyDetails: []
+        },
         totalAllocatedUnits: allocated,
         totalSpentUnits: spent,
-        totalUnpaidUnits: unpaid,
+        totalUnpaidUnits: unpaidBase,
         totalTransactionCount: expenses.length
     };
 };

@@ -536,11 +536,11 @@ export const useBudgetBarsData = (
         // Custom budgets calculation - UPDATED 13-Jan-2026: Sort by date proximity to today
         const customBudgetsData = custom.map(cb => {
             // CRITICAL FIX 13-Jan-2026: Pass string dates, not Date objects
-            const stats = getCustomBudgetStats(cb, transactions);
+            const stats = getCustomBudgetStats(cb, transactions, startDate, endDate, baseCurrency);
 
             // Calculate totals for BudgetBars
             const totalBudget = stats.allocated;
-            const paidAmount = stats.paid;
+            const paidAmount = stats.paid.totalBaseCurrencyAmount;
             const unpaidAmount = stats.unpaid; // FIXED 13-Jan-2026: Direct property, not nested
 
             const totalSpent = paidAmount + unpaidAmount;

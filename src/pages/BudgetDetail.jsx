@@ -413,7 +413,7 @@ export default function BudgetDetail() {
             // 2. Pass settings and histAvg
             return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome, settings, histAvg);
         } else {
-            return getCustomBudgetStats(budget, transactions);
+            return getCustomBudgetStats(budget, transactions, null, null, settings.baseCurrency);
         }
         // }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings.baseCurrency]);
     }, [budget, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
@@ -689,7 +689,7 @@ export default function BudgetDetail() {
                         <CardContent>
                             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {relatedCustomBudgetsForDisplay.map((customBudget) => {
-                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions);
+                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
 
                                     return (
                                         <BudgetCard
