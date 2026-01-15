@@ -689,7 +689,7 @@ export default function BudgetDetail() {
                         <CardContent>
                             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {relatedCustomBudgetsForDisplay.map((customBudget) => {
-                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions, monthStart, monthEnd);
+                                    const customBudgetStats = getCustomBudgetStats(customBudget, transactions);
 
                                     return (
                                         <BudgetCard
