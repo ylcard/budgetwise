@@ -36,8 +36,8 @@ export default function BudgetCard({ budget, stats, settings, onActivateBudget, 
             unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
         } else {
             alloc = Number(stats?.totalAllocatedUnits ?? 0);
-            pd = Number(stats?.totalSpentUnits ?? 0);
-            unpd = Number(stats?.totalUnpaidUnits ?? 0);
+            pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? stats?.paid ?? 0);
+            unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
         }
 
         const used = pd + unpd;
