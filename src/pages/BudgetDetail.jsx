@@ -130,51 +130,32 @@ export default function BudgetDetail() {
     // 1. Dependent on 'budget' loading (avoids fetching wrong data).
     // 2. Dynamic Query Key: Re-fetches if you switch budgets.
     // 3. Date Constraint: We attempt to fetch only relevant data (Conceptually).
+    // 1. First, define the IDs we need to fetch (Move this logic UP)
+    const relatedCustomBudgetIds = useMemo(() => {
+        if (!budget || !budget.isSystemBudget || budget.systemBudgetType !== 'wants') return [];
+
+        return allCustomBudgets
+            .filter(cb => doDateRangesOverlap(cb.startDate, cb.endDate, budget.startDate, budget.endDate))
+            .map(cb => cb.id);
+    }, [budget, allCustomBudgets]);
+
+    // 2. Now use those IDs in the transaction query
     const { data: transactions = [] } = useQuery({
-        // Deprecating due to inefficiency
-        // queryKey: ['transactions'],
-        // queryFn: () => base44.entities.Transaction.list('date', 1000),
-
-        // 1. Include specific budget dates in the key so we don't serve stale data from other months
-        // queryKey: ['transactions', budget?.id, budget?.startDate, budget?.endDate],
-        queryKey: ['transactions', budget?.id, relatedCustomBudgetsForDisplay?.map(cb => cb.id)],
+        queryKey: ['transactions', budget?.id, relatedCustomBudgetIds],
         queryFn: async () => {
-            // FIX: Use .filter() instead of .list()
-
-            // 1. For Custom Budgets, we can filter precisely by ID (fastest)
             if (!budget.isSystemBudget) {
-                // If viewing a Custom Budget directly, get ALL its transactions
                 return await base44.entities.Transaction.filter({ customBudgetId: budgetId });
             }
 
-            // 2. For System Budgets (Date Range), we still fetch recent history
-            // as the docs don't explicitly show date-range operators (like $gte).
-            // But we use the correct method signature now.
-
-            // testing
-            // return await base44.entities.Transaction.list('date', 2000);
-
-            // 2. For System Budgets: Filter by Date Range (Range Match)
-            // We are betting on standard MongoDB-style operators ($gte, $lte)
-            // return await base44.entities.Transaction.filter({
-            //     date: {
-            //         $gte: budget.startDate,
-            //         $lte: budget.endDate
-            //     }
-            // If viewing a System Budget, get its transactions AND related custom transactions
-            const relatedIds = relatedCustomBudgetsForDisplay.map(cb => cb.id);
-
             return await base44.entities.Transaction.filter({
                 $or: [
-                    // Match date range for the System Budget
                     { date: { $gte: budget.startDate, $lte: budget.endDate } },
-                    // Match specific IDs for related Custom Budgets shown on the page
-                    { customBudgetId: { $in: relatedIds } }
+                    { customBudgetId: { $in: relatedCustomBudgetIds } }
                 ]
             });
         },
         initialData: [],
-        enabled: !!budget && (budget.isSystemBudget ? !!relatedCustomBudgetsForDisplay : true)
+        enabled: !!budget,
     });
 
     // Fetch income for savings calculation
