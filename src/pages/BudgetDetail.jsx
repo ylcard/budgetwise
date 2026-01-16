@@ -479,6 +479,7 @@ export default function BudgetDetail() {
                         {/* ADDED: 16-Jan-2026 - Expense filters */}
                         <ExpenseFilters
                             categories={categories}
+                            transactions={budgetTransactions}
                             filters={expenseFilters}
                             onFilterChange={setExpenseFilters}
                             activeFilterCount={activeFilterCount}
