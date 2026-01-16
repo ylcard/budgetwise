@@ -9,10 +9,10 @@ import { motion } from "framer-motion";
 const getSpendByDayX = (allTransactions, targetMonth, targetYear, dayLimit) => {
     return allTransactions.reduce((sum, t) => {
         const tDate = new Date(t.date || t.created_date); // Adjust key if needed
-        
+
         // 1. Match Month/Year
         if (tDate.getMonth() !== targetMonth || tDate.getFullYear() !== targetYear) return sum;
-        
+
         // 2. Stop if transaction is after "Day X"
         if (tDate.getDate() > dayLimit) return sum;
 
@@ -48,7 +48,7 @@ export default function ReportStats({
     // const prevPaidExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
     const prevPaidExpenses = prevTransactions.reduce((sum, t) => {
         // If your DB doesn't use 'type', remove the condition and just return sum + t.amount
-        if (t.category?.name === 'Income' || t.type === 'income') return sum; 
+        if (t.category?.name === 'Income' || t.type === 'income') return sum;
         return sum + (Number(t.amount) || 0);
     }, 0);
 
@@ -198,48 +198,107 @@ export function FinancialHealthScore({
     if (isLoading) return null;
 
     // 1. Current Month Data
-    const currentExpenses = Math.abs(getMonthlyPaidExpenses(transactions, startDate, endDate));
-    const currentNet = monthlyIncome - currentExpenses;
-    const currentSavingsRate = monthlyIncome > 0 ? (currentNet / monthlyIncome) : 0;
+    // const currentExpenses = Math.abs(getMonthlyPaidExpenses(transactions, startDate, endDate));
+    // const currentNet = monthlyIncome - currentExpenses;
+    // const currentSavingsRate = monthlyIncome > 0 ? (currentNet / monthlyIncome) : 0;
 
     // 2. Previous Month Data (Approximate using available prevTransactions)
     // const prevExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
-    const prevExpenses = prevTransactions.reduce((sum, t) => {
-        if (t.category?.name === 'Income' || t.type === 'income') return sum; 
-        return sum + (Number(t.amount) || 0);
-    }, 0);
+    // const prevExpenses = prevTransactions.reduce((sum, t) => {
+    //     if (t.category?.name === 'Income' || t.type === 'income') return sum; 
+    //     return sum + (Number(t.amount) || 0);
+    // }, 0);
+
+    // --- INTELLIGENT PACING ALGORITHM ---    
+    const today = new Date();
+    // If viewing current month, compare "Day 1 to Today". If past month, compare "Day 1 to 31".
+    const isCurrentMonthView = today.getMonth() === startDate.getMonth() && today.getFullYear() === startDate.getFullYear();
+    const dayCursor = isCurrentMonthView ? today.getDate() : new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+
+    // 1. Current Spend (Day 1 to X)
+    const currentSpend = getSpendByDayX(transactions, startDate.getMonth(), startDate.getFullYear(), dayCursor);
+
+    // 2. Historical Context (Average of Last 3 Months by Day X)
+    // We calculate the same "Day 1 to X" spend for M-1, M-2, M-3
+    const m1 = new Date(startDate); m1.setMonth(startDate.getMonth() - 1);
+    const m2 = new Date(startDate); m2.setMonth(startDate.getMonth() - 2);
+    const m3 = new Date(startDate); m3.setMonth(startDate.getMonth() - 3);
+
+    const spendM1 = getSpendByDayX(fullHistory, m1.getMonth(), m1.getFullYear(), dayCursor);
+    const spendM2 = getSpendByDayX(fullHistory, m2.getMonth(), m2.getFullYear(), dayCursor);
+    const spendM3 = getSpendByDayX(fullHistory, m3.getMonth(), m3.getFullYear(), dayCursor);
+
+    // Calculate Baseline (Average of non-zero months)
+    const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
+    const averageSpendAtPointX = historyPoints.length > 0
+        ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
+        : currentSpend; // No history fallback
+
 
     // --- SCORING ALGORITHM (Max 100) ---
     // A. Savings Score (Max 50)
-    let savingsScore = 0;
-    if (currentSavingsRate > 0) {
-        savingsScore = Math.min(50, (currentSavingsRate / 0.20) * 50);
-    }
+    // let savingsScore = 0;
+    // if (currentSavingsRate > 0) {
+    //     savingsScore = Math.min(50, (currentSavingsRate / 0.20) * 50);
+    // }
 
-    // B. Efficiency Score (Max 30) - Rewards staying under budget ceilings
-    let efficiencyScore = 0;
-    if (currentNet >= 0) {
-        efficiencyScore = 15; // Base solvency
-        // Bonus for every 1% saved
-        efficiencyScore += Math.min(15, (currentSavingsRate * 100) * 0.5);
+    // // B. Efficiency Score (Max 30) - Rewards staying under budget ceilings
+    // let efficiencyScore = 0;
+    // if (currentNet >= 0) {
+    //     efficiencyScore = 15; // Base solvency
+    //     // Bonus for every 1% saved
+    //     efficiencyScore += Math.min(15, (currentSavingsRate * 100) * 0.5);
+    // } else {
+    //     const overspendRatio = monthlyIncome > 0 ? (Math.abs(currentNet) / monthlyIncome) : 1;
+    //     efficiencyScore = Math.max(0, 15 - (overspendRatio * 100));
+    // }
+
+    // // C. Trend Score (Max 20)
+    // let trendScore = 0;
+    // console.log(currentExpenses);
+    // console.log(prevExpenses);
+    // console.log(prevMonthlyIncome);
+    // if (currentExpenses < prevExpenses) {
+    //     trendScore += 10;
+    // }
+    // if (currentNet > (prevMonthlyIncome - prevExpenses)) {
+    //     trendScore += 10;
+    // }
+
+
+    // Metric 1: Pacing Score (Max 40) - "Are you spending less than USUAL by this day?"
+    let pacingScore = 0;
+    const diff = currentSpend - averageSpendAtPointX;
+    if (diff <= 0) {
+        pacingScore = 40; // Under average = Perfect
     } else {
-        const overspendRatio = monthlyIncome > 0 ? (Math.abs(currentNet) / monthlyIncome) : 1;
-        efficiencyScore = Math.max(0, 15 - (overspendRatio * 100));
+        // Lose points for being over average
+        const deviation = averageSpendAtPointX > 0 ? diff / averageSpendAtPointX : 1;
+        pacingScore = Math.max(0, 40 - (deviation * 100));
     }
 
-    // C. Trend Score (Max 20)
+    // Metric 2: Burn Ratio (Max 40) - "Is your spending rate sustainable for your income?"
+    // Target: Spend < 80% of income by end of month.
+    // Allowed Spend at Day X = (Income * 0.8) * (Day X / 30)
+    let efficiencyScore = 0;
+    const targetMaxSpend = monthlyIncome * 0.8 * (dayCursor / 30);
+
+    if (currentSpend <= targetMaxSpend) {
+        efficiencyScore = 40;
+    } else {
+        const overRatio = targetMaxSpend > 0 ? (currentSpend - targetMaxSpend) / targetMaxSpend : 1;
+        efficiencyScore = Math.max(0, 40 - (overRatio * 100));
+    }
+
+    // Metric 3: Control (Max 20) - "Did you behave better than last month specifically?"
     let trendScore = 0;
-    console.log(currentExpenses);
-    console.log(prevExpenses);
-    console.log(prevMonthlyIncome);
-    if (currentExpenses < prevExpenses) {
-        trendScore += 10;
-    }
-    if (currentNet > (prevMonthlyIncome - prevExpenses)) {
-        trendScore += 10;
-    }
+    if (currentSpend <= spendM1) trendScore = 20; // Better than last month
+    else if (currentSpend <= spendM1 * 1.1) trendScore = 10; // Within 10% margin
+    else trendScore = 0;
 
-    const totalScore = Math.round(savingsScore + efficiencyScore + trendScore);
+
+    // const totalScore = Math.round(savingsScore + efficiencyScore + trendScore);
+    const totalScore = Math.round(pacingScore + efficiencyScore + trendScore);
 
     // Visuals
     let color = '#10B981'; // Green
@@ -278,16 +337,16 @@ export function FinancialHealthScore({
                         <Activity className="w-5 h-5 text-blue-600" /> Financial Health
                     </h3>
                     <p className="text-sm text-gray-500 mt-1">
-                        Your score is based on your {Math.round(currentSavingsRate * 100)}% savings rate, budget efficiency, and month-over-month improvement.
+                        Score based on spending pacing (vs 3-mo avg), income sustainability, and improvement over last month.
                     </p>
                     <div className="flex gap-4 mt-4">
                         <div className="text-xs">
-                            <span className="block text-gray-400">Savings</span>
-                            <span className="font-semibold">{Math.round(savingsScore)}/50</span>
+                            <span className="block text-gray-400">Pacing</span>
+                            <span className="font-semibold">{Math.round(pacingScore)}/40</span>
                         </div>
                         <div className="text-xs">
-                            <span className="block text-gray-400">Efficiency</span>
-                            <span className="font-semibold">{Math.round(efficiencyScore)}/30</span>
+                            <span className="block text-gray-400">Ratio</span>
+                            <span className="font-semibold">{Math.round(efficiencyScore)}/40</span>
                         </div>
                         <div className="text-xs">
                             <span className="block text-gray-400">Trend</span>
