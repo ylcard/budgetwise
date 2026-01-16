@@ -30,21 +30,30 @@ export default function InfoTooltip({ title, description, wikiUrl }) {
                         <Info className="w-3.5 h-3.5" />
                     </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs p-3 space-y-2">
-                    {title && (
-                        <p className="font-semibold text-sm text-gray-900">{title}</p>
-                    )}
-                    <p className="text-xs text-gray-600 leading-relaxed">{description}</p>
-                    {wikiUrl && (
-                        <a
-                            href={wikiUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
-                        >
-                            Learn more on Wikipedia →
-                        </a>
-                    )}
+                <TooltipContent
+                    side="top"
+                    className="max-w-[240px] p-3 bg-white border border-gray-200 shadow-xl rounded-lg animate-in fade-in zoom-in duration-200"
+                >
+                    <div className="space-y-1.5">
+                        {title && (
+                            <p className="font-bold text-sm text-gray-900 leading-none">{title}</p>
+                        )}
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                            {description}
+                        </p>
+                        {wikiUrl && (
+                            <div className="pt-1">
+                                <a
+                                    href={wikiUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-0.5 font-semibold"
+                                >
+                                    Learn more on Wikipedia →
+                                </a>
+                            </div>
+                        )}
+                    </div>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
