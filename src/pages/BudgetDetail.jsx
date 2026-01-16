@@ -404,13 +404,15 @@ export default function BudgetDetail() {
                     </div>
                 </div>
 
-                {/* Budget Insights - ADDED: 16-Jan-2026 */}
-                <BudgetPostMortem
-                    budget={budget}
-                    transactions={transactions}
-                    categories={categories}
-                    settings={settings}
-                />
+                {/* Budget Insights - ADDED: 16-Jan-2026, MODIFIED: 16-Jan-2026 - Disabled for system budgets */}
+                {!budget.isSystemBudget && (
+                    <BudgetPostMortem
+                        budget={budget}
+                        transactions={transactions}
+                        categories={categories}
+                        settings={settings}
+                    />
+                )}
 
                 <div className="grid md:grid-cols-3 gap-4">
                     <Card><CardContent className="pt-6 text-center">
