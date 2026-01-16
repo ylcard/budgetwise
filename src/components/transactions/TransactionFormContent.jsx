@@ -265,18 +265,9 @@ export default function TransactionFormContent({
         // If "Needs" is selected, hide "Wants" system budget, and vice versa.
         if (formData.financial_priority) {
             filtered = filtered.filter(b => {
-                // if (!b.isSystemBudget) return true; // Always show Custom Budgets
+                if (!b.isSystemBudget) return true; // Always show Custom Budgets
                 // Only show the system budget that matches the selected priority
-                // return b.systemBudgetType === formData.financial_priority;
-                // Always include the budget that is ALREADY linked to this transaction
-                if (b.id === formData.customBudgetId) return true;
-
-                // For system budgets, filter by priority AND relevance to the transaction date
-                if (b.isSystemBudget) {
-                    return b.systemBudgetType === formData.financial_priority && 
-                           isDateInRange(formData.date, b.startDate, b.endDate);
-                }
-                return true; // Show all Custom Budgets
+                return b.systemBudgetType === formData.financial_priority;
             });
         }
 
