@@ -553,42 +553,19 @@ export default function RemainingBudgetCard({
     const totalLimitPct = needsLimitPct + wantsLimitPct;
     const visualSpendingEnd = needsVisualPct + wantsVisualPct;
 
-    // const efficiencyBarPct = Math.max(0, totalLimitPct - visualSpendingEnd);
     // Calculate the total space available for savings
     const totalAvailableForSavings = Math.max(0, 100 - visualSpendingEnd);
 
-    // Get the specific target percentage from goals
-    const savingsGoal = goals.find(g => g.priority === 'savings');
-    const savingsGoalPct = savingsGoal?.target_percentage || 0;
+    const savingsGoalPct = goals.find(g => g.priority === 'savings')?.target_percentage || 0;
 
-    // The 'Target' segment is either the goal or whatever is left if we overspent
     const targetSavingsBarPct = Math.min(savingsGoalPct, totalAvailableForSavings);
-
-    // The 'Extra' segment is only the portion that exceeds the goal
     const efficiencyBarPct = Math.max(0, totalAvailableForSavings - savingsGoalPct);
 
-    // const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
-
-    // DEPRECATED: Calculate Savings Utilization (Actual vs Target)
-    // const savingsUtil = savingsLimit > 0 ? (savingsAmount / savingsLimit) * 100 : 0;
-    // Calculate labels based on the actual physical width of the segments
-    // This ensures the math always adds up to 100% and Target Savings stays at its cap
-    const needsDisplayPct = Math.round(needsVisualPct);
-    const wantsDisplayPct = Math.round(wantsVisualPct);
-    const targetSavingsDisplayPct = Math.round(targetSavingsBarPct);
-    const extraSavingsDisplayPct = Math.round(efficiencyBarPct);
-
-    // Calculate actual currency values for labels
-    // const targetSavingsAmount = (targetSavingsBarPct / 100) * safeIncome;
-    // const extraSavingsAmount = (efficiencyBarPct / 100) * safeIncome;
-    // We cap the target amount at the limit so the % doesn't exceed 100
     const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
     const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
 
-    // Corrected Util percentages
-    const targetSavingsUtil = savingsLimit > 0 ? (targetSavingsAmount / savingsLimit) * 100 : 0;
-    // The 'Extra' percentage is the sum of unspent % from Needs and Wants
-    const extraSavingsPct = efficiencyBarPct;
+    const targetUtil = savingsLimit > 0 ? (targetSavingsAmount / savingsLimit) * 100 : 0;
+    const extraUtil = savingsLimit > 0 ? (extraSavingsAmount / savingsLimit) * 100 : 0;
 
     const stripePattern = {
       backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
@@ -620,7 +597,7 @@ export default function RemainingBudgetCard({
             <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
               <span className="truncate px-1">
                 {formatCurrency(needsTotal, settings)}
-                <span className="opacity-80 ml-1">({needsDisplayPct}%)</span>
+                <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
               </span>
             </div>
           </Link>
@@ -649,7 +626,7 @@ export default function RemainingBudgetCard({
             <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
               <span className="truncate px-1">
                 {formatCurrency(wantsTotal, settings)}
-                <span className="opacity-80 ml-1">({wantsDisplayPct}%)</span>
+                <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
               </span>
             </div>
           </Link>
@@ -660,7 +637,7 @@ export default function RemainingBudgetCard({
           <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
             <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
               <span className="truncate px-1">
-                {formatCurrency(targetSavingsAmount, settings)} ({Math.round(targetSavingsUtil)}%)
+                {formatCurrency(targetSavingsAmount, settings)} ({Math.round(targetUtil)}%)
               </span>
             </div>
           </AnimatedSegment>
@@ -669,7 +646,7 @@ export default function RemainingBudgetCard({
         {efficiencyBarPct > 0 && (
           <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-l border-white/20">
             <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-              {formatCurrency(extraSavingsAmount, settings)} ({Math.round(extraSavingsPct)}%)
+              {formatCurrency(extraSavingsAmount, settings)} ({Math.round(extraUtil)}%)
             </div>
           </AnimatedSegment>
         )}
