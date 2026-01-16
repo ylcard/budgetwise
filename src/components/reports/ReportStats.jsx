@@ -29,9 +29,11 @@ export default function ReportStats({
 
     const totalPaidExpenses = Math.abs(getMonthlyPaidExpenses(transactions, startDate, endDate));
     // const prevPaidExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
-    const prevPaidExpenses = Math.abs(
-        prevTransactions.reduce((sum, t) => (t.amount < 0 ? sum + t.amount : sum), 0)
-    );
+    const prevPaidExpenses = prevTransactions.reduce((sum, t) => {
+        // If your DB doesn't use 'type', remove the condition and just return sum + t.amount
+        if (t.category?.name === 'Income' || t.type === 'income') return sum; 
+        return sum + (Number(t.amount) || 0);
+    }, 0);
 
     const netFlow = monthlyIncome - totalPaidExpenses;
     const prevNetFlow = prevMonthlyIncome - prevPaidExpenses;
@@ -185,9 +187,10 @@ export function FinancialHealthScore({
 
     // 2. Previous Month Data (Approximate using available prevTransactions)
     // const prevExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
-    const prevExpenses = Math.abs(
-        prevTransactions.reduce((sum, t) => (t.amount < 0 ? sum + t.amount : sum), 0)
-    );
+    const prevExpenses = prevTransactions.reduce((sum, t) => {
+        if (t.category?.name === 'Income' || t.type === 'income') return sum; 
+        return sum + (Number(t.amount) || 0);
+    }, 0);
 
     // --- SCORING ALGORITHM (Max 100) ---
     // A. Savings Score (Max 50)
