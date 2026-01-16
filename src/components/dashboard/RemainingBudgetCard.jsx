@@ -358,6 +358,12 @@ export default function RemainingBudgetCard({
   const needsUtil = needsLimit > 0 ? (needsTotal / needsLimit) * 100 : 0;
   const wantsUtil = wantsLimit > 0 ? (wantsTotal / wantsLimit) * 100 : 0;
 
+  // --- SHARED SAVINGS CALCULATIONS ---
+  const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
+  const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
+  const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
+  const savingsGoal = goals.find(g => g.priority === 'savings');
+
   // Date Context
   const now = new Date();
   const isCurrentMonth =
@@ -561,8 +567,8 @@ export default function RemainingBudgetCard({
     const targetSavingsBarPct = Math.min(savingsGoalPct, totalAvailableForSavings);
     const efficiencyBarPct = Math.max(0, totalAvailableForSavings - savingsGoalPct);
 
-    const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
-    const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
+    // const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
+    // const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
 
     const targetUtil = savingsLimit > 0 ? (targetSavingsAmount / savingsLimit) * 100 : 0;
     const extraUtil = savingsLimit > 0 ? (extraSavingsAmount / savingsLimit) * 100 : 0;
@@ -654,7 +660,7 @@ export default function RemainingBudgetCard({
     );
   };
 
-  const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
+  // const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
   const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
   const isTotalOver = totalSpent > currentMonthIncome;
 
@@ -763,26 +769,16 @@ export default function RemainingBudgetCard({
                     </h2>
                   ) : (
                     <div className="space-y-1">
-                      <div className="flex items-baseline gap-2">
-                        <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-                          {Math.round(savingsPctDisplay)}%
-                        </h2>
-                        <span className="text-xl font-semibold text-emerald-600">Saved</span>
-                      </div>
-
-                      <p className="text-sm font-medium text-gray-600 flex items-center gap-1.5">
-                        <TrendingUp className="w-4 h-4 text-emerald-500" />
-                        {savingsPctDisplay >= (goals.find(g => g.priority === 'savings')?.target_percentage || 20) ? (
-                          <span>
-                            You've <span className="text-emerald-700 font-bold">exceeded</span> your goal by {formatCurrency(extraSavingsAmount, settings)}!
-                            Amazing work this month.
-                          </span>
-                        ) : savingsPctDisplay > 0 ? (
-                          <span>
-                            You're on track! Just <span className="text-blue-600 font-bold">{formatCurrency(Math.max(0, savingsLimit - targetSavingsAmount), settings)}</span> more to hit your target.
-                          </span>
+                      <h2 className="text-4xl font-extrabold text-gray-900 flex items-center gap-2 tracking-tight">
+                        {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">Saved</span>
+                      </h2>
+                      <p className="text-sm font-medium text-gray-500 flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-500">
+                        {extraSavingsAmount > 0 ? (
+                          <><TrendingUp className="w-4 h-4 text-emerald-500" /> You've crushed your goal by <span className="text-emerald-700 font-bold">{formatCurrency(extraSavingsAmount, settings)}</span>!</>
+                        ) : savingsAmount > 0 ? (
+                          <><Target className="w-4 h-4 text-blue-500" /> You're <span className="text-blue-600 font-bold">{formatCurrency(savingsLimit - savingsAmount, settings)}</span> away from your monthly target.</>
                         ) : (
-                          <span>Every small amount counts. Let's find some savings today!</span>
+                          "Every cent counts. Start your savings journey today!"
                         )}
                       </p>
                     </div>
