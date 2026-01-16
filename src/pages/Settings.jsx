@@ -287,8 +287,8 @@ export default function Settings() {
                                     <Select value={formData.currencyPosition} onValueChange={(v) => handleFormChange('currencyPosition', v)}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="before">Before ($100)</SelectItem>
-                                            <SelectItem value="after">After (100€)</SelectItem>
+                                            <SelectItem value="before">Before ({formData.currencySymbol}100)</SelectItem>
+                                            <SelectItem value="after">After (100{formData.currencySymbol})</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -421,16 +421,16 @@ export default function Settings() {
 
                                     {/* Lifestyle Creep Protection (Percentage Mode Only) */}
                                     {!isAbsoluteMode && (
-                                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-1 duration-300 delay-75">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-blue-100 rounded-full text-blue-600">
-                                                <Lock className="w-4 h-4" />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <p className="text-sm font-bold text-gray-900">Inflation Protection</p>
-                                                <p className="text-xs text-gray-500 max-w-[280px] sm:max-w-md">
-                                                    Prevents lifestyle creep. If income spikes, budgets are calculated on the lower of your current vs average income.
-                                                </p>
+                                        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-1 duration-300 delay-75">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-blue-100 rounded-full text-blue-600">
+                                                    <Lock className="w-4 h-4" />
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <p className="text-sm font-bold text-gray-900">Inflation Protection</p>
+                                                    <p className="text-xs text-gray-500 max-w-[280px] sm:max-w-md">
+                                                        Prevents lifestyle creep. If income spikes, budgets are calculated on the lower of your current vs average income.
+                                                    </p>
                                                 </div>
                                             </div>
                                             <Switch
