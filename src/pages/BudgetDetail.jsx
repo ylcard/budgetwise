@@ -490,7 +490,7 @@ export default function BudgetDetail() {
 
                             {/* Expense cards on right side */}
                             <div className="flex-1 min-w-0">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="flex flex-wrap gap-4">
                                     {filteredTransactions.length > 0 ? (
                                         filteredTransactions.map((t) => (
                                             <TransactionCard
