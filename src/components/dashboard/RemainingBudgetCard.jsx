@@ -569,8 +569,14 @@ export default function RemainingBudgetCard({
 
     // const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
 
-    // Calculate Savings Utilization (Actual vs Target)
-    const savingsUtil = savingsLimit > 0 ? (savingsAmount / savingsLimit) * 100 : 0;
+    // DEPRECATED: Calculate Savings Utilization (Actual vs Target)
+    // const savingsUtil = savingsLimit > 0 ? (savingsAmount / savingsLimit) * 100 : 0;
+        // Calculate labels based on the actual physical width of the segments
+        // This ensures the math always adds up to 100% and Target Savings stays at its cap
+        const needsDisplayPct = Math.round(needsVisualPct);
+        const wantsDisplayPct = Math.round(wantsVisualPct);
+        const targetSavingsDisplayPct = Math.round(targetSavingsBarPct);
+        const extraSavingsDisplayPct = Math.round(efficiencyBarPct);
 
     // Calculate actual currency values for labels
     const targetSavingsAmount = (targetSavingsBarPct / 100) * safeIncome;
@@ -606,7 +612,7 @@ export default function RemainingBudgetCard({
             <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
               <span className="truncate px-1">
                 {formatCurrency(needsTotal, settings)}
-                <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
+                <span className="opacity-80 ml-1">({needsDisplayPct}%)</span>
               </span>
             </div>
           </Link>
@@ -635,7 +641,7 @@ export default function RemainingBudgetCard({
             <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
               <span className="truncate px-1">
                 {formatCurrency(wantsTotal, settings)}
-                <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
+                <span className="opacity-80 ml-1">({wantsDisplayPct}%)</span>
               </span>
             </div>
           </Link>
@@ -646,7 +652,7 @@ export default function RemainingBudgetCard({
           <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
             <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
               <span className="truncate px-1">
-                {formatCurrency(targetSavingsAmount, settings)} ({Math.round(savingsUtil)}%)
+                {formatCurrency(targetSavingsAmount, settings)} ({targetSavingsDisplayPct}%)
               </span>
             </div>
           </AnimatedSegment>
@@ -655,7 +661,7 @@ export default function RemainingBudgetCard({
         {efficiencyBarPct > 0 && (
           <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-l border-white/20">
             <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-              {formatCurrency(extraSavingsAmount, settings)} ({Math.round(efficiencyBarPct)}%)
+              {formatCurrency(extraSavingsAmount, settings)} ({extraSavingsDisplayPct}%)
             </div>
           </AnimatedSegment>
         )}
