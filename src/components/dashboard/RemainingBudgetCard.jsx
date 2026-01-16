@@ -17,843 +17,849 @@ import confetti from "canvas-confetti";
 
 // --- COMPACT GOAL EDITOR COMPONENT ---
 const QuickGoalsEditor = ({ goals, settings, updateSettings, user, onClose }) => {
-    const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
-    const [mode, setMode] = useState(settings.goalMode ?? true); // true = %, false = $
+  const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
+  const [mode, setMode] = useState(settings.goalMode ?? true); // true = %, false = $
+
+  // Refactoring goal setting feature
+  // const [values, setValues] = useState({ needs: '', wants: '', savings: '' });
+
+  // State for Absolute Mode
+  const [absValues, setAbsValues] = useState({ needs: '', wants: '', savings: '' });
+
+  // State for Percentage Mode (Slider)
+  const [splits, setSplits] = useState({ split1: 50, split2: 80 });
+  const containerRef = useRef(null);
+  const [activeThumb, setActiveThumb] = useState(null);
+
+  // Initialize values based on current mode
+  useEffect(() => {
+    const map = {};
+    goals.forEach(g => {
+      // Refactoring goal setting feature
+      // map[g.priority] = mode
+      //     ? (g.target_percentage || 0)
+      //     : (g.target_amount || 0);
+      map[g.priority] = { pct: g.target_percentage, amt: g.target_amount };
+    });
+    // Refactoring oal setting feature
+    //     setValues({
+    //         needs: map.needs ?? (mode ? 50 : 0),
+    //         wants: map.wants ?? (mode ? 30 : 0),
+    //         savings: map.savings ?? (mode ? 20 : 0)
+    //     });
+    // }, [goals, mode]);
+
+    if (mode) {
+      // Percentage: Setup splits
+      const n = map.needs?.pct ?? 50;
+      const w = map.wants?.pct ?? 30;
+      setSplits({ split1: n, split2: n + w });
+    } else {
+      // Absolute: Setup inputs
+      setAbsValues({
+        needs: map.needs?.amt ?? '',
+        wants: map.wants?.amt ?? '',
+        savings: map.savings?.amt ?? ''
+      });
+    }
+  }, [goals, mode]);
+
+  // --- SLIDER HANDLERS ---
+  const handlePointerDown = (e, thumbIndex) => {
+    e.preventDefault();
+    e.target.setPointerCapture(e.pointerId);
+    setActiveThumb(thumbIndex);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!activeThumb || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const rawPercent = ((e.clientX - rect.left) / rect.width) * 100;
+    const constrained = Math.round(Math.max(0, Math.min(100, rawPercent)));
+
+    setSplits(prev => {
+      if (activeThumb === 1) return { ...prev, split1: Math.min(constrained, prev.split2 - 5) };
+      else return { ...prev, split2: Math.max(constrained, prev.split1 + 5) };
+    });
+  };
+
+  const handlePointerUp = (e) => {
+    setActiveThumb(null);
+    e.target.releasePointerCapture(e.pointerId);
+  };
+
+  // --- INPUT HANDLER (Regex Filter) ---
+  const handleAmountChange = (key, val) => {
+    // Allow only numbers, dots, and commas
+    if (val === '' || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+      setAbsValues(prev => ({ ...prev, [key]: val }));
+    }
+  };
+
+  const handleSave = async () => {
+    // 1. Update Mode if changed
+    if (mode !== (settings.goalMode ?? true)) {
+      await updateSettings({ goalMode: mode });
+    }
 
     // Refactoring goal setting feature
-    // const [values, setValues] = useState({ needs: '', wants: '', savings: '' });
+    // 2. Update Goals
+    // const promises = Object.entries(values).map(([priority, val]) => {
 
-    // State for Absolute Mode
-    const [absValues, setAbsValues] = useState({ needs: '', wants: '', savings: '' });
+    // 2. Prepare Data
+    let payloadMap = {};
 
-    // State for Percentage Mode (Slider)
-    const [splits, setSplits] = useState({ split1: 50, split2: 80 });
-    const containerRef = useRef(null);
-    const [activeThumb, setActiveThumb] = useState(null);
-
-    // Initialize values based on current mode
-    useEffect(() => {
-        const map = {};
-        goals.forEach(g => {
-            // Refactoring goal setting feature
-            // map[g.priority] = mode
-            //     ? (g.target_percentage || 0)
-            //     : (g.target_amount || 0);
-            map[g.priority] = { pct: g.target_percentage, amt: g.target_amount };
-        });
-        // Refactoring oal setting feature
-        //     setValues({
-        //         needs: map.needs ?? (mode ? 50 : 0),
-        //         wants: map.wants ?? (mode ? 30 : 0),
-        //         savings: map.savings ?? (mode ? 20 : 0)
-        //     });
-        // }, [goals, mode]);
-
-        if (mode) {
-            // Percentage: Setup splits
-            const n = map.needs?.pct ?? 50;
-            const w = map.wants?.pct ?? 30;
-            setSplits({ split1: n, split2: n + w });
-        } else {
-            // Absolute: Setup inputs
-            setAbsValues({
-                needs: map.needs?.amt ?? '',
-                wants: map.wants?.amt ?? '',
-                savings: map.savings?.amt ?? ''
-            });
-        }
-    }, [goals, mode]);
-
-    // --- SLIDER HANDLERS ---
-    const handlePointerDown = (e, thumbIndex) => {
-        e.preventDefault();
-        e.target.setPointerCapture(e.pointerId);
-        setActiveThumb(thumbIndex);
-    };
-
-    const handlePointerMove = (e) => {
-        if (!activeThumb || !containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
-        const rawPercent = ((e.clientX - rect.left) / rect.width) * 100;
-        const constrained = Math.round(Math.max(0, Math.min(100, rawPercent)));
-
-        setSplits(prev => {
-            if (activeThumb === 1) return { ...prev, split1: Math.min(constrained, prev.split2 - 5) };
-            else return { ...prev, split2: Math.max(constrained, prev.split1 + 5) };
-        });
-    };
-
-    const handlePointerUp = (e) => {
-        setActiveThumb(null);
-        e.target.releasePointerCapture(e.pointerId);
-    };
-
-    // --- INPUT HANDLER (Regex Filter) ---
-    const handleAmountChange = (key, val) => {
-        // Allow only numbers, dots, and commas
-        if (val === '' || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
-            setAbsValues(prev => ({ ...prev, [key]: val }));
-        }
-    };
-
-    const handleSave = async () => {
-        // 1. Update Mode if changed
-        if (mode !== (settings.goalMode ?? true)) {
-            await updateSettings({ goalMode: mode });
-        }
-
-        // Refactoring goal setting feature
-        // 2. Update Goals
-        // const promises = Object.entries(values).map(([priority, val]) => {
-
-        // 2. Prepare Data
-        let payloadMap = {};
-
-        if (mode) {
-            // Calc Pct from splits
-            payloadMap = {
-                needs: splits.split1,
-                wants: splits.split2 - splits.split1,
-                savings: 100 - splits.split2
-            };
-        } else {
-            // Clean inputs
-            payloadMap = {
-                needs: parseFloat(absValues.needs.toString().replace(',', '.')) || 0,
-                wants: parseFloat(absValues.wants.toString().replace(',', '.')) || 0,
-                savings: parseFloat(absValues.savings.toString().replace(',', '.')) || 0
-            };
-        }
-
-        // 3. Update Goals
-        const promises = Object.entries(payloadMap).map(([priority, numVal]) => {
-            // Refactoring goal setting feature
-            // const numVal = Number(val) || 0;
-
-            const payload = mode
-                ? { target_percentage: numVal }
-                : { target_amount: numVal };
-            return handleGoalUpdate(priority, mode ? numVal : 0, payload);
-        });
-
-        await Promise.all(promises);
-        if (onClose) onClose();
-    };
-
-    // Derived values for % display
-    const pctValues = {
+    if (mode) {
+      // Calc Pct from splits
+      payloadMap = {
         needs: splits.split1,
         wants: splits.split2 - splits.split1,
         savings: 100 - splits.split2
-    };
+      };
+    } else {
+      // Clean inputs
+      payloadMap = {
+        needs: parseFloat(absValues.needs.toString().replace(',', '.')) || 0,
+        wants: parseFloat(absValues.wants.toString().replace(',', '.')) || 0,
+        savings: parseFloat(absValues.savings.toString().replace(',', '.')) || 0
+      };
+    }
 
-    return (
-        <div className="space-y-3 w-60">
-            <div className="flex items-center justify-between">
-                <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider">Target Goals</h4>
-                <div className="flex bg-muted p-0.5 rounded-md">
-                    <button onClick={() => setMode(true)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>%</button>
-                    <button onClick={() => setMode(false)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${!mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>$</button>
-                </div>
+    // 3. Update Goals
+    const promises = Object.entries(payloadMap).map(([priority, numVal]) => {
+      // Refactoring goal setting feature
+      // const numVal = Number(val) || 0;
+
+      const payload = mode
+        ? { target_percentage: numVal }
+        : { target_amount: numVal };
+      return handleGoalUpdate(priority, mode ? numVal : 0, payload);
+    });
+
+    await Promise.all(promises);
+    if (onClose) onClose();
+  };
+
+  // Derived values for % display
+  const pctValues = {
+    needs: splits.split1,
+    wants: splits.split2 - splits.split1,
+    savings: 100 - splits.split2
+  };
+
+  return (
+    <div className="space-y-3 w-60">
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider">Target Goals</h4>
+        <div className="flex bg-muted p-0.5 rounded-md">
+          <button onClick={() => setMode(true)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>%</button>
+          <button onClick={() => setMode(false)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${!mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>$</button>
+        </div>
+      </div>
+      {mode ? (
+        // --- SLIDER VIEW ---
+        <div className="pt-2 pb-1 space-y-4">
+          <div ref={containerRef} className="relative h-4 w-full bg-gray-100 rounded-full select-none touch-none">
+            {/* Zones */}
+            <div className="absolute top-0 left-0 h-full rounded-l-full" style={{ width: `${splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.needs.color }} />
+            <div className="absolute top-0 h-full" style={{ left: `${splits.split1}%`, width: `${splits.split2 - splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.wants.color }} />
+            <div className="absolute top-0 h-full rounded-r-full" style={{ left: `${splits.split2}%`, width: `${100 - splits.split2}%`, backgroundColor: FINANCIAL_PRIORITIES.savings.color }} />
+
+            {/* Thumb 1 */}
+            <div onPointerDown={(e) => handlePointerDown(e, 1)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split1}%` }}>
+              <GripVertical className="w-2 h-2 text-gray-400" />
             </div>
-            {mode ? (
-                // --- SLIDER VIEW ---
-                <div className="pt-2 pb-1 space-y-4">
-                    <div ref={containerRef} className="relative h-4 w-full bg-gray-100 rounded-full select-none touch-none">
-                        {/* Zones */}
-                        <div className="absolute top-0 left-0 h-full rounded-l-full" style={{ width: `${splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.needs.color }} />
-                        <div className="absolute top-0 h-full" style={{ left: `${splits.split1}%`, width: `${splits.split2 - splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.wants.color }} />
-                        <div className="absolute top-0 h-full rounded-r-full" style={{ left: `${splits.split2}%`, width: `${100 - splits.split2}%`, backgroundColor: FINANCIAL_PRIORITIES.savings.color }} />
+            {/* Thumb 2 */}
+            <div onPointerDown={(e) => handlePointerDown(e, 2)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split2}%` }}>
+              <GripVertical className="w-2 h-2 text-gray-400" />
+            </div>
+          </div>
 
-                        {/* Thumb 1 */}
-                        <div onPointerDown={(e) => handlePointerDown(e, 1)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split1}%` }}>
-                            <GripVertical className="w-2 h-2 text-gray-400" />
-                        </div>
-                        {/* Thumb 2 */}
-                        <div onPointerDown={(e) => handlePointerDown(e, 2)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split2}%` }}>
-                            <GripVertical className="w-2 h-2 text-gray-400" />
-                        </div>
-                    </div>
+          {/* Readout */}
+          <div className="flex justify-between px-1">
+            {['needs', 'wants', 'savings'].map(key => (
+              <div key={key} className="flex flex-col items-center">
+                <div className="w-1.5 h-1.5 rounded-full mb-0.5" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
+                <span className="text-[10px] font-bold text-gray-700">{Math.round(pctValues[key])}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        // --- INPUT VIEW ---
+        <div className="flex items-end justify-between gap-2 pt-2">
+          {['needs', 'wants', 'savings'].map(key => (
+            <div key={key} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+              {/* Dot Indicator */}
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
 
-                    {/* Readout */}
-                    <div className="flex justify-between px-1">
-                        {['needs', 'wants', 'savings'].map(key => (
-                            <div key={key} className="flex flex-col items-center">
-                                <div className="w-1.5 h-1.5 rounded-full mb-0.5" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
-                                <span className="text-[10px] font-bold text-gray-700">{Math.round(pctValues[key])}%</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ) : (
-                // --- INPUT VIEW ---
-                <div className="flex items-end justify-between gap-2 pt-2">
-                    {['needs', 'wants', 'savings'].map(key => (
-                        <div key={key} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-                            {/* Dot Indicator */}
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
-
-                            {/* Compact Input */}
-                            <div className="relative w-full">
-                                <Input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={absValues[key]}
-                                    onChange={(e) => handleAmountChange(key, e.target.value)}
-                                    placeholder="0"
-                                    className="h-7 text-xs px-1.5 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                />
-                                {/* Optional: Tiny currency hint outside or as placeholder if preferred, 
+              {/* Compact Input */}
+              <div className="relative w-full">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={absValues[key]}
+                  onChange={(e) => handleAmountChange(key, e.target.value)}
+                  placeholder="0"
+                  className="h-7 text-xs px-1.5 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                {/* Optional: Tiny currency hint outside or as placeholder if preferred, 
                                     but for super-compact, relying on context + placeholder is cleaner 
                                     or we can add a tiny label below if needed. 
                                     Here I'm keeping it clean given the constraint. */}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            <Button onClick={handleSave} disabled={isSaving} className="w-full h-7 text-xs mt-2">
-                {isSaving ? 'Saving...' : 'Update Targets'}
-            </Button>
+              </div>
+            </div>
+          ))}
         </div>
-    );
+      )}
+
+      <Button onClick={handleSave} disabled={isSaving} className="w-full h-7 text-xs mt-2">
+        {isSaving ? 'Saving...' : 'Update Targets'}
+      </Button>
+    </div>
+  );
 };
 
 export default function RemainingBudgetCard({
-    bonusSavingsPotential,
-    currentMonthIncome,
-    currentMonthExpenses,
-    settings,
-    monthNavigator,
-    addIncomeButton,
-    addExpenseButton,
-    importDataButton,
-    systemBudgets = [],
-    goals = [],
-    breakdown = null,
-    historicalAverage = 0,
-    selectedMonth,
-    selectedYear
+  bonusSavingsPotential,
+  currentMonthIncome,
+  currentMonthExpenses,
+  settings,
+  monthNavigator,
+  addIncomeButton,
+  addExpenseButton,
+  importDataButton,
+  systemBudgets = [],
+  goals = [],
+  breakdown = null,
+  historicalAverage = 0,
+  selectedMonth,
+  selectedYear
 }) {
-    // Refactoring to add quick goal change to page
-    // const { updateSettings } = useSettings();
-    const { updateSettings, user } = useSettings();
-    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  // Refactoring to add quick goal change to page
+  // const { updateSettings } = useSettings();
+  const { updateSettings, user } = useSettings();
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-    if (!settings) return null;
+  if (!settings) return null;
 
-    const safeIncome = currentMonthIncome || 1;
-    const isSimpleView = settings.barViewMode; // true = simple
+  const safeIncome = currentMonthIncome || 1;
+  const isSimpleView = settings.barViewMode; // true = simple
 
-    // --- ANIMATION CONFIG ---
-    const fluidSpring = {
-        type: "spring",
-        stiffness: 120,
-        damping: 20,
-        mass: 1
+  // --- ANIMATION CONFIG ---
+  const fluidSpring = {
+    type: "spring",
+    stiffness: 120,
+    damping: 20,
+    mass: 1
+  };
+
+  // --- DATA EXTRACTION ---
+  const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
+  const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
+
+  // Nov 28 - bugfix wrong bar values
+  // const needsLimit = needsBudget?.budgetAmount || 0;
+  // const wantsLimit = wantsBudget?.budgetAmount || 0;
+
+  // Helper to resolve the actual limit for the month based on Goal Mode
+  const resolveLimit = (type) => {
+    const budget = systemBudgets.find(sb => sb.systemBudgetType === type);
+    // 1. Prefer pre-calculated targetAmount if available (from useBudgetBarsData)
+    if (budget && typeof budget.targetAmount === 'number') return budget.targetAmount;
+
+    // 2. Fallback: Calculate from goals based on settings
+    const goal = goals.find(g => g.priority === type);
+    if (!goal) return 0;
+
+    // implenting the logic for fixed mode
+    // if (settings.goalMode === false) return goal.target_amount || 0; // Absolute Mode
+    // return (safeIncome * (goal.target_percentage || 0)) / 100;       // Percentage Mode
+
+    // 3. Use centralized logic (Handles Absolute, Percentage AND Inflation Protection)
+    // Note: 'safeIncome' here acts as the 'monthlyIncome' argument
+    return resolveBudgetLimit(goal, safeIncome, settings, historicalAverage);
+
+  };
+
+  const needsLimit = resolveLimit('needs');
+  const wantsLimit = resolveLimit('wants');
+  const savingsLimit = resolveLimit('savings');
+
+  // Use breakdown for granular segments
+  const needsData = breakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
+  const wantsData = breakdown?.wants || { total: 0 };
+
+  // Aggregates
+  const needsTotal = needsData.total;
+  const wantsTotal = wantsData.total;
+  const totalSpent = currentMonthExpenses;
+
+  const needsColor = FINANCIAL_PRIORITIES.needs.color;
+  const wantsColor = FINANCIAL_PRIORITIES.wants.color;
+  const savingsColor = FINANCIAL_PRIORITIES.savings.color;
+
+  // --- GOAL SUMMARY TEXT ---
+  const GoalSummary = () => {
+    // goalMode: true = Percentage, false = Absolute
+    const isAbsolute = settings.goalMode === false;
+
+    const getValue = (priority) => {
+      const goal = goals.find(g => g.priority === priority);
+      if (isAbsolute) {
+        return formatCurrency(goal?.target_amount || 0, settings);
+      }
+      // Use nullish coalescing to fallback to defaults only if percentage is null/undefined
+      return `${goal?.target_percentage ?? (priority === 'needs' ? 50 : priority === 'wants' ? 30 : 20)}%`;
     };
-
-    // --- DATA EXTRACTION ---
-    const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
-    const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
-
-    // Nov 28 - bugfix wrong bar values
-    // const needsLimit = needsBudget?.budgetAmount || 0;
-    // const wantsLimit = wantsBudget?.budgetAmount || 0;
-
-    // Helper to resolve the actual limit for the month based on Goal Mode
-    const resolveLimit = (type) => {
-        const budget = systemBudgets.find(sb => sb.systemBudgetType === type);
-        // 1. Prefer pre-calculated targetAmount if available (from useBudgetBarsData)
-        if (budget && typeof budget.targetAmount === 'number') return budget.targetAmount;
-
-        // 2. Fallback: Calculate from goals based on settings
-        const goal = goals.find(g => g.priority === type);
-        if (!goal) return 0;
-
-        // implenting the logic for fixed mode
-        // if (settings.goalMode === false) return goal.target_amount || 0; // Absolute Mode
-        // return (safeIncome * (goal.target_percentage || 0)) / 100;       // Percentage Mode
-
-        // 3. Use centralized logic (Handles Absolute, Percentage AND Inflation Protection)
-        // Note: 'safeIncome' here acts as the 'monthlyIncome' argument
-        return resolveBudgetLimit(goal, safeIncome, settings, historicalAverage);
-
-    };
-
-    const needsLimit = resolveLimit('needs');
-    const wantsLimit = resolveLimit('wants');
-    const savingsLimit = resolveLimit('savings');
-
-    // Use breakdown for granular segments
-    const needsData = breakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
-    const wantsData = breakdown?.wants || { total: 0 };
-
-    // Aggregates
-    const needsTotal = needsData.total;
-    const wantsTotal = wantsData.total;
-    const totalSpent = currentMonthExpenses;
-
-    const needsColor = FINANCIAL_PRIORITIES.needs.color;
-    const wantsColor = FINANCIAL_PRIORITIES.wants.color;
-    const savingsColor = FINANCIAL_PRIORITIES.savings.color;
-
-    // --- GOAL SUMMARY TEXT ---
-    const GoalSummary = () => {
-        // goalMode: true = Percentage, false = Absolute
-        const isAbsolute = settings.goalMode === false;
-
-        const getValue = (priority) => {
-            const goal = goals.find(g => g.priority === priority);
-            if (isAbsolute) {
-                return formatCurrency(goal?.target_amount || 0, settings);
-            }
-            // Use nullish coalescing to fallback to defaults only if percentage is null/undefined
-            return `${goal?.target_percentage ?? (priority === 'needs' ? 50 : priority === 'wants' ? 30 : 20)}%`;
-        };
-
-        return (
-            <div className="flex items-center gap-1 text-sm font-medium hidden sm:flex">
-                <span style={{ color: needsColor }}>{getValue('needs')}</span>
-                <span className="text-gray-300">/</span>
-                <span style={{ color: wantsColor }}>{getValue('wants')}</span>
-                <span className="text-gray-300">/</span>
-                <span style={{ color: savingsColor }}>{getValue('savings')}</span>
-            </div>
-        );
-    };
-
-
-    // --- SEGMENT LOGIC (Detailed View) ---
-    const calculateSegments = (paid, unpaid, limit) => {
-        const total = paid + unpaid;
-        if (!limit || limit <= 0) return { safePaid: paid, safeUnpaid: unpaid, overflow: 0, total };
-        const overflow = Math.max(0, total - limit);
-        const safeTotal = total - overflow;
-        const safePaid = Math.min(paid, safeTotal);
-        const safeUnpaid = Math.max(0, safeTotal - safePaid);
-        return { safePaid, safeUnpaid, overflow, total };
-    };
-
-    const needsSegs = calculateSegments(needsData.paid, needsData.unpaid, needsLimit);
-
-    const wantsPaidTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0);
-    const wantsUnpaidTotal = (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
-    const wantsSegs = calculateSegments(wantsPaidTotal, wantsUnpaidTotal, wantsLimit);
-
-    // --- RENDER HELPERS ---
-    const handleViewToggle = (checked) => {
-        updateSettings({ barViewMode: checked });
-    };
-
-    // 1. WIDTH CALCULATIONS (Relative to Income)
-    // This determines how much physical space the bar takes up in the container
-    const needsPct = (needsTotal / safeIncome) * 100;
-    const wantsPct = (wantsTotal / safeIncome) * 100;
-    const savingsPct = Math.max(0, 100 - needsPct - wantsPct);
-
-    // 2. LABEL CALCULATIONS (Relative to Budget Limit)
-    // This determines the % text shown to the user (Utilization)
-    const needsUtil = needsLimit > 0 ? (needsTotal / needsLimit) * 100 : 0;
-    const wantsUtil = wantsLimit > 0 ? (wantsTotal / wantsLimit) * 100 : 0;
-
-    // Date Context
-    const now = new Date();
-    const isCurrentMonth =
-        // now.getMonth() === (settings.selectedMonth ?? now.getMonth()) &&
-        // now.getFullYear() === (settings.selectedYear ?? now.getFullYear());
-        now.getMonth() === selectedMonth &&
-        now.getFullYear() === selectedYear;
-
-    // const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    // Calculate days based strictly on the selected props
-    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-
-    const currentDay = now.getDate();
-    const isEndOfMonth = currentDay >= (daysInMonth - 3);
-
-    // Detect "Clean Slate" State (No income AND no expenses)
-    const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
-
-    // Get explicit month name for the empty state message
-    // safeMonth no longer required
-    // const safeMonth = settings.selectedMonth ?? now.getMonth();
-    // const monthName = getMonthName(safeMonth);
-    const monthName = getMonthName(selectedMonth);
-
-    // --- CONFETTI LOGIC ---
-    // We track the previous income to detect the specific transition from 0 -> Amount
-    const prevIncomeRef = useRef(currentMonthIncome);
-    const prevMonthRef = useRef(selectedMonth);
-    const prevYearRef = useRef(selectedYear);
-    // fixing premature celebrations
-    // const componentMountTime = useRef(Date.now());
-    // Track when the month last changed to ignore "fetch-induced" income jumps
-    const lastContextChangeTime = useRef(Date.now());
-
-    useEffect(() => {
-        const prevIncome = prevIncomeRef.current;
-        const currentIncome = currentMonthIncome || 0;
-        // Ensure we are detecting a change WITHIN the same month context, not a navigation event
-        const isSameContext = prevMonthRef.current === selectedMonth && prevYearRef.current === selectedYear;
-
-
-        // Check if we went from 0 (or undefined) to having money
-        // AND ensure this isn't just the page loading (wait 1s buffer)
-        // fixing premature celerbations
-        // const isDataLoading = Date.now() - componentMountTime.current < 1000;
-        // If context (Month/Year) changed, reset the safety timer
-        if (!isSameContext) {
-            lastContextChangeTime.current = Date.now();
-        }
-
-        // Safety buffer: Don't fire confetti if we just switched months < 1 second ago
-        // This handles the delay where data goes 0 -> Amount during fetching
-        const isWarmupPeriod = Date.now() - lastContextChangeTime.current < 1000;
-
-        // fixing confetti being naughty
-        // if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
-        // fixing premature celebrations
-        // if (!isDataLoading && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
-        if (!isWarmupPeriod && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
-            // Trigger Confetti!
-            const duration = 3000;
-            const end = Date.now() + duration;
-
-            const frame = () => {
-                // Launch particles from left edge
-                confetti({
-                    particleCount: 2,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
-                    colors: ['#10B981', '#34D399', '#6EE7B7'] // Emerald greens
-                });
-                // Launch particles from right edge
-                confetti({
-                    particleCount: 2,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: ['#10B981', '#34D399', '#6EE7B7']
-                });
-
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
-                }
-            };
-            frame();
-        }
-
-        // Update ref for next render
-        prevIncomeRef.current = currentIncome;
-        // Fixing confetti being naughty
-        // }, [currentMonthIncome]);
-        prevMonthRef.current = selectedMonth;
-        prevYearRef.current = selectedYear;
-    }, [currentMonthIncome, selectedMonth, selectedYear]);
-
-    const getStatusStyles = (used, limit, type) => {
-        if (!limit || limit === 0) return "text-white/90 font-medium";
-        const ratio = used / limit;
-        if (ratio > 1) return "text-red-100 font-extrabold flex items-center justify-center gap-1 animate-pulse shadow-sm";
-
-        if (type === 'wants' && ratio > 0.90) {
-            if (isCurrentMonth && isEndOfMonth) return "text-white/90 font-medium";
-            return "text-amber-100 font-bold flex items-center justify-center gap-1";
-        }
-        return "text-white/90 font-medium";
-    };
-
-    // Helper for animated segments
-    const AnimatedSegment = ({ width, color, children, className = "", style = {}, to }) => (
-        <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${width}%` }}
-            transition={fluidSpring}
-            className={`h-full relative group ${to ? 'cursor-pointer' : 'cursor-default'} overflow-hidden ${className}`}
-            style={{ backgroundColor: color, ...style }}
-        >
-            {to ? (
-                <Link to={to} className="flex items-center justify-center h-full w-full hover:brightness-110 transition-all z-20">
-                    {children}
-                </Link>
-            ) : (
-                <div className="flex items-center justify-center h-full w-full">
-                    {children}
-                </div>
-            )}
-        </motion.div>
-    );
-
-    // --- RENDER: SIMPLE BAR ---
-    const renderSimpleBar = () => {
-        // const needsLabel = `${Math.round(needsPct)}%`;
-        // const wantsLabel = `${Math.round(wantsPct)}%`;
-        const needsLabel = `${Math.round(needsUtil)}%`;
-        const wantsLabel = `${Math.round(wantsUtil)}%`;
-        const savingsLabel = `${Math.round(savingsPct)}%`;
-
-        return (
-            <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
-                <AnimatedSegment
-                    width={needsPct}
-                    color={needsColor}
-                    className="border-r border-white/10"
-                    to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : null}
-                >
-                    {needsPct > 8 && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
-                            {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
-                            {FINANCIAL_PRIORITIES.needs.label} {needsLabel}
-                        </motion.div>
-                    )}
-                </AnimatedSegment>
-
-                <AnimatedSegment
-                    width={wantsPct}
-                    color={wantsColor}
-                    className="border-r border-white/10"
-                    to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : null}
-                >
-                    {wantsPct > 8 && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
-                            {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && (
-                                <Zap className="w-3 h-3 inline mr-1 fill-current" />
-                            )}
-                            {FINANCIAL_PRIORITIES.wants.label} {wantsLabel}
-                        </motion.div>
-                    )}
-                </AnimatedSegment>
-
-                {savingsPct > 0 && (
-                    <AnimatedSegment width={savingsPct} className="bg-emerald-500">
-                        {savingsPct > 8 && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
-                                Savings {savingsLabel}
-                            </motion.div>
-                        )}
-                    </AnimatedSegment>
-                )}
-            </div>
-        );
-    };
-
-    // --- RENDER: DETAILED BAR ---
-    const renderDetailedBar = () => {
-        const CLICKABLE_MIN_PCT = 5;
-        const rawNeedsPct = (needsSegs.total / safeIncome) * 100;
-        const needsVisualPct = needsSegs.total > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
-        const rawWantsPct = (wantsSegs.total / safeIncome) * 100;
-        const wantsVisualPct = wantsSegs.total > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
-
-        const needsLimitPct = (needsLimit / safeIncome) * 100;
-        const wantsLimitPct = (wantsLimit / safeIncome) * 100;
-        const totalLimitPct = needsLimitPct + wantsLimitPct;
-        const visualSpendingEnd = needsVisualPct + wantsVisualPct;
-
-        // const efficiencyBarPct = Math.max(0, totalLimitPct - visualSpendingEnd);
-        // Calculate the total space available for savings
-        const totalAvailableForSavings = Math.max(0, 100 - visualSpendingEnd);
-
-        // Get the specific target percentage from goals
-        const savingsGoal = goals.find(g => g.priority === 'savings');
-        const savingsGoalPct = savingsGoal?.target_percentage || 0;
-
-        // The 'Target' segment is either the goal or whatever is left if we overspent
-        const targetSavingsBarPct = Math.min(savingsGoalPct, totalAvailableForSavings);
-
-        // The 'Extra' segment is only the portion that exceeds the goal
-        const efficiencyBarPct = Math.max(0, totalAvailableForSavings - savingsGoalPct);
-
-        // const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
-
-        // Calculate Savings Utilization (Actual vs Target)
-        const savingsUtil = savingsLimit > 0 ? (savingsAmount / savingsLimit) * 100 : 0;
-
-        // Calculate actual currency values for labels
-        const targetSavingsAmount = (targetSavingsBarPct / 100) * safeIncome;
-        const extraSavingsAmount = (efficiencyBarPct / 100) * safeIncome;
-
-        const stripePattern = {
-            backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
-            backgroundSize: '8px 8px'
-        };
-
-        return (
-            <div className="relative h-10 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
-                {/* NEEDS */}
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${needsVisualPct}%` }}
-                    transition={fluidSpring}
-                    className="h-full relative border-r border-white/20"
-                >
-                    <Link
-                        to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
-                        className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
-                    >
-                        {needsSegs.safePaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safePaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: needsColor }} />
-                        )}
-                        {needsSegs.safeUnpaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-blue-500 opacity-60" style={stripePattern} />
-                        )}
-                        {needsSegs.overflow > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: 'red', ...stripePattern }} />
-                        )}
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                            <span className="truncate px-1">
-                                {formatCurrency(needsTotal, settings)}
-                                <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
-                            </span>
-                        </div>
-                    </Link>
-                </motion.div>
-
-                {/* WANTS */}
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${wantsVisualPct}%` }}
-                    transition={fluidSpring}
-                    className="h-full relative border-r border-white/20"
-                >
-                    <Link
-                        to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
-                        className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
-                    >
-                        {wantsSegs.safePaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safePaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: wantsColor }} />
-                        )}
-                        {wantsSegs.safeUnpaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safeUnpaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: wantsColor, ...stripePattern }} />
-                        )}
-                        {wantsSegs.overflow > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-red-500" style={stripePattern} />
-                        )}
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                            <span className="truncate px-1">
-                                {formatCurrency(wantsTotal, settings)}
-                                <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
-                            </span>
-                        </div>
-                    </Link>
-                </motion.div>
-
-                {/* TARGET SAVINGS (Dark Green) */}
-                {targetSavingsBarPct > 0 && (
-                    <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
-                            <span className="truncate px-1">
-                                {formatCurrency(targetSavingsAmount, settings)}
-                                {savingsLimit > 0 && <span className="opacity-80 ml-1">({Math.round(savingsUtil)}%)</span>}
-                            </span>
-                        </div>
-                    </AnimatedSegment>
-                )}
-                {/* EXTRA SAVINGS (Light Green) */}
-                {efficiencyBarPct > 0 && (
-                    <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-l border-white/20">
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                            Extra 
-                            {efficiencyBarPct > 5 && <span className="ml-1">({formatCurrency(extraSavingsAmount, settings)})</span>}
-                        </div>
-                    </AnimatedSegment>
-                )}
-            </div>
-        );
-    };
-
-    const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
-    const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
-    const isTotalOver = totalSpent > currentMonthIncome;
-
-    const ViewToggle = () => (
-        <div className="flex bg-gray-100/80 p-1 rounded-lg border border-gray-200/50 relative isolate">
-            <button
-                onClick={() => handleViewToggle(true)}
-                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
-            >
-                {isSimpleView && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }} // Start slightly "back" (Z-depth)
-                        animate={{ opacity: 1, scale: 1 }}    // Snap to front
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }} // Snappy pop effect
-                        className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
-                    />
-                )}
-                <LayoutList className="w-3.5 h-3.5" />
-                Simple
-            </button>
-            <button
-                onClick={() => handleViewToggle(false)}
-                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${!isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
-            >
-                {!isSimpleView && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
-                    />
-                )}
-                <BarChart3 className="w-3.5 h-3.5" />
-                Detailed
-            </button>
-        </div>
-    );
 
     return (
-        <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
-            <CardContent className="p-5 flex-1 flex flex-col">
-                <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
-                    <div className="flex-1 w-full sm:w-auto">
-                        {monthNavigator}
-                    </div>
-                    <div className="flex flex-col-reverse sm:flex-row items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                        <motion.div layout>
-                            <AnimatePresence>
-                                {!isEmptyMonth && (
-                                    <motion.div
-                                        key="view-toggle"
-                                        // key={`view-toggle-${selectedMonth}-${selectedYear}`}
-                                        initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                                        exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                                        transition={fluidSpring}
-                                    >
-                                        <ViewToggle />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </motion.div>
-                        <div className="flex items-center gap-2">
-                            {importDataButton}
-                            {addExpenseButton}
-                            {/* Conditionally highlight the Add Income button if the month is empty */}
-                            {isEmptyMonth && addIncomeButton ? (
-                                <motion.div
-                                    // "Breathing" animation: scales up to 10% larger and back down
-                                    animate={{ scale: [1, 1.1, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                    className="relative z-10"
-                                >
-                                    {/* Stronger Glow: Negative inset makes it bleed out, blur makes it glow */}
-                                    <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
-                                    <div className="relative">{addIncomeButton}</div>
-                                </motion.div>
-                            ) : (
-                                addIncomeButton
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-6">
-                    {isEmptyMonth ? (
-                        <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm">
-                                <Calendar className="w-8 h-8 text-emerald-600" />
-                            </div>
-                            <div className="space-y-2 max-w-sm">
-                                <h3 className="text-xl font-bold text-gray-900">Ready to plan for {monthName}?</h3>
-                                <p className="text-gray-500 text-sm leading-relaxed">
-                                    Start by adding your expected income to see your savings potential and unlock your budget goals.
-                                </p>
-                            </div>
-                        </div>
-
-                    ) : ( // Non-empty state continues below
-                        <>
-                            <div className="flex items-end justify-between">
-                                <div>
-                                    {isTotalOver ? (
-                                        <h2 className="text-3xl font-bold text-red-600 flex items-center gap-2">
-                                            Over Limit <AlertCircle className="w-6 h-6" />
-                                        </h2>
-                                    ) : (
-                                        <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                                            {Math.round(savingsPctDisplay)}% <span className="text-lg font-medium text-gray-500">Saved</span>
-                                        </h2>
-                                    )}
-                                    <div className="text-sm text-gray-500 mt-1">
-                                        {currentMonthIncome > 0 ? (
-                                            <>Spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong></>
-                                        ) : "No income recorded."}
-                                    </div>
-                                </div>
-
-                                {!isSimpleView && bonusSavingsPotential > 0 && !isTotalOver && (
-                                    <div className="text-right hidden sm:block">
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
-                                            <TrendingUp className="w-3 h-3 text-emerald-600" />
-                                            <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
-                                        </div>
-                                    </div>
-                                )}
-                                {isSimpleView && !isTotalOver && (
-                                    <div className="text-right hidden sm:block">
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100">
-                                            <Target className="w-3 h-3 text-gray-500" />
-                                            <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                {isSimpleView ? renderSimpleBar() : renderDetailedBar()}
-
-                                <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-400 pt-1 gap-2">
-                                    <div className="flex gap-4 items-center">
-                                        <span className="flex items-center gap-1.5">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: needsColor }}></div>
-                                            {FINANCIAL_PRIORITIES.needs.label}
-                                        </span>
-                                        <span className="flex items-center gap-1.5">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: wantsColor }}></div>
-                                            {FINANCIAL_PRIORITIES.wants.label}
-                                        </span>
-                                        {!isSimpleView && (
-                                            <>
-                                                <span className="flex items-center gap-1 ml-2">
-                                                    <div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Paid
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)', backgroundSize: '8px 8px' }}></div> Plan
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <GoalSummary />
-                                        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                                            <PopoverTrigger asChild>
-                                                <button className="flex items-center gap-1 text-xs hover:text-blue-600 transition-colors outline-none">
-                                                    <Target size={14} />
-                                                    <span>Goals</span>
-                                                </button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-3" align="end">
-                                                <QuickGoalsEditor
-                                                    goals={goals}
-                                                    settings={settings}
-                                                    updateSettings={updateSettings}
-                                                    user={user}
-                                                    onClose={() => setIsPopoverOpen(false)}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-
-
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
+      <div className="flex items-center gap-1 text-sm font-medium hidden sm:flex">
+        <span style={{ color: needsColor }}>{getValue('needs')}</span>
+        <span className="text-gray-300">/</span>
+        <span style={{ color: wantsColor }}>{getValue('wants')}</span>
+        <span className="text-gray-300">/</span>
+        <span style={{ color: savingsColor }}>{getValue('savings')}</span>
+      </div>
     );
+  };
+
+
+  // --- SEGMENT LOGIC (Detailed View) ---
+  const calculateSegments = (paid, unpaid, limit) => {
+    const total = paid + unpaid;
+    if (!limit || limit <= 0) return { safePaid: paid, safeUnpaid: unpaid, overflow: 0, total };
+    const overflow = Math.max(0, total - limit);
+    const safeTotal = total - overflow;
+    const safePaid = Math.min(paid, safeTotal);
+    const safeUnpaid = Math.max(0, safeTotal - safePaid);
+    return { safePaid, safeUnpaid, overflow, total };
+  };
+
+  const needsSegs = calculateSegments(needsData.paid, needsData.unpaid, needsLimit);
+
+  const wantsPaidTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0);
+  const wantsUnpaidTotal = (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
+  const wantsSegs = calculateSegments(wantsPaidTotal, wantsUnpaidTotal, wantsLimit);
+
+  // --- RENDER HELPERS ---
+  const handleViewToggle = (checked) => {
+    updateSettings({ barViewMode: checked });
+  };
+
+  // 1. WIDTH CALCULATIONS (Relative to Income)
+  // This determines how much physical space the bar takes up in the container
+  const needsPct = (needsTotal / safeIncome) * 100;
+  const wantsPct = (wantsTotal / safeIncome) * 100;
+  const savingsPct = Math.max(0, 100 - needsPct - wantsPct);
+
+  // 2. LABEL CALCULATIONS (Relative to Budget Limit)
+  // This determines the % text shown to the user (Utilization)
+  const needsUtil = needsLimit > 0 ? (needsTotal / needsLimit) * 100 : 0;
+  const wantsUtil = wantsLimit > 0 ? (wantsTotal / wantsLimit) * 100 : 0;
+
+  // Date Context
+  const now = new Date();
+  const isCurrentMonth =
+    // now.getMonth() === (settings.selectedMonth ?? now.getMonth()) &&
+    // now.getFullYear() === (settings.selectedYear ?? now.getFullYear());
+    now.getMonth() === selectedMonth &&
+    now.getFullYear() === selectedYear;
+
+  // const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  // Calculate days based strictly on the selected props
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
+  const currentDay = now.getDate();
+  const isEndOfMonth = currentDay >= (daysInMonth - 3);
+
+  // Detect "Clean Slate" State (No income AND no expenses)
+  const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
+
+  // Get explicit month name for the empty state message
+  // safeMonth no longer required
+  // const safeMonth = settings.selectedMonth ?? now.getMonth();
+  // const monthName = getMonthName(safeMonth);
+  const monthName = getMonthName(selectedMonth);
+
+  // --- CONFETTI LOGIC ---
+  // We track the previous income to detect the specific transition from 0 -> Amount
+  const prevIncomeRef = useRef(currentMonthIncome);
+  const prevMonthRef = useRef(selectedMonth);
+  const prevYearRef = useRef(selectedYear);
+  // fixing premature celebrations
+  // const componentMountTime = useRef(Date.now());
+  // Track when the month last changed to ignore "fetch-induced" income jumps
+  const lastContextChangeTime = useRef(Date.now());
+
+  useEffect(() => {
+    const prevIncome = prevIncomeRef.current;
+    const currentIncome = currentMonthIncome || 0;
+    // Ensure we are detecting a change WITHIN the same month context, not a navigation event
+    const isSameContext = prevMonthRef.current === selectedMonth && prevYearRef.current === selectedYear;
+
+
+    // Check if we went from 0 (or undefined) to having money
+    // AND ensure this isn't just the page loading (wait 1s buffer)
+    // fixing premature celerbations
+    // const isDataLoading = Date.now() - componentMountTime.current < 1000;
+    // If context (Month/Year) changed, reset the safety timer
+    if (!isSameContext) {
+      lastContextChangeTime.current = Date.now();
+    }
+
+    // Safety buffer: Don't fire confetti if we just switched months < 1 second ago
+    // This handles the delay where data goes 0 -> Amount during fetching
+    const isWarmupPeriod = Date.now() - lastContextChangeTime.current < 1000;
+
+    // fixing confetti being naughty
+    // if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+    // fixing premature celebrations
+    // if (!isDataLoading && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+    if (!isWarmupPeriod && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
+      // Trigger Confetti!
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        // Launch particles from left edge
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#10B981', '#34D399', '#6EE7B7'] // Emerald greens
+        });
+        // Launch particles from right edge
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#10B981', '#34D399', '#6EE7B7']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
+    }
+
+    // Update ref for next render
+    prevIncomeRef.current = currentIncome;
+    // Fixing confetti being naughty
+    // }, [currentMonthIncome]);
+    prevMonthRef.current = selectedMonth;
+    prevYearRef.current = selectedYear;
+  }, [currentMonthIncome, selectedMonth, selectedYear]);
+
+  const getStatusStyles = (used, limit, type) => {
+    if (!limit || limit === 0) return "text-white/90 font-medium";
+    const ratio = used / limit;
+    if (ratio > 1) return "text-red-100 font-extrabold flex items-center justify-center gap-1 animate-pulse shadow-sm";
+
+    if (type === 'wants' && ratio > 0.90) {
+      if (isCurrentMonth && isEndOfMonth) return "text-white/90 font-medium";
+      return "text-amber-100 font-bold flex items-center justify-center gap-1";
+    }
+    return "text-white/90 font-medium";
+  };
+
+  // Helper for animated segments
+  const AnimatedSegment = ({ width, color, children, className = "", style = {}, to }) => (
+    <motion.div
+      initial={{ width: 0 }}
+      animate={{ width: `${width}%` }}
+      transition={fluidSpring}
+      className={`h-full relative group ${to ? 'cursor-pointer' : 'cursor-default'} overflow-hidden ${className}`}
+      style={{ backgroundColor: color, ...style }}
+    >
+      {to ? (
+        <Link to={to} className="flex items-center justify-center h-full w-full hover:brightness-110 transition-all z-20">
+          {children}
+        </Link>
+      ) : (
+        <div className="flex items-center justify-center h-full w-full">
+          {children}
+        </div>
+      )}
+    </motion.div>
+  );
+
+  // --- RENDER: SIMPLE BAR ---
+  const renderSimpleBar = () => {
+    // const needsLabel = `${Math.round(needsPct)}%`;
+    // const wantsLabel = `${Math.round(wantsPct)}%`;
+    const needsLabel = `${Math.round(needsUtil)}%`;
+    const wantsLabel = `${Math.round(wantsUtil)}%`;
+    const savingsLabel = `${Math.round(savingsPct)}%`;
+
+    return (
+      <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
+        <AnimatedSegment
+          width={needsPct}
+          color={needsColor}
+          className="border-r border-white/10"
+          to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : null}
+        >
+          {needsPct > 8 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
+              {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
+              {FINANCIAL_PRIORITIES.needs.label} {needsLabel}
+            </motion.div>
+          )}
+        </AnimatedSegment>
+
+        <AnimatedSegment
+          width={wantsPct}
+          color={wantsColor}
+          className="border-r border-white/10"
+          to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : null}
+        >
+          {wantsPct > 8 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
+              {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && (
+                <Zap className="w-3 h-3 inline mr-1 fill-current" />
+              )}
+              {FINANCIAL_PRIORITIES.wants.label} {wantsLabel}
+            </motion.div>
+          )}
+        </AnimatedSegment>
+
+        {savingsPct > 0 && (
+          <AnimatedSegment width={savingsPct} className="bg-emerald-500">
+            {savingsPct > 8 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
+                Savings {savingsLabel}
+              </motion.div>
+            )}
+          </AnimatedSegment>
+        )}
+      </div>
+    );
+  };
+
+  // --- RENDER: DETAILED BAR ---
+  const renderDetailedBar = () => {
+    const CLICKABLE_MIN_PCT = 5;
+    const rawNeedsPct = (needsSegs.total / safeIncome) * 100;
+    const needsVisualPct = needsSegs.total > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
+    const rawWantsPct = (wantsSegs.total / safeIncome) * 100;
+    const wantsVisualPct = wantsSegs.total > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
+
+    const needsLimitPct = (needsLimit / safeIncome) * 100;
+    const wantsLimitPct = (wantsLimit / safeIncome) * 100;
+    const totalLimitPct = needsLimitPct + wantsLimitPct;
+    const visualSpendingEnd = needsVisualPct + wantsVisualPct;
+
+    // const efficiencyBarPct = Math.max(0, totalLimitPct - visualSpendingEnd);
+    // Calculate the total space available for savings
+    const totalAvailableForSavings = Math.max(0, 100 - visualSpendingEnd);
+
+    // Get the specific target percentage from goals
+    const savingsGoal = goals.find(g => g.priority === 'savings');
+    const savingsGoalPct = savingsGoal?.target_percentage || 0;
+
+    // The 'Target' segment is either the goal or whatever is left if we overspent
+    const targetSavingsBarPct = Math.min(savingsGoalPct, totalAvailableForSavings);
+
+    // The 'Extra' segment is only the portion that exceeds the goal
+    const efficiencyBarPct = Math.max(0, totalAvailableForSavings - savingsGoalPct);
+
+    // const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
+
+    // Calculate Savings Utilization (Actual vs Target)
+    const savingsUtil = savingsLimit > 0 ? (savingsAmount / savingsLimit) * 100 : 0;
+
+    // Calculate actual currency values for labels
+    const targetSavingsAmount = (targetSavingsBarPct / 100) * safeIncome;
+    const extraSavingsAmount = (efficiencyBarPct / 100) * safeIncome;
+
+    const stripePattern = {
+      backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
+      backgroundSize: '8px 8px'
+    };
+
+    return (
+      <div className="relative h-10 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
+        {/* NEEDS */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${needsVisualPct}%` }}
+          transition={fluidSpring}
+          className="h-full relative border-r border-white/20"
+        >
+          <Link
+            to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
+            className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
+          >
+            {needsSegs.safePaid > 0 && (
+              <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safePaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: needsColor }} />
+            )}
+            {needsSegs.safeUnpaid > 0 && (
+              <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-blue-500 opacity-60" style={stripePattern} />
+            )}
+            {needsSegs.overflow > 0 && (
+              <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: 'red', ...stripePattern }} />
+            )}
+            <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              <span className="truncate px-1">
+                {formatCurrency(needsTotal, settings)}
+                <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
+              </span>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* WANTS */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${wantsVisualPct}%` }}
+          transition={fluidSpring}
+          className="h-full relative border-r border-white/20"
+        >
+          <Link
+            to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
+            className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
+          >
+            {wantsSegs.safePaid > 0 && (
+              <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safePaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: wantsColor }} />
+            )}
+            {wantsSegs.safeUnpaid > 0 && (
+              <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safeUnpaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: wantsColor, ...stripePattern }} />
+            )}
+            {wantsSegs.overflow > 0 && (
+              <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-red-500" style={stripePattern} />
+            )}
+            <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              <span className="truncate px-1">
+                {formatCurrency(wantsTotal, settings)}
+                <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
+              </span>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* TARGET SAVINGS (Dark Green) */}
+        {targetSavingsBarPct > 0 && (
+          <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
+              <span className="truncate px-1">
+                {formatCurrency(targetSavingsAmount, settings)} ({Math.round(savingsUtil)}%)
+              </span>
+            </div>
+          </AnimatedSegment>
+        )}
+        {/* EXTRA SAVINGS (Light Green) */}
+        {efficiencyBarPct > 0 && (
+          <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-l border-white/20">
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+              {formatCurrency(extraSavingsAmount, settings)} ({Math.round(efficiencyBarPct)}%)
+            </div>
+          </AnimatedSegment>
+        )}
+      </div>
+    );
+  };
+
+  const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
+  const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
+  const isTotalOver = totalSpent > currentMonthIncome;
+
+  const ViewToggle = () => (
+    <div className="flex bg-gray-100/80 p-1 rounded-lg border border-gray-200/50 relative isolate">
+      <button
+        onClick={() => handleViewToggle(true)}
+        className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+      >
+        {isSimpleView && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }} // Start slightly "back" (Z-depth)
+            animate={{ opacity: 1, scale: 1 }}    // Snap to front
+            transition={{ type: "spring", stiffness: 500, damping: 30 }} // Snappy pop effect
+            className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
+          />
+        )}
+        <LayoutList className="w-3.5 h-3.5" />
+        Simple
+      </button>
+      <button
+        onClick={() => handleViewToggle(false)}
+        className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${!isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+      >
+        {!isSimpleView && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
+          />
+        )}
+        <BarChart3 className="w-3.5 h-3.5" />
+        Detailed
+      </button>
+    </div>
+  );
+
+  return (
+    <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
+      <CardContent className="p-5 flex-1 flex flex-col">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+          <div className="flex-1 w-full sm:w-auto">
+            {monthNavigator}
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+            <motion.div layout>
+              <AnimatePresence>
+                {!isEmptyMonth && (
+                  <motion.div
+                    key="view-toggle"
+                    // key={`view-toggle-${selectedMonth}-${selectedYear}`}
+                    initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                    transition={fluidSpring}
+                  >
+                    <ViewToggle />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            <div className="flex items-center gap-2">
+              {importDataButton}
+              {addExpenseButton}
+              {/* Conditionally highlight the Add Income button if the month is empty */}
+              {isEmptyMonth && addIncomeButton ? (
+                <motion.div
+                  // "Breathing" animation: scales up to 10% larger and back down
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative z-10"
+                >
+                  {/* Stronger Glow: Negative inset makes it bleed out, blur makes it glow */}
+                  <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
+                  <div className="relative">{addIncomeButton}</div>
+                </motion.div>
+              ) : (
+                addIncomeButton
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          {isEmptyMonth ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in fade-in zoom-in-95 duration-500">
+              <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm">
+                <Calendar className="w-8 h-8 text-emerald-600" />
+              </div>
+              <div className="space-y-2 max-w-sm">
+                <h3 className="text-xl font-bold text-gray-900">Ready to plan for {monthName}?</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Start by adding your expected income to see your savings potential and unlock your budget goals.
+                </p>
+              </div>
+            </div>
+
+          ) : ( // Non-empty state continues below
+            <>
+              <div className="flex items-end justify-between">
+                <div>
+                  {isTotalOver ? (
+                    <h2 className="text-3xl font-bold text-red-600 flex items-center gap-2">
+                      Over Limit <AlertCircle className="w-6 h-6" />
+                    </h2>
+                  ) : (
+                    <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                      {Math.round(savingsPctDisplay)}% <span className="text-lg font-medium text-gray-500">Saved</span>
+                    </h2>
+                  )}
+                  <div className="text-sm text-gray-500 mt-1">
+                    {currentMonthIncome > 0 ? (
+                      <>Spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong></>
+                    ) : "No income recorded."}
+                  </div>
+                </div>
+
+                {!isSimpleView && bonusSavingsPotential > 0 && !isTotalOver && (
+                  <div className="text-right hidden sm:block">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
+                      <TrendingUp className="w-3 h-3 text-emerald-600" />
+                      <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
+                    </div>
+                  </div>
+                )}
+                {isSimpleView && !isTotalOver && (
+                  <div className="text-right hidden sm:block">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100">
+                      <Target className="w-3 h-3 text-gray-500" />
+                      <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {isSimpleView ? renderSimpleBar() : renderDetailedBar()}
+
+                <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-400 pt-1 gap-2">
+                  <div className="flex gap-4 items-center">
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: needsColor }}></div>
+                      {FINANCIAL_PRIORITIES.needs.label}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: wantsColor }}></div>
+                      {FINANCIAL_PRIORITIES.wants.label}
+                    </span>
+                    {!isSimpleView && (
+                      <>
+                        <span className="flex items-center gap-1.5 ml-2">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: savingsColor }}></div>
+                          Savings
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-emerald-300"></div>
+                          Extra
+                        </span>
+                        <span className="flex items-center gap-1 ml-2 border-l border-gray-200 pl-4">
+                          <div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Paid
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)', backgroundSize: '8px 8px' }}></div> Plan
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <GoalSummary />
+                    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <button className="flex items-center gap-1 text-xs hover:text-blue-600 transition-colors outline-none">
+                          <Target size={14} />
+                          <span>Goals</span>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" align="end">
+                        <QuickGoalsEditor
+                          goals={goals}
+                          settings={settings}
+                          updateSettings={updateSettings}
+                          user={user}
+                          onClose={() => setIsPopoverOpen(false)}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
