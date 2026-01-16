@@ -137,7 +137,7 @@ export default function ReportStats({
                         {/* Analysis Badge - Comparison vs Last Month */}
                         <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${netFlowDiffPercent >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                             {getArrow(netFlowDiffPercent)}
-                            <span>{Math.abs(netFlowDiffPercent).toFixed(0)}% vs last month</span>
+                            <span>{Math.abs(netFlowDiffPercent).toFixed(0)}% vs the previous month</span>
                         </div>
                         {/* Projection Badge */}
                         {isCurrentMonth ? (
