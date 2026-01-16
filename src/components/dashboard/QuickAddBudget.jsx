@@ -4,8 +4,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import CustomBudgetForm from "../custombudgets/CustomBudgetForm";
+import BudgetCreationWizard from "../custombudgets/BudgetCreationWizard";
 import { useSettings } from "../utils/SettingsContext";
+import { useTransactions, useCategories } from "../hooks/useBase44Entities";
 
 export default function QuickAddBudget({
     open,
@@ -15,6 +16,8 @@ export default function QuickAddBudget({
     baseCurrency
 }) {
     const { settings } = useSettings();
+    const { transactions } = useTransactions();
+    const { categories } = useCategories();
 
     const handleSubmitWrapper = (data) => {
         onSubmit(data);
@@ -24,19 +27,20 @@ export default function QuickAddBudget({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+                className="sm:max-w-5xl max-h-[90vh] overflow-y-auto"
                 aria-describedby="create-budget-description"
             >
-                <span id="create-budget-description" className="sr-only">Create a new custom budget</span>
+                <span id="create-budget-description" className="sr-only">Create a new custom budget with AI assistance</span>
                 <DialogHeader>
                     <DialogTitle>Create Budget</DialogTitle>
                 </DialogHeader>
-                <CustomBudgetForm
+                <BudgetCreationWizard
+                    transactions={transactions}
+                    categories={categories}
+                    settings={settings}
                     onSubmit={handleSubmitWrapper}
                     onCancel={() => onOpenChange(false)}
                     isSubmitting={isSubmitting}
-                    baseCurrency={baseCurrency}
-                    settings={settings}
                 />
             </DialogContent>
         </Dialog>
