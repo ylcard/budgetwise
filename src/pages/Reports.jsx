@@ -16,6 +16,7 @@ import ProjectionChart from "../components/reports/ProjectionChart";
 import ReportStats, { FinancialHealthScore } from "../components/reports/ReportStats";
 import { calculateProjection } from "../components/utils/projectionUtils";
 import { calculateBonusSavingsPotential } from "../components/utils/financialCalculations";
+import InfoTooltip from "../components/ui/InfoTooltip"; // ADDED: 16-Jan-2026
 
 export default function Reports() {
     const { user, settings } = useSettings();
@@ -116,6 +117,16 @@ export default function Reports() {
 
                 {/* 2. Historical Context & Future Projection */}
                 <div className="w-full">
+                    <div className="mb-2 flex items-center gap-1">
+                        <h2 className="text-lg font-semibold text-gray-900 inline-flex items-center">
+                            Financial Horizon
+                            <InfoTooltip
+                                title="Financial Horizon"
+                                description="A 6-month projection of your future spending based on historical patterns and trends. Helps you anticipate upcoming expenses and plan accordingly."
+                                wikiUrl="https://en.wikipedia.org/wiki/Time_horizon"
+                            />
+                        </h2>
+                    </div>
                     <ProjectionChart
                         transactions={transactions}
                         categories={categories}

@@ -6,6 +6,7 @@ import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
 import { calculateFinancialHealth } from "../utils/financialHealthAlgorithms"; // ADDED: 16-Jan-2026
 import { motion } from "framer-motion";
+import InfoTooltip from "../ui/InfoTooltip"; // ADDED: 16-Jan-2026
 
 // COMMENTED OUT: 16-Jan-2026 - Moved to financialHealthAlgorithms.jsx
 // // Helper: Calculate spend up to a specific day of the month
@@ -99,7 +100,14 @@ export default function ReportStats({
             <Card className="border-none shadow-sm">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium text-gray-500">Savings Rate</p>
+                        <p className="text-sm font-medium text-gray-500 inline-flex items-center">
+                            Savings Rate
+                            <InfoTooltip
+                                title="Savings Rate"
+                                description="The percentage of your income that you save after expenses. A higher savings rate indicates better financial health and more money available for future goals."
+                                wikiUrl="https://en.wikipedia.org/wiki/Savings_rate"
+                            />
+                        </p>
                         <motion.h3
                             initial={{ y: 5, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -125,7 +133,14 @@ export default function ReportStats({
             <Card className="border-none shadow-sm">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium text-gray-500">Net Flow</p>
+                        <p className="text-sm font-medium text-gray-500 inline-flex items-center">
+                            Net Flow
+                            <InfoTooltip
+                                title="Net Flow"
+                                description="Your total income minus total expenses. A positive net flow means you're earning more than you spend. A negative net flow indicates overspending."
+                                wikiUrl="https://en.wikipedia.org/wiki/Cash_flow"
+                            />
+                        </p>
                         <motion.h3
                             initial={{ y: 5, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -162,7 +177,13 @@ export default function ReportStats({
             <Card className="border-none shadow-sm">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium text-gray-500">Efficiency Bonus</p>
+                        <p className="text-sm font-medium text-gray-500 inline-flex items-center">
+                            Efficiency Bonus
+                            <InfoTooltip
+                                title="Efficiency Bonus"
+                                description="The amount of money you saved by spending less than your allocated Needs and Wants budgets. This represents your behavioral savings from disciplined spending."
+                            />
+                        </p>
                         <motion.h3
                             initial={{ y: 5, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -354,31 +375,70 @@ export function FinancialHealthScore({
                 </div>
                 {/* Text Summary */}
                 <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                    <h3 className="font-bold text-lg text-gray-900 inline-flex items-center gap-2">
                         <Activity className="w-5 h-5 text-blue-600" /> Financial Health
+                        <InfoTooltip
+                            title="Financial Health Score"
+                            description="A composite score (0-100) that evaluates your overall financial wellness based on spending habits, sustainability, consistency, and trends. Higher scores indicate stronger financial health."
+                            wikiUrl="https://en.wikipedia.org/wiki/Financial_wellness"
+                        />
                     </h3>
                     <p className="text-sm text-gray-500 mt-1">
                         Composite score analyzing real-time pacing, sustainability, volatility, savings consistency, and lifestyle trends.
                     </p>
                     <div className="grid grid-cols-5 gap-2 mt-4">
                         <div className="text-xs">
-                            <span className="block text-gray-400">Pacing</span>
+                            <span className="block text-gray-400 inline-flex items-center">
+                                Pacing
+                                <InfoTooltip
+                                    title="Pacing Score"
+                                    description="Compares your current spending to your 3-month historical average for the same day of the month. Shows if you're spending faster or slower than usual."
+                                />
+                            </span>
                             <span className="font-semibold">{pacingScore}</span>
                         </div>
                         <div className="text-xs">
-                            <span className="block text-gray-400">Burn</span>
+                            <span className="block text-gray-400 inline-flex items-center">
+                                Burn
+                                <InfoTooltip
+                                    title="Burn Ratio"
+                                    description="Measures spending sustainability against your income. Evaluates if your current spending rate will keep you within 80% of your income by month-end."
+                                    wikiUrl="https://en.wikipedia.org/wiki/Burn_rate"
+                                />
+                            </span>
                             <span className="font-semibold">{ratioScore}</span>
                         </div>
                         <div className="text-xs">
-                            <span className="block text-gray-400">Stable</span>
+                            <span className="block text-gray-400 inline-flex items-center">
+                                Stable
+                                <InfoTooltip
+                                    title="Stability Score"
+                                    description="Analyzes spending volatility over the last 6 months using Coefficient of Variation. Lower volatility means more predictable and stable spending patterns."
+                                    wikiUrl="https://en.wikipedia.org/wiki/Coefficient_of_variation"
+                                />
+                            </span>
                             <span className="font-semibold">{stabilityScore}</span>
                         </div>
                         <div className="text-xs">
-                            <span className="block text-gray-400">Sharpe</span>
+                            <span className="block text-gray-400 inline-flex items-center">
+                                Sharpe
+                                <InfoTooltip
+                                    title="Financial Sharpe Ratio"
+                                    description="Risk-adjusted savings consistency. Measures your average monthly savings relative to its volatility. Higher values indicate consistent, reliable saving behavior."
+                                    wikiUrl="https://en.wikipedia.org/wiki/Sharpe_ratio"
+                                />
+                            </span>
                             <span className="font-semibold">{sharpeScore}</span>
                         </div>
                         <div className="text-xs">
-                            <span className="block text-gray-400">Creep</span>
+                            <span className="block text-gray-400 inline-flex items-center">
+                                Creep
+                                <InfoTooltip
+                                    title="Lifestyle Creep Index"
+                                    description="Compares your expense growth rate vs. income growth rate over 6 months. Detects if your spending is increasing faster than your earnings."
+                                    wikiUrl="https://en.wikipedia.org/wiki/Lifestyle_inflation"
+                                />
+                            </span>
                             <span className="font-semibold">{creepScore}</span>
                         </div>
                     </div>
