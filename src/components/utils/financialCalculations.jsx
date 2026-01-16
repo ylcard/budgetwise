@@ -326,25 +326,38 @@ export const getCustomBudgetAllocationStats = (customBudget, allocations, transa
  * UPDATED: Accepts settings to correctly resolve the limits.
  */
 export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
-    let netPotential = 0;
+    // let netPotential = 0;
 
     // Calculate everything once
-    const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, startDate, endDate);
+    // const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, startDate, endDate);
 
+    // 1. Get the Goals (the percentages/amounts)
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
 
-    if (needsBudget) {
-        const limit = resolveBudgetLimit(needsBudget, monthlyIncome, settings, historicalAverage);
-        netPotential += limit - breakdown.needs.total;
-    }
+    // if (needsBudget) {
+    //     const limit = resolveBudgetLimit(needsBudget, monthlyIncome, settings, historicalAverage);
+    //     netPotential += limit - breakdown.needs.total;
+    // }
 
-    if (wantsBudget) {
-        const limit = resolveBudgetLimit(wantsBudget, monthlyIncome, settings, historicalAverage);
-        netPotential += limit - breakdown.wants.total;
-    }
+    // if (wantsBudget) {
+    //     const limit = resolveBudgetLimit(wantsBudget, monthlyIncome, settings, historicalAverage);
+    //     netPotential += limit - breakdown.wants.total;
+    // }
 
-    return netPotential;
+    // return netPotential;
+    
+    // 2. Calculate the combined Limit (€) for this specific month's income
+    const needsLimit = resolveBudgetLimit(needsBudget, monthlyIncome, settings, historicalAverage);
+    const wantsLimit = resolveBudgetLimit(wantsBudget, monthlyIncome, settings, historicalAverage);
+    const totalLimit = needsLimit + wantsLimit;
+
+    // 3. Get total spending for this month (using the existing simple function)
+    // We use getMonthlyPaidExpenses because efficiency is based on what you actually paid.
+    const actualSpent = getMonthlyPaidExpenses(transactions, startDate, endDate);
+
+    // 4. Bonus = What you were allowed to spend - What you actually spent
+    return totalLimit - actualSpent;
 };
 
 /**
