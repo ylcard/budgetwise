@@ -25,6 +25,14 @@ export const PeriodProvider = ({ children }) => {
         return now.getFullYear();
     }, []);
 
+    const previousMonth = useMemo(() => {
+        return selectedMonth === 0 ? 11 : selectedMonth - 1;
+    }, [selectedMonth]);
+
+    const previousYear = useMemo(() => {
+        return selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+    }, [selectedMonth, selectedYear]);
+
     const value = {
         selectedMonth,
         setSelectedMonth,
@@ -34,6 +42,8 @@ export const PeriodProvider = ({ children }) => {
         monthStart,
         monthEnd,
         currentYear,
+        previousMonth,
+        previousYear,
     };
 
     return <PeriodContext.Provider value={value}>{children}</PeriodContext.Provider>;
