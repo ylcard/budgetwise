@@ -60,7 +60,9 @@ const GRADE_CONFIG = {
 export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
     if (!feasibility) return null;
     
+    // ADDED: 16-Jan-2026 - Temporal context awareness
     const isFuture = feasibility.temporalContext === 'future';
+    const isOngoing = feasibility.temporalContext === 'ongoing';
 
     const config = GRADE_CONFIG[feasibility.feasibilityGrade] || GRADE_CONFIG['F'];
     const IconComponent = config.icon;
@@ -68,6 +70,18 @@ export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
 
     return (
         <div className="space-y-4">
+            {/* Temporal Context Indicator */}
+            {isFuture && (
+                <div className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                    <strong>Future Budget:</strong> This analysis shows hypothetical impact based on your current spending patterns.
+                </div>
+            )}
+            {isOngoing && (
+                <div className="text-xs text-yellow-600 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-200">
+                    <strong>Ongoing Budget:</strong> Analysis based on current financial state during the event.
+                </div>
+            )}
+
             {/* Grade Card */}
             <Card className={`border-2 ${config.borderColor}`}>
                 <CardContent className="p-4">

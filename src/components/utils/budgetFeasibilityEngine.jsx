@@ -25,9 +25,21 @@ export function checkBudgetImpact(proposedAmount, startDate, endDate, transactio
         return {
             feasibilityGrade: 'F',
             isAffordable: false,
-            message: 'Insufficient data for analysis'
+            message: 'Insufficient data for analysis',
+            temporalContext: 'unknown'
         };
     }
+
+    // ADDED: 16-Jan-2026 - Temporal awareness
+    const now = new Date();
+    const budgetStart = new Date(startDate);
+    const budgetEnd = new Date(endDate);
+    
+    const isFuture = budgetStart > now;
+    const isOngoing = budgetStart <= now && budgetEnd >= now;
+    const isPast = budgetEnd < now;
+    
+    const temporalContext = isFuture ? 'future' : isOngoing ? 'ongoing' : 'past';
 
     // Calculate historical net flow (last 6 months)
     const today = new Date();
@@ -112,6 +124,7 @@ export function checkBudgetImpact(proposedAmount, startDate, endDate, transactio
         feasibilityGrade: grade,
         isAffordable,
         message,
+        temporalContext, // ADDED: 16-Jan-2026
         metrics: {
             avgMonthlyIncome: Math.round(avgMonthlyIncome),
             avgMonthlyExpenses: Math.round(avgMonthlyExpenses),
