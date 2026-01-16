@@ -32,6 +32,7 @@ import BudgetCard from "../components/budgets/BudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
 import BudgetPostMortem from "../components/budgetdetail/BudgetPostMortem"; // ADDED: 16-Jan-2026
+import ExpenseFilters from "../components/budgetdetail/ExpenseFilters"; // ADDED: 16-Jan-2026
 
 export default function BudgetDetail() {
     const { settings } = useSettings();
@@ -40,6 +41,13 @@ export default function BudgetDetail() {
     const navigate = useNavigate();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const { confirmAction } = useConfirm();
+
+    // ADDED: 16-Jan-2026 - Expense filtering state
+    const [expenseFilters, setExpenseFilters] = useState({
+        categories: [],
+        paidStatus: 'all',
+        priorities: []
+    });
 
     const { monthStart, monthEnd } = usePeriod();
 
@@ -228,6 +236,43 @@ export default function BudgetDetail() {
         return transactions.filter(t => t.customBudgetId === budgetId);
     }, [transactions, budgetId, budget, categories, allCustomBudgets]);
 
+    // ADDED: 16-Jan-2026 - Filtered transactions based on user filters
+    const filteredTransactions = useMemo(() => {
+        let filtered = budgetTransactions;
+
+        // Filter by payment status
+        if (expenseFilters.paidStatus === 'paid') {
+            filtered = filtered.filter(t => t.isPaid);
+        } else if (expenseFilters.paidStatus === 'unpaid') {
+            filtered = filtered.filter(t => !t.isPaid);
+        }
+
+        // Filter by categories
+        if (expenseFilters.categories.length > 0) {
+            filtered = filtered.filter(t => expenseFilters.categories.includes(t.category_id));
+        }
+
+        // Filter by priorities
+        if (expenseFilters.priorities.length > 0) {
+            filtered = filtered.filter(t => {
+                const category = categories.find(c => c.id === t.category_id);
+                const effectivePriority = t.financial_priority || (category ? category.priority : null);
+                return expenseFilters.priorities.includes(effectivePriority);
+            });
+        }
+
+        return filtered;
+    }, [budgetTransactions, expenseFilters, categories]);
+
+    // ADDED: 16-Jan-2026 - Active filter count
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (expenseFilters.paidStatus !== 'all') count++;
+        if (expenseFilters.categories.length > 0) count += expenseFilters.categories.length;
+        if (expenseFilters.priorities.length > 0) count += expenseFilters.priorities.length;
+        return count;
+    }, [expenseFilters]);
+
     const relatedCustomBudgetsForDisplay = useMemo(() => {
         if (!budget || !budget.isSystemBudget || budget.systemBudgetType !== 'wants') return [];
         return allCustomBudgets
@@ -413,7 +458,9 @@ export default function BudgetDetail() {
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle>{budget.isSystemBudget ? 'Direct Expenses' : 'Expenses'} ({budgetTransactions.length})</CardTitle>
+                            <CardTitle>
+                                {budget.isSystemBudget ? 'Direct Expenses' : 'Expenses'} ({filteredTransactions.length}{budgetTransactions.length !== filteredTransactions.length ? ` of ${budgetTransactions.length}` : ''})
+                            </CardTitle>
                             {budget.isSystemBudget && <p className="text-sm text-gray-500">Expenses not part of any custom budget</p>}
                         </div>
                         <QuickAddTransaction
@@ -428,17 +475,33 @@ export default function BudgetDetail() {
                             triggerSize="sm"
                         />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
+                        {/* ADDED: 16-Jan-2026 - Expense filters */}
+                        <ExpenseFilters
+                            categories={categories}
+                            filters={expenseFilters}
+                            onFilterChange={setExpenseFilters}
+                            activeFilterCount={activeFilterCount}
+                        />
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {budgetTransactions.map((t) => (
-                                <TransactionCard
-                                    key={t.id}
-                                    transaction={t}
-                                    category={categoryMap[t.category_id]}
-                                    onEdit={(t, data) => transactionActions.handleSubmit(data, t)}
-                                    onDelete={() => transactionActions.handleDelete(t)}
-                                />
-                            ))}
+                            {filteredTransactions.length > 0 ? (
+                                filteredTransactions.map((t) => (
+                                    <TransactionCard
+                                        key={t.id}
+                                        transaction={t}
+                                        category={categoryMap[t.category_id]}
+                                        onEdit={(t, data) => transactionActions.handleSubmit(data, t)}
+                                        onDelete={() => transactionActions.handleDelete(t)}
+                                    />
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center py-8 text-gray-500">
+                                    {budgetTransactions.length === 0 
+                                        ? 'No expenses yet. Add your first expense above.'
+                                        : 'No expenses match the selected filters.'}
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
