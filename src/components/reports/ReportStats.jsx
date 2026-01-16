@@ -27,6 +27,7 @@ export default function ReportStats({
     monthlyIncome = 0,
     prevTransactions = [],
     prevMonthlyIncome = 0,
+    fullHistory = [],
     isLoading,
     settings,
     safeBaseline = 0,
