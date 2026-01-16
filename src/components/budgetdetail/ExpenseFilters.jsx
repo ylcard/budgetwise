@@ -88,7 +88,7 @@ export default function ExpenseFilters({
     const hasActiveFilters = activeFilterCount > 0;
 
     return (
-        <div className={`border rounded-lg bg-white transition-all duration-300 ${isOpen ? 'w-full' : 'w-12'} overflow-visible`}>
+        <div className={`border rounded-lg bg-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-12'} overflow-visible`}>
             {/* Header - Always visible */}
             <div className="flex items-center justify-between px-3 py-2.5 border-b">
                 {isOpen ? (
