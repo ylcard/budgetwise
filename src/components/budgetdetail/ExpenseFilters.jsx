@@ -88,140 +88,153 @@ export default function ExpenseFilters({
     const hasActiveFilters = activeFilterCount > 0;
 
     return (
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-            <div className="border rounded-lg bg-white">
-                <CollapsibleTrigger className="w-full">
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
+        <div className={`border rounded-lg bg-white transition-all duration-300 ${isOpen ? 'w-full' : 'w-12'} overflow-visible`}>
+            {/* Header - Always visible */}
+            <div className="flex items-center justify-between px-3 py-2.5 border-b">
+                {isOpen ? (
+                    <>
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                             <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
                             <span className="font-medium text-gray-900 text-sm">Filters</span>
                             {hasActiveFilters && (
-                                <>
-                                    <Badge variant="secondary" className="flex-shrink-0">
-                                        {activeFilterCount}
-                                    </Badge>
-                                    {!isOpen && filterSummary && (
-                                        <span className="text-xs text-gray-500 truncate">
-                                            {filterSummary}
-                                        </span>
-                                    )}
-                                </>
+                                <Badge variant="secondary" className="flex-shrink-0">
+                                    {activeFilterCount}
+                                </Badge>
                             )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            {hasActiveFilters && !isOpen && (
+                            {hasActiveFilters && (
                                 <CustomButton 
                                     variant="ghost" 
                                     size="sm"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        clearFilters();
-                                    }}
+                                    onClick={clearFilters}
                                     className="h-7 px-2 text-xs"
                                 >
                                     Clear
                                 </CustomButton>
                             )}
-                            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            >
+                                <ChevronDown className="w-4 h-4 text-gray-500 -rotate-90" />
+                            </button>
                         </div>
-                    </div>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent>
-                    <div className="border-t p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Payment Status Column */}
-                            <div>
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Payment Status</h4>
-                                <div className="space-y-2">
-                                    {['all', 'paid', 'unpaid'].map((status) => (
-                                        <div key={status} className="flex items-center gap-2">
-                                            <Checkbox
-                                                id={`status-${status}`}
-                                                checked={filters.paidStatus === status}
-                                                onCheckedChange={() => handlePaidStatusChange(status)}
-                                            />
-                                            <Label 
-                                                htmlFor={`status-${status}`}
-                                                className="text-sm text-gray-700 cursor-pointer capitalize"
-                                            >
-                                                {status}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Priority Column - Only show if there are multiple priorities */}
-                            {availablePriorities.length > 1 && (
-                                <div>
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Priority</h4>
-                                    <div className="space-y-2">
-                                        {availablePriorities.map((priority) => (
-                                            <div key={priority} className="flex items-center gap-2">
-                                                <Checkbox
-                                                    id={`priority-${priority}`}
-                                                    checked={(filters.priorities || []).includes(priority)}
-                                                    onCheckedChange={() => handlePriorityToggle(priority)}
-                                                />
-                                                <Label 
-                                                    htmlFor={`priority-${priority}`}
-                                                    className="text-sm text-gray-700 cursor-pointer capitalize"
-                                                >
-                                                    {priority}
-                                                </Label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                    </>
+                ) : (
+                    <div className="flex flex-col items-center gap-2 w-full">
+                        <button
+                            onClick={() => setIsOpen(true)}
+                            className="p-1.5 hover:bg-gray-100 rounded transition-colors relative"
+                            title="Open filters"
+                        >
+                            <Filter className="w-4 h-4 text-gray-500" />
+                            {hasActiveFilters && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full text-[8px] text-white flex items-center justify-center">
+                                    {activeFilterCount}
+                                </span>
                             )}
-
-                            {/* Categories Column - Only show categories that exist */}
-                            {availableCategories.length > 0 && (
-                                <div className={availablePriorities.length <= 1 ? 'md:col-span-2' : ''}>
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                                        Categories ({availableCategories.length})
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                                        {availableCategories.map((category) => (
-                                            <button
-                                                key={category.id}
-                                                onClick={() => handleCategoryToggle(category.id)}
-                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                                                    (filters.categories || []).includes(category.id)
-                                                        ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-600'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                            >
-                                                <span 
-                                                    className="w-2 h-2 rounded-full flex-shrink-0" 
-                                                    style={{ backgroundColor: category.color }}
-                                                />
-                                                {category.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Clear All Button */}
+                        </button>
                         {hasActiveFilters && (
-                            <div className="mt-4 pt-4 border-t">
-                                <CustomButton 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={clearFilters}
-                                    className="w-full"
-                                >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Clear All Filters
-                                </CustomButton>
-                            </div>
+                            <CustomButton 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={clearFilters}
+                                className="h-7 w-7 p-0"
+                                title="Clear filters"
+                            >
+                                <X className="w-3 h-3" />
+                            </CustomButton>
                         )}
                     </div>
-                </CollapsibleContent>
+                )}
             </div>
-        </Collapsible>
+
+            {/* Filter Content - Only visible when expanded */}
+            {isOpen && (
+                <div className="p-4 space-y-6 overflow-visible">
+                    {/* Filter Summary when expanded */}
+                    {hasActiveFilters && filterSummary && (
+                        <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded">
+                            Active: {filterSummary}
+                        </div>
+                    )}
+
+                    {/* Payment Status */}
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Payment Status</h4>
+                        <div className="space-y-2">
+                            {['all', 'paid', 'unpaid'].map((status) => (
+                                <div key={status} className="flex items-center gap-2">
+                                    <Checkbox
+                                        id={`status-${status}`}
+                                        checked={filters.paidStatus === status}
+                                        onCheckedChange={() => handlePaidStatusChange(status)}
+                                    />
+                                    <Label 
+                                        htmlFor={`status-${status}`}
+                                        className="text-sm text-gray-700 cursor-pointer capitalize"
+                                    >
+                                        {status}
+                                    </Label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Priority - Only show if there are multiple priorities */}
+                    {availablePriorities.length > 1 && (
+                        <div>
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Priority</h4>
+                            <div className="space-y-2">
+                                {availablePriorities.map((priority) => (
+                                    <div key={priority} className="flex items-center gap-2">
+                                        <Checkbox
+                                            id={`priority-${priority}`}
+                                            checked={(filters.priorities || []).includes(priority)}
+                                            onCheckedChange={() => handlePriorityToggle(priority)}
+                                        />
+                                        <Label 
+                                            htmlFor={`priority-${priority}`}
+                                            className="text-sm text-gray-700 cursor-pointer capitalize"
+                                        >
+                                            {priority}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Categories - Only show categories that exist */}
+                    {availableCategories.length > 0 && (
+                        <div>
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                                Categories ({availableCategories.length})
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                                {availableCategories.map((category) => (
+                                    <button
+                                        key={category.id}
+                                        onClick={() => handleCategoryToggle(category.id)}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 ${
+                                            (filters.categories || []).includes(category.id)
+                                                ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-600'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <span 
+                                            className="w-2 h-2 rounded-full flex-shrink-0" 
+                                            style={{ backgroundColor: category.color }}
+                                        />
+                                        {category.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

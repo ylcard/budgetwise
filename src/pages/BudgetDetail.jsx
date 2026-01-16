@@ -478,7 +478,7 @@ export default function BudgetDetail() {
                     <CardContent>
                         <div className="flex flex-col md:flex-row gap-4">
                             {/* ADDED: 16-Jan-2026 - Expense filters on left side */}
-                            <div className="w-full md:w-64 flex-shrink-0">
+                            <div className="flex-shrink-0">
                                 <ExpenseFilters
                                     categories={categories}
                                     transactions={budgetTransactions}
@@ -489,7 +489,7 @@ export default function BudgetDetail() {
                             </div>
 
                             {/* Expense cards on right side */}
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {filteredTransactions.length > 0 ? (
                                         filteredTransactions.map((t) => (
