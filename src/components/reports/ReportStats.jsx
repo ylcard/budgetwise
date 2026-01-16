@@ -27,7 +27,6 @@ export default function ReportStats({
     monthlyIncome = 0,
     prevTransactions = [],
     prevMonthlyIncome = 0,
-    fullHistory = [],
     isLoading,
     settings,
     safeBaseline = 0,
@@ -189,6 +188,7 @@ export default function ReportStats({
 export function FinancialHealthScore({
     monthlyIncome,
     transactions,
+    fullHistory = [],
     prevMonthlyIncome,
     prevTransactions,
     startDate,
