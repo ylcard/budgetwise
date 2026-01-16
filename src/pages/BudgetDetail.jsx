@@ -213,6 +213,7 @@ export default function BudgetDetail() {
             const allCustomBudgetIds = allCustomBudgets.map(cb => cb.id);
 
             return transactions.filter(t => {
+                if (t.customBudgetId === budget.id) return true
                 if (t.type !== 'expense' || !t.category_id) return false;
                 const category = categories.find(c => c.id === t.category_id);
                 const effectivePriority = t.financial_priority || (category ? category.priority : null);
