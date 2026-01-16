@@ -32,21 +32,21 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
             const expandedWidth = 280;
             const collapsedWidth = 140;
             const expansion = expandedWidth - collapsedWidth; // 140px total expansion
-            
+
             // Calculate centered position
             const centerOffset = -expansion / 2; // -70px to center
             const leftEdge = anchorRect.left + centerOffset;
             const rightEdge = anchorRect.right + centerOffset + expansion;
-            
+
             let finalOffset = centerOffset;
-            
+
             // Clamp within viewport with 20px padding
             if (leftEdge < 20) {
                 finalOffset = 20 - anchorRect.left;
             } else if (rightEdge > window.innerWidth - 20) {
                 finalOffset = (window.innerWidth - 20) - anchorRect.right - expansion;
             }
-            
+
             setOffsetX(finalOffset);
         }
     }, [isHovered]);
@@ -64,22 +64,20 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
         >
             {/* Absolutely Positioned Card - Expands from Center */}
             <div
-                className={`absolute top-0 bg-white border border-gray-200 transition-all duration-300 ease-out ${
-                    isHovered ? 'shadow-lg' : 'shadow-sm'
-                }`}
+                className={`absolute top-0 bg-white border border-gray-200 transition-all duration-300 ease-out ${isHovered ? 'shadow-xl z-50' : 'shadow-sm z-10' // Increased Z-Index to overlap neighbors
+                    }`}
                 style={{
                     borderRadius: '16px',
                     width: isHovered ? '280px' : '140px',
                     height: '140px',
-                    left: `${offsetX}px`,
+                    left: isHovered ? `${offsetX}px` : '0px',
                     zIndex: isHovered ? 10 : 1,
                 }}
             >
                 {/* Collapsed State - Vertical Layout */}
                 <div
-                    className={`absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 transition-opacity duration-200 ${
-                        isHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                    }`}
+                    className={`absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 transition-opacity duration-200 ${isHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                        }`}
                 >
                     {/* Icon Circle */}
                     <div
@@ -110,9 +108,8 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
 
                 {/* Expanded State - Horizontal Layout */}
                 <div
-                    className={`absolute inset-0 flex items-center gap-3 p-4 transition-opacity duration-200 ${
-                        isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                    }`}
+                    className={`absolute inset-0 flex items-center gap-3 p-4 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        }`}
                 >
                     {/* Left Side - Icon and Price */}
                     <div className="flex flex-col items-center gap-2 flex-shrink-0">
