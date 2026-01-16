@@ -74,29 +74,25 @@ export default function BudgetCreationWizard({
         setFeasibility(null);
     };
 
-    // Calculate feasibility when form data changes
-    useEffect(() => {
-        if (!formData || !formData.allocatedAmount || !formData.startDate || !formData.endDate) {
-            setFeasibility(null);
-            return;
+    // Real-time feasibility calculation as form changes
+    const handleFormChange = (updatedData) => {
+        setFormData(updatedData);
+        
+        // Calculate feasibility immediately on change
+        if (updatedData.allocatedAmount && updatedData.startDate && updatedData.endDate) {
+            const amount = parseFloat(updatedData.allocatedAmount);
+            if (!isNaN(amount) && amount > 0) {
+                const analysis = checkBudgetImpact(
+                    amount,
+                    parseISO(updatedData.startDate),
+                    parseISO(updatedData.endDate),
+                    transactions,
+                    settings
+                );
+                setFeasibility(analysis);
+            }
         }
-
-        const amount = parseFloat(formData.allocatedAmount);
-        if (isNaN(amount) || amount <= 0) {
-            setFeasibility(null);
-            return;
-        }
-
-        const analysis = checkBudgetImpact(
-            amount,
-            parseISO(formData.startDate),
-            parseISO(formData.endDate),
-            transactions,
-            settings
-        );
-
-        setFeasibility(analysis);
-    }, [formData, transactions, settings]);
+    };
 
     const handleFormSubmit = (data) => {
         onSubmit(data);
@@ -139,6 +135,7 @@ export default function BudgetCreationWizard({
                         onSubmit={handleFormSubmit}
                         onCancel={onCancel}
                         isSubmitting={isSubmitting}
+                        onFormChange={handleFormChange}
                     />
                 </div>
 

@@ -15,7 +15,8 @@ export default function CustomBudgetForm({
     budget,
     onSubmit,
     onCancel,
-    isSubmitting
+    isSubmitting,
+    onFormChange // ADDED: 16-Jan-2026 - Real-time form updates for feasibility
 }) {
     const { monthStart, monthEnd } = usePeriod();
 
@@ -50,11 +51,21 @@ export default function CustomBudgetForm({
     }, [budget, monthStart, monthEnd]);
 
     const handleDateRangeChange = (start, end) => {
-        setFormData(prev => ({
-            ...prev,
+        const updated = {
+            ...formData,
             startDate: start,
             endDate: end
-        }));
+        };
+        setFormData(updated);
+        // ADDED: 16-Jan-2026 - Notify parent of changes for real-time feasibility
+        if (onFormChange) onFormChange(updated);
+    };
+
+    const handleFieldChange = (field, value) => {
+        const updated = { ...formData, [field]: value };
+        setFormData(updated);
+        // ADDED: 16-Jan-2026 - Notify parent of changes for real-time feasibility
+        if (onFormChange) onFormChange(updated);
     };
 
     const handleSubmit = (e) => {
@@ -85,7 +96,7 @@ export default function CustomBudgetForm({
                     <Input
                         id="name"
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onChange={(e) => handleFieldChange('name', e.target.value)}
                         placeholder="e.g., Manchester Trip"
                         required
                         autoFocus
@@ -109,7 +120,7 @@ export default function CustomBudgetForm({
                     <AmountInput
                         id="allocatedAmount"
                         value={formData.allocatedAmount}
-                        onChange={(value) => setFormData({ ...formData, allocatedAmount: value })}
+                        onChange={(value) => handleFieldChange('allocatedAmount', value)}
                         placeholder="0.00"
                         required
                     />
@@ -123,7 +134,7 @@ export default function CustomBudgetForm({
                         <button
                             key={color}
                             type="button"
-                            onClick={() => setFormData({ ...formData, color })}
+                            onClick={() => handleFieldChange('color', color)}
                             className={`w-8 h-8 rounded-md border-2 transition-all hover:scale-110 ${formData.color === color ? 'border-gray-900 ring-2 ring-offset-1 ring-gray-900' : 'border-transparent'
                                 }`}
                             style={{ backgroundColor: color }}
@@ -137,7 +148,7 @@ export default function CustomBudgetForm({
                 <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) => handleFieldChange('description', e.target.value)}
                     placeholder="Add details about this budget..."
                     rows={2}
                     className="resize-none"

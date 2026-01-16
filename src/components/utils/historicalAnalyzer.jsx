@@ -92,8 +92,10 @@ export function analyzeEventPatterns(transactions, categories) {
                     }
                 });
                 
-                // Determine event type based on dominant categories
+                // Determine event type and extract metadata
                 const eventType = inferEventType(allTransactions, categoryMap);
+                const anchorExpense = identifyAnchorExpense(allTransactions, categoryMap);
+                const locations = extractLocations(allTransactions.map(t => t.title).filter(Boolean));
                 
                 events.push({
                     startDate: cluster[0].date,
@@ -103,6 +105,8 @@ export function analyzeEventPatterns(transactions, categories) {
                     transactionCount: allTransactions.length,
                     categoryDNA,
                     eventType,
+                    anchorExpense, // Primary expense that defines the event
+                    locations, // Detected locations
                     transactions: allTransactions
                 });
             }
@@ -117,32 +121,59 @@ export function analyzeEventPatterns(transactions, categories) {
 }
 
 /**
- * Infer event type from transaction patterns
+ * Infer event type from transaction patterns with category awareness
  */
 function inferEventType(transactions, categoryMap) {
     const categoryNames = transactions
         .map(t => categoryMap[t.category_id]?.name?.toLowerCase())
         .filter(Boolean);
     
-    const hasTravel = categoryNames.some(n => 
-        n.includes('transport') || n.includes('travel') || n.includes('flight')
-    );
-    const hasAccommodation = categoryNames.some(n => 
-        n.includes('hotel') || n.includes('accommodation')
-    );
-    const hasDining = categoryNames.some(n => 
-        n.includes('dining') || n.includes('restaurant') || n.includes('food')
-    );
-    const hasEntertainment = categoryNames.some(n => 
-        n.includes('entertainment') || n.includes('ticket')
-    );
+    const titles = transactions.map(t => t.title?.toLowerCase()).filter(Boolean);
     
-    if (hasTravel && hasAccommodation) return 'Trip';
-    if (hasTravel && hasDining && transactions.length <= 5) return 'Day Trip';
-    if (hasEntertainment && transactions.length <= 3) return 'Event';
+    // Identify anchor categories (main purpose indicators)
+    const hasTicket = categoryNames.some(n => n.includes('ticket')) || 
+                      titles.some(t => t.includes('ticket') || t.includes('concert') || t.includes('event'));
+    const hasFlight = categoryNames.some(n => n.includes('flight') || n.includes('airline')) ||
+                      titles.some(t => t.includes('flight') || t.includes('airport'));
+    const hasAccommodation = categoryNames.some(n => n.includes('hotel') || n.includes('accommodation') || n.includes('airbnb')) ||
+                              titles.some(t => t.includes('hotel') || t.includes('airbnb'));
+    const hasTransport = categoryNames.some(n => n.includes('transport') || n.includes('travel'));
+    const hasDining = categoryNames.some(n => n.includes('dining') || n.includes('restaurant') || n.includes('food'));
+    const hasEntertainment = categoryNames.some(n => n.includes('entertainment'));
+    
+    // Extract location hints from titles
+    const locations = extractLocations(titles);
+    
+    // Determine primary event type based on anchor categories
+    if (hasTicket && hasEntertainment) return 'Concert/Event';
+    if (hasFlight || (hasAccommodation && hasTransport)) return 'Trip';
+    if (hasAccommodation && !hasFlight && transactions.length <= 7) return 'Weekend Trip';
+    if (hasTransport && hasDining && transactions.length <= 5) return 'Day Trip';
     if (hasDining && transactions.length >= 5) return 'Social Week';
     
     return 'Special Period';
+}
+
+/**
+ * Extract potential location names from transaction titles
+ */
+function extractLocations(titles) {
+    const locations = [];
+    const commonCities = [
+        'paris', 'london', 'berlin', 'rome', 'madrid', 'barcelona', 'amsterdam',
+        'manchester', 'lisbon', 'prague', 'vienna', 'dublin', 'brussels'
+    ];
+    
+    titles.forEach(title => {
+        const words = title.toLowerCase().split(/\s+/);
+        words.forEach(word => {
+            if (commonCities.includes(word)) {
+                locations.push(word.charAt(0).toUpperCase() + word.slice(1));
+            }
+        });
+    });
+    
+    return [...new Set(locations)]; // Remove duplicates
 }
 
 /**
@@ -315,6 +346,37 @@ function formatArchetypeName(type) {
         'Special Period': 'Special Occasion'
     };
     return names[type] || type;
+}
+
+/**
+ * Identify the "anchor expense" - the primary transaction that defines the event
+ */
+function identifyAnchorExpense(transactions, categoryMap) {
+    const anchorKeywords = ['ticket', 'flight', 'hotel', 'airbnb', 'concert', 'event'];
+    
+    for (const t of transactions) {
+        const title = (t.title || '').toLowerCase();
+        const category = categoryMap[t.category_id]?.name?.toLowerCase() || '';
+        
+        if (anchorKeywords.some(kw => title.includes(kw) || category.includes(kw))) {
+            return {
+                title: t.title,
+                amount: t.amount,
+                category: categoryMap[t.category_id]?.name
+            };
+        }
+    }
+    
+    // If no anchor found, return the largest expense
+    const largest = transactions.reduce((max, t) => 
+        t.amount > max.amount ? t : max, transactions[0]
+    );
+    
+    return {
+        title: largest.title,
+        amount: largest.amount,
+        category: categoryMap[largest.category_id]?.name
+    };
 }
 
 function calculateConfidence(events) {
