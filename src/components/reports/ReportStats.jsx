@@ -203,8 +203,12 @@ export function FinancialHealthScore({
 
     // C. Trend Score (Max 20)
     let trendScore = 0;
-    if (currentExpenses < prevExpenses) trendScore += 10;
-    if (currentNet > (prevMonthlyIncome - prevExpenses)) trendScore += 10;
+    if (currentExpenses < prevExpenses) {
+        trendScore += 10;
+    }
+    if (currentNet > (prevMonthlyIncome - prevExpenses)) {
+        trendScore += 10;
+    }
 
     const totalScore = Math.round(savingsScore + efficiencyScore + trendScore);
 
