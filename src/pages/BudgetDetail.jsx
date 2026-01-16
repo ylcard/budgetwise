@@ -121,6 +121,8 @@ export default function BudgetDetail() {
             return await base44.entities.Transaction.filter({
                 $or: [
                     { date: { $gte: budget.startDate, $lte: budget.endDate } },
+                    // { customBudgetId: { $in: relatedCustomBudgetIds } }
+                    { customBudgetId: budgetId },
                     { customBudgetId: { $in: relatedCustomBudgetIds } }
                 ]
             });
