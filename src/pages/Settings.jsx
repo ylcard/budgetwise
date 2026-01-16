@@ -334,11 +334,12 @@ export default function Settings() {
                                     <Label>Decimal Places</Label>
                                     <Input type="number" min="0" max="4" value={formData.decimalPlaces} onChange={(e) => handleFormChange('decimalPlaces', parseInt(e.target.value) || 0)} />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="flex items-center gap-2 pt-8 cursor-pointer">
-                                        <input type="checkbox" checked={formData.hideTrailingZeros} onChange={(e) => handleFormChange('hideTrailingZeros', e.target.checked)} className="rounded border-gray-300" />
-                                        Hide Trailing Zeros
-                                    </Label>
+                                <div className="flex items-center justify-between pt-8">
+                                    <Label className="cursor-pointer font-medium">Hide Trailing Zeros</Label>
+                                    <Switch 
+                                        checked={formData.hideTrailingZeros} 
+                                        onCheckedChange={(checked) => handleFormChange('hideTrailingZeros', checked)} 
+                                    />
                                 </div>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
