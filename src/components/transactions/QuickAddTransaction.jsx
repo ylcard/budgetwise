@@ -54,7 +54,7 @@ export default function QuickAddTransaction({
     }, [transaction, selectedMonth, selectedYear]);
 
     const { monthStart, monthEnd } = getMonthBoundaries(dateContext.month, dateContext.year);
-    const { monthStart, monthEnd } = getMonthBoundaries(targetMonth, targetYear);
+    // const { monthStart, monthEnd } = getMonthBoundaries(targetMonth, targetYear);
 
     // 2. Fetch Data
     // System: Constrained by Date (Strict)
