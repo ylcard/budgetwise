@@ -28,7 +28,10 @@ export default function ReportStats({
     }
 
     const totalPaidExpenses = Math.abs(getMonthlyPaidExpenses(transactions, startDate, endDate));
-    const prevPaidExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
+    // const prevPaidExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
+    const prevPaidExpenses = Math.abs(
+        prevTransactions.reduce((sum, t) => (t.amount < 0 ? sum + t.amount : sum), 0)
+    );
 
     const netFlow = monthlyIncome - totalPaidExpenses;
     const prevNetFlow = prevMonthlyIncome - prevPaidExpenses;
