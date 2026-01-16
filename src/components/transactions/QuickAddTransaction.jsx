@@ -35,10 +35,25 @@ export default function QuickAddTransaction({
     const { user } = useSettings();
     // DEPRECATED: const { allBudgets } = useAllBudgets(user);
 
+    // Trying to fix expenses not being assigned to budgets when importing
     // 1. Determine Date Context for System Budgets
     // Default to current date if not provided (Global Add) or selected date (Dashboard)
-    const targetMonth = selectedMonth ?? new Date().getMonth();
-    const targetYear = selectedYear ?? new Date().getFullYear();
+    // const targetMonth = selectedMonth ?? new Date().getMonth();
+    // const targetYear = selectedYear ?? new Date().getFullYear();
+
+    // If editing, use the transaction's month/year. Otherwise, use the viewed month/year.
+    const dateContext = useMemo(() => {
+        if (transaction?.date) {
+            const d = new Date(transaction.date);
+            if (!isNaN(d)) return { month: d.getMonth(), year: d.getFullYear() };
+        }
+        return { 
+            month: selectedMonth ?? new Date().getMonth(), 
+            year: selectedYear ?? new Date().getFullYear() 
+        };
+    }, [transaction, selectedMonth, selectedYear]);
+
+    const { monthStart, monthEnd } = getMonthBoundaries(dateContext.month, dateContext.year);
     const { monthStart, monthEnd } = getMonthBoundaries(targetMonth, targetYear);
 
     // 2. Fetch Data
