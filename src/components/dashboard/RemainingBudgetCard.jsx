@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext";
@@ -798,10 +798,10 @@ export default function RemainingBudgetCard({
                     </div>
                   </div>
                 )}
-                {isSimpleView && !isTotalOver && (
+                {!isTotalOver && (
                   <div className="text-right hidden sm:block">
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100">
-                      <Target className="w-3 h-3 text-gray-500" />
+                      <Wallet className="w-3 h-3 text-gray-500" />
                       <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
                     </div>
                   </div>
