@@ -405,6 +405,7 @@ export default function Settings() {
                                                                     onChange={(val) => setAbsoluteValues(prev => ({ ...prev, [key]: val }))}
                                                                     placeholder="0.00"
                                                                     className="font-mono"
+                                                                    settingsOverride={formData}
                                                                 />
                                                             </div>
                                                         </div>
