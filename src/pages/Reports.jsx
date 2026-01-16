@@ -48,6 +48,7 @@ export default function Reports() {
     // const prevMonthlyTransactions = useMonthlyTransactions(transactions, prevMonth, prevYear);
     // const prevMonthlyIncome = useMonthlyIncome(transactions, prevMonth, prevYear);
     const prevMonthlyTransactions = useMonthlyTransactions(transactions, previousMonth, previousYear);
+    console.log(prevMonthlyTransactions);
     const prevMonthlyIncome = useMonthlyIncome(transactions, previousMonth, previousYear);
 
     const isLoading = loadingTransactions || loadingCategories || loadingGoals;
