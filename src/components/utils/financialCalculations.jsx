@@ -356,6 +356,13 @@ export const calculateBonusSavingsPotential = (systemBudgets, transactions, cate
     // We use getMonthlyPaidExpenses because efficiency is based on what you actually paid.
     const actualSpent = getMonthlyPaidExpenses(transactions, startDate, endDate);
 
+    // DEBUG LOGS - Check your browser console
+    console.log("--- EB CALCULATION ---");
+    console.log("Needs Budget Found:", !!needsBudget);
+    console.log("Wants Budget Found:", !!wantsBudget);
+    console.log("Limits:", { needsLimit, wantsLimit, totalLimit });
+    console.log("Actual Spent:", actualSpent);
+    console.log("Result:", totalLimit - actualSpent);
     // 4. Bonus = What you were allowed to spend - What you actually spent
     return totalLimit - actualSpent;
 };
