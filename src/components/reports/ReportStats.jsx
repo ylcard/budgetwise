@@ -387,18 +387,18 @@ export function FinancialHealthScore({
                         Composite score analyzing real-time pacing, sustainability, volatility, savings consistency, and lifestyle trends.
                     </p>
                     <div className="grid grid-cols-5 gap-2 mt-4">
-                        <div className="text-xs">
-                            <span className="block text-gray-400 inline-flex items-center">
+                        <div className="text-xs flex flex-col items-center">
+                            <span className="text-gray-400 inline-flex items-center mb-1">
                                 Pacing
                                 <InfoTooltip
                                     title="Pacing Score"
                                     description="Compares your current spending to your 3-month historical average for the same day of the month. Shows if you're spending faster or slower than usual."
                                 />
                             </span>
-                            <span className="font-semibold">{pacingScore}</span>
+                            <span className="font-semibold text-gray-900">{pacingScore}</span>
                         </div>
-                        <div className="text-xs">
-                            <span className="block text-gray-400 inline-flex items-center">
+                        <div className="text-xs flex flex-col items-center">
+                            <span className="text-gray-400 inline-flex items-center mb-1">
                                 Burn
                                 <InfoTooltip
                                     title="Burn Ratio"
@@ -406,10 +406,10 @@ export function FinancialHealthScore({
                                     wikiUrl="https://en.wikipedia.org/wiki/Burn_rate"
                                 />
                             </span>
-                            <span className="font-semibold">{ratioScore}</span>
+                            <span className="font-semibold text-gray-900">{ratioScore}</span>
                         </div>
-                        <div className="text-xs">
-                            <span className="block text-gray-400 inline-flex items-center">
+                        <div className="text-xs flex flex-col items-center">
+                            <span className="text-gray-400 inline-flex items-center mb-1">
                                 Stable
                                 <InfoTooltip
                                     title="Stability Score"
@@ -417,10 +417,10 @@ export function FinancialHealthScore({
                                     wikiUrl="https://en.wikipedia.org/wiki/Coefficient_of_variation"
                                 />
                             </span>
-                            <span className="font-semibold">{stabilityScore}</span>
+                            <span className="font-semibold text-gray-900">{stabilityScore}</span>
                         </div>
-                        <div className="text-xs">
-                            <span className="block text-gray-400 inline-flex items-center">
+                        <div className="text-xs flex flex-col items-center">
+                            <span className="text-gray-400 inline-flex items-center mb-1">
                                 Sharpe
                                 <InfoTooltip
                                     title="Financial Sharpe Ratio"
@@ -428,10 +428,10 @@ export function FinancialHealthScore({
                                     wikiUrl="https://en.wikipedia.org/wiki/Sharpe_ratio"
                                 />
                             </span>
-                            <span className="font-semibold">{sharpeScore}</span>
+                            <span className="font-semibold text-gray-900">{sharpeScore}</span>
                         </div>
-                        <div className="text-xs">
-                            <span className="block text-gray-400 inline-flex items-center">
+                        <div className="text-xs flex flex-col items-center">
+                            <span className="text-gray-400 inline-flex items-center mb-1">
                                 Creep
                                 <InfoTooltip
                                     title="Lifestyle Creep Index"
@@ -439,7 +439,7 @@ export function FinancialHealthScore({
                                     wikiUrl="https://en.wikipedia.org/wiki/Lifestyle_inflation"
                                 />
                             </span>
-                            <span className="font-semibold">{creepScore}</span>
+                            <span className="font-semibold text-gray-900">{creepScore}</span>
                         </div>
                     </div>
                 </div>
