@@ -475,34 +475,41 @@ export default function BudgetDetail() {
                             triggerSize="sm"
                         />
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        {/* ADDED: 16-Jan-2026 - Expense filters */}
-                        <ExpenseFilters
-                            categories={categories}
-                            transactions={budgetTransactions}
-                            filters={expenseFilters}
-                            onFilterChange={setExpenseFilters}
-                            activeFilterCount={activeFilterCount}
-                        />
+                    <CardContent>
+                        <div className="flex flex-col md:flex-row gap-4">
+                            {/* ADDED: 16-Jan-2026 - Expense filters on left side */}
+                            <div className="w-full md:w-64 flex-shrink-0">
+                                <ExpenseFilters
+                                    categories={categories}
+                                    transactions={budgetTransactions}
+                                    filters={expenseFilters}
+                                    onFilterChange={setExpenseFilters}
+                                    activeFilterCount={activeFilterCount}
+                                />
+                            </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {filteredTransactions.length > 0 ? (
-                                filteredTransactions.map((t) => (
-                                    <TransactionCard
-                                        key={t.id}
-                                        transaction={t}
-                                        category={categoryMap[t.category_id]}
-                                        onEdit={(t, data) => transactionActions.handleSubmit(data, t)}
-                                        onDelete={() => transactionActions.handleDelete(t)}
-                                    />
-                                ))
-                            ) : (
-                                <div className="col-span-full text-center py-8 text-gray-500">
-                                    {budgetTransactions.length === 0 
-                                        ? 'No expenses yet. Add your first expense above.'
-                                        : 'No expenses match the selected filters.'}
+                            {/* Expense cards on right side */}
+                            <div className="flex-1">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {filteredTransactions.length > 0 ? (
+                                        filteredTransactions.map((t) => (
+                                            <TransactionCard
+                                                key={t.id}
+                                                transaction={t}
+                                                category={categoryMap[t.category_id]}
+                                                onEdit={(t, data) => transactionActions.handleSubmit(data, t)}
+                                                onDelete={() => transactionActions.handleDelete(t)}
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full text-center py-8 text-gray-500">
+                                            {budgetTransactions.length === 0 
+                                                ? 'No expenses yet. Add your first expense above.'
+                                                : 'No expenses match the selected filters.'}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
