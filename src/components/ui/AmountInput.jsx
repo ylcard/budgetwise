@@ -35,6 +35,7 @@ import { SUPPORTED_CURRENCIES } from "../utils/constants";
  * @param {string|null} [props.currencySymbol=null] - Optional symbol to override the user's base currency symbol.
  * @param {string} [props.currency=null] - Optional currency code (e.g. "USD"). If provided along with onCurrencyChange, enables the selector.
  * @param {function(string)} [props.onCurrencyChange=null] - Handler for currency change.
+ * @param {object} [props.settingsOverride=null] - Optional settings object to override context (for previews).
  * @param {object} props.... - Remaining props passed directly to the underlying Input component.
  * @returns {JSX.Element} The styled amount input with currency symbol or selector.
  */
@@ -46,9 +47,12 @@ export default function AmountInput({
     currencySymbol = null,
     currency = null,
     onCurrencyChange = null,
+    settingsOverride = null,
     ...props
 }) {
-    const { settings } = useSettings();
+    // const { settings } = useSettings();
+    const { settings: contextSettings } = useSettings();
+    const settings = settingsOverride || contextSettings;
     const [open, setOpen] = useState(false);
 
     // Use provided currencySymbol or fall back to user's base currency
