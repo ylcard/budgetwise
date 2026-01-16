@@ -172,7 +172,7 @@ export default function ReportStats({
                             {formatCurrency(bonusSavingsPotential, settings)}
                         </motion.h3>
                         <div className="flex items-center gap-1 mt-2 text-xs font-medium text-emerald-600/80">
-                            <span>Unspent Needs & Wants</span>
+                            <span>{bonusSavingsPotential >= 0 ? 'Unspent Needs & Wants' : 'Budget Overspend'}</span>
                         </div>
                     </div>
                     <div className="mt-4 flex justify-center">
