@@ -563,7 +563,7 @@ export default function RemainingBudgetCard({
         // The 'Extra' segment is only the portion that exceeds the goal
         const efficiencyBarPct = Math.max(0, totalAvailableForSavings - savingsGoalPct);
 
-        const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
+        // const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
 
         // Calculate Savings Utilization (Actual vs Target)
         const savingsUtil = savingsLimit > 0 ? (savingsAmount / savingsLimit) * 100 : 0;
