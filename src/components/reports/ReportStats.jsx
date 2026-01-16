@@ -184,7 +184,10 @@ export function FinancialHealthScore({
     const currentSavingsRate = monthlyIncome > 0 ? (currentNet / monthlyIncome) : 0;
 
     // 2. Previous Month Data (Approximate using available prevTransactions)
-    const prevExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
+    // const prevExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
+    const prevExpenses = Math.abs(
+        prevTransactions.reduce((sum, t) => (t.amount < 0 ? sum + t.amount : sum), 0)
+    );
 
     // --- SCORING ALGORITHM (Max 100) ---
     // A. Savings Score (Max 50)
