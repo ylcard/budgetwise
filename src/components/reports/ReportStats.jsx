@@ -212,18 +212,19 @@ export function FinancialHealthScore({
 
     // --- INTELLIGENT PACING ALGORITHM ---    
     const today = new Date();
+    const start = new Date(startDate);
     // If viewing current month, compare "Day 1 to Today". If past month, compare "Day 1 to 31".
-    const isCurrentMonthView = today.getMonth() === startDate.getMonth() && today.getFullYear() === startDate.getFullYear();
-    const dayCursor = isCurrentMonthView ? today.getDate() : new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+    const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
+    const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
 
     // 1. Current Spend (Day 1 to X)
-    const currentSpend = getSpendByDayX(transactions, startDate.getMonth(), startDate.getFullYear(), dayCursor);
+    const currentSpend = getSpendByDayX(transactions, start.getMonth(), start.getFullYear(), dayCursor);
 
     // 2. Historical Context (Average of Last 3 Months by Day X)
     // We calculate the same "Day 1 to X" spend for M-1, M-2, M-3
-    const m1 = new Date(startDate); m1.setMonth(startDate.getMonth() - 1);
-    const m2 = new Date(startDate); m2.setMonth(startDate.getMonth() - 2);
-    const m3 = new Date(startDate); m3.setMonth(startDate.getMonth() - 3);
+    const m1 = new Date(start); m1.setMonth(start.getMonth() - 1);
+    const m2 = new Date(start); m2.setMonth(start.getMonth() - 2);
+    const m3 = new Date(start); m3.setMonth(start.getMonth() - 3);
 
     const spendM1 = getSpendByDayX(fullHistory, m1.getMonth(), m1.getFullYear(), dayCursor);
     const spendM2 = getSpendByDayX(fullHistory, m2.getMonth(), m2.getFullYear(), dayCursor);
