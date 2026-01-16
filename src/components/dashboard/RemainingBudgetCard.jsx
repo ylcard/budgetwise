@@ -531,7 +531,7 @@ export default function RemainingBudgetCard({
                     <AnimatedSegment width={savingsPct} className="bg-emerald-500">
                         {savingsPct > 8 && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
-                                Save {savingsLabel}
+                                Savings {savingsLabel}
                             </motion.div>
                         )}
                     </AnimatedSegment>
