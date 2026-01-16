@@ -762,9 +762,30 @@ export default function RemainingBudgetCard({
                       Over Limit <AlertCircle className="w-6 h-6" />
                     </h2>
                   ) : (
-                    <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                      {Math.round(savingsPctDisplay)}% <span className="text-lg font-medium text-gray-500">Saved</span>
-                    </h2>
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-2">
+                        <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+                          {Math.round(savingsPctDisplay)}%
+                        </h2>
+                        <span className="text-xl font-semibold text-emerald-600">Saved</span>
+                      </div>
+
+                      <p className="text-sm font-medium text-gray-600 flex items-center gap-1.5">
+                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        {savingsPctDisplay >= (goals.find(g => g.priority === 'savings')?.target_percentage || 20) ? (
+                          <span>
+                            You've <span className="text-emerald-700 font-bold">exceeded</span> your goal by {formatCurrency(extraSavingsAmount, settings)}!
+                            Amazing work this month.
+                          </span>
+                        ) : savingsPctDisplay > 0 ? (
+                          <span>
+                            You're on track! Just <span className="text-blue-600 font-bold">{formatCurrency(Math.max(0, savingsLimit - targetSavingsAmount), settings)}</span> more to hit your target.
+                          </span>
+                        ) : (
+                          <span>Every small amount counts. Let's find some savings today!</span>
+                        )}
+                      </p>
+                    </div>
                   )}
                   <div className="text-sm text-gray-500 mt-1">
                     {currentMonthIncome > 0 ? (
