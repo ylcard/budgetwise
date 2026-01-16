@@ -347,9 +347,9 @@ export const calculateBonusSavingsPotential = (systemBudgets, transactions, cate
 
     // return netPotential;
     
-    // 2. Calculate the combined Limit (€) for this specific month's income
-    const needsLimit = resolveBudgetLimit(needsBudget, monthlyIncome, settings, historicalAverage);
-    const wantsLimit = resolveBudgetLimit(wantsBudget, monthlyIncome, settings, historicalAverage);
+    // 2. Use the persisted budgetAmount from the database schema
+    const needsLimit = needsBudget?.budgetAmount || 0;
+    const wantsLimit = wantsBudget?.budgetAmount || 0;
     const totalLimit = needsLimit + wantsLimit;
 
     // 3. Get total spending for this month (using the existing simple function)
