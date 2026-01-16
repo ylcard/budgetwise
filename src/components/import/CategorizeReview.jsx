@@ -9,9 +9,9 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import CategorySelect from "@/components/ui/CategorySelect";
-import { parseDate, formatDate } from "@/components/utils/dateUtils";
+import { parseDate, formatDate, isDateInRange } from "@/components/utils/dateUtils";
 
-export default function CategorizeReview({ data, categories, customBudgets = [], onUpdateRow, onDeleteRows }) {
+export default function CategorizeReview({ data, categories, allBudgets = [], onUpdateRow, onDeleteRows }) {
     const { settings } = useSettings();
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [selectedIndices, setSelectedIndices] = useState(new Set());
@@ -70,7 +70,13 @@ export default function CategorizeReview({ data, categories, customBudgets = [],
         setSelectedIndices(new Set());
     };
 
-    // Show ALL budgets, but sort by relevance to the import dates.
+    // DEPRECATED: Show ALL budgets, but sort by relevance to the import dates.
+    // const sortedCustomBudgets = useMemo(() => {
+    //     if (data.length === 0) return customBudgets;
+
+    // Separate Custom vs System budgets for the UI
+    const customBudgets = useMemo(() => allBudgets.filter(b => !b.isSystemBudget), [allBudgets]);
+
     const sortedCustomBudgets = useMemo(() => {
         if (data.length === 0) return customBudgets;
 
