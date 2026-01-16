@@ -625,11 +625,6 @@ export default function RemainingBudgetCard({
                 </motion.div>
 
                 {/* SAVINGS */}
-                {efficiencyBarPct > 0 && (
-                    <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-r border-white/20">
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">Extra</div>
-                    </AnimatedSegment>
-                )}
                 {targetSavingsBarPct > 0 && (
                     <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
                         <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
@@ -638,6 +633,11 @@ export default function RemainingBudgetCard({
                                 {savingsLimit > 0 && <span className="opacity-80 ml-1">({Math.round(savingsUtil)}%)</span>}
                             </span>
                         </div>
+                    </AnimatedSegment>
+                )}
+                {efficiencyBarPct > 0 && (
+                    <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-r border-white/20">
+                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">Extra</div>
                     </AnimatedSegment>
                 )}
             </div>
