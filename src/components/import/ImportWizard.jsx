@@ -247,7 +247,9 @@ export default function ImportWizard({ onSuccess }) {
                     title: item.title,
                     amount: finalAmount,
                     type: item.type,
-                    date: new Date(item.date).toISOString().split('T')[0],
+                    // Trying to fix expenses not being assigned to budgets
+                    // date: new Date(item.date).toISOString().split('T')[0],
+                    date: formatDateString(item.date),
                     category_id: isExpense ? (item.categoryId || categories.find(c => c.name === 'Uncategorized')?.id) : null,
                     financial_priority: isExpense ? item.financial_priority : null,
                     // customBudgetId: isExpense ? item.customBudgetId : null,
@@ -255,7 +257,9 @@ export default function ImportWizard({ onSuccess }) {
                     originalAmount: item.originalAmount,
                     originalCurrency: item.originalCurrency,
                     isPaid: isExpense ? (item.isPaid || false) : null,
-                    paidDate: (isExpense && item.paidDate) ? new Date(item.paidDate).toISOString().split('T')[0] : null
+                    // Trying to fix expenses not being assigned to budgets
+                    // paidDate: (isExpense && item.paidDate) ? new Date(item.paidDate).toISOString().split('T')[0] : null
+                    paidDate: (isExpense && item.paidDate) ? formatDateString(item.paidDate) : null
                 };
             });
 
