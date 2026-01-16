@@ -66,7 +66,7 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
             <div
                 className={`absolute top-0 bg-white border border-gray-200 transition-all duration-300 ease-out ${
                     isHovered ? 'shadow-lg' : 'shadow-sm'
-                } ${!isIncome && !isPaid ? 'opacity-60' : ''}`}
+                }`}
                 style={{
                     borderRadius: '16px',
                     width: isHovered ? '280px' : '140px',
@@ -98,9 +98,8 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
                     <div
                         className="px-3 py-1 rounded-full"
                         style={{
-                            backgroundColor: (!isIncome && !isPaid) ? `${categoryColor}15` : `${categoryColor}20`,
-                            color: categoryColor,
-                            opacity: (!isIncome && !isPaid) ? 0.6 : 1,
+                            backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
+                            color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
                         }}
                     >
                         <p className="text-sm font-bold">
@@ -127,9 +126,8 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
                         <div
                             className="px-2.5 py-1 rounded-full"
                             style={{
-                                backgroundColor: (!isIncome && !isPaid) ? `${categoryColor}15` : categoryColor,
-                                color: (!isIncome && !isPaid) ? categoryColor : '#FFFFFF',
-                                opacity: (!isIncome && !isPaid) ? 0.7 : 1,
+                                backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
+                                color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
                             }}
                         >
                             <p className="text-xs font-bold whitespace-nowrap">
