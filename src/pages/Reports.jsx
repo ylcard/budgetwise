@@ -27,7 +27,9 @@ export default function Reports() {
         selectedYear,
         setSelectedYear,
         monthStart,
-        monthEnd
+        monthEnd,
+        previousMonth,
+        previousYear
     } = usePeriod();
 
     // Data fetching
@@ -41,11 +43,12 @@ export default function Reports() {
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
-    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
-    const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
-    const prevMonthlyTransactions = useMonthlyTransactions(transactions, prevMonth, prevYear);
-    const prevMonthlyIncome = useMonthlyIncome(transactions, prevMonth, prevYear);
-
+    // const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    // const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+    // const prevMonthlyTransactions = useMonthlyTransactions(transactions, prevMonth, prevYear);
+    // const prevMonthlyIncome = useMonthlyIncome(transactions, prevMonth, prevYear);
+    const prevMonthlyTransactions = useMonthlyTransactions(transactions, previousMonth, previousYear);
+    const prevMonthlyIncome = useMonthlyIncome(transactions, previousMonth, previousYear);
 
     const isLoading = loadingTransactions || loadingCategories || loadingGoals;
 
