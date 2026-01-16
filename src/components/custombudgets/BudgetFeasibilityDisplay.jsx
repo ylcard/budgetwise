@@ -59,6 +59,8 @@ const GRADE_CONFIG = {
 
 export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
     if (!feasibility) return null;
+    
+    const isFuture = feasibility.temporalContext === 'future';
 
     const config = GRADE_CONFIG[feasibility.feasibilityGrade] || GRADE_CONFIG['F'];
     const IconComponent = config.icon;

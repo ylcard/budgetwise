@@ -24,6 +24,18 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
     const analysis = useMemo(() => {
         if (!budget || !transactions || !categories) return null;
 
+        // ADDED: 16-Jan-2026 - Don't analyze future/planned budgets
+        const now = new Date();
+        const budgetStart = new Date(budget.startDate);
+        const budgetEnd = new Date(budget.endDate);
+        
+        // Only analyze if budget has started
+        if (budgetStart > now) return null;
+        
+        // Determine if budget is ongoing or completed
+        const isOngoing = budgetEnd >= now;
+        const isCompleted = budgetEnd < now || budget.status === 'completed';
+
         const categoryMap = createEntityMap(categories);
         
         // Filter transactions for this budget
@@ -62,24 +74,40 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
             t.amount > max.amount ? t : max, budgetTransactions[0]
         );
 
-        // Generate insights
+        // Generate insights (date-aware)
         const insights = [];
         
-        if (variancePercentage > 20) {
-            insights.push({
-                type: 'warning',
-                message: `Overspent by ${Math.abs(variancePercentage).toFixed(0)}%. Consider increasing budget for similar events.`
-            });
-        } else if (variancePercentage < -20) {
-            insights.push({
-                type: 'success',
-                message: `Underspent by ${Math.abs(variancePercentage).toFixed(0)}%. You can reduce budget for similar events.`
-            });
-        } else {
-            insights.push({
-                type: 'success',
-                message: 'Budget estimate was highly accurate!'
-            });
+        if (isCompleted) {
+            // Final analysis for completed budgets
+            if (variancePercentage > 20) {
+                insights.push({
+                    type: 'warning',
+                    message: `Overspent by ${Math.abs(variancePercentage).toFixed(0)}%. Consider increasing budget for similar events.`
+                });
+            } else if (variancePercentage < -20) {
+                insights.push({
+                    type: 'success',
+                    message: `Underspent by ${Math.abs(variancePercentage).toFixed(0)}%. You can reduce budget for similar events.`
+                });
+            } else {
+                insights.push({
+                    type: 'success',
+                    message: 'Budget estimate was highly accurate!'
+                });
+            }
+        } else if (isOngoing) {
+            // In-progress analysis
+            if (variancePercentage > 10) {
+                insights.push({
+                    type: 'warning',
+                    message: `Currently ${Math.abs(variancePercentage).toFixed(0)}% over budget. Event still ongoing.`
+                });
+            } else if (totalSpent < planned * 0.5) {
+                insights.push({
+                    type: 'info',
+                    message: `Spent ${((totalSpent / planned) * 100).toFixed(0)}% of budget so far.`
+                });
+            }
         }
 
         if (largestCategory) {
@@ -112,7 +140,9 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
             largestCategory,
             anchorTransaction,
             insights,
-            transactionCount: budgetTransactions.length
+            transactionCount: budgetTransactions.length,
+            isOngoing,
+            isCompleted
         };
     }, [budget, transactions, categories]);
 
@@ -127,7 +157,9 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-gray-500">
-                        Add expenses to see insights and recommendations.
+                        {budget && new Date(budget.startDate) > new Date()
+                            ? 'Budget starts in the future. Insights will appear once expenses are added.'
+                            : 'Add expenses to see insights and recommendations.'}
                     </p>
                 </CardContent>
             </Card>
@@ -154,13 +186,20 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
                 <CardTitle className="text-base flex items-center gap-2">
                     <Lightbulb className="w-4 h-4 text-blue-600" />
                     Budget Insights
+                    {analysis.isOngoing && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                            Ongoing
+                        </Badge>
+                    )}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* Accuracy Score */}
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                        <p className="text-xs text-gray-500 mb-1">Estimate Accuracy</p>
+                        <p className="text-xs text-gray-500 mb-1">
+                            {analysis.isCompleted ? 'Final Accuracy' : 'Current Status'}
+                        </p>
                         <div className="flex items-center gap-2">
                             <span className="text-2xl font-bold text-gray-900">
                                 {analysis.accuracy.toFixed(0)}%

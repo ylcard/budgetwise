@@ -19,6 +19,10 @@ import { createEntityMap } from "./generalUtils";
  */
 export function analyzeEventPatterns(transactions, categories) {
     if (!transactions || transactions.length === 0) return [];
+    
+    // ADDED: 16-Jan-2026 - Only analyze past events
+    const now = new Date();
+    const pastTransactions = transactions.filter(t => new Date(t.date) < now);
 
     const categoryMap = createEntityMap(categories);
     
