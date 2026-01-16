@@ -93,7 +93,6 @@ export default function Reports() {
                     monthlyIncome={monthlyIncome}
                     prevTransactions={prevMonthlyTransactions}
                     prevMonthlyIncome={prevMonthlyIncome}
-                    fullHistory={transactions}
                     isLoading={isLoading}
                     settings={settings}
                     safeBaseline={projectionData.totalProjectedMonthly}
