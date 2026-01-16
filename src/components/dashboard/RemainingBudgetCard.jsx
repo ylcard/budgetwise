@@ -553,7 +553,16 @@ export default function RemainingBudgetCard({
         const totalLimitPct = needsLimitPct + wantsLimitPct;
         const visualSpendingEnd = needsVisualPct + wantsVisualPct;
 
-        const efficiencyBarPct = Math.max(0, totalLimitPct - visualSpendingEnd);
+        // const efficiencyBarPct = Math.max(0, totalLimitPct - visualSpendingEnd);
+        // Calculate the total space available for savings
+        const totalAvailableForSavings = Math.max(0, 100 - visualSpendingEnd);
+
+        // The 'Target' segment is either the goal or whatever is left if we overspent
+        const targetSavingsBarPct = Math.min(savingsGoalPct, totalAvailableForSavings);
+
+        // The 'Extra' segment is only the portion that exceeds the goal
+        const efficiencyBarPct = Math.max(0, totalAvailableForSavings - savingsGoalPct);
+
         const targetSavingsBarPct = Math.max(0, 100 - Math.max(totalLimitPct, visualSpendingEnd));
 
         // Calculate Savings Utilization (Actual vs Target)
