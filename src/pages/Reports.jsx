@@ -107,6 +107,7 @@ export default function Reports() {
                     monthlyIncome={monthlyIncome}
                     transactions={monthlyTransactions}
                     prevMonthlyIncome={prevMonthlyIncome}
+                    fullHistory={transactions}
                     prevTransactions={prevMonthlyTransactions}
                     startDate={monthStart}
                     endDate={monthEnd}
