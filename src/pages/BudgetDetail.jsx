@@ -31,6 +31,7 @@ import AllocationManager from "../components/custombudgets/AllocationManager";
 import BudgetCard from "../components/budgets/BudgetCard";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
+import BudgetPostMortem from "../components/budgetdetail/BudgetPostMortem"; // ADDED: 16-Jan-2026
 
 export default function BudgetDetail() {
     const { settings } = useSettings();
@@ -349,6 +350,14 @@ export default function BudgetDetail() {
                         )}
                     </div>
                 </div>
+
+                {/* Budget Insights - ADDED: 16-Jan-2026 */}
+                <BudgetPostMortem
+                    budget={budget}
+                    transactions={transactions}
+                    categories={categories}
+                    settings={settings}
+                />
 
                 <div className="grid md:grid-cols-3 gap-4">
                     <Card><CardContent className="pt-6 text-center">
