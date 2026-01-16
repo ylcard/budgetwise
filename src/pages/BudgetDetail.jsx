@@ -221,13 +221,17 @@ export default function BudgetDetail() {
             if (budgetEnd) budgetEnd.setHours(23, 59, 59, 999);
             const allCustomBudgetIds = allCustomBudgets.map(cb => cb.id);
 
+            // FIXED: 16-Jan-2026 - System budgets should only show transactions within date range
+            // that match the priority type and are NOT assigned to any custom budget
             return transactions.filter(t => {
-                if (t.customBudgetId === budget.id) return true
                 if (t.type !== 'expense' || !t.category_id) return false;
+                
+                // System budget transactions should NOT have a customBudgetId
+                if (t.customBudgetId) return false;
+                
                 const category = categories.find(c => c.id === t.category_id);
                 const effectivePriority = t.financial_priority || (category ? category.priority : null);
                 if (effectivePriority !== budget.systemBudgetType) return false;
-                if (t.customBudgetId && allCustomBudgetIds.includes(t.customBudgetId)) return false;
 
                 const compDate = t.isPaid && t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
                 return compDate >= budgetStart && compDate <= budgetEnd;
