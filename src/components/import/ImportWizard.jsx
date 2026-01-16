@@ -8,8 +8,8 @@ import { parseCSV } from "@/components/utils/simpleCsvParser";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
-import { ArrowRight, Loader2, Upload } from "lucide-react";
-import { useCategories, useCategoryRules, useCustomBudgetsAll } from "@/components/hooks/useBase44Entities";
+import { ArrowRight, Loader2, Upload, Star } from "lucide-react";
+import { useCategories, useCategoryRules, useAllBudgets } from "@/components/hooks/useBase44Entities";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +31,16 @@ const parseCleanRawAmount = (value) => {
     return parseFloat(cleanStr) || 0;
 };
 
+// Helper to find a matching system budget for a transaction
+const findMatchingSystemBudget = (budgets, date, priority) => {
+    if (!priority || !date) return null;
+    return budgets.find(b =>
+        b.isSystemBudget &&
+        b.systemBudgetType === priority &&
+        date >= b.startDate && date <= b.endDate
+    )?.id || null;
+};
+
 export default function ImportWizard({ onSuccess }) {
     const [step, setStep] = useState(1);
     const [file, setFile] = useState(null);
@@ -43,7 +53,8 @@ export default function ImportWizard({ onSuccess }) {
     const { user, settings } = useSettings();
     const { categories } = useCategories();
     const { rules } = useCategoryRules(user);
-    const { allCustomBudgets } = useCustomBudgetsAll(user);
+    // const { allCustomBudgets } = useCustomBudgetsAll(user);
+    const { allBudgets } = useAllBudgets(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
@@ -227,6 +238,11 @@ export default function ImportWizard({ onSuccess }) {
                 const isExpense = item.type === 'expense';
                 const finalAmount = Math.abs(item.amount);
 
+                // If no custom budget was manually picked, try to find the matching system budget
+                const resolvedBudgetId = item.customBudgetId || (isExpense ?
+                    findMatchingSystemBudget(allBudgets, item.date, item.financial_priority) :
+                    null);
+
                 return {
                     title: item.title,
                     amount: finalAmount,
@@ -234,7 +250,8 @@ export default function ImportWizard({ onSuccess }) {
                     date: new Date(item.date).toISOString().split('T')[0],
                     category_id: isExpense ? (item.categoryId || categories.find(c => c.name === 'Uncategorized')?.id) : null,
                     financial_priority: isExpense ? item.financial_priority : null,
-                    customBudgetId: isExpense ? item.customBudgetId : null,
+                    // customBudgetId: isExpense ? item.customBudgetId : null,
+                    customBudgetId: resolvedBudgetId,
                     originalAmount: item.originalAmount,
                     originalCurrency: item.originalCurrency,
                     isPaid: isExpense ? (item.isPaid || false) : null,
@@ -340,7 +357,8 @@ export default function ImportWizard({ onSuccess }) {
                         <CategorizeReview
                             data={processedData}
                             categories={categories}
-                            customBudgets={allCustomBudgets}
+                            // customBudgets={allCustomBudgets}
+                            allBudgets={allBudgets}
                             onUpdateRow={handleUpdateRow}
                             onDeleteRows={handleDeleteRows}
                         />
