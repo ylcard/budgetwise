@@ -5,6 +5,23 @@ import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
 import { motion } from "framer-motion";
 
+// Helper: Calculate spend up to a specific day of the month
+const getSpendByDayX = (allTransactions, targetMonth, targetYear, dayLimit) => {
+    return allTransactions.reduce((sum, t) => {
+        const tDate = new Date(t.date || t.created_date); // Adjust key if needed
+        
+        // 1. Match Month/Year
+        if (tDate.getMonth() !== targetMonth || tDate.getFullYear() !== targetYear) return sum;
+        
+        // 2. Stop if transaction is after "Day X"
+        if (tDate.getDate() > dayLimit) return sum;
+
+        // 3. Sum Expenses (Positive numbers, exclude Income)
+        if (t.category?.name === 'Income' || t.type === 'income') return sum;
+        return sum + (Number(t.amount) || 0);
+    }, 0);
+};
+
 export default function ReportStats({
     transactions = [],
     monthlyIncome = 0,
