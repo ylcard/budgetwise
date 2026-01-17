@@ -9,7 +9,7 @@ import { DayPicker } from "react-day-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import "react-day-picker/dist/style.css";
+// import "react-day-picker/dist/style.css";
 import CategorySelect from "../ui/CategorySelect";
 import { useState, useMemo } from "react";
 import { isDateInRange } from "../utils/dateUtils";
