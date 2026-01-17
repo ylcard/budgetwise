@@ -348,11 +348,57 @@ export function FinancialHealthScore({
         return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'Risk' };
     };
 
+    // HELPER: Dynamic styling for the Main Header
+    const getHeaderStyle = (score) => {
+        if (score >= 90) return {
+            bg: 'bg-emerald-50',
+            border: 'border-emerald-100',
+            text: 'text-emerald-900',
+            subtext: 'text-emerald-600',
+            iconBg: 'bg-emerald-200',
+            iconColor: 'text-emerald-700',
+            gradient: 'from-emerald-50 to-white',
+            verdict: 'Excellent Health'
+        };
+        if (score >= 75) return {
+            bg: 'bg-blue-50',
+            border: 'border-blue-100',
+            text: 'text-blue-900',
+            subtext: 'text-blue-600',
+            iconBg: 'bg-blue-200',
+            iconColor: 'text-blue-700',
+            gradient: 'from-blue-50 to-white',
+            verdict: 'Good Health'
+        };
+        if (score >= 60) return {
+            bg: 'bg-amber-50',
+            border: 'border-amber-100',
+            text: 'text-amber-900',
+            subtext: 'text-amber-600',
+            iconBg: 'bg-amber-200',
+            iconColor: 'text-amber-700',
+            gradient: 'from-amber-50 to-white',
+            verdict: 'Fair Health'
+        };
+        return {
+            bg: 'bg-rose-50',
+            border: 'border-rose-100',
+            text: 'text-rose-900',
+            subtext: 'text-rose-600',
+            iconBg: 'bg-rose-200',
+            iconColor: 'text-rose-700',
+            gradient: 'from-rose-50 to-white',
+            verdict: 'Needs Attention'
+        };
+    };
+
+    const headerStyle = getHeaderStyle(totalScore);
+
     // Renders a single "DNA" cell
     const HealthCell = ({ label, score, description, wiki }) => {
         const style = getScoreStyle(score);
         return (
-            <div className="flex flex-col h-full justify-between p-3 rounded-lg border border-gray-100 bg-white shadow-lg transition-all">
+            <div className="flex flex-col h-full justify-between p-3 rounded-lg border border-gray-100 bg-white shadow-md hover:shadow-lg transition-all">
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
                     <InfoTooltip title={label} description={description} wikiUrl={wiki} />
@@ -383,22 +429,29 @@ export function FinancialHealthScore({
 
     return (
         <div className={`flex flex-col gap-4 h-full ${className || ''}`}>
-            {/* Main Header Card - Flex-none ensures it keeps natural height */}
-            <div className="flex-none flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-lg">
-                <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${totalScore >= 90 ? 'bg-emerald-100' : totalScore >= 60 ? 'bg-blue-100' : 'bg-rose-100'
-                        }`}>
-                        <Activity className={`w-6 h-6 ${totalScore >= 90 ? 'text-emerald-600' : totalScore >= 60 ? 'text-blue-600' : 'text-rose-600'
-                            }`} />
+            {/* Main Header Card - Redesigned with color and badge */}
+            <div className={`flex-none relative overflow-hidden flex items-center justify-between p-5 rounded-xl border shadow-md transition-colors duration-300 ${headerStyle.bg} ${headerStyle.border}`}>
+
+                {/* Subtle Gradient Overlay */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${headerStyle.gradient} opacity-60`} />
+
+                <div className="relative z-10 flex items-center gap-4">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${headerStyle.iconBg} shadow-sm`}>
+                        <Activity className={`w-7 h-7 ${headerStyle.iconColor}`} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-gray-900">Financial Health Score</h3>
-                        <p className="text-sm text-gray-500">Composite wellness analysis</p>
+                        <h3 className={`font-bold text-lg ${headerStyle.text}`}>Financial Health Score</h3>
+                        <p className={`text-sm font-medium ${headerStyle.subtext}`}>Composite wellness analysis</p>
                     </div>
                 </div>
-                <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-gray-900">{totalScore}</span>
-                    <span className="text-sm font-medium text-gray-500">/ 100</span>
+                <div className="relative z-10 flex flex-col items-end">
+                    <div className="flex items-baseline gap-1">
+                        <span className={`text-4xl font-extrabold ${headerStyle.text}`}>{totalScore}</span>
+                        <span className={`text-sm font-semibold ${headerStyle.subtext}`}>/100</span>
+                    </div>
+                    <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/60 backdrop-blur-sm ${headerStyle.iconColor} mt-1`}>
+                        {headerStyle.verdict}
+                    </span>
                 </div>
             </div>
 
