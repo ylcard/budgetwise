@@ -4,7 +4,12 @@ import { Search, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
-import DateRangePicker from "../ui/DateRangePicker";
+// import DateRangePicker from "../ui/DateRangePicker";
+import { DayPicker } from "react-day-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import "react-day-picker/dist/style.css";
 import CategorySelect from "../ui/CategorySelect";
 import { useMemo } from "react";
 import { isDateInRange } from "../utils/dateUtils";
@@ -12,13 +17,19 @@ import { usePeriod } from "../hooks/usePeriod";
 
 export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [] }) {
     const { monthStart, monthEnd } = usePeriod();
+    const [isPickerOpen, setIsPickerOpen] = useState(false);
 
     const handleCategoryChange = (newCategories) => {
         setFilters({ ...filters, category: newCategories });
     };
 
-    const handleDateRangeChange = (startDate, endDate) => {
-        setFilters({ ...filters, startDate, endDate });
+    const handleRangeSelect = (range) => {
+        // We only update if we have a range or it's cleared
+        setFilters({
+            ...filters,
+            startDate: range?.from ? format(range.from, 'yyyy-MM-dd') : '',
+            endDate: range?.to ? format(range.to, 'yyyy-MM-dd') : ''
+        });
     };
 
     const handleClearFilters = () => {
@@ -75,11 +86,44 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         />
                     </div>
                     <div className="flex items-center gap-2">
-                        <DateRangePicker
-                            startDate={filters.startDate}
-                            endDate={filters.endDate}
-                            onRangeChange={handleDateRangeChange}
-                        />
+                        {/* Direct implementation of DayPicker Range Mode */}
+                        <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+                            <PopoverTrigger asChild>
+                                <CustomButton
+                                    variant="outline"
+                                    className="h-9 justify-start text-left font-normal"
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {filters.startDate && filters.endDate ? (
+                                        <span>
+                                            {/* You can change this text to whatever you want, e.g., just "Jan 2026" */}
+                                            {format(new Date(filters.startDate), "LLL dd, y")} - {format(new Date(filters.endDate), "LLL dd, y")}
+                                        </span>
+                                    ) : (
+                                        <span>Pick a date</span>
+                                    )}
+                                </CustomButton>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                                <DayPicker
+                                    mode="range"
+                                    defaultMonth={filters.startDate ? new Date(filters.startDate) : new Date()}
+                                    selected={{
+                                        from: filters.startDate ? new Date(filters.startDate) : undefined,
+                                        to: filters.endDate ? new Date(filters.endDate) : undefined
+                                    }}
+                                    onSelect={handleRangeSelect}
+                                    weekStartsOn={1}
+                                    showOutsideDays
+                                    className="p-3"
+                                    modifiersClassNames={{
+                                        selected: 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                                        today: 'bg-accent text-accent-foreground'
+                                    }}
+                                />
+                            </PopoverContent>
+                        </Popover>
+
                         {activeFilterCount > 0 && (
                             <CustomButton
                                 variant="ghost"
