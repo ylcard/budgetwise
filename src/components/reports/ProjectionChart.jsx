@@ -90,7 +90,14 @@ export default function ProjectionChart({
         <Card className="border-none shadow-sm h-full flex flex-col">
             <CardHeader className="pb-2 flex-none">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-gray-800">Financial Horizon</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-gray-800">
+                        Financial Horizon
+                        <InfoTooltip
+                            title="Financial Horizon"
+                            description="A 6-month projection of your future spending based on historical patterns and trends. Helps you anticipate upcoming expenses and plan accordingly."
+                            wikiUrl="https://en.wikipedia.org/wiki/Time_horizon"
+                        />
+                    </CardTitle>
                     <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                         {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                         {isPositive ? 'Savings Proj.' : 'Overspend Risk'}
