@@ -221,6 +221,47 @@ export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
                             </div>
                         </div>
                     )}
+
+                    {/* Financial Health DNA Section */}
+                    {feasibility.health && (
+                        <div className="mt-6 pt-5 border-t border-gray-100">
+                            <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                                Financial Health DNA
+                            </h5>
+                            <div className="grid grid-cols-2 gap-3">
+                                <HealthMetric
+                                    label="Pacing"
+                                    score={health.pacing || 0}
+                                    icon={Activity}
+                                    description="Real-time spend vs. 3-month average. 100 is perfect (under budget)."
+                                />
+                                <HealthMetric
+                                    label="Burn Rate"
+                                    score={health.ratio || 0}
+                                    icon={Flame}
+                                    description="Sustainability of spending against income. Higher is more sustainable."
+                                />
+                                <HealthMetric
+                                    label="Stability"
+                                    score={health.stability || 0}
+                                    icon={ShieldCheck}
+                                    description="Consistency of expenses over time. Higher means fewer surprises."
+                                />
+                                <HealthMetric
+                                    label="Sharpe"
+                                    score={health.sharpe || 0}
+                                    icon={BarChart3}
+                                    description="Risk-adjusted savings consistency. Higher is better."
+                                />
+                                <HealthMetric
+                                    label="Creep"
+                                    score={health.creep || 0}
+                                    icon={Ghost}
+                                    description="Lifestyle Creep Index. 100 means expenses are NOT growing faster than income."
+                                />
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
