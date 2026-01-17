@@ -9,9 +9,7 @@ import { isDateInRange } from "./dateUtils";
 import { getMonthBoundaries } from "./dateUtils"; // Ensure this is imported
 import { base44 } from "@/api/base44Client";
 import { parseDate, getFirstDayOfMonth } from "./dateUtils";
-
-// ADDED 17-Jan-2026: Export the ensureSystemBudgetsExist function for use in hooks
-export { ensureSystemBudgetsExist } from "./budgetInitialization";
+import { ensureSystemBudgetsExist } from "./budgetInitialization";
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -395,115 +393,60 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
     return totalIncome / lookbackMonths;
 };
 
-/**
- * ADDED 17-Jan-2026: Ensures SystemBudget entities exist for a given user, month, and priority type.
- * This function is the SINGLE SOURCE OF TRUTH for creating system budgets.
- * It prevents duplicate budgets by checking existence before creation.
- * 
- * @param {string} userEmail - User's email address
- * @param {string} startDate - First day of the month (YYYY-MM-DD)
- * @param {string} endDate - Last day of the month (YYYY-MM-DD)
- * @param {Array} budgetGoals - Array of BudgetGoal entities (optional, for initial amounts)
- * @param {Object} settings - App settings (optional, for calculating initial amounts)
- * @param {number} monthlyIncome - Monthly income for the period (optional, for percentage-based calculation)
- * @returns {Promise<Array>} Array of created or existing SystemBudget entities
- */
-export const ensureSystemBudgetsExist = async (userEmail, startDate, endDate, budgetGoals = [], settings = {}, monthlyIncome = 0) => {
-    const priorityTypes = ['needs', 'wants', 'savings'];
-    const results = [];
-
-    for (const priorityType of priorityTypes) {
-        // Check if a SystemBudget already exists for this user, month, and priority
-        const existing = await base44.entities.SystemBudget.filter({
-            user_email: userEmail,
-            systemBudgetType: priorityType,
-            startDate: startDate,
-            endDate: endDate
-        });
-
-        if (existing && existing.length > 0) {
-            // Budget already exists - return the first one (should only be one)
-            results.push(existing[0]);
-        } else {
-            // Create a new SystemBudget
-            const goal = budgetGoals.find(g => g.priority === priorityType);
-            let budgetAmount = 0;
-
-            // Calculate initial budget amount based on mode
-            if (settings.goalMode === false && goal) {
-                // Absolute mode
-                budgetAmount = goal.target_amount || 0;
-            } else if (goal && monthlyIncome > 0) {
-                // Percentage mode
-                budgetAmount = (monthlyIncome * (goal.target_percentage || 0)) / 100;
-            }
-
-            const colorMap = {
-                needs: '#EF4444',
-                wants: '#F59E0B',
-                savings: '#10B981'
-            };
-
-            const nameMap = {
-                needs: 'Needs',
-                wants: 'Wants',
-                savings: 'Savings'
-            };
-
-            const newBudget = await base44.entities.SystemBudget.create({
-                name: nameMap[priorityType],
-                budgetAmount,
-                startDate,
-                endDate,
-                color: colorMap[priorityType],
-                user_email: userEmail,
-                systemBudgetType: priorityType,
-                cashAllocations: []
-            });
-
-            results.push(newBudget);
-        }
-    }
-
-    return results;
-};
+// ADDED 17-Jan-2026: Export ensureSystemBudgetsExist for use throughout the app
+export { ensureSystemBudgetsExist };
 
 /**
  * Recalculates System Budgets for Current and Future months based on updated Goals.
  * STRICTLY ignores past months to preserve history.
- * UPDATED 17-Jan-2026: Now calls ensureSystemBudgetsExist before attempting updates.
+ * UPDATED 17-Jan-2026: Now ensures budgets exist before attempting updates.
  * @param {Object} updatedGoal - The specific goal updated (e.g., { priority: 'needs', target_percentage: 50 })
  * @param {Object} settings - App settings (to determine if we are in 'absolute' or 'percentage' mode)
+ * @param {string} userEmail - User's email to ensure budgets exist for
+ * @param {Array} allGoals - All budget goals for calculating amounts
  */
-export const snapshotFutureBudgets = async (updatedGoal, settings) => {
+export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = null, allGoals = []) => {
     if (!updatedGoal || !settings) return;
 
     // 1. Define the "Horizon" (The first day of the current month)
     const now = new Date();
     const currentMonthStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
 
-    /*
-    // DEPRECATING THE USE OF .list()
-
-    // 2. Fetch all System Budgets
-    const allSystemBudgets = await base44.entities.SystemBudget.list();
-
-    // 3. Filter: Only budgets of this Type AND in the Future/Current
-    const budgetsToUpdate = allSystemBudgets.filter(sb => {
-        return sb.systemBudgetType === updatedGoal.priority &&
-            sb.startDate >= currentMonthStart;
-    });
-    */
-
-    // 2. Optimization: Fetch only relevant future/current budgets directly
-    const budgetsToUpdate = await base44.entities.SystemBudget.filter({
+    // 2. Fetch only relevant future/current budgets for this priority type
+    let budgetsToUpdate = await base44.entities.SystemBudget.filter({
         systemBudgetType: updatedGoal.priority,
         startDate: { $gte: currentMonthStart }
     });
 
-    // ADDED 17-Jan-2026: If no budgets exist for future months, we need to create them
-    // This can happen when a user sets goals but hasn't added transactions yet
-    // For now, we return early if no budgets exist (they'll be created on-demand when needed)
+    // ADDED 17-Jan-2026: If no budgets exist for the current month and we have userEmail,
+    // ensure at least the current month's budget exists
+    if (budgetsToUpdate.length === 0 && userEmail) {
+        const { monthStart, monthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
+        
+        // Fetch income for the current month to calculate percentage-based budgets
+        const currentMonthIncome = await base44.entities.Transaction.filter({
+            type: 'income',
+            date: { $gte: monthStart, $lte: monthEnd },
+            created_by: userEmail
+        }).then(txs => txs.reduce((sum, t) => sum + t.amount, 0));
+
+        // Create the current month's budgets
+        await ensureSystemBudgetsExist(
+            userEmail,
+            monthStart,
+            monthEnd,
+            allGoals,
+            settings,
+            currentMonthIncome
+        );
+
+        // Re-fetch budgets after ensuring they exist
+        budgetsToUpdate = await base44.entities.SystemBudget.filter({
+            systemBudgetType: updatedGoal.priority,
+            startDate: { $gte: currentMonthStart }
+        });
+    }
+
     if (budgetsToUpdate.length === 0) return;
 
     // 4. Pre-fetch transactions if we are in Percentage mode (to calculate income)
