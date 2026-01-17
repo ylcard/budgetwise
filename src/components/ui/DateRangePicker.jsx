@@ -4,116 +4,119 @@
  */
 
 import { useState } from "react";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+// import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { DayPicker, useNavigation } from "react-day-picker";
+// import { DayPicker, useNavigation } from "react-day-picker";
+import { DayPicker } from "react-day-picker";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSettings } from "../utils/SettingsContext";
-import { parseDate, formatDateString, formatDate, getMonthName } from "../utils/dateUtils";
-import { setMonth, setYear } from "date-fns";
+// import { parseDate, formatDateString, formatDate, getMonthName } from "../utils/dateUtils";
+// import { setMonth, setYear } from "date-fns";
+import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
 import "react-day-picker/dist/style.css";
 
 /**
  * Custom Caption component for DayPicker range mode.
  */
-function CustomCaption({ displayMonth }) {
-    const { goToMonth, nextMonth, previousMonth } = useNavigation();
-    const [monthOpen, setMonthOpen] = useState(false);
-    const [yearOpen, setYearOpen] = useState(false);
+// function CustomCaption({ displayMonth }) {
+//     const { goToMonth, nextMonth, previousMonth } = useNavigation();
+//     const [monthOpen, setMonthOpen] = useState(false);
+//     const [yearOpen, setYearOpen] = useState(false);
 
-    const months = Array.from({ length: 12 }, (_, i) => getMonthName(i));
-    const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i);
+//     const months = Array.from({ length: 12 }, (_, i) => getMonthName(i));
+//     const currentYear = new Date().getFullYear();
+//     const years = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i);
 
-    const handleMonthSelect = (index) => {
-        goToMonth(setMonth(displayMonth, index));
-        setMonthOpen(false);
-    };
+//     const handleMonthSelect = (index) => {
+//         goToMonth(setMonth(displayMonth, index));
+//         setMonthOpen(false);
+//     };
 
-    const handleYearSelect = (year) => {
-        goToMonth(setYear(displayMonth, year));
-        setYearOpen(false);
-    };
+//     const handleYearSelect = (year) => {
+//         goToMonth(setYear(displayMonth, year));
+//         setYearOpen(false);
+//     };
 
-    return (
-        <div className="flex items-center justify-between px-2 py-2">
-            <CustomButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => previousMonth && goToMonth(previousMonth)}
-                disabled={!previousMonth}
-                className="h-7 w-7"
-            >
-                <ChevronLeft className="h-4 w-4" />
-            </CustomButton>
+//     return (
+//         <div className="flex items-center justify-between px-2 py-2">
+//             <CustomButton
+//                 variant="ghost"
+//                 size="icon-sm"
+//                 onClick={() => previousMonth && goToMonth(previousMonth)}
+//                 disabled={!previousMonth}
+//                 className="h-7 w-7"
+//             >
+//                 <ChevronLeft className="h-4 w-4" />
+//             </CustomButton>
 
-            <div className="flex items-center gap-1">
-                <Popover open={monthOpen} onOpenChange={setMonthOpen}>
-                    <PopoverTrigger asChild>
-                        <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
-                            {getMonthName(displayMonth.getMonth())}
-                        </CustomButton>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[260px] p-2" align="center">
-                        <div className="grid grid-cols-3 gap-2">
-                            {months.map((m, i) => (
-                                <CustomButton
-                                    key={m}
-                                    variant={displayMonth.getMonth() === i ? "default" : "ghost"}
-                                    size="sm"
-                                    onClick={() => handleMonthSelect(i)}
-                                    className="h-8 text-xs"
-                                >
-                                    {m.slice(0, 3)}
-                                </CustomButton>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
+//             <div className="flex items-center gap-1">
+//                 <Popover open={monthOpen} onOpenChange={setMonthOpen}>
+//                     <PopoverTrigger asChild>
+//                         <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
+//                             {getMonthName(displayMonth.getMonth())}
+//                         </CustomButton>
+//                     </PopoverTrigger>
+//                     <PopoverContent className="w-[260px] p-2" align="center">
+//                         <div className="grid grid-cols-3 gap-2">
+//                             {months.map((m, i) => (
+//                                 <CustomButton
+//                                     key={m}
+//                                     variant={displayMonth.getMonth() === i ? "default" : "ghost"}
+//                                     size="sm"
+//                                     onClick={() => handleMonthSelect(i)}
+//                                     className="h-8 text-xs"
+//                                 >
+//                                     {m.slice(0, 3)}
+//                                 </CustomButton>
+//                             ))}
+//                         </div>
+//                     </PopoverContent>
+//                 </Popover>
 
-                <Popover open={yearOpen} onOpenChange={setYearOpen}>
-                    <PopoverTrigger asChild>
-                        <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
-                            {displayMonth.getFullYear()}
-                        </CustomButton>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0" align="center">
-                        <ScrollArea className="h-[280px]">
-                            <div className="grid grid-cols-4 gap-2 p-2">
-                                {years.map((year) => (
-                                    <CustomButton
-                                        key={year}
-                                        variant={displayMonth.getFullYear() === year ? "default" : "ghost"}
-                                        size="sm"
-                                        onClick={() => handleYearSelect(year)}
-                                        className="h-8 text-xs"
-                                    >
-                                        {year}
-                                    </CustomButton>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </PopoverContent>
-                </Popover>
-            </div>
+//                 <Popover open={yearOpen} onOpenChange={setYearOpen}>
+//                     <PopoverTrigger asChild>
+//                         <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
+//                             {displayMonth.getFullYear()}
+//                         </CustomButton>
+//                     </PopoverTrigger>
+//                     <PopoverContent className="w-[240px] p-0" align="center">
+//                         <ScrollArea className="h-[280px]">
+//                             <div className="grid grid-cols-4 gap-2 p-2">
+//                                 {years.map((year) => (
+//                                     <CustomButton
+//                                         key={year}
+//                                         variant={displayMonth.getFullYear() === year ? "default" : "ghost"}
+//                                         size="sm"
+//                                         onClick={() => handleYearSelect(year)}
+//                                         className="h-8 text-xs"
+//                                     >
+//                                         {year}
+//                                     </CustomButton>
+//                                 ))}
+//                             </div>
+//                         </ScrollArea>
+//                     </PopoverContent>
+//                 </Popover>
+//             </div>
 
-            <CustomButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => nextMonth && goToMonth(nextMonth)}
-                disabled={!nextMonth}
-                className="h-7 w-7"
-            >
-                <ChevronRight className="h-4 w-4" />
-            </CustomButton>
-        </div>
-    );
-}
+//             <CustomButton
+//                 variant="ghost"
+//                 size="icon-sm"
+//                 onClick={() => nextMonth && goToMonth(nextMonth)}
+//                 disabled={!nextMonth}
+//                 className="h-7 w-7"
+//             >
+//                 <ChevronRight className="h-4 w-4" />
+//             </CustomButton>
+//         </div>
+//     );
+// }
 
 export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
     const { settings } = useSettings();
@@ -163,9 +166,9 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     className="rdp-custom p-3"
                     weekStartsOn={1}
                     showOutsideDays
-                    components={{
-                        Caption: CustomCaption
-                    }}
+                    // components={{
+                    //     Caption: CustomCaption
+                    // }}
                     modifiersClassNames={{
                         selected: 'rdp-selected',
                         today: 'rdp-today'
