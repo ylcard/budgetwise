@@ -369,12 +369,13 @@ export default function TransactionFormContent({
                 }
             }
 
+            // MODIFIED: 17-Jan-2026 - Updated parameter names from USD to EUR
             if (sourceRate && targetRate) {
                 const conversion = calculateConvertedAmount(
                     originalAmount,
                     formData.originalCurrency,
                     settings?.baseCurrency || 'USD',
-                    { sourceToUSD: sourceRate, targetToUSD: targetRate }
+                    { sourceToEUR: sourceRate, targetToEUR: targetRate }
                 );
 
                 finalAmount = conversion.convertedAmount;
@@ -668,4 +669,3 @@ export default function TransactionFormContent({
         </form>
     );
 }
-
