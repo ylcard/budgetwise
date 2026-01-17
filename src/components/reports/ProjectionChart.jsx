@@ -89,7 +89,7 @@ export default function ProjectionChart({
 
     return (
         <Card className="border-none shadow-sm h-full flex flex-col">
-            <CardHeader className="pb-2 flex-none shadow-lg">
+            <CardHeader className="pb-2 flex-none">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold text-gray-800">
                         Financial Horizon
