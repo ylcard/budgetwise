@@ -142,12 +142,12 @@ export default function TransactionFormContent({
     // Smart Date for Custom Budgets
     // If a custom budget is selected and the current date is outside its range, default to the start date.
     useEffect(() => {
-        if (formData.budget_id) {
-            const selectedBudget = allBudgets.find(b => b.id === formData.budget_id);
-            if (selectedBudget && selectedBudget.type === 'custom' && selectedBudget.start_date && selectedBudget.end_date) {
+        if (formData.customBudgetId) {
+            const selectedBudget = allBudgets.find(b => b.id === formData.customBudgetId);
+            if (selectedBudget && !selectedBudget.isSystemBudget && selectedBudget.startDate && selectedBudget.endDate) {
                 const txDate = new Date(formData.date);
-                const startDate = new Date(selectedBudget.start_date);
-                const endDate = new Date(selectedBudget.end_date);
+                const startDate = new Date(selectedBudget.startDate);
+                const endDate = new Date(selectedBudget.endDate);
 
                 // Reset times for comparison
                 txDate.setHours(0, 0, 0, 0);
@@ -166,7 +166,7 @@ export default function TransactionFormContent({
                 }
             }
         }
-    }, [formData.budget_id, allBudgets, formData.date]);
+    }, [formData.customBudgetId, allBudgets, formData.date]);
 
     // Auto-select System Budget based on Priority
     // If priority changes to 'wants', try to find a budget named 'Wants'
