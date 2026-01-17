@@ -386,100 +386,58 @@ export function FinancialHealthScore({
     if (totalScore < 60) color = '#EF4444'; // Red for Needs Work
 
     return (
-        <Card className={`border-none shadow-sm overflow-hidden relative h-full ${className || ''}`}>
-            <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
-                {/* Score Circle */}
-                <div className="relative w-32 h-32 flex-shrink-0">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-                        <circle cx="60" cy="60" r="50" fill="none" stroke="#F3F4F6" strokeWidth="10" />
-                        <motion.circle
-                            initial={{ strokeDashoffset: 314 }}
-                            animate={{ strokeDashoffset: 314 - (totalScore / 100) * 314 }}
-                            transition={{ duration: 1 }}
-                            cx="60" cy="60" r="50"
-                            fill="none"
-                            stroke={color}
-                            strokeWidth="10"
-                            strokeLinecap="round"
-                            strokeDasharray="314"
-                        />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-3xl font-bold text-gray-900">{totalScore}</span>
-                        <span className="text-xs font-medium" style={{ color }}>{label}</span>
+        <div className={`space-y-4 ${className || ''}`}>
+            {/* Main Header Card */}
+            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${totalScore >= 90 ? 'bg-emerald-100' : totalScore >= 60 ? 'bg-blue-100' : 'bg-rose-100'
+                        }`}>
+                        <Activity className={`w-6 h-6 ${totalScore >= 90 ? 'text-emerald-600' : totalScore >= 60 ? 'text-blue-600' : 'text-rose-600'
+                            }`} />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-900">Financial Health Score</h3>
+                        <p className="text-sm text-gray-500">Composite wellness analysis</p>
                     </div>
                 </div>
-                {/* Text Summary */}
-                <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900 inline-flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-blue-600" /> Financial Health
-                        <InfoTooltip
-                            title="Financial Health Score"
-                            description="A composite score (0-100) that evaluates your overall financial wellness based on spending habits, sustainability, consistency, and trends. Higher scores indicate stronger financial health."
-                            wikiUrl="https://en.wikipedia.org/wiki/Financial_wellness"
-                        />
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Composite score analyzing real-time pacing, sustainability, volatility, savings consistency, and lifestyle trends.
-                    </p>
-                    <div className="grid grid-cols-5 gap-2 mt-4">
-                        <div className="text-xs flex flex-col items-center">
-                            <span className="text-gray-400 inline-flex items-center mb-1">
-                                Pacing
-                                <InfoTooltip
-                                    title="Pacing Score"
-                                    description="Compares your current spending to your 3-month historical average for the same day of the month. Shows if you're spending faster or slower than usual."
-                                />
-                            </span>
-                            <span className="font-semibold text-gray-900">{pacingScore}</span>
-                        </div>
-                        <div className="text-xs flex flex-col items-center">
-                            <span className="text-gray-400 inline-flex items-center mb-1">
-                                Burn
-                                <InfoTooltip
-                                    title="Burn Ratio"
-                                    description="Measures spending sustainability against your income. Evaluates if your current spending rate will keep you within 80% of your income by month-end."
-                                    wikiUrl="https://en.wikipedia.org/wiki/Burn_rate"
-                                />
-                            </span>
-                            <span className="font-semibold text-gray-900">{ratioScore}</span>
-                        </div>
-                        <div className="text-xs flex flex-col items-center">
-                            <span className="text-gray-400 inline-flex items-center mb-1">
-                                Stable
-                                <InfoTooltip
-                                    title="Stability Score"
-                                    description="Analyzes spending volatility over the last 6 months using Coefficient of Variation. Lower volatility means more predictable and stable spending patterns."
-                                    wikiUrl="https://en.wikipedia.org/wiki/Coefficient_of_variation"
-                                />
-                            </span>
-                            <span className="font-semibold text-gray-900">{stabilityScore}</span>
-                        </div>
-                        <div className="text-xs flex flex-col items-center">
-                            <span className="text-gray-400 inline-flex items-center mb-1">
-                                Sharpe
-                                <InfoTooltip
-                                    title="Financial Sharpe Ratio"
-                                    description="Risk-adjusted savings consistency. Measures your average monthly savings relative to its volatility. Higher values indicate consistent, reliable saving behavior."
-                                    wikiUrl="https://en.wikipedia.org/wiki/Sharpe_ratio"
-                                />
-                            </span>
-                            <span className="font-semibold text-gray-900">{sharpeScore}</span>
-                        </div>
-                        <div className="text-xs flex flex-col items-center">
-                            <span className="text-gray-400 inline-flex items-center mb-1">
-                                Creep
-                                <InfoTooltip
-                                    title="Lifestyle Creep Index"
-                                    description="Compares your expense growth rate vs. income growth rate over 6 months. Detects if your spending is increasing faster than your earnings."
-                                    wikiUrl="https://en.wikipedia.org/wiki/Lifestyle_inflation"
-                                />
-                            </span>
-                            <span className="font-semibold text-gray-900">{creepScore}</span>
-                        </div>
-                    </div>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-gray-900">{totalScore}</span>
+                    <span className="text-sm font-medium text-gray-500">/ 100</span>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+
+            {/* DNA Grid - 5 Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <HealthCell
+                    label="Pacing"
+                    score={pacingScore}
+                    description="Compares your current spending to your 3-month historical average for the same day of the month."
+                />
+                <HealthCell
+                    label="Burn"
+                    score={ratioScore}
+                    description="Sustainability: Will you run out of money before the month ends?"
+                    wiki="https://en.wikipedia.org/wiki/Burn_rate"
+                />
+                <HealthCell
+                    label="Stability"
+                    score={stabilityScore}
+                    description="Measures how predictable your monthly expenses are. High stability = fewer surprises."
+                    wiki="https://en.wikipedia.org/wiki/Coefficient_of_variation"
+                />
+                <HealthCell
+                    label="Sharpe"
+                    score={sharpeScore}
+                    description="Risk-adjusted savings consistency. High score = you save consistently, not just occasionally."
+                    wiki="https://en.wikipedia.org/wiki/Sharpe_ratio"
+                />
+                <HealthCell
+                    label="Creep"
+                    score={creepScore}
+                    description="Lifestyle Creep: Are your expenses growing faster than your income?"
+                    wiki="https://en.wikipedia.org/wiki/Lifestyle_inflation"
+                />
+            </div>
+        </div>
     );
 }
