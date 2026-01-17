@@ -11,6 +11,9 @@ import { base44 } from "@/api/base44Client";
 import { parseDate, getFirstDayOfMonth } from "./dateUtils";
 import { ensureSystemBudgetsExist } from "./budgetInitialization";
 
+// ADDED 17-Jan-2026: Re-export ensureSystemBudgetsExist for use throughout the app
+export { ensureSystemBudgetsExist };
+
 /**
  * Helper to check if a transaction falls within a date range.
  */
@@ -392,9 +395,6 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 
     return totalIncome / lookbackMonths;
 };
-
-// ADDED 17-Jan-2026: Export ensureSystemBudgetsExist for use throughout the app
-export { ensureSystemBudgetsExist };
 
 /**
  * Recalculates System Budgets for Current and Future months based on updated Goals.
