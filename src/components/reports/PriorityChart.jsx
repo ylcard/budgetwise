@@ -21,7 +21,7 @@ export default function PriorityChart({ transactions, categories, goals, monthly
     }
 
     return (
-        <Card className="border-none shadow-lg h-full flex flex-col">
+        <Card className="border-none shadow-lg flex flex-col h-full max-h-[500px]">
             <CardHeader>
                 <CardTitle>Actual vs Target by Priority</CardTitle>
             </CardHeader>
