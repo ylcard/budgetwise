@@ -1,6 +1,6 @@
 /**
  * @fileoverview DateRangePicker using react-day-picker v8 range mode
- * REDESIGNED: 17-Jan-2026 - Replaced custom dual DatePicker with native DayPicker range mode
+ * REDESIGNED: 17-Jan-2026 - Replaced custom dual DatePicker with native DayPicker range mode (single calendar)
  */
 
 import { useState } from "react";
@@ -160,7 +160,6 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     selected={range}
                     onSelect={handleSelect}
                     defaultMonth={range.from || new Date()}
-                    numberOfMonths={2}
                     className="rdp-custom p-3"
                     weekStartsOn={1}
                     showOutsideDays
@@ -182,3 +181,6 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
 // const [tempStart, setTempStart] = useState(startDate);
 // const [tempEnd, setTempEnd] = useState(endDate);
 // Apply/Cancel button logic removed - native range selection is more intuitive
+
+// COMMENTED OUT: 17-Jan-2026 - Removed numberOfMonths={2} to show single calendar instead of two side-by-side
+// numberOfMonths={2}
