@@ -144,15 +144,15 @@ export default function BudgetDetail() {
     const monthlyIncome = useMonthlyIncome(transactions, new Date(monthStart).getMonth(), new Date(monthStart).getFullYear());
 
     // 7. All Budgets (For dropdowns/QuickAdd)
+    // CRITICAL FIX 17-Jan-2026: Fetch ALL budgets without date filtering
+    // This ensures that when editing old transactions, their linked budget appears in the dropdown
     const { data: allBudgets = [] } = useQuery({
-        queryKey: ['allBudgets', monthStart, monthEnd],
+        queryKey: ['allBudgets'],
         queryFn: async () => {
-            const overlapFilter = {
-                startDate: { $lte: monthEnd },
-                endDate: { $gte: monthStart }
-            };
-            const customB = await base44.entities.CustomBudget.filter(overlapFilter);
-            const sysB = await base44.entities.SystemBudget.filter(overlapFilter);
+            // Fetch ALL custom budgets (no date filter)
+            const customB = await base44.entities.CustomBudget.list();
+            // Fetch ALL system budgets (no date filter) 
+            const sysB = await base44.entities.SystemBudget.list();
             return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         initialData: [],
