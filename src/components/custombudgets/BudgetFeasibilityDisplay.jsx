@@ -8,58 +8,116 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-    CheckCircle2, 
-    AlertTriangle, 
-    XCircle, 
+import {
+    CheckCircle2,
+    AlertTriangle,
+    XCircle,
     TrendingDown,
     ArrowRight,
     DollarSign,
     Clock
 } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatCurrency } from "../utils/currencyUtils";
 
+// ADD: Helper to determine color based on score (0-100)
+const getScoreColor = (score) => {
+    if (score >= 90) return 'text-green-600 bg-green-600';
+    if (score >= 75) return 'text-blue-600 bg-blue-600';
+    if (score >= 60) return 'text-yellow-600 bg-yellow-600';
+    return 'text-red-600 bg-red-600';
+};
+
+const getScoreBg = (score) => {
+    if (score >= 90) return 'bg-green-100';
+    if (score >= 75) return 'bg-blue-100';
+    if (score >= 60) return 'bg-yellow-100';
+    return 'bg-red-100';
+};
+
 const GRADE_CONFIG = {
-    'A': { 
-        icon: CheckCircle2, 
-        color: 'text-green-600', 
+    'A': {
+        icon: CheckCircle2,
+        color: 'text-green-600',
         bgColor: 'bg-green-50',
         badgeColor: 'bg-green-100 text-green-700',
         borderColor: 'border-green-200'
     },
-    'B': { 
-        icon: CheckCircle2, 
-        color: 'text-blue-600', 
+    'B': {
+        icon: CheckCircle2,
+        color: 'text-blue-600',
         bgColor: 'bg-blue-50',
         badgeColor: 'bg-blue-100 text-blue-700',
         borderColor: 'border-blue-200'
     },
-    'C': { 
-        icon: AlertTriangle, 
-        color: 'text-yellow-600', 
+    'C': {
+        icon: AlertTriangle,
+        color: 'text-yellow-600',
         bgColor: 'bg-yellow-50',
         badgeColor: 'bg-yellow-100 text-yellow-700',
         borderColor: 'border-yellow-200'
     },
-    'D': { 
-        icon: AlertTriangle, 
-        color: 'text-orange-600', 
+    'D': {
+        icon: AlertTriangle,
+        color: 'text-orange-600',
         bgColor: 'bg-orange-50',
         badgeColor: 'bg-orange-100 text-orange-700',
         borderColor: 'border-orange-200'
     },
-    'F': { 
-        icon: XCircle, 
-        color: 'text-red-600', 
+    'F': {
+        icon: XCircle,
+        color: 'text-red-600',
         bgColor: 'bg-red-50',
         badgeColor: 'bg-red-100 text-red-700',
         borderColor: 'border-red-200'
     }
 };
 
+// ADD: Sub-component for individual metrics
+const HealthMetric = ({ label, score, icon: Icon, description }) => {
+    const colorClass = getScoreColor(score);
+    const bgClass = getScoreBg(score);
+
+    return (
+        <div className="flex flex-col space-y-2 p-3 rounded-lg bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-md ${bgClass}`}>
+                        <Icon className={`w-4 h-4 ${colorClass.split(' ')[0]}`} />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">{label}</span>
+                </div>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="max-w-[200px] text-xs">{description}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
+
+            <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                    <span className="font-bold text-gray-900">{Math.round(score)}/100</span>
+                    <span className="text-gray-500">{score >= 90 ? 'Excellent' : score >= 60 ? 'Fair' : 'Risk'}</span>
+                </div>
+                <Progress value={score} className="h-2" indicatorClassName={colorClass.split(' ')[1]} />
+            </div>
+        </div>
+    );
+};
+
 export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
     if (!feasibility) return null;
-    
+
     // ADDED: 16-Jan-2026 - Temporal context awareness
     const isFuture = feasibility.temporalContext === 'future';
     const isOngoing = feasibility.temporalContext === 'ongoing';
@@ -131,11 +189,10 @@ export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
                                         {metrics.currentSavingsRate?.toFixed(1)}%
                                     </span>
                                     <ArrowRight className="w-3 h-3 text-gray-400" />
-                                    <span className={`font-medium ${
-                                        metrics.projectedSavingsRate < 10 ? 'text-red-600' :
-                                        metrics.projectedSavingsRate < 20 ? 'text-yellow-600' :
-                                        'text-green-600'
-                                    }`}>
+                                    <span className={`font-medium ${metrics.projectedSavingsRate < 10 ? 'text-red-600' :
+                                            metrics.projectedSavingsRate < 20 ? 'text-yellow-600' :
+                                                'text-green-600'
+                                        }`}>
                                         {metrics.projectedSavingsRate?.toFixed(1)}%
                                     </span>
                                 </div>
