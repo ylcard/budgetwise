@@ -10,6 +10,9 @@ import { getMonthBoundaries } from "./dateUtils"; // Ensure this is imported
 import { base44 } from "@/api/base44Client";
 import { parseDate, getFirstDayOfMonth } from "./dateUtils";
 
+// ADDED 17-Jan-2026: Export the ensureSystemBudgetsExist function for use in hooks
+export { ensureSystemBudgetsExist } from "./budgetInitialization";
+
 /**
  * Helper to check if a transaction falls within a date range.
  */
