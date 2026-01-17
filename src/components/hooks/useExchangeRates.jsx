@@ -58,13 +58,13 @@ export const useExchangeRates = () => {
                 }
             }
 
-            // Build the list of currencies we need rates for (excluding USD)
+            // MODIFIED: 17-Jan-2026 - Build the list of currencies we need rates for (excluding EUR)
             const currenciesToFetch = new Set();
-            if (sourceCurrency !== 'USD') currenciesToFetch.add(sourceCurrency);
-            if (targetCurrency !== 'USD') currenciesToFetch.add(targetCurrency);
+            if (sourceCurrency !== 'EUR') currenciesToFetch.add(sourceCurrency);
+            if (targetCurrency !== 'EUR') currenciesToFetch.add(targetCurrency);
 
             if (currenciesToFetch.size === 0) {
-                // Both are USD, no need to fetch
+                // Both are EUR, no need to fetch
                 setIsRefreshing(false);
                 return {
                     success: true,
@@ -72,38 +72,57 @@ export const useExchangeRates = () => {
                 };
             }
 
-            // Fetch rates using Core.InvokeLLM
-            const prompt = `Please provide the current exchange rates for the following currencies against USD for the date ${date}. 
-For each currency, I need the rate in the format: 1 [CURRENCY] = X USD.
-
-Currencies needed: ${Array.from(currenciesToFetch).join(', ')}
-
-Return the data in JSON format with the structure:
-{
-  "rates": {
-    "CURRENCY_CODE": rate_value,
-    ...
-  }
-}
-
-For example, if 1 GBP = 1.25 USD, the entry should be "GBP": 1.25
-
-Only include the rates for the currencies I listed above.`;
-
-            const response = await base44.integrations.Core.InvokeLLM({
-                prompt: prompt,
-                add_context_from_internet: true,
-                response_json_schema: {
-                    type: "object",
-                    properties: {
-                        rates: {
-                            type: "object",
-                            additionalProperties: { type: "number" }
-                        }
-                    },
-                    required: ["rates"]
+            // MODIFIED: 17-Jan-2026 - Switched from LLM to frankfurter.dev API (with ECB fallback)
+            // Fetch rates using frankfurter.dev API (EUR base) with ECB as fallback
+            let response;
+            try {
+                // Try frankfurter.dev first
+                const frankfurterUrl = `https://api.frankfurter.dev/v1/${date}?symbols=${Array.from(currenciesToFetch).join(',')}`;
+                const frankfurterResponse = await fetch(frankfurterUrl);
+                
+                if (!frankfurterResponse.ok) {
+                    throw new Error(`Frankfurter API returned ${frankfurterResponse.status}`);
                 }
-            });
+                
+                const frankfurterData = await frankfurterResponse.json();
+                response = { rates: frankfurterData.rates };
+            } catch (frankfurterError) {
+                console.warn('Frankfurter API failed, trying ECB fallback:', frankfurterError.message);
+                
+                // Fallback to ECB API
+                // ECB API format: https://data.ecb.europa.eu/data-detail-api?startPeriod={date}&endPeriod={date}&detail=dataonly
+                // We need to construct a query for each currency
+                const ecbRates = {};
+                
+                for (const currency of currenciesToFetch) {
+                    try {
+                        // ECB dataset: EXR.D.{CURRENCY}.EUR.SP00.A (Daily exchange rates)
+                        const ecbUrl = `https://data-api.ecb.europa.eu/service/data/EXR/D.${currency}.EUR.SP00.A?startPeriod=${date}&endPeriod=${date}&format=jsondata`;
+                        const ecbResponse = await fetch(ecbUrl);
+                        
+                        if (ecbResponse.ok) {
+                            const ecbData = await ecbResponse.json();
+                            // Extract the rate from ECB's complex structure
+                            const observations = ecbData?.dataSets?.[0]?.series?.['0:0:0:0:0']?.observations;
+                            if (observations) {
+                                const latestObservation = Object.values(observations)[0];
+                                if (latestObservation && latestObservation[0]) {
+                                    // ECB gives us 1 EUR = X {currency}, we need to invert it
+                                    ecbRates[currency] = 1 / parseFloat(latestObservation[0]);
+                                }
+                            }
+                        }
+                    } catch (currencyError) {
+                        console.error(`Failed to fetch ${currency} from ECB:`, currencyError);
+                    }
+                }
+                
+                if (Object.keys(ecbRates).length === 0) {
+                    throw new Error('Both Frankfurter and ECB APIs failed');
+                }
+                
+                response = { rates: ecbRates };
+            }
 
             // This handles the edge case where a rate might have been added while the LLM was thinking.
             const currentRates = queryClient.getQueryData([QUERY_KEYS.EXCHANGE_RATES]) || ratesToCheck;
@@ -118,10 +137,11 @@ Only include the rates for the currencies I listed above.`;
                 const isNowFresh = areRatesFresh(currentRates, currency, 'USD', date, 14);
                 if (isNowFresh) continue;
 
+                // MODIFIED: 17-Jan-2026 - Changed from USD to EUR as base currency
                 const existingRate = currentRates.find(
                     r => r.date === date &&
                         r.fromCurrency === currency &&
-                        r.toCurrency === 'USD'
+                        r.toCurrency === 'EUR'
                 );
 
                 if (existingRate) {
@@ -130,11 +150,12 @@ Only include the rates for the currencies I listed above.`;
                         ratesToUpdate.push({ id: existingRate.id, rate });
                     }
                 } else {
+                    // MODIFIED: 17-Jan-2026 - Changed from USD to EUR as base currency
                     // Create new rate
                     ratesToCreate.push({
                         date: date,
                         fromCurrency: currency,
-                        toCurrency: 'USD',
+                        toCurrency: 'EUR',
                         rate: rate
                     });
                 }

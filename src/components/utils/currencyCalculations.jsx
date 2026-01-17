@@ -1,22 +1,23 @@
 /**
- * Currency conversion utilities using USD as the reference currency.
+ * MODIFIED: 17-Jan-2026 - Currency conversion utilities using EUR as the reference currency (changed from USD).
  * Implements the triangulation method with multiplication-only approach.
  */
 
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
 
 /**
+ * MODIFIED: 17-Jan-2026 - Changed from USD to EUR as the reference currency
  * Calculate converted amount from source currency to target currency.
- * Uses USD as the reference currency for triangulation.
+ * Uses EUR as the reference currency for triangulation.
  * 
- * Formula: Converted Amount = Amount × Rate(Source→USD) × Rate(USD→Target)
+ * Formula: Converted Amount = Amount × Rate(Source→EUR) × Rate(EUR→Target)
  * 
  * @param {number} sourceAmount - The amount in source currency
  * @param {string} sourceCurrencyCode - The source currency code (e.g., 'GBP')
- * @param {string} targetCurrencyCode - The target currency code (e.g., 'EUR')
+ * @param {string} targetCurrencyCode - The target currency code (e.g., 'USD')
  * @param {Object} rates - Object containing exchange rates
- * @param {number} rates.sourceToUSD - Rate for Source→USD (e.g., 1 GBP = 1.25 USD)
- * @param {number} rates.targetToUSD - Rate for Target→USD (e.g., 1 EUR = 1.08 USD)
+ * @param {number} rates.sourceToEUR - Rate for Source→EUR (e.g., 1 GBP = 1.15 EUR)
+ * @param {number} rates.targetToEUR - Rate for Target→EUR (e.g., 1 USD = 0.92 EUR)
  * @returns {Object} { convertedAmount: number, exchangeRateUsed: number }
  */
 export function calculateConvertedAmount(sourceAmount, sourceCurrencyCode, targetCurrencyCode, rates) {
@@ -28,19 +29,19 @@ export function calculateConvertedAmount(sourceAmount, sourceCurrencyCode, targe
         };
     }
 
-    const { sourceToUSD, targetToUSD } = rates;
+    const { sourceToEUR, targetToEUR } = rates;
 
-    // Pre-calculate USD→Target rate (inverse)
-    const usdToTarget = 1 / targetToUSD;
+    // Pre-calculate EUR→Target rate (inverse)
+    const eurToTarget = 1 / targetToEUR;
 
-    // Convert Source→USD
-    const amountInUSD = sourceAmount * sourceToUSD;
+    // Convert Source→EUR
+    const amountInEUR = sourceAmount * sourceToEUR;
 
-    // Convert USD→Target (multiplication only)
-    const convertedAmount = amountInUSD * usdToTarget;
+    // Convert EUR→Target (multiplication only)
+    const convertedAmount = amountInEUR * eurToTarget;
 
     // Calculate the direct exchange rate used (Source→Target)
-    const exchangeRateUsed = sourceToUSD * usdToTarget;
+    const exchangeRateUsed = sourceToEUR * eurToTarget;
 
     return {
         convertedAmount: parseFloat(convertedAmount.toFixed(2)),
@@ -49,17 +50,18 @@ export function calculateConvertedAmount(sourceAmount, sourceCurrencyCode, targe
 }
 
 /**
+ * MODIFIED: 17-Jan-2026 - Changed from USD to EUR as the reference currency
  * Retrieve exchange rates for a specific currency pair and date from the database.
  * Now implements a 14-day freshness window - will use rates up to 14 days old.
  * 
  * @param {Array} exchangeRates - Array of ExchangeRate entities
  * @param {string} currencyCode - The currency code to look up (e.g., 'GBP')
  * @param {string} date - The target date in YYYY-MM-DD format
- * @returns {number|null} The rate for Currency→USD, or null if not found
+ * @returns {number|null} The rate for Currency→EUR, or null if not found
  */
 export function getRateForDate(exchangeRates, currencyCode, date) {
-    // Handle USD case (USD→USD = 1.0)
-    if (currencyCode === 'USD') {
+    // Handle EUR case (EUR→EUR = 1.0)
+    if (currencyCode === 'EUR') {
         return 1.0;
     }
 
@@ -68,6 +70,7 @@ export function getRateForDate(exchangeRates, currencyCode, date) {
 }
 
 /**
+ * MODIFIED: 17-Jan-2026 - Changed from USD to EUR as the reference currency
  * Retrieve the full exchange rate object for a specific currency pair and date.
  * 
  * @param {Array} exchangeRates - Array of ExchangeRate entities
@@ -76,15 +79,14 @@ export function getRateForDate(exchangeRates, currencyCode, date) {
  * @returns {Object|null} The ExchangeRate entity or null
  */
 export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCurrency = 'EUR') {
-    // Handle USD case (Source is USD, Target is Base Currency)
-    if (currencyCode === 'USD') {
-        // We need to find the rate for Base -> USD (e.g. EUR -> USD)
-        // Then invert it to get USD -> Base (e.g. 1 USD = 0.95 EUR)
+    // Handle EUR case (Source is EUR, Target is Base Currency)
+    if (currencyCode === 'EUR') {
+        // If base is also EUR, rate is 1
+        if (baseCurrency === 'EUR') return { rate: 1.0, date: date };
 
-        // If base is also USD, rate is 1
-        if (baseCurrency === 'USD') return { rate: 1.0, date: date };
-
-        const baseRateDetails = getRateDetailsForDate(exchangeRates, baseCurrency, date, 'USD');
+        // We need to find the rate for Base -> EUR
+        // Then invert it to get EUR -> Base
+        const baseRateDetails = getRateDetailsForDate(exchangeRates, baseCurrency, date, 'EUR');
 
         if (baseRateDetails) {
             return {
@@ -98,11 +100,10 @@ export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCur
 
     // Find all rates within the freshness window (0 to 14 days)
     const targetDateObj = startOfDay(parseISO(date));
-    const windowDays = 14;
 
-    // Find all rates for this currency pair
+    // MODIFIED: 17-Jan-2026 - Find all rates for this currency pair (now EUR-based)
     const relevantRates = exchangeRates.filter(r =>
-        r.fromCurrency === currencyCode && r.toCurrency === 'USD'
+        r.fromCurrency === currencyCode && r.toCurrency === 'EUR'
     );
 
     if (relevantRates.length === 0) return null;
@@ -120,6 +121,7 @@ export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCur
 }
 
 /**
+ * MODIFIED: 17-Jan-2026 - Changed from USD to EUR as the reference currency
  * Check if exchange rates for a given date and currencies are fresh enough.
  * 
  * @param {Array} exchangeRates - Array of ExchangeRate entities
@@ -132,10 +134,10 @@ export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCur
 export function areRatesFresh(exchangeRates, sourceCurrency, targetCurrency, date) {
     // Logic simplified: Determine which currencies need lookup
     const neededCurrencies = [];
-    if (sourceCurrency !== 'USD') neededCurrencies.push(sourceCurrency);
-    if (targetCurrency !== 'USD') neededCurrencies.push(targetCurrency);
+    if (sourceCurrency !== 'EUR') neededCurrencies.push(sourceCurrency);
+    if (targetCurrency !== 'EUR') neededCurrencies.push(targetCurrency);
 
-    if (neededCurrencies.length === 0) return true; // Both are USD
+    if (neededCurrencies.length === 0) return true; // Both are EUR
 
     // Check if EVERY needed currency has a rate within the window
     return neededCurrencies.every(currency => {
