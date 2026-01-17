@@ -29,6 +29,7 @@ export default function GoalSettings({
     setFixedLifestyleMode, // function
     // Currency formatting
     settings,
+    className,
     // Actions
     onSave              // function
 }) {
@@ -79,7 +80,7 @@ export default function GoalSettings({
 
     if (isLoading) {
         return (
-            <Card className="border-none shadow-lg sticky top-6">
+            <Card className={`border-none shadow-md sticky top-6 ${className || ''}`}>
                 <CardHeader>
                     <CardTitle>Goal Settings</CardTitle>
                 </CardHeader>
@@ -91,7 +92,7 @@ export default function GoalSettings({
     }
 
     return (
-        <Card className="border-none shadow-md sticky top-6 h-full flex flex-col">
+        <Card className={`border-none shadow-md sticky top-6 h-full flex flex-col ${className || ''}`}>
             <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
                     <Target className="w-5 h-5" />
