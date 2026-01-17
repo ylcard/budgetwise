@@ -1,127 +1,130 @@
 /**
- * @fileoverview DatePicker component for selecting a single date using react-day-picker v8.
+ * @fileoverview DatePicker component for selecting a single date using react-day-picker v9.
  * Integrates UI components (Popover, CustomButton, DayPicker) and utilizes
  * user settings for date formatting and utility functions for storage/retrieval.
- * UPDATED: 17-Jan-2026 - Migrated to react-day-picker v8 with custom navigation controls
+ * UPDATED: 17-Jan-2026 - Migrated to react-day-picker v9 with dropdown navigation
  */
 
 import { useState } from "react";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { DayPicker, useNavigation } from "react-day-picker";
+import { DayPicker } from "react-day-picker";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSettings } from "../utils/SettingsContext";
-import { parseDate, formatDateString, formatDate, getMonthName } from "../utils/dateUtils";
-import { setMonth, setYear } from "date-fns";
-import "react-day-picker/dist/style.css";
+import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
+// COMMENTED OUT: 17-Jan-2026 - react-day-picker v9 removed useNavigation hook, using captionLayout="dropdown-buttons" instead
+// import { useNavigation } from "react-day-picker";
+// import { ScrollArea } from "@/components/ui/scroll-area";
+// import { getMonthName } from "../utils/dateUtils";
+// import { setMonth, setYear } from "date-fns";
 
-/**
- * Custom Caption component for DayPicker.
- * Replaces the default caption with interactive Month and Year popovers
- * that display grids for quicker selection.
- */
-function CustomCaption({ displayMonth }) {
-    const { goToMonth, nextMonth, previousMonth } = useNavigation();
-    const [monthOpen, setMonthOpen] = useState(false);
-    const [yearOpen, setYearOpen] = useState(false);
+// COMMENTED OUT: 17-Jan-2026 - Custom caption not needed with react-day-picker v9's built-in dropdown navigation
+// /**
+//  * Custom Caption component for DayPicker.
+//  * Replaces the default caption with interactive Month and Year popovers
+//  * that display grids for quicker selection.
+//  */
+// function CustomCaption({ displayMonth }) {
+//     const { goToMonth, nextMonth, previousMonth } = useNavigation();
+//     const [monthOpen, setMonthOpen] = useState(false);
+//     const [yearOpen, setYearOpen] = useState(false);
 
-    // Generate ranges
-    const months = Array.from({ length: 12 }, (_, i) => getMonthName(i));
-    const currentYear = new Date().getFullYear();
-    // Range: Current Year - 50 to + 50
-    const years = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i);
+//     // Generate ranges
+//     const months = Array.from({ length: 12 }, (_, i) => getMonthName(i));
+//     const currentYear = new Date().getFullYear();
+//     // Range: Current Year - 50 to + 50
+//     const years = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i);
 
-    const handleMonthSelect = (index) => {
-        goToMonth(setMonth(displayMonth, index));
-        setMonthOpen(false);
-    };
+//     const handleMonthSelect = (index) => {
+//         goToMonth(setMonth(displayMonth, index));
+//         setMonthOpen(false);
+//     };
 
-    const handleYearSelect = (year) => {
-        goToMonth(setYear(displayMonth, year));
-        setYearOpen(false);
-    };
+//     const handleYearSelect = (year) => {
+//         goToMonth(setYear(displayMonth, year));
+//         setYearOpen(false);
+//     };
 
-    return (
-        <div className="flex items-center justify-between px-2 py-2">
-            <CustomButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => previousMonth && goToMonth(previousMonth)}
-                disabled={!previousMonth}
-                className="h-7 w-7"
-            >
-                <ChevronLeft className="h-4 w-4" />
-            </CustomButton>
+//     return (
+//         <div className="flex items-center justify-between px-2 py-2">
+//             <CustomButton
+//                 variant="ghost"
+//                 size="icon-sm"
+//                 onClick={() => previousMonth && goToMonth(previousMonth)}
+//                 disabled={!previousMonth}
+//                 className="h-7 w-7"
+//             >
+//                 <ChevronLeft className="h-4 w-4" />
+//             </CustomButton>
 
-            <div className="flex items-center gap-1">
-                {/* Month Picker */}
-                <Popover open={monthOpen} onOpenChange={setMonthOpen}>
-                    <PopoverTrigger asChild>
-                        <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
-                            {getMonthName(displayMonth.getMonth())}
-                        </CustomButton>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[260px] p-2" align="center">
-                        <div className="grid grid-cols-3 gap-2">
-                            {months.map((m, i) => (
-                                <CustomButton
-                                    key={m}
-                                    variant={displayMonth.getMonth() === i ? "default" : "ghost"}
-                                    size="sm"
-                                    onClick={() => handleMonthSelect(i)}
-                                    className="h-8 text-xs"
-                                >
-                                    {m.slice(0, 3)}
-                                </CustomButton>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
+//             <div className="flex items-center gap-1">
+//                 {/* Month Picker */}
+//                 <Popover open={monthOpen} onOpenChange={setMonthOpen}>
+//                     <PopoverTrigger asChild>
+//                         <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
+//                             {getMonthName(displayMonth.getMonth())}
+//                         </CustomButton>
+//                     </PopoverTrigger>
+//                     <PopoverContent className="w-[260px] p-2" align="center">
+//                         <div className="grid grid-cols-3 gap-2">
+//                             {months.map((m, i) => (
+//                                 <CustomButton
+//                                     key={m}
+//                                     variant={displayMonth.getMonth() === i ? "default" : "ghost"}
+//                                     size="sm"
+//                                     onClick={() => handleMonthSelect(i)}
+//                                     className="h-8 text-xs"
+//                                 >
+//                                     {m.slice(0, 3)}
+//                                 </CustomButton>
+//                             ))}
+//                         </div>
+//                     </PopoverContent>
+//                 </Popover>
 
-                {/* Year Picker */}
-                <Popover open={yearOpen} onOpenChange={setYearOpen}>
-                    <PopoverTrigger asChild>
-                        <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
-                            {displayMonth.getFullYear()}
-                        </CustomButton>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0" align="center">
-                        <ScrollArea className="h-[280px]">
-                            <div className="grid grid-cols-4 gap-2 p-2">
-                                {years.map((year) => (
-                                    <CustomButton
-                                        key={year}
-                                        variant={displayMonth.getFullYear() === year ? "default" : "ghost"}
-                                        size="sm"
-                                        onClick={() => handleYearSelect(year)}
-                                        className="h-8 text-xs"
-                                    >
-                                        {year}
-                                    </CustomButton>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </PopoverContent>
-                </Popover>
-            </div>
+//                 {/* Year Picker */}
+//                 <Popover open={yearOpen} onOpenChange={setYearOpen}>
+//                     <PopoverTrigger asChild>
+//                         <CustomButton variant="ghost" size="sm" className="h-7 text-sm font-medium hover:bg-gray-100">
+//                             {displayMonth.getFullYear()}
+//                         </CustomButton>
+//                     </PopoverTrigger>
+//                     <PopoverContent className="w-[240px] p-0" align="center">
+//                         <ScrollArea className="h-[280px]">
+//                             <div className="grid grid-cols-4 gap-2 p-2">
+//                                 {years.map((year) => (
+//                                     <CustomButton
+//                                         key={year}
+//                                         variant={displayMonth.getFullYear() === year ? "default" : "ghost"}
+//                                         size="sm"
+//                                         onClick={() => handleYearSelect(year)}
+//                                         className="h-8 text-xs"
+//                                     >
+//                                         {year}
+//                                     </CustomButton>
+//                                 ))}
+//                             </div>
+//                         </ScrollArea>
+//                     </PopoverContent>
+//                 </Popover>
+//             </div>
 
-            <CustomButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => nextMonth && goToMonth(nextMonth)}
-                disabled={!nextMonth}
-                className="h-7 w-7"
-            >
-                <ChevronRight className="h-4 w-4" />
-            </CustomButton>
-        </div>
-    );
-}
+//             <CustomButton
+//                 variant="ghost"
+//                 size="icon-sm"
+//                 onClick={() => nextMonth && goToMonth(nextMonth)}
+//                 disabled={!nextMonth}
+//                 className="h-7 w-7"
+//             >
+//                 <ChevronRight className="h-4 w-4" />
+//             </CustomButton>
+//         </div>
+//     );
+// }
 
 /**
  * A reusable single-date picker component using react-day-picker.
@@ -178,17 +181,13 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
                     selected={dateValue}
                     onSelect={handleSelect}
                     defaultMonth={dateValue}
-                    className="rdp-custom p-3"
+                    className="p-3"
                     weekStartsOn={1}
                     showOutsideDays
                     fixedWeeks
-                    components={{
-                        Caption: CustomCaption
-                    }}
-                    modifiersClassNames={{
-                        selected: 'rdp-selected',
-                        today: 'rdp-today'
-                    }}
+                    captionLayout="dropdown-buttons"
+                    startMonth={new Date(1900, 0)}
+                    endMonth={new Date(2100, 11)}
                 />
             </PopoverContent>
         </Popover>

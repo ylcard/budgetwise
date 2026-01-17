@@ -68,11 +68,12 @@
   }
 }
 
-/* ADDED: 17-Jan-2026 - Custom react-day-picker v8 styles */
-.rdp-custom {
+/* COMMENTED OUT: 17-Jan-2026 - react-day-picker v8 custom styles no longer needed with v9 */
+/* react-day-picker v9 uses different class names and has built-in styling */
+/* .rdp-custom {
   --rdp-cell-size: 40px;
-  --rdp-accent-color: rgb(59 130 246); /* blue-500 */
-  --rdp-background-color: rgb(239 246 255); /* blue-50 */
+  --rdp-accent-color: rgb(59 130 246);
+  --rdp-background-color: rgb(239 246 255);
   font-family: inherit;
 }
 
@@ -93,7 +94,7 @@
 .rdp-custom .rdp-head_cell {
   font-weight: 500;
   font-size: 0.75rem;
-  color: rgb(107 114 128); /* gray-500 */
+  color: rgb(107 114 128);
   text-transform: uppercase;
   padding: 0.5rem 0;
 }
@@ -116,7 +117,7 @@
 }
 
 .rdp-custom .rdp-day:hover:not(.rdp-day_selected):not(.rdp-day_disabled) {
-  background-color: rgb(243 244 246); /* gray-100 */
+  background-color: rgb(243 244 246);
 }
 
 .rdp-custom .rdp-day_selected {
@@ -132,11 +133,11 @@
 }
 
 .rdp-custom .rdp-day_outside {
-  color: rgb(209 213 219); /* gray-300 */
+  color: rgb(209 213 219);
 }
 
 .rdp-custom .rdp-day_disabled {
-  color: rgb(209 213 219); /* gray-300 */
+  color: rgb(209 213 219);
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -154,5 +155,32 @@
 }
 
 .rdp-custom .rdp-nav {
-  display: none; /* Hidden because we use custom navigation */
+  display: none;
+} */
+
+/* ADDED: 17-Jan-2026 - react-day-picker v9 custom styling */
+.rdp {
+  --rdp-accent-color: rgb(59 130 246); /* blue-500 */
+  --rdp-accent-background-color: rgb(239 246 255); /* blue-50 */
+}
+
+.rdp-day_selected {
+  background-color: var(--rdp-accent-color);
+  color: white;
+  font-weight: 500;
+}
+
+.rdp-day_selected:hover {
+  background-color: rgb(37 99 235); /* blue-600 */
+}
+
+.rdp-day_range_middle {
+  background-color: var(--rdp-accent-background-color);
+  color: var(--rdp-accent-color);
+}
+
+.rdp-day_today:not(.rdp-day_selected) {
+  font-weight: 600;
+  color: var(--rdp-accent-color);
+  background-color: var(--rdp-accent-background-color);
 }

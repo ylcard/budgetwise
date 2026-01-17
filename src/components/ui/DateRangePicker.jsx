@@ -1,29 +1,33 @@
 /**
- * @fileoverview DateRangePicker using react-day-picker v8 range mode
+ * @fileoverview DateRangePicker using react-day-picker v9 range mode
  * REDESIGNED: 17-Jan-2026 - Replaced custom dual DatePicker with native DayPicker range mode (single calendar)
+ * UPDATED: 17-Jan-2026 - Upgraded to react-day-picker v9 with dropdown navigation
  */
 
 import { useState } from "react";
-// import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
-// import { DayPicker, useNavigation } from "react-day-picker";
 import { DayPicker } from "react-day-picker";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-// import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSettings } from "../utils/SettingsContext";
-// import { parseDate, formatDateString, formatDate, getMonthName } from "../utils/dateUtils";
-// import { setMonth, setYear } from "date-fns";
 import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
-import "react-day-picker/dist/style.css";
 
-/**
- * Custom Caption component for DayPicker range mode.
- */
+// COMMENTED OUT: 17-Jan-2026 - react-day-picker v9 removed useNavigation hook and custom caption support
+// Using captionLayout="dropdown-buttons" instead for navigation
+// import { useNavigation } from "react-day-picker";
+// import { ScrollArea } from "@/components/ui/scroll-area";
+// import { getMonthName } from "../utils/dateUtils";
+// import { setMonth, setYear } from "date-fns";
+
+// COMMENTED OUT: 17-Jan-2026 - Custom caption not supported in react-day-picker v9
+// Using built-in dropdown navigation with captionLayout prop instead
+// /**
+//  * Custom Caption component for DayPicker range mode.
+//  */
 // function CustomCaption({ displayMonth }) {
 //     const { goToMonth, nextMonth, previousMonth } = useNavigation();
 //     const [monthOpen, setMonthOpen] = useState(false);
@@ -163,16 +167,12 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     selected={range}
                     onSelect={handleSelect}
                     defaultMonth={range.from || new Date()}
-                    className="rdp-custom p-3"
+                    className="p-3"
                     weekStartsOn={1}
                     showOutsideDays
-                    // components={{
-                    //     Caption: CustomCaption
-                    // }}
-                    modifiersClassNames={{
-                        selected: 'rdp-selected',
-                        today: 'rdp-today'
-                    }}
+                    captionLayout="dropdown-buttons"
+                    startMonth={new Date(1900, 0)}
+                    endMonth={new Date(2100, 11)}
                 />
             </PopoverContent>
         </Popover>
