@@ -128,15 +128,18 @@ export const useGoalActions = (user, goals) => {
 
     const updateGoalMutation = useMutation({
         mutationFn: ({ id, data }) => base44.entities.BudgetGoal.update(id, data),
-        // Implementing snapshots
-        // onSuccess: () => {
         onSuccess: async (data, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
 
-            // Trigger snapshot for current/future budgets using the new goal data
-            // variables.data contains the updated percentage/amount
-            // variables.priority is passed from handleGoalUpdate below
-            await snapshotFutureBudgets({ ...variables.data, priority: variables.priority }, settings);
+            // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
+            const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
+            
+            await snapshotFutureBudgets(
+                { ...variables.data, priority: variables.priority }, 
+                settings, 
+                user?.email, 
+                allGoals
+            );
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
         onError: (error) => {
@@ -146,11 +149,13 @@ export const useGoalActions = (user, goals) => {
 
     const createGoalMutation = useMutation({
         mutationFn: (data) => base44.entities.BudgetGoal.create(data),
-        // Implementing snapshots
-        // onSuccess: () => {
         onSuccess: async (data, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
-            await snapshotFutureBudgets(variables, settings);
+            
+            // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
+            const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
+            
+            await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
         onError: (error) => {
