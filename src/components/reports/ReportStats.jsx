@@ -130,7 +130,7 @@ export default function ReportStats({
                 </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm">
+            <Card className="border-none shadow-lg">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
                         <p className="text-sm font-medium text-gray-500 inline-flex items-center">
@@ -174,7 +174,7 @@ export default function ReportStats({
                 </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm">
+            <Card className="border-none shadow-lg">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
                         <p className="text-sm font-medium text-gray-500 inline-flex items-center">
@@ -384,7 +384,7 @@ export function FinancialHealthScore({
     return (
         <div className={`flex flex-col gap-4 h-full ${className || ''}`}>
             {/* Main Header Card - Flex-none ensures it keeps natural height */}
-            <div className="flex-none flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <div className="flex-none flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-lg">
                 <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${totalScore >= 90 ? 'bg-emerald-100' : totalScore >= 60 ? 'bg-blue-100' : 'bg-rose-100'
                         }`}>
