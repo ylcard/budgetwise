@@ -204,6 +204,7 @@ export default function Reports() {
                             setAbsoluteValues={setAbsoluteValues}
                             fixedLifestyleMode={fixedLifestyleMode}
                             setFixedLifestyleMode={setFixedLifestyleMode}
+                            settings={settings}
                             onSave={handleGoalSave}
                         />
                     </div>
