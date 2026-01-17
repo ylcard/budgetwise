@@ -352,7 +352,7 @@ export function FinancialHealthScore({
     const HealthCell = ({ label, score, description, wiki }) => {
         const style = getScoreStyle(score);
         return (
-            <div className="flex flex-col h-full justify-between p-3 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col h-full justify-between p-3 rounded-lg border border-gray-100 bg-white shadow-lg transition-all">
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
                     <InfoTooltip title={label} description={description} wikiUrl={wiki} />
