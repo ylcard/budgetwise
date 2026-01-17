@@ -56,7 +56,6 @@ export default function MonthlyBreakdown({
                         <div className="flex justify-between items-center">
                             <div>
                                 <CardTitle className="text-xl font-bold text-gray-900">Monthly Breakdown</CardTitle>
-                                <p className="text-sm text-gray-500 mt-1">Overview by category</p>
                             </div>
 
                             {/* The "Fancier" Summary Section */}
