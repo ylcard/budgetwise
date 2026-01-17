@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import InfoTooltip from "../ui/InfoTooltip"; // ADDED: 17-Jan-2026
 
 const priorityConfig = {
-    needs: { label: "Needs", color: "#EF4444", description: "Essential expenses" },
-    wants: { label: "Wants", color: "#F59E0B", description: "Discretionary spending" },
+    needs: { label: "Essentials", color: "#EF4444", description: "Essential expenses" },
+    wants: { label: "Lifestyle", color: "#F59E0B", description: "Discretionary spending" },
     savings: { label: "Savings", color: "#10B981", description: "Savings and investments" }
 };
 
@@ -93,7 +93,7 @@ export default function GoalSettings({
                     Goal Allocation
                     <InfoTooltip
                         title="Goal Allocation"
-                        description="Define how your monthly income is split between Needs (essentials), Wants (lifestyle), and Savings (investments). You can use percentage-based allocation or set absolute amounts."
+                        description="Define how your monthly income is split between Essentials, Lifestyle, and Savings. You can use percentage-based allocation or set absolute amounts."
                     />
                 </CardTitle>
             </CardHeader>
@@ -105,7 +105,7 @@ export default function GoalSettings({
                         <span className="text-xs font-semibold text-gray-500">Allocation Mode</span>
                         <InfoTooltip
                             title="Allocation Modes"
-                            description="Percentage Mode: Budgets scale with your income (e.g., 50% of income to Needs). Absolute Mode: Fixed budget amounts regardless of income changes."
+                            description="Percentage Mode: Budgets scale with your income (e.g., 50% of income to Essentials). Absolute Mode: Fixed budget amounts regardless of income changes."
                         />
                     </div>
                     <div className="flex items-center justify-center p-1 bg-gray-100 rounded-lg">
