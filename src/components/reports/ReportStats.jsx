@@ -218,7 +218,8 @@ export function FinancialHealthScore({
     startDate,
     endDate,
     isLoading,
-    settings
+    settings,
+    className
 }) {
     if (isLoading) return null;
 
@@ -350,7 +351,7 @@ export function FinancialHealthScore({
     if (totalScore < 60) color = '#EF4444'; // Red for Needs Work
 
     return (
-        <Card className="border-none shadow-sm overflow-hidden relative">
+        <Card className={`border-none shadow-sm overflow-hidden relative h-full ${className || ''}`}>
             <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
                 {/* Score Circle */}
                 <div className="relative w-32 h-32 flex-shrink-0">
