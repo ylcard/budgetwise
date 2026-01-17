@@ -213,12 +213,8 @@ export function FinancialHealthScore({
     monthlyIncome,
     transactions,
     fullHistory = [],
-    prevMonthlyIncome,
-    prevTransactions,
     startDate,
-    endDate,
     isLoading,
-    settings,
     className
 }) {
     if (isLoading) return null;
@@ -356,7 +352,7 @@ export function FinancialHealthScore({
     const HealthCell = ({ label, score, description, wiki }) => {
         const style = getScoreStyle(score);
         return (
-            <div className="flex flex-col p-3 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col h-full justify-between p-3 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
                     <InfoTooltip title={label} description={description} wikiUrl={wiki} />
@@ -386,9 +382,9 @@ export function FinancialHealthScore({
     if (totalScore < 60) color = '#EF4444'; // Red for Needs Work
 
     return (
-        <div className={`space-y-4 ${className || ''}`}>
-            {/* Main Header Card */}
-            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <div className={`flex flex-col gap-4 h-full ${className || ''}`}>
+            {/* Main Header Card - Flex-none ensures it keeps natural height */}
+            <div className="flex-none flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${totalScore >= 90 ? 'bg-emerald-100' : totalScore >= 60 ? 'bg-blue-100' : 'bg-rose-100'
                         }`}>
@@ -407,7 +403,7 @@ export function FinancialHealthScore({
             </div>
 
             {/* DNA Grid - 5 Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
                 <HealthCell
                     label="Pacing"
                     score={pacingScore}
