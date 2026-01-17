@@ -17,9 +17,12 @@ import ReportStats, { FinancialHealthScore } from "../components/reports/ReportS
 import { calculateProjection } from "../components/utils/projectionUtils";
 import { calculateBonusSavingsPotential } from "../components/utils/financialCalculations";
 import InfoTooltip from "../components/ui/InfoTooltip"; // ADDED: 16-Jan-2026
+import GoalSettings from "../components/reports/GoalSettings"; // ADDED: 17-Jan-2026
+import { useGoalActions } from "../components/hooks/useActions"; // ADDED: 17-Jan-2026
+import { useState, useEffect, useRef } from "react"; // UPDATED: 17-Jan-2026
 
 export default function Reports() {
-    const { user, settings } = useSettings();
+    const { user, settings, updateSettings } = useSettings();
 
     // Period management
     const {
@@ -39,6 +42,76 @@ export default function Reports() {
     const { goals, isLoading: loadingGoals } = useGoals(user);
     const { allCustomBudgets } = useCustomBudgetsAll(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+
+    // ADDED 17-Jan-2026: Goal Settings state management
+    const { handleGoalUpdate, isSaving: isGoalSaving } = useGoalActions(user, goals);
+    const [localGoalMode, setLocalGoalMode] = useState(settings.goalMode ?? true);
+    const [splits, setSplits] = useState({ split1: 50, split2: 80 });
+    const [absoluteValues, setAbsoluteValues] = useState({ needs: '', wants: '', savings: '' });
+    const [fixedLifestyleMode, setFixedLifestyleMode] = useState(settings.fixedLifestyleMode ?? false);
+
+    // Sync with DB settings
+    useEffect(() => {
+        setLocalGoalMode(settings.goalMode ?? true);
+        setFixedLifestyleMode(settings.fixedLifestyleMode ?? false);
+    }, [settings.goalMode, settings.fixedLifestyleMode]);
+
+    // Sync with DB goals
+    useEffect(() => {
+        if (goals.length > 0) {
+            setAbsoluteValues({
+                needs: goals.find(g => g.priority === 'needs')?.target_amount ?? '',
+                wants: goals.find(g => g.priority === 'wants')?.target_amount ?? '',
+                savings: goals.find(g => g.priority === 'savings')?.target_amount ?? ''
+            });
+            const map = { needs: 0, wants: 0, savings: 0 };
+            goals.forEach(goal => { map[goal.priority] = goal.target_percentage; });
+            setSplits({
+                split1: map.needs || 50,
+                split2: (map.needs || 50) + (map.wants || 30)
+            });
+        }
+    }, [goals]);
+
+    // Save handler
+    const handleGoalSave = async () => {
+        const promises = [];
+        const currentValues = {
+            needs: splits.split1,
+            wants: splits.split2 - splits.split1,
+            savings: 100 - splits.split2
+        };
+
+        // Update settings
+        await updateSettings({
+            ...settings,
+            goalMode: localGoalMode,
+            fixedLifestyleMode: fixedLifestyleMode
+        });
+
+        // Update goals
+        ['needs', 'wants', 'savings'].forEach((priority) => {
+            const existingGoal = goals.find(g => g.priority === priority);
+            let payload = {};
+
+            if (!localGoalMode) {
+                const newAmt = absoluteValues[priority] === '' ? 0 : Number(absoluteValues[priority]);
+                payload = {
+                    target_amount: newAmt,
+                    target_percentage: existingGoal?.target_percentage || 0
+                };
+            } else {
+                const newPct = currentValues[priority];
+                payload = {
+                    target_amount: existingGoal?.target_amount || 0,
+                    target_percentage: newPct
+                };
+            }
+            promises.push(handleGoalUpdate(priority, payload.target_percentage, payload));
+        });
+
+        await Promise.all(promises);
+    };
 
     // Derived data
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
@@ -148,7 +221,21 @@ export default function Reports() {
                             selectedYear={selectedYear}
                         />
                     </div>
-                    <div className="lg:col-span-1 h-full">
+                    <div className="lg:col-span-1 h-full space-y-8">
+                        <GoalSettings
+                            isLoading={loadingGoals}
+                            isSaving={isGoalSaving}
+                            goalMode={localGoalMode}
+                            setGoalMode={setLocalGoalMode}
+                            splits={splits}
+                            setSplits={setSplits}
+                            absoluteValues={absoluteValues}
+                            setAbsoluteValues={setAbsoluteValues}
+                            fixedLifestyleMode={fixedLifestyleMode}
+                            setFixedLifestyleMode={setFixedLifestyleMode}
+                            onSave={handleGoalSave}
+                        />
+
                         <PriorityChart
                             transactions={monthlyTransactions}
                             categories={categories}
@@ -157,7 +244,6 @@ export default function Reports() {
                             isLoading={isLoading}
                             settings={settings}
                         />
-
                     </div>
                 </div>
             </div>

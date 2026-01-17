@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import AmountInput from "../ui/AmountInput";
 import { Label } from "@/components/ui/label";
+import InfoTooltip from "../ui/InfoTooltip"; // ADDED: 17-Jan-2026
 
 const priorityConfig = {
     needs: { label: "Needs", color: "#EF4444", description: "Essential expenses" },
@@ -90,26 +91,39 @@ export default function GoalSettings({
                 <CardTitle className="flex items-center gap-2">
                     <Target className="w-5 h-5" />
                     Goal Allocation
+                    <InfoTooltip
+                        title="Goal Allocation"
+                        description="Define how your monthly income is split between Needs (essentials), Wants (lifestyle), and Savings (investments). You can use percentage-based allocation or set absolute amounts."
+                    />
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
 
                 {/* Mode Switcher */}
-                <div className="flex items-center justify-center p-1 bg-gray-100 rounded-lg">
-                    <button
-                        type="button"
-                        onClick={() => setGoalMode(true)}
-                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${!isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Percentage
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setGoalMode(false)}
-                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Absolute Values
-                    </button>
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-500">Allocation Mode</span>
+                        <InfoTooltip
+                            title="Allocation Modes"
+                            description="Percentage Mode: Budgets scale with your income (e.g., 50% of income to Needs). Absolute Mode: Fixed budget amounts regardless of income changes."
+                        />
+                    </div>
+                    <div className="flex items-center justify-center p-1 bg-gray-100 rounded-lg">
+                        <button
+                            type="button"
+                            onClick={() => setGoalMode(true)}
+                            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${!isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Percentage
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setGoalMode(false)}
+                            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Absolute Values
+                        </button>
+                    </div>
                 </div>
 
                 {/* SLIDER VIEW (Percentage Mode) */}
@@ -202,8 +216,14 @@ export default function GoalSettings({
                                 <Lock className="w-4 h-4" />
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-gray-900">Fixed Lifestyle Mode</p>
-                                <p className="text-[10px] text-gray-500">If income rises, keep Needs budget fixed and save the rest.</p>
+                                <div className="flex items-center gap-1">
+                                    <p className="text-sm font-bold text-gray-900">Inflation Protection</p>
+                                    <InfoTooltip
+                                        title="Inflation Protection"
+                                        description="Prevents lifestyle creep when income increases. Budgets are calculated based on your historical average income rather than current spikes. Extra income automatically goes to Savings."
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500">If income rises, keep budgets fixed and save the rest.</p>
                             </div>
                         </div>
                         <Switch
@@ -226,6 +246,16 @@ export default function GoalSettings({
                                     <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                         {config.label}
                                     </span>
+                                    <InfoTooltip
+                                        title={config.label}
+                                        description={
+                                            key === 'needs' ? 
+                                            "Essential expenses you can't avoid (rent, utilities, groceries, transportation, insurance)." :
+                                            key === 'wants' ?
+                                            "Discretionary spending for lifestyle and entertainment (dining out, hobbies, subscriptions, shopping)." :
+                                            "Money set aside for future goals, investments, emergency fund, and long-term financial security."
+                                        }
+                                    />
                                 </div>
                                 <div className="text-2xl font-bold text-gray-900">
                                     {Math.round(currentValues[key])}%
