@@ -344,6 +344,41 @@ export function FinancialHealthScore({
     // if (totalScore < 60) { color = '#F59E0B'; label = 'Fair'; }
     // if (totalScore < 40) { color = '#EF4444'; label = 'Needs Work'; }
 
+    // HELPER: Dynamic styling for the DNA cards
+    const getScoreStyle = (score) => {
+        if (score >= 90) return { color: 'text-emerald-600', bg: 'bg-emerald-50', bar: 'bg-emerald-500', label: 'Excellent' };
+        if (score >= 75) return { color: 'text-blue-600', bg: 'bg-blue-50', bar: 'bg-blue-500', label: 'Good' };
+        if (score >= 60) return { color: 'text-amber-600', bg: 'bg-amber-50', bar: 'bg-amber-500', label: 'Fair' };
+        return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'Risk' };
+    };
+
+    // Renders a single "DNA" cell
+    const HealthCell = ({ label, score, description, wiki }) => {
+        const style = getScoreStyle(score);
+        return (
+            <div className="flex flex-col p-3 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
+                    <InfoTooltip title={label} description={description} wikiUrl={wiki} />
+                </div>
+                <div className="flex items-end justify-between mb-2">
+                    <span className={`text-2xl font-bold ${style.color}`}>{Math.round(score)}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${style.bg} ${style.color}`}>
+                        {style.label}
+                    </span>
+                </div>
+                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${score}%` }}
+                        transition={{ duration: 1, delay: 0.2 }}
+                        className={`h-full ${style.bar}`}
+                    />
+                </div>
+            </div>
+        );
+    };
+
     // ADDED: 16-Jan-2026 - Color mapping for label
     let color = '#10B981'; // Green
     if (totalScore < 90) color = '#3B82F6'; // Blue for Good
