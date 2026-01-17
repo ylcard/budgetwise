@@ -389,7 +389,7 @@ export function FinancialHealthScore({
         <div className={`space-y-4 ${className || ''}`}>
             {/* Main Header Card */}
             <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${totalScore >= 90 ? 'bg-emerald-100' : totalScore >= 60 ? 'bg-blue-100' : 'bg-rose-100'
                         }`}>
                         <Activity className={`w-6 h-6 ${totalScore >= 90 ? 'text-emerald-600' : totalScore >= 60 ? 'text-blue-600' : 'text-rose-600'
