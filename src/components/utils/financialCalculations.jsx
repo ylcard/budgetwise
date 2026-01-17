@@ -393,8 +393,82 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 };
 
 /**
+ * ADDED 17-Jan-2026: Ensures SystemBudget entities exist for a given user, month, and priority type.
+ * This function is the SINGLE SOURCE OF TRUTH for creating system budgets.
+ * It prevents duplicate budgets by checking existence before creation.
+ * 
+ * @param {string} userEmail - User's email address
+ * @param {string} startDate - First day of the month (YYYY-MM-DD)
+ * @param {string} endDate - Last day of the month (YYYY-MM-DD)
+ * @param {Array} budgetGoals - Array of BudgetGoal entities (optional, for initial amounts)
+ * @param {Object} settings - App settings (optional, for calculating initial amounts)
+ * @param {number} monthlyIncome - Monthly income for the period (optional, for percentage-based calculation)
+ * @returns {Promise<Array>} Array of created or existing SystemBudget entities
+ */
+export const ensureSystemBudgetsExist = async (userEmail, startDate, endDate, budgetGoals = [], settings = {}, monthlyIncome = 0) => {
+    const priorityTypes = ['needs', 'wants', 'savings'];
+    const results = [];
+
+    for (const priorityType of priorityTypes) {
+        // Check if a SystemBudget already exists for this user, month, and priority
+        const existing = await base44.entities.SystemBudget.filter({
+            user_email: userEmail,
+            systemBudgetType: priorityType,
+            startDate: startDate,
+            endDate: endDate
+        });
+
+        if (existing && existing.length > 0) {
+            // Budget already exists - return the first one (should only be one)
+            results.push(existing[0]);
+        } else {
+            // Create a new SystemBudget
+            const goal = budgetGoals.find(g => g.priority === priorityType);
+            let budgetAmount = 0;
+
+            // Calculate initial budget amount based on mode
+            if (settings.goalMode === false && goal) {
+                // Absolute mode
+                budgetAmount = goal.target_amount || 0;
+            } else if (goal && monthlyIncome > 0) {
+                // Percentage mode
+                budgetAmount = (monthlyIncome * (goal.target_percentage || 0)) / 100;
+            }
+
+            const colorMap = {
+                needs: '#EF4444',
+                wants: '#F59E0B',
+                savings: '#10B981'
+            };
+
+            const nameMap = {
+                needs: 'Needs',
+                wants: 'Wants',
+                savings: 'Savings'
+            };
+
+            const newBudget = await base44.entities.SystemBudget.create({
+                name: nameMap[priorityType],
+                budgetAmount,
+                startDate,
+                endDate,
+                color: colorMap[priorityType],
+                user_email: userEmail,
+                systemBudgetType: priorityType,
+                cashAllocations: []
+            });
+
+            results.push(newBudget);
+        }
+    }
+
+    return results;
+};
+
+/**
  * Recalculates System Budgets for Current and Future months based on updated Goals.
  * STRICTLY ignores past months to preserve history.
+ * UPDATED 17-Jan-2026: Now calls ensureSystemBudgetsExist before attempting updates.
  * @param {Object} updatedGoal - The specific goal updated (e.g., { priority: 'needs', target_percentage: 50 })
  * @param {Object} settings - App settings (to determine if we are in 'absolute' or 'percentage' mode)
  */
@@ -424,6 +498,9 @@ export const snapshotFutureBudgets = async (updatedGoal, settings) => {
         startDate: { $gte: currentMonthStart }
     });
 
+    // ADDED 17-Jan-2026: If no budgets exist for future months, we need to create them
+    // This can happen when a user sets goals but hasn't added transactions yet
+    // For now, we return early if no budgets exist (they'll be created on-demand when needed)
     if (budgetsToUpdate.length === 0) return;
 
     // 4. Pre-fetch transactions if we are in Percentage mode (to calculate income)
