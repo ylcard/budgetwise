@@ -57,15 +57,48 @@ export default function QuickAddTransaction({
     // const { monthStart, monthEnd } = getMonthBoundaries(targetMonth, targetYear);
 
     // 2. Fetch Data
-    // System: Constrained by Date (Strict)
+    // System: Constrained by Date (Strict) - BUT if editing, fetch the transaction's month too
+    // CRITICAL FIX 17-Jan-2026: When editing, we need to fetch system budgets for BOTH:
+    // 1. The currently viewed month (for context)
+    // 2. The transaction's original month (so the linked budget appears in dropdown)
+    const transactionMonth = transaction?.date ? new Date(transaction.date).getMonth() : null;
+    const transactionYear = transaction?.date ? new Date(transaction.date).getFullYear() : null;
+    
+    const needsSecondFetch = transaction && (
+        transactionMonth !== dateContext.month || transactionYear !== dateContext.year
+    );
+    
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+    
+    // If editing a transaction from a different month, fetch that month's system budgets too
+    const transactionMonthBounds = needsSecondFetch 
+        ? getMonthBoundaries(transactionMonth, transactionYear)
+        : { monthStart: null, monthEnd: null };
+    
+    const { systemBudgets: transactionSystemBudgets } = useSystemBudgetsForPeriod(
+        user, 
+        transactionMonthBounds.monthStart, 
+        transactionMonthBounds.monthEnd
+    );
+    
     // Custom: Unconstrained (Fetch "All" - handled by hook limit)
     const { allCustomBudgets } = useCustomBudgetsAll(user, null, null);
 
     // 3. Prepare & Sort the Dropdown List
     const allBudgets = useMemo(() => {
-        // A. System Budgets: Filter out Savings, Format props
-        const formattedSystem = systemBudgets
+        // CRITICAL FIX 17-Jan-2026: Merge system budgets from BOTH date ranges when editing
+        
+        // A. System Budgets: Combine current month + transaction's month (if different)
+        const combinedSystemBudgets = needsSecondFetch 
+            ? [...systemBudgets, ...transactionSystemBudgets]
+            : systemBudgets;
+        
+        // Remove duplicates (shouldn't happen, but just in case)
+        const uniqueSystemBudgets = Array.from(
+            new Map(combinedSystemBudgets.map(sb => [sb.id, sb])).values()
+        );
+        
+        const formattedSystem = uniqueSystemBudgets
             .filter(sb => sb.systemBudgetType !== 'savings') // Rule: Savings is not for expenses
             .map(sb => ({
                 ...sb,
@@ -79,7 +112,7 @@ export default function QuickAddTransaction({
 
         // C. Merge: System at the TOP
         return [...formattedSystem, ...sortedCustom];
-    }, [systemBudgets, allCustomBudgets]);
+    }, [systemBudgets, transactionSystemBudgets, allCustomBudgets, needsSecondFetch]);
 
     // We rely on internal state UNLESS the parent explicitly passes a boolean 'open' prop
     const [internalOpen, setInternalOpen] = useState(false);
