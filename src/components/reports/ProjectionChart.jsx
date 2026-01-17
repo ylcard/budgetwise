@@ -110,7 +110,7 @@ export default function ProjectionChart({
                         : `Projected to overspend by ${formatCurrency(Math.abs(currentNet), settings)}.`}
                 </p>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0">
+            <CardContent className="flex-1 min-h-0 shadow-lg">
                 <div className="h-64 flex flex-col justify-end mt-4">
                     {/* The Chart Area - 3 distinct columns */}
                     <div className="flex items-end justify-between h-full gap-4 pt-6 px-2 relative">
