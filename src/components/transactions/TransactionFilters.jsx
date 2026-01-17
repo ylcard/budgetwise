@@ -11,7 +11,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import "react-day-picker/dist/style.css";
 import CategorySelect from "../ui/CategorySelect";
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 
