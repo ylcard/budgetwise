@@ -1,4 +1,10 @@
+/**
+ * @fileoverview Modern Month/Year Picker with grid layout
+ * REDESIGNED: 17-Jan-2026 - New modern design inspired by react-native-modern-datepicker
+ */
+
 import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthName } from "../utils/dateUtils";
 import { CustomButton } from "@/components/ui/CustomButton";
 import {
@@ -6,106 +12,108 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 export default function MonthYearPickerPopover({ currentMonth, currentYear, onMonthChange, children }) {
     const [open, setOpen] = useState(false);
-    const [tempMonth, setTempMonth] = useState(currentMonth);
     const [tempYear, setTempYear] = useState(currentYear);
 
+    // Months in reverse chronological order (12 -> 1)
+    const months = [
+        { index: 2, label: "March" },
+        { index: 1, label: "February" },
+        { index: 0, label: "January" },
+        { index: 5, label: "June" },
+        { index: 4, label: "May" },
+        { index: 3, label: "April" },
+        { index: 8, label: "September" },
+        { index: 7, label: "August" },
+        { index: 6, label: "July" },
+        { index: 11, label: "December" },
+        { index: 10, label: "November" },
+        { index: 9, label: "October" },
+    ];
 
+    const handleYearChange = (delta) => {
+        setTempYear(prev => prev + delta);
+    };
 
-    // Generate year options: current year ± 5 years
-    const currentYearNow = new Date().getFullYear();
-    const years = [];
-    for (let i = currentYearNow - 5; i <= currentYearNow + 5; i++) {
-        years.push(i);
-    }
-
-    const handleApply = () => {
-        onMonthChange(tempMonth, tempYear);
+    const handleMonthSelect = (monthIndex) => {
+        onMonthChange(monthIndex, tempYear);
         setOpen(false);
     };
 
-    const handleCancel = () => {
-        setTempMonth(currentMonth);
-        setTempYear(currentYear);
-        setOpen(false);
+    const handleOpenChange = (isOpen) => {
+        setOpen(isOpen);
+        if (isOpen) {
+            // Reset to current year when opening
+            setTempYear(currentYear);
+        }
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={handleOpenChange}>
             <PopoverTrigger asChild>
                 {children}
             </PopoverTrigger>
-            <PopoverContent className="w-80" align="center">
-                <div className="space-y-4">
-                    <h4 className="font-semibold text-sm">Select Month & Year</h4>
-
-                    <div className="space-y-2">
-                        <label className="text-xs font-medium text-gray-600">Month</label>
-                        <Select
-                            value={String(tempMonth)}
-                            onValueChange={(value) => setTempMonth(parseInt(value))}
+            <PopoverContent className="w-[380px] p-8" align="center">
+                <div className="space-y-8">
+                    {/* Year Navigation */}
+                    <div className="flex items-center justify-between">
+                        <CustomButton
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleYearChange(-1)}
+                            className="h-10 w-10 hover:bg-gray-100"
                         >
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Array.from({ length: 12 }).map((_, index) => (
-                                    <SelectItem key={index} value={index.toString()}>
-                                        {getMonthName(index)}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <ChevronLeft className="h-5 w-5 text-cyan-500" />
+                        </CustomButton>
+                        <h2 className="text-2xl font-semibold text-gray-700">
+                            {tempYear}
+                        </h2>
+                        <CustomButton
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleYearChange(1)}
+                            className="h-10 w-10 hover:bg-gray-100"
+                        >
+                            <ChevronRight className="h-5 w-5 text-cyan-500" />
+                        </CustomButton>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-xs font-medium text-gray-600">Year</label>
-                        <Select
-                            value={String(tempYear)}
-                            onValueChange={(value) => setTempYear(parseInt(value))}
-                        >
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {years.map((year) => (
-                                    <SelectItem key={year} value={year.toString()}>
-                                        {year}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                        <CustomButton
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCancel}
-                            className="flex-1"
-                        >
-                            Cancel
-                        </CustomButton>
-                        <CustomButton
-                            variant="primary"
-                            size="sm"
-                            onClick={handleApply}
-                            className="flex-1"
-                        >
-                            Apply
-                        </CustomButton>
+                    {/* Month Grid - 3x4 */}
+                    <div className="grid grid-cols-3 gap-4">
+                        {months.map(({ index, label }) => {
+                            const isSelected = index === currentMonth && tempYear === currentYear;
+                            return (
+                                <button
+                                    key={index}
+                                    onClick={() => handleMonthSelect(index)}
+                                    className={`
+                                        py-3 px-4 rounded-2xl text-base font-medium transition-all
+                                        ${isSelected 
+                                            ? 'bg-cyan-400 text-white shadow-md' 
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                        }
+                                    `}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </PopoverContent>
         </Popover>
     );
 }
+
+// COMMENTED OUT: 17-Jan-2026 - Old select-based implementation replaced with modern grid design
+// import {
+//     Select,
+//     SelectContent,
+//     SelectItem,
+//     SelectTrigger,
+//     SelectValue,
+// } from "@/components/ui/select";
+// 
+// Old implementation with dropdowns and Apply/Cancel buttons removed
