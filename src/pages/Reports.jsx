@@ -211,8 +211,6 @@ export default function Reports() {
 
                 {/* 2. Historical Context & Future Projection */}
                 <div className="w-full">
-                    <div className="mb-2 flex items-center gap-1">
-                    </div>
                     <ProjectionChart
                         transactions={transactions}
                         categories={categories}
