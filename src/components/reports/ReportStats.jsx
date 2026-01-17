@@ -97,7 +97,7 @@ export default function ReportStats({
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-none shadow-sm">
+            <Card className="border-none shadow-lg">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
                         <p className="text-sm font-medium text-gray-500 inline-flex items-center">
