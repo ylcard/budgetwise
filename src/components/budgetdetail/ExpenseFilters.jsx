@@ -89,11 +89,11 @@ export default function ExpenseFilters({
 
     return (
         <div className={`border rounded-lg bg-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-12'} overflow-visible`}>
-            {/* Header - Always visible */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b">
+            {/* Header - Always visible, MODIFIED: 17-Jan-2026 - Fixed button position */}
+            <div className="flex items-center px-3 py-2.5 border-b relative">
                 {isOpen ? (
                     <>
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0 flex-1 pr-10">
                             <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
                             <span className="font-medium text-gray-900 text-sm">Filters</span>
                             {hasActiveFilters && (
@@ -113,19 +113,32 @@ export default function ExpenseFilters({
                                     Clear
                                 </CustomButton>
                             )}
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                            >
-                                <ChevronDown className="w-4 h-4 text-gray-500 -rotate-90" />
-                            </button>
                         </div>
+                        <button
+                            onClick={() => setIsOpen(false)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                            <ChevronDown className="w-4 h-4 text-gray-500 -rotate-90" />
+                        </button>
                     </>
                 ) : (
-                    <div className="flex flex-col items-center gap-2 w-full">
+                    <>
+                        <div className="flex flex-col items-center gap-2 flex-1">
+                            {hasActiveFilters && (
+                                <CustomButton 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={clearFilters}
+                                    className="h-7 w-7 p-0"
+                                    title="Clear filters"
+                                >
+                                    <X className="w-3 h-3" />
+                                </CustomButton>
+                            )}
+                        </div>
                         <button
                             onClick={() => setIsOpen(true)}
-                            className="p-1.5 hover:bg-gray-100 rounded transition-colors relative"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
                             title="Open filters"
                         >
                             <Filter className="w-4 h-4 text-gray-500" />
@@ -135,18 +148,7 @@ export default function ExpenseFilters({
                                 </span>
                             )}
                         </button>
-                        {hasActiveFilters && (
-                            <CustomButton 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={clearFilters}
-                                className="h-7 w-7 p-0"
-                                title="Clear filters"
-                            >
-                                <X className="w-3 h-3" />
-                            </CustomButton>
-                        )}
-                    </div>
+                    </>
                 )}
             </div>
 
