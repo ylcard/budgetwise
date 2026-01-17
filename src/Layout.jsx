@@ -3,6 +3,7 @@ import { Wallet } from "lucide-react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
+import { useRecurringProcessor } from "./components/hooks/useRecurringProcessor";
 import {
     Sidebar,
     SidebarContent,
@@ -18,6 +19,9 @@ import { PeriodProvider } from "./components/hooks/usePeriod";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
+    
+    // ADDED 17-Jan-2026: Trigger recurring transaction processing on app load
+    useRecurringProcessor();
 
     return (
         <SidebarProvider>
