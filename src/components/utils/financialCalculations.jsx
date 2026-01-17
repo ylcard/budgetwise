@@ -2,17 +2,15 @@
  * @file Financial Calculations Utilities
  * @description Centralized functions for calculating expenses, income, and budget statistics.
  * @created 11-Nov-2025
- * @updated 15-Jan-2026 - CRITICAL FIX: Custom Budget calculations now unified across all views (Dashboard, BudgetDetail). Paid and unpaid amounts aggregate ALL linked transactions regardless of payment date or transaction date. Only customBudgetId filtering is applied.
+ * @updated 17-Jan-2026 - OPTIMIZED: snapshotFutureBudgets now creates budgets proactively for the next 12 months
  */
 
 import { isDateInRange } from "./dateUtils";
-import { getMonthBoundaries } from "./dateUtils"; // Ensure this is imported
+import { getMonthBoundaries } from "./dateUtils";
 import { base44 } from "@/api/base44Client";
-import { parseDate, getFirstDayOfMonth } from "./dateUtils";
+import { parseDate, getFirstDayOfMonth, getLastDayOfMonth } from "./dateUtils";
 import { ensureSystemBudgetsExist } from "./budgetInitialization";
-
-// ADDED 17-Jan-2026: Re-export ensureSystemBudgetsExist for use throughout the app
-export { ensureSystemBudgetsExist };
+import { addMonths } from 'date-fns';
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -330,44 +328,19 @@ export const getCustomBudgetAllocationStats = (customBudget, allocations, transa
  * UPDATED: Accepts settings to correctly resolve the limits.
  */
 export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
-    // let netPotential = 0;
-
-    // Calculate everything once
-    // const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, startDate, endDate);
-
-    // 1. Get the Goals (the percentages/amounts)
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
-
-    // if (needsBudget) {
-    //     const limit = resolveBudgetLimit(needsBudget, monthlyIncome, settings, historicalAverage);
-    //     netPotential += limit - breakdown.needs.total;
-    // }
-
-    // if (wantsBudget) {
-    //     const limit = resolveBudgetLimit(wantsBudget, monthlyIncome, settings, historicalAverage);
-    //     netPotential += limit - breakdown.wants.total;
-    // }
-
-    // return netPotential;
     
-    // 2. Use the persisted budgetAmount from the database schema
+    // Use the persisted budgetAmount from the database schema
     const needsLimit = needsBudget?.budgetAmount || 0;
     const wantsLimit = wantsBudget?.budgetAmount || 0;
     const totalLimit = needsLimit + wantsLimit;
 
-    // 3. Get total spending for this month (using the existing simple function)
+    // Get total spending for this month (using the existing simple function)
     // We use getMonthlyPaidExpenses because efficiency is based on what you actually paid.
     const actualSpent = getMonthlyPaidExpenses(transactions, startDate, endDate);
 
-    // DEBUG LOGS - Check your browser console
-    console.log("--- EB CALCULATION ---");
-    console.log("Needs Budget Found:", !!needsBudget);
-    console.log("Wants Budget Found:", !!wantsBudget);
-    console.log("Limits:", { needsLimit, wantsLimit, totalLimit });
-    console.log("Actual Spent:", actualSpent);
-    console.log("Result:", totalLimit - actualSpent);
-    // 4. Bonus = What you were allowed to spend - What you actually spent
+    // Bonus = What you were allowed to spend - What you actually spent
     return totalLimit - actualSpent;
 };
 
@@ -399,103 +372,87 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 /**
  * Recalculates System Budgets for Current and Future months based on updated Goals.
  * STRICTLY ignores past months to preserve history.
- * UPDATED 17-Jan-2026: Now ensures budgets exist before attempting updates.
+ * OPTIMIZED 17-Jan-2026: Creates budgets for the next 12 months proactively to prevent duplicates.
  * @param {Object} updatedGoal - The specific goal updated (e.g., { priority: 'needs', target_percentage: 50 })
  * @param {Object} settings - App settings (to determine if we are in 'absolute' or 'percentage' mode)
  * @param {string} userEmail - User's email to ensure budgets exist for
  * @param {Array} allGoals - All budget goals for calculating amounts
  */
 export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = null, allGoals = []) => {
-    if (!updatedGoal || !settings) return;
+    if (!updatedGoal || !settings || !userEmail) return;
 
-    // 1. Define the "Horizon" (The first day of the current month)
     const now = new Date();
     const currentMonthStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
 
-    // 2. Fetch only relevant future/current budgets for this priority type
-    let budgetsToUpdate = await base44.entities.SystemBudget.filter({
-        systemBudgetType: updatedGoal.priority,
-        startDate: { $gte: currentMonthStart }
-    });
+    // Phase 1: Ensure all three system budgets exist for each of the next 12 months
+    const horizonMonths = 12;
+    for (let i = 0; i < horizonMonths; i++) {
+        const monthDate = addMonths(now, i);
+        const monthStart = getFirstDayOfMonth(monthDate.getMonth(), monthDate.getFullYear());
+        const monthEnd = getLastDayOfMonth(monthDate.getMonth(), monthDate.getFullYear());
 
-    // ADDED 17-Jan-2026: If no budgets exist for the current month and we have userEmail,
-    // ensure at least the current month's budget exists
-    if (budgetsToUpdate.length === 0 && userEmail) {
-        const { monthStart, monthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
-        
-        // Fetch income for the current month to calculate percentage-based budgets
-        const currentMonthIncome = await base44.entities.Transaction.filter({
+        // Fetch income for this specific month to pass to ensureSystemBudgetsExist
+        const monthlyIncome = await base44.entities.Transaction.filter({
             type: 'income',
             date: { $gte: monthStart, $lte: monthEnd },
             created_by: userEmail
         }).then(txs => txs.reduce((sum, t) => sum + t.amount, 0));
 
-        // Create the current month's budgets
         await ensureSystemBudgetsExist(
             userEmail,
             monthStart,
             monthEnd,
             allGoals,
             settings,
-            currentMonthIncome
+            monthlyIncome
         );
-
-        // Re-fetch budgets after ensuring they exist
-        budgetsToUpdate = await base44.entities.SystemBudget.filter({
-            systemBudgetType: updatedGoal.priority,
-            startDate: { $gte: currentMonthStart }
-        });
     }
+
+    // Phase 2: Now that all budgets are guaranteed to exist, fetch and update the relevant ones
+    const budgetsToUpdate = await base44.entities.SystemBudget.filter({
+        user_email: userEmail,
+        systemBudgetType: updatedGoal.priority,
+        startDate: { $gte: currentMonthStart }
+    });
 
     if (budgetsToUpdate.length === 0) return;
 
-    // 4. Pre-fetch transactions if we are in Percentage mode (to calculate income)
-    let transactions = [];
-    if (settings.budgetSystem === 'percentage') {
-        // Fetch enough history to cover likely current month
-        // DEPRECATING THE USE OF .list(): transactions = await base44.entities.Transaction.list('date', 1000);
-
-        // Optimization: Only fetch INCOME transactions from the horizon onwards
-        transactions = await base44.entities.Transaction.filter({
+    // Pre-fetch transactions for income calculation if in percentage mode
+    let transactionsForIncomeCalc = [];
+    if (settings.goalMode !== false) {
+        transactionsForIncomeCalc = await base44.entities.Transaction.filter({
             type: 'income',
-            date: { $gte: currentMonthStart }
+            date: { $gte: currentMonthStart },
+            created_by: userEmail
         });
     }
 
-    // 5. Process updates
     const updatePromises = budgetsToUpdate.map(async (budget) => {
         let newAmount = 0;
 
-        if (settings.budgetSystem === 'absolute') {
-            // SCENARIO A: Absolute Amount
+        if (settings.goalMode === false) {
             newAmount = updatedGoal.target_amount || 0;
-        }
-        else {
-            // SCENARIO B: Percentage Based
+        } else {
             const bDate = parseDate(budget.startDate);
-
-            // Calculate Income specifically for this budget's month
-            const monthIncome = transactions
+            
+            const monthIncome = transactionsForIncomeCalc
                 .filter(t => {
-                    if (t.type !== 'income') return false;
                     const tDate = parseDate(t.date);
-                    return tDate.getMonth() === bDate.getMonth() &&
-                        tDate.getFullYear() === bDate.getFullYear();
+                    return tDate.getFullYear() === bDate.getFullYear() && tDate.getMonth() === bDate.getMonth();
                 })
                 .reduce((sum, t) => sum + t.amount, 0);
 
             newAmount = (monthIncome * (updatedGoal.target_percentage / 100));
         }
 
-        // Only update if the amount actually changed
         if (Math.abs((budget.budgetAmount || 0) - newAmount) > 0.01) {
             return base44.entities.SystemBudget.update(budget.id, {
                 budgetAmount: newAmount,
-                target_amount: settings.budgetSystem === 'absolute' ? updatedGoal.target_amount : 0,
-                target_percentage: settings.budgetSystem === 'percentage' ? updatedGoal.target_percentage : 0
+                target_amount: settings.goalMode === false ? updatedGoal.target_amount : 0,
+                target_percentage: settings.goalMode !== false ? updatedGoal.target_percentage : 0
             });
         }
     });
 
-    await Promise.all(updatePromises);
+    await Promise.all(updatePromises.filter(Boolean));
 };

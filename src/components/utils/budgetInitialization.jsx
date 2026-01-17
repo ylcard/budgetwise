@@ -2,6 +2,7 @@
  * @file Budget Initialization Utilities
  * @description Centralizes the creation and validation of SystemBudget entities.
  * @created 17-Jan-2026
+ * @updated 17-Jan-2026 - OPTIMIZED: Single query to fetch all existing budgets for a month
  * 
  * CRITICAL: This is the SINGLE SOURCE OF TRUTH for creating SystemBudget entities.
  * All code that needs to create or ensure SystemBudgets exist must call ensureSystemBudgetsExist.
@@ -14,6 +15,8 @@ import { base44 } from "@/api/base44Client";
  * Ensures SystemBudget entities exist for a given user, month, and priority types.
  * This function is the SINGLE SOURCE OF TRUTH for creating system budgets.
  * It prevents duplicate budgets by checking existence before creation.
+ * 
+ * OPTIMIZATION 17-Jan-2026: Fetches all existing budgets in a single query to prevent race conditions.
  * 
  * USAGE SCENARIOS:
  * 1. When a user adds their first expense/income for a new month
@@ -57,20 +60,22 @@ export const ensureSystemBudgetsExist = async (
         savings: 'Savings'
     };
 
-    for (const priorityType of priorityTypes) {
-        // CRITICAL: Check if a SystemBudget already exists for this user, month, and priority
-        // This prevents duplicate budgets
-        const existing = await base44.entities.SystemBudget.filter({
-            user_email: userEmail,
-            systemBudgetType: priorityType,
-            startDate: startDate,
-            endDate: endDate
-        });
+    // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
+    // This prevents race conditions during concurrent operations
+    const existingBudgetsForMonth = await base44.entities.SystemBudget.filter({
+        user_email: userEmail,
+        startDate: startDate,
+        endDate: endDate
+    });
 
-        if (existing && existing.length > 0) {
-            // Budget already exists - use the first one (should only be one)
-            // If multiple exist (data integrity issue), we still return the first
-            results[priorityType] = existing[0];
+    for (const priorityType of priorityTypes) {
+        const existingForThisPriority = existingBudgetsForMonth.find(
+            (b) => b.systemBudgetType === priorityType
+        );
+
+        if (existingForThisPriority) {
+            // Budget already exists - use it
+            results[priorityType] = existingForThisPriority;
         } else {
             // Create a new SystemBudget
             const goal = budgetGoals.find(g => g.priority === priorityType);
