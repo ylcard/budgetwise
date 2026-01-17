@@ -7,11 +7,12 @@ import { Switch } from "@/components/ui/switch";
 import AmountInput from "../ui/AmountInput";
 import { Label } from "@/components/ui/label";
 import InfoTooltip from "../ui/InfoTooltip"; // ADDED: 17-Jan-2026
+import { formatCurrency } from "../utils/currencyUtils";
 
 const priorityConfig = {
-    needs: { label: "Essentials", color: "#EF4444", description: "Essential expenses" },
-    wants: { label: "Lifestyle", color: "#F59E0B", description: "Discretionary spending" },
-    savings: { label: "Savings", color: "#10B981", description: "Savings and investments" }
+    needs: { label: "Essentials", color: "#EF4444", textClass: "text-red-500" },
+    wants: { label: "Lifestyle", color: "#F59E0B", textClass: "text-amber-500" },
+    savings: { label: "Savings", color: "#10B981", textClass: "text-emerald-500" }
 };
 
 export default function GoalSettings({
@@ -26,7 +27,8 @@ export default function GoalSettings({
     setAbsoluteValues,  // function
     fixedLifestyleMode, // boolean
     setFixedLifestyleMode, // function
-
+    // Currency formatting
+    settings,
     // Actions
     onSave              // function
 }) {
@@ -41,6 +43,9 @@ export default function GoalSettings({
         wants: splits.split2 - splits.split1,
         savings: 100 - splits.split2
     };
+
+    // Calculate total absolute value
+    const totalAbsolute = Object.values(absoluteValues).reduce((acc, val) => acc + (Number(val) || 0), 0);
 
     // --- SLIDER INTERACTION LOGIC (Kept local as it's UI interaction) ---
     const handlePointerDown = (e, thumbIndex) => {
@@ -86,8 +91,8 @@ export default function GoalSettings({
     }
 
     return (
-        <Card className="border-none shadow-lg sticky top-6">
-            <CardHeader>
+        <Card className="border-none shadow-md sticky top-6 h-full flex flex-col">
+            <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
                     <Target className="w-5 h-5" />
                     Goal Allocation
@@ -97,182 +102,148 @@ export default function GoalSettings({
                     />
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="flex-1 flex flex-col gap-6">
 
                 {/* Mode Switcher */}
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-gray-500">Allocation Mode</span>
-                        <InfoTooltip
-                            title="Allocation Modes"
-                            description="Percentage Mode: Budgets scale with your income (e.g., 50% of income to Essentials). Absolute Mode: Fixed budget amounts regardless of income changes."
-                        />
-                    </div>
-                    <div className="flex items-center justify-center p-1 bg-gray-100 rounded-lg">
-                        <button
-                            type="button"
-                            onClick={() => setGoalMode(true)}
-                            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${!isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            Percentage
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setGoalMode(false)}
-                            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            Absolute Values
-                        </button>
-                    </div>
+                <div className="bg-gray-100 p-1 rounded-lg flex">
+                    <button
+                        type="button"
+                        onClick={() => setGoalMode(true)}
+                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${!isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Percentage
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setGoalMode(false)}
+                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${isAbsoluteMode ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Absolute
+                    </button>
                 </div>
 
                 {/* SLIDER VIEW (Percentage Mode) */}
-                {!isAbsoluteMode ? (
-                    <div className="pt-6 pb-2 px-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div
-                            ref={containerRef}
-                            className="relative h-6 w-full bg-gray-100 rounded-full select-none touch-none"
-                        >
-                            {/* Visual Zones */}
-                            <div
-                                className="absolute top-0 left-0 h-full rounded-l-full transition-colors"
-                                style={{ width: `${splits.split1}%`, backgroundColor: priorityConfig.needs.color }}
-                            />
-                            <div
-                                className="absolute top-0 h-full transition-colors"
-                                style={{
-                                    left: `${splits.split1}%`,
-                                    width: `${splits.split2 - splits.split1}%`,
-                                    backgroundColor: priorityConfig.wants.color
-                                }}
-                            />
-                            <div
-                                className="absolute top-0 h-full rounded-r-full transition-colors"
-                                style={{
-                                    left: `${splits.split2}%`,
-                                    width: `${100 - splits.split2}%`,
-                                    backgroundColor: priorityConfig.savings.color
-                                }}
-                            />
+                {/* MAIN CONTENT AREA: Use min-h to prevent jarring size jumps */}
+                <div className="flex-1 min-h-[180px]">
+                    {!isAbsoluteMode ? (
+                        /* --- PERCENTAGE MODE --- */
+                        <div className="space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="px-2 pt-2">
+                                <div
+                                    ref={containerRef}
+                                    className="relative h-6 w-full bg-gray-100 rounded-full select-none touch-none"
+                                >
+                                    {/* Visual Zones */}
+                                    <div
+                                        className="absolute top-0 left-0 h-full rounded-l-full transition-colors"
+                                        style={{ width: `${splits.split1}%`, backgroundColor: priorityConfig.needs.color }}
+                                    />
+                                    <div
+                                        className="absolute top-0 h-full transition-colors"
+                                        style={{
+                                            left: `${splits.split1}%`,
+                                            width: `${splits.split2 - splits.split1}%`,
+                                            backgroundColor: priorityConfig.wants.color
+                                        }}
+                                    />
+                                    <div
+                                        className="absolute top-0 h-full rounded-r-full transition-colors"
+                                        style={{
+                                            left: `${splits.split2}%`,
+                                            width: `${100 - splits.split2}%`,
+                                            backgroundColor: priorityConfig.savings.color
+                                        }}
+                                    />
 
-                            {/* Thumb 1 */}
-                            <div
-                                onPointerDown={(e) => handlePointerDown(e, 1)}
-                                onPointerMove={handlePointerMove}
-                                onPointerUp={handlePointerUp}
-                                className={`absolute top-0 bottom-0 w-4 -ml-2 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`}
-                                style={{ left: `${splits.split1}%` }}
-                            >
-                                <GripVertical className="w-2.5 h-2.5 text-gray-400" />
+                                    {/* Thumb 1 */}
+                                    <div
+                                        onPointerDown={(e) => handlePointerDown(e, 1)}
+                                        onPointerMove={handlePointerMove}
+                                        onPointerUp={handlePointerUp}
+                                        className={`absolute top-0 bottom-0 w-4 -ml-2 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                        style={{ left: `${splits.split1}%` }}
+                                    >
+                                        <GripVertical className="w-2.5 h-2.5 text-gray-400" />
+                                    </div>
+
+                                    {/* Thumb 2 */}
+                                    <div
+                                        onPointerDown={(e) => handlePointerDown(e, 2)}
+                                        onPointerMove={handlePointerMove}
+                                        onPointerUp={handlePointerUp}
+                                        className={`absolute top-0 bottom-0 w-4 -ml-2 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                        style={{ left: `${splits.split2}%` }}
+                                    >
+                                        <GripVertical className="w-3 h-3 text-gray-400" />
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Legend / Values (Updated: No bullets, just colored text) */}
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                {Object.entries(priorityConfig).map(([key, config]) => (
+                                    <div key={key} className="flex flex-col items-center">
+                                        <span className={`text-xs font-bold uppercase tracking-wider mb-1 ${config.textClass}`}>
+                                            {config.label}
+                                        </span>
+                                        <span className="text-2xl font-bold text-gray-900">
+                                            {Math.round(currentValues[key])}%
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
 
-                            {/* Thumb 2 */}
-                            <div
-                                onPointerDown={(e) => handlePointerDown(e, 2)}
-                                onPointerMove={handlePointerMove}
-                                onPointerUp={handlePointerUp}
-                                className={`absolute top-0 bottom-0 w-4 -ml-2 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`}
-                                style={{ left: `${splits.split2}%` }}
-                            >
-                                <GripVertical className="w-3 h-3 text-gray-400" />
+                            {/* Inflation Protection */}
+                            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 rounded-full text-blue-600">
+                                        <Lock className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-1">
+                                            <p className="text-sm font-bold text-gray-900">Inflation Protection</p>
+                                            <InfoTooltip
+                                                title="Inflation Protection"
+                                                description="Budgets stay fixed if income rises; extra goes to Savings."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <Switch checked={fixedLifestyleMode} onCheckedChange={setFixedLifestyleMode} />
                             </div>
                         </div>
-                    </div>
-                ) : (
-                    /* INPUT VIEW (Absolute Mode) */
-                    <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
-                        <div className="grid grid-cols-1 gap-4">
-                            {Object.entries(priorityConfig).map(([key, config]) => (
-                                <div key={key} className="space-y-1.5">
-                                    <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
-                                        {config.label}
-                                    </Label>
-                                    <div>
+                    ) : (
+                        /* --- ABSOLUTE MODE --- */
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="grid grid-cols-1 gap-4">
+                                {Object.entries(priorityConfig).map(([key, config]) => (
+                                    <div key={key} className="space-y-1">
+                                        <Label className={`text-xs font-bold uppercase tracking-wider ${config.textClass}`}>
+                                            {config.label}
+                                        </Label>
                                         <AmountInput
                                             value={absoluteValues[key]}
                                             onChange={(val) => setAbsoluteValues(prev => ({ ...prev, [key]: val }))}
                                             placeholder="0.00"
-                                            className="font-mono"
+                                            className="font-mono h-9"
                                         />
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">Total Allocated</span>
-                            <span className="text-lg font-bold text-gray-900">
-                                $ {Object.values(absoluteValues).reduce((acc, val) => acc + (Number(val) || 0), 0).toLocaleString()}
-                            </span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Lifestyle Creep Protection (Percentage Mode Only) */}
-                {!isAbsoluteMode && (
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-1 duration-300 delay-75">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-full text-blue-600">
-                                <Lock className="w-4 h-4" />
+                                ))}
                             </div>
-                            <div>
-                                <div className="flex items-center gap-1">
-                                    <p className="text-sm font-bold text-gray-900">Inflation Protection</p>
-                                    <InfoTooltip
-                                        title="Inflation Protection"
-                                        description="Prevents lifestyle creep when income increases. Budgets are calculated based on your historical average income rather than current spikes. Extra income automatically goes to Savings."
-                                    />
-                                </div>
-                                <p className="text-[10px] text-gray-500">If income rises, keep budgets fixed and save the rest.</p>
+                            <div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-2">
+                                <span className="text-sm font-medium text-gray-500">Total Allocated</span>
+                                <span className="text-lg font-bold text-gray-900">
+                                    {formatCurrency(totalAbsolute, settings)}
+                                </span>
                             </div>
                         </div>
-                        <Switch
-                            checked={fixedLifestyleMode}
-                            onCheckedChange={setFixedLifestyleMode}
-                        />
-                    </div>
-                )}
-
-                {/* Percentage Values Legend (Hidden in Absolute Mode) */}
-                {!isAbsoluteMode && (
-                    <div className="grid grid-cols-3 gap-4 animate-in fade-in">
-                        {Object.entries(priorityConfig).map(([key, config]) => (
-                            <div key={key} className="text-center space-y-1">
-                                <div className="flex items-center justify-center gap-2 mb-1">
-                                    <div
-                                        className="w-2 h-2 rounded-full"
-                                        style={{ backgroundColor: config.color }}
-                                    />
-                                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        {config.label}
-                                    </span>
-                                    <InfoTooltip
-                                        title={config.label}
-                                        description={
-                                            key === 'needs' ? 
-                                            "Essential expenses you can't avoid (rent, utilities, groceries, transportation, insurance)." :
-                                            key === 'wants' ?
-                                            "Discretionary spending for lifestyle and entertainment (dining out, hobbies, subscriptions, shopping)." :
-                                            "Money set aside for future goals, investments, emergency fund, and long-term financial security."
-                                        }
-                                    />
-                                </div>
-                                <div className="text-2xl font-bold text-gray-900">
-                                    {Math.round(currentValues[key])}%
-                                </div>
-                                <p className="text-[10px] text-gray-400 line-clamp-1 px-1">
-                                    {config.description}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                    )}
+                </div>
 
                 <CustomButton
                     onClick={onSave}
                     disabled={isSaving}
                     variant="primary"
-                    className="w-full"
+                    className="w-full mt-auto"
                 >
                     <Save className="w-4 h-4 mr-2" />
                     {isSaving ? 'Saving...' : 'Save Goals'}
