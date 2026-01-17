@@ -161,32 +161,51 @@ export default function Reports() {
                     </div>
                 </div>
 
-                {/* 1. High-Level KPIs (New) */}
-                <ReportStats
-                    transactions={monthlyTransactions}
-                    monthlyIncome={monthlyIncome}
-                    prevTransactions={prevMonthlyTransactions}
-                    prevMonthlyIncome={prevMonthlyIncome}
-                    isLoading={isLoading}
-                    settings={settings}
-                    safeBaseline={projectionData.totalProjectedMonthly}
-                    startDate={monthStart}
-                    endDate={monthEnd}
-                    bonusSavingsPotential={bonusSavingsPotential}
-                />
+                {/* 1. Top Row: KPIs + Goal Allocation */}
+                <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-8">
+                        <ReportStats
+                            transactions={monthlyTransactions}
+                            monthlyIncome={monthlyIncome}
+                            prevTransactions={prevMonthlyTransactions}
+                            prevMonthlyIncome={prevMonthlyIncome}
+                            isLoading={isLoading}
+                            settings={settings}
+                            safeBaseline={projectionData.totalProjectedMonthly}
+                            startDate={monthStart}
+                            endDate={monthEnd}
+                            bonusSavingsPotential={bonusSavingsPotential}
+                        />
 
-                {/* 2. Financial Health Score (New) */}
-                <FinancialHealthScore
-                    monthlyIncome={monthlyIncome}
-                    transactions={monthlyTransactions}
-                    prevMonthlyIncome={prevMonthlyIncome}
-                    fullHistory={transactions}
-                    prevTransactions={prevMonthlyTransactions}
-                    startDate={monthStart}
-                    endDate={monthEnd}
-                    isLoading={isLoading}
-                    settings={settings}
-                />
+                        <FinancialHealthScore
+                            monthlyIncome={monthlyIncome}
+                            transactions={monthlyTransactions}
+                            prevMonthlyIncome={prevMonthlyIncome}
+                            fullHistory={transactions}
+                            prevTransactions={prevMonthlyTransactions}
+                            startDate={monthStart}
+                            endDate={monthEnd}
+                            isLoading={isLoading}
+                            settings={settings}
+                        />
+                    </div>
+
+                    <div className="lg:col-span-1">
+                        <GoalSettings
+                            isLoading={loadingGoals}
+                            isSaving={isGoalSaving}
+                            goalMode={localGoalMode}
+                            setGoalMode={setLocalGoalMode}
+                            splits={splits}
+                            setSplits={setSplits}
+                            absoluteValues={absoluteValues}
+                            setAbsoluteValues={setAbsoluteValues}
+                            fixedLifestyleMode={fixedLifestyleMode}
+                            setFixedLifestyleMode={setFixedLifestyleMode}
+                            onSave={handleGoalSave}
+                        />
+                    </div>
+                </div>
 
                 {/* 2. Historical Context & Future Projection */}
                 <div className="w-full">
@@ -208,10 +227,9 @@ export default function Reports() {
                     />
                 </div>
 
-                {/* 3. Detailed Breakdown & Goals */}
+                {/* 3. Bottom Row: Monthly Breakdown + Priority Chart */}
                 <div className="grid lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 h-full">
-
+                    <div className="lg:col-span-2">
                         <MonthlyBreakdown
                             transactions={monthlyTransactions}
                             categories={categories}
@@ -221,21 +239,7 @@ export default function Reports() {
                             selectedYear={selectedYear}
                         />
                     </div>
-                    <div className="lg:col-span-1 h-full space-y-8">
-                        <GoalSettings
-                            isLoading={loadingGoals}
-                            isSaving={isGoalSaving}
-                            goalMode={localGoalMode}
-                            setGoalMode={setLocalGoalMode}
-                            splits={splits}
-                            setSplits={setSplits}
-                            absoluteValues={absoluteValues}
-                            setAbsoluteValues={setAbsoluteValues}
-                            fixedLifestyleMode={fixedLifestyleMode}
-                            setFixedLifestyleMode={setFixedLifestyleMode}
-                            onSave={handleGoalSave}
-                        />
-
+                    <div className="lg:col-span-1">
                         <PriorityChart
                             transactions={monthlyTransactions}
                             categories={categories}
