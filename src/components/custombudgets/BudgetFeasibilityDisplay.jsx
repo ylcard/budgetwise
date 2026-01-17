@@ -15,8 +15,15 @@ import {
     TrendingDown,
     ArrowRight,
     DollarSign,
-    Clock
+    Clock,
+    Activity,     // Pacing
+    Flame,        // Burn
+    ShieldCheck,  // Stability
+    BarChart3,    // Sharpe
+    Ghost,        // Creep
+    HelpCircle
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
     Tooltip,
     TooltipContent,
@@ -190,8 +197,8 @@ export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
                                     </span>
                                     <ArrowRight className="w-3 h-3 text-gray-400" />
                                     <span className={`font-medium ${metrics.projectedSavingsRate < 10 ? 'text-red-600' :
-                                            metrics.projectedSavingsRate < 20 ? 'text-yellow-600' :
-                                                'text-green-600'
+                                        metrics.projectedSavingsRate < 20 ? 'text-yellow-600' :
+                                            'text-green-600'
                                         }`}>
                                         {metrics.projectedSavingsRate?.toFixed(1)}%
                                     </span>
