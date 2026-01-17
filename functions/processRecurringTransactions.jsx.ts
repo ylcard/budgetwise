@@ -1,11 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { addDays, startOfDay, parseISO, isBefore, isAfter, format } from 'npm:date-fns@3.6.0';
+import { addDays, addWeeks, addMonths, addYears, setDate, startOfDay, parseISO, isBefore, isAfter, format } from 'npm:date-fns@3.6.0';
 
 /**
- * MODIFIED 17-Jan-2026: User-triggered backend function to process recurring transactions.
- * Accepts lastProcessedDate and userLocalDate in payload.
- * Implements catch-up logic with bulk transaction fetching for performance.
- * Updates UserSettings.lastProcessedRecurringDate upon completion.
+ * Backend function to process recurring transactions.
+ * UPDATED: 17-Jan-2026 - Added max iterations safety guard for catch-up loop
+ * It generates transactions for all due recurring items and updates their nextOccurrence.
  */
 
 Deno.serve(async (req) => {
@@ -17,98 +16,65 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Parse payload
-        const payload = await req.json();
-        const { lastProcessedDate, userLocalDate } = payload;
-
-        if (!userLocalDate) {
-            return Response.json({ error: 'userLocalDate is required' }, { status: 400 });
+        // Admin-only check for scheduled task execution
+        if (user.role !== 'admin') {
+            return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
         }
 
-        // Use user's local date as the target date
-        const targetDate = startOfDay(parseISO(userLocalDate));
-        const targetDateStr = format(targetDate, 'yyyy-MM-dd');
+        const today = startOfDay(new Date());
+        const todayStr = format(today, 'yyyy-MM-dd');
 
-        // Determine start date for catch-up loop
-        const startDate = lastProcessedDate 
-            ? addDays(startOfDay(parseISO(lastProcessedDate)), 1)
-            : targetDate;
-
-        // Fetch user-scoped data
-        const allRecurring = await base44.entities.RecurringTransaction.filter({ user_email: user.email });
+        // Fetch all active recurring transactions
+        const allRecurring = await base44.asServiceRole.entities.RecurringTransaction.list();
         const activeRecurring = allRecurring.filter(r => r.isActive && r.nextOccurrence);
 
-        // Bulk fetch all system budgets for the user (for budget assignment)
-        const allSystemBudgets = await base44.entities.SystemBudget.filter({ user_email: user.email });
-
-        // PERFORMANCE OPTIMIZATION: Bulk fetch existing transactions in the gap period
-        const existingTransactions = await base44.entities.Transaction.filter({
-            user_email: user.email,
-            date: { $gte: format(startDate, 'yyyy-MM-dd'), $lte: targetDateStr }
-        });
-
-        // Create a Set for fast duplicate checking: "recurringId:date"
-        const existingTxSet = new Set(
-            existingTransactions
-                .filter(tx => tx.recurringTransactionId)
-                .map(tx => `${tx.recurringTransactionId}:${tx.date}`)
-        );
+        // Fetch all system budgets for budget assignment
+        const allSystemBudgets = await base44.asServiceRole.entities.SystemBudget.list();
 
         let processed = 0;
         let skipped = 0;
         const errors = [];
 
-        // Catch-up loop: iterate from startDate to targetDate
-        let currentDate = startOfDay(startDate);
-        while (isBefore(currentDate, targetDate) || currentDate.getTime() === targetDate.getTime()) {
-            const currentDateStr = format(currentDate, 'yyyy-MM-dd');
+        // ADDED: 17-Jan-2026 - Safety guard to prevent infinite loops
+        const MAX_ITERATIONS_PER_RECURRING = 100;
 
-            for (const recurring of activeRecurring) {
-                try {
-                    const nextOccurrence = recurring.nextOccurrence ? startOfDay(parseISO(recurring.nextOccurrence)) : null;
+        for (const recurring of activeRecurring) {
+            let iterationCount = 0;
+            
+            try {
+                let nextDate = startOfDay(parseISO(recurring.nextOccurrence));
 
-                    // Skip if not due yet
-                    if (!nextOccurrence || isAfter(nextOccurrence, currentDate)) {
-                        continue;
-                    }
-
-                    // Skip if already processed
-                    if (recurring.lastProcessedDate) {
-                        const lastProcessed = startOfDay(parseISO(recurring.lastProcessedDate));
-                        if (!isBefore(lastProcessed, currentDate)) {
-                            continue;
-                        }
-                    }
+                // MODIFIED: 17-Jan-2026 - Added while loop for catch-up with safety guard
+                while (
+                    !isAfter(nextDate, today) && 
+                    iterationCount < MAX_ITERATIONS_PER_RECURRING
+                ) {
+                    iterationCount++;
 
                     // Check if end date has passed
                     if (recurring.endDate) {
                         const endDate = startOfDay(parseISO(recurring.endDate));
-                        if (isBefore(endDate, currentDate)) {
+                        if (isBefore(endDate, today)) {
                             // Deactivate the recurring transaction
-                            await base44.entities.RecurringTransaction.update(recurring.id, {
+                            await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
                                 isActive: false,
                                 nextOccurrence: null,
                             });
-                            continue;
+                            break;
                         }
                     }
 
-                    // Duplicate check using the Set
-                    const txKey = `${recurring.id}:${currentDateStr}`;
-                    if (existingTxSet.has(txKey)) {
-                        skipped++;
-                        continue;
-                    }
-
-                    // MONTH TRANSITION: Recalculate budget variables for current date
+                    // Find appropriate system budget for expenses
                     let customBudgetId = null;
                     if (recurring.type === 'expense' && recurring.financial_priority) {
-                        const txMonth = currentDate.getMonth();
-                        const txYear = currentDate.getFullYear();
+                        // Find the system budget for the transaction's month that matches the priority
+                        const txMonth = nextDate.getMonth();
+                        const txYear = nextDate.getFullYear();
                         const monthStart = format(new Date(txYear, txMonth, 1), 'yyyy-MM-dd');
                         const monthEnd = format(new Date(txYear, txMonth + 1, 0), 'yyyy-MM-dd');
 
                         const matchingBudget = allSystemBudgets.find(sb =>
+                            sb.user_email === recurring.user_email &&
                             sb.systemBudgetType === recurring.financial_priority &&
                             sb.startDate === monthStart &&
                             sb.endDate === monthEnd
@@ -120,13 +86,14 @@ Deno.serve(async (req) => {
                     }
 
                     // Create the transaction
+                    const currentOccurrenceStr = format(nextDate, 'yyyy-MM-dd');
                     const transactionData = {
                         title: recurring.title,
                         amount: recurring.amount,
                         originalAmount: recurring.originalAmount || recurring.amount,
                         originalCurrency: recurring.originalCurrency || 'USD',
                         type: recurring.type,
-                        date: currentDateStr,
+                        date: currentOccurrenceStr,
                         notes: recurring.notes ? `${recurring.notes} (Auto-generated)` : 'Auto-generated from recurring transaction',
                         recurringTransactionId: recurring.id,
                     };
@@ -136,45 +103,53 @@ Deno.serve(async (req) => {
                         transactionData.financial_priority = recurring.financial_priority || null;
                         transactionData.customBudgetId = customBudgetId;
                         transactionData.isPaid = recurring.autoMarkPaid || false;
-                        transactionData.paidDate = recurring.autoMarkPaid ? currentDateStr : null;
+                        transactionData.paidDate = recurring.autoMarkPaid ? currentOccurrenceStr : null;
                         transactionData.isCashTransaction = false;
                     }
 
-                    await base44.entities.Transaction.create(transactionData);
-
-                    // Add to Set to prevent re-creation in subsequent loop iterations
-                    existingTxSet.add(txKey);
-
-                    // Calculate next occurrence
-                    const newNextOccurrence = calculateNextOccurrence(recurring, currentDate);
-
-                    // Update recurring transaction
-                    await base44.entities.RecurringTransaction.update(recurring.id, {
-                        lastProcessedDate: currentDateStr,
-                        nextOccurrence: newNextOccurrence,
-                        isActive: newNextOccurrence !== null,
-                    });
-
+                    await base44.asServiceRole.entities.Transaction.create(transactionData);
                     processed++;
-                } catch (err) {
-                    errors.push({ id: recurring.id, title: recurring.title, date: currentDateStr, error: err.message });
+
+                    // Calculate next occurrence for the next iteration
+                    const newNextOccurrence = calculateNextOccurrence(recurring, nextDate);
+                    
+                    if (!newNextOccurrence) {
+                        // No more occurrences - deactivate
+                        await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
+                            lastProcessedDate: currentOccurrenceStr,
+                            nextOccurrence: null,
+                            isActive: false,
+                        });
+                        break;
+                    }
+
+                    // Move to next date for the loop
+                    nextDate = startOfDay(parseISO(newNextOccurrence));
                 }
+
+                // ADDED: 17-Jan-2026 - If we exited the loop normally (not because of end date)
+                if (iterationCount > 0 && iterationCount < MAX_ITERATIONS_PER_RECURRING) {
+                    // Update the recurring transaction with the final nextOccurrence
+                    const finalNextOccurrence = format(nextDate, 'yyyy-MM-dd');
+                    await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
+                        lastProcessedDate: format(addDays(nextDate, -1), 'yyyy-MM-dd'),
+                        nextOccurrence: finalNextOccurrence,
+                        isActive: true,
+                    });
+                } else if (iterationCount === 0) {
+                    // Not yet due - skip
+                    skipped++;
+                } else if (iterationCount >= MAX_ITERATIONS_PER_RECURRING) {
+                    // Safety limit reached - log error
+                    errors.push({ 
+                        id: recurring.id, 
+                        title: recurring.title, 
+                        error: `Safety limit reached (${MAX_ITERATIONS_PER_RECURRING} iterations)` 
+                    });
+                }
+            } catch (err) {
+                errors.push({ id: recurring.id, title: recurring.title, error: err.message });
             }
-
-            currentDate = addDays(currentDate, 1);
-        }
-
-        // CRITICAL: Update UserSettings to mark completion
-        const userSettings = await base44.entities.UserSettings.filter({ user_email: user.email });
-        if (userSettings.length > 0) {
-            await base44.entities.UserSettings.update(userSettings[0].id, {
-                lastProcessedRecurringDate: targetDateStr
-            });
-        } else {
-            await base44.entities.UserSettings.create({
-                user_email: user.email,
-                lastProcessedRecurringDate: targetDateStr
-            });
         }
 
         return Response.json({
@@ -182,7 +157,7 @@ Deno.serve(async (req) => {
             processed,
             skipped,
             errors: errors.length > 0 ? errors : undefined,
-            targetDate: targetDateStr,
+            timestamp: todayStr,
         });
     } catch (error) {
         console.error('Process recurring error:', error);
@@ -211,8 +186,6 @@ function calculateNextOccurrence(recurring, fromDate) {
  * Calculate the next date from a base date based on frequency.
  */
 function calculateNextFromBase(baseDate, frequency, dayOfMonth, dayOfWeek) {
-    const { addWeeks, addMonths, addYears, setDate } = await import('npm:date-fns@3.6.0');
-    
     switch (frequency) {
         case 'daily':
             return addDays(baseDate, 1);

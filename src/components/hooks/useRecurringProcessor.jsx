@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 /**
  * CREATED 17-Jan-2026: Frontend hook to trigger processRecurringTransactions backend function.
+ * UPDATED: 17-Jan-2026 - Removed isProcessing from dependencies, added recurring check
  * Checks if the current month is different from lastProcessedRecurringDate.
  * If so, triggers the backend function and displays user feedback.
  */
@@ -16,6 +17,7 @@ export function useRecurringProcessor() {
 
     useEffect(() => {
         const processRecurring = async () => {
+            // MODIFIED: 17-Jan-2026 - Guard prevents concurrent runs
             if (isProcessing || !settings) return;
 
             const currentDate = new Date();
@@ -28,8 +30,17 @@ export function useRecurringProcessor() {
             // Determine if processing is needed
             let shouldProcess = false;
             if (!lastProcessed) {
-                // First time - process
-                shouldProcess = true;
+                // MODIFIED: 17-Jan-2026 - Check if user has any recurring transactions before processing
+                try {
+                    const recurringTransactions = await base44.entities.RecurringTransaction.list();
+                    // Only process if user has recurring transactions
+                    if (recurringTransactions && recurringTransactions.length > 0) {
+                        shouldProcess = true;
+                    }
+                } catch (error) {
+                    console.error('Error fetching recurring transactions:', error);
+                    return;
+                }
             } else {
                 const lastProcessedDate = parseISO(lastProcessed);
                 const lastProcessedMonthYear = format(startOfMonth(lastProcessedDate), 'yyyy-MM');
@@ -80,7 +91,8 @@ export function useRecurringProcessor() {
         };
 
         processRecurring();
-    }, [settings, isProcessing]);
+        // MODIFIED: 17-Jan-2026 - Removed isProcessing from dependency array to prevent re-trigger
+    }, [settings]);
 
     return { isProcessing };
 }
