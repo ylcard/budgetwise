@@ -162,8 +162,8 @@ export default function Reports() {
                 </div>
 
                 {/* 1. Top Row: KPIs + Goal Allocation */}
-                <div className="grid lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-8">
+                <div className="grid lg:grid-cols-3 gap-8 items-stretch">
+                    <div className="lg:col-span-2 flex flex-col gap-8">
                         <ReportStats
                             transactions={monthlyTransactions}
                             monthlyIncome={monthlyIncome}
@@ -187,11 +187,13 @@ export default function Reports() {
                             endDate={monthEnd}
                             isLoading={isLoading}
                             settings={settings}
+                            className="flex-1"
                         />
                     </div>
 
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-1 flex">
                         <GoalSettings
+                            className="w-full"
                             isLoading={loadingGoals}
                             isSaving={isGoalSaving}
                             goalMode={localGoalMode}
