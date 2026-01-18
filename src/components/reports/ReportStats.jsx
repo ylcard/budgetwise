@@ -389,7 +389,7 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
         if (score >= 90) return { color: 'text-emerald-600', bg: 'bg-emerald-50', bar: 'bg-emerald-500', label: 'Excellent' };
         if (score >= 75) return { color: 'text-blue-600', bg: 'bg-blue-50', bar: 'bg-blue-500', label: 'Good' };
         if (score >= 60) return { color: 'text-amber-600', bg: 'bg-amber-50', bar: 'bg-amber-500', label: 'Fair' };
-        return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'Risk' };
+        return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'At Risk' };
     };
 
     // HELPER: Dynamic styling for the Main Header
