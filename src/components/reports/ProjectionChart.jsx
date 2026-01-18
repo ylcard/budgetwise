@@ -4,19 +4,33 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
 import { getMonthBoundaries, parseDate } from "../utils/dateUtils";
 import { getMonthlyIncome, getMonthlyPaidExpenses } from "../utils/financialCalculations";
-import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { useTransactions } from "../hooks/useBase44Entities";
+import { ArrowRight, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 
 export default function ProjectionChart({
-    transactions = [],
     settings,
     projectionData
 }) {
+
+    // 1. Independent Real-Time Window (6 months back from actual 'now')
+    const horizonWindow = useMemo(() => {
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth() - 6, 1);
+        return {
+            from: start.toISOString().split('T')[0],
+            to: today.toISOString().split('T')[0]
+        };
+    }, []);
+
+    // 2. Self-contained data fetching
+    const { transactions, isLoading } = useTransactions(horizonWindow.from, horizonWindow.to);
 
     // Extract the safe baseline calculated in parent (Reports.js)
     const safeMonthlyAverage = projectionData?.totalProjectedMonthly || 0;
 
     const { data, sixMonthAvg } = useMemo(() => {
+        if (isLoading || !transactions.length) return { data: [], sixMonthAvg: 0 };
         const realToday = new Date();
 
         // --- 0. CALCULATE 6-MONTH AVERAGE (Context) ---
@@ -77,7 +91,13 @@ export default function ProjectionChart({
             }
         ];
         return { data: chartData, sixMonthAvg: avgExp };
-    }, [transactions, safeMonthlyAverage]);
+    }, [transactions, safeMonthlyAverage, isLoading]);
+
+    if (isLoading) return (
+        <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px]">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+        </Card>
+    );
 
     // Scaling for the chart
     const maxVal = Math.max(...data.map(d => Math.max(d.income, d.expense)), 100) * 1.1;
