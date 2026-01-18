@@ -30,7 +30,7 @@ export default function ProjectionChart({ settings }) {
         
         const realToday = new Date();
 
-        // --- 0. CALCULATE 6-MONTH BASELINE (Internal & Static) ---
+        // --- 0. CALCULATE 6-MONTH EXPENSE BASELINE ---
         let totalPastExpenses = 0;
         let validMonths = 0;
         for (let i = 1; i <= 6; i++) {
@@ -42,25 +42,28 @@ export default function ProjectionChart({ settings }) {
                 validMonths++;
             }
         }
-        const avgExp = validMonths > 0 ? totalPastExpenses / validMonths : 0;
-        const safeBaseline = avgExp;
-
+        const safeBaseline = validMonths > 0 ? totalPastExpenses / validMonths : 0;
 
         // --- 1. BAR: LAST MONTH (Actuals) ---
         const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastBoundaries = getMonthBoundaries(lastMonthDate.getMonth(), lastMonthDate.getFullYear());
-        const lastIncome = getMonthlyIncome(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd);
+        const lastIncome = transactions
+            .filter(t => t.type === 'income' && isTransactionInDateRange(t, lastBoundaries.monthStart, lastBoundaries.monthEnd))
+            .reduce((sum, t) => sum + t.amount, 0);
         const lastExpenses = Math.abs(getMonthlyPaidExpenses(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd));
 
-        // --- 2. BAR: THIS MONTH (Projection) ---
+        // --- 2. BAR: THIS MONTH (Real-Time Projection) ---
         const currentBoundaries = getMonthBoundaries(today.getMonth(), today.getFullYear());
         const currentMonthTransactions = transactions.filter(t => isTransactionInDateRange(t, currentBoundaries.monthStart, currentBoundaries.monthEnd));
-        
-        const currentIncome = getMonthlyIncome(transactions, currentBoundaries.monthStart, currentBoundaries.monthEnd);
+
+        // Fix: Use simple type filter for income to avoid missing data
+        const currentIncome = currentMonthTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+
         const currentExpenseProj = estimateCurrentMonth(currentMonthTransactions, safeBaseline).total;
 
         // --- 3. BAR: NEXT MONTH (Target) ---
-
         const nextIncome = lastIncome;
         const nextExpense = safeBaseline;
 
@@ -69,7 +72,7 @@ export default function ProjectionChart({ settings }) {
             { label: 'This Month', subLabel: 'Projected', income: currentIncome, expense: currentExpenseProj, type: 'current' },
             { label: 'Next Month', subLabel: 'Target', income: nextIncome, expense: nextExpense, type: 'future' }
         ];
-        return { data: chartData, sixMonthAvg: avgExp };
+        return { data: chartData, sixMonthAvg: safeBaseline };
     }, [transactions, isLoading, today]);
 
     if (isLoading || data.length < 3) {
