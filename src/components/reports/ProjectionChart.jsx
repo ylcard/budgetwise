@@ -30,7 +30,11 @@ export default function ProjectionChart({
     const safeMonthlyAverage = projectionData?.totalProjectedMonthly || 0;
 
     const { data, sixMonthAvg } = useMemo(() => {
-        if (isLoading || !transactions.length) return { data: [], sixMonthAvg: 0 };
+        // Guard: Return empty structure during load
+        if (isLoading || !transactions || transactions.length === 0) {
+            return { data: [], sixMonthAvg: 0 };
+        }
+        
         const realToday = new Date();
 
         // --- 0. CALCULATE 6-MONTH AVERAGE (Context) ---
@@ -93,11 +97,13 @@ export default function ProjectionChart({
         return { data: chartData, sixMonthAvg: avgExp };
     }, [transactions, safeMonthlyAverage, isLoading]);
 
-    if (isLoading) return (
-        <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px]">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
-        </Card>
-    );
+    if (isLoading || !data || data.length < 3) {
+        return (
+            <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px]">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+            </Card>
+        );
+    }
 
     // Scaling for the chart
     const maxVal = Math.max(...data.map(d => Math.max(d.income, d.expense)), 100) * 1.1;
