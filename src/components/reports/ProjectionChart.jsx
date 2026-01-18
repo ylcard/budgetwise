@@ -53,16 +53,21 @@ export default function ProjectionChart({
         const lastIncome = getMonthlyIncome(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd);
         const lastExpenses = Math.abs(getMonthlyPaidExpenses(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd));
 
-        // --- 2. THIS MONTH (Projection) ---
+        // --- 2. THIS MONTH (Real-Time Projection) ---
+        const curMonth = realToday.getMonth();
+        const curYear = realToday.getFullYear();
+        const currentBoundaries = getMonthBoundaries(curMonth, curYear);
+
+        // Filter transactions strictly for the current real-world month
         const currentMonthTransactions = transactions.filter(t => {
             const tDate = parseDate(t.date || t.paidDate);
-            return tDate.getMonth() === realToday.getMonth() &&
-                tDate.getFullYear() === realToday.getFullYear();
+            return tDate.getMonth() === curMonth && tDate.getFullYear() === curYear;
         });
 
-        // Income: Sum of Actual + Planned Income for this month (simplified to Actual here for safety)
-        const currentBoundaries = getMonthBoundaries(realToday.getMonth(), realToday.getFullYear());
-        const currentIncome = getMonthlyIncome(transactions, currentBoundaries.monthStart, currentBoundaries.monthEnd);
+        // Income: Use getMonthlyIncome on the currentMonthTransactions subset 
+        // to ensure we only sum this month's actuals from the 6-month pool
+        const currentIncome = getMonthlyIncome(currentMonthTransactions, currentBoundaries.monthStart, currentBoundaries.monthEnd);
+
         // Expense: Hybrid Projection
         const currentExpenseProj = estimateCurrentMonth(currentMonthTransactions, safeMonthlyAverage).total;
 
