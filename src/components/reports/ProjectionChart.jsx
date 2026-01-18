@@ -2,11 +2,10 @@ import { useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "../utils/currencyUtils";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
-import { getMonthBoundaries } from "../utils/dateUtils";
+import { getMonthBoundaries, parseDate } from "../utils/dateUtils";
 import { getMonthlyIncome, getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import InfoTooltip from "@/components/ui/InfoTooltip";
-import { parseDate } from "../components/utils/dateUtils";
 
 export default function ProjectionChart({
     transactions = [],
