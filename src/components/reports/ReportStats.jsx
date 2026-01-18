@@ -261,7 +261,7 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
     allCustomBudgets,
     className
 }) {
-    if (isLoading) return null;
+    // if (isLoading) return null;
 
     // COMMENTED OUT: 16-Jan-2026 - All calculation logic moved to financialHealthAlgorithms.jsx
     // // 1. Current Month Data
@@ -370,10 +370,14 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
 
     // ADDED: 16-Jan-2026 - Use new centralized algorithm
     const healthData = useMemo(() => {
+        if (isLoading && !transactions.length) return null;
         return calculateFinancialHealth(transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets);
     }, [transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets]);
 
-    const { totalScore, breakdown, label } = healthData;
+    // const { totalScore, breakdown, label } = healthData;
+    if (!healthData) return <div className="animate-pulse bg-gray-50 rounded-xl h-48" />;
+
+    const { totalScore, breakdown } = healthData;
     const { pacing: pacingScore, ratio: ratioScore, stability: stabilityScore, sharpe: sharpeScore, creep: creepScore } = breakdown;
 
     // COMMENTED OUT: 16-Jan-2026 - Label now comes from algorithm
