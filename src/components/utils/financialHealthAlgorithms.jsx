@@ -161,13 +161,19 @@ const calculateSharpeRatio = (fullHistory, categories, allCustomBudgets, monthly
     // Standard Sharpe Ratio
     const sharpe = avgSavings / stdDev;
 
-    // Map Sharpe to 0-100 scale
-    // Sharpe of 1.0 (Savings = Volatility) = 80 points
-    // Sharpe of 0.0 (Breakeven) = 20 points
-    // Negative Sharpe = 0-20 points
-    let score = 20 + (sharpe * 60);
-    
-    return Math.max(0, Math.min(100, score));
+    // Map Sharpe to 0-100 scale using a more forgiving curve
+    // If Sharpe is negative (Average is a loss), score is 0-25
+    if (sharpe < 0) {
+        return Math.max(0, 25 + (sharpe * 25)); 
+    }
+
+    // If Sharpe is positive, we use a multiplier that rewards getting 
+    // closer to a 1.0 ratio (Consistency).
+    // 0.16 Sharpe will now result in ~40/100 (Fair/Warning)
+    // 0.50 Sharpe will result in ~70/100 (Good)
+    let score = 25 + (Math.sqrt(sharpe) * 65);
+
+    return Math.min(100, Math.round(score));
 };
 
 /**
