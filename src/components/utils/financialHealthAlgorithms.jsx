@@ -18,13 +18,13 @@
 const getSpendByDayX = (allTransactions, targetMonth, targetYear, dayLimit) => {
     return allTransactions.reduce((sum, t) => {
         const tDate = new Date(t.date || t.created_date);
-        
+
         // Match Month/Year
         if (tDate.getMonth() !== targetMonth || tDate.getFullYear() !== targetYear) return sum;
-        
+
         // Stop if transaction is after Day X
         if (tDate.getDate() > dayLimit) return sum;
-        
+
         // Sum expenses only (exclude income)
         if (t.category?.name === 'Income' || t.type === 'income') return sum;
         return sum + (Number(t.amount) || 0);
@@ -75,33 +75,33 @@ const calculateStdDev = (values) => {
 const calculatePacingScore = (transactions, fullHistory, startDate) => {
     const today = new Date();
     const start = new Date(startDate);
-    
+
     // If viewing current month, compare "Day 1 to Today". If past month, compare full month.
     const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
     const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
-    
+
     // Current spend (Day 1 to X)
     const currentSpend = getSpendByDayX(transactions, start.getMonth(), start.getFullYear(), dayCursor);
-    
+
     // Historical context (Average of last 3 months by Day X)
     const m1 = new Date(start); m1.setMonth(start.getMonth() - 1);
     const m2 = new Date(start); m2.setMonth(start.getMonth() - 2);
     const m3 = new Date(start); m3.setMonth(start.getMonth() - 3);
-    
+
     const spendM1 = getSpendByDayX(fullHistory, m1.getMonth(), m1.getFullYear(), dayCursor);
     const spendM2 = getSpendByDayX(fullHistory, m2.getMonth(), m2.getFullYear(), dayCursor);
     const spendM3 = getSpendByDayX(fullHistory, m3.getMonth(), m3.getFullYear(), dayCursor);
-    
+
     // Calculate baseline (average of non-zero months)
     const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
     const averageSpendAtPointX = historyPoints.length > 0
         ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
         : currentSpend; // Fallback to current if no history
-    
+
     // Score calculation
     const diff = currentSpend - averageSpendAtPointX;
     if (diff <= 0) return 100; // Under average = Perfect
-    
+
     // Penalize for being over average
     const deviation = averageSpendAtPointX > 0 ? diff / averageSpendAtPointX : 1;
     return Math.max(0, 100 - (deviation * 100));
@@ -112,17 +112,29 @@ const calculatePacingScore = (transactions, fullHistory, startDate) => {
  * Real-time: Is spending rate sustainable for income?
  * Target: Spend < 80% of income by end of month
  */
-const calculateBurnRatio = (transactions, monthlyIncome, startDate) => {
-    const today = new Date();
+const calculateBurnRatio = (transactions, monthlyIncome, startDate, settings, goals) => {
     const start = new Date(startDate);
-    const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
-    const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
-    
-    const currentSpend = getSpendByDayX(transactions, start.getMonth(), start.getFullYear(), dayCursor);
-    const targetMaxSpend = monthlyIncome * 0.8 * (dayCursor / 30);
-    
+    const year = start.getFullYear();
+    const month = start.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const today = new Date();
+    const isCurrentMonthView = today.getMonth() === month && today.getFullYear() === year;
+    const dayCursor = isCurrentMonthView ? today.getDate() : daysInMonth;
+
+    // Get Needs + Wants targets (resolving Absolute vs Percentage)
+    const needsGoal = goals.find(g => g.priority === 'needs');
+    const wantsGoal = goals.find(g => g.priority === 'wants');
+
+    // Logic: if setting is absolute, use target_amount. If percentage, calculate it.
+    const needsLimit = settings.goalMode === false ? (needsGoal?.target_amount || 0) : (monthlyIncome * (needsGoal?.target_percentage || 0) / 100);
+    const wantsLimit = settings.goalMode === false ? (wantsGoal?.target_amount || 0) : (monthlyIncome * (wantsGoal?.target_percentage || 0) / 100);
+
+    const targetMaxSpend = (needsLimit + wantsLimit) * (dayCursor / daysInMonth);
+    const currentSpend = getSpendByDayX(transactions, month, year, dayCursor);
+
     if (currentSpend <= targetMaxSpend) return 100;
-    
+
     const overRatio = targetMaxSpend > 0 ? (currentSpend - targetMaxSpend) / targetMaxSpend : 1;
     return Math.max(0, 100 - (overRatio * 100));
 };
@@ -135,7 +147,7 @@ const calculateBurnRatio = (transactions, monthlyIncome, startDate) => {
 const calculateStabilityScore = (fullHistory, startDate) => {
     const start = new Date(startDate);
     const monthlyExpenses = [];
-    
+
     // Collect last 6 months of expenses
     for (let i = 1; i <= 6; i++) {
         const targetDate = new Date(start);
@@ -143,13 +155,13 @@ const calculateStabilityScore = (fullHistory, startDate) => {
         const expenses = getMonthlyExpenses(fullHistory, targetDate.getMonth(), targetDate.getFullYear());
         if (expenses > 0) monthlyExpenses.push(expenses);
     }
-    
+
     if (monthlyExpenses.length < 2) return 50; // Not enough data, neutral score
-    
+
     const mean = monthlyExpenses.reduce((a, b) => a + b, 0) / monthlyExpenses.length;
     const stdDev = calculateStdDev(monthlyExpenses);
     const cv = mean > 0 ? stdDev / mean : 0; // Coefficient of Variation
-    
+
     // Score: CV of 0 = 100, CV of 0.5 or higher = 0
     // Linear scale: Score = 100 - (CV * 200)
     return Math.max(0, Math.min(100, 100 - (cv * 200)));
@@ -163,7 +175,7 @@ const calculateStabilityScore = (fullHistory, startDate) => {
 const calculateSharpeRatio = (fullHistory, startDate) => {
     const start = new Date(startDate);
     const monthlySavings = [];
-    
+
     // Collect last 6 months of net savings
     for (let i = 1; i <= 6; i++) {
         const targetDate = new Date(start);
@@ -173,16 +185,16 @@ const calculateSharpeRatio = (fullHistory, startDate) => {
         const netSavings = income - expenses;
         if (income > 0) monthlySavings.push(netSavings); // Only include months with income
     }
-    
+
     if (monthlySavings.length < 2) return 50; // Not enough data, neutral score
-    
+
     const avgSavings = monthlySavings.reduce((a, b) => a + b, 0) / monthlySavings.length;
     const stdDev = calculateStdDev(monthlySavings);
-    
+
     if (stdDev === 0) return avgSavings > 0 ? 100 : 0; // Perfect consistency
-    
+
     const sharpe = avgSavings / stdDev;
-    
+
     // Score: Sharpe of 1.0+ = 100, Sharpe of -1.0 or lower = 0
     // Linear scale between -1 and 1
     return Math.max(0, Math.min(100, ((sharpe + 1) / 2) * 100));
@@ -196,7 +208,7 @@ const calculateSharpeRatio = (fullHistory, startDate) => {
 const calculateLifestyleCreepIndex = (fullHistory, startDate) => {
     const start = new Date(startDate);
     const dataPoints = [];
-    
+
     // Collect last 6 months of income and expenses
     for (let i = 1; i <= 6; i++) {
         const targetDate = new Date(start);
@@ -205,21 +217,21 @@ const calculateLifestyleCreepIndex = (fullHistory, startDate) => {
         const expenses = getMonthlyExpenses(fullHistory, targetDate.getMonth(), targetDate.getFullYear());
         if (income > 0) dataPoints.push({ income, expenses });
     }
-    
+
     if (dataPoints.length < 3) return 50; // Not enough data, neutral score
-    
+
     dataPoints.reverse(); // Oldest to newest
-    
+
     // Calculate growth rates (simple linear regression slope approximation)
     const incomeGrowth = (dataPoints[dataPoints.length - 1].income - dataPoints[0].income) / dataPoints[0].income;
     const expenseGrowth = (dataPoints[dataPoints.length - 1].expenses - dataPoints[0].expenses) / dataPoints[0].expenses;
-    
+
     // Score: If expense growth <= income growth, score 100
     // For every 1% that expenses outpace income, lose 5 points
     const creepDelta = expenseGrowth - incomeGrowth;
-    
+
     if (creepDelta <= 0) return 100; // No lifestyle creep
-    
+
     return Math.max(0, 100 - (creepDelta * 500)); // Penalize excess expense growth
 };
 
@@ -241,23 +253,23 @@ export const calculateFinancialHealth = (transactions, fullHistory, monthlyIncom
     const stability = calculateStabilityScore(fullHistory, startDate);
     const sharpe = calculateSharpeRatio(fullHistory, startDate);
     const creep = calculateLifestyleCreepIndex(fullHistory, startDate);
-    
+
     // Weighted average (can adjust weights as needed)
     // Current weights: Pacing 25%, Ratio 25%, Stability 20%, Sharpe 15%, Creep 15%
     const totalScore = Math.round(
-        (pacing * 0.25) + 
-        (ratio * 0.25) + 
-        (stability * 0.20) + 
-        (sharpe * 0.15) + 
+        (pacing * 0.25) +
+        (ratio * 0.25) +
+        (stability * 0.20) +
+        (sharpe * 0.15) +
         (creep * 0.15)
     );
-    
+
     // Determine label
     let label = 'Needs Work';
     if (totalScore >= 90) label = 'Excellent';
     else if (totalScore >= 75) label = 'Good';
     else if (totalScore >= 60) label = 'Fair';
-    
+
     return {
         totalScore,
         breakdown: {
