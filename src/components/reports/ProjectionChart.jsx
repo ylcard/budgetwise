@@ -17,12 +17,12 @@ export default function ProjectionChart({
     const safeMonthlyAverage = projectionData?.totalProjectedMonthly || 0;
 
     const { data, sixMonthAvg } = useMemo(() => {
-        const today = new Date();
+        const realToday = new Date();
 
         // --- 0. CALCULATE 6-MONTH AVERAGE (Context) ---
         let totalPastExpenses = 0;
         for (let i = 1; i <= 6; i++) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const d = new Date(realToday.getFullYear(), realToday.getMonth() - i, 1);
             const bounds = getMonthBoundaries(d.getMonth(), d.getFullYear());
             totalPastExpenses += Math.abs(getMonthlyPaidExpenses(transactions, bounds.monthStart, bounds.monthEnd));
         }
@@ -30,20 +30,20 @@ export default function ProjectionChart({
 
 
         // --- 1. LAST MONTH (Context) ---
-        const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthDate = new Date(realToday.getFullYear(), realToday.getMonth() - 1, 1);
         const lastBoundaries = getMonthBoundaries(lastMonthDate.getMonth(), lastMonthDate.getFullYear());
         const lastIncome = getMonthlyIncome(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd);
         const lastExpenses = Math.abs(getMonthlyPaidExpenses(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd));
 
         // --- 2. THIS MONTH (Projection) ---
         const currentMonthTransactions = transactions.filter(t => {
-            const tDate = new Date(t.date);
-            return tDate.getMonth() === today.getMonth() &&
-                tDate.getFullYear() === today.getFullYear();
+            const tDate = parseDate(t.date || t.paidDate);
+            return tDate.getMonth() === realToday.getMonth() &&
+                tDate.getFullYear() === realToday.getFullYear();
         });
 
         // Income: Sum of Actual + Planned Income for this month (simplified to Actual here for safety)
-        const currentBoundaries = getMonthBoundaries(today.getMonth(), today.getFullYear());
+        const currentBoundaries = getMonthBoundaries(realToday.getMonth(), realToday.getFullYear());
         const currentIncome = getMonthlyIncome(transactions, currentBoundaries.monthStart, currentBoundaries.monthEnd);
         // Expense: Hybrid Projection
         const currentExpenseProj = estimateCurrentMonth(currentMonthTransactions, safeMonthlyAverage).total;
