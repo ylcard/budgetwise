@@ -16,10 +16,10 @@ import ProjectionChart from "../components/reports/ProjectionChart";
 import ReportStats, { FinancialHealthScore } from "../components/reports/ReportStats";
 import { calculateProjection } from "../components/utils/projectionUtils";
 import { calculateBonusSavingsPotential } from "../components/utils/financialCalculations";
-import InfoTooltip from "../components/ui/InfoTooltip"; // ADDED: 16-Jan-2026
 import GoalSettings from "../components/reports/GoalSettings"; // ADDED: 17-Jan-2026
 import { useGoalActions } from "../components/hooks/useActions"; // ADDED: 17-Jan-2026
 import { useState, useEffect, useRef } from "react"; // UPDATED: 17-Jan-2026
+import { parseDate } from "./dateUtils";
 
 export default function Reports() {
     const { user, settings, updateSettings } = useSettings();
