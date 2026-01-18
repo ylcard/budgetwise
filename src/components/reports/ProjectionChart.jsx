@@ -8,101 +8,71 @@ import { useTransactions } from "../hooks/useBase44Entities";
 import { ArrowRight, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 
-export default function ProjectionChart({
-    settings,
-    projectionData
-}) {
+export default function ProjectionChart({ settings }) {
+    const today = useMemo(() => new Date(), []); // Absolute "Today" - never changes
 
-    // 1. Independent Real-Time Window (6 months back from actual 'now')
+    // 1. Independent Real-Time Window (Last 6 Months + Current Month)
     const horizonWindow = useMemo(() => {
-        const today = new Date();
         const start = new Date(today.getFullYear(), today.getMonth() - 6, 1);
         return {
             from: start.toISOString().split('T')[0],
             to: today.toISOString().split('T')[0]
         };
-    }, []);
+    }, [today]);
 
-    // 2. Self-contained data fetching
+    // 2. Fetch independent data strictly for this real-time window
     const { transactions, isLoading } = useTransactions(horizonWindow.from, horizonWindow.to);
 
-    // Extract the safe baseline calculated in parent (Reports.js)
-    const safeMonthlyAverage = projectionData?.totalProjectedMonthly || 0;
-
     const { data, sixMonthAvg } = useMemo(() => {
-        // Guard: Return empty structure during load
         if (isLoading || !transactions || transactions.length === 0) {
             return { data: [], sixMonthAvg: 0 };
         }
         
         const realToday = new Date();
 
-        // --- 0. CALCULATE 6-MONTH AVERAGE (Context) ---
+        // --- 0. CALCULATE 6-MONTH BASELINE (Internal & Static) ---
         let totalPastExpenses = 0;
+        let validMonths = 0;
         for (let i = 1; i <= 6; i++) {
-            const d = new Date(realToday.getFullYear(), realToday.getMonth() - i, 1);
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
             const bounds = getMonthBoundaries(d.getMonth(), d.getFullYear());
-            totalPastExpenses += Math.abs(getMonthlyPaidExpenses(transactions, bounds.monthStart, bounds.monthEnd));
+            const spent = Math.abs(getMonthlyPaidExpenses(transactions, bounds.monthStart, bounds.monthEnd));
+            if (spent > 0) {
+                totalPastExpenses += spent;
+                validMonths++;
+            }
         }
-        const avgExp = totalPastExpenses / 6;
+        const avgExp = validMonths > 0 ? totalPastExpenses / validMonths : 0;
+        const safeBaseline = avgExp;
 
 
-        // --- 1. LAST MONTH (Context) ---
-        const lastMonthDate = new Date(realToday.getFullYear(), realToday.getMonth() - 1, 1);
+        // --- 1. BAR: LAST MONTH (Actuals) ---
+        const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastBoundaries = getMonthBoundaries(lastMonthDate.getMonth(), lastMonthDate.getFullYear());
         const lastIncome = getMonthlyIncome(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd);
         const lastExpenses = Math.abs(getMonthlyPaidExpenses(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd));
 
-        // --- 2. THIS MONTH (Real-Time Projection) ---
-        const curMonth = realToday.getMonth();
-        const curYear = realToday.getFullYear();
-        const currentBoundaries = getMonthBoundaries(curMonth, curYear);
+        // --- 2. BAR: THIS MONTH (Projection) ---
+        const currentBoundaries = getMonthBoundaries(today.getMonth(), today.getFullYear());
+        const currentMonthTransactions = transactions.filter(t => isTransactionInDateRange(t, currentBoundaries.monthStart, currentBoundaries.monthEnd));
+        
+        const currentIncome = getMonthlyIncome(transactions, currentBoundaries.monthStart, currentBoundaries.monthEnd);
+        const currentExpenseProj = estimateCurrentMonth(currentMonthTransactions, safeBaseline).total;
 
-        // Filter transactions strictly for the current real-world month
-        const currentMonthTransactions = transactions.filter(t => {
-            const tDate = parseDate(t.date || t.paidDate);
-            return tDate.getMonth() === curMonth && tDate.getFullYear() === curYear;
-        });
+        // --- 3. BAR: NEXT MONTH (Target) ---
 
-        // Income: Use getMonthlyIncome on the currentMonthTransactions subset 
-        // to ensure we only sum this month's actuals from the 6-month pool
-        const currentIncome = getMonthlyIncome(currentMonthTransactions, currentBoundaries.monthStart, currentBoundaries.monthEnd);
-
-        // Expense: Hybrid Projection
-        const currentExpenseProj = estimateCurrentMonth(currentMonthTransactions, safeMonthlyAverage).total;
-
-        // --- 3. NEXT MONTH (Target) ---
-        // We assume Income is stable (uses Last Month as proxy) for a conservative estimate
         const nextIncome = lastIncome;
-        const nextExpense = safeMonthlyAverage;
+        const nextExpense = safeBaseline;
 
         const chartData = [
-            {
-                label: 'Last Month',
-                subLabel: lastMonthDate.toLocaleDateString('en-US', { month: 'short' }),
-                income: lastIncome,
-                expense: lastExpenses,
-                type: 'past'
-            },
-            {
-                label: 'This Month',
-                subLabel: 'Projected',
-                income: currentIncome,
-                expense: currentExpenseProj,
-                type: 'current'
-            },
-            {
-                label: 'Next Month',
-                subLabel: 'Target',
-                income: nextIncome,
-                expense: nextExpense,
-                type: 'future'
-            }
+            { label: 'Last Month', subLabel: lastMonthDate.toLocaleDateString('en-US', { month: 'short' }), income: lastIncome, expense: lastExpenses, type: 'past' },
+            { label: 'This Month', subLabel: 'Projected', income: currentIncome, expense: currentExpenseProj, type: 'current' },
+            { label: 'Next Month', subLabel: 'Target', income: nextIncome, expense: nextExpense, type: 'future' }
         ];
         return { data: chartData, sixMonthAvg: avgExp };
-    }, [transactions, safeMonthlyAverage, isLoading]);
+    }, [transactions, isLoading, today]);
 
-    if (isLoading || !data || data.length < 3) {
+    if (isLoading || data.length < 3) {
         return (
             <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px]">
                 <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
