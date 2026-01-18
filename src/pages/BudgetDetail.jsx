@@ -1,3 +1,4 @@
+
 import { useMemo, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent";
 import BudgetPostMortem from "../components/budgetdetail/BudgetPostMortem"; // ADDED: 16-Jan-2026
 import ExpenseFilters from "../components/budgetdetail/ExpenseFilters"; // ADDED: 16-Jan-2026
+import BudgetFeasibilityDisplay from "../components/custombudgets/BudgetFeasibilityDisplay"; // ADDED: 18-Jan-2026
 
 export default function BudgetDetail() {
     const { settings } = useSettings();
@@ -130,7 +132,6 @@ export default function BudgetDetail() {
             return await base44.entities.Transaction.filter({
                 $or: [
                     { date: { $gte: budget.startDate, $lte: budget.endDate } },
-                    // { customBudgetId: { $in: relatedCustomBudgetIds } }
                     { customBudgetId: budgetId },
                     { customBudgetId: { $in: relatedCustomBudgetIds } }
                 ]
@@ -219,7 +220,6 @@ export default function BudgetDetail() {
             const budgetStart = parseDate(budget.startDate);
             const budgetEnd = parseDate(budget.endDate);
             if (budgetEnd) budgetEnd.setHours(23, 59, 59, 999);
-            const allCustomBudgetIds = allCustomBudgets.map(cb => cb.id);
 
             // FIXED: 16-Jan-2026 - System budgets should only show direct expenses within date range
             return transactions.filter(t => {
@@ -406,12 +406,26 @@ export default function BudgetDetail() {
 
                 {/* Budget Insights - ADDED: 16-Jan-2026, MODIFIED: 16-Jan-2026 - Disabled for system budgets */}
                 {!budget.isSystemBudget && (
-                    <BudgetPostMortem
-                        budget={budget}
-                        transactions={transactions}
-                        categories={categories}
-                        settings={settings}
-                    />
+                    <>
+                        <BudgetPostMortem
+                            budget={budget}
+                            transactions={transactions}
+                            categories={categories}
+                            settings={settings}
+                        />
+
+                        {/* ADDED: 18-Jan-2026 - AI insights for existing budgets */}
+                        <BudgetFeasibilityDisplay
+                            feasibility={null}
+                            settings={settings}
+                            budgetData={{
+                                ...budget,
+                                transactions: budgetTransactions,
+                                stats: stats,
+                                allocations: allocations
+                            }}
+                        />
+                    </>
                 )}
 
                 <div className="grid md:grid-cols-3 gap-4">
