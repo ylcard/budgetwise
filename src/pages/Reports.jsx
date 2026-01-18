@@ -187,6 +187,8 @@ export default function Reports() {
                             endDate={monthEnd}
                             isLoading={isLoading}
                             settings={settings}
+                            categories={categories}
+                            allCustomBudgets={allCustomBudgets}
                             goals={goals}
                             className="flex-1"
                         />
