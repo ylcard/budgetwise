@@ -1,13 +1,16 @@
 /**
  * Budget Feasibility Display
  * CREATED: 16-Jan-2026
+ * MODIFIED: 18-Jan-2026 - Added AI insights button
  * 
  * Shows feasibility analysis and financial impact of proposed budgets
  */
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CustomButton } from "@/components/ui/CustomButton";
 import {
     CheckCircle2,
     AlertTriangle,
@@ -21,7 +24,9 @@ import {
     ShieldCheck,  // Stability
     BarChart3,    // Sharpe
     Ghost,        // Creep
-    HelpCircle
+    HelpCircle,
+    Sparkles,
+    Loader2
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -31,6 +36,8 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatCurrency } from "../utils/currencyUtils";
+import { base44 } from "@/api/base44Client";
+import { useToast } from "@/components/ui/use-toast";
 
 // ADD: Helper to determine color based on score (0-100)
 const getScoreColor = (score) => {
@@ -122,8 +129,12 @@ const HealthMetric = ({ label, score, icon: Icon, description }) => {
     );
 };
 
-export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
+export default function BudgetFeasibilityDisplay({ feasibility, settings, budgetData }) {
     if (!feasibility) return null;
+
+    const [aiInsights, setAiInsights] = useState(null);
+    const [loadingInsights, setLoadingInsights] = useState(false);
+    const { toast } = useToast();
 
     // ADDED: 16-Jan-2026 - Temporal context awareness
     const isFuture = feasibility.temporalContext === 'future';
@@ -132,6 +143,39 @@ export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
     const config = GRADE_CONFIG[feasibility.feasibilityGrade] || GRADE_CONFIG['F'];
     const IconComponent = config.icon;
     const metrics = feasibility.metrics || {};
+
+    // ADDED: 18-Jan-2026 - AI insights generation
+    const generateInsights = async () => {
+        setLoadingInsights(true);
+        try {
+            const response = await base44.functions.invoke('generateBudgetInsights', {
+                budgetData: {
+                    ...budgetData,
+                    feasibility: {
+                        grade: feasibility.feasibilityGrade,
+                        feasibilityScore: feasibility.feasibilityScore,
+                        riskLevel: feasibility.riskLevel,
+                        metrics
+                    }
+                }
+            });
+
+            if (response.data.insight) {
+                setAiInsights(response.data.insight);
+            } else {
+                throw new Error('No insights generated');
+            }
+        } catch (error) {
+            console.error('Error generating insights:', error);
+            toast({
+                title: "Failed to generate insights",
+                description: error.message || "Please try again later",
+                variant: "destructive"
+            });
+        } finally {
+            setLoadingInsights(false);
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -231,37 +275,72 @@ export default function BudgetFeasibilityDisplay({ feasibility, settings }) {
                             <div className="grid grid-cols-2 gap-3">
                                 <HealthMetric
                                     label="Pacing"
-                                    score={health.pacing || 0}
+                                    score={feasibility.health.pacing || 0}
                                     icon={Activity}
                                     description="Real-time spend vs. 3-month average. 100 is perfect (under budget)."
                                 />
                                 <HealthMetric
                                     label="Burn Rate"
-                                    score={health.ratio || 0}
+                                    score={feasibility.health.ratio || 0}
                                     icon={Flame}
                                     description="Sustainability of spending against income. Higher is more sustainable."
                                 />
                                 <HealthMetric
                                     label="Stability"
-                                    score={health.stability || 0}
+                                    score={feasibility.health.stability || 0}
                                     icon={ShieldCheck}
                                     description="Consistency of expenses over time. Higher means fewer surprises."
                                 />
                                 <HealthMetric
                                     label="Sharpe"
-                                    score={health.sharpe || 0}
+                                    score={feasibility.health.sharpe || 0}
                                     icon={BarChart3}
                                     description="Risk-adjusted savings consistency. Higher is better."
                                 />
                                 <HealthMetric
                                     label="Creep"
-                                    score={health.creep || 0}
+                                    score={feasibility.health.creep || 0}
                                     icon={Ghost}
                                     description="Lifestyle Creep Index. 100 means expenses are NOT growing faster than income."
                                 />
                             </div>
                         </div>
                     )}
+
+                    {/* AI Insights Section - ADDED: 18-Jan-2026 */}
+                    <div className="mt-6 pt-5 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-3">
+                            <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                AI-Powered Insights
+                            </h5>
+                            <CustomButton
+                                variant="info"
+                                size="sm"
+                                onClick={generateInsights}
+                                disabled={loadingInsights}
+                            >
+                                {loadingInsights ? (
+                                    <>
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        Analyzing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-3 h-3" />
+                                        Get AI Insights
+                                    </>
+                                )}
+                            </CustomButton>
+                        </div>
+
+                        {aiInsights && (
+                            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+                                <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                                    {aiInsights}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
 
