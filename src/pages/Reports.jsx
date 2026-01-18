@@ -36,8 +36,15 @@ export default function Reports() {
         previousYear
     } = usePeriod();
 
+    // Calculate 6-month lookback for Health Metrics
+    const lookbackDate = useMemo(() => {
+        const d = new Date(monthStart);
+        d.setMonth(d.getMonth() - 6);
+        return d.toISOString().split('T')[0]; // YYYY-MM-DD
+    }, [monthStart]);
+
     // Data fetching
-    const { transactions, isLoading: loadingTransactions } = useTransactions();
+    const { transactions, isLoading: loadingTransactions } = useTransactions(lookbackDate, monthEnd);
     const { categories, isLoading: loadingCategories } = useCategories();
     const { goals, isLoading: loadingGoals } = useGoals(user);
     const { allCustomBudgets } = useCustomBudgetsAll(user);
