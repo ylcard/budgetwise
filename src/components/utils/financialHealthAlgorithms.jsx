@@ -153,13 +153,21 @@ const calculateSharpeRatio = (fullHistory, categories, allCustomBudgets, monthly
 
     if (monthlySavings.length < 2) return 50; // Not enough data, neutral score
 
-    const target = getMonthlyTarget(goals, 'savings', monthlyIncome, settings);
+    const avgSavings = monthlySavings.reduce((a, b) => a + b, 0) / monthlySavings.length;
+    const stdDev = calculateStdDev(monthlySavings);
 
-    if (target <= 0) return 100;
+    if (stdDev === 0) return avgSavings > 0 ? 100 : 0;
 
-    const totalShortfall = monthlySavings.reduce((acc, s) => acc + Math.max(0, target - s), 0);
-    const maxAllowableShortfall = target * 2; // Bottom out at 0 if you miss 2 full months of savings over 6 months
-    return Math.max(0, 100 - (totalShortfall / maxAllowableShortfall * 100));
+    // Standard Sharpe Ratio
+    const sharpe = avgSavings / stdDev;
+
+    // Map Sharpe to 0-100 scale
+    // Sharpe of 1.0 (Savings = Volatility) = 80 points
+    // Sharpe of 0.0 (Breakeven) = 20 points
+    // Negative Sharpe = 0-20 points
+    let score = 20 + (sharpe * 60);
+    
+    return Math.max(0, Math.min(100, score));
 };
 
 /**
