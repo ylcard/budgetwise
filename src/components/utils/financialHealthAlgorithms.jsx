@@ -188,16 +188,14 @@ const calculateSharpeRatio = (fullHistory, startDate) => {
 
     if (monthlySavings.length < 2) return 50; // Not enough data, neutral score
 
-    const avgSavings = monthlySavings.reduce((a, b) => a + b, 0) / monthlySavings.length;
-    const stdDev = calculateStdDev(monthlySavings);
+    const savingsGoal = goals.find(g => g.priority === 'savings');
+    const target = settings.goalMode === false ? (savingsGoal?.target_amount || 0) : (monthlyIncome * (savingsGoal?.target_percentage || 0) / 100);
 
-    if (stdDev === 0) return avgSavings > 0 ? 100 : 0; // Perfect consistency
+    if (target <= 0) return 100;
 
-    const sharpe = avgSavings / stdDev;
-
-    // Score: Sharpe of 1.0+ = 100, Sharpe of -1.0 or lower = 0
-    // Linear scale between -1 and 1
-    return Math.max(0, Math.min(100, ((sharpe + 1) / 2) * 100));
+    const totalShortfall = monthlySavings.reduce((acc, s) => acc + Math.max(0, target - s), 0);
+    const maxAllowableShortfall = target * 2; // Bottom out at 0 if you miss 2 full months of savings over 6 months
+    return Math.max(0, 100 - (totalShortfall / maxAllowableShortfall * 100));
 };
 
 /**
@@ -223,8 +221,14 @@ const calculateLifestyleCreepIndex = (fullHistory, startDate) => {
     dataPoints.reverse(); // Oldest to newest
 
     // Calculate growth rates (simple linear regression slope approximation)
-    const incomeGrowth = (dataPoints[dataPoints.length - 1].income - dataPoints[0].income) / dataPoints[0].income;
-    const expenseGrowth = (dataPoints[dataPoints.length - 1].expenses - dataPoints[0].expenses) / dataPoints[0].expenses;
+    // Smoothing: Compare average of first 2 months vs last 2 months
+    const startInc = (dataPoints[0].income + dataPoints[1].income) / 2;
+    const endInc = (dataPoints[dataPoints.length - 1].income + dataPoints[dataPoints.length - 2].income) / 2;
+    const startExp = (dataPoints[0].expenses + dataPoints[1].expenses) / 2;
+    const endExp = (dataPoints[dataPoints.length - 1].expenses + dataPoints[dataPoints.length - 2].expenses) / 2;
+
+    const incomeGrowth = (endInc - startInc) / startInc;
+    const expenseGrowth = (endExp - startExp) / startExp;
 
     // Score: If expense growth <= income growth, score 100
     // For every 1% that expenses outpace income, lose 5 points
