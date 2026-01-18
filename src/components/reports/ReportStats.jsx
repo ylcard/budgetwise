@@ -370,9 +370,23 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
 
     // ADDED: 16-Jan-2026 - Use new centralized algorithm
     const healthData = useMemo(() => {
-        if (isLoading && !transactions.length) return null;
+        if (isLoading && (!transactions || transactions.length === 0)) return null;
         return calculateFinancialHealth(transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets);
     }, [transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets]);
+
+    // 2. If no healthData (First time loading this month), show Skeleton
+    if (!healthData) {
+        return (
+            <div className={`flex flex-col gap-4 h-full animate-pulse ${className || ''}`}>
+                <div className="h-24 bg-gray-100 rounded-xl border border-gray-200" />
+                <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="h-32 bg-gray-50 rounded-lg border border-gray-100" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     // const { totalScore, breakdown, label } = healthData;
     if (!healthData) return <div className="animate-pulse bg-gray-50 rounded-xl h-48" />;
