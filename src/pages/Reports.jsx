@@ -39,10 +39,11 @@ export default function Reports() {
     // Calculate 6-month lookback window using system date logic
     const healthWindow = useMemo(() => {
         const start = parseDate(monthStart);
+        const today = new Date();
         start.setMonth(start.getMonth() - 6);
         return {
             from: start.toISOString().split('T')[0],
-            to: monthEnd // Use the string directly from usePeriod
+            to: today > parseDate(monthEnd) ? today.toISOString().split('T')[0] : monthEnd
         };
     }, [monthStart, monthEnd]);
 
