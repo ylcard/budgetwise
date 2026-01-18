@@ -120,7 +120,7 @@ export const getMonthlyTarget = (allGoals, priority, monthlyIncome, settings, hi
  * Replaces getPaidNeedsExpenses, getDirectPaidWantsExpenses, etc.
  * * @returns {Object} { needs: { paid, unpaid, total }, wants: { directPaid, directUnpaid, customPaid, customUnpaid, total } }
  */
-export const getFinancialBreakdown = (transactions, categories, allCustomBudgets, startDate, endDate) => {
+export const getFinancialBreakdown = (transactions, categories, allCustomBudgets, startDate, endDate, dayLimit = null) => {
     const result = {
         needs: { paid: 0, unpaid: 0, total: 0 },
         wants: {
@@ -135,6 +135,12 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
     transactions.forEach(t => {
         if (t.type !== 'expense') return;
         if (!isTransactionInDateRange(t, startDate, endDate)) return;
+
+        // Pacing Support: If dayLimit is provided, skip transactions after that day of the month
+        if (dayLimit) {
+            const tDate = parseDate(t.date || t.created_date);
+            if (tDate.getDate() > dayLimit) return;
+        }
 
         const isCustom = isActualCustomBudget(t.customBudgetId, allCustomBudgets);
         const category = categories ? categories.find(c => c.id === t.category_id) : null;
