@@ -136,11 +136,9 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
         if (t.type !== 'expense') return;
         if (!isTransactionInDateRange(t, startDate, endDate)) return;
 
-        // Pacing Support: If dayLimit is provided, skip transactions after that day of the month
-        if (dayLimit) {
-            const tDate = parseDate(t.date || t.created_date);
-            if (tDate.getDate() > dayLimit) return;
-        }
+        // UNIFIED DATE LOGIC: Use the same effective date as the range check for pacing
+        const effectiveDate = (t.isPaid && t.paidDate) ? t.paidDate : t.date;
+        if (dayLimit && parseDate(effectiveDate).getDate() > dayLimit) return;
 
         const isCustom = isActualCustomBudget(t.customBudgetId, allCustomBudgets);
         const category = categories ? categories.find(c => c.id === t.category_id) : null;
@@ -177,7 +175,11 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
         result.wants.customPaid +
         result.wants.customUnpaid;
 
-    return result;
+    // Add top-level total for unified consumption by Health Algorithms
+    return {
+        ...result,
+        totalExpenses: result.needs.total + result.wants.total
+    };
 };
 
 /**
