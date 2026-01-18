@@ -6,6 +6,7 @@ import { getMonthBoundaries } from "../utils/dateUtils";
 import { getMonthlyIncome, getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { parseDate } from "../components/utils/dateUtils";
 
 export default function ProjectionChart({
     transactions = [],
