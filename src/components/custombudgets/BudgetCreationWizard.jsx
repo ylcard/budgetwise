@@ -146,6 +146,7 @@ export default function BudgetCreationWizard({
                         <BudgetFeasibilityDisplay
                             feasibility={feasibility}
                             settings={settings}
+                            budgetData={formData}
                         />
                     ) : (
                         <div className="bg-gray-50 rounded-lg p-6 text-center">
