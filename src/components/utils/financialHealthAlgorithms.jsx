@@ -13,9 +13,9 @@
 import {
     getFinancialBreakdown,
     getMonthlyIncome,
-    getMonthlyTarget,
-    getMonthBoundaries
+    getMonthlyTarget
 } from "./financialCalculations";
+import { getMonthBoundaries } from "./dateUtils";
 
 /**
  * Calculate standard deviation
