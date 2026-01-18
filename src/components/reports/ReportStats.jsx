@@ -253,6 +253,8 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
     fullHistory = [],
     startDate,
     isLoading,
+    settings,
+    goals,
     className
 }) {
     if (isLoading) return null;
@@ -364,8 +366,8 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
 
     // ADDED: 16-Jan-2026 - Use new centralized algorithm
     const healthData = useMemo(() => {
-        return calculateFinancialHealth(transactions, fullHistory, monthlyIncome, startDate);
-    }, [transactions, fullHistory, monthlyIncome, startDate]);
+        return calculateFinancialHealth(transactions, fullHistory, monthlyIncome, startDate, settings, goals);
+    }, [transactions, fullHistory, monthlyIncome, startDate, settings, goals]);
 
     const { totalScore, breakdown, label } = healthData;
     const { pacing: pacingScore, ratio: ratioScore, stability: stabilityScore, sharpe: sharpeScore, creep: creepScore } = breakdown;
