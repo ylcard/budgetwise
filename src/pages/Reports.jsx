@@ -36,15 +36,18 @@ export default function Reports() {
         previousYear
     } = usePeriod();
 
-    // Calculate 6-month lookback for Health Metrics
-    const lookbackDate = useMemo(() => {
-        const d = new Date(monthStart);
-        d.setMonth(d.getMonth() - 6);
-        return d.toISOString().split('T')[0]; // YYYY-MM-DD
-    }, [monthStart]);
+    // Calculate 6-month lookback window using system date logic
+    const healthWindow = useMemo(() => {
+        const start = parseDate(monthStart);
+        start.setMonth(start.getMonth() - 6);
+        return {
+            from: start.toISOString().split('T')[0],
+            to: monthEnd // Use the string directly from usePeriod
+        };
+    }, [monthStart, monthEnd]);
 
     // Data fetching
-    const { transactions, isLoading: loadingTransactions } = useTransactions(lookbackDate, monthEnd);
+    const { transactions, isLoading: loadingTransactions } = useTransactions(healthWindow.from, healthWindow.to);
     const { categories, isLoading: loadingCategories } = useCategories();
     const { goals, isLoading: loadingGoals } = useGoals(user);
     const { allCustomBudgets } = useCustomBudgetsAll(user);
