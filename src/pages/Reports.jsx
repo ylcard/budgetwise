@@ -36,14 +36,13 @@ export default function Reports() {
         previousYear
     } = usePeriod();
 
-    // Calculate 6-month lookback window using system date logic
+    // Health Window: 6 months prior to selected month
     const healthWindow = useMemo(() => {
         const start = parseDate(monthStart);
-        const today = new Date();
         start.setMonth(start.getMonth() - 6);
         return {
             from: start.toISOString().split('T')[0],
-            to: today > parseDate(monthEnd) ? today.toISOString().split('T')[0] : monthEnd
+            to: monthEnd
         };
     }, [monthStart, monthEnd]);
 
@@ -227,8 +226,6 @@ export default function Reports() {
                 {/* 2. Historical Context & Future Projection */}
                 <div className="w-full">
                     <ProjectionChart
-                        transactions={transactions}
-                        categories={categories}
                         settings={settings}
                         projectionData={projectionData}
                     />
