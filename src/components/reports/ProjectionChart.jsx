@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "../utils/currencyUtils";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
 import { getMonthBoundaries, parseDate } from "../utils/dateUtils";
-import { getMonthlyIncome, getMonthlyPaidExpenses } from "../utils/financialCalculations";
+import { getMonthlyIncome, getMonthlyPaidExpenses, isTransactionInDateRange } from "../utils/financialCalculations";
 import { useTransactions } from "../hooks/useBase44Entities";
 import { ArrowRight, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import InfoTooltip from "@/components/ui/InfoTooltip";
