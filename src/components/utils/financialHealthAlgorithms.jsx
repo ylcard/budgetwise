@@ -62,9 +62,10 @@ const calculatePacingScore = (transactions, fullHistory, categories, allCustomBu
     const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
     const averageSpendAtPointX = historyPoints.length > 0
         ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
-        : currentSpend; // Fallback to current if no history
+        : null; // No history found
 
     // Score calculation
+    if (averageSpendAtPointX === null) return 50; // Neutral score for new users
     const diff = currentSpend - averageSpendAtPointX;
     if (diff <= 0) return 100; // Under average = Perfect
 
