@@ -19,7 +19,7 @@ import { calculateBonusSavingsPotential } from "../components/utils/financialCal
 import GoalSettings from "../components/reports/GoalSettings"; // ADDED: 17-Jan-2026
 import { useGoalActions } from "../components/hooks/useActions"; // ADDED: 17-Jan-2026
 import { useState, useEffect, useRef } from "react"; // UPDATED: 17-Jan-2026
-import { parseDate } from "./dateUtils";
+import { parseDate } from "../components/utils/dateUtils";
 
 export default function Reports() {
     const { user, settings, updateSettings } = useSettings();
