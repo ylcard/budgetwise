@@ -5,10 +5,8 @@
  * @updated 17-Jan-2026 - OPTIMIZED: snapshotFutureBudgets now creates budgets proactively for the next 12 months
  */
 
-import { isDateInRange } from "./dateUtils";
-import { getMonthBoundaries } from "./dateUtils";
 import { base44 } from "@/api/base44Client";
-import { parseDate, getFirstDayOfMonth, getLastDayOfMonth } from "./dateUtils";
+import { parseDate, getFirstDayOfMonth, getLastDayOfMonth, isDateInRange, getMonthBoundaries } from "./dateUtils";
 import { ensureSystemBudgetsExist } from "./budgetInitialization";
 import { addMonths } from 'date-fns';
 
