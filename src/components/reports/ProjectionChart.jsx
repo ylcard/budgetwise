@@ -11,16 +11,17 @@ import InfoTooltip from "@/components/ui/InfoTooltip";
 export default function ProjectionChart({ settings }) {
     const today = useMemo(() => new Date(), []); // Absolute "Today" - never changes
 
-    // 1. Independent Real-Time Window (Last 6 Months + Current Month)
+    // 1. Independent Window: 6 Months Back -> END of Current Month
     const horizonWindow = useMemo(() => {
         const start = new Date(today.getFullYear(), today.getMonth() - 6, 1);
+        const endOfCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         return {
             from: start.toISOString().split('T')[0],
-            to: today.toISOString().split('T')[0]
+            to: endOfCurrentMonth.toISOString().split('T')[0]
         };
     }, [today]);
 
-    // 2. Fetch independent data strictly for this real-time window
+    // 2. Fetch data (Now includes the "Future" of the current month)
     const { transactions, isLoading } = useTransactions(horizonWindow.from, horizonWindow.to);
 
     const { data, sixMonthAvg } = useMemo(() => {
@@ -52,14 +53,20 @@ export default function ProjectionChart({ settings }) {
             .reduce((sum, t) => sum + t.amount, 0);
         const lastExpenses = Math.abs(getMonthlyPaidExpenses(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd));
 
-        // --- 2. BAR: THIS MONTH (Real-Time Projection) ---
+        // --- 2. BAR: THIS MONTH (Full Month Projection) ---
         const currentBoundaries = getMonthBoundaries(today.getMonth(), today.getFullYear());
-        const currentMonthTransactions = transactions.filter(t => isTransactionInDateRange(t, currentBoundaries.monthStart, currentBoundaries.monthEnd));
 
-        // Fix: Use simple type filter for income to avoid missing data
+        // Filter strictly by this month's boundaries (Day 1 to Day 31)
+        const currentMonthTransactions = transactions.filter(t => 
+            isTransactionInDateRange(t, currentBoundaries.monthStart, currentBoundaries.monthEnd)
+        );
+
+        // Income: Sum ALL income for the month (past + future scheduled)
         const currentIncome = currentMonthTransactions
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
+
+        // Expense: Hybrid Projection (Spent so far + Expected baseline for remaining days)
 
         const currentExpenseProj = estimateCurrentMonth(currentMonthTransactions, safeBaseline).total;
 
