@@ -107,6 +107,15 @@ export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historica
 };
 
 /**
+ * Returns the resolved target amount for a specific goal priority.
+ */
+export const getMonthlyTarget = (allGoals, priority, monthlyIncome, settings, historicalAverage = 0) => {
+    const goal = allGoals.find(g => g.priority === priority);
+    if (!goal) return 0;
+    return resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+};
+
+/**
  * CORE AGGREGATOR: Calculates granular breakdown of expenses in one pass.
  * Replaces getPaidNeedsExpenses, getDirectPaidWantsExpenses, etc.
  * * @returns {Object} { needs: { paid, unpaid, total }, wants: { directPaid, directUnpaid, customPaid, customUnpaid, total } }
@@ -330,7 +339,7 @@ export const getCustomBudgetAllocationStats = (customBudget, allocations, transa
 export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
-    
+
     // Use the persisted budgetAmount from the database schema
     const needsLimit = needsBudget?.budgetAmount || 0;
     const wantsLimit = wantsBudget?.budgetAmount || 0;
@@ -434,7 +443,7 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
             newAmount = updatedGoal.target_amount || 0;
         } else {
             const bDate = parseDate(budget.startDate);
-            
+
             const monthIncome = transactionsForIncomeCalc
                 .filter(t => {
                     const tDate = parseDate(t.date);
