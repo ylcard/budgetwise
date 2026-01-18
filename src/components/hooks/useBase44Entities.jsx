@@ -15,12 +15,13 @@ export const useTransactions = (startDate = null, endDate = null) => {
         queryKey: [QUERY_KEYS.TRANSACTIONS, startDate, endDate],
         queryFn: async () => {
             if (startDate && endDate) {
-                // Server-side date range filter + Sort by date descending
+                // When a range is requested (for Reports/Health), we need 
+                // the full set for mathematical accuracy.
                 return await base44.entities.Transaction.filter({ 
                     date: { $gte: startDate, $lte: endDate } 
-                }, '-date');
+                }, '-date', 5000); // Increased limit to cover extreme high-frequency users
             }
-            return await base44.entities.Transaction.list('-date', 2000);
+            return await base44.entities.Transaction.list('-date', 500); // Smaller default list for general views
         },
         initialData: [],
     });
