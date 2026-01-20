@@ -57,25 +57,6 @@ export default function BudgetBars({
 
     return (
         <div className="space-y-6">
-            {savingsShortfall > 0 && (
-                <Card className="border-none shadow-lg bg-orange-50 border-orange-200">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                            <AlertTriangle className="w-5 h-5 text-orange-600" />
-                            <div>
-                                <p className="font-semibold text-orange-900">
-                                    Savings Target Not Met
-                                </p>
-                                <p className="text-sm text-orange-700">
-                                    You're short {formatCurrency(savingsShortfall, settings)} of your savings goal.
-                                    Target: {formatCurrency(savingsTarget, settings)}, Actual: {formatCurrency(totalActualSavings, settings)}
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
             {showSystem && systemBudgetsData.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
