@@ -1,11 +1,11 @@
-import { useMemo, memo } from "react";
+import { useMemo, memo, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank, Activity, TrendingDown, ShieldCheck } from "lucide-react";
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank, Activity, TrendingDown, ShieldCheck, Loader2 } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
 import { calculateFinancialHealth } from "../utils/financialHealthAlgorithms"; // ADDED: 16-Jan-2026
-import { motion } from "framer-motion";
+import { motion, useSpring, useTransform, animate, useMotionValue } from "framer-motion";
 import InfoTooltip from "../ui/InfoTooltip"; // ADDED: 16-Jan-2026
 
 // COMMENTED OUT: 16-Jan-2026 - Moved to financialHealthAlgorithms.jsx
@@ -220,9 +220,26 @@ const getScoreStyle = (score) => {
     return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'Risk' };
 };
 
+// Helper: A "slot machine" style rolling number for the "Calculating" effect
+const RollingNumber = ({ value, duration = 1.5 }) => {
+    const motionValue = useMotionValue(0);
+    const rounded = useTransform(motionValue, (latest) => Math.round(latest));
+
+    useEffect(() => {
+        const controls = animate(motionValue, value, {
+            duration: duration,
+            ease: "circOut", // Starts fast, slows down at the end like a wheel
+        });
+        return controls.stop;
+    }, [value, duration, motionValue]);
+
+    return <motion.span className="tabular-nums tracking-tight">{rounded}</motion.span>;
+};
+
 // Renders a single "DNA" cell - Memoized so it only re-animates if the score actually changes
 const HealthCell = memo(({ label, score, description, wiki }) => {
     const style = getScoreStyle(score);
+
     return (
         <div className="flex flex-col h-full justify-between p-3 rounded-lg border border-gray-100 bg-white shadow-md hover:shadow-lg transition-all">
             <div className="flex items-center justify-between mb-2">
@@ -230,10 +247,18 @@ const HealthCell = memo(({ label, score, description, wiki }) => {
                 <InfoTooltip title={label} description={description} wikiUrl={wiki} />
             </div>
             <div className="flex items-end justify-between mb-2">
-                <span className={`text-2xl font-bold ${style.color}`}>{Math.round(score)}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${style.bg} ${style.color}`}>
-                    {style.label}
+                <span className={`text-2xl font-bold ${style.color}`}>
+                    <RollingNumber value={score} />
                 </span>
+                {/* Fade in the verdict label only after numbers start settling to reduce visual noise */}
+                <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5, duration: 0.5 }}
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${style.bg} ${style.color}`}
+                >
+                    {style.label}
+                </motion.span>
             </div>
             <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                 <motion.div
@@ -481,12 +506,19 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
                 </div>
                 <div className="relative z-10 flex flex-col items-end">
                     <div className="flex items-baseline gap-1">
-                        <span className={`text-4xl font-extrabold ${headerStyle.text}`}>{totalScore}</span>
+                        <span className={`text-4xl font-extrabold ${headerStyle.text}`}>
+                            <RollingNumber value={totalScore} duration={2} />
+                        </span>
                         <span className={`text-sm font-semibold ${headerStyle.subtext}`}>/100</span>
                     </div>
-                    <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/60 backdrop-blur-sm ${headerStyle.iconColor} mt-1`}>
+                    <motion.span
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1 }} // Wait for the big number to finish rolling
+                        className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/60 backdrop-blur-sm ${headerStyle.iconColor} mt-1`}
+                    >
                         {headerStyle.verdict}
-                    </span>
+                    </motion.span>
                 </div>
             </div>
 
