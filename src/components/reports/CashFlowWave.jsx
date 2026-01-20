@@ -226,20 +226,32 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             padding={{ left: 20, right: 20 }}
                         />
 
+                        {/* AXIS 1: For NET FLOW (Bars) - Anchored to 0 */}
                         <YAxis
+                            yAxisId="flow"
                             tick={{ fill: '#6b7280', fontSize: 12 }}
                             tickLine={{ stroke: '#e5e7eb' }}
                             tickCount={5}
                             tickFormatter={(value) => formatCurrency(value, settings)}
                         />
 
+                        {/* AXIS 2: For TOTALS (Lines) - Hidden & Scaled to float higher */}
+                        {/* 'domain' hack: We force the min value to be lower than 0 to push lines up */}
+                        <YAxis
+                            yAxisId="totals"
+                            orientation="right"
+                            hide={true}
+                            domain={[dataMin => dataMin * 0.5, 'auto']} // Pushes curves up visually
+                        />
+
                         <Tooltip content={<CustomTooltip />} />
 
                         {/* Zero reference line */}
-                        <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
+                        <ReferenceLine yAxisId="flow" y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
 
                         {/* 1. BARS FIRST (Draws behind the lines/dots to prevent obscuring) */}
                         <Bar
+                            yAxisId="flow"
                             dataKey="netFlow"
                             radius={[4, 4, 0, 0]}
                             maxBarSize={50}
@@ -260,6 +272,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
 
                         {/* 2. AREAS LAST (Draws on top so dots align and stay visible) */}
                         <Area
+                            yAxisId="totals"
                             type="monotone"
                             dataKey="income"
                             stroke="#10b981"
@@ -273,6 +286,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                         />
 
                         <Area
+                            yAxisId="totals"
                             type="monotone"
                             dataKey="expense"
                             stroke="#ef4444"
