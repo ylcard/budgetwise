@@ -183,7 +183,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             {/* Gradient for expense area */}
                             <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
-                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                <stop offset="50%" stopColor="#ef4444" stopOpacity={0} />
                             </linearGradient>
 
                             {/* Pattern for projected areas */}
@@ -236,37 +236,9 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                         <Tooltip content={<CustomTooltip />} />
 
                         {/* Zero reference line */}
-                        <ReferenceLine y={0} stroke="#6b7280" strokeWidth={1} strokeDasharray="3 3" />
+                        <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
 
-                        {/* Income area (river) - behind everything */}
-                        <Area
-                            type="basis"
-                            dataKey="income"
-                            stroke="#10b981"
-                            strokeWidth={3}
-                            fill="url(#incomeGradient)"
-                            fillOpacity={1}
-                            mask="url(#fadeMask)"
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                            isAnimationActive={true}
-                            animationDuration={1000}
-                        />
-
-                        {/* Expense area (river) */}
-                        <Area
-                            type="monotone"
-                            dataKey="expense"
-                            stroke="#ef4444"
-                            strokeWidth={3}
-                            fill="url(#expenseGradient)"
-                            fillOpacity={1}
-                            mask="url(#fadeMask)"
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                            isAnimationActive={true}
-                            animationDuration={1000}
-                        />
-
-                        {/* Net flow bars (most prominent) */}
+                        {/* 1. BARS FIRST (Draws behind the lines/dots to prevent obscuring) */}
                         <Bar
                             dataKey="netFlow"
                             radius={[4, 4, 0, 0]}
@@ -285,6 +257,33 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                                 />
                             ))}
                         </Bar>
+
+                        {/* 2. AREAS LAST (Draws on top so dots align and stay visible) */}
+                        <Area
+                            type="monotone"
+                            dataKey="income"
+                            stroke="#10b981"
+                            strokeWidth={3}
+                            fill="url(#incomeGradient)"
+                            fillOpacity={1}
+                            mask="url(#fadeMask)"
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                            isAnimationActive={true}
+                            animationDuration={1000}
+                        />
+
+                        <Area
+                            type="monotone"
+                            dataKey="expense"
+                            stroke="#ef4444"
+                            strokeWidth={3}
+                            fill="url(#expenseGradient)"
+                            fillOpacity={1}
+                            mask="url(#fadeMask)"
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                            isAnimationActive={true}
+                            animationDuration={1000}
+                        />
                     </ComposedChart>
                 </ResponsiveContainer>
 
