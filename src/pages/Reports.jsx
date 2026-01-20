@@ -12,14 +12,13 @@ import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/us
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import PriorityChart from "../components/reports/PriorityChart";
 import MonthNavigator from "../components/ui/MonthNavigator";
-// UPDATED: 20-Jan-2026 - Replaced ProjectionChart with CashFlowWave
-import CashFlowWave from "../components/reports/CashFlowWave";
+import CashFlowWave from "../components/reports/CashFlowWave"; // UPDATED: 20-Jan-2026
 import ReportStats, { FinancialHealthScore } from "../components/reports/ReportStats";
 import { calculateProjection } from "../components/utils/projectionUtils";
 import { calculateBonusSavingsPotential } from "../components/utils/financialCalculations";
-import GoalSettings from "../components/reports/GoalSettings"; // ADDED: 17-Jan-2026
-import { useGoalActions } from "../components/hooks/useActions"; // ADDED: 17-Jan-2026
-import { useState, useEffect, useRef } from "react"; // UPDATED: 17-Jan-2026
+import GoalSettings from "../components/reports/GoalSettings";
+import { useGoalActions } from "../components/hooks/useActions";
+import { useState, useEffect, useRef } from "react";
 import { parseDate } from "../components/utils/dateUtils";
 
 export default function Reports() {
@@ -54,7 +53,7 @@ export default function Reports() {
     const { allCustomBudgets } = useCustomBudgetsAll(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
-    // ADDED 17-Jan-2026: Goal Settings state management
+    // Goal Settings state management
     const { handleGoalUpdate, isSaving: isGoalSaving } = useGoalActions(user, goals);
     const [localGoalMode, setLocalGoalMode] = useState(settings.goalMode ?? true);
     const [splits, setSplits] = useState({ split1: 50, split2: 80 });
@@ -128,10 +127,6 @@ export default function Reports() {
     const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
-    // const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
-    // const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
-    // const prevMonthlyTransactions = useMonthlyTransactions(transactions, prevMonth, prevYear);
-    // const prevMonthlyIncome = useMonthlyIncome(transactions, prevMonth, prevYear);
     const prevMonthlyTransactions = useMonthlyTransactions(transactions, previousMonth, previousYear);
     console.log(prevMonthlyTransactions);
     const prevMonthlyIncome = useMonthlyIncome(transactions, previousMonth, previousYear);
@@ -142,7 +137,6 @@ export default function Reports() {
     const bonusSavingsPotential = useMemo(() => {
         if (!monthStart || !monthEnd || !systemBudgets) return 0;
         const goalMode = settings?.goalMode ?? true;
-        // Updated to pass income and goalMode for correct calculation
         return calculateBonusSavingsPotential(systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, goalMode);
     }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
@@ -161,7 +155,6 @@ export default function Reports() {
                         </p>
                     </div>
 
-                    {/* Global Month Navigator - Clean, no border box */}
                     <div className="flex-none">
                         <MonthNavigator
                             currentMonth={selectedMonth}
@@ -225,11 +218,8 @@ export default function Reports() {
                 </div>
 
                 {/* 2. Historical Context & Future Projection */}
-                {/* UPDATED: 20-Jan-2026 - Using CashFlowWave instead of ProjectionChart */}
                 <div className="w-full">
-                    <CashFlowWave
-                        settings={settings}
-                    />
+                    <CashFlowWave settings={settings} />
                 </div>
 
                 {/* 3. Bottom Row: Monthly Breakdown + Priority Chart */}
