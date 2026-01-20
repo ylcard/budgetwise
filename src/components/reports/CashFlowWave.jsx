@@ -212,6 +212,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             dataKey="month"
                             tick={{ fill: '#6b7280', fontSize: 12 }}
                             tickLine={{ stroke: '#e5e7eb' }}
+                            padding={{ left: 20, right: 20 }}
                         />
 
                         <YAxis
