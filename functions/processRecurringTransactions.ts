@@ -3,7 +3,7 @@ import { addDays, addWeeks, addMonths, addYears, setDate, startOfDay, parseISO, 
 
 /**
  * Backend function to process recurring transactions.
- * This should be called daily by a scheduled task.
+ * UPDATED: 17-Jan-2026 - Added max iterations safety guard for catch-up loop
  * It generates transactions for all due recurring items and updates their nextOccurrence.
  */
 
@@ -35,84 +35,118 @@ Deno.serve(async (req) => {
         let skipped = 0;
         const errors = [];
 
+        // ADDED: 17-Jan-2026 - Safety guard to prevent infinite loops
+        const MAX_ITERATIONS_PER_RECURRING = 100;
+
         for (const recurring of activeRecurring) {
+            let iterationCount = 0;
+            
             try {
-                const nextDate = startOfDay(parseISO(recurring.nextOccurrence));
+                let nextDate = startOfDay(parseISO(recurring.nextOccurrence));
 
-                // Check if due (nextOccurrence is today or in the past)
-                if (isAfter(nextDate, today)) {
-                    skipped++;
-                    continue;
-                }
+                // MODIFIED: 17-Jan-2026 - Added while loop for catch-up with safety guard
+                while (
+                    !isAfter(nextDate, today) && 
+                    iterationCount < MAX_ITERATIONS_PER_RECURRING
+                ) {
+                    iterationCount++;
 
-                // Check if end date has passed
-                if (recurring.endDate) {
-                    const endDate = startOfDay(parseISO(recurring.endDate));
-                    if (isBefore(endDate, today)) {
-                        // Deactivate the recurring transaction
+                    // Check if end date has passed
+                    if (recurring.endDate) {
+                        const endDate = startOfDay(parseISO(recurring.endDate));
+                        if (isBefore(endDate, today)) {
+                            // Deactivate the recurring transaction
+                            await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
+                                isActive: false,
+                                nextOccurrence: null,
+                            });
+                            break;
+                        }
+                    }
+
+                    // Find appropriate system budget for expenses
+                    let customBudgetId = null;
+                    if (recurring.type === 'expense' && recurring.financial_priority) {
+                        // Find the system budget for the transaction's month that matches the priority
+                        const txMonth = nextDate.getMonth();
+                        const txYear = nextDate.getFullYear();
+                        const monthStart = format(new Date(txYear, txMonth, 1), 'yyyy-MM-dd');
+                        const monthEnd = format(new Date(txYear, txMonth + 1, 0), 'yyyy-MM-dd');
+
+                        const matchingBudget = allSystemBudgets.find(sb =>
+                            sb.user_email === recurring.user_email &&
+                            sb.systemBudgetType === recurring.financial_priority &&
+                            sb.startDate === monthStart &&
+                            sb.endDate === monthEnd
+                        );
+
+                        if (matchingBudget) {
+                            customBudgetId = matchingBudget.id;
+                        }
+                    }
+
+                    // Create the transaction
+                    const currentOccurrenceStr = format(nextDate, 'yyyy-MM-dd');
+                    const transactionData = {
+                        title: recurring.title,
+                        amount: recurring.amount,
+                        originalAmount: recurring.originalAmount || recurring.amount,
+                        originalCurrency: recurring.originalCurrency || 'USD',
+                        type: recurring.type,
+                        date: currentOccurrenceStr,
+                        notes: recurring.notes ? `${recurring.notes} (Auto-generated)` : 'Auto-generated from recurring transaction',
+                        recurringTransactionId: recurring.id,
+                    };
+
+                    if (recurring.type === 'expense') {
+                        transactionData.category_id = recurring.category_id || null;
+                        transactionData.financial_priority = recurring.financial_priority || null;
+                        transactionData.customBudgetId = customBudgetId;
+                        transactionData.isPaid = recurring.autoMarkPaid || false;
+                        transactionData.paidDate = recurring.autoMarkPaid ? currentOccurrenceStr : null;
+                        transactionData.isCashTransaction = false;
+                    }
+
+                    await base44.asServiceRole.entities.Transaction.create(transactionData);
+                    processed++;
+
+                    // Calculate next occurrence for the next iteration
+                    const newNextOccurrence = calculateNextOccurrence(recurring, nextDate);
+                    
+                    if (!newNextOccurrence) {
+                        // No more occurrences - deactivate
                         await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
-                            isActive: false,
+                            lastProcessedDate: currentOccurrenceStr,
                             nextOccurrence: null,
+                            isActive: false,
                         });
-                        continue;
+                        break;
                     }
+
+                    // Move to next date for the loop
+                    nextDate = startOfDay(parseISO(newNextOccurrence));
                 }
 
-                // Find appropriate system budget for expenses
-                let customBudgetId = null;
-                if (recurring.type === 'expense' && recurring.financial_priority) {
-                    // Find the system budget for the transaction's month that matches the priority
-                    const txMonth = nextDate.getMonth();
-                    const txYear = nextDate.getFullYear();
-                    const monthStart = format(new Date(txYear, txMonth, 1), 'yyyy-MM-dd');
-                    const monthEnd = format(new Date(txYear, txMonth + 1, 0), 'yyyy-MM-dd');
-
-                    const matchingBudget = allSystemBudgets.find(sb =>
-                        sb.user_email === recurring.user_email &&
-                        sb.systemBudgetType === recurring.financial_priority &&
-                        sb.startDate === monthStart &&
-                        sb.endDate === monthEnd
-                    );
-
-                    if (matchingBudget) {
-                        customBudgetId = matchingBudget.id;
-                    }
+                // ADDED: 17-Jan-2026 - If we exited the loop normally (not because of end date)
+                if (iterationCount > 0 && iterationCount < MAX_ITERATIONS_PER_RECURRING) {
+                    // Update the recurring transaction with the final nextOccurrence
+                    const finalNextOccurrence = format(nextDate, 'yyyy-MM-dd');
+                    await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
+                        lastProcessedDate: format(addDays(nextDate, -1), 'yyyy-MM-dd'),
+                        nextOccurrence: finalNextOccurrence,
+                        isActive: true,
+                    });
+                } else if (iterationCount === 0) {
+                    // Not yet due - skip
+                    skipped++;
+                } else if (iterationCount >= MAX_ITERATIONS_PER_RECURRING) {
+                    // Safety limit reached - log error
+                    errors.push({ 
+                        id: recurring.id, 
+                        title: recurring.title, 
+                        error: `Safety limit reached (${MAX_ITERATIONS_PER_RECURRING} iterations)` 
+                    });
                 }
-
-                // Create the transaction
-                const transactionData = {
-                    title: recurring.title,
-                    amount: recurring.amount,
-                    originalAmount: recurring.originalAmount || recurring.amount,
-                    originalCurrency: recurring.originalCurrency || 'USD',
-                    type: recurring.type,
-                    date: recurring.nextOccurrence,
-                    notes: recurring.notes ? `${recurring.notes} (Auto-generated)` : 'Auto-generated from recurring transaction',
-                };
-
-                if (recurring.type === 'expense') {
-                    transactionData.category_id = recurring.category_id || null;
-                    transactionData.financial_priority = recurring.financial_priority || null;
-                    transactionData.customBudgetId = customBudgetId;
-                    transactionData.isPaid = recurring.autoMarkPaid || false;
-                    transactionData.paidDate = recurring.autoMarkPaid ? recurring.nextOccurrence : null;
-                    transactionData.isCashTransaction = false;
-                }
-
-                await base44.asServiceRole.entities.Transaction.create(transactionData);
-
-                // Calculate next occurrence
-                const newNextOccurrence = calculateNextOccurrence(recurring, nextDate);
-
-                // Update recurring transaction
-                await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
-                    lastProcessedDate: recurring.nextOccurrence,
-                    nextOccurrence: newNextOccurrence,
-                    // If no more occurrences, deactivate
-                    isActive: newNextOccurrence !== null,
-                });
-
-                processed++;
             } catch (err) {
                 errors.push({ id: recurring.id, title: recurring.title, error: err.message });
             }
