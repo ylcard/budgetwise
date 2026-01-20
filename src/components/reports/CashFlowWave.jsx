@@ -228,7 +228,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
 
                         {/* Income area (river) - behind everything */}
                         <Area
-                            type="monotone"
+                            type="basis"
                             dataKey="income"
                             stroke="#10b981"
                             strokeWidth={3}
