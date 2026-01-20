@@ -10,6 +10,7 @@ import {
     Legend,
     ResponsiveContainer,
     ReferenceLine,
+    Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "../utils/currencyUtils";
@@ -39,7 +40,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
         const avgIncome = historical.reduce((sum, d) => sum + (d.income || 0), 0) / (historical.length || 1);
         const avgExpense = historical.reduce((sum, d) => sum + (d.expense || 0), 0) / (historical.length || 1);
         const totalNetFlow = historical.reduce((sum, d) => sum + (d.netFlow || 0), 0);
-        
+
         return {
             avgIncome,
             avgExpense,
@@ -175,14 +176,14 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                         <defs>
                             {/* Gradient for income area */}
                             <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                             </linearGradient>
-                            
+
                             {/* Gradient for expense area */}
                             <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05} />
+                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                             </linearGradient>
 
                             {/* Pattern for projected areas */}
@@ -206,21 +207,22 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                         </defs>
 
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        
+
                         <XAxis
                             dataKey="month"
                             tick={{ fill: '#6b7280', fontSize: 12 }}
                             tickLine={{ stroke: '#e5e7eb' }}
                         />
-                        
+
                         <YAxis
                             tick={{ fill: '#6b7280', fontSize: 12 }}
                             tickLine={{ stroke: '#e5e7eb' }}
+                            tickCount={5}
                             tickFormatter={(value) => formatCurrency(value, settings)}
                         />
-                        
+
                         <Tooltip content={<CustomTooltip />} />
-                        
+
                         {/* Zero reference line */}
                         <ReferenceLine y={0} stroke="#9ca3af" strokeWidth={2} strokeDasharray="3 3" />
 
@@ -229,9 +231,10 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             type="monotone"
                             dataKey="income"
                             stroke="#10b981"
-                            strokeWidth={2}
+                            strokeWidth={3}
                             fill="url(#incomeGradient)"
                             fillOpacity={1}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
                             isAnimationActive={true}
                             animationDuration={1000}
                         />
@@ -241,9 +244,10 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             type="monotone"
                             dataKey="expense"
                             stroke="#ef4444"
-                            strokeWidth={2}
+                            strokeWidth={3}
                             fill="url(#expenseGradient)"
                             fillOpacity={1}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
                             isAnimationActive={true}
                             animationDuration={1000}
                         />
@@ -252,15 +256,16 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                         <Bar
                             dataKey="netFlow"
                             radius={[4, 4, 0, 0]}
+                            maxBarSize={50}
                             isAnimationActive={true}
                             animationDuration={800}
                         >
                             {data.map((entry, index) => (
-                                <Bar
+                                <Cell
                                     key={`bar-${index}`}
-                                    fill={entry.netFlow >= 0 ? '#2563eb' : '#dc2626'}
-                                    opacity={entry.isProjection ? 0.6 : 1}
-                                    stroke={entry.isProjection ? '#94a3b8' : 'none'}
+                                    fill={entry.netFlow >= 0 ? '#3b82f6' : '#ef4444'}
+                                    fillOpacity={entry.isProjection ? 0.3 : 1}
+                                    stroke={entry.isProjection ? (entry.netFlow >= 0 ? '#3b82f6' : '#ef4444') : 'none'}
                                     strokeWidth={entry.isProjection ? 2 : 0}
                                     strokeDasharray={entry.isProjection ? '4 4' : '0'}
                                 />
