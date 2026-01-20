@@ -224,7 +224,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                         <Tooltip content={<CustomTooltip />} />
 
                         {/* Zero reference line */}
-                        <ReferenceLine y={0} stroke="#9ca3af" strokeWidth={2} strokeDasharray="3 3" />
+                        <ReferenceLine y={0} stroke="#6b7280" strokeWidth={1} strokeDasharray="3 3" />
 
                         {/* Income area (river) - behind everything */}
                         <Area
