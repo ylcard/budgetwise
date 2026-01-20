@@ -177,7 +177,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             {/* Gradient for income area */}
                             <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                <stop offset="50%" stopColor="#10b981" stopOpacity={0} />
                             </linearGradient>
 
                             {/* Gradient for expense area */}
