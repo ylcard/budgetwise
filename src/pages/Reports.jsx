@@ -12,7 +12,8 @@ import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/us
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import PriorityChart from "../components/reports/PriorityChart";
 import MonthNavigator from "../components/ui/MonthNavigator";
-import ProjectionChart from "../components/reports/ProjectionChart";
+// UPDATED: 20-Jan-2026 - Replaced ProjectionChart with CashFlowWave
+import CashFlowWave from "../components/reports/CashFlowWave";
 import ReportStats, { FinancialHealthScore } from "../components/reports/ReportStats";
 import { calculateProjection } from "../components/utils/projectionUtils";
 import { calculateBonusSavingsPotential } from "../components/utils/financialCalculations";
@@ -224,10 +225,10 @@ export default function Reports() {
                 </div>
 
                 {/* 2. Historical Context & Future Projection */}
+                {/* UPDATED: 20-Jan-2026 - Using CashFlowWave instead of ProjectionChart */}
                 <div className="w-full">
-                    <ProjectionChart
+                    <CashFlowWave
                         settings={settings}
-                        projectionData={projectionData}
                     />
                 </div>
 
