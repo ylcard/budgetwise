@@ -1,12 +1,4 @@
-import { useMemo } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { formatCurrency } from "../utils/currencyUtils";
-import { estimateCurrentMonth } from "../utils/projectionUtils";
-import { getMonthBoundaries } from "../utils/dateUtils";
-import { getMonthlyIncome, getMonthlyPaidExpenses, isTransactionInDateRange } from "../utils/financialCalculations";
-import { useTransactions } from "../hooks/useBase44Entities";
-import { TrendingUp, TrendingDown, Loader2 } from "lucide-react";
-import InfoTooltip from "@/components/ui/InfoTooltip";
+import { memo, useMemo } from "react";
 import {
     ComposedChart,
     Area,
@@ -15,308 +7,272 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
+    Legend,
     ResponsiveContainer,
     ReferenceLine,
-    Legend
 } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "../utils/currencyUtils";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
-export default function CashFlowWave({ settings }) {
-    const today = useMemo(() => new Date(), []);
+/**
+ * CashFlowWave Component
+ * 
+ * CREATED: 20-Jan-2026
+ * 
+ * A fluid, interactive visualization of cash flow over time.
+ * 
+ * Features:
+ * - Net Flow Bars: Green for savings, Red for deficits (most prominent metric)
+ * - Income & Expense Areas: Smooth "rivers" showing the gap between in/out
+ * - Projection Separation: Visual distinction between historical (solid) vs projected (dashed) data
+ * 
+ * Props:
+ * - data: Array of monthly data points with { month, income, expense, netFlow, isProjection }
+ * - settings: User settings for currency formatting
+ */
 
-    // 1. Independent Window: 6 Months Back -> END of Current Month
-    const horizonWindow = useMemo(() => {
-        const start = new Date(today.getFullYear(), today.getMonth() - 6, 1);
-        const endOfCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
+    // Calculate summary stats
+    const stats = useMemo(() => {
+        const historical = data.filter(d => !d.isProjection);
+        const avgIncome = historical.reduce((sum, d) => sum + (d.income || 0), 0) / (historical.length || 1);
+        const avgExpense = historical.reduce((sum, d) => sum + (d.expense || 0), 0) / (historical.length || 1);
+        const totalNetFlow = historical.reduce((sum, d) => sum + (d.netFlow || 0), 0);
+        
         return {
-            from: start.toISOString().split('T')[0],
-            to: endOfCurrentMonth.toISOString().split('T')[0]
+            avgIncome,
+            avgExpense,
+            totalNetFlow,
+            isPositive: totalNetFlow >= 0,
         };
-    }, [today]);
+    }, [data]);
 
-    // 2. Fetch data
-    const { transactions, isLoading } = useTransactions(horizonWindow.from, horizonWindow.to);
+    // Custom tooltip
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (!active || !payload || payload.length === 0) return null;
 
-    const { data, sixMonthAvg, currentNet, isPositive } = useMemo(() => {
-        if (isLoading || !transactions || transactions.length === 0) {
-            return { data: [], sixMonthAvg: 0, currentNet: 0, isPositive: true };
-        }
-
-        // --- 0. CALCULATE 6-MONTH EXPENSE BASELINE ---
-        let totalPastExpenses = 0;
-        let validMonths = 0;
-        for (let i = 1; i <= 6; i++) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            const bounds = getMonthBoundaries(d.getMonth(), d.getFullYear());
-            const spent = Math.abs(getMonthlyPaidExpenses(transactions, bounds.monthStart, bounds.monthEnd));
-            if (spent > 0) {
-                totalPastExpenses += spent;
-                validMonths++;
-            }
-        }
-        const safeBaseline = validMonths > 0 ? totalPastExpenses / validMonths : 0;
-
-        // --- 1. LAST MONTH (Actuals) ---
-        const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastBoundaries = getMonthBoundaries(lastMonthDate.getMonth(), lastMonthDate.getFullYear());
-        const lastIncome = transactions
-            .filter(t => t.type === 'income' && isTransactionInDateRange(t, lastBoundaries.monthStart, lastBoundaries.monthEnd))
-            .reduce((sum, t) => sum + t.amount, 0);
-        const lastExpenses = Math.abs(getMonthlyPaidExpenses(transactions, lastBoundaries.monthStart, lastBoundaries.monthEnd));
-        const lastNet = lastIncome - lastExpenses;
-
-        // --- 2. THIS MONTH (Full Month Projection) ---
-        const currentBoundaries = getMonthBoundaries(today.getMonth(), today.getFullYear());
-        const currentMonthTransactions = transactions.filter(t =>
-            isTransactionInDateRange(t, currentBoundaries.monthStart, currentBoundaries.monthEnd)
-        );
-
-        const currentIncome = currentMonthTransactions
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + t.amount, 0);
-
-        const currentExpenseProj = estimateCurrentMonth(currentMonthTransactions, safeBaseline).total;
-        const currentNetCalc = currentIncome - currentExpenseProj;
-
-        // --- 3. NEXT MONTH (Target) ---
-        const nextIncome = lastIncome;
-        const nextExpense = safeBaseline;
-        const nextNet = nextIncome - nextExpense;
-
-        const chartData = [
-            {
-                month: lastMonthDate.toLocaleDateString('en-US', { month: 'short' }),
-                income: lastIncome,
-                expense: lastExpenses,
-                netFlow: lastNet,
-                type: 'history'
-            },
-            {
-                month: 'This Month',
-                income: currentIncome,
-                expense: currentExpenseProj,
-                netFlow: currentNetCalc,
-                type: 'current'
-            },
-            {
-                month: 'Next',
-                income: nextIncome,
-                expense: nextExpense,
-                netFlow: nextNet,
-                type: 'projection'
-            }
-        ];
-
-        return {
-            data: chartData,
-            sixMonthAvg: safeBaseline,
-            currentNet: currentNetCalc,
-            isPositive: currentNetCalc >= 0
-        };
-    }, [transactions, isLoading, today]);
-
-    if (isLoading || data.length < 3) {
-        return (
-            <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px]">
-                <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
-            </Card>
-        );
-    }
-
-    // Custom Tooltip
-    const CustomTooltip = ({ active, payload }) => {
-        if (!active || !payload || !payload.length) return null;
-
-        const data = payload[0].payload;
-        const isProjection = data.type === 'projection';
+        const dataPoint = payload[0].payload;
+        const isProjection = dataPoint.isProjection;
 
         return (
-            <div className="bg-gray-900 text-white text-xs p-3 rounded-lg shadow-xl">
-                <p className="font-bold mb-2 border-b border-gray-700 pb-2">{data.month}</p>
-                <div className="space-y-1.5">
-                    <div className="flex justify-between gap-6">
-                        <span className="text-emerald-300">Income:</span>
-                        <span className="font-semibold">{formatCurrency(data.income, settings)}</span>
-                    </div>
-                    <div className="flex justify-between gap-6">
-                        <span className="text-rose-300">Expense:</span>
-                        <span className="font-semibold">{formatCurrency(data.expense, settings)}</span>
-                    </div>
-                    <div className="flex justify-between gap-6 pt-1 border-t border-gray-700">
-                        <span className={data.netFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'}>Net Flow:</span>
-                        <span className="font-bold">{formatCurrency(data.netFlow, settings)}</span>
-                    </div>
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
+                <p className="font-semibold text-gray-900 mb-2">
+                    {label}
                     {isProjection && (
-                        <p className="text-[10px] text-gray-400 italic pt-1">
-                            *Based on 6-month baseline
-                        </p>
+                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                            Projected
+                        </span>
                     )}
+                </p>
+                <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between gap-4">
+                        <span className="text-green-600 font-medium">Income:</span>
+                        <span className="font-semibold">{formatCurrency(dataPoint.income || 0, settings)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                        <span className="text-red-600 font-medium">Expenses:</span>
+                        <span className="font-semibold">{formatCurrency(dataPoint.expense || 0, settings)}</span>
+                    </div>
+                    <div className="border-t border-gray-200 pt-1 mt-1">
+                        <div className="flex items-center justify-between gap-4">
+                            <span className={`font-bold ${dataPoint.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                Net Flow:
+                            </span>
+                            <span className={`font-bold ${dataPoint.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(dataPoint.netFlow || 0, settings)}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     };
 
-    // Custom Bar Shape for dashed projection bars
-    const CustomBar = (props) => {
-        const { fill, x, y, width, height, payload } = props;
-        
-        if (payload.type === 'projection') {
-            // Dashed pattern for projection
-            return (
-                <g>
-                    <defs>
-                        <pattern
-                            id={`dash-${payload.month}`}
-                            patternUnits="userSpaceOnUse"
-                            width="4"
-                            height="4"
-                            patternTransform="rotate(45)"
-                        >
-                            <rect width="2" height="4" fill={fill} />
-                        </pattern>
-                    </defs>
-                    <rect
-                        x={x}
-                        y={y}
-                        width={width}
-                        height={height}
-                        fill={`url(#dash-${payload.month})`}
-                        stroke={fill}
-                        strokeWidth={1.5}
-                        strokeDasharray="4 2"
-                        opacity={0.7}
-                    />
-                </g>
-            );
-        }
+    // Custom legend
+    const CustomLegend = () => (
+        <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-3 bg-green-500/20 border-2 border-green-500 rounded" />
+                <span className="text-gray-700">Income</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-3 bg-red-500/20 border-2 border-red-500 rounded" />
+                <span className="text-gray-700">Expenses</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-3 bg-blue-600 rounded" />
+                <span className="text-gray-700">Net Flow (Positive)</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-3 bg-red-600 rounded" />
+                <span className="text-gray-700">Net Flow (Negative)</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-1 border-t-2 border-dashed border-gray-400" />
+                <span className="text-gray-700">Projected</span>
+            </div>
+        </div>
+    );
 
-        // Solid bar for history
-        return <rect x={x} y={y} width={width} height={height} fill={fill} />;
-    };
+    if (!data || data.length === 0) {
+        return (
+            <Card className="border-none shadow-lg">
+                <CardHeader>
+                    <CardTitle>Cash Flow Wave</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center py-12 text-gray-500">
+                        No data available for visualization
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
-        <Card className="border-none shadow-sm h-full flex flex-col">
-            <CardHeader className="pb-2 flex-none">
+        <Card className="border-none shadow-lg">
+            <CardHeader>
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-gray-800">
-                        Cash Flow Wave
-                        <InfoTooltip
-                            title="Cash Flow Wave"
-                            description="Visualizes your income and expenses as flowing rivers, with net cash flow shown as bars. Green bars indicate savings, red bars show deficits. Dashed areas represent projections based on your 6-month spending baseline."
-                            wikiUrl="https://en.wikipedia.org/wiki/Cash_flow"
-                        />
-                    </CardTitle>
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                        {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        {isPositive ? 'Savings Projected' : 'Overspend Risk'}
+                    <CardTitle>Cash Flow Wave</CardTitle>
+                    <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-green-600" />
+                            <div>
+                                <p className="text-xs text-gray-500">Avg Income</p>
+                                <p className="font-semibold text-green-600">
+                                    {formatCurrency(stats.avgIncome, settings)}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <TrendingDown className="w-4 h-4 text-red-600" />
+                            <div>
+                                <p className="text-xs text-gray-500">Avg Expenses</p>
+                                <p className="font-semibold text-red-600">
+                                    {formatCurrency(stats.avgExpense, settings)}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${stats.isPositive ? 'bg-green-600' : 'bg-red-600'}`} />
+                            <div>
+                                <p className="text-xs text-gray-500">Total Net</p>
+                                <p className={`font-semibold ${stats.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                    {formatCurrency(stats.totalNetFlow, settings)}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <p className="text-sm text-gray-500">
-                    {isPositive
-                        ? `On track to save ${formatCurrency(currentNet, settings)} this month.`
-                        : `Projected to overspend by ${formatCurrency(Math.abs(currentNet), settings)}.`}
-                </p>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
+            <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
                     <ComposedChart
                         data={data}
-                        margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                     >
                         <defs>
-                            {/* Gradient for Income Area */}
+                            {/* Gradient for income area */}
                             <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
                                 <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
                             </linearGradient>
-                            {/* Gradient for Expense Area */}
+                            
+                            {/* Gradient for expense area */}
                             <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
                                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05} />
                             </linearGradient>
+
+                            {/* Pattern for projected areas */}
+                            <pattern
+                                id="projectionPattern"
+                                patternUnits="userSpaceOnUse"
+                                width="8"
+                                height="8"
+                                patternTransform="rotate(45)"
+                            >
+                                <line
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="8"
+                                    stroke="#94a3b8"
+                                    strokeWidth="1"
+                                    strokeDasharray="2,2"
+                                />
+                            </pattern>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        
                         <XAxis
                             dataKey="month"
-                            stroke="#9ca3af"
-                            fontSize={12}
-                            fontWeight={500}
+                            tick={{ fill: '#6b7280', fontSize: 12 }}
+                            tickLine={{ stroke: '#e5e7eb' }}
                         />
+                        
                         <YAxis
-                            stroke="#9ca3af"
-                            fontSize={11}
-                            tickFormatter={(value) => `${settings.currencySymbol}${(value / 1000).toFixed(0)}k`}
+                            tick={{ fill: '#6b7280', fontSize: 12 }}
+                            tickLine={{ stroke: '#e5e7eb' }}
+                            tickFormatter={(value) => formatCurrency(value, settings)}
                         />
+                        
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend
-                            verticalAlign="top"
-                            height={36}
-                            iconType="line"
-                            wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
-                        />
+                        
+                        {/* Zero reference line */}
+                        <ReferenceLine y={0} stroke="#9ca3af" strokeWidth={2} strokeDasharray="3 3" />
 
-                        {/* Reference Line for 6-Month Average */}
-                        <ReferenceLine
-                            y={sixMonthAvg}
-                            stroke="#9ca3af"
-                            strokeDasharray="5 5"
-                            strokeWidth={1.5}
-                            label={{
-                                value: '6M Avg',
-                                position: 'right',
-                                fill: '#6b7280',
-                                fontSize: 10
-                            }}
-                        />
-
-                        {/* Income River (Area behind bars) */}
+                        {/* Income area (river) - behind everything */}
                         <Area
                             type="monotone"
                             dataKey="income"
                             stroke="#10b981"
                             strokeWidth={2}
                             fill="url(#incomeGradient)"
-                            name="Income"
-                            strokeDasharray={(entry) => entry.type === 'projection' ? '5 5' : '0'}
+                            fillOpacity={1}
+                            isAnimationActive={true}
+                            animationDuration={1000}
                         />
 
-                        {/* Expense River (Area behind bars) */}
+                        {/* Expense area (river) */}
                         <Area
                             type="monotone"
                             dataKey="expense"
                             stroke="#ef4444"
                             strokeWidth={2}
                             fill="url(#expenseGradient)"
-                            name="Expense"
-                            strokeDasharray={(entry) => entry.type === 'projection' ? '5 5' : '0'}
+                            fillOpacity={1}
+                            isAnimationActive={true}
+                            animationDuration={1000}
                         />
 
-                        {/* Net Flow Bars (Main focus) */}
+                        {/* Net flow bars (most prominent) */}
                         <Bar
                             dataKey="netFlow"
-                            fill="#8884d8"
-                            name="Net Flow"
                             radius={[4, 4, 0, 0]}
-                            shape={<CustomBar />}
+                            isAnimationActive={true}
+                            animationDuration={800}
                         >
                             {data.map((entry, index) => (
                                 <Bar
                                     key={`bar-${index}`}
-                                    fill={entry.netFlow >= 0 ? '#10b981' : '#ef4444'}
+                                    fill={entry.netFlow >= 0 ? '#2563eb' : '#dc2626'}
+                                    opacity={entry.isProjection ? 0.6 : 1}
+                                    stroke={entry.isProjection ? '#94a3b8' : 'none'}
+                                    strokeWidth={entry.isProjection ? 2 : 0}
+                                    strokeDasharray={entry.isProjection ? '4 4' : '0'}
                                 />
                             ))}
                         </Bar>
                     </ComposedChart>
                 </ResponsiveContainer>
+
+                <CustomLegend />
             </CardContent>
         </Card>
     );
-}
+});
 
-// CREATED: 20-Jan-2026
-// Replaces ProjectionChart with a fluid, interactive visualization using recharts
-// Features:
-// - Net Flow Bars: Green (savings) vs Red (deficit)
-// - Income/Expense Rivers: Smooth area charts showing the gap
-// - Visual Separation: Solid lines/bars for history, dashed for projections
-// - Interactive tooltips with detailed breakdown
-// - 6-month average reference line
+export default CashFlowWave;
