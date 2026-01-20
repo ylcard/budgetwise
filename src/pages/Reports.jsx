@@ -14,12 +14,12 @@ import PriorityChart from "../components/reports/PriorityChart";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import ProjectionChart from "../components/reports/ProjectionChart";
 import ReportStats, { FinancialHealthScore } from "../components/reports/ReportStats";
-import { calculateProjection } from "../components/utils/projectionUtils";
-import { calculateBonusSavingsPotential } from "../components/utils/financialCalculations";
-import GoalSettings from "../components/reports/GoalSettings"; // ADDED: 17-Jan-2026
-import { useGoalActions } from "../components/hooks/useActions"; // ADDED: 17-Jan-2026
-import { useState, useEffect, useRef } from "react"; // UPDATED: 17-Jan-2026
-import { parseDate } from "../components/utils/dateUtils";
+import { calculateProjection, estimateCurrentMonth } from "../components/utils/projectionUtils";
+import { calculateBonusSavingsPotential, getMonthlyIncome, getMonthlyPaidExpenses } from "../components/utils/financialCalculations";
+import GoalSettings from "../components/reports/GoalSettings";
+import { useGoalActions } from "../components/hooks/useActions";
+import { useState, useEffect, useRef } from "react";
+import { parseDate, getMonthBoundaries } from "../components/utils/dateUtils";
 
 export default function Reports() {
     const { user, settings, updateSettings } = useSettings();
@@ -148,6 +148,44 @@ export default function Reports() {
     // Calculate the "Safe Baseline" using your existing logic
     const projectionData = useMemo(() => calculateProjection(transactions, categories, 6), [transactions, categories]);
 
+    // ADDED: Prepare data for the CashFlowWave chart
+    const cashFlowData = useMemo(() => {
+        if (loadingTransactions || !transactions) return [];
+
+        const dataPoints = [];
+        const realToday = new Date();
+
+        // Loop 6 months back from the SELECTED month (not necessarily today)
+        for (let i = 5; i >= 0; i--) {
+            // Calculate target month based on user selection
+            const d = new Date(selectedYear, selectedMonth - i, 1);
+
+            // Check if this specific data point is the "Real Current Month"
+            const isRealCurrentMonth = d.getMonth() === realToday.getMonth() && d.getFullYear() === realToday.getFullYear();
+
+            const { monthStart: mStart, monthEnd: mEnd } = getMonthBoundaries(d.getMonth(), d.getFullYear());
+
+            const income = getMonthlyIncome(transactions, mStart, mEnd);
+            let expense = Math.abs(getMonthlyPaidExpenses(transactions, mStart, mEnd));
+
+            // If it is the real current month, use the projection estimate for better accuracy
+            if (isRealCurrentMonth) {
+                // Filter transactions just for this month to estimate
+                const currentTrans = transactions.filter(t => new Date(t.date || t.created_date) >= new Date(mStart) && new Date(t.date || t.created_date) <= new Date(mEnd));
+                expense = estimateCurrentMonth(currentTrans, projectionData.sixMonthAvg || 0).total;
+            }
+
+            dataPoints.push({
+                month: d.toLocaleDateString('en-US', { month: 'short' }),
+                income,
+                expense,
+                netFlow: income - expense,
+                isProjection: isRealCurrentMonth
+            });
+        }
+        return dataPoints;
+    }, [transactions, loadingTransactions, selectedMonth, selectedYear, projectionData]);
+
     return (
         <div className="min-h-screen px-4 md:px-8 pb-4 md:pb-8 pt-2 md:pt-4">
             <div className="max-w-7xl mx-auto space-y-8">
@@ -224,7 +262,12 @@ export default function Reports() {
                 </div>
 
                 {/* 2. Historical Context & Future Projection */}
-                <div className="w-full">
+                <div className="w-full space-y-8">
+                    {/* New Wave Chart added ABOVE the Projection Chart */}
+                    <CashFlowWave
+                        data={cashFlowData}
+                        settings={settings}
+                    />
                     <ProjectionChart
                         settings={settings}
                         projectionData={projectionData}
