@@ -13,6 +13,7 @@ import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import PriorityChart from "../components/reports/PriorityChart";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import ProjectionChart from "../components/reports/ProjectionChart";
+import CashFlowWave from "../components/reports/CashFlowWave"; // ADDED
 import ReportStats, { FinancialHealthScore } from "../components/reports/ReportStats";
 import { calculateProjection, estimateCurrentMonth } from "../components/utils/projectionUtils";
 import { calculateBonusSavingsPotential, getMonthlyIncome, getMonthlyPaidExpenses } from "../components/utils/financialCalculations";
