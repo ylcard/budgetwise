@@ -204,6 +204,17 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                                     strokeDasharray="2,2"
                                 />
                             </pattern>
+
+                            {/* MASK: Fades the left and right edges so the "wall" disappears */}
+                            <linearGradient id="fadeGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="white" stopOpacity={0} />
+                                <stop offset="5%" stopColor="white" stopOpacity={1} />
+                                <stop offset="95%" stopColor="white" stopOpacity={1} />
+                                <stop offset="100%" stopColor="white" stopOpacity={0} />
+                            </linearGradient>
+                            <mask id="fadeMask">
+                                <rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" />
+                            </mask>
                         </defs>
 
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -235,6 +246,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             strokeWidth={3}
                             fill="url(#incomeGradient)"
                             fillOpacity={1}
+                            mask="url(#fadeMask)"
                             activeDot={{ r: 6, strokeWidth: 0 }}
                             isAnimationActive={true}
                             animationDuration={1000}
@@ -248,6 +260,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                             strokeWidth={3}
                             fill="url(#expenseGradient)"
                             fillOpacity={1}
+                            mask="url(#fadeMask)"
                             activeDot={{ r: 6, strokeWidth: 0 }}
                             isAnimationActive={true}
                             animationDuration={1000}
