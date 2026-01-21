@@ -801,6 +801,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                         <AnimatePresence mode="popLayout">
                                             {!isSimpleView && bonusSavingsPotential > 0 && (
                                                 <motion.div
+                                                    layout
                                                     key="efficiency-badge"
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
