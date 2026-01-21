@@ -9,7 +9,7 @@ import { createEntityMap } from "../utils/generalUtils";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { useSettings } from "../utils/SettingsContext";
-import { getCurrentPeriodBoundaries } from "../utils/dateUtils";
+import { getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
 import { detectCrossPeriodSettlement } from "../utils/calculationEngine";
 import { useState } from "react";
 import QuickAddTransaction from "../transactions/QuickAddTransaction";
@@ -17,7 +17,14 @@ import QuickAddIncome from "../transactions/QuickAddIncome";
 
 export default function RecentTransactions({ transactions, categories, customBudgets, onEdit, onDelete }) {
     const { settings } = useSettings();
-    const { currentYear, monthStart, monthEnd } = getCurrentPeriodBoundaries();
+    
+    // Anchor to real-time (now)
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    // Generate YYYY-MM-DD strings to ensure compatibility with calculation engine
+    const monthStart = getFirstDayOfMonth(now.getMonth(), currentYear);
+    const monthEnd = getLastDayOfMonth(now.getMonth(), currentYear);
+
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [showEditDialog, setShowEditDialog] = useState(false);
 
