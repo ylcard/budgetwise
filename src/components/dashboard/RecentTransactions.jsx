@@ -9,21 +9,25 @@ import { createEntityMap } from "../utils/generalUtils";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { useSettings } from "../utils/SettingsContext";
-import { getFirstDayOfMonth, getLastDayOfMonth } from "../utils/dateUtils";
+import { getCurrentPeriodBoundaries } from "../utils/dateUtils";
+import { useTransactions } from "../hooks/useBase44Entities";
+import { usePaidTransactions } from "../hooks/useDerivedData";
 import { detectCrossPeriodSettlement } from "../utils/calculationEngine";
 import { useState } from "react";
 import QuickAddTransaction from "../transactions/QuickAddTransaction";
 import QuickAddIncome from "../transactions/QuickAddIncome";
 
-export default function RecentTransactions({ transactions, categories, customBudgets, onEdit, onDelete }) {
+export default function RecentTransactions({ categories, customBudgets, onEdit, onDelete }) {
     const { settings } = useSettings();
     
-    // Anchor to real-time (now)
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    // Generate YYYY-MM-DD strings to ensure compatibility with calculation engine
-    const monthStart = getFirstDayOfMonth(now.getMonth(), currentYear);
-    const monthEnd = getLastDayOfMonth(now.getMonth(), currentYear);
+    // 1. Determine "Now" (Real-time boundaries)
+    const { currentYear, monthStart, monthEnd } = getCurrentPeriodBoundaries();
+
+    // 2. Fetch transactions specifically for the real-time current month
+    const { transactions: rawTransactions } = useTransactions(monthStart, monthEnd);
+
+    // 3. Process them (filter for paid, sort by date, limit to 10)
+    const transactions = usePaidTransactions(rawTransactions, 10);
 
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [showEditDialog, setShowEditDialog] = useState(false);
