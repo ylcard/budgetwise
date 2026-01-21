@@ -802,10 +802,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             {!isSimpleView && bonusSavingsPotential > 0 && (
                                                 <motion.div
                                                     layout
+                                                    style={{ originX: 1 }}
                                                     key="efficiency-badge"
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 10, x: 0, scale: 0.9 }}
+                                                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
                                                     transition={{ duration: 0.3, ease: "easeInOut" }}
                                                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100"
                                                 >
