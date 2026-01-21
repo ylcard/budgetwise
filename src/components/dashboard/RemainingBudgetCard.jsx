@@ -790,28 +790,28 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 </div>
 
                                 {!isTotalOver && (
-                                    <div className="hidden sm:flex flex-col items-end gap-2 relative">
+                                    <div className="hidden sm:flex flex-col items-end relative">
                                         <motion.div
                                             layout
-                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100 z-10"
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100 z-20 relative"
                                         >
                                             <Wallet className="w-3 h-3 text-gray-500" />
                                             <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
                                         </motion.div>
-                                        <AnimatePresence mode="popLayout">
+                                        <AnimatePresence>
                                             {!isSimpleView && bonusSavingsPotential > 0 && (
                                                 <motion.div
-                                                    layout
-                                                    style={{ originX: 1 }}
                                                     key="efficiency-badge"
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                                    initial={{ opacity: 0, height: 0, marginTop: 0, y: 10 }}
+                                                    animate={{ opacity: 1, height: "auto", marginTop: 8, y: 0 }}
+                                                    exit={{ opacity: 0, height: 0, marginTop: 0, y: 10 }}
                                                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100"
+                                                    className="overflow-hidden flex justify-end"
                                                 >
-                                                    <TrendingUp className="w-3 h-3 text-emerald-600" />
-                                                    <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
+                                                        <TrendingUp className="w-3 h-3 text-emerald-600" />
+                                                        <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
+                                                    </div>
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
