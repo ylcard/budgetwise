@@ -307,6 +307,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const wantsLimit = resolveLimit('wants');
     const savingsLimit = resolveLimit('savings');
 
+    // Refs for smart measurement
+    const containerRef = useRef(null);
+    const textRefs = useRef({});
+
     // Use breakdown for granular segments
     const needsData = breakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
     const wantsData = breakdown?.wants || { total: 0 };
@@ -533,21 +537,37 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // The "Steal from the Richest" Algorithm
         const calculateDynamicLayout = () => {
             if (!hoveredSubSegment) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
+            if (!containerRef.current) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
 
             const [targetCat] = hoveredSubSegment.split('-');
-            const TARGET_MIN_WIDTH = 40; // Target 40% width for the active category
-
             let current = { needs: needsOuterPct, wants: wantsOuterPct, savings: savingsOuterPct };
 
-            // If target already big enough, don't move walls
-            if (current[targetCat] >= TARGET_MIN_WIDTH) return { n: current.needs, w: current.wants, s: current.savings };
+            // 1. MEASURE: How much space (in %) does the text actually need?
+            const textEl = textRefs.current[hoveredSubSegment];
+            if (!textEl) return { n: current.needs, w: current.wants, s: current.savings };
+
+            const totalWidthPx = containerRef.current.offsetWidth;
+            const textWidthPx = textEl.scrollWidth; // Actual width of text content
+            const currentSegmentWidthPx = (current[targetCat] / 100) * totalWidthPx;
+
+            // PADDING: Add 24px buffer for comfortable reading
+            const requiredWidthPx = textWidthPx + 24;
+            const requiredPct = (requiredWidthPx / totalWidthPx) * 100;
+
+            // 2. CHECK: If it already fits, DO NOTHING.
+            // We allow a small tolerance (1px) for rounding errors
+            if (currentSegmentWidthPx >= requiredWidthPx - 1) {
+                return { n: current.needs, w: current.wants, s: current.savings };
+            }
+
+            // 3. TARGET: Expand only to what is needed, capped at 60% to prevent breaking the layout
+            const targetWidth = Math.min(requiredPct, 60);
 
             // Identify the Target, the Donor (widest other), and the Bystander
             const others = Object.keys(current).filter(k => k !== targetCat);
             const donorKey = current[others[0]] > current[others[1]] ? others[0] : others[1];
-            const bystanderKey = others.find(k => k !== donorKey);
 
-            const needed = TARGET_MIN_WIDTH - current[targetCat];
+            const needed = targetWidth - current[targetCat];
             const availableFromDonor = Math.max(0, current[donorKey] - 15); // Leave donor at least 15%
 
             const transferAmount = Math.min(needed, availableFromDonor);
@@ -578,7 +598,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // We only do this if we are in Detailed view
         if (hoveredSubSegment && !isSimpleView) {
             const [cat, type] = hoveredSubSegment.split('-');
-            const FOCUS_RATIO = 0.85; // Hovered part takes 85% of the bar
+            // Less aggressive focus ratio, allows the other part to stay visible
+            const FOCUS_RATIO = 0.75;
 
             if (cat === 'needs') {
                 if (type === 'unpaid' && nR.u > 0) {
@@ -636,7 +657,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const savingsLabel = `${Math.round(savingsPct)}%`;
 
         return (
-            <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
+            <div ref={containerRef} className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
 
                 {/* NEEDS SEGMENT */}
                 <motion.div
@@ -663,17 +684,17 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     {/* Primary Label (Left) */}
                                     {nR.p > 0.1 && (
                                         <div className="text-[11px] sm:text-xs font-bold text-white overflow-hidden whitespace-nowrap">
-                                            <TextSwap>
+                                            <TextSwap><span ref={el => textRefs.current['needs-paid'] = el}>
                                                 {formatCurrency(needsSegs.safePaid, settings)} ({needsPaidUtil}%)
-                                            </TextSwap>
+                                            </span></TextSwap>
                                         </div>
                                     )}
                                     {/* Secondary Label (Right - Only if Unpaid segment is too small < 15% and this one is big enough) */}
                                     {nR.u <= 0.15 && nR.p > 0.15 && needsSegs.safeUnpaid > 0 && (
                                         <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
-                                            <TextSwap>
+                                            <TextSwap><span ref={el => textRefs.current['needs-unpaid'] = el}> // Fallback ref
                                                 Plan: {formatCurrency(needsSegs.safeUnpaid, settings)}
-                                            </TextSwap>
+                                            </span></TextSwap>
                                         </div>
                                     )}
                                 </div>
@@ -691,9 +712,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         >
                             {!isSimpleView && nR.u > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white px-1 whitespace-nowrap">
-                                    <TextSwap>
+                                    <TextSwap><span ref={el => textRefs.current['needs-unpaid'] = el}>
                                         {formatCurrency(needsSegs.safeUnpaid, settings)} ({needsUnpaidUtil}%)
-                                    </TextSwap>
+                                    </span></TextSwap>
                                 </div>
                             )}
                         </motion.div>
@@ -751,9 +772,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 <div className="w-full px-1 flex items-center justify-between">
                                     {wR.p > 0.1 && (
                                         <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap">
-                                            <TextSwap>
+                                            <TextSwap><span ref={el => textRefs.current['wants-paid'] = el}>
                                                 {formatCurrency(wantsSegs.safePaid, settings)} ({wantsPaidUtil}%)
-                                            </TextSwap>
+                                            </span></TextSwap>
                                         </div>
                                     )}
                                     {wR.u <= 0.15 && wR.p > 0.15 && wantsSegs.safeUnpaid > 0 && (
@@ -776,9 +797,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         >
                             {!isSimpleView && wR.u > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
-                                    <TextSwap>
+                                    <TextSwap><span ref={el => textRefs.current['wants-unpaid'] = el}>
                                         {formatCurrency(wantsSegs.safeUnpaid, settings)} ({wantsUnpaidUtil}%)
-                                    </TextSwap>
+                                    </span></TextSwap>
                                 </div>
                             )}
                         </motion.div>
@@ -828,9 +849,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 <div className="w-full px-1 flex items-center justify-between">
                                     {sTargetRatio > 0.1 && (
                                         <div className="text-[11px] sm:text-xs font-bold text-white truncate px-1">
-                                            <TextSwap>
+                                            <TextSwap><span ref={el => textRefs.current['savings-target'] = el}>
                                                 {formatCurrency(sTarget, settings)} ({targetSavingsUtil}%)
-                                            </TextSwap>
+                                            </span></TextSwap>
                                         </div>
                                     )}
                                     {/* If Extra savings is tiny, show it inside Target bar if possible */}
@@ -853,9 +874,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         >
                             {!isSimpleView && sExtraRatio > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-emerald-800 truncate px-1">
-                                    <TextSwap>
+                                    <TextSwap><span ref={el => textRefs.current['savings-extra'] = el}>
                                         {formatCurrency(sExtra, settings)} ({extraSavingsUtil}%)
-                                    </TextSwap>
+                                    </span></TextSwap>
                                 </div>
                             )}
                         </motion.div>
