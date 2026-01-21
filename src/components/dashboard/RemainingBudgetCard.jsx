@@ -561,6 +561,17 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
         const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
 
+        // Utilization % (Relative to Category Limits)
+        const getUtil = (val, limit) => (limit > 0 ? Math.round((val / limit) * 100) : 0);
+
+        const needsPaidUtil = getUtil(needsSegs.safePaid, needsLimit);
+        const needsUnpaidUtil = getUtil(needsSegs.safeUnpaid, needsLimit);
+        const wantsPaidUtil = getUtil(wantsSegs.safePaid, wantsLimit); // Using Paid Total (Direct + Custom)
+        const wantsUnpaidUtil = getUtil(wantsSegs.safeUnpaid, wantsLimit);
+        const totalSavingsUtil = getUtil(totalSavings, savingsLimit);
+        const targetSavingsUtil = getUtil(sTarget, savingsLimit);
+        const extraSavingsUtil = getUtil(sExtra, savingsLimit);
+
         const savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
 
         // Labels
@@ -576,7 +587,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     initial={{ width: 0 }}
                     animate={{ width: `${needsOuterPct}%` }}
                     transition={fluidSpring}
-                    className="h-full relative border-r border-white/20"
+                    className="h-full relative"
                 >
                     <Link
                         to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
@@ -590,9 +601,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ backgroundColor: needsColor }}
                         >
                             {!isSimpleView && nR.p > 0.1 && (
-                                <div className="text-[10px] font-bold text-white overflow-hidden px-1">
+                                <div className="text-[11px] sm:text-xs font-bold text-white overflow-hidden px-1">
                                     <TextSwap>
-                                        {formatCurrency(needsSegs.safePaid, settings)}
+                                        {formatCurrency(needsSegs.safePaid, settings)} ({needsPaidUtil}%)
                                     </TextSwap>
                                 </div>
                             )}
@@ -606,8 +617,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={stripePattern}
                         >
                             {!isSimpleView && nR.u > 0.1 && (
-                                <div className="text-[10px] font-bold text-white px-1">
-                                    <TextSwap>Plan</TextSwap>
+                                <div className="text-[11px] sm:text-xs font-bold text-white px-1 whitespace-nowrap">
+                                    <TextSwap>
+                                        {formatCurrency(needsSegs.safeUnpaid, settings)} ({needsUnpaidUtil}%)
+                                    </TextSwap>
                                 </div>
                             )}
                         </motion.div>
@@ -647,7 +660,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     initial={{ width: 0 }}
                     animate={{ width: `${wantsOuterPct}%` }}
                     transition={fluidSpring}
-                    className="h-full relative border-r border-white/20"
+                    className="h-full relative"
                 >
                     <Link
                         to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
@@ -660,8 +673,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ backgroundColor: wantsColor }}
                         >
                             {!isSimpleView && wR.p > 0.1 && (
-                                <div className="text-[10px] font-bold text-white">
-                                    <TextSwap>{formatCurrency(wantsSegs.safePaid, settings)}</TextSwap>
+                                <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
+                                    <TextSwap>
+                                        {formatCurrency(wantsSegs.safePaid, settings)} ({wantsPaidUtil}%)
+                                    </TextSwap>
                                 </div>
                             )}
                         </motion.div>
@@ -670,11 +685,19 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             transition={fluidSpring}
                             className="h-full opacity-60 overflow-hidden"
                             style={{ backgroundColor: wantsColor, ...stripePattern }}
-                        />
+                        >
+                            {!isSimpleView && wR.u > 0.1 && (
+                                <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
+                                    <TextSwap>
+                                        {formatCurrency(wantsSegs.safeUnpaid, settings)} ({wantsUnpaidUtil}%)
+                                    </TextSwap>
+                                </div>
+                            )}
+                        </motion.div>
                         <motion.div
                             animate={{ width: isSimpleView ? "0%" : `${wR.o * 100}%` }}
                             transition={fluidSpring}
-                            className="h-full bg-red-500"
+                            className="h-full bg-red-500 opacity-60 overflow-hidden"
                             style={stripePattern}
                         />
 
@@ -712,8 +735,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
                         >
                             {!isSimpleView && sTargetRatio > 0.2 && (
-                                <div className="text-[10px] font-bold text-white truncate px-1">
-                                    <TextSwap>{formatCurrency(sTarget, settings)}</TextSwap>
+                                <div className="text-[11px] sm:text-xs font-bold text-white truncate px-1">
+                                    <TextSwap>
+                                        {formatCurrency(sTarget, settings)} ({targetSavingsUtil}%)
+                                    </TextSwap>
                                 </div>
                             )}
                         </motion.div>
@@ -725,8 +750,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full bg-emerald-300 border-l border-white/20 flex items-center justify-center relative overflow-hidden"
                         >
                             {!isSimpleView && sExtraRatio > 0.2 && (
-                                <div className="text-[10px] font-bold text-emerald-800 truncate px-1">
-                                    <TextSwap>{formatCurrency(sExtra, settings)}</TextSwap>
+                                <div className="text-[11px] sm:text-xs font-bold text-emerald-800 truncate px-1">
+                                    <TextSwap>
+                                        {formatCurrency(sExtra, settings)} ({extraSavingsUtil}%)
+                                    </TextSwap>
                                 </div>
                             )}
                         </motion.div>
@@ -734,7 +761,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
                             <div className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
                                 <TextSwap>
-                                    Savings {savingsLabel}
+                                    {/* Simple View: Show Total Amount + % of Target */}
+                                    <span className="font-bold">{formatCurrency(totalSavings, settings)}</span>
+                                    <span className="opacity-90 ml-1 font-normal">({totalSavingsUtil}%)</span>
                                 </TextSwap>
                             </div>
                         </div>
