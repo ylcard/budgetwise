@@ -72,6 +72,12 @@ export default function TransactionFilters({ filters, setFilters, categories, al
         isDateChanged
     ].filter(Boolean).length;
 
+    // Prepare the selected range object for DayPicker
+    const selectedRange = {
+        from: filters.startDate ? new Date(filters.startDate) : undefined,
+        to: filters.endDate ? new Date(filters.endDate) : undefined
+    };
+
     return (
         <Card className="border-none shadow-lg">
             <CardContent className="p-4 space-y-4">
@@ -87,6 +93,43 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         />
                     </div>
                     <div className="flex items-center gap-2">
+
+                        <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+                            <PopoverTrigger asChild>
+                                <CustomButton
+                                    id="date"
+                                    variant="outline"
+                                    className={cn(
+                                        "w-[260px] justify-start text-left font-normal",
+                                        !filters.startDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {filters.startDate ? (
+                                        filters.endDate ? (
+                                            <>
+                                                {format(new Date(filters.startDate), "LLL dd, y")} -{" "}
+                                                {format(new Date(filters.endDate), "LLL dd, y")}
+                                            </>
+                                        ) : (
+                                            format(new Date(filters.startDate), "LLL dd, y")
+                                        )
+                                    ) : (
+                                        <span>Pick a date</span>
+                                    )}
+                                </CustomButton>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                                <DayPicker
+                                    mode="range"
+                                    defaultMonth={selectedRange.from}
+                                    selected={selectedRange}
+                                    onSelect={handleRangeSelect}
+                                    numberOfMonths={2}
+                                />
+                            </PopoverContent>
+                        </Popover>
+
                         {activeFilterCount > 0 && (
                             <CustomButton
                                 variant="ghost"
