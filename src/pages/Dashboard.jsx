@@ -63,9 +63,6 @@ export default function Dashboard() {
     // System budget management (auto-creation/update)
     useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
 
-    // Derived data
-    const paidTransactions = usePaidTransactions(transactions, 10);
-
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
     // Dashboard summary with categories parameter for granular expense calculations
@@ -254,7 +251,6 @@ export default function Dashboard() {
 
                     <div className="lg:col-span-1 flex flex-col">
                         <RecentTransactions
-                            transactions={paidTransactions}
                             categories={categories}
                             settings={settings}
                             customBudgets={allCustomBudgets}
