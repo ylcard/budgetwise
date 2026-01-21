@@ -125,7 +125,6 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                     defaultMonth={selectedRange.from}
                                     selected={selectedRange}
                                     onSelect={handleRangeSelect}
-                                    numberOfMonths={2}
                                 />
                             </PopoverContent>
                         </Popover>
