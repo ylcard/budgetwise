@@ -795,17 +795,21 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             <Wallet className="w-3 h-3 text-gray-500" />
                                             <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
                                         </div>
-                                        {!isSimpleView && bonusSavingsPotential > 0 && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.5, ease: "easeOut" }}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100"
-                                            >
-                                                <TrendingUp className="w-3 h-3 text-emerald-600" />
-                                                <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
-                                            </motion.div>
-                                        )}
+                                        <AnimatePresence>
+                                            {!isSimpleView && bonusSavingsPotential > 0 && (
+                                                <motion.div
+                                                    key="efficiency-badge"
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 20 }}
+                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100"
+                                                >
+                                                    <TrendingUp className="w-3 h-3 text-emerald-600" />
+                                                    <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 )}
                             </div>
