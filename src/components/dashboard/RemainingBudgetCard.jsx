@@ -368,6 +368,22 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const wantsUnpaidTotal = (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
     const wantsSegs = calculateSegments(wantsPaidTotal, wantsUnpaidTotal, wantsLimit);
 
+    // --- ANIMATION HELPERS ---
+    const TextSwap = ({ children, className = "" }) => (
+        <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div
+                key={children?.toString()} // Trigger animation on content change
+                initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className={`whitespace-nowrap ${className}`}
+            >
+                {children}
+            </motion.div>
+        </AnimatePresence>
+    );
+
     // --- RENDER HELPERS ---
     const handleViewToggle = (checked) => {
         updateSettings({ barViewMode: checked });
@@ -574,9 +590,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ backgroundColor: needsColor }}
                         >
                             {!isSimpleView && nR.p > 0.1 && (
-                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] font-bold text-white whitespace-nowrap">
-                                    {formatCurrency(needsSegs.safePaid, settings)} ({Math.round(nR.p * 100)}%)
-                                </motion.span>
+                                <div className="text-[10px] font-bold text-white overflow-hidden px-1">
+                                    <TextSwap>
+                                        {formatCurrency(needsSegs.safePaid, settings)}
+                                    </TextSwap>
+                                </div>
                             )}
                         </motion.div>
 
@@ -588,7 +606,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={stripePattern}
                         >
                             {!isSimpleView && nR.u > 0.1 && (
-                                <span className="text-[10px] font-bold text-white whitespace-nowrap px-1">Plan</span>
+                                <div className="text-[10px] font-bold text-white px-1">
+                                    <TextSwap>Plan</TextSwap>
+                                </div>
                             )}
                         </motion.div>
 
@@ -601,10 +621,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         />
 
                         {/* SIMPLE VIEW LABEL OVERLAY */}
-                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 whitespace-nowrap pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
-                            <div className={`${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
+                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className={`flex items-center justify-center ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
                                 {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
-                                {FINANCIAL_PRIORITIES.needs.label} {needsLabel}
+                                <TextSwap>
+                                    {/* Show Amount and % instead of Label */}
+                                    <span className="font-bold">{formatCurrency(needsTotal, settings)}</span>
+                                    <span className="opacity-90 ml-1 font-normal">({needsLabel})</span>
+                                </TextSwap>
                             </div>
                         </div>
 
@@ -636,9 +660,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ backgroundColor: wantsColor }}
                         >
                             {!isSimpleView && wR.p > 0.1 && (
-                                <span className="text-[10px] font-bold text-white whitespace-nowrap">
-                                    {formatCurrency(wantsSegs.safePaid, settings)}
-                                </span>
+                                <div className="text-[10px] font-bold text-white">
+                                    <TextSwap>{formatCurrency(wantsSegs.safePaid, settings)}</TextSwap>
+                                </div>
                             )}
                         </motion.div>
                         <motion.div
@@ -654,10 +678,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={stripePattern}
                         />
 
-                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 whitespace-nowrap pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
-                            <div className={`${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
+                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className={`flex items-center justify-center ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
                                 {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-current" />}
-                                {FINANCIAL_PRIORITIES.wants.label} {wantsLabel}
+                                <TextSwap>
+                                    <span className="font-bold">{formatCurrency(wantsTotal, settings)}</span>
+                                    <span className="opacity-90 ml-1 font-normal">({wantsLabel})</span>
+                                </TextSwap>
                             </div>
                         </div>
 
@@ -685,7 +712,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
                         >
                             {!isSimpleView && sTargetRatio > 0.2 && (
-                                <span className="text-[10px] font-bold text-white truncate px-1">{formatCurrency(sTarget, settings)}</span>
+                                <div className="text-[10px] font-bold text-white truncate px-1">
+                                    <TextSwap>{formatCurrency(sTarget, settings)}</TextSwap>
+                                </div>
                             )}
                         </motion.div>
 
@@ -696,13 +725,17 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full bg-emerald-300 border-l border-white/20 flex items-center justify-center relative overflow-hidden"
                         >
                             {!isSimpleView && sExtraRatio > 0.2 && (
-                                <span className="text-[10px] font-bold text-emerald-800 truncate px-1">{formatCurrency(sExtra, settings)}</span>
+                                <div className="text-[10px] font-bold text-emerald-800 truncate px-1">
+                                    <TextSwap>{formatCurrency(sExtra, settings)}</TextSwap>
+                                </div>
                             )}
                         </motion.div>
 
                         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
                             <div className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
-                                Savings {savingsLabel}
+                                <TextSwap>
+                                    Savings {savingsLabel}
+                                </TextSwap>
                             </div>
                         </div>
                     </motion.div>
