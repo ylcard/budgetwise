@@ -537,31 +537,54 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // The "Steal from the Richest" Algorithm
         const calculateDynamicLayout = () => {
             if (!hoveredSubSegment) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
+
+            // 0. PRE-CHECK: If we are simple view, never expand
+            if (isSimpleView) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
+
             if (!containerRef.current) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
 
             const [targetCat] = hoveredSubSegment.split('-');
             let current = { needs: needsOuterPct, wants: wantsOuterPct, savings: savingsOuterPct };
 
-            // 1. MEASURE: How much space (in %) does the text actually need?
+            // 1. MEASURE: Does the text fit?
             const textEl = textRefs.current[hoveredSubSegment];
             if (!textEl) return { n: current.needs, w: current.wants, s: current.savings };
 
             const totalWidthPx = containerRef.current.offsetWidth;
             const textWidthPx = textEl.scrollWidth; // Actual width of text content
-            const currentSegmentWidthPx = (current[targetCat] / 100) * totalWidthPx;
+
+            // We need to determine the CURRENT width of the specific sub-segment being hovered
+            // to see if IT needs space.
+            // Note: This is an approximation based on the outer category width * internal ratio
+            // We can simplify: just check if the text is wider than the visual space provided.
+            const parentWidthPx = (current[targetCat] / 100) * totalWidthPx;
+
+            // Retrieve internal ratios to calculate actual sub-segment width (approx)
+            let internalRatio = 1;
+            if (targetCat === 'needs') internalRatio = hoveredSubSegment.includes('paid') ? needsSegs.safePaid / needsSegs.total : needsSegs.safeUnpaid / needsSegs.total;
+            if (targetCat === 'wants') internalRatio = hoveredSubSegment.includes('paid') ? wantsSegs.safePaid / wantsSegs.total : wantsSegs.safeUnpaid / wantsSegs.total;
+            if (targetCat === 'savings') {
+                const sTotal = Math.min(savingsLimit, Math.max(0, currentMonthIncome - totalSpent)) + Math.max(0, (currentMonthIncome - totalSpent) - savingsLimit);
+                internalRatio = hoveredSubSegment.includes('target') ? (Math.min(savingsLimit, Math.max(0, currentMonthIncome - totalSpent)) / sTotal) : (Math.max(0, (currentMonthIncome - totalSpent) - savingsLimit) / sTotal);
+            }
+
+            const currentSubWidthPx = parentWidthPx * internalRatio;
 
             // PADDING: Add 24px buffer for comfortable reading
             const requiredWidthPx = textWidthPx + 24;
-            const requiredPct = (requiredWidthPx / totalWidthPx) * 100;
 
             // 2. CHECK: If it already fits, DO NOTHING.
-            // We allow a small tolerance (1px) for rounding errors
-            if (currentSegmentWidthPx >= requiredWidthPx - 1) {
+            // This prevents "jitter" when hovering segments that are already big enough.
+            if (currentSubWidthPx >= requiredWidthPx) {
                 return { n: current.needs, w: current.wants, s: current.savings };
             }
 
-            // 3. TARGET: Expand only to what is needed, capped at 60% to prevent breaking the layout
-            const targetWidth = Math.min(requiredPct, 60);
+            // 3. CALCULATE GAP: How much *Outer* width do we need to add to make the *Inner* part fit?
+            // Formula: RequiredOuter = RequiredSubPixel / InternalRatio / TotalPixel * 100
+            const requiredOuterPct = ((requiredWidthPx / internalRatio) / totalWidthPx) * 100;
+
+            // Cap expansion to avoid breaking UI (max 70% of total bar)
+            const targetWidth = Math.min(requiredOuterPct, 70);
 
             // Identify the Target, the Donor (widest other), and the Bystander
             const others = Object.keys(current).filter(k => k !== targetCat);
@@ -593,28 +616,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         let nR = getRatios(needsSegs);
         let wR = getRatios(wantsSegs);
 
-        // Internal Expansion: If a specific sub-segment is hovered, 
-        // force it to take up most of the space within its (now expanded) parent.
-        // We only do this if we are in Detailed view
-        if (hoveredSubSegment && !isSimpleView) {
-            const [cat, type] = hoveredSubSegment.split('-');
-            // Less aggressive focus ratio, allows the other part to stay visible
-            const FOCUS_RATIO = 0.75;
-
-            if (cat === 'needs') {
-                if (type === 'unpaid' && nR.u > 0) {
-                    nR = { p: 1 - FOCUS_RATIO, u: FOCUS_RATIO, o: nR.o };
-                } else if (type === 'paid') {
-                    nR = { p: FOCUS_RATIO, u: 1 - FOCUS_RATIO, o: nR.o };
-                }
-            } else if (cat === 'wants') {
-                if (type === 'unpaid' && wR.u > 0) {
-                    wR = { p: 1 - FOCUS_RATIO, u: FOCUS_RATIO, o: wR.o };
-                } else if (type === 'paid') {
-                    wR = { p: FOCUS_RATIO, u: 1 - FOCUS_RATIO, o: wR.o };
-                }
-            }
-        }
+        // Note: We removed the "Internal Expansion" block here.
+        // Since we are now expanding the OUTER width based on the internal ratio requirement,
+        // we don't need to skew the internal ratios artificially.
+        // This keeps the "Paid" vs "Unpaid" proportion true to reality, 
+        // but makes the whole block big enough to see the small one.
 
         // Savings Split
         // Simple: Target = 100%, Extra = 0% (Visually combined)
@@ -631,14 +637,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         let sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
         let sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
 
-        // Handle Savings Internal Hover
-        if (hoveredSubSegment === 'savings-extra' && !isSimpleView && sExtra > 0) {
-            sExtraRatio = 0.85;
-            sTargetRatio = 0.15;
-        } else if (hoveredSubSegment === 'savings-target' && !isSimpleView) {
-            sTargetRatio = 0.85;
-            sExtraRatio = 0.15;
-        }
+        // Removed Savings Internal Hover logic to prevent "jumping" text.
+        // The outer expansion handles the space requirements now.
 
         // Utilization % (Relative to Category Limits)
         const getUtil = (val, limit) => (limit > 0 ? Math.round((val / limit) * 100) : 0);
