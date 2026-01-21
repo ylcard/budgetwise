@@ -186,3 +186,15 @@ export const doDateRangesOverlap = (start1, end1, start2, end2) => {
     if (!s1 || !e1 || !s2 || !e2) return false;
     return s1 <= e2 && e1 >= s2;
 };
+
+/**
+ * Get the current period boundaries based on real-time (now).
+ * Returns the current year and the start/end string dates for the current month.
+ * @returns {{ currentYear: number, monthStart: string, monthEnd: string }}
+ */
+export const getCurrentPeriodBoundaries = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const { monthStart, monthEnd } = getMonthBoundaries(now.getMonth(), currentYear);
+    return { currentYear, monthStart, monthEnd };
+};
