@@ -904,7 +904,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                                         <div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Paid
                                                     </span>
                                                     <span className="flex items-center gap-1">
-                                                        <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)', backgroundSize: '8px 8px' }}></div> Plan
+                                                        <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)', backgroundSize: '8px 8px' }}></div> Unpaid
                                                     </span>
                                                 </motion.div>
                                             )}
