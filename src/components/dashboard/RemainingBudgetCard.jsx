@@ -600,11 +600,24 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full relative overflow-hidden flex items-center justify-center"
                             style={{ backgroundColor: needsColor }}
                         >
-                            {!isSimpleView && nR.p > 0.1 && (
-                                <div className="text-[11px] sm:text-xs font-bold text-white overflow-hidden px-1">
-                                    <TextSwap>
-                                        {formatCurrency(needsSegs.safePaid, settings)} ({needsPaidUtil}%)
-                                    </TextSwap>
+                            {!isSimpleView && (
+                                <div className="w-full px-1 flex items-center justify-between">
+                                    {/* Primary Label (Left) */}
+                                    {nR.p > 0.1 && (
+                                        <div className="text-[11px] sm:text-xs font-bold text-white overflow-hidden whitespace-nowrap">
+                                            <TextSwap>
+                                                {formatCurrency(needsSegs.safePaid, settings)} ({needsPaidUtil}%)
+                                            </TextSwap>
+                                        </div>
+                                    )}
+                                    {/* Secondary Label (Right - Only if Unpaid segment is too small < 15% and this one is big enough) */}
+                                    {nR.u <= 0.15 && nR.p > 0.15 && needsSegs.safeUnpaid > 0 && (
+                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
+                                            <TextSwap>
+                                                Plan: {formatCurrency(needsSegs.safeUnpaid, settings)}
+                                            </TextSwap>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </motion.div>
@@ -616,7 +629,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full bg-blue-500 opacity-60 overflow-hidden flex items-center justify-center"
                             style={stripePattern}
                         >
-                            {!isSimpleView && nR.u > 0.1 && (
+                            {!isSimpleView && nR.u > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white px-1 whitespace-nowrap">
                                     <TextSwap>
                                         {formatCurrency(needsSegs.safeUnpaid, settings)} ({needsUnpaidUtil}%)
@@ -672,11 +685,22 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full relative overflow-hidden flex items-center justify-center"
                             style={{ backgroundColor: wantsColor }}
                         >
-                            {!isSimpleView && wR.p > 0.1 && (
-                                <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
-                                    <TextSwap>
-                                        {formatCurrency(wantsSegs.safePaid, settings)} ({wantsPaidUtil}%)
-                                    </TextSwap>
+                            {!isSimpleView && (
+                                <div className="w-full px-1 flex items-center justify-between">
+                                    {wR.p > 0.1 && (
+                                        <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap">
+                                            <TextSwap>
+                                                {formatCurrency(wantsSegs.safePaid, settings)} ({wantsPaidUtil}%)
+                                            </TextSwap>
+                                        </div>
+                                    )}
+                                    {wR.u <= 0.15 && wR.p > 0.15 && wantsSegs.safeUnpaid > 0 && (
+                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
+                                            <TextSwap>
+                                                Plan: {formatCurrency(wantsSegs.safeUnpaid, settings)}
+                                            </TextSwap>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </motion.div>
@@ -686,7 +710,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full opacity-60 overflow-hidden"
                             style={{ backgroundColor: wantsColor, ...stripePattern }}
                         >
-                            {!isSimpleView && wR.u > 0.1 && (
+                            {!isSimpleView && wR.u > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
                                     <TextSwap>
                                         {formatCurrency(wantsSegs.safeUnpaid, settings)} ({wantsUnpaidUtil}%)
@@ -734,11 +758,21 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             transition={fluidSpring}
                             className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
                         >
-                            {!isSimpleView && sTargetRatio > 0.2 && (
-                                <div className="text-[11px] sm:text-xs font-bold text-white truncate px-1">
-                                    <TextSwap>
-                                        {formatCurrency(sTarget, settings)} ({targetSavingsUtil}%)
-                                    </TextSwap>
+                            {!isSimpleView && (
+                                <div className="w-full px-1 flex items-center justify-between">
+                                    {sTargetRatio > 0.1 && (
+                                        <div className="text-[11px] sm:text-xs font-bold text-white truncate px-1">
+                                            <TextSwap>
+                                                {formatCurrency(sTarget, settings)} ({targetSavingsUtil}%)
+                                            </TextSwap>
+                                        </div>
+                                    )}
+                                    {/* If Extra savings is tiny, show it inside Target bar if possible */}
+                                    {sExtraRatio <= 0.15 && sTargetRatio > 0.15 && sExtra > 0 && (
+                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
+                                            <TextSwap>+{formatCurrency(sExtra, settings)}</TextSwap>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </motion.div>
@@ -749,7 +783,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             transition={fluidSpring}
                             className="h-full bg-emerald-300 border-l border-white/20 flex items-center justify-center relative overflow-hidden"
                         >
-                            {!isSimpleView && sExtraRatio > 0.2 && (
+                            {!isSimpleView && sExtraRatio > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-emerald-800 truncate px-1">
                                     <TextSwap>
                                         {formatCurrency(sExtra, settings)} ({extraSavingsUtil}%)
