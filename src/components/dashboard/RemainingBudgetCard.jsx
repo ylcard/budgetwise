@@ -884,24 +884,31 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: wantsColor }}></div>
                                             {FINANCIAL_PRIORITIES.wants.label}
                                         </span>
-                                        {!isSimpleView && (
-                                            <>
-                                                <span className="flex items-center gap-1.5 ml-2">
-                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: savingsColor }}></div>
-                                                    Savings
-                                                </span>
-                                                <span className="flex items-center gap-1.5">
-                                                    <div className="w-2 h-2 rounded-full bg-emerald-300"></div>
-                                                    Extra
-                                                </span>
-                                                <span className="flex items-center gap-1 ml-2 border-l border-gray-200 pl-4">
-                                                    <div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Paid
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)', backgroundSize: '8px 8px' }}></div> Plan
-                                                </span>
-                                            </>
-                                        )}
+                                        <AnimatePresence>
+                                            {!isSimpleView && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -15, width: 0 }}
+                                                    animate={{ opacity: 1, y: 0, width: "auto" }}
+                                                    exit={{ opacity: 0, y: -15, width: 0 }}
+                                                    className="flex items-center gap-4 overflow-hidden"
+                                                >
+                                                    <span className="flex items-center gap-1.5 ml-2">
+                                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: savingsColor }}></div>
+                                                        Savings
+                                                    </span>
+                                                    <span className="flex items-center gap-1.5">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-300"></div>
+                                                        Extra
+                                                    </span>
+                                                    <span className="flex items-center gap-1 ml-2 border-l border-gray-200 pl-4">
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Paid
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)', backgroundSize: '8px 8px' }}></div> Plan
+                                                    </span>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <GoalSummary />
