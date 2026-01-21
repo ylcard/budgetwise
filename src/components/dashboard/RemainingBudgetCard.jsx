@@ -356,8 +356,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         return { safePaid, safeUnpaid, overflow, total };
     };
 
-    const needsSegs = calculateSegments(needsData.paid, needsData.unpaid, needsLimit);
+    // --- UNIFIED SEGMENT HELPERS ---
+    // Pre-calculate segments for both views to ensure smooth transitions
+    const stripePattern = {
+        backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
+        backgroundSize: '8px 8px'
+    };
 
+    const needsSegs = calculateSegments(needsData.paid, needsData.unpaid, needsLimit);
     const wantsPaidTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0);
     const wantsUnpaidTotal = (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
     const wantsSegs = calculateSegments(wantsPaidTotal, wantsUnpaidTotal, wantsLimit);
@@ -492,114 +498,118 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         return "text-white/90 font-medium";
     };
 
-    // --- RENDER: SIMPLE BAR ---
-    const renderSimpleBar = () => {
-        // const needsLabel = `${Math.round(needsPct)}%`;
-        // const wantsLabel = `${Math.round(wantsPct)}%`;
+    // --- RENDER: UNIFIED BAR (Handles both Simple & Detailed via internal sizing) ---
+    const renderUnifiedBar = () => {
+        // Calculate Layout Percentages (Outer widths relative to income)
+        const safeTotalNeeds = needsSegs.total > 0 ? needsSegs.total : 0;
+        const safeTotalWants = wantsSegs.total > 0 ? wantsSegs.total : 0;
+
+        // Ensure minimal visibility for clickable areas if they exist but are tiny
+        const CLICKABLE_MIN_PCT = 5;
+
+        const needsOuterPct = Math.max((safeTotalNeeds / safeIncome) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
+        const wantsOuterPct = Math.max((safeTotalWants / safeIncome) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
+
+        // Savings fills remaining space
+        // Note: For visual cleanliness, we clamp the outer bars so they don't overflow the container in weird ways
+        // but the internal segments handle the "Overflow" logic (red bars).
+
+        // Internal Split Ratios (0 to 1)
+        // If Simple View: Primary = 1 (100%), Secondary = 0.
+        // If Detailed View: Primary = Paid/Total, Secondary = Unpaid/Total.
+
+        const getRatios = (segments) => {
+            if (segments.total === 0) return { p: 0, u: 0, o: 0 };
+            return {
+                p: segments.safePaid / segments.total,
+                u: segments.safeUnpaid / segments.total,
+                o: segments.overflow / segments.total
+            };
+        };
+
+        const nR = getRatios(needsSegs);
+        const wR = getRatios(wantsSegs);
+
+        // Savings Split
+        // Simple: Target = 100%, Extra = 0% (Visually combined)
+        // Detailed: Split based on actuals
+        const totalSavings = Math.max(0, currentMonthIncome - totalSpent); // This aligns with 'savingsAmount'
+        // If we have extra savings, the "Target" bar shouldn't shrink below the target amount in detailed view
+        // actually, savings logic is: 
+        // Bar 1 (Dark): min(total, limit)
+        // Bar 2 (Light): max(0, total - limit)
+        const sTarget = Math.min(savingsLimit, totalSavings);
+        const sExtra = Math.max(0, totalSavings - savingsLimit);
+        const sTotal = sTarget + sExtra;
+
+        const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
+        const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
+
+        const savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
+
+        // Labels
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
         const savingsLabel = `${Math.round(savingsPct)}%`;
 
         return (
             <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
-                <AnimatedSegment
-                    width={needsPct}
-                    color={needsColor}
-                    className="border-r border-white/10"
-                    to={needsBudget ? `/BudgetDetail?id=${needsBudget.id}` : null}
-                >
-                    {needsPct > 8 && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
-                            {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
-                            {FINANCIAL_PRIORITIES.needs.label} {needsLabel}
-                        </motion.div>
-                    )}
-                </AnimatedSegment>
 
-                <AnimatedSegment
-                    width={wantsPct}
-                    color={wantsColor}
-                    className="border-r border-white/10"
-                    to={wantsBudget ? `/BudgetDetail?id=${wantsBudget.id}` : null}
-                >
-                    {wantsPct > 8 && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`text-xs sm:text-sm z-10 whitespace-nowrap ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
-                            {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && (
-                                <Zap className="w-3 h-3 inline mr-1 fill-current" />
-                            )}
-                            {FINANCIAL_PRIORITIES.wants.label} {wantsLabel}
-                        </motion.div>
-                    )}
-                </AnimatedSegment>
-
-                {savingsPct > 0 && (
-                    <AnimatedSegment width={savingsPct} className="bg-emerald-500">
-                        {savingsPct > 8 && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
-                                Savings {savingsLabel}
-                            </motion.div>
-                        )}
-                    </AnimatedSegment>
-                )}
-            </div>
-        );
-    };
-
-    // --- RENDER: DETAILED BAR ---
-    const renderDetailedBar = () => {
-        const CLICKABLE_MIN_PCT = 5;
-        const rawNeedsPct = (needsSegs.total / safeIncome) * 100;
-        const needsVisualPct = needsSegs.total > 0 ? Math.max(rawNeedsPct, CLICKABLE_MIN_PCT) : 0;
-        const rawWantsPct = (wantsSegs.total / safeIncome) * 100;
-        const wantsVisualPct = wantsSegs.total > 0 ? Math.max(rawWantsPct, CLICKABLE_MIN_PCT) : 0;
-
-        const needsLimitPct = (needsLimit / safeIncome) * 100;
-        const wantsLimitPct = (wantsLimit / safeIncome) * 100;
-        const totalLimitPct = needsLimitPct + wantsLimitPct;
-        const visualSpendingEnd = needsVisualPct + wantsVisualPct;
-
-        // Calculate the total space available for savings
-        const totalAvailableForSavings = Math.max(0, 100 - visualSpendingEnd);
-
-        const savingsGoalPct = goals.find(g => g.priority === 'savings')?.target_percentage || 0;
-
-        const targetSavingsBarPct = Math.min(savingsGoalPct, totalAvailableForSavings);
-        const efficiencyBarPct = Math.max(0, totalAvailableForSavings - savingsGoalPct);
-
-        // const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
-        // const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
-
-        const targetUtil = savingsLimit > 0 ? (targetSavingsAmount / savingsLimit) * 100 : 0;
-        const extraUtil = savingsLimit > 0 ? (extraSavingsAmount / savingsLimit) * 100 : 0;
-
-        const stripePattern = {
-            backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
-            backgroundSize: '8px 8px'
-        };
-
-        return (
-            <div className="relative h-10 w-full bg-gray-100 rounded-lg overflow-hidden flex shadow-inner">
-                {/* NEEDS */}
+                {/* NEEDS SEGMENT */}
                 <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${needsVisualPct}%` }}
+                    animate={{ width: `${needsOuterPct}%` }}
                     transition={fluidSpring}
                     className="h-full relative border-r border-white/20"
                 >
                     <Link
                         to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
-                        className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
+                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''} overflow-hidden`}
                     >
-                        {needsSegs.safePaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safePaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: needsColor }} />
-                        )}
-                        {needsSegs.safeUnpaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.safeUnpaid / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-blue-500 opacity-60" style={stripePattern} />
-                        )}
-                        {needsSegs.overflow > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(needsSegs.overflow / needsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: 'red', ...stripePattern }} />
-                        )}
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${needsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        {/* Paid Part (Shrinks to reveal Unpaid) */}
+                        <motion.div
+                            animate={{ width: isSimpleView ? "100%" : `${nR.p * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full relative overflow-hidden flex items-center justify-center"
+                            style={{ backgroundColor: needsColor }}
+                        >
+                            {!isSimpleView && nR.p > 0.1 && (
+                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] font-bold text-white whitespace-nowrap">
+                                    {formatCurrency(needsSegs.safePaid, settings)} ({Math.round(nR.p * 100)}%)
+                                </motion.span>
+                            )}
+                        </motion.div>
+
+                        {/* Unpaid Part (Grows from 0) */}
+                        <motion.div
+                            animate={{ width: isSimpleView ? "0%" : `${nR.u * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full bg-blue-500 opacity-60 overflow-hidden flex items-center justify-center"
+                            style={stripePattern}
+                        >
+                            {!isSimpleView && nR.u > 0.1 && (
+                                <span className="text-[10px] font-bold text-white whitespace-nowrap px-1">Plan</span>
+                            )}
+                        </motion.div>
+
+                        {/* Overflow Part */}
+                        <motion.div
+                            animate={{ width: isSimpleView ? "0%" : `${nR.o * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full bg-red-500 opacity-60 overflow-hidden"
+                            style={{ backgroundColor: 'red', ...stripePattern }}
+                        />
+
+                        {/* SIMPLE VIEW LABEL OVERLAY */}
+                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 whitespace-nowrap pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className={`${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
+                                {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
+                                {FINANCIAL_PRIORITIES.needs.label} {needsLabel}
+                            </div>
+                        </div>
+
+                        {/* DETAILED HOVER LABEL OVERLAY (Fallback for tiny segments) */}
+                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white pointer-events-none transition-opacity duration-300 ${!isSimpleView && (nR.p < 0.1 && nR.u < 0.1) ? 'opacity-100 group-hover:opacity-100' : 'opacity-0'}`}>
                             <span className="truncate px-1">
                                 {formatCurrency(needsTotal, settings)}
                                 <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
@@ -608,27 +618,50 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     </Link>
                 </motion.div>
 
-                {/* WANTS */}
+                {/* WANTS SEGMENT */}
                 <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${wantsVisualPct}%` }}
+                    animate={{ width: `${wantsOuterPct}%` }}
                     transition={fluidSpring}
                     className="h-full relative border-r border-white/20"
                 >
                     <Link
                         to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
-                        className="flex h-full w-full relative group hover:brightness-110 overflow-hidden"
+                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''} overflow-hidden`}
                     >
-                        {wantsSegs.safePaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safePaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full" style={{ backgroundColor: wantsColor }} />
-                        )}
-                        {wantsSegs.safeUnpaid > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.safeUnpaid / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full opacity-60" style={{ backgroundColor: wantsColor, ...stripePattern }} />
-                        )}
-                        {wantsSegs.overflow > 0 && (
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(wantsSegs.overflow / wantsSegs.total) * 100}%` }} transition={fluidSpring} className="h-full bg-red-500" style={stripePattern} />
-                        )}
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity ${wantsVisualPct > 10 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <motion.div
+                            animate={{ width: isSimpleView ? "100%" : `${wR.p * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full relative overflow-hidden flex items-center justify-center"
+                            style={{ backgroundColor: wantsColor }}
+                        >
+                            {!isSimpleView && wR.p > 0.1 && (
+                                <span className="text-[10px] font-bold text-white whitespace-nowrap">
+                                    {formatCurrency(wantsSegs.safePaid, settings)}
+                                </span>
+                            )}
+                        </motion.div>
+                        <motion.div
+                            animate={{ width: isSimpleView ? "0%" : `${wR.u * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full opacity-60 overflow-hidden"
+                            style={{ backgroundColor: wantsColor, ...stripePattern }}
+                        />
+                        <motion.div
+                            animate={{ width: isSimpleView ? "0%" : `${wR.o * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full bg-red-500"
+                            style={stripePattern}
+                        />
+
+                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 whitespace-nowrap pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className={`${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
+                                {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-current" />}
+                                {FINANCIAL_PRIORITIES.wants.label} {wantsLabel}
+                            </div>
+                        </div>
+
+                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white pointer-events-none transition-opacity duration-300 ${!isSimpleView && (wR.p < 0.1 && wR.u < 0.1) ? 'opacity-100 group-hover:opacity-100' : 'opacity-0'}`}>
                             <span className="truncate px-1">
                                 {formatCurrency(wantsTotal, settings)}
                                 <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
@@ -637,23 +670,42 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     </Link>
                 </motion.div>
 
-                {/* TARGET SAVINGS (Dark Green) */}
-                {targetSavingsBarPct > 0 && (
-                    <AnimatedSegment width={targetSavingsBarPct} className="bg-emerald-500">
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white transition-opacity opacity-75 group-hover:opacity-100 whitespace-nowrap overflow-hidden">
-                            <span className="truncate px-1">
-                                {formatCurrency(targetSavingsAmount, settings)} ({Math.round(targetUtil)}%)
-                            </span>
+                {/* SAVINGS SEGMENT (Unified) */}
+                {savingsOuterPct > 0 && (
+                    <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${savingsOuterPct}%` }}
+                        transition={fluidSpring}
+                        className="h-full relative flex overflow-hidden"
+                    >
+                        {/* Target Savings (Dark Green) */}
+                        <motion.div
+                            animate={{ width: isSimpleView ? "100%" : `${sTargetRatio * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
+                        >
+                            {!isSimpleView && sTargetRatio > 0.2 && (
+                                <span className="text-[10px] font-bold text-white truncate px-1">{formatCurrency(sTarget, settings)}</span>
+                            )}
+                        </motion.div>
+
+                        {/* Extra Savings (Light Green) */}
+                        <motion.div
+                            animate={{ width: isSimpleView ? "0%" : `${sExtraRatio * 100}%` }}
+                            transition={fluidSpring}
+                            className="h-full bg-emerald-300 border-l border-white/20 flex items-center justify-center relative overflow-hidden"
+                        >
+                            {!isSimpleView && sExtraRatio > 0.2 && (
+                                <span className="text-[10px] font-bold text-emerald-800 truncate px-1">{formatCurrency(sExtra, settings)}</span>
+                            )}
+                        </motion.div>
+
+                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
+                                Savings {savingsLabel}
+                            </div>
                         </div>
-                    </AnimatedSegment>
-                )}
-                {/* EXTRA SAVINGS (Light Green) */}
-                {efficiencyBarPct > 0 && (
-                    <AnimatedSegment width={efficiencyBarPct} className="bg-emerald-300 border-l border-white/20">
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-emerald-800 opacity-75 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                            {formatCurrency(extraSavingsAmount, settings)} ({Math.round(extraUtil)}%)
-                        </div>
-                    </AnimatedSegment>
+                    </motion.div>
                 )}
             </div>
         );
@@ -820,7 +872,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             </div>
 
                             <div className="space-y-2">
-                                {isSimpleView ? renderSimpleBar() : renderDetailedBar()}
+                                {renderUnifiedBar()}
 
                                 <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-400 pt-1 gap-2">
                                     <div className="flex gap-4 items-center">
