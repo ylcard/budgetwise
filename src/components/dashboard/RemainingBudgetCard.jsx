@@ -790,18 +790,21 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 </div>
 
                                 {!isTotalOver && (
-                                    <div className="hidden sm:flex flex-col items-end gap-2">
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100">
+                                    <div className="hidden sm:flex flex-col items-end gap-2 relative">
+                                        <motion.div
+                                            layout
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100 z-10"
+                                        >
                                             <Wallet className="w-3 h-3 text-gray-500" />
                                             <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
-                                        </div>
-                                        <AnimatePresence>
+                                        </motion.div>
+                                        <AnimatePresence mode="popLayout">
                                             {!isSimpleView && bonusSavingsPotential > 0 && (
                                                 <motion.div
                                                     key="efficiency-badge"
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 20 }}
+                                                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
                                                     transition={{ duration: 0.3, ease: "easeInOut" }}
                                                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100"
                                                 >
