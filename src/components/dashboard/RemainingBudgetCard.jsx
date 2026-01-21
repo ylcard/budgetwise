@@ -268,7 +268,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     // const { updateSettings } = useSettings();
     const { updateSettings, user } = useSettings();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-    const [hoveredSegment, setHoveredSegment] = useState(null);
+    const [hoveredSubSegment, setHoveredSubSegment] = useState(null); // Format: 'category-type' (e.g., 'wants-unpaid')
 
     if (!settings) return null;
 
@@ -530,38 +530,36 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
 
         // --- HOVER LOGIC ---
-        let finalNeedsPct = needsOuterPct;
-        let finalWantsPct = wantsOuterPct;
-        let finalSavingsPct = savingsOuterPct;
+        // The "Steal from the Richest" Algorithm
+        const calculateDynamicLayout = () => {
+            if (!hoveredSubSegment) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
 
-        if (hoveredSegment) {
-            const HOVER_MIN_WIDTH = 30; // 30% min width when hovered to fit text
+            const [targetCat] = hoveredSubSegment.split('-');
+            const TARGET_MIN_WIDTH = 40; // Target 40% width for the active category
 
-            const redistribute = (targetPct, other1Pct, other2Pct) => {
-                if (targetPct >= HOVER_MIN_WIDTH) return [targetPct, other1Pct, other2Pct];
+            let current = { needs: needsOuterPct, wants: wantsOuterPct, savings: savingsOuterPct };
 
-                const needed = HOVER_MIN_WIDTH - targetPct;
-                const available = other1Pct + other2Pct;
+            // If target already big enough, don't move walls
+            if (current[targetCat] >= TARGET_MIN_WIDTH) return { n: current.needs, w: current.wants, s: current.savings };
 
-                if (available <= 0) return [targetPct, other1Pct, other2Pct];
+            // Identify the Target, the Donor (widest other), and the Bystander
+            const others = Object.keys(current).filter(k => k !== targetCat);
+            const donorKey = current[others[0]] > current[others[1]] ? others[0] : others[1];
+            const bystanderKey = others.find(k => k !== donorKey);
 
-                // Scale others down proportionally
-                const ratio = (available - needed) / available;
-                const safeRatio = Math.max(0, ratio);
+            const needed = TARGET_MIN_WIDTH - current[targetCat];
+            const availableFromDonor = Math.max(0, current[donorKey] - 15); // Leave donor at least 15%
 
-                return [HOVER_MIN_WIDTH, other1Pct * safeRatio, other2Pct * safeRatio];
-            };
+            const transferAmount = Math.min(needed, availableFromDonor);
 
-            if (hoveredSegment === 'needs') {
-                [finalNeedsPct, finalWantsPct, finalSavingsPct] = redistribute(needsOuterPct, wantsOuterPct, savingsOuterPct);
-            } else if (hoveredSegment === 'wants') {
-                const [w, n, s] = redistribute(wantsOuterPct, needsOuterPct, savingsOuterPct);
-                finalWantsPct = w; finalNeedsPct = n; finalSavingsPct = s;
-            } else if (hoveredSegment === 'savings') {
-                const [s, n, w] = redistribute(savingsOuterPct, needsOuterPct, wantsOuterPct);
-                finalSavingsPct = s; finalNeedsPct = n; finalWantsPct = w;
-            }
-        }
+            // Apply Transfer
+            current[targetCat] += transferAmount;
+            current[donorKey] -= transferAmount;
+
+            return { n: current.needs, w: current.wants, s: current.savings };
+        };
+
+        const { n: finalNeedsPct, w: finalWantsPct, s: finalSavingsPct } = calculateDynamicLayout();
 
         const getRatios = (segments) => {
             if (segments.total === 0) return { p: 0, u: 0, o: 0 };
@@ -572,8 +570,30 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             };
         };
 
-        const nR = getRatios(needsSegs);
-        const wR = getRatios(wantsSegs);
+        let nR = getRatios(needsSegs);
+        let wR = getRatios(wantsSegs);
+
+        // Internal Expansion: If a specific sub-segment is hovered, 
+        // force it to take up most of the space within its (now expanded) parent.
+        // We only do this if we are in Detailed view
+        if (hoveredSubSegment && !isSimpleView) {
+            const [cat, type] = hoveredSubSegment.split('-');
+            const FOCUS_RATIO = 0.85; // Hovered part takes 85% of the bar
+
+            if (cat === 'needs') {
+                if (type === 'unpaid' && nR.u > 0) {
+                    nR = { p: 1 - FOCUS_RATIO, u: FOCUS_RATIO, o: nR.o };
+                } else if (type === 'paid') {
+                    nR = { p: FOCUS_RATIO, u: 1 - FOCUS_RATIO, o: nR.o };
+                }
+            } else if (cat === 'wants') {
+                if (type === 'unpaid' && wR.u > 0) {
+                    wR = { p: 1 - FOCUS_RATIO, u: FOCUS_RATIO, o: wR.o };
+                } else if (type === 'paid') {
+                    wR = { p: FOCUS_RATIO, u: 1 - FOCUS_RATIO, o: wR.o };
+                }
+            }
+        }
 
         // Savings Split
         // Simple: Target = 100%, Extra = 0% (Visually combined)
@@ -587,8 +607,17 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const sExtra = Math.max(0, totalSavings - savingsLimit);
         const sTotal = sTarget + sExtra;
 
-        const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
-        const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
+        let sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
+        let sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
+
+        // Handle Savings Internal Hover
+        if (hoveredSubSegment === 'savings-extra' && !isSimpleView && sExtra > 0) {
+            sExtraRatio = 0.85;
+            sTargetRatio = 0.15;
+        } else if (hoveredSubSegment === 'savings-target' && !isSimpleView) {
+            sTargetRatio = 0.85;
+            sExtraRatio = 0.15;
+        }
 
         // Utilization % (Relative to Category Limits)
         const getUtil = (val, limit) => (limit > 0 ? Math.round((val / limit) * 100) : 0);
@@ -615,8 +644,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     animate={{ width: `${finalNeedsPct}%` }}
                     transition={fluidSpring}
                     className="h-full relative"
-                    onMouseEnter={() => setHoveredSegment('needs')}
-                    onMouseLeave={() => setHoveredSegment(null)}
                 >
                     <Link
                         to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
@@ -626,6 +653,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <motion.div
                             animate={{ width: isSimpleView ? "100%" : `${nR.p * 100}%` }}
                             transition={fluidSpring}
+                            onMouseEnter={() => setHoveredSubSegment('needs-paid')}
+                            onMouseLeave={() => setHoveredSubSegment(null)}
                             className="h-full relative overflow-hidden flex items-center justify-center"
                             style={{ backgroundColor: needsColor }}
                         >
@@ -655,6 +684,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <motion.div
                             animate={{ width: isSimpleView ? "0%" : `${nR.u * 100}%` }}
                             transition={fluidSpring}
+                            onMouseEnter={() => setHoveredSubSegment('needs-unpaid')}
+                            onMouseLeave={() => setHoveredSubSegment(null)}
                             className="h-full bg-blue-500 opacity-60 overflow-hidden flex items-center justify-center"
                             style={stripePattern}
                         >
@@ -703,8 +734,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     animate={{ width: `${finalWantsPct}%` }}
                     transition={fluidSpring}
                     className="h-full relative"
-                    onMouseEnter={() => setHoveredSegment('wants')}
-                    onMouseLeave={() => setHoveredSegment(null)}
                 >
                     <Link
                         to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
@@ -713,6 +742,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <motion.div
                             animate={{ width: isSimpleView ? "100%" : `${wR.p * 100}%` }}
                             transition={fluidSpring}
+                            onMouseEnter={() => setHoveredSubSegment('wants-paid')}
+                            onMouseLeave={() => setHoveredSubSegment(null)}
                             className="h-full relative overflow-hidden flex items-center justify-center"
                             style={{ backgroundColor: wantsColor }}
                         >
@@ -738,6 +769,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <motion.div
                             animate={{ width: isSimpleView ? "0%" : `${wR.u * 100}%` }}
                             transition={fluidSpring}
+                            onMouseEnter={() => setHoveredSubSegment('wants-unpaid')}
+                            onMouseLeave={() => setHoveredSubSegment(null)}
                             className="h-full opacity-60 overflow-hidden"
                             style={{ backgroundColor: wantsColor, ...stripePattern }}
                         >
@@ -787,9 +820,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <motion.div
                             animate={{ width: isSimpleView ? "100%" : `${sTargetRatio * 100}%` }}
                             transition={fluidSpring}
+                            onMouseEnter={() => setHoveredSubSegment('savings-target')}
+                            onMouseLeave={() => setHoveredSubSegment(null)}
                             className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
-                            onMouseEnter={() => setHoveredSegment('savings')}
-                            onMouseLeave={() => setHoveredSegment(null)}
                         >
                             {!isSimpleView && (
                                 <div className="w-full px-1 flex items-center justify-between">
@@ -814,6 +847,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <motion.div
                             animate={{ width: isSimpleView ? "0%" : `${sExtraRatio * 100}%` }}
                             transition={fluidSpring}
+                            onMouseEnter={() => setHoveredSubSegment('savings-extra')}
+                            onMouseLeave={() => setHoveredSubSegment(null)}
                             className="h-full bg-emerald-300 border-l border-white/20 flex items-center justify-center relative overflow-hidden"
                         >
                             {!isSimpleView && sExtraRatio > 0.15 && (
