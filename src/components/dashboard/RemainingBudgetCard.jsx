@@ -692,7 +692,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     {/* Secondary Label (Right - Only if Unpaid segment is too small < 15% and this one is big enough) */}
                                     {nR.u <= 0.15 && nR.p > 0.15 && needsSegs.safeUnpaid > 0 && (
                                         <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
-                                            <TextSwap><span ref={el => textRefs.current['needs-unpaid'] = el}> // Fallback ref
+                                            <TextSwap><span ref={el => textRefs.current['needs-unpaid'] = el}>
                                                 Plan: {formatCurrency(needsSegs.safeUnpaid, settings)}
                                             </span></TextSwap>
                                         </div>
