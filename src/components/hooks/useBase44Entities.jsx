@@ -23,8 +23,7 @@ export const useTransactions = (startDate = null, endDate = null) => {
             }
             return await base44.entities.Transaction.list('-date', 500); // Smaller default list for general views
         },
-        initialData: [],
-        placeholderData: keepPreviousData, // Keeps "January" data visible while fetching "February"
+        keepPreviousData: true, // Keeps "January" data visible while fetching "February"
     });
 
     return { transactions, isLoading, error };
@@ -91,8 +90,8 @@ export const useCustomBudgetsAll = (user, monthStart = null, monthEnd = null) =>
                 100
             );
         },
-        initialData: [],
-        placeholderData: keepPreviousData,
+        // initialData: [],
+        keepPreviousData: true,
         enabled: !!user,
     });
 
@@ -122,8 +121,8 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
             // OPTIMIZATION: Server-side email filter
             return await base44.entities.SystemBudget.filter({ user_email: user.email });
         },
-        initialData: [],
-        placeholderData: keepPreviousData,
+        // initialData: [],
+        keepPreviousData: true,
         enabled: !!user,
     });
 
@@ -151,8 +150,8 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
                 endDate: monthEnd
             });
         },
-        initialData: [],
-        placeholderData: keepPreviousData,
+        // initialData: [],
+        keepPreviousData: true,
         enabled: !!user && !!monthStart && !!monthEnd,
     });
 
