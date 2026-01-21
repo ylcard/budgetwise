@@ -530,84 +530,71 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
         const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
 
-        // Calculate Layout Percentages (Outer widths relative to income)
+        // 1. Calculate Savings Values EARLY (Unified Source of Truth)
+        const totalSavings = Math.max(0, currentMonthIncome - totalSpent);
+        const sTarget = Math.min(savingsLimit, totalSavings);
+        const sExtra = Math.max(0, totalSavings - savingsLimit);
+        const sTotal = sTarget + sExtra;
+        const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
+        const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
+
+        // 2. Base Layout Percentages
         const safeTotalNeeds = needsSegs.total > 0 ? needsSegs.total : 0;
         const safeTotalWants = wantsSegs.total > 0 ? wantsSegs.total : 0;
 
-        // Ensure minimal visibility for clickable areas if they exist but are tiny
         const CLICKABLE_MIN_PCT = 5;
 
         const needsOuterPct = Math.max((safeTotalNeeds / safeIncome) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
         const wantsOuterPct = Math.max((safeTotalWants / safeIncome) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
-
         const savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
 
         // --- HOVER LOGIC ---
-        // The "Steal from the Richest" Algorithm
         const calculateDynamicLayout = () => {
-            if (!hoveredSubSegment) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
-
-            // 0. PRE-CHECK: If we are simple view, never expand
-            if (isSimpleView) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
-
-            if (!containerRef.current) return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
+            if (!hoveredSubSegment || isSimpleView || !containerRef.current) {
+                return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
+            }
 
             const [targetCat] = hoveredSubSegment.split('-');
             let current = { needs: needsOuterPct, wants: wantsOuterPct, savings: savingsOuterPct };
-
-            // 1. MEASURE: Does the text fit?
-            const textEl = textRefs.current[hoveredSubSegment];
-            if (!textEl) return { n: current.needs, w: current.wants, s: current.savings };
-
             const totalWidthPx = containerRef.current.offsetWidth;
-            const textWidthPx = textEl.scrollWidth; // Actual width of text content
 
-            // We need to determine the CURRENT width of the specific sub-segment being hovered
-            // to see if IT needs space.
-            // Note: This is an approximation based on the outer category width * internal ratio
-            // We can simplify: just check if the text is wider than the visual space provided.
-            const parentWidthPx = (current[targetCat] / 100) * totalWidthPx;
+            // Unified Category Check: Ensure all text in the category fits
+            const subTypes = targetCat === 'savings' ? ['target', 'extra'] : ['paid', 'unpaid'];
+            let maxRequiredPct = current[targetCat];
 
-            // Retrieve internal ratios to calculate actual sub-segment width (approx)
-            let internalRatio = 1;
-            if (targetCat === 'needs') internalRatio = hoveredSubSegment.includes('paid') ? needsSegs.safePaid / needsSegs.total : needsSegs.safeUnpaid / needsSegs.total;
-            if (targetCat === 'wants') internalRatio = hoveredSubSegment.includes('paid') ? wantsSegs.safePaid / wantsSegs.total : wantsSegs.safeUnpaid / wantsSegs.total;
-            if (targetCat === 'savings') {
-                // Use the pre-calculated ratios
-                internalRatio = hoveredSubSegment.includes('target') ? sTargetRatio : sExtraRatio;
-            }
+            subTypes.forEach(type => {
+                const key = `${targetCat}-${type}`;
+                const textEl = textRefs.current[key];
+                if (!textEl) return;
 
-            // If ratio is 0 (segment doesn't exist), we can't expand it
-            if (!internalRatio || internalRatio <= 0.01) return { n: current.needs, w: current.wants, s: current.savings };
+                // Calculate ratio safely to prevent NaN
+                let ratio = 0;
+                if (targetCat === 'needs') ratio = type === 'paid' ? needsSegs.safePaid / (needsSegs.total || 1) : needsSegs.safeUnpaid / (needsSegs.total || 1);
+                if (targetCat === 'wants') ratio = type === 'paid' ? wantsSegs.safePaid / (wantsSegs.total || 1) : wantsSegs.safeUnpaid / (wantsSegs.total || 1);
+                if (targetCat === 'savings') ratio = type === 'target' ? sTargetRatio : sExtraRatio;
 
-            const currentSubWidthPx = parentWidthPx * internalRatio;
+                if (ratio <= 0.05) return;
 
-            // PADDING: Add 24px buffer for comfortable reading
-            const requiredWidthPx = textWidthPx + 24;
+                const requiredWidthPx = textEl.scrollWidth + 32; // Buffer for comfortable reading
+                const currentSubPx = (current[targetCat] / 100) * totalWidthPx * ratio;
 
-            // 2. CHECK: If it already fits, DO NOTHING.
-            // This prevents "jitter" when hovering segments that are already big enough.
-            if (currentSubWidthPx >= requiredWidthPx) {
-                return { n: current.needs, w: current.wants, s: current.savings };
-            }
+                if (currentSubPx < requiredWidthPx) {
+                    const neededParentPct = (requiredWidthPx / ratio / totalWidthPx) * 100;
+                    if (neededParentPct > maxRequiredPct) maxRequiredPct = neededParentPct;
+                }
+            });
 
-            // 3. CALCULATE GAP: How much *Outer* width do we need to add to make the *Inner* part fit?
-            // Formula: RequiredOuter = RequiredSubPixel / InternalRatio / TotalPixel * 100
-            const requiredOuterPct = ((requiredWidthPx / internalRatio) / totalWidthPx) * 100;
+            const targetWidth = Math.min(maxRequiredPct, 70);
+            if (targetWidth <= current[targetCat] + 0.5) return current;
 
-            // Cap expansion to avoid breaking UI (max 70% of total bar)
-            const targetWidth = Math.min(requiredOuterPct, 70);
-
-            // Identify the Target, the Donor (widest other), and the Bystander
             const others = Object.keys(current).filter(k => k !== targetCat);
             const donorKey = current[others[0]] > current[others[1]] ? others[0] : others[1];
 
             const needed = targetWidth - current[targetCat];
-            const availableFromDonor = Math.max(0, current[donorKey] - 15); // Leave donor at least 15%
+            const availableFromDonor = Math.max(0, current[donorKey] - 12);
 
             const transferAmount = Math.min(needed, availableFromDonor);
 
-            // Apply Transfer
             current[targetCat] += transferAmount;
             current[donorKey] -= transferAmount;
 
