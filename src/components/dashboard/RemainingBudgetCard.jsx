@@ -521,6 +521,15 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
     // --- RENDER: UNIFIED BAR (Handles both Simple & Detailed via internal sizing) ---
     const renderUnifiedBar = () => {
+        // 1. Calculate Savings Values EARLY (so both Layout and Render use the same numbers)
+        const totalSavings = Math.max(0, currentMonthIncome - totalSpent);
+        const sTarget = Math.min(savingsLimit, totalSavings);
+        const sExtra = Math.max(0, totalSavings - savingsLimit);
+        const sTotal = sTarget + sExtra;
+
+        const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
+        const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
+
         // Calculate Layout Percentages (Outer widths relative to income)
         const safeTotalNeeds = needsSegs.total > 0 ? needsSegs.total : 0;
         const safeTotalWants = wantsSegs.total > 0 ? wantsSegs.total : 0;
@@ -564,9 +573,12 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             if (targetCat === 'needs') internalRatio = hoveredSubSegment.includes('paid') ? needsSegs.safePaid / needsSegs.total : needsSegs.safeUnpaid / needsSegs.total;
             if (targetCat === 'wants') internalRatio = hoveredSubSegment.includes('paid') ? wantsSegs.safePaid / wantsSegs.total : wantsSegs.safeUnpaid / wantsSegs.total;
             if (targetCat === 'savings') {
-                const sTotal = Math.min(savingsLimit, Math.max(0, currentMonthIncome - totalSpent)) + Math.max(0, (currentMonthIncome - totalSpent) - savingsLimit);
-                internalRatio = hoveredSubSegment.includes('target') ? (Math.min(savingsLimit, Math.max(0, currentMonthIncome - totalSpent)) / sTotal) : (Math.max(0, (currentMonthIncome - totalSpent) - savingsLimit) / sTotal);
+                // Use the pre-calculated ratios
+                internalRatio = hoveredSubSegment.includes('target') ? sTargetRatio : sExtraRatio;
             }
+
+            // If ratio is 0 (segment doesn't exist), we can't expand it
+            if (!internalRatio || internalRatio <= 0.01) return { n: current.needs, w: current.wants, s: current.savings };
 
             const currentSubWidthPx = parentWidthPx * internalRatio;
 
@@ -615,30 +627,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
         let nR = getRatios(needsSegs);
         let wR = getRatios(wantsSegs);
-
-        // Note: We removed the "Internal Expansion" block here.
-        // Since we are now expanding the OUTER width based on the internal ratio requirement,
-        // we don't need to skew the internal ratios artificially.
-        // This keeps the "Paid" vs "Unpaid" proportion true to reality, 
-        // but makes the whole block big enough to see the small one.
-
-        // Savings Split
-        // Simple: Target = 100%, Extra = 0% (Visually combined)
-        // Detailed: Split based on actuals
-        const totalSavings = Math.max(0, currentMonthIncome - totalSpent); // This aligns with 'savingsAmount'
-        // If we have extra savings, the "Target" bar shouldn't shrink below the target amount in detailed view
-        // actually, savings logic is: 
-        // Bar 1 (Dark): min(total, limit)
-        // Bar 2 (Light): max(0, total - limit)
-        const sTarget = Math.min(savingsLimit, totalSavings);
-        const sExtra = Math.max(0, totalSavings - savingsLimit);
-        const sTotal = sTarget + sExtra;
-
-        let sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
-        let sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
-
-        // Removed Savings Internal Hover logic to prevent "jumping" text.
-        // The outer expansion handles the space requirements now.
 
         // Utilization % (Relative to Category Limits)
         const getUtil = (val, limit) => (limit > 0 ? Math.round((val / limit) * 100) : 0);
