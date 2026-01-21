@@ -526,15 +526,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const sTarget = Math.min(savingsLimit, totalSavings);
         const sExtra = Math.max(0, totalSavings - savingsLimit);
         const sTotal = sTarget + sExtra;
-
-        const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
-        const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
-
-        // 1. Calculate Savings Values EARLY (Unified Source of Truth)
-        const totalSavings = Math.max(0, currentMonthIncome - totalSpent);
-        const sTarget = Math.min(savingsLimit, totalSavings);
-        const sExtra = Math.max(0, totalSavings - savingsLimit);
-        const sTotal = sTarget + sExtra;
         const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
         const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
 
