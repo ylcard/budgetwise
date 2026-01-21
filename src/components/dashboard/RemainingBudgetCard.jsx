@@ -789,20 +789,18 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     </div>
                                 </div>
 
-                                {!isSimpleView && bonusSavingsPotential > 0 && !isTotalOver && (
-                                    <div className="text-right hidden sm:block">
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
-                                            <TrendingUp className="w-3 h-3 text-emerald-600" />
-                                            <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
-                                        </div>
-                                    </div>
-                                )}
                                 {!isTotalOver && (
-                                    <div className="text-right hidden sm:block">
+                                    <div className="hidden sm:flex flex-col items-end gap-2">
                                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100">
                                             <Wallet className="w-3 h-3 text-gray-500" />
                                             <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
                                         </div>
+                                        {!isSimpleView && bonusSavingsPotential > 0 && (
+                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
+                                                <TrendingUp className="w-3 h-3 text-emerald-600" />
+                                                <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
