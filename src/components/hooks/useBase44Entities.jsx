@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
 import { getMonthlyIncome, resolveBudgetLimit } from "../utils/financialCalculations";
 import { useSettings } from "../utils/SettingsContext";
@@ -24,6 +24,7 @@ export const useTransactions = (startDate = null, endDate = null) => {
             return await base44.entities.Transaction.list('-date', 500); // Smaller default list for general views
         },
         initialData: [],
+        placeholderData: keepPreviousData, // Keeps "January" data visible while fetching "February"
     });
 
     return { transactions, isLoading, error };
@@ -91,6 +92,7 @@ export const useCustomBudgetsAll = (user, monthStart = null, monthEnd = null) =>
             );
         },
         initialData: [],
+        placeholderData: keepPreviousData,
         enabled: !!user,
     });
 
@@ -121,6 +123,7 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
             return await base44.entities.SystemBudget.filter({ user_email: user.email });
         },
         initialData: [],
+        placeholderData: keepPreviousData,
         enabled: !!user,
     });
 
@@ -149,6 +152,7 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
             });
         },
         initialData: [],
+        placeholderData: keepPreviousData,
         enabled: !!user && !!monthStart && !!monthEnd,
     });
 
