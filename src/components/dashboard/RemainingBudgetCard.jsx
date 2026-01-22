@@ -389,7 +389,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
     // --- UNIFIED SEGMENT HELPERS ---
     // Pre-calculate segments for both views to ensure smooth transitions
-    const stripePattern = {
+    const STRIPE_PATTERN = {
         backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
         backgroundSize: '8px 8px'
     };
