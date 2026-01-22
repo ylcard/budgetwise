@@ -79,7 +79,12 @@ const SmartSegment = memo(({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <motion.span layout ref={textRef} className="flex items-center justify-center px-1 whitespace-nowrap">
+            <motion.span
+                layout
+                ref={textRef}
+                className="flex items-center justify-center px-1 whitespace-nowrap"
+                transition={fluidSpring} // Ensure text moves at same speed as box
+            >
                 {children}
             </motion.span>
         </motion.div>
