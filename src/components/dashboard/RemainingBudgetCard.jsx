@@ -49,7 +49,7 @@ const SmartSegment = memo(({
         if (containerRef.current && textRef.current) {
             const containerWidth = containerRef.current.offsetWidth;
             const textWidth = textRef.current.offsetWidth;
-            const requiredWidth = textWidth + 40; // Text + Padding Buffer
+            const requiredWidth = textWidth + 400; // Text + Padding Buffer
 
             // Logic: Calculate exact pixels needed
             if (requiredWidth > containerWidth) {
