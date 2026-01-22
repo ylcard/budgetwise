@@ -690,7 +690,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ ...STRIPE_PATTERN, opacity: 0.6 }}
                             direction={nR.p > 0 ? "center" : "left"}
                         >
-                            {!isSimpleView && nR.u > 0.15 && (
+                            {!isSimpleView && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white px-1 whitespace-nowrap">
                                     <TextSwap>
                                         {formatCurrency(needsSegs.safeUnpaid, settings)} ({needsUnpaidUtil}%)
@@ -763,7 +763,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ ...STRIPE_PATTERN, opacity: 0.6 }}
                             direction="center"
                         >
-                            {!isSimpleView && wR.u > 0.15 && (
+                            {!isSimpleView && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
                                     <TextSwap>
                                         {formatCurrency(wantsSegs.safeUnpaid, settings)} ({wantsUnpaidUtil}%)
@@ -838,7 +838,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ borderLeft: "1px solid rgba(255,255,255,0.2)" }}
                             direction="right" // Always right edge
                         >
-                            {!isSimpleView && sExtraRatio > 0.15 && (
+                            {!isSimpleView && (
                                 <div className="text-[11px] sm:text-xs font-bold text-emerald-800 truncate px-1">
                                     <TextSwap>
                                         {formatCurrency(sExtra, settings)} ({extraSavingsUtil}%)
