@@ -521,7 +521,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
     // --- RENDER: UNIFIED BAR (Handles both Simple & Detailed via internal sizing) ---
     const renderUnifiedBar = () => {
-        // 1. Calculate Savings Values EARLY (so both Layout and Render use the same numbers)
+        // Calculate savings values
         const totalSavings = Math.max(0, currentMonthIncome - totalSpent);
         const sTarget = Math.min(savingsLimit, totalSavings);
         const sExtra = Math.max(0, totalSavings - savingsLimit);
@@ -529,71 +529,50 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
         const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
 
-        // 2. Base Layout Percentages
+        // Base layout percentages (relative to income)
         const safeTotalNeeds = needsSegs.total > 0 ? needsSegs.total : 0;
         const safeTotalWants = wantsSegs.total > 0 ? wantsSegs.total : 0;
-
         const CLICKABLE_MIN_PCT = 5;
 
-        const needsOuterPct = Math.max((safeTotalNeeds / safeIncome) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
-        const wantsOuterPct = Math.max((safeTotalWants / safeIncome) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
-        const savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
+        const needsBasePct = Math.max((safeTotalNeeds / safeIncome) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
+        const wantsBasePct = Math.max((safeTotalWants / safeIncome) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
+        const savingsBasePct = Math.max(0, 100 - needsBasePct - wantsBasePct);
 
-        // --- HOVER LOGIC ---
-        const calculateDynamicLayout = () => {
-            if (!hoveredSubSegment || isSimpleView || !containerRef.current) {
-                return { n: needsOuterPct, w: wantsOuterPct, s: savingsOuterPct };
+        // Calculate final widths based on hover state
+        let finalNeedsPct = needsBasePct;
+        let finalWantsPct = wantsBasePct;
+        let finalSavingsPct = savingsBasePct;
+
+        // Only expand on hover in detailed view
+        if (!isSimpleView && hoveredSubSegment && containerRef.current) {
+            const [hoveredCat] = hoveredSubSegment.split('-');
+            const MIN_WIDTH_PCT = 30; // Minimum comfortable width for reading
+
+            if (hoveredCat === 'needs' && needsBasePct < MIN_WIDTH_PCT) {
+                const needed = MIN_WIDTH_PCT - needsBasePct;
+                const available = Math.max(0, Math.max(wantsBasePct, savingsBasePct) - 12);
+                const expansion = Math.min(needed, available);
+                finalNeedsPct += expansion;
+                if (wantsBasePct > savingsBasePct) finalWantsPct -= expansion;
+                else finalSavingsPct -= expansion;
+            } else if (hoveredCat === 'wants' && wantsBasePct < MIN_WIDTH_PCT) {
+                const needed = MIN_WIDTH_PCT - wantsBasePct;
+                const available = Math.max(0, Math.max(needsBasePct, savingsBasePct) - 12);
+                const expansion = Math.min(needed, available);
+                finalWantsPct += expansion;
+                if (needsBasePct > savingsBasePct) finalNeedsPct -= expansion;
+                else finalSavingsPct -= expansion;
+            } else if (hoveredCat === 'savings' && savingsBasePct < MIN_WIDTH_PCT) {
+                const needed = MIN_WIDTH_PCT - savingsBasePct;
+                const available = Math.max(0, Math.max(needsBasePct, wantsBasePct) - 12);
+                const expansion = Math.min(needed, available);
+                finalSavingsPct += expansion;
+                if (needsBasePct > wantsBasePct) finalNeedsPct -= expansion;
+                else finalWantsPct -= expansion;
             }
+        }
 
-            const [targetCat] = hoveredSubSegment.split('-');
-            let current = { needs: needsOuterPct, wants: wantsOuterPct, savings: savingsOuterPct };
-            const totalWidthPx = containerRef.current.offsetWidth;
-
-            // Unified Category Check: Ensure all text in the category fits
-            const subTypes = targetCat === 'savings' ? ['target', 'extra'] : ['paid', 'unpaid'];
-            let maxRequiredPct = current[targetCat];
-
-            subTypes.forEach(type => {
-                const key = `${targetCat}-${type}`;
-                const textEl = textRefs.current[key];
-                if (!textEl) return;
-
-                // Calculate ratio safely to prevent NaN
-                let ratio = 0;
-                if (targetCat === 'needs') ratio = type === 'paid' ? needsSegs.safePaid / (needsSegs.total || 1) : needsSegs.safeUnpaid / (needsSegs.total || 1);
-                if (targetCat === 'wants') ratio = type === 'paid' ? wantsSegs.safePaid / (wantsSegs.total || 1) : wantsSegs.safeUnpaid / (wantsSegs.total || 1);
-                if (targetCat === 'savings') ratio = type === 'target' ? sTargetRatio : sExtraRatio;
-
-                if (ratio <= 0.05) return;
-
-                const requiredWidthPx = textEl.scrollWidth + 32; // Buffer for comfortable reading
-                const currentSubPx = (current[targetCat] / 100) * totalWidthPx * ratio;
-
-                if (currentSubPx < requiredWidthPx) {
-                    const neededParentPct = (requiredWidthPx / ratio / totalWidthPx) * 100;
-                    if (neededParentPct > maxRequiredPct) maxRequiredPct = neededParentPct;
-                }
-            });
-
-            const targetWidth = Math.min(maxRequiredPct, 70);
-            if (targetWidth <= current[targetCat] + 0.5) return current;
-
-            const others = Object.keys(current).filter(k => k !== targetCat);
-            const donorKey = current[others[0]] > current[others[1]] ? others[0] : others[1];
-
-            const needed = targetWidth - current[targetCat];
-            const availableFromDonor = Math.max(0, current[donorKey] - 12);
-
-            const transferAmount = Math.min(needed, availableFromDonor);
-
-            current[targetCat] += transferAmount;
-            current[donorKey] -= transferAmount;
-
-            return { n: current.needs, w: current.wants, s: current.savings };
-        };
-
-        const { n: finalNeedsPct, w: finalWantsPct, s: finalSavingsPct } = calculateDynamicLayout();
-
+        // Calculate ratios for sub-segments
         const getRatios = (segments) => {
             if (segments.total === 0) return { p: 0, u: 0, o: 0 };
             return {
@@ -603,21 +582,21 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             };
         };
 
-        let nR = getRatios(needsSegs);
-        let wR = getRatios(wantsSegs);
+        const nR = getRatios(needsSegs);
+        const wR = getRatios(wantsSegs);
 
-        // Utilization % (Relative to Category Limits)
+        // Utilization percentages (relative to limits)
         const getUtil = (val, limit) => (limit > 0 ? Math.round((val / limit) * 100) : 0);
 
         const needsPaidUtil = getUtil(needsSegs.safePaid, needsLimit);
         const needsUnpaidUtil = getUtil(needsSegs.safeUnpaid, needsLimit);
-        const wantsPaidUtil = getUtil(wantsSegs.safePaid, wantsLimit); // Using Paid Total (Direct + Custom)
+        const wantsPaidUtil = getUtil(wantsSegs.safePaid, wantsLimit);
         const wantsUnpaidUtil = getUtil(wantsSegs.safeUnpaid, wantsLimit);
         const totalSavingsUtil = getUtil(totalSavings, savingsLimit);
         const targetSavingsUtil = getUtil(sTarget, savingsLimit);
         const extraSavingsUtil = getUtil(sExtra, savingsLimit);
 
-        // Labels
+        // Labels for simple view
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
         const savingsLabel = `${Math.round(savingsPct)}%`;
