@@ -71,7 +71,10 @@ const SmartSegment = memo(({
                 paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
                 paddingRight: (isHovered && needsExpansion) ? 8 : 0,
             }}
-            transition={fluidSpring}
+            transition={{
+                ...fluidSpring,
+                layout: fluidSpring
+            }}
             style={{ backgroundColor: color, ...style }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={() => setIsHovered(false)}
