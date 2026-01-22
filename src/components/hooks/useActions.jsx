@@ -133,19 +133,11 @@ export const useGoalActions = (user, goals) => {
 
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
             const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
-
-            // CRITICAL: Overlay the updated goal onto the fetched list.
-            // This prevents a race condition where the DB fetch might return the old data 
-            // before the write has fully propagated, causing snapshotFutureBudgets to use stale data.
-            const updatedGoals = allGoals.map(g =>
-                g.id === variables.id ? { ...g, ...variables.data, priority: variables.priority } : g
-            );
-
             await snapshotFutureBudgets(
                 { ...variables.data, priority: variables.priority },
                 settings,
                 user?.email,
-                updatedGoals
+                allGoals
             );
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
@@ -158,17 +150,9 @@ export const useGoalActions = (user, goals) => {
         mutationFn: (data) => base44.entities.BudgetGoal.create(data),
         onSuccess: async (data, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
-
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
             const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
-
-            // FIX: Deduplicate to prevent race conditions.
-            // 1. Remove any goal from DB fetch that matches the new priority (if DB was fast)
-            // 2. Add the definitive 'data' from the server response
-            const otherGoals = allGoals.filter(g => g.priority !== variables.priority);
-            const updatedGoals = [...otherGoals, data];const updatedGoals = [...allGoals, variables];
-
-            await snapshotFutureBudgets(variables, settings, user?.email, updatedGoals);
+            await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
         onError: (error) => {
