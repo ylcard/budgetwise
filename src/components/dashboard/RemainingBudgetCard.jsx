@@ -685,13 +685,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             </TextSwap>
                                         </div>
                                     )}
-                                    {wR.u <= 0.15 && wR.p > 0.15 && wantsSegs.safeUnpaid > 0 && (
-                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
-                                            <TextSwap>
-                                                Plan: {formatCurrency(wantsSegs.safeUnpaid, settings)}
-                                            </TextSwap>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </motion.div>
