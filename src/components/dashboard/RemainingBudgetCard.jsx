@@ -133,9 +133,9 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
         } else {
             // Clean inputs
             payloadMap = {
-                needs: parseFloat(absValues.needs.toString().replace(',', '.')) || 0,
-                wants: parseFloat(absValues.wants.toString().replace(',', '.')) || 0,
-                savings: parseFloat(absValues.savings.toString().replace(',', '.')) || 0
+                needs: parseFloat(String(absValues.needs).replace(',', '.')) || 0,
+                wants: parseFloat(String(absValues.wants).replace(',', '.')) || 0,
+                savings: parseFloat(String(absValues.savings).replace(',', '.')) || 0
             };
         }
 
@@ -443,7 +443,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             prevMonthRef.current = selectedMonth;
             prevYearRef.current = selectedYear;
             lastContextChangeTime.current = Date.now();
-            return; 
+            return;
         }
 
         // Check if we went from 0 (or undefined) to having money
