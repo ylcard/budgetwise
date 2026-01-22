@@ -22,6 +22,11 @@ const fluidSpring = {
     mass: 1
 };
 
+const STRIPE_PATTERN = {
+    backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
+    backgroundSize: '8px 8px'
+};
+
 // --- SMART SEGMENT (Handles Hover Expansion) ---
 const SmartSegment = memo(({
     widthPct,
@@ -37,7 +42,7 @@ const SmartSegment = memo(({
     const textRef = useRef(null);
 
     // If segment is effectively invisible, don't render (avoids 0px glitches)
-    if (widthPct <= 0.01) return null;
+    if (widthPct <= 0.001) return null;
 
     const handleMouseEnter = () => {
         if (containerRef.current && textRef.current) {
@@ -56,37 +61,24 @@ const SmartSegment = memo(({
 
     return (
         <motion.div
+            layout
             ref={containerRef}
-            className={`relative h-full ${className}`}
-            initial={{ width: 0 }}
-            animate={{ width: `${widthPct}%` }}
+            className={`h-full flex items-center justify-center overflow-hidden ${className}`} // Removed relative/absolute
+            initial={false}
+            animate={{
+                flex: widthPct, // Behaves like a weight ratio
+                minWidth: (isHovered && needsExpansion) ? "max-content" : 0, // Force space if needed
+                paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
+                paddingRight: (isHovered && needsExpansion) ? 8 : 0,
+            }}
             transition={fluidSpring}
+            style={{ backgroundColor: color, ...style }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <motion.div
-                className="absolute top-0 bottom-0 flex items-center justify-center overflow-hidden whitespace-nowrap shadow-sm border-r border-white/10"
-                initial={false}
-                animate={{
-                    // Only expand if hovered AND measurement said we need space
-                    width: (isHovered && needsExpansion) ? "auto" : "100%",
-                    paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
-                    paddingRight: (isHovered && needsExpansion) ? 8 : 0,
-                    zIndex: (isHovered && needsExpansion) ? 50 : 1,
-                    left: direction === 'left' ? 0 : (direction === 'center' ? '50%' : 'auto'),
-                    right: direction === 'right' ? 0 : 'auto',
-                    x: direction === 'center' ? '-50%' : 0, // Center alignment transform
-                    scale: (isHovered && needsExpansion) ? 1.05 : 1,
-                    boxShadow: (isHovered && needsExpansion) ? "0 4px 12px rgba(0,0,0,0.2)" : "none"
-                }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                style={{ backgroundColor: color, ...style }}
-            >
-                {/* Wrap children in span so we can measure the actual text width */}
-                <span ref={textRef} className="flex items-center justify-center px-1">
-                    {children}
-                </span>
-            </motion.div>
+            <motion.span layout ref={textRef} className="flex items-center justify-center px-1 whitespace-nowrap">
+                {children}
+            </motion.span>
         </motion.div>
     );
 });
@@ -413,11 +405,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
     // --- UNIFIED SEGMENT HELPERS ---
     // Pre-calculate segments for both views to ensure smooth transitions
-    const STRIPE_PATTERN = {
-        backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
-        backgroundSize: '8px 8px'
-    };
-
     const needsSegs = calculateSegments(needsData.paid, needsData.unpaid, needsLimit);
     const wantsPaidTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0);
     const wantsUnpaidTotal = (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
@@ -653,15 +640,15 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
                 {/* NEEDS SEGMENT */}
                 <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${needsOuterPct}%` }}
+                    layout
+                    initial={false}
+                    animate={{ flex: needsOuterPct }}
                     transition={fluidSpring}
-                    className="h-full relative"
+                    className="h-full relative flex min-w-0"
                 >
                     <Link
                         to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
-                        // Removed overflow-hidden so children can expand
-                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
+                        className={`flex h-full w-full ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
                     >
                         {/* Paid Part (Shrinks to reveal Unpaid) */}
                         <SmartSegment
@@ -730,14 +717,15 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
                 {/* WANTS SEGMENT */}
                 <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${wantsOuterPct}%` }}
+                    layout
+                    initial={false}
+                    animate={{ flex: wantsOuterPct }}
                     transition={fluidSpring}
-                    className="h-full relative"
+                    className="h-full relative flex min-w-0"
                 >
                     <Link
                         to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
-                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
+                        className={`flex h-full w-full ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
                     >
                         <SmartSegment
                             widthPct={isSimpleView ? 100 : wR.p * 100}
@@ -801,10 +789,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 {/* SAVINGS SEGMENT (Unified) */}
                 {savingsOuterPct > 0 && (
                     <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${savingsOuterPct}%` }}
+                        layout
+                        initial={false}
+                        animate={{ flex: savingsOuterPct }}
                         transition={fluidSpring}
-                        className="h-full relative flex overflow-hidden"
+                        className="h-full relative flex min-w-0"
                     >
                         {/* Target Savings (Dark Green) */}
                         <SmartSegment
