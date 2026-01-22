@@ -17,7 +17,7 @@ import confetti from "canvas-confetti";
 // --- SHARED CONFIG ---
 const fluidSpring = {
     type: "spring",
-    stiffness: 120,
+    stiffness: 40,
     damping: 20,
     mass: 1
 };
