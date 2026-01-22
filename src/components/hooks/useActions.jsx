@@ -133,12 +133,19 @@ export const useGoalActions = (user, goals) => {
 
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
             const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
-            
+
+            // CRITICAL: Overlay the updated goal onto the fetched list.
+            // This prevents a race condition where the DB fetch might return the old data 
+            // before the write has fully propagated, causing snapshotFutureBudgets to use stale data.
+            const updatedGoals = allGoals.map(g =>
+                g.id === variables.id ? { ...g, ...variables.data, priority: variables.priority } : g
+            );
+
             await snapshotFutureBudgets(
-                { ...variables.data, priority: variables.priority }, 
-                settings, 
-                user?.email, 
-                allGoals
+                { ...variables.data, priority: variables.priority },
+                settings,
+                user?.email,
+                updatedGoals
             );
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
@@ -151,11 +158,15 @@ export const useGoalActions = (user, goals) => {
         mutationFn: (data) => base44.entities.BudgetGoal.create(data),
         onSuccess: async (data, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
-            
+
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
             const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
-            
-            await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
+
+            // Optimistically add the new goal to the list for the snapshot
+            // Note: variables doesn't have an ID yet, but snapshot logic usually just needs priority/values
+            const updatedGoals = [...allGoals, variables];
+
+            await snapshotFutureBudgets(variables, settings, user?.email, updatedGoals);
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
         onError: (error) => {
