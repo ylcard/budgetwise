@@ -32,36 +32,60 @@ const SmartSegment = memo(({
     style = {}
 }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const [needsExpansion, setNeedsExpansion] = useState(false);
+    const containerRef = useRef(null);
+    const textRef = useRef(null);
 
     // If segment is effectively invisible, don't render (avoids 0px glitches)
     if (widthPct <= 0.01) return null;
 
+    const handleMouseEnter = () => {
+        if (containerRef.current && textRef.current) {
+            const containerWidth = containerRef.current.offsetWidth;
+            const textWidth = textRef.current.offsetWidth;
+
+            // Logic: Only expand if the text + buffer (16px) is wider than the container
+            if (textWidth + 16 > containerWidth) {
+                setNeedsExpansion(true);
+            } else {
+                setNeedsExpansion(false);
+            }
+        }
+        setIsHovered(true);
+    };
+
     return (
         <motion.div
+            ref={containerRef}
             className={`relative h-full ${className}`}
             initial={{ width: 0 }}
             animate={{ width: `${widthPct}%` }}
             transition={fluidSpring}
-            onMouseEnter={() => setIsHovered(true)}
+            onMouseEnter={handleMouseEnter}
             onMouseLeave={() => setIsHovered(false)}
         >
             <motion.div
                 className="absolute top-0 bottom-0 flex items-center justify-center overflow-hidden whitespace-nowrap shadow-sm border-r border-white/10"
                 initial={false}
                 animate={{
-                    width: isHovered ? "auto" : "100%", // Expand to fit content
-                    minWidth: isHovered ? 110 : "100%", // Minimum readable width on hover
-                    zIndex: isHovered ? 50 : 1, // Pop over neighbors
+                    // Only expand if hovered AND measurement said we need space
+                    width: (isHovered && needsExpansion) ? "auto" : "100%",
+                    paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
+                    paddingRight: (isHovered && needsExpansion) ? 8 : 0,
+                    zIndex: (isHovered && needsExpansion) ? 50 : 1,
                     left: direction === 'left' ? 0 : (direction === 'center' ? '50%' : 'auto'),
                     right: direction === 'right' ? 0 : 'auto',
                     x: direction === 'center' ? '-50%' : 0, // Center alignment transform
-                    scale: isHovered ? 1.05 : 1, // Slight pop effect
-                    boxShadow: isHovered ? "0 4px 12px rgba(0,0,0,0.2)" : "none"
+                    scale: (isHovered && needsExpansion) ? 1.05 : 1,
+                    boxShadow: (isHovered && needsExpansion) ? "0 4px 12px rgba(0,0,0,0.2)" : "none"
                 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 style={{ backgroundColor: color, ...style }}
             >
-                {children}
+                {/* Wrap children in span so we can measure the actual text width */}
+                <span ref={textRef} className="flex items-center justify-center px-1">
+                    {children}
+                </span>
             </motion.div>
         </motion.div>
     );
