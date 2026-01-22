@@ -609,14 +609,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             </TextSwap>
                                         </div>
                                     )}
-                                    {/* Secondary Label (Right - Only if Unpaid segment is too small < 15% and this one is big enough) */}
-                                    {nR.u <= 0.15 && nR.p > 0.15 && needsSegs.safeUnpaid > 0 && (
-                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
-                                            <TextSwap>
-                                                Plan: {formatCurrency(needsSegs.safeUnpaid, settings)}
-                                            </TextSwap>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </motion.div>
