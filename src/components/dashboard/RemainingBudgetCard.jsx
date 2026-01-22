@@ -663,7 +663,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <SmartSegment
                             widthPct={isSimpleView ? 0 : nR.u * 100}
                             color={needsColor}
-                            style={{ ...stripePattern, opacity: 0.6 }}
+                            style={{ ...STRIPE_PATTERN, opacity: 0.6 }}
                             direction={nR.p > 0 ? "center" : "left"}
                         >
                             {!isSimpleView && nR.u > 0.15 && (
@@ -674,7 +674,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 </div>
                             )}
                         </SmartSegment>
-
+                        widthPct={isSimpleView ? 0 : nR.o * 100}
                         {/* Overflow Part */}
                         <SmartSegment
                             widthPct={isSimpleView ? 0 : nR.o * 100}
@@ -737,7 +737,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <SmartSegment
                             widthPct={isSimpleView ? 0 : wR.u * 100}
                             color={wantsColor}
-                            style={{ ...stripePattern, opacity: 0.6 }}
+                            style={{ ...STRIPE_PATTERN, opacity: 0.6 }}
                             direction="center"
                         >
                             {!isSimpleView && wR.u > 0.15 && (
@@ -752,7 +752,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <SmartSegment
                             widthPct={isSimpleView ? 0 : wR.o * 100}
                             color="red"
-                            style={{ ...stripePattern, opacity: 0.6 }}
+                            style={{ ...STRIPE_PATTERN, opacity: 0.6 }}
                             direction="center"
                         />
 
@@ -1032,7 +1032,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                                         <div className="w-2 h-2 bg-gray-400 rounded-sm"></div> Paid
                                                     </span>
                                                     <span className="flex items-center gap-1">
-                                                        <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)', backgroundSize: '8px 8px' }}></div> Unpaid
+                                                        <div className="w-2 h-2 bg-gray-400/50 rounded-sm" style={STRIPE_PATTERN}></div> Unpaid
                                                     </span>
                                                 </motion.div>
                                             )}
