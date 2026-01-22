@@ -451,6 +451,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Ensure we are detecting a change WITHIN the same month context, not a navigation event
         const isSameContext = prevMonthRef.current === selectedMonth && prevYearRef.current === selectedYear;
 
+        // If context changed, strictly update refs and exit to prevent false positives
+        if (!isSameContext) {
+            prevIncomeRef.current = currentIncome;
+            prevMonthRef.current = selectedMonth;
+            prevYearRef.current = selectedYear;
+            lastContextChangeTime.current = Date.now();
+            return; 
+        }
 
         // Check if we went from 0 (or undefined) to having money
         // AND ensure this isn't just the page loading (wait 1s buffer)
