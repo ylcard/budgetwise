@@ -600,7 +600,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ backgroundColor: needsColor }}
                         >
                             {!isSimpleView && (
-                                <div className="w-full px-1 flex items-center justify-between">
+                                <div className="w-full px-1 flex items-center justify-center">
                                     {/* Primary Label (Left) */}
                                     {nR.p > 0.1 && (
                                         <div className="text-[11px] sm:text-xs font-bold text-white overflow-hidden whitespace-nowrap">
@@ -677,7 +677,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             style={{ backgroundColor: wantsColor }}
                         >
                             {!isSimpleView && (
-                                <div className="w-full px-1 flex items-center justify-between">
+                                <div className="w-full px-1 flex items-center justify-center">
                                     {wR.p > 0.1 && (
                                         <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap">
                                             <TextSwap>
@@ -743,7 +743,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
                         >
                             {!isSimpleView && (
-                                <div className="w-full px-1 flex items-center justify-between">
+                                <div className="w-full px-1 flex items-center justify-center">
                                     {sTargetRatio > 0.1 && (
                                         <div className="text-[11px] sm:text-xs font-bold text-white truncate px-1">
                                             <TextSwap>
