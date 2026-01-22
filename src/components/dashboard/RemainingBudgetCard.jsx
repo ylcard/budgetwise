@@ -674,7 +674,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 </div>
                             )}
                         </SmartSegment>
-                        widthPct={isSimpleView ? 0 : nR.o * 100}
                         {/* Overflow Part */}
                         <SmartSegment
                             widthPct={isSimpleView ? 0 : nR.o * 100}
