@@ -38,6 +38,7 @@ const SmartSegment = memo(({
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [needsExpansion, setNeedsExpansion] = useState(false);
+    const [expandedWidth, setExpandedWidth] = useState(0); // <--- NEW STATE
     const containerRef = useRef(null);
     const textRef = useRef(null);
 
@@ -48,9 +49,11 @@ const SmartSegment = memo(({
         if (containerRef.current && textRef.current) {
             const containerWidth = containerRef.current.offsetWidth;
             const textWidth = textRef.current.offsetWidth;
+            const requiredWidth = textWidth + 24; // Text + Padding Buffer
 
-            // Logic: Only expand if the text + buffer (16px) is wider than the container
-            if (textWidth + 16 > containerWidth) {
+            // Logic: Calculate exact pixels needed
+            if (requiredWidth > containerWidth) {
+                setExpandedWidth(requiredWidth); // Set the target pixel number
                 setNeedsExpansion(true);
             } else {
                 setNeedsExpansion(false);
@@ -63,11 +66,11 @@ const SmartSegment = memo(({
         <motion.div
             layout
             ref={containerRef}
-            className={`h-full flex items-center justify-center overflow-hidden ${className}`} // Removed relative/absolute
+            className={`h-full flex items-center justify-center overflow-hidden ${className}`}
             initial={false}
             animate={{
-                flex: widthPct, // Behaves like a weight ratio
-                minWidth: (isHovered && needsExpansion) ? "max-content" : 0, // Force space if needed
+                flex: widthPct,
+                minWidth: (isHovered && needsExpansion) ? expandedWidth : 0, 
                 paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
                 paddingRight: (isHovered && needsExpansion) ? 8 : 0,
             }}
