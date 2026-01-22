@@ -22,7 +22,52 @@ const fluidSpring = {
     mass: 1
 };
 
-// --- STABLE HELPERS (Defined outside to prevent re-animation) ---
+// --- SMART SEGMENT (Handles Hover Expansion) ---
+const SmartSegment = memo(({
+    widthPct,
+    color,
+    children,
+    direction = 'center', // 'left', 'center', 'right'
+    className = "",
+    style = {}
+}) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    // If segment is effectively invisible, don't render (avoids 0px glitches)
+    if (widthPct <= 0.01) return null;
+
+    return (
+        <motion.div
+            className={`relative h-full ${className}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${widthPct}%` }}
+            transition={fluidSpring}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <motion.div
+                className="absolute top-0 bottom-0 flex items-center justify-center overflow-hidden whitespace-nowrap shadow-sm border-r border-white/10"
+                initial={false}
+                animate={{
+                    width: isHovered ? "auto" : "100%", // Expand to fit content
+                    minWidth: isHovered ? 110 : "100%", // Minimum readable width on hover
+                    zIndex: isHovered ? 50 : 1, // Pop over neighbors
+                    left: direction === 'left' ? 0 : (direction === 'center' ? '50%' : 'auto'),
+                    right: direction === 'right' ? 0 : 'auto',
+                    x: direction === 'center' ? '-50%' : 0, // Center alignment transform
+                    scale: isHovered ? 1.05 : 1, // Slight pop effect
+                    boxShadow: isHovered ? "0 4px 12px rgba(0,0,0,0.2)" : "none"
+                }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                style={{ backgroundColor: color, ...style }}
+            >
+                {children}
+            </motion.div>
+        </motion.div>
+    );
+});
+
+// --- LEGACY HELPERS (Refactored out but kept if needed elsewhere, though unused in new bar) ---
 const AnimatedSegment = memo(({ width, color, children, className = "", style = {}, to }) => (
     <motion.div
         initial={{ width: 0 }}
@@ -576,6 +621,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Labels
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
+        // savingsLabel unused but kept for ref
         const savingsLabel = `${Math.round(savingsPct)}%`;
 
         return (
@@ -590,14 +636,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 >
                     <Link
                         to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
-                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''} overflow-hidden`}
+                        // Removed overflow-hidden so children can expand
+                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
                     >
                         {/* Paid Part (Shrinks to reveal Unpaid) */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "100%" : `${nR.p * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full relative overflow-hidden flex items-center justify-center"
-                            style={{ backgroundColor: needsColor }}
+                        <SmartSegment
+                            widthPct={isSimpleView ? 100 : nR.p * 100}
+                            color={needsColor}
+                            direction="left" // Always left edge
                         >
                             {!isSimpleView && (
                                 <div className="w-full px-1 flex items-center justify-center">
@@ -611,14 +657,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     )}
                                 </div>
                             )}
-                        </motion.div>
+                        </SmartSegment>
 
                         {/* Unpaid Part (Grows from 0) */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${nR.u * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full bg-blue-500 opacity-60 overflow-hidden flex items-center justify-center"
-                            style={stripePattern}
+                        <SmartSegment
+                            widthPct={isSimpleView ? 0 : nR.u * 100}
+                            color={needsColor}
+                            style={{ ...stripePattern, opacity: 0.6 }}
+                            direction={nR.p > 0 ? "center" : "left"}
                         >
                             {!isSimpleView && nR.u > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white px-1 whitespace-nowrap">
@@ -627,14 +673,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     </TextSwap>
                                 </div>
                             )}
-                        </motion.div>
+                        </SmartSegment>
 
                         {/* Overflow Part */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${nR.o * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full bg-red-500 opacity-60 overflow-hidden"
-                            style={{ backgroundColor: 'red', ...stripePattern }}
+                        <SmartSegment
+                            widthPct={isSimpleView ? 0 : nR.o * 100}
+                            color="red"
+                            style={{ ...stripePattern, opacity: 0.6 }}
+                            direction="center"
                         />
 
                         {/* SIMPLE VIEW LABEL OVERLAY */}
@@ -668,13 +714,12 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 >
                     <Link
                         to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
-                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''} overflow-hidden`}
+                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
                     >
-                        <motion.div
-                            animate={{ width: isSimpleView ? "100%" : `${wR.p * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full relative overflow-hidden flex items-center justify-center"
-                            style={{ backgroundColor: wantsColor }}
+                        <SmartSegment
+                            widthPct={isSimpleView ? 100 : wR.p * 100}
+                            color={wantsColor}
+                            direction="center"
                         >
                             {!isSimpleView && (
                                 <div className="w-full px-1 flex items-center justify-center">
@@ -687,12 +732,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     )}
                                 </div>
                             )}
-                        </motion.div>
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${wR.u * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full opacity-60 overflow-hidden"
-                            style={{ backgroundColor: wantsColor, ...stripePattern }}
+                        </SmartSegment>
+
+                        <SmartSegment
+                            widthPct={isSimpleView ? 0 : wR.u * 100}
+                            color={wantsColor}
+                            style={{ ...stripePattern, opacity: 0.6 }}
+                            direction="center"
                         >
                             {!isSimpleView && wR.u > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
@@ -701,12 +747,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     </TextSwap>
                                 </div>
                             )}
-                        </motion.div>
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${wR.o * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full bg-red-500 opacity-60 overflow-hidden"
-                            style={stripePattern}
+                        </SmartSegment>
+
+                        <SmartSegment
+                            widthPct={isSimpleView ? 0 : wR.o * 100}
+                            color="red"
+                            style={{ ...stripePattern, opacity: 0.6 }}
+                            direction="center"
                         />
 
                         <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
@@ -737,10 +784,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         className="h-full relative flex overflow-hidden"
                     >
                         {/* Target Savings (Dark Green) */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "100%" : `${sTargetRatio * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
+                        <SmartSegment
+                            widthPct={isSimpleView ? 100 : sTargetRatio * 100}
+                            color="#10B981" // emerald-500
+                            direction={sExtraRatio > 0 ? "center" : "right"} // If extra exists, center. Else, right edge.
                         >
                             {!isSimpleView && (
                                 <div className="w-full px-1 flex items-center justify-center">
@@ -759,13 +806,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     )}
                                 </div>
                             )}
-                        </motion.div>
+                        </SmartSegment>
 
                         {/* Extra Savings (Light Green) */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${sExtraRatio * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full bg-emerald-300 border-l border-white/20 flex items-center justify-center relative overflow-hidden"
+                        <SmartSegment
+                            widthPct={isSimpleView ? 0 : sExtraRatio * 100}
+                            color="#6EE7B7" // emerald-300
+                            style={{ borderLeft: "1px solid rgba(255,255,255,0.2)" }}
+                            direction="right" // Always right edge
                         >
                             {!isSimpleView && sExtraRatio > 0.15 && (
                                 <div className="text-[11px] sm:text-xs font-bold text-emerald-800 truncate px-1">
@@ -774,7 +822,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     </TextSwap>
                                 </div>
                             )}
-                        </motion.div>
+                        </SmartSegment>
 
                         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
                             <div className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
