@@ -651,7 +651,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     layout
                     initial={false}
                     animate={{ flex: needsOuterPct }}
-                    transition={fluidSpring}
+                    transition={{ ...fluidSpring, layout: fluidSpring }}
                     className="h-full relative flex min-w-0"
                 >
                     <Link
@@ -728,7 +728,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     layout
                     initial={false}
                     animate={{ flex: wantsOuterPct }}
-                    transition={fluidSpring}
+                    transition={{ ...fluidSpring, layout: fluidSpring }}
                     className="h-full relative flex min-w-0"
                 >
                     <Link
@@ -800,7 +800,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         layout
                         initial={false}
                         animate={{ flex: savingsOuterPct }}
-                        transition={fluidSpring}
+                        transition={{ ...fluidSpring, layout: fluidSpring }}
                         className="h-full relative flex min-w-0"
                     >
                         {/* Target Savings (Dark Green) */}
