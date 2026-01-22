@@ -268,7 +268,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     // const { updateSettings } = useSettings();
     const { updateSettings, user } = useSettings();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-    const [hoveredSubSegment, setHoveredSubSegment] = useState(null); // Format: 'category-type' (e.g., 'wants-unpaid')
+    const [hoveredSubSegment, setHoveredSubSegment] = useState(null); // Format: segment id (e.g., 'E1', 'E2', 'L1', 'L2', 'S1', 'S2')
 
     if (!settings) return null;
 
@@ -278,10 +278,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     // --- DATA EXTRACTION ---
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
-
-    // Nov 28 - bugfix wrong bar values
-    // const needsLimit = needsBudget?.budgetAmount || 0;
-    // const wantsLimit = wantsBudget?.budgetAmount || 0;
 
     // Helper to resolve the actual limit for the month based on Goal Mode
     const resolveLimit = (type) => {
@@ -293,14 +289,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const goal = goals.find(g => g.priority === type);
         if (!goal) return 0;
 
-        // implenting the logic for fixed mode
-        // if (settings.goalMode === false) return goal.target_amount || 0; // Absolute Mode
-        // return (safeIncome * (goal.target_percentage || 0)) / 100;       // Percentage Mode
-
         // 3. Use centralized logic (Handles Absolute, Percentage AND Inflation Protection)
-        // Note: 'safeIncome' here acts as the 'monthlyIncome' argument
         return resolveBudgetLimit(goal, safeIncome, settings, historicalAverage);
-
     };
 
     const needsLimit = resolveLimit('needs');
@@ -414,13 +404,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     // Date Context
     const now = new Date();
     const isCurrentMonth =
-        // now.getMonth() === (settings.selectedMonth ?? now.getMonth()) &&
-        // now.getFullYear() === (settings.selectedYear ?? now.getFullYear());
         now.getMonth() === selectedMonth &&
         now.getFullYear() === selectedYear;
 
-    // const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    // Calculate days based strictly on the selected props
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
     const currentDay = now.getDate();
@@ -430,9 +416,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
 
     // Get explicit month name for the empty state message
-    // safeMonth no longer required
-    // const safeMonth = settings.selectedMonth ?? now.getMonth();
-    // const monthName = getMonthName(safeMonth);
     const monthName = getMonthName(selectedMonth);
 
     // --- CONFETTI LOGIC ---
@@ -440,8 +423,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const prevIncomeRef = useRef(currentMonthIncome);
     const prevMonthRef = useRef(selectedMonth);
     const prevYearRef = useRef(selectedYear);
-    // fixing premature celebrations
-    // const componentMountTime = useRef(Date.now());
     // Track when the month last changed to ignore "fetch-induced" income jumps
     const lastContextChangeTime = useRef(Date.now());
 
@@ -454,8 +435,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
         // Check if we went from 0 (or undefined) to having money
         // AND ensure this isn't just the page loading (wait 1s buffer)
-        // fixing premature celerbations
-        // const isDataLoading = Date.now() - componentMountTime.current < 1000;
         // If context (Month/Year) changed, reset the safety timer
         if (!isSameContext) {
             lastContextChangeTime.current = Date.now();
@@ -465,10 +444,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // This handles the delay where data goes 0 -> Amount during fetching
         const isWarmupPeriod = Date.now() - lastContextChangeTime.current < 1000;
 
-        // fixing confetti being naughty
-        // if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
-        // fixing premature celebrations
-        // if (!isDataLoading && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
         if (!isWarmupPeriod && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
             // Trigger Confetti!
             const duration = 3000;
@@ -501,8 +476,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
         // Update ref for next render
         prevIncomeRef.current = currentIncome;
-        // Fixing confetti being naughty
-        // }, [currentMonthIncome]);
         prevMonthRef.current = selectedMonth;
         prevYearRef.current = selectedYear;
     }, [currentMonthIncome, selectedMonth, selectedYear]);
@@ -525,323 +498,217 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const totalSavings = Math.max(0, currentMonthIncome - totalSpent);
         const sTarget = Math.min(savingsLimit, totalSavings);
         const sExtra = Math.max(0, totalSavings - savingsLimit);
-        const sTotal = sTarget + sExtra;
-        const sTargetRatio = sTotal > 0 ? (sTarget / sTotal) : 0;
-        const sExtraRatio = sTotal > 0 ? (sExtra / sTotal) : 0;
 
-        // Base layout percentages (relative to income)
-        const safeTotalNeeds = needsSegs.total > 0 ? needsSegs.total : 0;
-        const safeTotalWants = wantsSegs.total > 0 ? wantsSegs.total : 0;
-        const CLICKABLE_MIN_PCT = 5;
+        // Base percentages for ALL 6 segments (relative to income)
+        const CLICKABLE_MIN_PCT = 3;
+        const TEXT_BUFFER_PX = 20; // Padding for comfortable text reading
 
-        const needsBasePct = Math.max((safeTotalNeeds / safeIncome) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
-        const wantsBasePct = Math.max((safeTotalWants / safeIncome) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
-        const savingsBasePct = Math.max(0, 100 - needsBasePct - wantsBasePct);
+        const E1_basePct = Math.max((needsSegs.safePaid / safeIncome) * 100, needsSegs.safePaid > 0 ? CLICKABLE_MIN_PCT : 0);
+        const E2_basePct = Math.max((needsSegs.safeUnpaid / safeIncome) * 100, needsSegs.safeUnpaid > 0 ? CLICKABLE_MIN_PCT : 0);
+        const L1_basePct = Math.max((wantsSegs.safePaid / safeIncome) * 100, wantsSegs.safePaid > 0 ? CLICKABLE_MIN_PCT : 0);
+        const L2_basePct = Math.max((wantsSegs.safeUnpaid / safeIncome) * 100, wantsSegs.safeUnpaid > 0 ? CLICKABLE_MIN_PCT : 0);
+        const S1_basePct = Math.max((sTarget / safeIncome) * 100, sTarget > 0 ? CLICKABLE_MIN_PCT : 0);
+        const S2_basePct = Math.max((sExtra / safeIncome) * 100, sExtra > 0 ? CLICKABLE_MIN_PCT : 0);
 
-        // Calculate final widths based on hover state
-        let finalNeedsPct = needsBasePct;
-        let finalWantsPct = wantsBasePct;
-        let finalSavingsPct = savingsBasePct;
+        // Calculate dynamic widths based on hover
+        const getDynamicWidths = () => {
+            const widths = { E1: E1_basePct, E2: E2_basePct, L1: L1_basePct, L2: L2_basePct, S1: S1_basePct, S2: S2_basePct };
 
-        // Only expand on hover in detailed view
-        if (!isSimpleView && hoveredSubSegment && containerRef.current) {
-            const [hoveredCat] = hoveredSubSegment.split('-');
-            const MIN_WIDTH_PCT = 30; // Minimum comfortable width for reading
+            if (isSimpleView || !hoveredSubSegment || !containerRef.current) return widths;
 
-            if (hoveredCat === 'needs' && needsBasePct < MIN_WIDTH_PCT) {
-                const needed = MIN_WIDTH_PCT - needsBasePct;
-                const available = Math.max(0, Math.max(wantsBasePct, savingsBasePct) - 12);
-                const expansion = Math.min(needed, available);
-                finalNeedsPct += expansion;
-                if (wantsBasePct > savingsBasePct) finalWantsPct -= expansion;
-                else finalSavingsPct -= expansion;
-            } else if (hoveredCat === 'wants' && wantsBasePct < MIN_WIDTH_PCT) {
-                const needed = MIN_WIDTH_PCT - wantsBasePct;
-                const available = Math.max(0, Math.max(needsBasePct, savingsBasePct) - 12);
-                const expansion = Math.min(needed, available);
-                finalWantsPct += expansion;
-                if (needsBasePct > savingsBasePct) finalNeedsPct -= expansion;
-                else finalSavingsPct -= expansion;
-            } else if (hoveredCat === 'savings' && savingsBasePct < MIN_WIDTH_PCT) {
-                const needed = MIN_WIDTH_PCT - savingsBasePct;
-                const available = Math.max(0, Math.max(needsBasePct, wantsBasePct) - 12);
-                const expansion = Math.min(needed, available);
-                finalSavingsPct += expansion;
-                if (needsBasePct > wantsBasePct) finalNeedsPct -= expansion;
-                else finalWantsPct -= expansion;
-            }
-        }
+            const totalBarWidthPx = containerRef.current.offsetWidth;
+            const textEl = textRefs.current[hoveredSubSegment];
 
-        // Calculate ratios for sub-segments
-        const getRatios = (segments) => {
-            if (segments.total === 0) return { p: 0, u: 0, o: 0 };
-            return {
-                p: segments.safePaid / segments.total,
-                u: segments.safeUnpaid / segments.total,
-                o: segments.overflow / segments.total
+            if (!textEl || widths[hoveredSubSegment] === 0) return widths;
+
+            const requiredTextWidthPx = textEl.scrollWidth + TEXT_BUFFER_PX;
+            const currentSegmentWidthPx = (widths[hoveredSubSegment] / 100) * totalBarWidthPx;
+
+            // Only expand if text doesn't fit
+            if (currentSegmentWidthPx >= requiredTextWidthPx) return widths;
+
+            const neededPct = (requiredTextWidthPx / totalBarWidthPx) * 100;
+            const expansionNeeded = neededPct - widths[hoveredSubSegment];
+
+            // Define neighbors for balanced expansion (left and right)
+            const neighbors = {
+                E1: ['E2', 'L1'], // Can only take from right
+                E2: ['E1', 'L1'],
+                L1: ['E2', 'L2'],
+                L2: ['L1', 'S1'],
+                S1: ['L2', 'S2'],
+                S2: ['S1'] // Can only take from left
             };
+
+            const potentialDonors = neighbors[hoveredSubSegment] || [];
+            let remaining = expansionNeeded;
+
+            // Try taking equally from both sides
+            for (const donorKey of potentialDonors) {
+                if (remaining <= 0) break;
+                const available = Math.max(0, widths[donorKey] - CLICKABLE_MIN_PCT);
+                const takeAmount = Math.min(remaining / potentialDonors.length, available);
+                widths[donorKey] -= takeAmount;
+                widths[hoveredSubSegment] += takeAmount;
+                remaining -= takeAmount;
+            }
+
+            return widths;
         };
 
-        const nR = getRatios(needsSegs);
-        const wR = getRatios(wantsSegs);
+        const currentWidths = getDynamicWidths();
 
         // Utilization percentages (relative to limits)
         const getUtil = (val, limit) => (limit > 0 ? Math.round((val / limit) * 100) : 0);
 
-        const needsPaidUtil = getUtil(needsSegs.safePaid, needsLimit);
-        const needsUnpaidUtil = getUtil(needsSegs.safeUnpaid, needsLimit);
-        const wantsPaidUtil = getUtil(wantsSegs.safePaid, wantsLimit);
-        const wantsUnpaidUtil = getUtil(wantsSegs.safeUnpaid, wantsLimit);
-        const totalSavingsUtil = getUtil(totalSavings, savingsLimit);
-        const targetSavingsUtil = getUtil(sTarget, savingsLimit);
-        const extraSavingsUtil = getUtil(sExtra, savingsLimit);
+        const E1_util = getUtil(needsSegs.safePaid, needsLimit);
+        const E2_util = getUtil(needsSegs.safeUnpaid, needsLimit);
+        const L1_util = getUtil(wantsSegs.safePaid, wantsLimit);
+        const L2_util = getUtil(wantsSegs.safeUnpaid, wantsLimit);
+        const S1_util = getUtil(sTarget, savingsLimit);
+        const S2_util = getUtil(sExtra, savingsLimit);
 
         // Labels for simple view
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
-        const savingsLabel = `${Math.round(savingsPct)}%`;
+        const totalSavingsUtil = getUtil(totalSavings, savingsLimit);
+
+        // Segment component
+        const Segment = ({ id, value, util, color, isPatterned, isExtraS2 }) => {
+            const isHovered = hoveredSubSegment === id;
+            const segmentRef = useRef(null);
+            const [shouldShowText, setShouldShowText] = useState(false);
+
+            useEffect(() => {
+                if (isSimpleView || !segmentRef.current || !textRefs.current[id]) return;
+
+                const textWidth = textRefs.current[id].scrollWidth;
+                const segmentWidth = segmentRef.current.offsetWidth;
+
+                // Show text if it fits OR if hovered
+                setShouldShowText(isHovered || (segmentWidth > (textWidth + TEXT_BUFFER_PX)));
+            }, [isHovered, isSimpleView, currentWidths]);
+
+            return (
+                <motion.div
+                    ref={segmentRef}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${isSimpleView ? 0 : currentWidths[id]}%` }}
+                    transition={fluidSpring}
+                    onMouseEnter={() => !isSimpleView && setHoveredSubSegment(id)}
+                    onMouseLeave={() => !isSimpleView && setHoveredSubSegment(null)}
+                    className="h-full relative overflow-hidden flex items-center justify-center"
+                    style={{
+                        backgroundColor: color,
+                        backgroundImage: isPatterned ? stripePattern.backgroundImage : 'none',
+                        backgroundSize: isPatterned ? stripePattern.backgroundSize : 'auto',
+                        opacity: isPatterned ? 0.6 : 1
+                    }}
+                >
+                    <AnimatePresence mode="wait">
+                        {!isSimpleView && shouldShowText && (
+                            <motion.span
+                                key={`${id}-text`}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                ref={el => textRefs.current[id] = el}
+                                className={`text-[11px] sm:text-xs font-bold whitespace-nowrap px-1 ${isExtraS2 ? 'text-emerald-800' : 'text-white'}`}
+                            >
+                                {formatCurrency(value, settings)} ({util}%)
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+            );
+        };
 
         return (
             <div ref={containerRef} className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
-
-                {/* NEEDS SEGMENT */}
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${finalNeedsPct}%` }}
-                    transition={fluidSpring}
-                    className="h-full relative"
-                >
-                    <Link
-                        to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
-                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''} overflow-hidden`}
-                    >
-                        {/* Paid Part (Shrinks to reveal Unpaid) */}
+                
+                {/* Simple View - Grouped Categories */}
+                {isSimpleView && (
+                    <>
                         <motion.div
-                            animate={{ width: isSimpleView ? "100%" : `${nR.p * 100}%` }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${needsPct}%` }}
                             transition={fluidSpring}
-                            onMouseEnter={() => setHoveredSubSegment('needs-paid')}
-                            onMouseLeave={() => setHoveredSubSegment(null)}
-                            className="h-full relative overflow-hidden flex items-center justify-center"
-                            style={{ backgroundColor: needsColor }}
+                            className="h-full relative"
                         >
-                            {!isSimpleView && (
-                                <div className="w-full px-1 flex items-center justify-between">
-                                    {/* Primary Label (Left) */}
-                                    {nR.p > 0.1 && (
-                                        <div className="text-[11px] sm:text-xs font-bold text-white overflow-hidden whitespace-nowrap">
-                                            <TextSwap><span ref={el => textRefs.current['needs-paid'] = el}>
-                                                {formatCurrency(needsSegs.safePaid, settings)} ({needsPaidUtil}%)
-                                            </span></TextSwap>
-                                        </div>
-                                    )}
-                                    {/* Secondary Label (Right - Only if Unpaid segment is too small < 15% and this one is big enough) */}
-                                    {nR.u <= 0.15 && nR.p > 0.15 && needsSegs.safeUnpaid > 0 && (
-                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
-                                            <TextSwap><span ref={el => textRefs.current['needs-unpaid'] = el}>
-                                                Plan: {formatCurrency(needsSegs.safeUnpaid, settings)}
-                                            </span></TextSwap>
-                                        </div>
-                                    )}
+                            <Link
+                                to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
+                                className="flex h-full w-full hover:brightness-110 transition-all overflow-hidden"
+                                style={{ backgroundColor: needsColor }}
+                            >
+                                <div className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none">
+                                    <div className={`flex items-center justify-center ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
+                                        {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
+                                        <TextSwap>
+                                            <span className="font-bold">{formatCurrency(needsTotal, settings)}</span>
+                                            <span className="opacity-90 ml-1 font-normal">({needsLabel})</span>
+                                        </TextSwap>
+                                    </div>
                                 </div>
-                            )}
+                            </Link>
                         </motion.div>
 
-                        {/* Unpaid Part (Grows from 0) */}
                         <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${nR.u * 100}%` }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${wantsPct}%` }}
                             transition={fluidSpring}
-                            onMouseEnter={() => setHoveredSubSegment('needs-unpaid')}
-                            onMouseLeave={() => setHoveredSubSegment(null)}
-                            className="h-full bg-blue-500 opacity-60 overflow-hidden flex items-center justify-center"
-                            style={stripePattern}
+                            className="h-full relative"
                         >
-                            {!isSimpleView && nR.u > 0.15 && (
-                                <div className="text-[11px] sm:text-xs font-bold text-white px-1 whitespace-nowrap">
-                                    <TextSwap><span ref={el => textRefs.current['needs-unpaid'] = el}>
-                                        {formatCurrency(needsSegs.safeUnpaid, settings)} ({needsUnpaidUtil}%)
-                                    </span></TextSwap>
+                            <Link
+                                to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
+                                className="flex h-full w-full hover:brightness-110 transition-all overflow-hidden"
+                                style={{ backgroundColor: wantsColor }}
+                            >
+                                <div className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none">
+                                    <div className={`flex items-center justify-center ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
+                                        {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-current" />}
+                                        <TextSwap>
+                                            <span className="font-bold">{formatCurrency(wantsTotal, settings)}</span>
+                                            <span className="opacity-90 ml-1 font-normal">({wantsLabel})</span>
+                                        </TextSwap>
+                                    </div>
                                 </div>
-                            )}
+                            </Link>
                         </motion.div>
 
-                        {/* Overflow Part */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${nR.o * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full bg-red-500 opacity-60 overflow-hidden"
-                            style={{ backgroundColor: 'red', ...stripePattern }}
-                        />
-
-                        {/* SIMPLE VIEW LABEL OVERLAY */}
-                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
-                            <div className={`flex items-center justify-center ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
-                                {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
-                                <TextSwap>
-                                    {/* Show Amount and % instead of Label */}
-                                    <span className="font-bold">{formatCurrency(needsTotal, settings)}</span>
-                                    <span className="opacity-90 ml-1 font-normal">({needsLabel})</span>
-                                </TextSwap>
-                            </div>
-                        </div>
-
-                        {/* DETAILED HOVER LABEL OVERLAY (Fallback for tiny segments) */}
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white pointer-events-none transition-opacity duration-300 ${!isSimpleView && (nR.p < 0.1 && nR.u < 0.1) ? 'opacity-100 group-hover:opacity-100' : 'opacity-0'}`}>
-                            <span className="truncate px-1">
-                                {formatCurrency(needsTotal, settings)}
-                                <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
-                            </span>
-                        </div>
-                    </Link>
-                </motion.div>
-
-                {/* WANTS SEGMENT */}
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${finalWantsPct}%` }}
-                    transition={fluidSpring}
-                    className="h-full relative"
-                >
-                    <Link
-                        to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
-                        className={`flex h-full w-full relative ${!isSimpleView ? 'group hover:brightness-110' : ''} overflow-hidden`}
-                    >
-                        <motion.div
-                            animate={{ width: isSimpleView ? "100%" : `${wR.p * 100}%` }}
-                            transition={fluidSpring}
-                            onMouseEnter={() => setHoveredSubSegment('wants-paid')}
-                            onMouseLeave={() => setHoveredSubSegment(null)}
-                            className="h-full relative overflow-hidden flex items-center justify-center"
-                            style={{ backgroundColor: wantsColor }}
-                        >
-                            {!isSimpleView && (
-                                <div className="w-full px-1 flex items-center justify-between">
-                                    {wR.p > 0.1 && (
-                                        <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap">
-                                            <TextSwap><span ref={el => textRefs.current['wants-paid'] = el}>
-                                                {formatCurrency(wantsSegs.safePaid, settings)} ({wantsPaidUtil}%)
-                                            </span></TextSwap>
-                                        </div>
-                                    )}
-                                    {wR.u <= 0.15 && wR.p > 0.15 && wantsSegs.safeUnpaid > 0 && (
-                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
-                                            <TextSwap>
-                                                Plan: {formatCurrency(wantsSegs.safeUnpaid, settings)}
-                                            </TextSwap>
-                                        </div>
-                                    )}
+                        {savingsPct > 0 && (
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${savingsPct}%` }}
+                                transition={fluidSpring}
+                                className="h-full bg-emerald-500 flex items-center justify-center relative"
+                            >
+                                <div className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
+                                    <TextSwap>
+                                        <span className="font-bold">{formatCurrency(totalSavings, settings)}</span>
+                                        <span className="opacity-90 ml-1 font-normal">({totalSavingsUtil}%)</span>
+                                    </TextSwap>
                                 </div>
-                            )}
-                        </motion.div>
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${wR.u * 100}%` }}
-                            transition={fluidSpring}
-                            onMouseEnter={() => setHoveredSubSegment('wants-unpaid')}
-                            onMouseLeave={() => setHoveredSubSegment(null)}
-                            className="h-full opacity-60 overflow-hidden"
-                            style={{ backgroundColor: wantsColor, ...stripePattern }}
-                        >
-                            {!isSimpleView && wR.u > 0.15 && (
-                                <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap px-1">
-                                    <TextSwap><span ref={el => textRefs.current['wants-unpaid'] = el}>
-                                        {formatCurrency(wantsSegs.safeUnpaid, settings)} ({wantsUnpaidUtil}%)
-                                    </span></TextSwap>
-                                </div>
-                            )}
-                        </motion.div>
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${wR.o * 100}%` }}
-                            transition={fluidSpring}
-                            className="h-full bg-red-500 opacity-60 overflow-hidden"
-                            style={stripePattern}
-                        />
+                            </motion.div>
+                        )}
+                    </>
+                )}
 
-                        <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
-                            <div className={`flex items-center justify-center ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
-                                {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-current" />}
-                                <TextSwap>
-                                    <span className="font-bold">{formatCurrency(wantsTotal, settings)}</span>
-                                    <span className="opacity-90 ml-1 font-normal">({wantsLabel})</span>
-                                </TextSwap>
-                            </div>
-                        </div>
-
-                        <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white pointer-events-none transition-opacity duration-300 ${!isSimpleView && (wR.p < 0.1 && wR.u < 0.1) ? 'opacity-100 group-hover:opacity-100' : 'opacity-0'}`}>
-                            <span className="truncate px-1">
-                                {formatCurrency(wantsTotal, settings)}
-                                <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
-                            </span>
-                        </div>
-                    </Link>
-                </motion.div>
-
-                {/* SAVINGS SEGMENT (Unified) */}
-                {finalSavingsPct > 0 && (
-                    <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${finalSavingsPct}%` }}
-                        transition={fluidSpring}
-                        className="h-full relative flex overflow-hidden"
-                    >
-                        {/* Target Savings (Dark Green) */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "100%" : `${sTargetRatio * 100}%` }}
-                            transition={fluidSpring}
-                            onMouseEnter={() => setHoveredSubSegment('savings-target')}
-                            onMouseLeave={() => setHoveredSubSegment(null)}
-                            className="h-full bg-emerald-500 flex items-center justify-center relative overflow-hidden"
-                        >
-                            {!isSimpleView && (
-                                <div className="w-full px-1 flex items-center justify-between">
-                                    {sTargetRatio > 0.1 && (
-                                        <div className="text-[11px] sm:text-xs font-bold text-white truncate px-1">
-                                            <TextSwap><span ref={el => textRefs.current['savings-target'] = el}>
-                                                {formatCurrency(sTarget, settings)} ({targetSavingsUtil}%)
-                                            </span></TextSwap>
-                                        </div>
-                                    )}
-                                    {/* If Extra savings is tiny, show it inside Target bar if possible */}
-                                    {sExtraRatio <= 0.15 && sTargetRatio > 0.15 && sExtra > 0 && (
-                                        <div className="text-[10px] font-medium text-white/90 whitespace-nowrap pl-1">
-                                            <TextSwap>+{formatCurrency(sExtra, settings)}</TextSwap>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </motion.div>
-
-                        {/* Extra Savings (Light Green) */}
-                        <motion.div
-                            animate={{ width: isSimpleView ? "0%" : `${sExtraRatio * 100}%` }}
-                            transition={fluidSpring}
-                            onMouseEnter={() => setHoveredSubSegment('savings-extra')}
-                            onMouseLeave={() => setHoveredSubSegment(null)}
-                            className="h-full bg-emerald-300 border-l border-white/20 flex items-center justify-center relative overflow-hidden"
-                        >
-                            {!isSimpleView && sExtraRatio > 0.15 && (
-                                <div className="text-[11px] sm:text-xs font-bold text-emerald-800 truncate px-1">
-                                    <TextSwap><span ref={el => textRefs.current['savings-extra'] = el}>
-                                        {formatCurrency(sExtra, settings)} ({extraSavingsUtil}%)
-                                    </span></TextSwap>
-                                </div>
-                            )}
-                        </motion.div>
-
-                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
-                            <div className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
-                                <TextSwap>
-                                    {/* Simple View: Show Total Amount + % of Target */}
-                                    <span className="font-bold">{formatCurrency(totalSavings, settings)}</span>
-                                    <span className="opacity-90 ml-1 font-normal">({totalSavingsUtil}%)</span>
-                                </TextSwap>
-                            </div>
-                        </div>
-                    </motion.div>
+                {/* Detailed View - Individual Segments */}
+                {!isSimpleView && (
+                    <>
+                        <Segment id="E1" value={needsSegs.safePaid} util={E1_util} color={needsColor} />
+                        <Segment id="E2" value={needsSegs.safeUnpaid} util={E2_util} color={needsColor} isPatterned />
+                        <Segment id="L1" value={wantsSegs.safePaid} util={L1_util} color={wantsColor} />
+                        <Segment id="L2" value={wantsSegs.safeUnpaid} util={L2_util} color={wantsColor} isPatterned />
+                        <Segment id="S1" value={sTarget} util={S1_util} color={savingsColor} />
+                        <Segment id="S2" value={sExtra} util={S2_util} color="#6EE7B7" isExtraS2 />
+                    </>
                 )}
             </div>
         );
     };
 
-    // const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
     const isTotalOver = totalSpent > currentMonthIncome;
 
@@ -853,9 +720,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             >
                 {isSimpleView && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }} // Start slightly "back" (Z-depth)
-                        animate={{ opacity: 1, scale: 1 }}    // Snap to front
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }} // Snappy pop effect
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
                     />
                 )}
@@ -893,7 +760,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 {!isEmptyMonth && (
                                     <motion.div
                                         key="view-toggle"
-                                        // key={`view-toggle-${selectedMonth}-${selectedYear}`}
                                         initial={{ opacity: 0, scale: 0.8, x: 20 }}
                                         animate={{ opacity: 1, scale: 1, x: 0 }}
                                         exit={{ opacity: 0, scale: 0.8, x: 20 }}
@@ -907,15 +773,12 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <div className="flex items-center gap-2">
                             {importDataButton}
                             {addExpenseButton}
-                            {/* Conditionally highlight the Add Income button if the month is empty */}
                             {isEmptyMonth && addIncomeButton ? (
                                 <motion.div
-                                    // "Breathing" animation: scales up to 10% larger and back down
                                     animate={{ scale: [1, 1.1, 1] }}
                                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                                     className="relative z-10"
                                 >
-                                    {/* Stronger Glow: Negative inset makes it bleed out, blur makes it glow */}
                                     <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
                                     <div className="relative">{addIncomeButton}</div>
                                 </motion.div>
@@ -940,7 +803,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             </div>
                         </div>
 
-                    ) : ( // Non-empty state continues below
+                    ) : (
                         <>
                             <div className="flex items-end justify-between">
                                 <div>
