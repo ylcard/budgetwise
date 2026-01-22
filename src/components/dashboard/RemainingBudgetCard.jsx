@@ -389,10 +389,15 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         updateSettings({ barViewMode: checked });
     };
 
+    // Determine the baseline for bar calculation.
+    // If income is 0 but we have expenses, treat the total expenses as the 100% mark
+    // to prevent bars from becoming 50,000% wide.
+    const calculationBase = currentMonthIncome > 0 ? currentMonthIncome : Math.max(totalSpent, 1);
+
     // 1. WIDTH CALCULATIONS (Relative to Income)
     // This determines how much physical space the bar takes up in the container
-    const needsPct = (needsTotal / safeIncome) * 100;
-    const wantsPct = (wantsTotal / safeIncome) * 100;
+    const needsPct = (needsTotal / calculationBase) * 100;
+    const wantsPct = (wantsTotal / calculationBase) * 100;
     const savingsPct = Math.max(0, 100 - needsPct - wantsPct);
 
     // 2. LABEL CALCULATIONS (Relative to Budget Limit)
