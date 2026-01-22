@@ -48,9 +48,6 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
     const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
     const [mode, setMode] = useState(settings.goalMode ?? true); // true = %, false = $
 
-    // Refactoring goal setting feature
-    // const [values, setValues] = useState({ needs: '', wants: '', savings: '' });
-
     // State for Absolute Mode
     const [absValues, setAbsValues] = useState({ needs: '', wants: '', savings: '' });
 
@@ -63,19 +60,8 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
     useEffect(() => {
         const map = {};
         goals.forEach(g => {
-            // Refactoring goal setting feature
-            // map[g.priority] = mode
-            //     ? (g.target_percentage || 0)
-            //     : (g.target_amount || 0);
             map[g.priority] = { pct: g.target_percentage, amt: g.target_amount };
         });
-        // Refactoring oal setting feature
-        //     setValues({
-        //         needs: map.needs ?? (mode ? 50 : 0),
-        //         wants: map.wants ?? (mode ? 30 : 0),
-        //         savings: map.savings ?? (mode ? 20 : 0)
-        //     });
-        // }, [goals, mode]);
 
         if (mode) {
             // Percentage: Setup splits
