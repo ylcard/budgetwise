@@ -679,7 +679,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         <SmartSegment
                             widthPct={isSimpleView ? 0 : nR.o * 100}
                             color="red"
-                            style={{ ...stripePattern, opacity: 0.6 }}
+                            style={{ ...STRIPE_PATTERN, opacity: 0.6 }}
                             direction="center"
                         />
 
