@@ -28,7 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Fixed 120px expansion logic
+// REFACTORED: 23-Jan-2026 - Fixed 120px expansion logic (switched to fixed width mode on hover)
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -39,7 +39,6 @@ const SmartSegment = memo(({
     const [isHovered, setIsHovered] = useState(false);
     const [needsExpansion, setNeedsExpansion] = useState(false);
     const containerRef = useRef(null);
-    const textRef = useRef(null);
 
     // If segment is effectively invisible, don't render (avoids 0px glitches)
     if (widthPct <= 0.001) return null;
@@ -48,10 +47,8 @@ const SmartSegment = memo(({
 
     const handleMouseEnter = () => {
         if (containerRef.current) {
-            // Measure the container's current size
             const containerWidth = containerRef.current.offsetWidth;
-
-            // Logic: If segment is less than 120px, expand to 120px on hover
+            // If segment is less than 120px, expand to 120px on hover
             if (containerWidth < MIN_WIDTH_PX) {
                 setNeedsExpansion(true);
             } else {
@@ -61,17 +58,26 @@ const SmartSegment = memo(({
         setIsHovered(true);
     };
 
+    // When hovered and needs expansion, switch to fixed width mode
+    // Otherwise, use flex mode for proportional sizing
+    const shouldUseFixedWidth = isHovered && needsExpansion;
+
     return (
         <motion.div
             layout
             ref={containerRef}
             className={`h-full flex items-center justify-center overflow-hidden ${className}`}
             initial={false}
-            animate={{
+            animate={shouldUseFixedWidth ? {
+                flex: 'none',
+                width: MIN_WIDTH_PX,
+                paddingLeft: 8,
+                paddingRight: 8,
+            } : {
                 flex: widthPct / 100,
-                minWidth: (isHovered && needsExpansion) ? MIN_WIDTH_PX : 0,
-                paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
-                paddingRight: (isHovered && needsExpansion) ? 8 : 0,
+                width: 'auto',
+                paddingLeft: 0,
+                paddingRight: 0,
             }}
             transition={{
                 ...fluidSpring,
@@ -79,13 +85,15 @@ const SmartSegment = memo(({
             }}
             style={{ backgroundColor: color, ...style }}
             onMouseEnter={handleMouseEnter}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseLeave={() => {
+                setIsHovered(false);
+                setNeedsExpansion(false);
+            }}
         >
             <motion.span
                 layout
-                ref={textRef}
                 className="flex items-center justify-center px-1 whitespace-nowrap"
-                transition={fluidSpring} // Ensure text moves at same speed as box
+                transition={fluidSpring}
             >
                 {children}
             </motion.span>
