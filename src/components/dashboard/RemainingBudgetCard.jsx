@@ -28,6 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
+// REFACTORED: 23-Jan-2026 - Fixed 120px expansion logic
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -37,25 +38,21 @@ const SmartSegment = memo(({
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [needsExpansion, setNeedsExpansion] = useState(false);
-    const [expandedWidth, setExpandedWidth] = useState(0);
     const containerRef = useRef(null);
     const textRef = useRef(null);
 
     // If segment is effectively invisible, don't render (avoids 0px glitches)
     if (widthPct <= 0.001) return null;
 
+    const MIN_WIDTH_PX = 120; // Minimum width for comfortable readability
+
     const handleMouseEnter = () => {
-        if (containerRef.current && textRef.current) {
+        if (containerRef.current) {
             // Measure the container's current size
             const containerWidth = containerRef.current.offsetWidth;
-            // Measure the text's natural, unclipped size
-            const textWidth = textRef.current.scrollWidth;
-            const buffer = 40; 
-            const requiredWidth = textWidth + buffer;
 
-            // Logic: Calculate exact pixels needed
-            if (requiredWidth > containerWidth) {
-                setExpandedWidth(requiredWidth); // Set the target pixel number
+            // Logic: If segment is less than 120px, expand to 120px on hover
+            if (containerWidth < MIN_WIDTH_PX) {
                 setNeedsExpansion(true);
             } else {
                 setNeedsExpansion(false);
@@ -72,7 +69,7 @@ const SmartSegment = memo(({
             initial={false}
             animate={{
                 flex: widthPct / 100,
-                minWidth: (isHovered && needsExpansion) ? expandedWidth : 0,
+                minWidth: (isHovered && needsExpansion) ? MIN_WIDTH_PX : 0,
                 paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
                 paddingRight: (isHovered && needsExpansion) ? 8 : 0,
             }}
