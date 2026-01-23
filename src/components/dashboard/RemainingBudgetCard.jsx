@@ -32,7 +32,6 @@ const SmartSegment = memo(({
     widthPct,
     color,
     children,
-    direction = 'center', // 'left', 'center', 'right'
     className = "",
     style = {}
 }) => {
@@ -45,37 +44,19 @@ const SmartSegment = memo(({
     // If segment is effectively invisible, don't render (avoids 0px glitches)
     if (widthPct <= 0.001) return null;
 
-    // const handleMouseEnter = () => {
-    //     if (containerRef.current && textRef.current) {
-    //         const containerWidth = containerRef.current.offsetWidth;
-    //         const textWidth = textRef.current.offsetWidth;
-    //         const requiredWidth = textWidth + 400; // Text + Padding Buffer
-
-    //         // Logic: Calculate exact pixels needed
-    //         if (requiredWidth > containerWidth) {
-    //             setExpandedWidth(requiredWidth); // Set the target pixel number
-    //             setNeedsExpansion(true);
-    //         } else {
-    //             setNeedsExpansion(false);
-    //         }
-    //     }
-    //     setIsHovered(true);
-    // };
     const handleMouseEnter = () => {
         if (containerRef.current && textRef.current) {
             const containerWidth = containerRef.current.offsetWidth;
-            const textWidth = textRef.current.getBoundingClientRect().width;
-            
-            // FORCE A LARGER BUFFER HERE
-            // This guarantees the segment becomes Text Size + 60px padding
-            const buffer = 60; 
-            const requiredWidth = textWidth + buffer;
+            const textWidth = textRef.current.offsetWidth;
+            const requiredWidth = textWidth + 400; // Text + Padding Buffer
 
-            // We check if requiredWidth > containerWidth OR if we just want to force a pop
-            // Removing the conditional check forces expansion even if it "fits", 
-            // which creates a satisfying "pop" effect every time.
-            setExpandedWidth(requiredWidth);
-            setNeedsExpansion(true); 
+            // Logic: Calculate exact pixels needed
+            if (requiredWidth > containerWidth) {
+                setExpandedWidth(requiredWidth); // Set the target pixel number
+                setNeedsExpansion(true);
+            } else {
+                setNeedsExpansion(false);
+            }
         }
         setIsHovered(true);
     };
@@ -111,27 +92,6 @@ const SmartSegment = memo(({
         </motion.div>
     );
 });
-
-// --- LEGACY HELPERS (Refactored out but kept if needed elsewhere, though unused in new bar) ---
-const AnimatedSegment = memo(({ width, color, children, className = "", style = {}, to }) => (
-    <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${width}%` }}
-        transition={fluidSpring}
-        className={`h-full relative group ${to ? 'cursor-pointer' : 'cursor-default'} overflow-hidden ${className}`}
-        style={{ backgroundColor: color, ...style }}
-    >
-        {to ? (
-            <Link to={to} className="flex items-center justify-center h-full w-full hover:brightness-110 transition-all z-20">
-                {children}
-            </Link>
-        ) : (
-            <div className="flex items-center justify-center h-full w-full">
-                {children}
-            </div>
-        )}
-    </motion.div>
-));
 
 // --- COMPACT GOAL EDITOR COMPONENT ---
 const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose }) => {
@@ -206,10 +166,6 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
             await updateSettings({ goalMode: mode });
         }
 
-        // Refactoring goal setting feature
-        // 2. Update Goals
-        // const promises = Object.entries(values).map(([priority, val]) => {
-
         // 2. Prepare Data
         let payloadMap = {};
 
@@ -231,8 +187,6 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
 
         // 3. Update Goals
         const promises = Object.entries(payloadMap).map(([priority, numVal]) => {
-            // Refactoring goal setting feature
-            // const numVal = Number(val) || 0;
 
             const payload = mode
                 ? { target_percentage: numVal }
@@ -340,8 +294,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     selectedMonth,
     selectedYear
 }) {
-    // Refactoring to add quick goal change to page
-    // const { updateSettings } = useSettings();
     const { updateSettings, user } = useSettings();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
@@ -354,10 +306,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
     const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
 
-    // Nov 28 - bugfix wrong bar values
-    // const needsLimit = needsBudget?.budgetAmount || 0;
-    // const wantsLimit = wantsBudget?.budgetAmount || 0;
-
     // Helper to resolve the actual limit for the month based on Goal Mode
     const resolveLimit = (type) => {
         const budget = systemBudgets.find(sb => sb.systemBudgetType === type);
@@ -367,10 +315,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // 2. Fallback: Calculate from goals based on settings
         const goal = goals.find(g => g.priority === type);
         if (!goal) return 0;
-
-        // implenting the logic for fixed mode
-        // if (settings.goalMode === false) return goal.target_amount || 0; // Absolute Mode
-        // return (safeIncome * (goal.target_percentage || 0)) / 100;       // Percentage Mode
 
         // 3. Use centralized logic (Handles Absolute, Percentage AND Inflation Protection)
         // Note: 'safeIncome' here acts as the 'monthlyIncome' argument
@@ -485,12 +429,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     // Date Context
     const now = new Date();
     const isCurrentMonth =
-        // now.getMonth() === (settings.selectedMonth ?? now.getMonth()) &&
-        // now.getFullYear() === (settings.selectedYear ?? now.getFullYear());
         now.getMonth() === selectedMonth &&
         now.getFullYear() === selectedYear;
 
-    // const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     // Calculate days based strictly on the selected props
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
@@ -501,9 +442,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
 
     // Get explicit month name for the empty state message
-    // safeMonth no longer required
-    // const safeMonth = settings.selectedMonth ?? now.getMonth();
-    // const monthName = getMonthName(safeMonth);
     const monthName = getMonthName(selectedMonth);
 
     // --- CONFETTI LOGIC ---
@@ -511,8 +449,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const prevIncomeRef = useRef(currentMonthIncome);
     const prevMonthRef = useRef(selectedMonth);
     const prevYearRef = useRef(selectedYear);
-    // fixing premature celebrations
-    // const componentMountTime = useRef(Date.now());
     // Track when the month last changed to ignore "fetch-induced" income jumps
     const lastContextChangeTime = useRef(Date.now());
 
@@ -531,10 +467,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             return;
         }
 
-        // Check if we went from 0 (or undefined) to having money
-        // AND ensure this isn't just the page loading (wait 1s buffer)
-        // fixing premature celerbations
-        // const isDataLoading = Date.now() - componentMountTime.current < 1000;
         // If context (Month/Year) changed, reset the safety timer
         if (!isSameContext) {
             lastContextChangeTime.current = Date.now();
@@ -544,10 +476,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // This handles the delay where data goes 0 -> Amount during fetching
         const isWarmupPeriod = Date.now() - lastContextChangeTime.current < 1000;
 
-        // fixing confetti being naughty
-        // if (!isDataLoading && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
-        // fixing premature celebrations
-        // if (!isDataLoading && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
         if (!isWarmupPeriod && isSameContext && (!prevIncome || prevIncome === 0) && currentIncome > 0) {
             // Trigger Confetti!
             const duration = 3000;
@@ -580,8 +508,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
         // Update ref for next render
         prevIncomeRef.current = currentIncome;
-        // Fixing confetti being naughty
-        // }, [currentMonthIncome]);
         prevMonthRef.current = selectedMonth;
         prevYearRef.current = selectedYear;
     }, [currentMonthIncome, selectedMonth, selectedYear]);
@@ -661,7 +587,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Labels
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
-        // savingsLabel unused but kept for ref
         const savingsLabel = `${Math.round(savingsPct)}%`;
 
         return (
