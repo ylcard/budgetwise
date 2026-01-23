@@ -28,7 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Fixed expansion by switching flex mode on hover
+// REFACTORED: 23-Jan-2026 - Clean rebuild with percentage-based detection and stable flex
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -36,51 +36,41 @@ const SmartSegment = memo(({
     className = "",
     style = {}
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [needsExpansion, setNeedsExpansion] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const containerRef = useRef(null);
 
     // If segment is effectively invisible, don't render
     if (widthPct <= 0.001) return null;
 
     const MIN_WIDTH_PX = 120;
-
-    // Measure on mount to determine if expansion is needed
-    useEffect(() => {
-        if (containerRef.current) {
-            const width = containerRef.current.offsetWidth;
-            setNeedsExpansion(width < MIN_WIDTH_PX);
-        }
-    }, [widthPct]);
-
-    const shouldExpand = isExpanded && needsExpansion;
+    
+    // Determine if segment is narrow based on percentage alone (no measurement)
+    // Assuming typical screen width of ~1000px for the bar, 12% = ~120px
+    const isNarrow = widthPct < 12;
+    const shouldExpand = isHovered && isNarrow;
 
     return (
         <motion.div
             ref={containerRef}
-            className={`h-full flex items-center justify-center relative overflow-visible ${className}`}
-            initial={false}
-            animate={shouldExpand ? {
-                flexGrow: 0,
-                flexShrink: 0,
-                width: MIN_WIDTH_PX,
-            } : {
-                flexGrow: widthPct,
-                flexShrink: widthPct,
-                width: 'auto',
-            }}
+            className={`h-full flex items-center justify-center overflow-hidden ${className}`}
             style={{
-                flexBasis: shouldExpand ? MIN_WIDTH_PX : 0,
                 backgroundColor: color,
-                zIndex: isExpanded ? 10 : 1,
+                position: 'relative',
+                zIndex: shouldExpand ? 10 : 1,
                 ...style
             }}
-            transition={{
-                duration: 0.25,
-                ease: [0.4, 0, 0.2, 1]
+            initial={false}
+            animate={shouldExpand ? {
+                flex: `0 0 ${MIN_WIDTH_PX}px`,
+            } : {
+                flex: `${widthPct} 1 0%`,
             }}
-            onMouseEnter={() => setIsExpanded(true)}
-            onMouseLeave={() => setIsExpanded(false)}
+            transition={{
+                duration: 0.2,
+                ease: [0.25, 0.1, 0.25, 1]
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
             <span className="px-2 whitespace-nowrap text-center">
                 {children}
