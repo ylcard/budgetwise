@@ -69,7 +69,7 @@ const SmartSegment = memo(({
             initial={false}
             animate={{
                 flex: widthPct,
-                minWidth: (isHovered && needsExpansion) ? expandedWidth : 0, 
+                minWidth: (isHovered && needsExpansion) ? expandedWidth : 0,
                 paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
                 paddingRight: (isHovered && needsExpansion) ? 8 : 0,
             }}
@@ -404,19 +404,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         updateSettings({ barViewMode: checked });
     };
 
-    // Determine the baseline for bar calculation.
-    // If income is 0 but we have expenses, treat the total expenses as the 100% mark
-    // to prevent bars from becoming 50,000% wide.
-    const calculationBase = currentMonthIncome > 0 ? currentMonthIncome : Math.max(totalSpent, 1);
-
-    // 1. WIDTH CALCULATIONS (Relative to Income)
-    // This determines how much physical space the bar takes up in the container
-    const needsPct = (needsTotal / calculationBase) * 100;
-    const wantsPct = (wantsTotal / calculationBase) * 100;
-    const savingsPct = Math.max(0, 100 - needsPct - wantsPct);
-
-    // 2. LABEL CALCULATIONS (Relative to Budget Limit)
-    // This determines the % text shown to the user (Utilization)
     const needsUtil = needsLimit > 0 ? (needsTotal / needsLimit) * 100 : 0;
     const wantsUtil = wantsLimit > 0 ? (wantsTotal / wantsLimit) * 100 : 0;
 
@@ -424,7 +411,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
     const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
     const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
-    const savingsGoal = goals.find(g => g.priority === 'savings');
 
     // Date Context
     const now = new Date();
