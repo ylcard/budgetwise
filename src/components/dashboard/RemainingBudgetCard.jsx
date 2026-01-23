@@ -299,7 +299,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
     if (!settings) return null;
 
-    const safeIncome = currentMonthIncome || 1;
+    // REFACTORED: 23-Jan-2026 - Improved zero income handling for accurate bar rendering
+    const safeIncome = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
     const isSimpleView = settings.barViewMode; // true = simple
 
     // --- DATA EXTRACTION ---
