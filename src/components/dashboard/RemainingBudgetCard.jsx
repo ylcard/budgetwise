@@ -37,7 +37,7 @@ const SmartSegment = memo(({
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [needsExpansion, setNeedsExpansion] = useState(false);
-    const [expandedWidth, setExpandedWidth] = useState(0); // <--- NEW STATE
+    const [expandedWidth, setExpandedWidth] = useState(0);
     const containerRef = useRef(null);
     const textRef = useRef(null);
 
