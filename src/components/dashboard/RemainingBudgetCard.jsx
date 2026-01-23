@@ -45,19 +45,37 @@ const SmartSegment = memo(({
     // If segment is effectively invisible, don't render (avoids 0px glitches)
     if (widthPct <= 0.001) return null;
 
+    // const handleMouseEnter = () => {
+    //     if (containerRef.current && textRef.current) {
+    //         const containerWidth = containerRef.current.offsetWidth;
+    //         const textWidth = textRef.current.offsetWidth;
+    //         const requiredWidth = textWidth + 400; // Text + Padding Buffer
+
+    //         // Logic: Calculate exact pixels needed
+    //         if (requiredWidth > containerWidth) {
+    //             setExpandedWidth(requiredWidth); // Set the target pixel number
+    //             setNeedsExpansion(true);
+    //         } else {
+    //             setNeedsExpansion(false);
+    //         }
+    //     }
+    //     setIsHovered(true);
+    // };
     const handleMouseEnter = () => {
         if (containerRef.current && textRef.current) {
             const containerWidth = containerRef.current.offsetWidth;
-            const textWidth = textRef.current.offsetWidth;
-            const requiredWidth = textWidth + 400; // Text + Padding Buffer
+            const textWidth = textRef.current.getBoundingClientRect().width;
+            
+            // FORCE A LARGER BUFFER HERE
+            // This guarantees the segment becomes Text Size + 60px padding
+            const buffer = 60; 
+            const requiredWidth = textWidth + buffer;
 
-            // Logic: Calculate exact pixels needed
-            if (requiredWidth > containerWidth) {
-                setExpandedWidth(requiredWidth); // Set the target pixel number
-                setNeedsExpansion(true);
-            } else {
-                setNeedsExpansion(false);
-            }
+            // We check if requiredWidth > containerWidth OR if we just want to force a pop
+            // Removing the conditional check forces expansion even if it "fits", 
+            // which creates a satisfying "pop" effect every time.
+            setExpandedWidth(requiredWidth);
+            setNeedsExpansion(true); 
         }
         setIsHovered(true);
     };
