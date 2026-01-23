@@ -46,9 +46,8 @@ const SmartSegment = memo(({
 
     const handleMouseEnter = () => {
         if (containerRef.current && textRef.current) {
-            // Use getBoundingClientRect for more accurate measurement of squished text
-            const containerWidth = containerRef.current.getBoundingClientRect().width;
-            const textWidth = textRef.current.getBoundingClientRect().width;
+            const containerWidth = containerRef.current.offsetWidth;
+            const textWidth = textRef.current.scrollWidth;
             const buffer = 40; // Use a reasonable buffer (e.g., 40px)
             const requiredWidth = textWidth + buffer;
 
@@ -70,7 +69,7 @@ const SmartSegment = memo(({
             className={`h-full flex items-center justify-center overflow-hidden ${className}`}
             initial={false}
             animate={{
-                flex: widthPct,
+                flex: widthPct / 100,
                 minWidth: (isHovered && needsExpansion) ? expandedWidth : 0,
                 paddingLeft: (isHovered && needsExpansion) ? 8 : 0,
                 paddingRight: (isHovered && needsExpansion) ? 8 : 0,
@@ -583,7 +582,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 <motion.div
                     layout
                     initial={false}
-                    animate={{ flex: `${needsOuterPct} 1 0%` }}
+                    animate={{ flex: `${needsOuterPct / 100} 1 auto` }}
                     transition={{ ...fluidSpring, layout: fluidSpring }}
                     className="h-full relative flex"
                 >
@@ -660,7 +659,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 <motion.div
                     layout
                     initial={false}
-                    animate={{ flex: `${wantsOuterPct} 1 0%` }}
+                    animate={{ flex: `${wantsOuterPct / 100} 1 auto` }}
                     transition={{ ...fluidSpring, layout: fluidSpring }}
                     className="h-full relative flex"
                 >
@@ -732,7 +731,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     <motion.div
                         layout
                         initial={false}
-                        animate={{ flex: `${savingsOuterPct} 1 0%` }}
+                        animate={{ flex: `${savingsOuterPct / 100} 1 auto` }}
                         transition={{ ...fluidSpring, layout: fluidSpring }}
                         className="h-full relative flex"
                     >
