@@ -28,7 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Fixed flex overflow issue with explicit width override
+// REFACTORED: 23-Jan-2026 - Clean rebuild with percentage-based detection and stable flex
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -54,17 +54,16 @@ const SmartSegment = memo(({
             ref={containerRef}
             className={`h-full flex items-center justify-center overflow-hidden ${className}`}
             style={{
-                flex: `${widthPct} 1 0%`,
                 backgroundColor: color,
                 position: 'relative',
                 zIndex: shouldExpand ? 10 : 1,
                 ...style
             }}
             initial={false}
-            animate={{
-                width: shouldExpand ? MIN_WIDTH_PX : undefined,
-                flexShrink: shouldExpand ? 0 : 1,
-                flexGrow: shouldExpand ? 0 : widthPct,
+            animate={shouldExpand ? {
+                flex: `0 0 ${MIN_WIDTH_PX}px`,
+            } : {
+                flex: `${widthPct} 1 0%`,
             }}
             transition={{
                 duration: 0.2,
