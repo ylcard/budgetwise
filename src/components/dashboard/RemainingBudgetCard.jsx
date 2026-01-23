@@ -28,7 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Completely rebuilt from ground up with simpler, more reliable logic
+// REFACTORED: 23-Jan-2026 - Completely rebuilt with smooth animation
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -54,17 +54,16 @@ const SmartSegment = memo(({
             style={{
                 flex: `${widthPct} 1 0%`,
                 backgroundColor: color,
-                minWidth: (isExpanded && isNarrowSegment) ? `${MIN_WIDTH_PX}px` : '0px',
                 zIndex: isExpanded ? 10 : 1,
                 ...style
             }}
             initial={false}
             animate={{
-                scale: 1,
+                minWidth: (isExpanded && isNarrowSegment) ? MIN_WIDTH_PX : 0,
             }}
             transition={{
-                duration: 0.2,
-                ease: "easeOut"
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1]
             }}
             onMouseEnter={() => {
                 if (isNarrowSegment) {
