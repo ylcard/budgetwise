@@ -46,9 +46,11 @@ const SmartSegment = memo(({
 
     const handleMouseEnter = () => {
         if (containerRef.current && textRef.current) {
-            const containerWidth = containerRef.current.offsetWidth;
-            const textWidth = textRef.current.offsetWidth;
-            const requiredWidth = textWidth + 400; // Text + Padding Buffer
+            // Use getBoundingClientRect for more accurate measurement of squished text
+            const containerWidth = containerRef.current.getBoundingClientRect().width;
+            const textWidth = textRef.current.getBoundingClientRect().width;
+            const buffer = 40; // Use a reasonable buffer (e.g., 40px)
+            const requiredWidth = textWidth + buffer;
 
             // Logic: Calculate exact pixels needed
             if (requiredWidth > containerWidth) {
@@ -581,13 +583,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 <motion.div
                     layout
                     initial={false}
-                    animate={{ flex: needsOuterPct }}
+                    animate={{ flex: `${needsOuterPct} 1 0%` }}
                     transition={{ ...fluidSpring, layout: fluidSpring }}
-                    className="h-full relative flex min-w-0"
+                    className="h-full relative flex"
                 >
                     <Link
                         to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
-                        className={`flex h-full w-full ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
+                        className={`flex h-full min-w-full ${!isSimpleView ? 'group hover:brightness-110' : ''}`}
                     >
                         {/* Paid Part (Shrinks to reveal Unpaid) */}
                         <SmartSegment
