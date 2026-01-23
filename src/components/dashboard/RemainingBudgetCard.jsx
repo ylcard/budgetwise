@@ -661,6 +661,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     layout
                     initial={false}
                     animate={{ flex: `${wantsOuterPct} 1 0%` }}
+                    transition={{ ...fluidSpring, layout: fluidSpring }}
                     className="h-full relative flex"
                 >
                     <Link
@@ -731,9 +732,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     <motion.div
                         layout
                         initial={false}
-                        animate={{ flex: savingsOuterPct }}
+                        animate={{ flex: `${savingsOuterPct} 1 0%` }}
                         transition={{ ...fluidSpring, layout: fluidSpring }}
-                        className="h-full relative flex min-w-0"
+                        className="h-full relative flex"
                     >
                         {/* Target Savings (Dark Green) */}
                         <SmartSegment
