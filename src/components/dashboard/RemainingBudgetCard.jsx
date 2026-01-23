@@ -46,9 +46,11 @@ const SmartSegment = memo(({
 
     const handleMouseEnter = () => {
         if (containerRef.current && textRef.current) {
+            // Measure the container's current size
             const containerWidth = containerRef.current.offsetWidth;
+            // Measure the text's natural, unclipped size
             const textWidth = textRef.current.scrollWidth;
-            const buffer = 40; // Use a reasonable buffer (e.g., 40px)
+            const buffer = 40; 
             const requiredWidth = textWidth + buffer;
 
             // Logic: Calculate exact pixels needed
@@ -582,7 +584,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 <motion.div
                     layout
                     initial={false}
-                    animate={{ flex: `${needsOuterPct / 100} 1 auto` }}
+                    animate={{ flex: `${needsOuterPct} 1 auto` }}
                     transition={{ ...fluidSpring, layout: fluidSpring }}
                     className="h-full relative flex"
                 >
@@ -659,7 +661,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 <motion.div
                     layout
                     initial={false}
-                    animate={{ flex: `${wantsOuterPct / 100} 1 auto` }}
+                    animate={{ flex: `${wantsOuterPct} 1 auto` }}
                     transition={{ ...fluidSpring, layout: fluidSpring }}
                     className="h-full relative flex"
                 >
@@ -731,7 +733,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                     <motion.div
                         layout
                         initial={false}
-                        animate={{ flex: `${savingsOuterPct / 100} 1 auto` }}
+                        animate={{ flex: `${savingsOuterPct} 1 auto` }}
                         transition={{ ...fluidSpring, layout: fluidSpring }}
                         className="h-full relative flex"
                     >
