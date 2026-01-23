@@ -513,6 +513,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
     // --- RENDER: UNIFIED BAR (Handles both Simple & Detailed via internal sizing) ---
     const renderUnifiedBar = () => {
+        // REFACTORED: 23-Jan-2026 - Improved calculationBase logic for zero income scenarios
         // Calculate Layout Percentages (Outer widths relative to income)
         const safeTotalNeeds = needsSegs.total > 0 ? needsSegs.total : 0;
         const safeTotalWants = wantsSegs.total > 0 ? wantsSegs.total : 0;
@@ -520,8 +521,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Ensure minimal visibility for clickable areas if they exist but are tiny
         const CLICKABLE_MIN_PCT = 5;
 
-        const needsOuterPct = Math.max((safeTotalNeeds / safeIncome) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
-        const wantsOuterPct = Math.max((safeTotalWants / safeIncome) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
+        // Use actual income for calculation base, fallback to 1 only for division safety
+        const calculationBase = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
+        
+        const needsOuterPct = Math.max((safeTotalNeeds / calculationBase) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
+        const wantsOuterPct = Math.max((safeTotalWants / calculationBase) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
 
         // Savings fills remaining space
         // Note: For visual cleanliness, we clamp the outer bars so they don't overflow the container in weird ways
