@@ -28,7 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Completely rebuilt with smooth animation
+// REFACTORED: 23-Jan-2026 - Fixed expansion by switching flex mode on hover
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -37,42 +37,50 @@ const SmartSegment = memo(({
     style = {}
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [needsExpansion, setNeedsExpansion] = useState(false);
     const containerRef = useRef(null);
 
     // If segment is effectively invisible, don't render
     if (widthPct <= 0.001) return null;
 
     const MIN_WIDTH_PX = 120;
-    
-    // Pre-calculate if this segment is narrow (< 15% typically means < 120px on most screens)
-    const isNarrowSegment = widthPct < 15;
+
+    // Measure on mount to determine if expansion is needed
+    useEffect(() => {
+        if (containerRef.current) {
+            const width = containerRef.current.offsetWidth;
+            setNeedsExpansion(width < MIN_WIDTH_PX);
+        }
+    }, [widthPct]);
+
+    const shouldExpand = isExpanded && needsExpansion;
 
     return (
         <motion.div
             ref={containerRef}
-            className={`h-full flex items-center justify-center relative ${className}`}
+            className={`h-full flex items-center justify-center relative overflow-visible ${className}`}
+            initial={false}
+            animate={shouldExpand ? {
+                flexGrow: 0,
+                flexShrink: 0,
+                width: MIN_WIDTH_PX,
+            } : {
+                flexGrow: widthPct,
+                flexShrink: widthPct,
+                width: 'auto',
+            }}
             style={{
-                flex: `${widthPct} 1 0%`,
+                flexBasis: shouldExpand ? MIN_WIDTH_PX : 0,
                 backgroundColor: color,
                 zIndex: isExpanded ? 10 : 1,
                 ...style
             }}
-            initial={false}
-            animate={{
-                minWidth: (isExpanded && isNarrowSegment) ? MIN_WIDTH_PX : 0,
-            }}
             transition={{
-                duration: 0.3,
+                duration: 0.25,
                 ease: [0.4, 0, 0.2, 1]
             }}
-            onMouseEnter={() => {
-                if (isNarrowSegment) {
-                    setIsExpanded(true);
-                }
-            }}
-            onMouseLeave={() => {
-                setIsExpanded(false);
-            }}
+            onMouseEnter={() => setIsExpanded(true)}
+            onMouseLeave={() => setIsExpanded(false)}
         >
             <span className="px-2 whitespace-nowrap text-center">
                 {children}
