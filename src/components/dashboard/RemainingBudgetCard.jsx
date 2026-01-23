@@ -28,7 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Fixed jitter and grey gap by locking state during animation
+// REFACTORED: 23-Jan-2026 - Completely rebuilt from ground up with simpler, more reliable logic
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -36,81 +36,48 @@ const SmartSegment = memo(({
     className = "",
     style = {}
 }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    const [needsExpansion, setNeedsExpansion] = useState(false);
-    const [isAnimating, setIsAnimating] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const containerRef = useRef(null);
 
-    // If segment is effectively invisible, don't render (avoids 0px glitches)
+    // If segment is effectively invisible, don't render
     if (widthPct <= 0.001) return null;
 
-    const MIN_WIDTH_PX = 120; // Minimum width for comfortable readability
-
-    const handleMouseEnter = () => {
-        // Don't recalculate during animation to prevent jitter
-        if (isAnimating) return;
-        
-        if (containerRef.current) {
-            const containerWidth = containerRef.current.offsetWidth;
-            // If segment is less than 120px, expand to 120px on hover
-            if (containerWidth < MIN_WIDTH_PX) {
-                setNeedsExpansion(true);
-                setIsAnimating(true);
-                // Reset animation lock after transition completes
-                setTimeout(() => setIsAnimating(false), 400);
-            } else {
-                setNeedsExpansion(false);
-            }
-        }
-        setIsHovered(true);
-    };
-
-    const handleMouseLeave = () => {
-        setIsHovered(false);
-        setNeedsExpansion(false);
-        setIsAnimating(true);
-        setTimeout(() => setIsAnimating(false), 400);
-    };
-
-    // When hovered and needs expansion, switch to fixed width mode
-    const shouldUseFixedWidth = isHovered && needsExpansion;
+    const MIN_WIDTH_PX = 120;
+    
+    // Pre-calculate if this segment is narrow (< 15% typically means < 120px on most screens)
+    const isNarrowSegment = widthPct < 15;
 
     return (
         <motion.div
-            layout
             ref={containerRef}
-            className={`h-full flex items-center justify-center overflow-hidden ${className}`}
+            className={`h-full flex items-center justify-center relative ${className}`}
+            style={{
+                flex: `${widthPct} 1 0%`,
+                backgroundColor: color,
+                minWidth: (isExpanded && isNarrowSegment) ? `${MIN_WIDTH_PX}px` : '0px',
+                zIndex: isExpanded ? 10 : 1,
+                ...style
+            }}
             initial={false}
-            animate={shouldUseFixedWidth ? {
-                flexGrow: 0,
-                flexShrink: 0,
-                flexBasis: MIN_WIDTH_PX,
-                width: MIN_WIDTH_PX,
-                paddingLeft: 8,
-                paddingRight: 8,
-            } : {
-                flexGrow: widthPct / 100,
-                flexShrink: widthPct / 100,
-                flexBasis: 0,
-                width: 'auto',
-                paddingLeft: 0,
-                paddingRight: 0,
+            animate={{
+                scale: 1,
             }}
             transition={{
-                ...fluidSpring,
-                layout: fluidSpring
+                duration: 0.2,
+                ease: "easeOut"
             }}
-            style={{ backgroundColor: color, ...style }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onMouseEnter={() => {
+                if (isNarrowSegment) {
+                    setIsExpanded(true);
+                }
+            }}
+            onMouseLeave={() => {
+                setIsExpanded(false);
+            }}
         >
-            <motion.span
-                layout
-                className="flex items-center justify-center px-1 whitespace-nowrap"
-                transition={fluidSpring}
-            >
+            <span className="px-2 whitespace-nowrap text-center">
                 {children}
-            </motion.span>
+            </span>
         </motion.div>
     );
 });
