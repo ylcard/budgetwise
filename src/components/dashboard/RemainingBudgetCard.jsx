@@ -573,7 +573,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Labels
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
-        const savingsLabel = `${Math.round(savingsPct)}%`;
 
         return (
             <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
