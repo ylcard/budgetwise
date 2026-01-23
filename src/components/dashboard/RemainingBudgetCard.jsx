@@ -28,7 +28,7 @@ const STRIPE_PATTERN = {
 };
 
 // --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Fixed 120px expansion logic (switched to fixed width mode on hover)
+// REFACTORED: 23-Jan-2026 - Fixed jitter and grey gap by locking state during animation
 const SmartSegment = memo(({
     widthPct,
     color,
@@ -38,6 +38,7 @@ const SmartSegment = memo(({
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [needsExpansion, setNeedsExpansion] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
     const containerRef = useRef(null);
 
     // If segment is effectively invisible, don't render (avoids 0px glitches)
@@ -46,11 +47,17 @@ const SmartSegment = memo(({
     const MIN_WIDTH_PX = 120; // Minimum width for comfortable readability
 
     const handleMouseEnter = () => {
+        // Don't recalculate during animation to prevent jitter
+        if (isAnimating) return;
+        
         if (containerRef.current) {
             const containerWidth = containerRef.current.offsetWidth;
             // If segment is less than 120px, expand to 120px on hover
             if (containerWidth < MIN_WIDTH_PX) {
                 setNeedsExpansion(true);
+                setIsAnimating(true);
+                // Reset animation lock after transition completes
+                setTimeout(() => setIsAnimating(false), 400);
             } else {
                 setNeedsExpansion(false);
             }
@@ -58,8 +65,14 @@ const SmartSegment = memo(({
         setIsHovered(true);
     };
 
+    const handleMouseLeave = () => {
+        setIsHovered(false);
+        setNeedsExpansion(false);
+        setIsAnimating(true);
+        setTimeout(() => setIsAnimating(false), 400);
+    };
+
     // When hovered and needs expansion, switch to fixed width mode
-    // Otherwise, use flex mode for proportional sizing
     const shouldUseFixedWidth = isHovered && needsExpansion;
 
     return (
@@ -69,12 +82,16 @@ const SmartSegment = memo(({
             className={`h-full flex items-center justify-center overflow-hidden ${className}`}
             initial={false}
             animate={shouldUseFixedWidth ? {
-                flex: 'none',
+                flexGrow: 0,
+                flexShrink: 0,
+                flexBasis: MIN_WIDTH_PX,
                 width: MIN_WIDTH_PX,
                 paddingLeft: 8,
                 paddingRight: 8,
             } : {
-                flex: widthPct / 100,
+                flexGrow: widthPct / 100,
+                flexShrink: widthPct / 100,
+                flexBasis: 0,
                 width: 'auto',
                 paddingLeft: 0,
                 paddingRight: 0,
@@ -85,10 +102,7 @@ const SmartSegment = memo(({
             }}
             style={{ backgroundColor: color, ...style }}
             onMouseEnter={handleMouseEnter}
-            onMouseLeave={() => {
-                setIsHovered(false);
-                setNeedsExpansion(false);
-            }}
+            onMouseLeave={handleMouseLeave}
         >
             <motion.span
                 layout
