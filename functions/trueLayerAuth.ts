@@ -113,18 +113,20 @@ Deno.serve(async (req) => {
 
         // Get providers list
         if (action === 'getProviders') {
-            const response = await fetch('https://api.truelayer.com/api/providers', {
+            // MODIFIED: 26-Jan-2026 - Correct TrueLayer providers endpoint
+            const response = await fetch('https://api.truelayer.com/providers', {
                 headers: {
                     'Accept': 'application/json',
                 },
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch providers');
+                const errorText = await response.text();
+                throw new Error(`Failed to fetch providers: ${response.status} ${errorText}`);
             }
 
             const data = await response.json();
-            return Response.json({ providers: data.results });
+            return Response.json({ providers: data });
         }
 
         return Response.json({ error: 'Invalid action' }, { status: 400 });
