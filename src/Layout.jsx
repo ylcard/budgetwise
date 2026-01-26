@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Wallet } from "lucide-react";
+import { Wallet, LogOut } from "lucide-react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
@@ -16,6 +16,7 @@ import {
     SidebarProvider,
 } from "@/components/ui/sidebar";
 import { PeriodProvider } from "./components/hooks/usePeriod";
+import { base44 } from "@/api/base44Client";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
@@ -70,11 +71,22 @@ const LayoutContent = ({ children }) => {
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
                                     ))}
-                                </SidebarMenu>
-                            </SidebarGroupContent>
-                        </SidebarGroup>
-                    </SidebarContent>
-                </Sidebar>
+                                    </SidebarMenu>
+                                    </SidebarGroupContent>
+                                    </SidebarGroup>
+
+                                    {/* Logout Button */}
+                                    <div className="p-3 mt-auto border-t border-gray-200">
+                                    <SidebarMenuButton
+                                    onClick={() => base44.auth.logout()}
+                                    className="hover:bg-red-50 hover:text-red-700 transition-all duration-200 rounded-xl w-full text-red-600"
+                                    >
+                                    <LogOut className="w-5 h-5" />
+                                    <span className="font-medium">Logout</span>
+                                    </SidebarMenuButton>
+                                    </div>
+                                    </SidebarContent>
+                                    </Sidebar>
 
                 <main className="flex-1 flex flex-col relative">
                     <div className="flex-1 overflow-auto pt-20 md:pb-0">
@@ -101,9 +113,18 @@ const LayoutContent = ({ children }) => {
                                         </span>
                                     </Link>
                                 );
-                            })}
-                        </div>
-                    </nav>
+                                })}
+                                <button
+                                onClick={() => base44.auth.logout()}
+                                className="flex flex-1 flex-col items-center justify-center gap-1 py-1 rounded-lg transition-all duration-200 min-w-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                <LogOut className="w-5 h-5 sm:w-6 sm:h-6 stroke-2" />
+                                <span className="text-[9px] sm:text-[10px] font-medium truncate max-w-full px-0.5">
+                                    Logout
+                                </span>
+                                </button>
+                                </div>
+                                </nav>
                 </main>
             </div>
         </SidebarProvider>
