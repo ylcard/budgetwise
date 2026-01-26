@@ -111,23 +111,21 @@ Deno.serve(async (req) => {
             return Response.json({ tokens });
         }
 
-        // Get providers list
-        if (action === 'getProviders') {
-            // MODIFIED: 26-Jan-2026 - Correct TrueLayer providers endpoint
-            const response = await fetch('https://api.truelayer.com/providers', {
-                headers: {
-                    'Accept': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to fetch providers: ${response.status} ${errorText}`);
-            }
-
-            const data = await response.json();
-            return Response.json({ providers: data });
-        }
+        // COMMENTED OUT: 26-Jan-2026 - TrueLayer doesn't provide public API to list providers
+        // The auth dialog shows available banks after clicking auth link
+        // if (action === 'getProviders') {
+        //     const response = await fetch('https://api.truelayer.com/providers', {
+        //         headers: {
+        //             'Accept': 'application/json',
+        //         },
+        //     });
+        //     if (!response.ok) {
+        //         const errorText = await response.text();
+        //         throw new Error(`Failed to fetch providers: ${response.status} ${errorText}`);
+        //     }
+        //     const data = await response.json();
+        //     return Response.json({ providers: data });
+        // }
 
         return Response.json({ error: 'Invalid action' }, { status: 400 });
 
