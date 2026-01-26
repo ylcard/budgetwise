@@ -9,6 +9,7 @@ import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Transactions from './pages/Transactions';
+import BankSync from './pages/BankSync';
 import __Layout from './Layout.jsx';
 
 
@@ -24,6 +25,7 @@ export const PAGES = {
     "Reports": Reports,
     "Settings": Settings,
     "Transactions": Transactions,
+    "BankSync": BankSync,
 }
 
 export const pagesConfig = {
