@@ -1,3 +1,4 @@
+import BankSync from './pages/BankSync';
 import BudgetDetail from './pages/BudgetDetail';
 import Budgets from './pages/Budgets';
 import Categories from './pages/Categories';
@@ -9,11 +10,11 @@ import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Transactions from './pages/Transactions';
-import BankSync from './pages/BankSync';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "BankSync": BankSync,
     "BudgetDetail": BudgetDetail,
     "Budgets": Budgets,
     "Categories": Categories,
@@ -25,7 +26,6 @@ export const PAGES = {
     "Reports": Reports,
     "Settings": Settings,
     "Transactions": Transactions,
-    "BankSync": BankSync,
 }
 
 export const pagesConfig = {
