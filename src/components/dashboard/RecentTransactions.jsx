@@ -19,7 +19,7 @@ import QuickAddIncome from "../transactions/QuickAddIncome";
 
 export default function RecentTransactions({ categories, customBudgets, onEdit, onDelete }) {
     const { settings } = useSettings();
-    
+
     // 1. Determine "Now" (Real-time boundaries)
     const { currentYear, monthStart, monthEnd } = getCurrentPeriodBoundaries();
 
@@ -132,13 +132,12 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                                 {customBudget && (
                                                     <>
                                                         <span className="text-gray-300">•</span>
-                                                        <Badge 
-                                                            variant="outline" 
-                                                            className={`text-xs px-2 py-0.5 font-medium ${
-                                                                crossPeriodInfo.isCrossPeriod 
-                                                                    ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-200 hover:border-orange-300 hover:text-orange-900' 
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`text-xs px-2 py-0.5 font-medium ${crossPeriodInfo.isCrossPeriod
+                                                                    ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-200 hover:border-orange-300 hover:text-orange-900'
                                                                     : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-200 hover:border-gray-300 hover:text-gray-900'
-                                                            } transition-all cursor-pointer`}
+                                                                } transition-all cursor-pointer`}
                                                         >
                                                             <Link to={`/BudgetDetail?id=${customBudget.id}`} className="flex items-center gap-1">
                                                                 {customBudget.name}
@@ -150,20 +149,18 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center shrink-0">
-                                        <div className="text-right">
-                                            <p className={`font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                                {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
-                                            </p>
-                                        </div>
-                                        
-                                        {/* ADDED 13-Jan-2026: Edit/Delete action buttons */}
-                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 bg-white shadow-sm border border-gray-100 rounded-lg p-1 z-10">
+                                    {/* UPDATED 26-Jan-2026: Swap Amount with Actions on hover */}
+                                    <div className="relative flex items-center justify-end shrink-0 min-w-[100px]">
+                                        <p className={`font-bold transition-all duration-300 group-hover:opacity-0 group-hover:translate-x-2 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                                        </p>
+
+                                        <div className="absolute right-0 flex items-center gap-1 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                                             <CustomButton
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 onClick={() => handleEdit(transaction)}
-                                                className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
+                                                className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600"
                                             >
                                                 <Pencil className="w-3 h-3" />
                                             </CustomButton>
@@ -171,7 +168,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 onClick={() => onDelete && onDelete(transaction)}
-                                                className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                                                className="h-8 w-8 hover:bg-red-50 hover:text-red-600"
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                             </CustomButton>
