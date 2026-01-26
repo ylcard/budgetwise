@@ -59,9 +59,14 @@ const BankConnectionCard = memo(function BankConnectionCard({
                         <div className={`w-10 h-10 rounded-lg ${config.bg} flex items-center justify-center`}>
                             <Building2 className={`w-5 h-5 ${config.color}`} />
                         </div>
+                        {/* MODIFIED: 26-Jan-2026 - Support unified schema */}
                         <div>
-                            <h3 className="font-semibold text-gray-900">{connection.aspsp_name}</h3>
-                            <p className="text-xs text-gray-500">{connection.aspsp_country}</p>
+                            <h3 className="font-semibold text-gray-900">
+                                {connection.provider_name || connection.aspsp_name}
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                                {connection.country || connection.aspsp_country} • {connection.provider === 'truelayer' ? 'TrueLayer' : 'Enable Banking'}
+                            </p>
                         </div>
                     </div>
                     <Badge className={config.badge}>

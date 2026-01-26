@@ -1,3 +1,4 @@
+import BankSync from './pages/BankSync';
 import BudgetDetail from './pages/BudgetDetail';
 import Budgets from './pages/Budgets';
 import Categories from './pages/Categories';
@@ -13,6 +14,7 @@ import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "BankSync": BankSync,
     "BudgetDetail": BudgetDetail,
     "Budgets": Budgets,
     "Categories": Categories,

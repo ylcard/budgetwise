@@ -21,10 +21,11 @@ import {
 /**
  * Bank Sync Page
  * CREATED: 26-Jan-2026
+ * MODIFIED: 26-Jan-2026 - Added TrueLayer support alongside Enable Banking
  * 
- * Manages bank connections via Enable Banking API
+ * Manages bank connections via TrueLayer and Enable Banking APIs
  * Features:
- * - Connect new banks
+ * - Connect new banks (TrueLayer or Enable Banking)
  * - View connected accounts
  * - Manual sync with preview
  * - Auto-sync configuration
@@ -42,6 +43,7 @@ export default function BankSync() {
     const [loadingBanks, setLoadingBanks] = useState(false);
     const [syncing, setSyncing] = useState(null);
     const [banks, setBanks] = useState(null);
+    const [selectedProvider, setSelectedProvider] = useState('truelayer'); // ADDED: 26-Jan-2026
 
     // Fetch bank connections
     const { data: connections = [], isLoading } = useQuery({
@@ -49,14 +51,29 @@ export default function BankSync() {
         queryFn: () => base44.entities.BankConnection.list(),
     });
 
-    // Load available banks
-    const loadBanks = useCallback(async () => {
+    // MODIFIED: 26-Jan-2026 - Support both TrueLayer and Enable Banking
+    const loadBanks = useCallback(async (provider = 'truelayer') => {
         setLoadingBanks(true);
+        setSelectedProvider(provider);
         try {
-            const response = await base44.functions.invoke('enableBankingAuth', {
-                action: 'getASPSPs'
-            });
-            setBanks(response.data.aspsps);
+            if (provider === 'truelayer') {
+                const response = await base44.functions.invoke('trueLayerAuth', {
+                    action: 'getProviders'
+                });
+                // Transform TrueLayer providers to match bank list format
+                const providers = (response.data.providers || []).map(p => ({
+                    name: p.display_name,
+                    country: p.country,
+                    provider_id: p.provider_id,
+                    logo: p.logo_uri,
+                }));
+                setBanks(providers);
+            } else {
+                const response = await base44.functions.invoke('enableBankingAuth', {
+                    action: 'getASPSPs'
+                });
+                setBanks(response.data.aspsps);
+            }
         } catch (error) {
             toast({
                 title: "Failed to load banks",
@@ -68,25 +85,34 @@ export default function BankSync() {
         }
     }, [toast]);
 
-    // Start bank connection flow
+    // MODIFIED: 26-Jan-2026 - Support both providers
     const handleSelectBank = useCallback(async (bank) => {
         try {
             const redirectUrl = `${window.location.origin}/BankSync`;
             const state = Math.random().toString(36).substring(7);
             
-            // Store state for verification
-            sessionStorage.setItem('enable_banking_state', state);
-            sessionStorage.setItem('enable_banking_aspsp', JSON.stringify(bank));
+            // Store state and provider for verification
+            sessionStorage.setItem('bank_sync_state', state);
+            sessionStorage.setItem('bank_sync_provider', selectedProvider);
+            sessionStorage.setItem('bank_sync_bank', JSON.stringify(bank));
 
-            const response = await base44.functions.invoke('enableBankingAuth', {
-                action: 'startAuth',
-                aspsp: bank,
-                redirectUrl,
-                state
-            });
-
-            // Redirect to Enable Banking
-            window.location.href = response.data.redirectUrl;
+            if (selectedProvider === 'truelayer') {
+                const response = await base44.functions.invoke('trueLayerAuth', {
+                    action: 'generateAuthLink',
+                    redirectUrl,
+                    state,
+                    providerId: bank.provider_id
+                });
+                window.location.href = response.data.authUrl;
+            } else {
+                const response = await base44.functions.invoke('enableBankingAuth', {
+                    action: 'startAuth',
+                    aspsp: bank,
+                    redirectUrl,
+                    state
+                });
+                window.location.href = response.data.redirectUrl;
+            }
         } catch (error) {
             toast({
                 title: "Failed to start connection",
@@ -94,9 +120,9 @@ export default function BankSync() {
                 variant: "destructive"
             });
         }
-    }, [toast]);
+    }, [toast, selectedProvider]);
 
-    // Handle OAuth callback
+    // MODIFIED: 26-Jan-2026 - Handle both TrueLayer and Enable Banking callbacks
     useEffect(() => {
         const handleCallback = async () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -111,14 +137,14 @@ export default function BankSync() {
                     description: errorDesc || error,
                     variant: "destructive"
                 });
-                // Clear URL
                 window.history.replaceState({}, '', '/BankSync');
                 return;
             }
 
             if (code && state) {
-                const storedState = sessionStorage.getItem('enable_banking_state');
-                const storedAspsp = sessionStorage.getItem('enable_banking_aspsp');
+                const storedState = sessionStorage.getItem('bank_sync_state');
+                const storedProvider = sessionStorage.getItem('bank_sync_provider');
+                const storedBank = sessionStorage.getItem('bank_sync_bank');
 
                 if (state !== storedState) {
                     toast({
@@ -130,34 +156,72 @@ export default function BankSync() {
                 }
 
                 try {
-                    const response = await base44.functions.invoke('enableBankingAuth', {
-                        action: 'createSession',
-                        code
-                    });
+                    const bank = JSON.parse(storedBank);
+                    const redirectUrl = `${window.location.origin}/BankSync`;
 
-                    const aspsp = JSON.parse(storedAspsp);
-                    const session = response.data.session;
+                    if (storedProvider === 'truelayer') {
+                        // Exchange code for access token
+                        const tokenResponse = await base44.functions.invoke('trueLayerAuth', {
+                            action: 'exchangeCode',
+                            code,
+                            redirectUrl
+                        });
 
-                    // Save connection
-                    await base44.entities.BankConnection.create({
-                        aspsp_name: aspsp.name,
-                        aspsp_country: aspsp.country,
-                        session_id: session.session_id,
-                        accounts: session.accounts || [],
-                        status: 'active',
-                        auto_sync_enabled: true
-                    });
+                        const tokens = tokenResponse.data.tokens;
+                        const expiryDate = new Date(Date.now() + tokens.expires_in * 1000);
+
+                        // Save connection
+                        await base44.entities.BankConnection.create({
+                            provider: 'truelayer',
+                            provider_name: bank.name,
+                            provider_id: bank.provider_id,
+                            country: bank.country,
+                            access_token: tokens.access_token,
+                            refresh_token: tokens.refresh_token,
+                            token_expiry: expiryDate.toISOString(),
+                            accounts: [],
+                            status: 'active',
+                            auto_sync_enabled: true,
+                            user_email: (await base44.auth.me()).email
+                        });
+
+                        toast({
+                            title: "Bank connected!",
+                            description: `Successfully connected to ${bank.name} via TrueLayer`
+                        });
+                    } else {
+                        // Enable Banking flow
+                        const response = await base44.functions.invoke('enableBankingAuth', {
+                            action: 'createSession',
+                            code
+                        });
+
+                        const session = response.data.session;
+
+                        await base44.entities.BankConnection.create({
+                            provider: 'enable_banking',
+                            provider_name: bank.name,
+                            provider_id: bank.name,
+                            country: bank.country,
+                            access_token: session.session_id,
+                            accounts: session.accounts || [],
+                            status: 'active',
+                            auto_sync_enabled: true,
+                            user_email: (await base44.auth.me()).email
+                        });
+
+                        toast({
+                            title: "Bank connected!",
+                            description: `Successfully connected to ${bank.name} via Enable Banking`
+                        });
+                    }
 
                     queryClient.invalidateQueries(['bankConnections']);
 
-                    toast({
-                        title: "Bank connected!",
-                        description: `Successfully connected to ${aspsp.name}`
-                    });
-
                     // Clear storage and URL
-                    sessionStorage.removeItem('enable_banking_state');
-                    sessionStorage.removeItem('enable_banking_aspsp');
+                    sessionStorage.removeItem('bank_sync_state');
+                    sessionStorage.removeItem('bank_sync_provider');
+                    sessionStorage.removeItem('bank_sync_bank');
                     window.history.replaceState({}, '', '/BankSync');
 
                 } catch (error) {
@@ -173,14 +237,18 @@ export default function BankSync() {
         handleCallback();
     }, [queryClient, toast]);
 
-    // Sync bank transactions
+    // MODIFIED: 26-Jan-2026 - Support both providers
     const handleSync = useCallback(async (connection) => {
         setSyncing(connection.id);
         try {
             const dateFrom = new Date();
-            dateFrom.setDate(dateFrom.getDate() - 30); // Last 30 days
+            dateFrom.setDate(dateFrom.getDate() - 30);
 
-            const response = await base44.functions.invoke('syncBankTransactions', {
+            const functionName = connection.provider === 'truelayer' 
+                ? 'trueLayerSync' 
+                : 'syncBankTransactions';
+
+            const response = await base44.functions.invoke(functionName, {
                 connectionId: connection.id,
                 dateFrom: dateFrom.toISOString().split('T')[0],
                 dateTo: new Date().toISOString().split('T')[0]
@@ -288,23 +356,36 @@ export default function BankSync() {
                             Connect your bank accounts to automatically import transactions
                         </p>
                     </div>
-                    <CustomButton
-                        variant="create"
-                        onClick={() => {
-                            loadBanks();
-                            setShowBankSelection(true);
-                        }}
-                    >
-                        <Plus className="w-4 h-4" />
-                        Connect Bank
-                    </CustomButton>
+                    {/* MODIFIED: 26-Jan-2026 - Provider selection */}
+                    <div className="flex gap-2">
+                        <CustomButton
+                            variant="create"
+                            onClick={() => {
+                                loadBanks('truelayer');
+                                setShowBankSelection(true);
+                            }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            Connect UK Bank
+                        </CustomButton>
+                        <CustomButton
+                            variant="outline"
+                            onClick={() => {
+                                loadBanks('enable_banking');
+                                setShowBankSelection(true);
+                            }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            Connect EU Bank
+                        </CustomButton>
+                    </div>
                 </div>
 
-                {/* Info Alert */}
+                {/* MODIFIED: 26-Jan-2026 - Updated info for both providers */}
                 <Alert className="bg-blue-50 border-blue-200">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-900">
-                        <strong>Powered by Enable Banking:</strong> Securely connect to 6,000+ banks across Europe. 
+                        <strong>Secure Bank Connection:</strong> Connect via TrueLayer (UK banks) or Enable Banking (6,000+ European banks). 
                         Your credentials are never stored, and connections are read-only.
                     </AlertDescription>
                 </Alert>
@@ -329,16 +410,29 @@ export default function BankSync() {
                         <p className="text-gray-600 mb-6">
                             Connect your bank to start automatically importing transactions
                         </p>
-                        <CustomButton
-                            variant="create"
-                            onClick={() => {
-                                loadBanks();
-                                setShowBankSelection(true);
-                            }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            Connect Your First Bank
-                        </CustomButton>
+                        {/* MODIFIED: 26-Jan-2026 - Provider selection */}
+                        <div className="flex gap-3 justify-center">
+                            <CustomButton
+                                variant="create"
+                                onClick={() => {
+                                    loadBanks('truelayer');
+                                    setShowBankSelection(true);
+                                }}
+                            >
+                                <Plus className="w-4 h-4" />
+                                Connect UK Bank
+                            </CustomButton>
+                            <CustomButton
+                                variant="outline"
+                                onClick={() => {
+                                    loadBanks('enable_banking');
+                                    setShowBankSelection(true);
+                                }}
+                            >
+                                <Plus className="w-4 h-4" />
+                                Connect EU Bank
+                            </CustomButton>
+                        </div>
                     </CardContent>
                 </Card>
             ) : (
