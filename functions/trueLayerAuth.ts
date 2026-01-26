@@ -31,28 +31,26 @@ Deno.serve(async (req) => {
         }
 
         // Generate auth link
+        // MODIFIED: 26-Jan-2026 - Use providers parameter to show all UK banks in auth dialog
         if (action === 'generateAuthLink') {
             const { redirectUrl, state, providerId } = params;
             
-            const scopes = [
-                'info',
-                'accounts',
-                'balance',
-                'transactions',
-                'offline_access'
-            ].join('%20');
+            const scopes = 'info accounts balance cards transactions direct_debits standing_orders offline_access';
 
             let authUrl = `https://auth.truelayer.com/?` +
                 `response_type=code` +
                 `&client_id=${clientId}` +
+                `&scope=${encodeURIComponent(scopes)}` +
                 `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
-                `&scope=${scopes}` +
                 `&state=${state}`;
 
+            // Add providers parameter to show all UK banks in auth dialog
+            // uk-ob-all: UK Open Banking providers
+            // uk-oauth-all: UK OAuth providers
             if (providerId) {
-                authUrl += `&provider_id=${providerId}&providers=uk-ob-all`;
+                authUrl += `&provider_id=${providerId}`;
             } else {
-                authUrl += `&providers=uk-ob-all`;
+                authUrl += `&providers=${encodeURIComponent('uk-ob-all uk-oauth-all')}`;
             }
 
             return Response.json({ authUrl });
