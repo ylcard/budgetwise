@@ -135,8 +135,8 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                                         <Badge
                                                             variant="outline"
                                                             className={`text-xs px-2 py-0.5 font-medium ${crossPeriodInfo.isCrossPeriod
-                                                                    ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-200 hover:border-orange-300 hover:text-orange-900'
-                                                                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-200 hover:border-gray-300 hover:text-gray-900'
+                                                                ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-200 hover:border-orange-300 hover:text-orange-900'
+                                                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-200 hover:border-gray-300 hover:text-gray-900'
                                                                 } transition-all cursor-pointer`}
                                                         >
                                                             <Link to={`/BudgetDetail?id=${customBudget.id}`} className="flex items-center gap-1">
@@ -149,13 +149,13 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                             </div>
                                         </div>
                                     </div>
-                                    {/* UPDATED 26-Jan-2026: Swap Amount with Actions on hover */}
-                                    <div className="relative flex items-center justify-end shrink-0 min-w-[100px]">
-                                        <p className={`font-bold transition-all duration-300 group-hover:opacity-0 group-hover:translate-x-2 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {/* UPDATED: Sliding Swap Animation */}
+                                    <div className="relative flex items-center justify-end shrink-0 min-w-[100px] overflow-hidden">
+                                        <p className={`font-bold transition-all duration-300 ease-in-out group-hover:translate-x-full group-hover:opacity-0 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                                             {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </p>
 
-                                        <div className="absolute right-0 flex items-center gap-1 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                                        <div className="absolute right-0 flex items-center gap-1 transition-all duration-300 ease-in-out translate-x-full opacity-0 group-hover:translate-x-0 group-hover:opacity-100">
                                             <CustomButton
                                                 variant="ghost"
                                                 size="icon-sm"
