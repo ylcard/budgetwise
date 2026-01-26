@@ -9,8 +9,7 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm, /* useGoalActions */ } from "../components/hooks/useActions"; // UPDATED 17-Jan-2026: Commented out useGoalActions
 // import { useGoals } from "../components/hooks/useBase44Entities"; // REMOVED 17-Jan-2026: Goals moved to Reports
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { Settings as SettingsIcon, Save, LogOut } from "lucide-react"; // UPDATED 17-Jan-2026: Removed unused icons
-import { base44 } from "@/api/base44Client";
+import { Settings as SettingsIcon, Save } from "lucide-react"; // UPDATED 17-Jan-2026: Removed unused icons
 import {
     CURRENCY_OPTIONS,
     // FINANCIAL_PRIORITIES, // REMOVED 17-Jan-2026: Goals moved to Reports
@@ -197,34 +196,6 @@ export default function Settings() {
                         </div>
 
                         {/* REMOVED 17-Jan-2026: Goal Allocation moved to Reports page */}
-                    </CardContent>
-                </Card>
-
-                {/* ADDED 26-Jan-2026: Logout Section */}
-                <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <LogOut className="w-5 h-5" />
-                            Account
-                        </CardTitle>
-                        <CardDescription>
-                            Manage your account and session
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                            <div>
-                                <p className="font-medium text-gray-900">{user?.full_name || user?.email}</p>
-                                <p className="text-sm text-gray-500">{user?.email}</p>
-                            </div>
-                            <CustomButton
-                                variant="delete"
-                                onClick={() => base44.auth.logout()}
-                            >
-                                <LogOut className="w-4 h-4" />
-                                Logout
-                            </CustomButton>
-                        </div>
                     </CardContent>
                 </Card>
                 {/* --- STATIC ACTION BUTTONS --- */}

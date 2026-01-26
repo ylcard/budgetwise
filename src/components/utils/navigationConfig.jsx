@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw, Building2 } from "lucide-react";
+import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 export const navigationItems = [
@@ -32,11 +32,6 @@ export const navigationItems = [
     title: "Reports",
     url: createPageUrl("Reports"),
     icon: BarChart3,
-  },
-  {
-    title: "Bank Sync",
-    url: createPageUrl("BankSync"),
-    icon: Building2,
   },
   {
     title: "Settings",
