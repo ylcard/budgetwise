@@ -94,7 +94,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                             return (
                                 <div
                                     key={transaction.id}
-                                    className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                                    className="relative flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
                                 >
                                     <div className="flex items-center gap-3 flex-1 min-w-0">
                                         {isIncome ? (
@@ -150,7 +150,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 shrink-0">
+                                    <div className="flex items-center shrink-0">
                                         <div className="text-right">
                                             <p className={`font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                                                 {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
@@ -158,7 +158,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                         </div>
                                         
                                         {/* ADDED 13-Jan-2026: Edit/Delete action buttons */}
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 bg-white shadow-sm border border-gray-100 rounded-lg p-1 z-10">
                                             <CustomButton
                                                 variant="ghost"
                                                 size="icon-sm"
