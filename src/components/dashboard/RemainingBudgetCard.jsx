@@ -43,7 +43,7 @@ const SmartSegment = memo(({
     if (widthPct <= 0.001) return null;
 
     const MIN_WIDTH_PX = 120;
-    
+
     // Determine if segment is narrow based on percentage alone (no measurement)
     // Assuming typical screen width of ~1000px for the bar, 12% = ~120px
     const isNarrow = widthPct < 12;
@@ -499,23 +499,35 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
     // --- RENDER: UNIFIED BAR (Handles both Simple & Detailed via internal sizing) ---
     const renderUnifiedBar = () => {
-        // REFACTORED: 23-Jan-2026 - Improved calculationBase logic for zero income scenarios
-        // Calculate Layout Percentages (Outer widths relative to income)
         const safeTotalNeeds = needsSegs.total > 0 ? needsSegs.total : 0;
         const safeTotalWants = wantsSegs.total > 0 ? wantsSegs.total : 0;
 
         // Ensure minimal visibility for clickable areas if they exist but are tiny
         const CLICKABLE_MIN_PCT = 5;
 
-        // Use actual income for calculation base, fallback to 1 only for division safety
+        // --- WIDTH CALCULATIONS ---
         const calculationBase = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
-        
-        const needsOuterPct = Math.max((safeTotalNeeds / calculationBase) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
-        const wantsOuterPct = Math.max((safeTotalWants / calculationBase) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
 
-        // Savings fills remaining space
-        // Note: For visual cleanliness, we clamp the outer bars so they don't overflow the container in weird ways
-        // but the internal segments handle the "Overflow" logic (red bars).
+        let needsOuterPct, wantsOuterPct, savingsOuterPct;
+
+        if (isSimpleView) {
+            // SIMPLE VIEW: Widths based on GOALS (Target Amount or Percentage)
+            // 1. Calculate the "Total Goal Pie"
+            const totalGoal = needsLimit + wantsLimit + savingsLimit;
+            const goalBase = totalGoal > 0 ? totalGoal : 1;
+
+            // 2. Calculate raw percentages relative to the Total Goal
+            // 3. Rounding Logic: Round Needs/Wants, assign remainder to Savings to ensure strictly 100%
+            needsOuterPct = Math.round((needsLimit / goalBase) * 100);
+            wantsOuterPct = Math.round((wantsLimit / goalBase) * 100);
+            savingsOuterPct = 100 - needsOuterPct - wantsOuterPct;
+
+        } else {
+            // DETAILED VIEW: Widths based on INCOME SHARE (Original Logic)
+            needsOuterPct = Math.max((safeTotalNeeds / calculationBase) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
+            wantsOuterPct = Math.max((safeTotalWants / calculationBase) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
+            savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
+        }
 
         // Internal Split Ratios (0 to 1)
         // If Simple View: Primary = 1 (100%), Secondary = 0.
@@ -559,8 +571,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const targetSavingsUtil = getUtil(sTarget, savingsLimit);
         const extraSavingsUtil = getUtil(sExtra, savingsLimit);
 
-        const savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
-
         // Labels
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
@@ -586,6 +596,22 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             color={needsColor}
                             direction="left" // Always left edge
                         >
+                            {/* SIMPLE VIEW: Progress Bar Style (Light Target / Dark Actual) */}
+                            {isSimpleView && (
+                                <>
+                                    {/* Lighten the background to represent "Target" */}
+                                    <div className="absolute inset-0 bg-white/60" />
+                                    {/* Dark Bar for "Actual" usage */}
+                                    <div
+                                        className="absolute inset-y-0 left-0 transition-all duration-500 ease-out"
+                                        style={{
+                                            backgroundColor: needsColor,
+                                            width: `${Math.min(100, (needsTotal / (needsLimit || 1)) * 100)}%`
+                                        }}
+                                    />
+                                </>
+                            )}
+
                             {!isSimpleView && (
                                 <div className="w-full px-1 flex items-center justify-center">
                                     {/* Primary Label (Left) */}
@@ -662,6 +688,18 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             color={wantsColor}
                             direction="center"
                         >
+                            {isSimpleView && (
+                                <>
+                                    <div className="absolute inset-0 bg-white/60" />
+                                    <div
+                                        className="absolute inset-y-0 left-0 transition-all duration-500 ease-out"
+                                        style={{
+                                            backgroundColor: wantsColor,
+                                            width: `${Math.min(100, (wantsTotal / (wantsLimit || 1)) * 100)}%`
+                                        }}
+                                    />
+                                </>
+                            )}
                             {!isSimpleView && (
                                 <div className="w-full px-1 flex items-center justify-center">
                                     {wR.p > 0.1 && (
@@ -731,6 +769,19 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             color="#10B981" // emerald-500
                             direction={sExtraRatio > 0 ? "center" : "right"} // If extra exists, center. Else, right edge.
                         >
+                            {isSimpleView && (
+                                <>
+                                    <div className="absolute inset-0 bg-white/60" />
+                                    {/* For Savings: "Used" is actually "Saved" */}
+                                    <div
+                                        className="absolute inset-y-0 left-0 transition-all duration-500 ease-out"
+                                        style={{
+                                            backgroundColor: "#10B981",
+                                            width: `${Math.min(100, (totalSavings / (savingsLimit || 1)) * 100)}%`
+                                        }}
+                                    />
+                                </>
+                            )}
                             {!isSimpleView && (
                                 <div className="w-full px-1 flex items-center justify-center">
                                     {sTargetRatio > 0.1 && (
