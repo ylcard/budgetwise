@@ -766,7 +766,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             )}
                         </SmartSegment>
 
-                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+                        <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
                             <div className="text-white/90 font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap">
                                 <TextSwap>
                                     {/* Simple View: Show Total Amount + % of Target */}
