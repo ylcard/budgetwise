@@ -356,36 +356,24 @@ export default function BankSync() {
                             Connect your bank accounts to automatically import transactions
                         </p>
                     </div>
-                    {/* MODIFIED: 26-Jan-2026 - Provider selection */}
-                    <div className="flex gap-2">
-                        <CustomButton
-                            variant="create"
-                            onClick={() => {
-                                loadBanks('truelayer');
-                                setShowBankSelection(true);
-                            }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            Connect UK Bank
-                        </CustomButton>
-                        <CustomButton
-                            variant="outline"
-                            onClick={() => {
-                                loadBanks('enable_banking');
-                                setShowBankSelection(true);
-                            }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            Connect EU Bank
-                        </CustomButton>
-                    </div>
+                    {/* MODIFIED: 26-Jan-2026 - TrueLayer only */}
+                    <CustomButton
+                        variant="create"
+                        onClick={() => {
+                            loadBanks('truelayer');
+                            setShowBankSelection(true);
+                        }}
+                    >
+                        <Plus className="w-4 h-4" />
+                        Connect Bank
+                    </CustomButton>
                 </div>
 
-                {/* MODIFIED: 26-Jan-2026 - Updated info for both providers */}
+                {/* MODIFIED: 26-Jan-2026 - TrueLayer only */}
                 <Alert className="bg-blue-50 border-blue-200">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-900">
-                        <strong>Secure Bank Connection:</strong> Connect via TrueLayer (UK banks) or Enable Banking (6,000+ European banks). 
+                        <strong>Powered by TrueLayer:</strong> Securely connect to UK banks with industry-leading Open Banking. 
                         Your credentials are never stored, and connections are read-only.
                     </AlertDescription>
                 </Alert>
@@ -410,29 +398,17 @@ export default function BankSync() {
                         <p className="text-gray-600 mb-6">
                             Connect your bank to start automatically importing transactions
                         </p>
-                        {/* MODIFIED: 26-Jan-2026 - Provider selection */}
-                        <div className="flex gap-3 justify-center">
-                            <CustomButton
-                                variant="create"
-                                onClick={() => {
-                                    loadBanks('truelayer');
-                                    setShowBankSelection(true);
-                                }}
-                            >
-                                <Plus className="w-4 h-4" />
-                                Connect UK Bank
-                            </CustomButton>
-                            <CustomButton
-                                variant="outline"
-                                onClick={() => {
-                                    loadBanks('enable_banking');
-                                    setShowBankSelection(true);
-                                }}
-                            >
-                                <Plus className="w-4 h-4" />
-                                Connect EU Bank
-                            </CustomButton>
-                        </div>
+                        {/* MODIFIED: 26-Jan-2026 - TrueLayer only */}
+                        <CustomButton
+                            variant="create"
+                            onClick={() => {
+                                loadBanks('truelayer');
+                                setShowBankSelection(true);
+                            }}
+                        >
+                            <Plus className="w-4 h-4" />
+                            Connect Your First Bank
+                        </CustomButton>
                     </CardContent>
                 </Card>
             ) : (
