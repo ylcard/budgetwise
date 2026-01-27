@@ -237,6 +237,7 @@ Deno.serve(async (req) => {
                 iban: acc.account_number?.iban,
                 currency: acc.currency,
                 account_type: acc.account_type,
+                balance: acc.balance?.current
             }))
         };
         console.log('📝 [SYNC] Update payload:', JSON.stringify(updatePayload, null, 2));
