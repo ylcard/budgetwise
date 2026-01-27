@@ -254,18 +254,19 @@ export default function BankSync() {
         handleCallback();
     }, [queryClient, toast]);
 
-    // MODIFIED: 26-Jan-2026 - Support both providers
+    // MODIFIED: 27-Jan-2026 - TrueLayer only (Enable Banking deprecated)
     const handleSync = useCallback(async (connection) => {
         setSyncing(connection.id);
         try {
             const dateFrom = new Date();
             dateFrom.setDate(dateFrom.getDate() - 30);
 
-            const functionName = connection.provider === 'truelayer'
-                ? 'trueLayerSync'
-                : 'syncBankTransactions';
+            // COMMENTED OUT: 27-Jan-2026 - Enable Banking deprecated, only TrueLayer supported
+            // const functionName = connection.provider === 'truelayer'
+            //     ? 'trueLayerSync'
+            //     : 'syncBankTransactions';
 
-            const response = await base44.functions.invoke(functionName, {
+            const response = await base44.functions.invoke('trueLayerSync', {
                 connectionId: connection.id,
                 dateFrom: dateFrom.toISOString().split('T')[0],
                 dateTo: new Date().toISOString().split('T')[0]
