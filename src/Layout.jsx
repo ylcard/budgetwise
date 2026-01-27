@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { Wallet } from "lucide-react";
+import { Wallet, LogOut } from "lucide-react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
 import { useRecurringProcessor } from "./components/hooks/useRecurringProcessor";
+import { base44 } from "@/api/base44Client";
 import {
     Sidebar,
     SidebarContent,
@@ -13,9 +14,11 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarHeader,
+    SidebarFooter,
     SidebarProvider,
 } from "@/components/ui/sidebar";
 import { PeriodProvider } from "./components/hooks/usePeriod";
+import { CustomButton } from "@/components/ui/CustomButton";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
@@ -74,9 +77,20 @@ const LayoutContent = ({ children }) => {
                             </SidebarGroupContent>
                         </SidebarGroup>
                     </SidebarContent>
-                </Sidebar>
 
-                <main className="flex-1 flex flex-col relative">
+                    <SidebarFooter className="p-3 border-t border-gray-200">
+                        <CustomButton
+                            variant="ghost"
+                            className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => base44.auth.logout()}
+                        >
+                            <LogOut className="w-5 h-5 mr-3" />
+                            <span className="font-medium">Logout</span>
+                        </CustomButton>
+                    </SidebarFooter>
+                    </Sidebar>
+
+                    <main className="flex-1 flex flex-col relative">
                     <div className="flex-1 overflow-auto pt-20 md:pb-0">
                         {children}
                     </div>
