@@ -12,26 +12,58 @@ const BASE_API_URL = "https://api.truelayer.com";
 
 Deno.serve(async (req) => {
     try {
+        console.log('🚀 [SYNC] TrueLayer Sync Handler started');
+        
         const base44 = createClientFromRequest(req);
         const user = await base44.auth.me();
+        console.log('👤 [SYNC] User authenticated:', user?.email);
 
         if (!user) {
+            console.error('❌ [SYNC] No user found - Unauthorized');
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await req.json();
+        console.log('📦 [SYNC] Request body:', JSON.stringify(body, null, 2));
+        
         const connectionId = body.connectionId;
         const dateFrom = body.dateFrom;
         const dateTo = body.dateTo;
+        
+        console.log('🔑 [SYNC] Parsed parameters:', {
+            connectionId,
+            dateFrom,
+            dateTo,
+            hasConnectionId: !!connectionId,
+            hasDateFrom: !!dateFrom,
+            hasDateTo: !!dateTo
+        });
 
         // Fetch bank connection by ID
+        console.log('🔍 [SYNC] Fetching connection with ID:', connectionId);
         const connection = await base44.asServiceRole.entities.BankConnection.get(connectionId);
+        console.log('✅ [SYNC] Connection fetched:', {
+            id: connection?.id,
+            provider: connection?.provider,
+            provider_name: connection?.provider_name,
+            status: connection?.status,
+            created_by: connection?.created_by,
+            hasAccessToken: !!connection?.access_token,
+            hasRefreshToken: !!connection?.refresh_token,
+            token_expiry: connection?.token_expiry
+        });
 
         if (!connection || connection.created_by !== user.email) {
+            console.error('❌ [SYNC] Connection not found or unauthorized:', {
+                hasConnection: !!connection,
+                connectionCreatedBy: connection?.created_by,
+                userEmail: user.email
+            });
             return Response.json({ error: 'Connection not found' }, { status: 404 });
         }
 
         if (connection.status !== 'active') {
+            console.error('❌ [SYNC] Connection is not active:', connection.status);
             return Response.json({ error: 'Connection is not active' }, { status: 400 });
         }
 
@@ -67,6 +99,10 @@ Deno.serve(async (req) => {
         }
 
         // Fetch accounts
+        console.log('🏦 [SYNC] Fetching accounts from TrueLayer...');
+        console.log('🌐 [SYNC] Request URL:', `${BASE_API_URL}/data/v1/accounts`);
+        console.log('🔑 [SYNC] Using access token (first 20 chars):', accessToken?.substring(0, 20) + '...');
+        
         const accountsResponse = await fetch(`${BASE_API_URL}/data/v1/accounts`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -74,56 +110,98 @@ Deno.serve(async (req) => {
             }
         });
 
+        console.log('📡 [SYNC] Accounts response status:', accountsResponse.status, accountsResponse.statusText);
+
         if (!accountsResponse.ok) {
-            throw new Error('Failed to fetch accounts from TrueLayer');
+            const errorText = await accountsResponse.text();
+            console.error('❌ [SYNC] Failed to fetch accounts:', {
+                status: accountsResponse.status,
+                statusText: accountsResponse.statusText,
+                errorBody: errorText
+            });
+            throw new Error(`Failed to fetch accounts from TrueLayer: ${accountsResponse.status} - ${errorText}`);
         }
 
         const accountsData = await accountsResponse.json();
+        console.log('✅ [SYNC] Accounts data received:', JSON.stringify(accountsData, null, 2));
+        
         const accounts = accountsData.results || [];
+        console.log('📊 [SYNC] Number of accounts found:', accounts.length);
 
         // Fetch transactions for each account
         const allTransactions = [];
+        console.log('💸 [SYNC] Starting to fetch transactions for', accounts.length, 'accounts');
 
-        for (const account of accounts) {
+        for (let i = 0; i < accounts.length; i++) {
+            const account = accounts[i];
+            console.log(`\n📋 [SYNC] Processing account ${i + 1}/${accounts.length}:`, {
+                account_id: account.account_id,
+                display_name: account.display_name,
+                account_type: account.account_type,
+                currency: account.currency
+            });
+
             // Build query params
             const params = new URLSearchParams();
             if (dateFrom) params.append('from', dateFrom);
             if (dateTo) params.append('to', dateTo);
 
-            const txResponse = await fetch(
-                `${BASE_API_URL}/data/v1/accounts/${account.account_id}/transactions?${params}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Accept': 'application/json',
-                    }
+            const txUrl = `${BASE_API_URL}/data/v1/accounts/${account.account_id}/transactions?${params}`;
+            console.log('🌐 [SYNC] Fetching transactions from:', txUrl);
+
+            const txResponse = await fetch(txUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Accept': 'application/json',
                 }
-            );
+            });
+
+            console.log('📡 [SYNC] Transactions response status:', txResponse.status, txResponse.statusText);
 
             if (!txResponse.ok) {
-                console.error(`Failed to fetch transactions for account ${account.account_id}`);
+                const errorText = await txResponse.text();
+                console.error(`❌ [SYNC] Failed to fetch transactions for account ${account.account_id}:`, {
+                    status: txResponse.status,
+                    statusText: txResponse.statusText,
+                    errorBody: errorText
+                });
                 continue;
             }
 
             const txData = await txResponse.json();
+            console.log('✅ [SYNC] Transaction data received:', {
+                resultsCount: txData.results?.length || 0,
+                hasResults: !!txData.results
+            });
 
             // Transform transactions to app format
-            const transactions = (txData.results || []).map(tx => ({
-                bankTransactionId: tx.transaction_id,
-                accountId: account.account_id,
-                accountName: account.display_name || `${account.account_type} Account`,
-                date: tx.timestamp.split('T')[0],
-                amount: Math.abs(tx.amount),
-                type: tx.transaction_type === 'CREDIT' ? 'income' : 'expense',
-                description: tx.description || tx.transaction_category || 'Bank Transaction',
-                currency: tx.currency,
-                merchantName: tx.merchant_name,
-                category: tx.transaction_category,
-                originalData: tx,
-            }));
+            const transactions = (txData.results || []).map((tx, txIndex) => {
+                const transformed = {
+                    bankTransactionId: tx.transaction_id,
+                    accountId: account.account_id,
+                    accountName: account.display_name || `${account.account_type} Account`,
+                    date: tx.timestamp.split('T')[0],
+                    amount: Math.abs(tx.amount),
+                    type: tx.transaction_type === 'CREDIT' ? 'income' : 'expense',
+                    description: tx.description || tx.transaction_category || 'Bank Transaction',
+                    currency: tx.currency,
+                    merchantName: tx.merchant_name,
+                    category: tx.transaction_category,
+                    originalData: tx,
+                };
 
+                if (txIndex === 0) {
+                    console.log('📝 [SYNC] Sample transformed transaction:', JSON.stringify(transformed, null, 2));
+                }
+
+                return transformed;
+            });
+
+            console.log(`✅ [SYNC] Transformed ${transactions.length} transactions for account ${account.account_id}`);
             allTransactions.push(...transactions);
         }
+
+        console.log(`\n📊 [SYNC] Total transactions collected: ${allTransactions.length}`);
 
         // Update connection metadata
         await base44.asServiceRole.entities.BankConnection.update(connectionId, {
