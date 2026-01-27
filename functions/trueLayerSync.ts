@@ -7,6 +7,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
  * Fetches accounts, balances, and transactions from TrueLayer
  */
 
+// CONFIGURATION: Production Mode
+const BASE_API_URL = "https://api.truelayer.com";
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
@@ -16,10 +19,14 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { connectionId, dateFrom, dateTo } = await req.json();
+        const body = await req.json();
+        const connectionId = body.connectionId;
+        const dateFrom = body.dateFrom;
+        const dateTo = body.dateTo;
 
-        // Fetch bank connection
-        const connection = await base44.entities.BankConnection.get(connectionId);
+        // Fetch bank connection using filter (SDK doesn't have .get)
+        const connections = await base44.entities.BankConnection.filter({ id: connectionId });
+        const connection = connections[0];
         
         if (!connection || connection.created_by !== user.email) {
             return Response.json({ error: 'Connection not found' }, { status: 404 });
@@ -56,7 +63,7 @@ Deno.serve(async (req) => {
         }
 
         // Fetch accounts
-        const accountsResponse = await fetch('https://api.truelayer.com/data/v1/accounts', {
+        const accountsResponse = await fetch(`${BASE_API_URL}/data/v1/accounts`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Accept': 'application/json',
@@ -80,7 +87,7 @@ Deno.serve(async (req) => {
             if (dateTo) params.append('to', dateTo);
 
             const txResponse = await fetch(
-                `https://api.truelayer.com/data/v1/accounts/${account.account_id}/transactions?${params}`, 
+                `${BASE_API_URL}/data/v1/accounts/${account.account_id}/transactions?${params}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
