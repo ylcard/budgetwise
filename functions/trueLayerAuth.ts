@@ -10,22 +10,34 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
  * - Fetch available providers
  */
 
+// CONFIGURATION: Production Mode
+const AUTH_URL = "https://auth.truelayer.com";
+const API_URL = "https://api.truelayer.com";
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
+        // const user = await base44.auth.me();
 
-        if (!user) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        // if (!user) {
+        //     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        // }
+
+        // Debugging: Log the incoming request method
+        console.log(`Received request: ${req.method}`);
+
+        // 1. Authenticate User
+        const user = await base44.auth.me();
+        if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { action, ...params } = await req.json();
+        console.log(`Action received: "${action}"`); // DEBUG LOG
 
         const clientId = Deno.env.get("TRUELAYER_CLIENT_ID");
         const clientSecret = Deno.env.get("TRUELAYER_CLIENT_SECRET");
 
         if (!clientId || !clientSecret) {
-            return Response.json({ 
+            return Response.json({
                 error: 'TrueLayer credentials not configured'
             }, { status: 500 });
         }
@@ -34,10 +46,10 @@ Deno.serve(async (req) => {
         // MODIFIED: 26-Jan-2026 - Use providers parameter to show all UK banks in auth dialog
         if (action === 'generateAuthLink') {
             const { redirectUrl, state, providerId } = params;
-            
+
             const scopes = 'info accounts balance cards transactions direct_debits standing_orders offline_access';
 
-            let authUrl = `https://auth.truelayer.com/?` +
+            let authUrl = `${AUTH_URL}/?` +
                 `response_type=code` +
                 `&client_id=${clientId}` +
                 `&scope=${encodeURIComponent(scopes)}` +
@@ -60,7 +72,7 @@ Deno.serve(async (req) => {
         if (action === 'exchangeCode') {
             const { code, redirectUrl } = params;
 
-            const response = await fetch('https://auth.truelayer.com/connect/token', {
+            const response = await fetch(`${AUTH_URL}/connect/token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -87,7 +99,7 @@ Deno.serve(async (req) => {
         if (action === 'refreshToken') {
             const { refreshToken } = params;
 
-            const response = await fetch('https://auth.truelayer.com/connect/token', {
+            const response = await fetch(`${AUTH_URL}/connect/token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -109,27 +121,30 @@ Deno.serve(async (req) => {
             return Response.json({ tokens });
         }
 
-        // COMMENTED OUT: 26-Jan-2026 - TrueLayer doesn't provide public API to list providers
-        // The auth dialog shows available banks after clicking auth link
-        // if (action === 'getProviders') {
-        //     const response = await fetch('https://api.truelayer.com/providers', {
-        //         headers: {
-        //             'Accept': 'application/json',
-        //         },
-        //     });
-        //     if (!response.ok) {
-        //         const errorText = await response.text();
-        //         throw new Error(`Failed to fetch providers: ${response.status} ${errorText}`);
-        //     }
-        //     const data = await response.json();
-        //     return Response.json({ providers: data });
-        // }
+        // NEW: Required to link the bank connection to specific accounts
+        if (action === 'getAccounts') {
+            const { accessToken } = params;
+
+            const response = await fetch(`${API_URL}/data/v1/accounts`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Accept': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to fetch accounts: ${response.status} ${errorText}`);
+            }
+            const data = await response.json();
+            return Response.json({ results: data.results });
+        }
 
         return Response.json({ error: 'Invalid action' }, { status: 400 });
 
     } catch (error) {
         console.error('TrueLayer Auth Error:', error);
-        return Response.json({ 
+        return Response.json({
             error: error.message,
             details: error.toString()
         }, { status: 500 });
