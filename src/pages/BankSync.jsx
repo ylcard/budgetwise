@@ -271,6 +271,11 @@ export default function BankSync() {
                 variant: "destructive"
             });
         } finally {
+            console.error('❌ [SYNC] Full Error Object:', error.response?.data);
+            console.error('❌ [SYNC] Status:', error.response?.status);
+            console.error('❌ [SYNC] Error occurred:', error);
+            console.error('❌ [SYNC] Error message:', error.message);
+            console.error('❌ [SYNC] Error stack:', error.stack);
             console.log('🔄 [SYNC] Sync completed, resetting syncing state');
             setSyncing(null);
         }
