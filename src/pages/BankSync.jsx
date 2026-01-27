@@ -11,9 +11,9 @@ import BankConnectionCard from "../components/banksync/BankConnectionCard";
 // COMMENTED OUT: 26-Jan-2026 - No bank selection dialog for TrueLayer
 // import BankSelectionDialog from "../components/banksync/BankSelectionDialog";
 import TransactionPreviewDialog from "../components/banksync/TransactionPreviewDialog";
-import { 
-    Building2, 
-    Plus, 
+import {
+    Building2,
+    Plus,
     AlertCircle,
     Sparkles,
     Info
@@ -62,12 +62,12 @@ export default function BankSync() {
         try {
             // const redirectUrl = `${window.location.origin}/BankSync`;
             // Force the production URL if we are not on localhost
-            const redirectUrl = window.location.hostname === 'localhost' 
+            const redirectUrl = window.location.hostname === 'localhost'
                 ? `${window.location.origin}/BankSync`
                 : 'https://presso.base44.app/BankSync';
 
             const state = Math.random().toString(36).substring(7);
-            
+
             // Store state for verification
             sessionStorage.setItem('bank_sync_state', state);
             sessionStorage.setItem('bank_sync_provider', 'truelayer');
@@ -77,7 +77,7 @@ export default function BankSync() {
                 redirectUrl,
                 state
             });
-            
+
             window.location.href = response.data.authUrl;
         } catch (error) {
             toast({
@@ -176,7 +176,7 @@ export default function BankSync() {
                             action: 'getAccounts',
                             accessToken: tokens.access_token
                         });
-                        
+
                         const accounts = accountsResponse.data.results || [];
                         const firstAccount = accounts[0];
 
@@ -192,8 +192,8 @@ export default function BankSync() {
                             refresh_token: tokens.refresh_token,
                             token_expiry: expiryDate.toISOString(),
                             // Store the accounts immediately so the UI isn't empty
-                            accounts: accounts.map(a => ({ 
-                                account_id: a.account_id, 
+                            accounts: accounts.map(a => ({
+                                account_id: a.account_id,
                                 name: a.display_name,
                                 currency: a.currency
                             })),
@@ -261,8 +261,8 @@ export default function BankSync() {
             const dateFrom = new Date();
             dateFrom.setDate(dateFrom.getDate() - 30);
 
-            const functionName = connection.provider === 'truelayer' 
-                ? 'trueLayerSync' 
+            const functionName = connection.provider === 'truelayer'
+                ? 'trueLayerSync'
                 : 'syncBankTransactions';
 
             const response = await base44.functions.invoke(functionName, {
@@ -352,12 +352,12 @@ export default function BankSync() {
     });
 
     const handleDelete = useCallback((connection) => {
-        confirmAction({
-            title: "Remove Bank Connection",
-            description: `Are you sure you want to disconnect ${connection.aspsp_name}? This will not delete imported transactions.`,
-            confirmText: "Remove",
-            onConfirm: () => deleteConnection(connection.id)
-        });
+        confirmAction(
+            "Remove Bank Connection",
+            `Are you sure you want to disconnect ${connection.provider_name || 'this bank'}? This will not delete imported transactions.`,
+            () => deleteConnection(connection.id),
+            { confirmText: "Remove", destructive: true }
+        );
     }, [confirmAction, deleteConnection]);
 
     return (
@@ -387,7 +387,7 @@ export default function BankSync() {
                 <Alert className="bg-blue-50 border-blue-200">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-900">
-                        <strong>Powered by TrueLayer:</strong> Securely connect to UK banks with industry-leading Open Banking. 
+                        <strong>Powered by TrueLayer:</strong> Securely connect to UK banks with industry-leading Open Banking.
                         Your credentials are never stored, and connections are read-only.
                     </AlertDescription>
                 </Alert>
