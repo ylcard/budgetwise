@@ -58,7 +58,12 @@ export default function BankSync() {
     // MODIFIED: 26-Jan-2026 - TrueLayer shows banks in auth dialog, no API to fetch list
     const initiateConnection = useCallback(async () => {
         try {
-            const redirectUrl = `${window.location.origin}/BankSync`;
+            // const redirectUrl = `${window.location.origin}/BankSync`;
+            // Force the production URL if we are not on localhost
+            const redirectUrl = window.location.hostname === 'localhost' 
+                ? `${window.location.origin}/BankSync`
+                : 'https://presso.base44.app/BankSync';
+
             const state = Math.random().toString(36).substring(7);
             
             // Store state for verification
