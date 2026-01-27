@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
         };
         console.log('📝 [SYNC] Update payload:', JSON.stringify(updatePayload, null, 2));
         
-        await base44.asServiceRole.entities.BankConnection.update(connectionId, updatePayload);
+        await base44.entities.BankConnection.update(connectionId, updatePayload);
         console.log('✅ [SYNC] Connection metadata updated successfully');
 
         const response = {
