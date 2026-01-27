@@ -73,10 +73,9 @@ export default function BankSync() {
             sessionStorage.setItem('bank_sync_provider', 'truelayer');
 
             const response = await base44.functions.invoke('trueLayerAuth', {
-                action: 'ping'
-                // action: 'generateAuthLink',
-                // redirectUrl,
-                // state
+                action: 'generateAuthLink',
+                redirectUrl,
+                state
             });
 
             window.location.href = response.data.authUrl;
@@ -239,11 +238,14 @@ export default function BankSync() {
             //     : 'syncBankTransactions';
 
             console.log('🔄 [SYNC] Invoking trueLayerSync function...');
-            const response = await base44.functions.invoke('trueLayerSync', {
-                connectionId: connection.id,
-                dateFrom: dateFrom.toISOString().split('T')[0],
-                dateTo: new Date().toISOString().split('T')[0]
+            const response = await base44.functions.invoke('trueLayerAuth', {
+                action: 'ping'
             });
+            // const response = await base44.functions.invoke('trueLayerSync', {
+            //     connectionId: connection.id,
+            //     dateFrom: dateFrom.toISOString().split('T')[0],
+            //     dateTo: new Date().toISOString().split('T')[0]
+            // });
 
             console.log('✅ [SYNC] Response received:', response);
             console.log('✅ [SYNC] Response data:', response.data);
