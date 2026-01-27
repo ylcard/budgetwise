@@ -41,11 +41,16 @@ Deno.serve(async (req) => {
 
         // Fetch bank connection by ID
         console.log('🔍 [SYNC] Fetching connection with ID:', connectionId);
+        console.log('🔍 [SYNC] User email for filter:', user.email);
+
         // MODIFIED: 27-Jan-2026 - Changed from .get(id) to .filter({id, created_by}) due to unexpected 'not found' errors with .get()
         const connections = await base44.asServiceRole.entities.BankConnection.filter({
             id: connectionId,
             created_by: user.email
         });
+        console.log('🔍 [SYNC] Filter returned connections:', connections);
+        console.log('🔍 [SYNC] Number of connections found:', connections.length);
+
         const connection = connections[0]; // Get the first (and should be only) result
         console.log('✅ [SYNC] Connection fetched:', {
             id: connection?.id,
