@@ -49,16 +49,16 @@ Deno.serve(async (req) => {
             provider: connection?.provider,
             provider_name: connection?.provider_name,
             status: connection?.status,
-            created_by: connection?.created_by,
+            user_email: connection?.user_email,
             hasAccessToken: !!connection?.access_token,
             hasRefreshToken: !!connection?.refresh_token,
             token_expiry: connection?.token_expiry
         });
 
-        if (!connection || connection.created_by !== user.email) {
+        if (!connection || connection.user_email !== user.email) {
             console.error('❌ [SYNC] Connection not found or unauthorized:', {
                 hasConnection: !!connection,
-                connectionCreatedBy: connection?.created_by,
+                connectionUserEmail: connection?.user_email,
                 userEmail: user.email
             });
             return Response.json({ error: 'Connection not found' }, { status: 404 });
