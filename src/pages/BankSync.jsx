@@ -168,17 +168,33 @@ export default function BankSync() {
                         const tokens = tokenResponse.data.tokens;
                         const expiryDate = new Date(Date.now() + tokens.expires_in * 1000);
 
+                        // 1. FETCH ACCOUNTS IMMEDIATELY
+                        // We need this to get the real bank name (e.g. "BBVA") and account IDs
+                        const accountsResponse = await base44.functions.invoke('trueLayerAuth', {
+                            action: 'getAccounts',
+                            accessToken: tokens.access_token
+                        });
+                        
+                        const accounts = accountsResponse.data.results || [];
+                        const firstAccount = accounts[0];
+
                         // MODIFIED: 26-Jan-2026 - User selects bank in TrueLayer dialog, no stored bank info
                         // Save connection with generic info, will be updated after first sync
                         await base44.entities.BankConnection.create({
                             provider: 'truelayer',
-                            provider_name: 'Bank Account',
-                            provider_id: 'truelayer',
-                            country: 'GB',
+                            // Use the real provider details from the account fetch
+                            provider_name: firstAccount?.provider?.display_name || 'Bank Account',
+                            provider_id: firstAccount?.provider?.provider_id || 'truelayer',
+                            country: firstAccount?.provider?.country_code || 'ES', // Default to ES if undefined, or keep dynamic
                             access_token: tokens.access_token,
                             refresh_token: tokens.refresh_token,
                             token_expiry: expiryDate.toISOString(),
-                            accounts: [],
+                            // Store the accounts immediately so the UI isn't empty
+                            accounts: accounts.map(a => ({ 
+                                account_id: a.account_id, 
+                                name: a.display_name,
+                                currency: a.currency
+                            })),
                             status: 'active',
                             auto_sync_enabled: true,
                             user_email: (await base44.auth.me()).email
