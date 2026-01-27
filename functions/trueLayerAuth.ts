@@ -99,6 +99,9 @@ Deno.serve(async (req) => {
         // Refresh access token
         if (action === 'refreshToken') {
             const { refreshToken } = params;
+            console.log('🔄 [AUTH] Refresh token requested');
+            console.log('🔄 [AUTH] Has refresh token:', !!refreshToken);
+            console.log('🔄 [AUTH] Refresh token (first 20 chars):', refreshToken?.substring(0, 20));
 
             const response = await fetch(`${AUTH_URL}/connect/token`, {
                 method: 'POST',
@@ -113,12 +116,16 @@ Deno.serve(async (req) => {
                 }),
             });
 
+            console.log('🔄 [AUTH] TrueLayer response status:', response.status);
+
             if (!response.ok) {
                 const error = await response.text();
+                console.error('❌ [AUTH] TrueLayer refresh error:', error);
                 throw new Error(`Failed to refresh token: ${error}`);
             }
 
             const tokens = await response.json();
+            console.log('✅ [AUTH] Token refreshed successfully, expires in:', tokens.expires_in);
             return Response.json({ tokens });
         }
 
