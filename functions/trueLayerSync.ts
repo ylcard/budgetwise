@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         }
 
         // Update connection metadata
-        await base44.asServiceRole.entities.BankConnection.update(connectionId, {
+        await base44.entities.BankConnection.update(connectionId, {
             last_sync: new Date().toISOString(),
             accounts: accounts.map(acc => ({
                 account_id: acc.account_id,
