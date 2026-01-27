@@ -70,32 +70,46 @@ Deno.serve(async (req) => {
         // Get fresh access token (refresh if needed)
         let accessToken = connection.access_token;
         const tokenExpiry = new Date(connection.token_expiry);
+        const now = new Date();
+        
+        console.log('🔐 [SYNC] Token validation:', {
+            tokenExpiry: tokenExpiry.toISOString(),
+            currentTime: now.toISOString(),
+            isExpired: tokenExpiry < now,
+            minutesUntilExpiry: Math.floor((tokenExpiry.getTime() - now.getTime()) / 60000)
+        });
 
-        if (tokenExpiry < new Date()) {
-            console.log("🔄 Token expired, requesting refresh from trueLayerAuth...");
-
-            // Token expired, refresh it
+        if (tokenExpiry < now) {
+            console.log('🔄 [SYNC] Token expired, refreshing...');
             const refreshResponse = await base44.functions.invoke('trueLayerAuth', {
                 action: 'refreshToken',
                 refreshToken: connection.refresh_token
+            });
+            console.log('✅ [SYNC] Refresh response received:', {
+                hasData: !!refreshResponse.data,
+                hasTokens: !!refreshResponse.data?.tokens
             });
 
             // Handle both ways the SDK might wrap the response
             const responseData = refreshResponse.data || refreshResponse;
 
             if (!responseData.tokens) {
-                console.error("❌ Refresh response missing tokens:", responseData);
+                console.error('❌ [SYNC] Failed to refresh access token - no tokens in response:', responseData);
                 throw new Error('Failed to refresh access token - check trueLayerAuth logs');
             }
 
             accessToken = responseData.tokens.access_token;
+            console.log('✅ [SYNC] New access token obtained, updating connection...');
 
             // Update the connection with the new data
-            await base44.entities.BankConnection.update(connectionId, {
+            await base44.asServiceRole.entities.BankConnection.update(connectionId, {
                 access_token: responseData.tokens.access_token,
                 refresh_token: responseData.tokens.refresh_token || connection.refresh_token,
                 token_expiry: new Date(Date.now() + responseData.tokens.expires_in * 1000).toISOString()
             });
+            console.log('✅ [SYNC] Connection updated with new tokens');
+        } else {
+            console.log('✅ [SYNC] Access token is still valid, no refresh needed');
         }
 
         // Fetch accounts
@@ -204,7 +218,8 @@ Deno.serve(async (req) => {
         console.log(`\n📊 [SYNC] Total transactions collected: ${allTransactions.length}`);
 
         // Update connection metadata
-        await base44.asServiceRole.entities.BankConnection.update(connectionId, {
+        console.log('💾 [SYNC] Updating connection metadata...');
+        const updatePayload = {
             last_sync: new Date().toISOString(),
             accounts: accounts.map(acc => ({
                 account_id: acc.account_id,
@@ -215,19 +230,35 @@ Deno.serve(async (req) => {
                 currency: acc.currency,
                 account_type: acc.account_type,
             }))
-        });
+        };
+        console.log('📝 [SYNC] Update payload:', JSON.stringify(updatePayload, null, 2));
+        
+        await base44.asServiceRole.entities.BankConnection.update(connectionId, updatePayload);
+        console.log('✅ [SYNC] Connection metadata updated successfully');
 
-        return Response.json({
+        const response = {
             transactions: allTransactions,
             accounts: accounts,
             count: allTransactions.length
+        };
+        console.log('🎉 [SYNC] Sync completed successfully:', {
+            transactionCount: response.count,
+            accountCount: accounts.length
         });
 
+        return Response.json(response);
+
     } catch (error) {
-        console.error('TrueLayer Sync Error:', error);
+        console.error('💥 [SYNC] CRITICAL ERROR:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+            toString: error.toString()
+        });
         return Response.json({
             error: error.message,
-            details: error.toString()
+            details: error.toString(),
+            stack: error.stack
         }, { status: 500 });
     }
 });
