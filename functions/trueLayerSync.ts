@@ -43,27 +43,32 @@ Deno.serve(async (req) => {
         console.log('🔍 [SYNC] Fetching connection with ID:', connectionId);
         console.log('🔍 [SYNC] User email:', user.email);
         
-        // DEBUGGING: 27-Jan-2026 - List ALL connections to see what's in the database
-        const allConnections = await base44.asServiceRole.entities.BankConnection.list();
-        console.log('🔍 [SYNC] ALL connections in database:', allConnections.map(c => ({ 
+        // DEBUGGING: 27-Jan-2026 - Try BOTH user-scoped and service-role queries
+        console.log('🔍 [SYNC] Trying user-scoped query first...');
+        const userConnections = await base44.entities.BankConnection.list();
+        console.log('🔍 [SYNC] User-scoped connections:', userConnections.map(c => ({ 
             id: c.id, 
             user_email: c.user_email, 
             created_by: c.created_by,
             provider_name: c.provider_name
         })));
         
-        // Find the specific connection by ID
-        const connection = allConnections.find(c => c.id === connectionId);
-        console.log('🔍 [SYNC] Found matching connection:', !!connection);
+        console.log('🔍 [SYNC] Trying service-role query...');
+        const serviceConnections = await base44.asServiceRole.entities.BankConnection.list();
+        console.log('🔍 [SYNC] Service-role connections:', serviceConnections.map(c => ({ 
+            id: c.id, 
+            user_email: c.user_email, 
+            created_by: c.created_by,
+            provider_name: c.provider_name
+        })));
         
-        if (connection) {
-            console.log('🔍 [SYNC] Connection details:', {
-                id: connection.id,
-                user_email: connection.user_email,
-                created_by: connection.created_by,
-                provider: connection.provider,
-                status: connection.status
-            });
+        // Try to find in user-scoped results first
+        let connection = userConnections.find(c => c.id === connectionId);
+        console.log('🔍 [SYNC] Found in user-scoped?', !!connection);
+        
+        if (!connection) {
+            connection = serviceConnections.find(c => c.id === connectionId);
+            console.log('🔍 [SYNC] Found in service-role?', !!connection);
         }
         console.log('✅ [SYNC] Connection fetched:', {
             id: connection?.id,
