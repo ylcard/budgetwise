@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
             console.log('✅ [SYNC] New access token obtained, updating connection...');
 
             // Update the connection with the new data
-            await base44.asServiceRole.entities.BankConnection.update(connectionId, {
+            await base44.entities.BankConnection.update(connectionId, {
                 access_token: responseData.tokens.access_token,
                 refresh_token: responseData.tokens.refresh_token || connection.refresh_token,
                 token_expiry: new Date(Date.now() + responseData.tokens.expires_in * 1000).toISOString()
