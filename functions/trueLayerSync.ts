@@ -13,7 +13,7 @@ const BASE_API_URL = "https://api.truelayer.com";
 Deno.serve(async (req) => {
     try {
         console.log('🚀 [SYNC] TrueLayer Sync Handler started');
-        
+
         const base44 = createClientFromRequest(req);
         const user = await base44.auth.me();
         console.log('👤 [SYNC] User authenticated:', user?.email);
@@ -25,11 +25,11 @@ Deno.serve(async (req) => {
 
         const body = await req.json();
         console.log('📦 [SYNC] Request body:', JSON.stringify(body, null, 2));
-        
+
         const connectionId = body.connectionId;
         const dateFrom = body.dateFrom;
         const dateTo = body.dateTo;
-        
+
         console.log('🔑 [SYNC] Parsed parameters:', {
             connectionId,
             dateFrom,
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
         // Fetch bank connection by ID
         console.log('🔍 [SYNC] Fetching connection with ID:', connectionId);
-        
+
         // FIXED: 27-Jan-2026 - Use user-scoped query instead of service-role because RLS blocks service-role access
         const connection = await base44.entities.BankConnection.get(connectionId);
         console.log('✅ [SYNC] Connection fetched:', {
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         let accessToken = connection.access_token;
         const tokenExpiry = new Date(connection.token_expiry);
         const now = new Date();
-        
+
         console.log('🔐 [SYNC] Token validation:', {
             tokenExpiry: tokenExpiry.toISOString(),
             currentTime: now.toISOString(),
@@ -95,8 +95,13 @@ Deno.serve(async (req) => {
             // Handle both ways the SDK might wrap the response
             const responseData = refreshResponse.data || refreshResponse;
 
-            if (!responseData.tokens) {
-                console.error('❌ [SYNC] Failed to refresh access token - no tokens in response:', responseData);
+            // FIXED: TrueLayer returns a flat object, check both flat and nested structures
+            const newAccessToken = responseData.access_token || responseData.tokens?.access_token;
+            const newRefreshToken = responseData.refresh_token || responseData.tokens?.refresh_token;
+            const expiresIn = responseData.expires_in || responseData.tokens?.expires_in;
+
+            if (!newAccessToken) {
+                console.error('❌ [SYNC] Failed to refresh access token - missing access_token in response:', responseData);
                 throw new Error('Failed to refresh access token - check trueLayerAuth logs');
             }
 
@@ -105,9 +110,9 @@ Deno.serve(async (req) => {
 
             // Update the connection with the new data
             await base44.entities.BankConnection.update(connectionId, {
-                access_token: responseData.tokens.access_token,
-                refresh_token: responseData.tokens.refresh_token || connection.refresh_token,
-                token_expiry: new Date(Date.now() + responseData.tokens.expires_in * 1000).toISOString()
+                access_token: newAccessToken,
+                refresh_token: newRefreshToken || connection.refresh_token,
+                token_expiry: new Date(Date.now() + (expiresIn || 3600) * 1000).toISOString()
             });
             console.log('✅ [SYNC] Connection updated with new tokens');
         } else {
@@ -118,7 +123,7 @@ Deno.serve(async (req) => {
         console.log('🏦 [SYNC] Fetching accounts from TrueLayer...');
         console.log('🌐 [SYNC] Request URL:', `${BASE_API_URL}/data/v1/accounts`);
         console.log('🔑 [SYNC] Using access token (first 20 chars):', accessToken?.substring(0, 20) + '...');
-        
+
         const accountsResponse = await fetch(`${BASE_API_URL}/data/v1/accounts`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -140,7 +145,7 @@ Deno.serve(async (req) => {
 
         const accountsData = await accountsResponse.json();
         console.log('✅ [SYNC] Accounts data received:', JSON.stringify(accountsData, null, 2));
-        
+
         const accounts = accountsData.results || [];
         console.log('📊 [SYNC] Number of accounts found:', accounts.length);
 
@@ -234,7 +239,7 @@ Deno.serve(async (req) => {
             }))
         };
         console.log('📝 [SYNC] Update payload:', JSON.stringify(updatePayload, null, 2));
-        
+
         await base44.entities.BankConnection.update(connectionId, updatePayload);
         console.log('✅ [SYNC] Connection metadata updated successfully');
 
