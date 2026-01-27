@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
             const { redirectUrl, state, providerId } = params;
 
             // Use core scopes for better compatibility during testing
-            const scopes = 'info accounts balance cards transactions offline_access';
+            const scopes = 'info accounts balance cards transactions direct_debits standing_orders offline_access';
             
             const authParams = new URLSearchParams({
                 response_type: 'code',
@@ -56,12 +56,12 @@ Deno.serve(async (req) => {
                 scope: scopes,
                 redirect_uri: redirectUrl,
                 state: state,
-                // Always include providers even if a specific one is selected
-                providers: 'uk-ob-all uk-oauth-all' 
+                // We include UK and ES (Spain) providers here
+                providers: 'uk-ob-all uk-oauth-all es-ob-all es-xs2a-all'
             });
 
             if (providerId) {
-                authParams.append('provider_id', providerId);
+                authParams.set('provider_id', providerId);
             }
 
             const authUrl = `${AUTH_URL}/?${authParams.toString()}`;
