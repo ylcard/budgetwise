@@ -93,7 +93,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
                                 </div>
                                 {account.balance !== undefined && (
                                     <p className="text-sm font-semibold text-gray-900 ml-2">
-                                        {formatCurrency(account.balance, settings)}
+                                        {formatCurrency(Number(account.balance), settings)}
                                     </p>
                                 )}
                             </div>
