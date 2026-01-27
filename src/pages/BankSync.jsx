@@ -238,6 +238,11 @@ export default function BankSync() {
             //     : 'syncBankTransactions';
 
             console.log('🔄 [SYNC] Invoking trueLayerSync function...');
+            console.log('🔍 [DEBUG] Connection Details:', {
+                connectionId: connection.id,
+                accountId: connection.accounts?.[0]?.account_id,
+                fullConnection: connection
+            });
             const response = await base44.functions.invoke('trueLayerSync', {
                 connectionId: connection.id,
                 dateFrom: dateFrom.toISOString().split('T')[0],
