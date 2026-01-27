@@ -105,7 +105,8 @@ Deno.serve(async (req) => {
                 throw new Error('Failed to refresh access token - check trueLayerAuth logs');
             }
 
-            accessToken = responseData.tokens.access_token;
+            // accessToken = responseData.tokens.access_token;
+            accessToken = newAccessToken;
             console.log('✅ [SYNC] New access token obtained, updating connection...');
 
             // Update the connection with the new data
