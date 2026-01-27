@@ -41,35 +41,9 @@ Deno.serve(async (req) => {
 
         // Fetch bank connection by ID
         console.log('🔍 [SYNC] Fetching connection with ID:', connectionId);
-        console.log('🔍 [SYNC] User email:', user.email);
         
-        // DEBUGGING: 27-Jan-2026 - Try BOTH user-scoped and service-role queries
-        console.log('🔍 [SYNC] Trying user-scoped query first...');
-        const userConnections = await base44.entities.BankConnection.list();
-        console.log('🔍 [SYNC] User-scoped connections:', userConnections.map(c => ({ 
-            id: c.id, 
-            user_email: c.user_email, 
-            created_by: c.created_by,
-            provider_name: c.provider_name
-        })));
-        
-        console.log('🔍 [SYNC] Trying service-role query...');
-        const serviceConnections = await base44.asServiceRole.entities.BankConnection.list();
-        console.log('🔍 [SYNC] Service-role connections:', serviceConnections.map(c => ({ 
-            id: c.id, 
-            user_email: c.user_email, 
-            created_by: c.created_by,
-            provider_name: c.provider_name
-        })));
-        
-        // Try to find in user-scoped results first
-        let connection = userConnections.find(c => c.id === connectionId);
-        console.log('🔍 [SYNC] Found in user-scoped?', !!connection);
-        
-        if (!connection) {
-            connection = serviceConnections.find(c => c.id === connectionId);
-            console.log('🔍 [SYNC] Found in service-role?', !!connection);
-        }
+        // FIXED: 27-Jan-2026 - Use user-scoped query instead of service-role because RLS blocks service-role access
+        const connection = await base44.entities.BankConnection.get(connectionId);
         console.log('✅ [SYNC] Connection fetched:', {
             id: connection?.id,
             provider: connection?.provider,
