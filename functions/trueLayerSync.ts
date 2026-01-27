@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
         const dateTo = body.dateTo;
 
         // Fetch bank connection using filter (SDK doesn't have .get)
-        const connections = await base44.entities.BankConnection.filter({ id: connectionId });
+        const connections = await base44.asServiceRole.entities.BankConnection.filter({ id: connectionId });
         const connection = connections[0];
         
         if (!connection || connection.created_by !== user.email) {
@@ -55,8 +55,7 @@ Deno.serve(async (req) => {
             accessToken = tokens.access_token;
 
             // Update connection with new tokens
-            // await base44.asServiceRole.entities.BankConnection.update(connectionId, {
-            await base44.entities.BankConnection.update(connectionId, {
+            await base44.asServiceRole.entities.BankConnection.update(connectionId, {
                 access_token: tokens.access_token,
                 refresh_token: tokens.refresh_token || connection.refresh_token,
                 token_expiry: new Date(Date.now() + tokens.expires_in * 1000).toISOString()
@@ -123,7 +122,7 @@ Deno.serve(async (req) => {
         }
 
         // Update connection metadata
-        await base44.entities.BankConnection.update(connectionId, {
+        await base44.asServiceRole.entities.BankConnection.update(connectionId, {
             last_sync: new Date().toISOString(),
             accounts: accounts.map(acc => ({
                 account_id: acc.account_id,
