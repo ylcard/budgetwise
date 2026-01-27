@@ -73,9 +73,10 @@ export default function BankSync() {
             sessionStorage.setItem('bank_sync_provider', 'truelayer');
 
             const response = await base44.functions.invoke('trueLayerAuth', {
-                action: 'generateAuthLink',
-                redirectUrl,
-                state
+                action: 'ping'
+                // action: 'generateAuthLink',
+                // redirectUrl,
+                // state
             });
 
             window.location.href = response.data.authUrl;
@@ -87,41 +88,6 @@ export default function BankSync() {
             });
         }
     }, [toast]);
-
-    // COMMENTED OUT: 26-Jan-2026 - No longer needed, user selects bank in TrueLayer auth dialog
-    // const handleSelectBank = useCallback(async (bank) => {
-    //     try {
-    //         const redirectUrl = `${window.location.origin}/BankSync`;
-    //         const state = Math.random().toString(36).substring(7);
-    //         
-    //         sessionStorage.setItem('bank_sync_state', state);
-    //         sessionStorage.setItem('bank_sync_provider', selectedProvider);
-    //         sessionStorage.setItem('bank_sync_bank', JSON.stringify(bank));
-    //         if (selectedProvider === 'truelayer') {
-    //             const response = await base44.functions.invoke('trueLayerAuth', {
-    //                 action: 'generateAuthLink',
-    //                 redirectUrl,
-    //                 state,
-    //                 providerId: bank.provider_id
-    //             });
-    //             window.location.href = response.data.authUrl;
-    //         } else {
-    //             const response = await base44.functions.invoke('enableBankingAuth', {
-    //                 action: 'startAuth',
-    //                 aspsp: bank,
-    //                 redirectUrl,
-    //                 state
-    //             });
-    //             window.location.href = response.data.redirectUrl;
-    //         }
-    //     } catch (error) {
-    //         toast({
-    //             title: "Failed to start connection",
-    //             description: error.message,
-    //             variant: "destructive"
-    //         });
-    //     }
-    // }, [toast, selectedProvider]);
 
     // MODIFIED: 26-Jan-2026 - Handle both TrueLayer and Enable Banking callbacks
     useEffect(() => {
