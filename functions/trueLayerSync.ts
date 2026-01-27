@@ -43,14 +43,28 @@ Deno.serve(async (req) => {
         console.log('🔍 [SYNC] Fetching connection with ID:', connectionId);
         console.log('🔍 [SYNC] User email:', user.email);
         
-        // MODIFIED: 27-Jan-2026 - Try filtering by user_email field (defined in schema) instead of built-in created_by
-        const connections = await base44.asServiceRole.entities.BankConnection.filter({
-            user_email: user.email
-        });
-        console.log('🔍 [SYNC] All user connections:', connections.map(c => ({ id: c.id, user_email: c.user_email })));
+        // DEBUGGING: 27-Jan-2026 - List ALL connections to see what's in the database
+        const allConnections = await base44.asServiceRole.entities.BankConnection.list();
+        console.log('🔍 [SYNC] ALL connections in database:', allConnections.map(c => ({ 
+            id: c.id, 
+            user_email: c.user_email, 
+            created_by: c.created_by,
+            provider_name: c.provider_name
+        })));
         
-        const connection = connections.find(c => c.id === connectionId);
+        // Find the specific connection by ID
+        const connection = allConnections.find(c => c.id === connectionId);
         console.log('🔍 [SYNC] Found matching connection:', !!connection);
+        
+        if (connection) {
+            console.log('🔍 [SYNC] Connection details:', {
+                id: connection.id,
+                user_email: connection.user_email,
+                created_by: connection.created_by,
+                provider: connection.provider,
+                status: connection.status
+            });
+        }
         console.log('✅ [SYNC] Connection fetched:', {
             id: connection?.id,
             provider: connection?.provider,
