@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
         // Fetch bank connection by ID
         const connection = await base44.asServiceRole.entities.BankConnection.get(connectionId);
-        
+
         if (!connection || connection.created_by !== user.email) {
             return Response.json({ error: 'Connection not found' }, { status: 404 });
         }
@@ -38,26 +38,31 @@ Deno.serve(async (req) => {
         // Get fresh access token (refresh if needed)
         let accessToken = connection.access_token;
         const tokenExpiry = new Date(connection.token_expiry);
-        
+
         if (tokenExpiry < new Date()) {
+            console.log("🔄 Token expired, requesting refresh from trueLayerAuth...");
+
             // Token expired, refresh it
             const refreshResponse = await base44.functions.invoke('trueLayerAuth', {
                 action: 'refreshToken',
                 refreshToken: connection.refresh_token
             });
 
-            if (!refreshResponse.data.tokens) {
-                throw new Error('Failed to refresh access token');
+            // Handle both ways the SDK might wrap the response
+            const responseData = refreshResponse.data || refreshResponse;
+
+            if (!responseData.tokens) {
+                console.error("❌ Refresh response missing tokens:", responseData);
+                throw new Error('Failed to refresh access token - check trueLayerAuth logs');
             }
 
-            const tokens = refreshResponse.data.tokens;
-            accessToken = tokens.access_token;
+            accessToken = responseData.tokens.access_token;
 
-            // Update connection with new tokens
-            await base44.asServiceRole.entities.BankConnection.update(connectionId, {
-                access_token: tokens.access_token,
-                refresh_token: tokens.refresh_token || connection.refresh_token,
-                token_expiry: new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+            // Update the connection with the new data
+            await base44.entities.BankConnection.update(connectionId, {
+                access_token: responseData.tokens.access_token,
+                refresh_token: responseData.tokens.refresh_token || connection.refresh_token,
+                token_expiry: new Date(Date.now() + responseData.tokens.expires_in * 1000).toISOString()
             });
         }
 
@@ -78,7 +83,7 @@ Deno.serve(async (req) => {
 
         // Fetch transactions for each account
         const allTransactions = [];
-        
+
         for (const account of accounts) {
             // Build query params
             const params = new URLSearchParams();
@@ -101,7 +106,7 @@ Deno.serve(async (req) => {
             }
 
             const txData = await txResponse.json();
-            
+
             // Transform transactions to app format
             const transactions = (txData.results || []).map(tx => ({
                 bankTransactionId: tx.transaction_id,
@@ -134,7 +139,7 @@ Deno.serve(async (req) => {
             }))
         });
 
-        return Response.json({ 
+        return Response.json({
             transactions: allTransactions,
             accounts: accounts,
             count: allTransactions.length
@@ -142,7 +147,7 @@ Deno.serve(async (req) => {
 
     } catch (error) {
         console.error('TrueLayer Sync Error:', error);
-        return Response.json({ 
+        return Response.json({
             error: error.message,
             details: error.toString()
         }, { status: 500 });
