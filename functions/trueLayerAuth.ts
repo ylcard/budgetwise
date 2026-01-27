@@ -47,24 +47,25 @@ Deno.serve(async (req) => {
         if (action === 'generateAuthLink') {
             const { redirectUrl, state, providerId } = params;
 
-            const scopes = 'info accounts balance cards transactions direct_debits standing_orders offline_access';
+            // Use core scopes for better compatibility during testing
+            const scopes = 'info accounts balance cards transactions offline_access';
+            
+            const authParams = new URLSearchParams({
+                response_type: 'code',
+                client_id: clientId,
+                scope: scopes,
+                redirect_uri: redirectUrl,
+                state: state,
+                // Always include providers even if a specific one is selected
+                providers: 'uk-ob-all uk-oauth-all' 
+            });
 
-            let authUrl = `${AUTH_URL}/?` +
-                `response_type=code` +
-                `&client_id=${clientId}` +
-                `&scope=${encodeURIComponent(scopes)}` +
-                `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
-                `&state=${state}`;
-
-            // Add providers parameter to show all UK banks in auth dialog
-            // uk-ob-all: UK Open Banking providers
-            // uk-oauth-all: UK OAuth providers
             if (providerId) {
-                authUrl += `&provider_id=${providerId}`;
-            } else {
-                authUrl += `&providers=${encodeURIComponent('uk-ob-all uk-oauth-all')}`;
+                authParams.append('provider_id', providerId);
             }
 
+            const authUrl = `${AUTH_URL}/?${authParams.toString()}`;
+            
             return Response.json({ authUrl });
         }
 
