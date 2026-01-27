@@ -24,9 +24,8 @@ Deno.serve(async (req) => {
         const dateFrom = body.dateFrom;
         const dateTo = body.dateTo;
 
-        // Fetch bank connection using filter (SDK doesn't have .get)
-        const connections = await base44.asServiceRole.entities.BankConnection.filter({ id: connectionId });
-        const connection = connections[0];
+        // Fetch bank connection by ID
+        const connection = await base44.asServiceRole.entities.BankConnection.get(connectionId);
         
         if (!connection || connection.created_by !== user.email) {
             return Response.json({ error: 'Connection not found' }, { status: 404 });
