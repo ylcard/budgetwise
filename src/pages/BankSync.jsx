@@ -256,38 +256,55 @@ export default function BankSync() {
 
     // MODIFIED: 27-Jan-2026 - TrueLayer only (Enable Banking deprecated)
     const handleSync = useCallback(async (connection) => {
+        console.log('🔄 [SYNC] Starting sync for connection:', connection.id);
         setSyncing(connection.id);
         try {
             const dateFrom = new Date();
             dateFrom.setDate(dateFrom.getDate() - 30);
+
+            console.log('🔄 [SYNC] Date range:', {
+                from: dateFrom.toISOString().split('T')[0],
+                to: new Date().toISOString().split('T')[0]
+            });
 
             // COMMENTED OUT: 27-Jan-2026 - Enable Banking deprecated, only TrueLayer supported
             // const functionName = connection.provider === 'truelayer'
             //     ? 'trueLayerSync'
             //     : 'syncBankTransactions';
 
+            console.log('🔄 [SYNC] Invoking trueLayerSync function...');
             const response = await base44.functions.invoke('trueLayerSync', {
                 connectionId: connection.id,
                 dateFrom: dateFrom.toISOString().split('T')[0],
                 dateTo: new Date().toISOString().split('T')[0]
             });
 
+            console.log('✅ [SYNC] Response received:', response);
+            console.log('✅ [SYNC] Response data:', response.data);
+            console.log('✅ [SYNC] Transactions:', response.data?.transactions);
+
             if (response.data.transactions && response.data.transactions.length > 0) {
+                console.log('✅ [SYNC] Showing preview with', response.data.transactions.length, 'transactions');
                 setPreviewTransactions(response.data.transactions);
                 setShowTransactionPreview(true);
             } else {
+                console.log('ℹ️ [SYNC] No transactions found');
                 toast({
                     title: "No new transactions",
                     description: "All transactions are up to date"
                 });
             }
         } catch (error) {
+            console.error('❌ [SYNC] Error occurred:', error);
+            console.error('❌ [SYNC] Error message:', error.message);
+            console.error('❌ [SYNC] Error stack:', error.stack);
             toast({
                 title: "Sync failed",
                 description: error.message,
                 variant: "destructive"
             });
         } finally {
+            console.log('🔄 [SYNC] Sync completed, resetting syncing state');
             setSyncing(null);
         }
     }, [toast]);
