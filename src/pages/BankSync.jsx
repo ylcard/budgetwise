@@ -260,6 +260,8 @@ export default function BankSync() {
                 });
             }
         } catch (error) {
+            console.error('❌ [SYNC] Full Error Object:', error.response?.data);
+            console.error('❌ [SYNC] Status:', error.response?.status);
             console.error('❌ [SYNC] Error occurred:', error);
             console.error('❌ [SYNC] Error message:', error.message);
             console.error('❌ [SYNC] Error stack:', error.stack);
