@@ -232,12 +232,12 @@ Deno.serve(async (req) => {
             accounts: accounts.map(acc => ({
                 account_id: acc.account_id,
                 name: acc.display_name || `${acc.account_type} Account`,
-                account_number: acc.account_number?.number,
-                sort_code: acc.account_number?.sort_code,
-                iban: acc.account_number?.iban,
+                account_number: acc.account_number?.number ? String(acc.account_number.number) : undefined,
+                sort_code: acc.account_number?.sort_code ? String(acc.account_number.sort_code) : undefined,
+                iban: acc.account_number?.iban ? String(acc.account_number.iban) : undefined,
                 currency: acc.currency,
                 account_type: acc.account_type,
-                balance: acc.balance?.current
+                balance: typeof acc.balance?.current === 'number' ? acc.balance.current : 0
             }))
         };
         console.log('📝 [SYNC] Update payload:', JSON.stringify(updatePayload, null, 2));
