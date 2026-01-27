@@ -180,6 +180,16 @@ export default function BankSync() {
                         const accounts = accountsResponse.data.results || [];
                         const firstAccount = accounts[0];
 
+                        // 1. FETCH ACCOUNTS IMMEDIATELY
+                        // We need this to get the real bank name (e.g. "BBVA") and account IDs
+                        const accountsResponse = await base44.functions.invoke('trueLayerAuth', {
+                            action: 'getAccounts',
+                            accessToken: tokens.access_token
+                        });
+                        
+                        const accounts = accountsResponse.data.results || [];
+                        const firstAccount = accounts[0];
+
                         // MODIFIED: 26-Jan-2026 - User selects bank in TrueLayer dialog, no stored bank info
                         // Save connection with generic info, will be updated after first sync
                         await base44.entities.BankConnection.create({
