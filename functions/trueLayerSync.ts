@@ -230,14 +230,14 @@ Deno.serve(async (req) => {
         const updatePayload = {
             last_sync: new Date().toISOString(),
             accounts: accounts.map(acc => ({
-                account_id: acc.account_id,
-                name: acc.display_name || `${acc.account_type} Account`,
+                account_id: String(acc.account_id || ''),
+                name: String(acc.display_name || acc.account_type || 'Account'),
                 account_number: acc.account_number?.number ? String(acc.account_number.number) : undefined,
                 sort_code: acc.account_number?.sort_code ? String(acc.account_number.sort_code) : undefined,
                 iban: acc.account_number?.iban ? String(acc.account_number.iban) : undefined,
-                currency: acc.currency,
-                account_type: acc.account_type,
-                balance: typeof acc.balance?.current === 'number' ? acc.balance.current : 0
+                currency: String(acc.currency || 'EUR'),
+                account_type: String(acc.account_type || ''),
+                balance: typeof acc.balance?.current === 'number' ? Number(acc.balance.current) : 0
             }))
         };
         console.log('📝 [SYNC] Update payload:', JSON.stringify(updatePayload, null, 2));
