@@ -296,13 +296,15 @@ export default function BankSync() {
                     return !existingKeys.has(key);
                 })
                 .map(tx => ({
-                    title: tx.description,
-                    amount: tx.amount,
-                    originalAmount: tx.amount,
-                    originalCurrency: tx.currency,
+                    title: tx.description || 'Bank Transaction',
+                    amount: Number(tx.amount),
+                    originalAmount: Number(tx.amount),
+                    originalCurrency: tx.currency || 'EUR',
                     type: tx.type,
                     date: tx.date,
-                    notes: `Imported from ${tx.accountName}`
+                    isPaid: tx.type === 'expense' ? true : undefined,
+                    paidDate: tx.type === 'expense' ? tx.date : undefined,
+                    notes: `Imported from ${tx.accountName}${tx.merchantName ? ` - ${tx.merchantName}` : ''}`
                 }));
 
             if (newTransactions.length === 0) {
