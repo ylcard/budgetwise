@@ -258,6 +258,7 @@ export default function TransactionFormContent({
 
     // 3. Filter Options (Search only)
     // We rely on the parent component to provide the correct order (System > Active > Planned)
+    // FIXED 01-Feb-2026: Use transaction date (or paid date) for filtering, not current date
     const visibleOptions = useMemo(() => {
         let filtered = allBudgets;
 
@@ -271,7 +272,19 @@ export default function TransactionFormContent({
             });
         }
 
-        // B. Search Filter
+        // B. Date-Based Filter for System Budgets
+        // CRITICAL FIX: Use the paid date if available (for paid expenses), otherwise use transaction date
+        const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate 
+            ? formData.paidDate 
+            : formData.date;
+        
+        filtered = filtered.filter(b => {
+            if (!b.isSystemBudget) return true; // Always show Custom Budgets
+            // Only show system budgets relevant to the transaction/paid date
+            return isDateInRange(relevantDate, b.startDate, b.endDate);
+        });
+
+        // C. Search Filter
         if (budgetSearchTerm && budgetSearchTerm.length > 0) {
             filtered = filtered.filter(b =>
                 b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
@@ -280,7 +293,7 @@ export default function TransactionFormContent({
         // DEPRECATED:     return smartSortedBudgets.slice(0, 5);
         // DEPRECATED: }, [smartSortedBudgets, budgetSearchTerm]);
         return filtered;
-    }, [allBudgets, budgetSearchTerm, formData.financial_priority]);
+    }, [allBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type]);
 
     const executeRefresh = async (force) => {
         const result = await refreshRates(
