@@ -41,34 +41,64 @@ export default function QuickAddTransaction({
     // const targetMonth = selectedMonth ?? new Date().getMonth();
     // const targetYear = selectedYear ?? new Date().getFullYear();
 
-    // FIXED 01-Feb-2026: Fetch wider date range for system budgets to support adding expenses from different months
-    // Instead of just fetching the viewed month, fetch 6 months back + 1 month forward
-    const dateRangeForFetch = useMemo(() => {
-        const now = new Date();
-        const viewMonth = selectedMonth ?? now.getMonth();
-        const viewYear = selectedYear ?? now.getFullYear();
-        
-        // Start from 6 months ago
-        const startDate = new Date(viewYear, viewMonth - 6, 1);
-        // End 1 month in the future
-        const endDate = new Date(viewYear, viewMonth + 2, 0); // Last day of next month
-        
-        return {
-            start: startDate.toISOString().split('T')[0],
-            end: endDate.toISOString().split('T')[0]
+    // If editing, use the transaction's month/year. Otherwise, use the viewed month/year.
+    const dateContext = useMemo(() => {
+        if (transaction?.date) {
+            const d = new Date(transaction.date);
+            if (!isNaN(d)) return { month: d.getMonth(), year: d.getFullYear() };
+        }
+        return { 
+            month: selectedMonth ?? new Date().getMonth(), 
+            year: selectedYear ?? new Date().getFullYear() 
         };
-    }, [selectedMonth, selectedYear]);
+    }, [transaction, selectedMonth, selectedYear]);
 
-    // 2. Fetch Data - System budgets for wide range
-    const { systemBudgets } = useSystemBudgetsForPeriod(user, dateRangeForFetch.start, dateRangeForFetch.end);
+    const { monthStart, monthEnd } = getMonthBoundaries(dateContext.month, dateContext.year);
+    // const { monthStart, monthEnd } = getMonthBoundaries(targetMonth, targetYear);
+
+    // 2. Fetch Data
+    // System: Constrained by Date (Strict) - BUT if editing, fetch the transaction's month too
+    // CRITICAL FIX 17-Jan-2026: When editing, we need to fetch system budgets for BOTH:
+    // 1. The currently viewed month (for context)
+    // 2. The transaction's original month (so the linked budget appears in dropdown)
+    const transactionMonth = transaction?.date ? new Date(transaction.date).getMonth() : null;
+    const transactionYear = transaction?.date ? new Date(transaction.date).getFullYear() : null;
+    
+    const needsSecondFetch = transaction && (
+        transactionMonth !== dateContext.month || transactionYear !== dateContext.year
+    );
+    
+    const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+    
+    // If editing a transaction from a different month, fetch that month's system budgets too
+    const transactionMonthBounds = needsSecondFetch 
+        ? getMonthBoundaries(transactionMonth, transactionYear)
+        : { monthStart: null, monthEnd: null };
+    
+    const { systemBudgets: transactionSystemBudgets } = useSystemBudgetsForPeriod(
+        user, 
+        transactionMonthBounds.monthStart, 
+        transactionMonthBounds.monthEnd
+    );
     
     // Custom: Unconstrained (Fetch "All" - handled by hook limit)
     const { allCustomBudgets } = useCustomBudgetsAll(user, null, null);
 
     // 3. Prepare & Sort the Dropdown List
     const allBudgets = useMemo(() => {
-        // FIXED 01-Feb-2026: Simplified - we now fetch a wide range, no need for merging
-        const formattedSystem = systemBudgets
+        // CRITICAL FIX 17-Jan-2026: Merge system budgets from BOTH date ranges when editing
+        
+        // A. System Budgets: Combine current month + transaction's month (if different)
+        const combinedSystemBudgets = needsSecondFetch 
+            ? [...systemBudgets, ...transactionSystemBudgets]
+            : systemBudgets;
+        
+        // Remove duplicates (shouldn't happen, but just in case)
+        const uniqueSystemBudgets = Array.from(
+            new Map(combinedSystemBudgets.map(sb => [sb.id, sb])).values()
+        );
+        
+        const formattedSystem = uniqueSystemBudgets
             .filter(sb => sb.systemBudgetType !== 'savings') // Rule: Savings is not for expenses
             .map(sb => ({
                 ...sb,
@@ -82,7 +112,7 @@ export default function QuickAddTransaction({
 
         // C. Merge: System at the TOP
         return [...formattedSystem, ...sortedCustom];
-    }, [systemBudgets, allCustomBudgets]);
+    }, [systemBudgets, transactionSystemBudgets, allCustomBudgets, needsSecondFetch]);
 
     // We rely on internal state UNLESS the parent explicitly passes a boolean 'open' prop
     const [internalOpen, setInternalOpen] = useState(false);
@@ -128,15 +158,14 @@ export default function QuickAddTransaction({
     // Calculate default date
     const getInitialDate = () => {
         const now = new Date();
-        const viewMonth = selectedMonth ?? now.getMonth();
-        const viewYear = selectedYear ?? now.getFullYear();
-        
         // If selected month/year matches current real-time, use today
-        if (viewMonth === now.getMonth() && viewYear === now.getFullYear()) {
+        // DEPRECATED: if (selectedMonth === now.getMonth() && selectedYear === now.getFullYear()) {
+        if (dateContext.month === now.getMonth() && dateContext.year === now.getFullYear()) {
             return formatDateString(now);
         }
         // Otherwise default to the 1st of the selected month
-        return getFirstDayOfMonth(viewMonth, viewYear);
+        // DEPRECATED: return getFirstDayOfMonth(selectedMonth, selectedYear);
+        return getFirstDayOfMonth(dateContext.month, dateContext.year);
     };
 
     return (
