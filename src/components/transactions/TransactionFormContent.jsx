@@ -178,12 +178,17 @@ export default function TransactionFormContent({
             return;
         }
 
+       // Determine the relevant date for budget selection (match logic in visibleOptions)
+       const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate 
+           ? formData.paidDate 
+           : formData.date;
+
         if (formData.financial_priority && allBudgets.length > 0) {
             // Find a matching system budget (case-insensitive)
             const matchingSystemBudget = allBudgets.find(b =>
                 b.isSystemBudget &&
                 b.name.toLowerCase() === formData.financial_priority.toLowerCase() &&
-                isDateInRange(formData.date, b.startDate, b.endDate)
+                isDateInRange(relevantDate, b.startDate, b.endDate)
             );
 
             if (matchingSystemBudget) {
@@ -206,7 +211,7 @@ export default function TransactionFormContent({
                 }
             }
         }
-    }, [formData.financial_priority, allBudgets, formData.date]);
+    }, [formData.financial_priority, allBudgets, formData.date, formData.isPaid, formData.paidDate, formData.type]);
 
     /* Removing Sorting Logic from the Form
         // Filter budgets to show active + planned statuses + relevant completed budgets
