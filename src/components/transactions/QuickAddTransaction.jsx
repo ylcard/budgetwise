@@ -67,19 +67,8 @@ export default function QuickAddTransaction({
 
     // 3. Prepare & Sort the Dropdown List
     const allBudgets = useMemo(() => {
-        // CRITICAL FIX 17-Jan-2026: Merge system budgets from BOTH date ranges when editing
-        
-        // A. System Budgets: Combine current month + transaction's month (if different)
-        const combinedSystemBudgets = needsSecondFetch 
-            ? [...systemBudgets, ...transactionSystemBudgets]
-            : systemBudgets;
-        
-        // Remove duplicates (shouldn't happen, but just in case)
-        const uniqueSystemBudgets = Array.from(
-            new Map(combinedSystemBudgets.map(sb => [sb.id, sb])).values()
-        );
-        
-        const formattedSystem = uniqueSystemBudgets
+        // FIXED 01-Feb-2026: Simplified - we now fetch a wide range, no need for merging
+        const formattedSystem = systemBudgets
             .filter(sb => sb.systemBudgetType !== 'savings') // Rule: Savings is not for expenses
             .map(sb => ({
                 ...sb,
@@ -93,7 +82,7 @@ export default function QuickAddTransaction({
 
         // C. Merge: System at the TOP
         return [...formattedSystem, ...sortedCustom];
-    }, [systemBudgets, transactionSystemBudgets, allCustomBudgets, needsSecondFetch]);
+    }, [systemBudgets, allCustomBudgets]);
 
     // We rely on internal state UNLESS the parent explicitly passes a boolean 'open' prop
     const [internalOpen, setInternalOpen] = useState(false);
