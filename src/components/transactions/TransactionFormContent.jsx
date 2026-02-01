@@ -20,10 +20,10 @@ import { useExchangeRates } from "../hooks/useExchangeRates";
 import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
-import { formatDateString, isDateInRange, formatDate } from "../utils/dateUtils";
+import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "../utils/dateUtils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
 import { normalizeAmount } from "../utils/generalUtils";
-import { useCategoryRules } from "../hooks/useBase44Entities";
+import { useCategoryRules, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { categorizeTransaction } from "../utils/transactionCategorization";
 
 export default function TransactionFormContent({
@@ -65,6 +65,61 @@ export default function TransactionFormContent({
     const [isBudgetOpen, setIsBudgetOpen] = useState(false);
     const [budgetSearchTerm, setBudgetSearchTerm] = useState("");
     const [validationError, setValidationError] = useState(null);
+
+    // ADDED 01-Feb-2026: Dynamically fetch system budgets for the transaction date's month
+    // This ensures we have budgets available for any date the user enters, not just the viewed month
+    const transactionDateBounds = useMemo(() => {
+        if (!formData.date) return null;
+        const txDate = new Date(formData.date);
+        if (isNaN(txDate)) return null;
+        return getMonthBoundaries(txDate.getMonth(), txDate.getFullYear());
+    }, [formData.date]);
+
+    const paidDateBounds = useMemo(() => {
+        if (!formData.isPaid || !formData.paidDate) return null;
+        const paidDate = new Date(formData.paidDate);
+        if (isNaN(paidDate)) return null;
+        return getMonthBoundaries(paidDate.getMonth(), paidDate.getFullYear());
+    }, [formData.isPaid, formData.paidDate]);
+
+    const { systemBudgets: txDateSystemBudgets } = useSystemBudgetsForPeriod(
+        user,
+        transactionDateBounds?.monthStart,
+        transactionDateBounds?.monthEnd
+    );
+
+    const { systemBudgets: paidDateSystemBudgets } = useSystemBudgetsForPeriod(
+        user,
+        paidDateBounds?.monthStart,
+        paidDateBounds?.monthEnd
+    );
+
+    // Merge all system budgets (from parent + transaction date + paid date) with custom budgets from parent
+    const mergedBudgets = useMemo(() => {
+        const systemFromParent = allBudgets.filter(b => b.isSystemBudget);
+        const customFromParent = allBudgets.filter(b => !b.isSystemBudget);
+        
+        // Combine all system budgets and deduplicate by ID
+        const allSystemBudgets = [
+            ...systemFromParent,
+            ...txDateSystemBudgets,
+            ...(paidDateSystemBudgets || [])
+        ];
+        
+        const uniqueSystemBudgets = Array.from(
+            new Map(allSystemBudgets.map(sb => [sb.id, sb])).values()
+        );
+        
+        // Format system budgets to match expected structure
+        const formattedSystem = uniqueSystemBudgets.map(sb => ({
+            ...sb,
+            isSystemBudget: true,
+            allocatedAmount: sb.budgetAmount || sb.allocatedAmount
+        }));
+        
+        // Return system budgets first, then custom budgets
+        return [...formattedSystem, ...customFromParent];
+    }, [allBudgets, txDateSystemBudgets, paidDateSystemBudgets]);
 
     // Initialize form data from initialTransaction (for editing)
     useEffect(() => {
@@ -183,9 +238,9 @@ export default function TransactionFormContent({
            ? formData.paidDate 
            : formData.date;
 
-        if (formData.financial_priority && allBudgets.length > 0) {
+        if (formData.financial_priority && mergedBudgets.length > 0) {
             // Find a matching system budget (case-insensitive)
-            const matchingSystemBudget = allBudgets.find(b =>
+            const matchingSystemBudget = mergedBudgets.find(b =>
                 b.isSystemBudget &&
                 b.name.toLowerCase() === formData.financial_priority.toLowerCase() &&
                 isDateInRange(relevantDate, b.startDate, b.endDate)
@@ -195,7 +250,7 @@ export default function TransactionFormContent({
                 // Only auto-switch if we currently have NO budget selected, 
                 // or if the currently selected budget is also a system budget.
                 // We don't want to kick the user out of a specific custom budget (e.g., "Trip 2025").
-                const currentBudget = allBudgets.find(b => b.id === formData.customBudgetId);
+                const currentBudget = mergedBudgets.find(b => b.id === formData.customBudgetId);
                 const canAutoSwitch = !formData.customBudgetId || (currentBudget && currentBudget.isSystemBudget);
 
                 if (canAutoSwitch) {
@@ -205,13 +260,13 @@ export default function TransactionFormContent({
                 // If we can't find a matching system budget (e.g. future month not generated),
                 // and we are currently pointing to a system budget, we should clear it to avoid 
                 // pointing to the WRONG month (like November budget for January expense).
-                const currentBudget = allBudgets.find(b => b.id === formData.customBudgetId);
+                const currentBudget = mergedBudgets.find(b => b.id === formData.customBudgetId);
                 if (currentBudget && currentBudget.isSystemBudget) {
                     setFormData(prev => ({ ...prev, customBudgetId: '' }));
                 }
             }
         }
-    }, [formData.financial_priority, allBudgets, formData.date, formData.isPaid, formData.paidDate, formData.type]);
+    }, [formData.financial_priority, mergedBudgets, formData.date, formData.isPaid, formData.paidDate, formData.type]);
 
     /* Removing Sorting Logic from the Form
         // Filter budgets to show active + planned statuses + relevant completed budgets
@@ -265,7 +320,7 @@ export default function TransactionFormContent({
     // We rely on the parent component to provide the correct order (System > Active > Planned)
     // FIXED 01-Feb-2026: Use transaction date (or paid date) for filtering, not current date
     const visibleOptions = useMemo(() => {
-        let filtered = allBudgets;
+        let filtered = mergedBudgets;
 
         // A. Mutual Exclusivity for System Budgets based on Priority
         // If "Needs" is selected, hide "Wants" system budget, and vice versa.
@@ -298,7 +353,7 @@ export default function TransactionFormContent({
         // DEPRECATED:     return smartSortedBudgets.slice(0, 5);
         // DEPRECATED: }, [smartSortedBudgets, budgetSearchTerm]);
         return filtered;
-    }, [allBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type]);
+    }, [mergedBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type]);
 
     const executeRefresh = async (force) => {
         const result = await refreshRates(
@@ -613,7 +668,7 @@ export default function TransactionFormContent({
                                     className="w-full justify-between font-normal"
                                 >
                                     {formData.customBudgetId
-                                        ? allBudgets.find((b) => b.id === formData.customBudgetId)?.name
+                                        ? mergedBudgets.find((b) => b.id === formData.customBudgetId)?.name
                                         : "Select budget..."}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </CustomButton>
