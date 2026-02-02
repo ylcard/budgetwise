@@ -82,16 +82,28 @@ export default function TransactionFormContent({
         return getMonthBoundaries(paidDate.getMonth(), paidDate.getFullYear());
     }, [formData.isPaid, formData.paidDate]);
 
+    // Check if parent (allBudgets) already provides system budgets for these dates
+    // This prevents redundant fetching which triggers parent re-renders and form resets
+    const hasParentBudgetsForTxDate = useMemo(() => {
+        if (!transactionDateBounds) return false;
+        return allBudgets.some(b => b.isSystemBudget && b.startDate <= transactionDateBounds.monthEnd && b.endDate >= transactionDateBounds.monthStart);
+    }, [allBudgets, transactionDateBounds]);
+
+    const hasParentBudgetsForPaidDate = useMemo(() => {
+        if (!paidDateBounds) return false;
+        return allBudgets.some(b => b.isSystemBudget && b.startDate <= paidDateBounds.monthEnd && b.endDate >= paidDateBounds.monthStart);
+    }, [allBudgets, paidDateBounds]);
+
     const { systemBudgets: txDateSystemBudgets } = useSystemBudgetsForPeriod(
         user,
-        transactionDateBounds?.monthStart,
-        transactionDateBounds?.monthEnd
+        hasParentBudgetsForTxDate ? null : transactionDateBounds?.monthStart,
+        hasParentBudgetsForTxDate ? null : transactionDateBounds?.monthEnd
     );
 
     const { systemBudgets: paidDateSystemBudgets } = useSystemBudgetsForPeriod(
         user,
-        paidDateBounds?.monthStart,
-        paidDateBounds?.monthEnd
+        hasParentBudgetsForPaidDate ? null : paidDateBounds?.monthStart,
+        hasParentBudgetsForPaidDate ? null : paidDateBounds?.monthEnd
     );
 
     // Merge all system budgets (from parent + transaction date + paid date) with custom budgets from parent
