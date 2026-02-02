@@ -1,7 +1,7 @@
 import React from 'react';
 import { Home, Heart, Plane } from 'lucide-react';
 import { useSettings } from '../utils/SettingsContext';
-import { formatCurrency } from '../utils/formatCurrency';
+import { formatCurrency } from '../utils/currencyUtils';
 
 /**
  * CREATED: 02-Feb-2026
@@ -39,7 +39,7 @@ const BudgetHealthCards = ({ budgets, totalSpent, totalBudget }) => {
     const getBudgetLabel = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'NEEDS (Fixed)';
         if (budget.systemBudgetType === 'wants') return 'WANTS (Variable)';
-        return `${budget.name.toUpperCase()}`;
+        return `${budget.name.toUpperCase()} (Custom)`;
     };
 
     const calculatePercentage = (spent, total) => {
