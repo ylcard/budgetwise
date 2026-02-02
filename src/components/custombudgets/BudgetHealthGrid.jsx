@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSettings } from '../utils/SettingsContext';
-import { formatCurrency } from '../utils/formatCurrency';
+import { formatCurrency } from '../utils/currencyUtils';
 
 /**
  * CREATED: 02-Feb-2026
