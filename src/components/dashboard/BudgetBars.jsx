@@ -30,8 +30,8 @@ export default function BudgetBars({
     showSystem = true
 }) {
 
-    // 1. Initialize local state with global setting (Default to 'bars' if undefined)
-    const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
+    // 1. Initialize local state (Default to 'health-cards' for modern view)
+    const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'health-cards');
 
     // 2. Sync local state when global settings update (e.g. from Settings page or DB load)
     useEffect(() => {
@@ -40,16 +40,33 @@ export default function BudgetBars({
         }
     }, [settings.budgetViewMode]);
 
-    const [customStartIndex, setCustomStartIndex] = useState(0);
-    const barsPerPage = viewMode === 'cards' ? 4 : 7;
+    // const [customStartIndex, setCustomStartIndex] = useState(0);
+    // const barsPerPage = viewMode === 'cards' ? 4 : 7;
 
     // UPDATED 15-Jan-2026: BudgetBars now always calculates its own stats using the latest getCustomBudgetStats
     const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
         useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings);
 
-    const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
-    const canScrollLeft = customStartIndex > 0;
-    const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
+    // const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
+    // const canScrollLeft = customStartIndex > 0;
+    // const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
+    // 2. Data Adapter: Transform Custom Budgets for the new unified components
+    const normalizedCustomBudgets = useMemo(() => {
+        return customBudgetsData.map(b => {
+            // Calculate Spent (Paid + Unpaid)
+            const paid = b.stats?.paid?.totalBaseCurrencyAmount || b.stats?.paidAmount || 0;
+            const unpaid = b.stats?.unpaid?.totalBaseCurrencyAmount || b.stats?.unpaid || 0;
+            return {
+                ...b,
+                id: b.id,
+                name: b.name,
+                systemBudgetType: 'custom', // Force fallback styling
+                spent: paid + unpaid,
+                allocatedAmount: b.stats?.totalAllocatedUnits || b.budgetAmount || 0,
+                budgetAmount: b.stats?.totalAllocatedUnits || b.budgetAmount || 0
+            };
+        });
+    }, [customBudgetsData]);
 
     // 3. Local-only toggle handler
     // This allows the user to temporarily switch views without affecting their saved preference
