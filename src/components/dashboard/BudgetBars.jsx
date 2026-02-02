@@ -41,7 +41,7 @@ export default function BudgetBars({
     const barsPerPage = viewMode === 'cards' ? 4 : 7;
 
     // UPDATED 15-Jan-2026: BudgetBars now always calculates its own stats using the latest getCustomBudgetStats
-    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } = 
+    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } =
         useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings);
 
     const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
@@ -67,16 +67,6 @@ export default function BudgetBars({
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center justify-end gap-2 mb-4">
-                            <Label htmlFor="view-mode-custom" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
-                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
-                            </Label>
-                            <Switch
-                                id="view-mode-custom"
-                                checked={viewMode === 'cards'}
-                                onCheckedChange={handleViewModeChange}
-                            />
-                        </div>
                         <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                             {systemBudgetsData.map((budget) => (
                                 viewMode === 'bars' ? (
@@ -144,16 +134,6 @@ export default function BudgetBars({
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center justify-end gap-2 mb-4">
-                            <Label htmlFor="view-mode-custom" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
-                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
-                            </Label>
-                            <Switch
-                                id="view-mode-custom"
-                                checked={viewMode === 'cards'}
-                                onCheckedChange={handleViewModeChange}
-                            />
-                        </div>
                         <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                             {visibleCustomBudgets.map((budget) => (
                                 viewMode === 'bars' ? (
