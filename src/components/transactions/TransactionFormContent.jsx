@@ -138,24 +138,8 @@ export default function TransactionFormContent({
                 isCashExpense: initialTransaction.isCashTransaction || false,
                 notes: initialTransaction.notes || ''
             });
-        } else {
-            // Reset to defaults for new transaction
-            setFormData({
-                title: '',
-                amount: null,
-                originalCurrency: settings?.baseCurrency || 'USD',
-                type: 'expense',
-                category_id: '',
-                financial_priority: '',
-                date: formatDateString(new Date()),
-                isPaid: false,
-                paidDate: '',
-                customBudgetId: '',
-                isCashExpense: false,
-                notes: ''
-            });
         }
-    }, [initialTransaction, settings?.baseCurrency]);
+    }, [initialTransaction]);
 
     const isForeignCurrency = formData.originalCurrency !== (settings?.baseCurrency || 'USD');
 
