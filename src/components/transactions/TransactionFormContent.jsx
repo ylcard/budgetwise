@@ -221,7 +221,7 @@ export default function TransactionFormContent({
                 }
             }
         }
-    }, [formData.customBudgetId, allBudgets, formData.date]);
+    }, [formData.customBudgetId, allBudgets]);
 
     // Auto-select System Budget based on Priority
     // If priority changes to 'wants', try to find a budget named 'Wants'
