@@ -58,13 +58,16 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
         try {
             const currentDate = new Date();
             const userLocalDate = format(currentDate, 'yyyy-MM-dd');
+            console.log('🔘 [MANUAL] User clicked Process Now - Date:', userLocalDate);
             
             const response = await base44.functions.invoke('processRecurringTransactions', {
                 userLocalDate
             });
+            console.log('📥 [MANUAL] Backend response:', JSON.stringify(response.data, null, 2));
 
             if (response.data.success) {
                 const { processed, skipped, errors } = response.data;
+                console.log('✅ [MANUAL] Success - Processed:', processed, 'Skipped:', skipped, 'Errors:', errors?.length || 0);
                 
                 if (processed > 0) {
                     toast.success(`Successfully processed ${processed} transaction${processed !== 1 ? 's' : ''}`, { id: toastId });
