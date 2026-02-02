@@ -1,10 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, AlertTriangle, LayoutGrid, List, Smartphone, PieChart, SquareActivity, CreditCard } from "lucide-react";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
 import BudgetCard from "../budgets/BudgetCard";
+import BudgetHealthCards from "./variations/BudgetHealthCards";
+import BudgetHealthCircular from "./variations/BudgetHealthCircular";
+import BudgetHealthCompact from "./variations/BudgetHealthCompact";
+import BudgetHealthGrid from "./variations/BudgetHealthGrid";
 // import { Label } from "@/components/ui/label";
 // import { Switch } from "@/components/ui/switch";
 
