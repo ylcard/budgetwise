@@ -74,40 +74,26 @@ export default function BudgetBars({
     //     const newMode = checked ? 'cards' : 'bars';
     //     setViewMode(newMode);
     // };
+
+    // Calculate totals for HealthCards view
+    const customTotals = useMemo(() => {
+        return normalizedCustomBudgets.reduce((acc, curr) => ({
+            spent: acc.spent + curr.spent,
+            budget: acc.budget + curr.allocatedAmount
+        }), { spent: 0, budget: 0 });
+    }, [normalizedCustomBudgets]);
+
     // View Options Configuration
     const viewOptions = [
         { id: 'bars', icon: List, label: 'List' },
-        { id: 'cards', icon: LayoutGrid, label: 'Cards' },
+        { id: 'health-cards', icon: CreditCard, label: 'Dashboard' },
+        { id: 'circular', icon: PieChart, label: 'Gauges' },
+        { id: 'compact', icon: Smartphone, label: 'Compact' },
+        { id: 'grid', icon: SquareActivity, label: 'Grid' },
     ];
 
     return (
         <div className="space-y-6">
-            {/* GLOBAL VIEW CONTROLS */}
-            <div className="flex items-center justify-end">
-                <div className="bg-gray-100/80 p-1 rounded-lg flex gap-1 border border-gray-200">
-                    {viewOptions.map((option) => {
-                        const Icon = option.icon;
-                        const isActive = viewMode === option.id;
-                        return (
-                            <button
-                                key={option.id}
-                                onClick={() => setViewMode(option.id)}
-                                className={`
-                                    relative flex items-center justify-center px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ease-in-out
-                                    ${isActive 
-                                        ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5' 
-                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                                    }
-                                `}
-                                title={`${option.label} View`}
-                            >
-                                <Icon className="w-4 h-4" />
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
             {showSystem && systemBudgetsData.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -118,27 +104,17 @@ export default function BudgetBars({
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
+                        {/* System Budgets always render as List (Bars) per requirement */}
+                        <div className="flex flex-col gap-4">
                             {systemBudgetsData.map((budget) => (
-                                viewMode === 'bars' ? (
-                                    <BudgetBar
-                                        key={budget.id}
-                                        budget={budget}
-                                        isCustom={false}
-                                        isSavings={budget.systemBudgetType === 'savings'}
-                                        settings={settings}
-                                        hideActions={true}
-                                    />
-                                ) : (
-                                    <div key={budget.id} className="flex-1 min-w-0">
-                                        <BudgetCard
-                                            budget={{ ...budget, isSystemBudget: true }}
-                                            stats={budget.stats}
-                                            settings={settings}
-                                            size="sm"
-                                        />
-                                    </div>
-                                )
+                                <BudgetBar
+                                    key={budget.id}
+                                    budget={budget}
+                                    isCustom={false}
+                                    isSavings={budget.systemBudgetType === 'savings'}
+                                    settings={settings}
+                                    hideActions={true}
+                                />
                             ))}
                         </div>
                     </CardContent>
@@ -146,34 +122,38 @@ export default function BudgetBars({
             )}
 
             {customBudgetsData.length > 0 && (
-                <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
+                <div className="space-y-4">
+                    {/* Custom Budgets Header & Switcher */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
+                            <span className="px-3 py-1 rounded-lg text-sm font-bold bg-purple-50 text-purple-600 border border-purple-100">
                                 Custom Budgets
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {customBudgetsData.length > barsPerPage && (
-                                <>
-                                    <CustomButton
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setCustomStartIndex(Math.max(0, customStartIndex - 1))}
-                                        disabled={!canScrollLeft}
-                                    >
-                                        <ChevronLeft className="w-4 h-4" />
-                                    </CustomButton>
-                                    <CustomButton
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setCustomStartIndex(customStartIndex + 1)}
-                                        disabled={!canScrollRight}
-                                    >
-                                        <ChevronRight className="w-4 h-4" />
-                                    </CustomButton>
-                                </>
-                            )}
+                        <div className="flex items-center gap-3">
+                            {/* View Switcher */}
+                            <div className="bg-white p-1 rounded-lg flex gap-1 border border-gray-200 shadow-sm">
+                                {viewOptions.map((option) => {
+                                    const Icon = option.icon;
+                                    const isActive = viewMode === option.id;
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            onClick={() => setViewMode(option.id)}
+                                            className={`
+                                                relative flex items-center justify-center p-2 rounded-md transition-all duration-200
+                                                ${isActive
+                                                    ? 'bg-gray-900 text-white shadow-md'
+                                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                                }
+                                            `}
+                                            title={option.label}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                        </button>
+                                    );
+                                })}
+                            </div>
                             <CustomButton
                                 variant="create"
                                 size="sm"
@@ -183,48 +163,56 @@ export default function BudgetBars({
                                 New Budget
                             </CustomButton>
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
-                            {visibleCustomBudgets.map((budget) => (
-                                viewMode === 'bars' ? (
-                                    <BudgetBar
-                                        key={budget.id}
-                                        budget={budget}
-                                        stats={budget.stats}
-                                        isCustom={true}
-                                        settings={settings}
-                                        hideActions={true}
-                                    />
-                                ) : (
-                                    <div key={budget.id} className="flex-1 min-w-0">
-                                        <BudgetCard
-                                            key={budget.id}
-                                            budget={budget}
-                                            stats={budget.stats}
-                                            settings={settings}
-                                            size="sm"
-                                        />
-                                    </div>
-                                )
-                            ))}
-                        </div>
+                    </div>
+                    {/* Render Selected View Variation */}
+                    <div className="animate-in fade-in duration-300">
 
-                        {customBudgetsData.length > barsPerPage && (
-                            <div className="flex justify-center gap-1 mt-4">
-                                {Array.from({ length: Math.ceil(customBudgetsData.length / barsPerPage) }).map((_, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`h-2 rounded-full transition-all ${Math.floor(customStartIndex / barsPerPage) === idx
-                                            ? 'w-8 bg-purple-600'
-                                            : 'w-2 bg-gray-300'
-                                            }`}
-                                    />
-                                ))}
+                        {viewMode === 'health-cards' && (
+                            <BudgetHealthCards
+                                budgets={normalizedCustomBudgets}
+                                totalSpent={customTotals.spent}
+                                totalBudget={customTotals.budget}
+                            />
+                        )}
+
+                        {viewMode === 'circular' && (
+                            <div className="flex justify-center w-full">
+                                <BudgetHealthCircular budgets={normalizedCustomBudgets} />
                             </div>
                         )}
-                    </CardContent>
-                </Card>
+                        {viewMode === 'compact' && (
+                            <div className="flex justify-center w-full">
+                                <BudgetHealthCompact budgets={normalizedCustomBudgets} />
+                            </div>
+                        )}
+
+                        {viewMode === 'grid' && (
+                            <div className="flex justify-center w-full">
+                                <BudgetHealthGrid budgets={normalizedCustomBudgets} />
+                            </div>
+                        )}
+
+                        {/* Fallback / Legacy List View */}
+                        {viewMode === 'bars' && (
+                            <Card className="border-none shadow-lg">
+                                <CardContent className="pt-6">
+                                    <div className="flex flex-col gap-4">
+                                        {customBudgetsData.map((budget) => (
+                                            <BudgetBar
+                                                key={budget.id}
+                                                budget={budget}
+                                                stats={budget.stats}
+                                                isCustom={true}
+                                                settings={settings}
+                                                hideActions={true}
+                                            />
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </div>
             )}
             {customBudgetsData.length === 0 && (
                 <Card className="border-2 border-dashed border-gray-200 bg-gray-50/50 shadow-sm hover:border-purple-200 hover:bg-purple-50/30 transition-all duration-300">
