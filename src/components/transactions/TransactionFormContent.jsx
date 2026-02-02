@@ -102,7 +102,7 @@ export default function TransactionFormContent({
         // Combine all system budgets and deduplicate by ID
         const allSystemBudgets = [
             ...systemFromParent,
-            ...txDateSystemBudgets,
+            ...(txDateSystemBudgets || []),
             ...(paidDateSystemBudgets || [])
         ];
         
