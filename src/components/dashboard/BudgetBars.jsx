@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
-import { formatCurrency } from "../utils/currencyUtils";
+import { Plus, ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
 import BudgetCard from "../budgets/BudgetCard";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+// import { Label } from "@/components/ui/label";
+// import { Switch } from "@/components/ui/switch";
 
 export default function BudgetBars({
     systemBudgets,
@@ -50,13 +49,44 @@ export default function BudgetBars({
 
     // 3. Local-only toggle handler
     // This allows the user to temporarily switch views without affecting their saved preference
-    const handleViewModeChange = (checked) => {
-        const newMode = checked ? 'cards' : 'bars';
-        setViewMode(newMode);
-    };
+    // const handleViewModeChange = (checked) => {
+    //     const newMode = checked ? 'cards' : 'bars';
+    //     setViewMode(newMode);
+    // };
+    // View Options Configuration
+    const viewOptions = [
+        { id: 'bars', icon: List, label: 'List' },
+        { id: 'cards', icon: LayoutGrid, label: 'Cards' },
+    ];
 
     return (
         <div className="space-y-6">
+            {/* GLOBAL VIEW CONTROLS */}
+            <div className="flex items-center justify-end">
+                <div className="bg-gray-100/80 p-1 rounded-lg flex gap-1 border border-gray-200">
+                    {viewOptions.map((option) => {
+                        const Icon = option.icon;
+                        const isActive = viewMode === option.id;
+                        return (
+                            <button
+                                key={option.id}
+                                onClick={() => setViewMode(option.id)}
+                                className={`
+                                    relative flex items-center justify-center px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ease-in-out
+                                    ${isActive 
+                                        ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5' 
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                                    }
+                                `}
+                                title={`${option.label} View`}
+                            >
+                                <Icon className="w-4 h-4" />
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
             {showSystem && systemBudgetsData.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
