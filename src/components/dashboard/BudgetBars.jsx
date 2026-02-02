@@ -5,10 +5,10 @@ import { Plus, ChevronLeft, ChevronRight, AlertTriangle, LayoutGrid, List, Smart
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
 import BudgetCard from "../budgets/BudgetCard";
-import BudgetHealthCards from "./variations/BudgetHealthCards";
-import BudgetHealthCircular from "./variations/BudgetHealthCircular";
-import BudgetHealthCompact from "./variations/BudgetHealthCompact";
-import BudgetHealthGrid from "./variations/BudgetHealthGrid";
+import BudgetHealthCards from "../custombudgets/BudgetHealthCards";
+import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
+import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
+import BudgetHealthGrid from "../custombudgets/BudgetHealthGrid";
 // import { Label } from "@/components/ui/label";
 // import { Switch } from "@/components/ui/switch";
 
