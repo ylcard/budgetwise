@@ -2,6 +2,8 @@ import React from 'react';
 import { Home, Heart, Plane } from 'lucide-react';
 import { useSettings } from '../utils/SettingsContext';
 import { formatCurrency } from '../utils/currencyUtils';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '../../utils';
 
 /**
  * CREATED: 02-Feb-2026
@@ -11,6 +13,7 @@ import { formatCurrency } from '../utils/currencyUtils';
 
 const BudgetHealthCircular = ({ budgets }) => {
     const { settings } = useSettings();
+    const navigate = useNavigate();
 
     const getBudgetIcon = (budget) => {
         if (budget.systemBudgetType === 'needs') return Home;
@@ -30,10 +33,11 @@ const BudgetHealthCircular = ({ budgets }) => {
         return 'stroke-orange-500';
     };
 
+    // UPDATED 02-Feb-2026: Removed parenthetical labels, just use budget name
     const getBudgetLabel = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'Needs';
         if (budget.systemBudgetType === 'wants') return 'Wants';
-        return `Custom (${budget.name})`;
+        return budget.name || 'Custom';
     };
 
     const calculatePercentage = (spent, total) => {
@@ -50,8 +54,9 @@ const BudgetHealthCircular = ({ budgets }) => {
                 const remaining = total - spent;
                 const percentage = calculatePercentage(spent, total);
 
+                // UPDATED 02-Feb-2026: Changed to semi-circle (speedometer style)
                 const radius = 40;
-                const circumference = 2 * Math.PI * radius;
+                const circumference = Math.PI * radius; // Half circle
                 const offset = circumference - (percentage / 100) * circumference;
 
                 return (
@@ -60,23 +65,20 @@ const BudgetHealthCircular = ({ budgets }) => {
                         className={`bg-[#252838] rounded-2xl p-5 border-2 ${getBorderColor(budget)} shadow-lg`}
                     >
                         <div className="flex items-center justify-between">
-                            {/* Left: Circular Progress */}
-                            <div className="relative w-24 h-24 flex-shrink-0">
-                                <svg className="transform -rotate-90 w-24 h-24">
-                                    {/* Background Circle */}
-                                    <circle
-                                        cx="48"
-                                        cy="48"
-                                        r={radius}
+                            {/* Left: Semi-Circular Progress (Speedometer Style) */}
+                            <div className="relative w-24 h-16 flex-shrink-0">
+                                <svg className="w-24 h-16" viewBox="0 0 96 60">
+                                    {/* Background Semi-Circle */}
+                                    <path
+                                        d="M 8 56 A 40 40 0 0 1 88 56"
                                         stroke="rgba(255,255,255,0.1)"
                                         strokeWidth="8"
                                         fill="none"
+                                        strokeLinecap="round"
                                     />
-                                    {/* Progress Circle */}
-                                    <circle
-                                        cx="48"
-                                        cy="48"
-                                        r={radius}
+                                    {/* Progress Semi-Circle */}
+                                    <path
+                                        d="M 8 56 A 40 40 0 0 1 88 56"
                                         className={getCircleColor(budget)}
                                         strokeWidth="8"
                                         fill="none"
@@ -87,7 +89,7 @@ const BudgetHealthCircular = ({ budgets }) => {
                                     />
                                 </svg>
                                 {/* Percentage Text */}
-                                <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="absolute inset-0 flex items-center justify-center pt-2">
                                     <span className="text-white text-lg font-bold">{percentage}%</span>
                                 </div>
                             </div>
@@ -95,7 +97,12 @@ const BudgetHealthCircular = ({ budgets }) => {
                             {/* Right: Budget Details */}
                             <div className="flex-1 ml-5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-white font-semibold text-base">{getBudgetLabel(budget)}</h3>
+                                    <h3 
+                                        className="text-white font-semibold text-base cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={() => navigate(createPageUrl('BudgetDetail', { id: budget.id }))}
+                                    >
+                                        {getBudgetLabel(budget)}
+                                    </h3>
                                     <Icon className="w-5 h-5 text-gray-400" />
                                 </div>
                                 <div className="text-white text-3xl font-bold mb-1">
@@ -111,11 +118,12 @@ const BudgetHealthCircular = ({ budgets }) => {
                 );
             })}
 
-            {/* Label */}
+            {/* COMMENTED OUT 02-Feb-2026: Removed variation label per user request
             <div className="text-center text-gray-400 text-sm mt-6">
                 <p className="font-semibold">Variation A</p>
                 <p className="text-xs">Modern Cards with Circular Gauges</p>
             </div>
+            */}
         </div>
     );
 };

@@ -2,6 +2,8 @@ import React from 'react';
 import { Home, Heart, Plane } from 'lucide-react';
 import { useSettings } from '../utils/SettingsContext';
 import { formatCurrency } from '../utils/currencyUtils';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '../../utils';
 
 /**
  * CREATED: 02-Feb-2026
@@ -11,6 +13,7 @@ import { formatCurrency } from '../utils/currencyUtils';
 
 const BudgetHealthCompact = ({ budgets }) => {
     const { settings } = useSettings();
+    const navigate = useNavigate();
 
     const getBudgetIcon = (budget) => {
         if (budget.systemBudgetType === 'needs') return Home;
@@ -58,7 +61,12 @@ const BudgetHealthCompact = ({ budgets }) => {
                                 <div className={`w-8 h-8 rounded-lg bg-gray-700/50 flex items-center justify-center ${getIconColor(budget)}`}>
                                     <Icon className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-white font-semibold text-base">{getBudgetLabel(budget)}</h3>
+                                <h3 
+                                    className="text-white font-semibold text-base cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => navigate(createPageUrl('BudgetDetail', { id: budget.id }))}
+                                >
+                                    {getBudgetLabel(budget)}
+                                </h3>
                             </div>
 
                             {/* Progress Bar */}
@@ -85,11 +93,12 @@ const BudgetHealthCompact = ({ budgets }) => {
                 })}
             </div>
 
-            {/* Label */}
+            {/* COMMENTED OUT 02-Feb-2026: Removed variation label per user request
             <div className="text-center text-gray-400 text-sm mt-6">
                 <p className="font-semibold">Variation B</p>
                 <p className="text-xs">Compact List View with Stacked Bars</p>
             </div>
+            */}
         </div>
     );
 };

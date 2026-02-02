@@ -2,6 +2,8 @@ import React from 'react';
 import { Home, Heart, Plane } from 'lucide-react';
 import { useSettings } from '../utils/SettingsContext';
 import { formatCurrency } from '../utils/currencyUtils';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '../../utils';
 
 /**
  * CREATED: 02-Feb-2026
@@ -11,6 +13,7 @@ import { formatCurrency } from '../utils/currencyUtils';
 
 const BudgetHealthCards = ({ budgets, totalSpent, totalBudget }) => {
     const { settings } = useSettings();
+    const navigate = useNavigate();
 
     const getBudgetIcon = (budget) => {
         if (budget.systemBudgetType === 'needs') return Home;
@@ -36,10 +39,11 @@ const BudgetHealthCards = ({ budgets, totalSpent, totalBudget }) => {
         return 'bg-gradient-to-r from-orange-500 to-amber-500';
     };
 
+    // UPDATED 02-Feb-2026: Removed parenthetical labels, just use budget name
     const getBudgetLabel = (budget) => {
-        if (budget.systemBudgetType === 'needs') return 'NEEDS (Fixed)';
-        if (budget.systemBudgetType === 'wants') return 'WANTS (Variable)';
-        return `${budget.name.toUpperCase()} (Custom)`;
+        if (budget.systemBudgetType === 'needs') return 'NEEDS';
+        if (budget.systemBudgetType === 'wants') return 'WANTS';
+        return budget.name?.toUpperCase() || 'CUSTOM';
     };
 
     const calculatePercentage = (spent, total) => {
@@ -73,7 +77,10 @@ const BudgetHealthCards = ({ budgets, totalSpent, totalBudget }) => {
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-white font-semibold text-sm tracking-wide">
+                                <h3 
+                                    className="text-white font-semibold text-sm tracking-wide cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => navigate(createPageUrl('BudgetDetail', { id: budget.id }))}
+                                >
                                     {getBudgetLabel(budget)}
                                 </h3>
                                 <Icon className={`w-5 h-5 text-${budget.systemBudgetType === 'needs' ? 'cyan' : budget.systemBudgetType === 'wants' ? 'purple' : 'orange'}-400`} />
