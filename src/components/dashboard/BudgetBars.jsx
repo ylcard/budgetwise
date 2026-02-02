@@ -6,8 +6,14 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { useBudgetBarsData } from "../hooks/useDerivedData";
 import BudgetBar from "../custombudgets/BudgetBar";
 import BudgetCard from "../budgets/BudgetCard";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+// COMMENTED OUT 02-Feb-2026: Replaced Switch with SegmentedControl
+// import { Label } from "@/components/ui/label";
+// import { Switch } from "@/components/ui/switch";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import BudgetHealthCards from "../custombudgets/BudgetHealthCards";
+import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
+import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
+import BudgetHealthGrid from "../custombudgets/BudgetHealthGrid";
 
 export default function BudgetBars({
     systemBudgets,
@@ -27,8 +33,17 @@ export default function BudgetBars({
     showSystem = true
 }) {
 
-    // 1. Initialize local state with global setting (Default to 'bars' if undefined)
+    // UPDATED 02-Feb-2026: Expanded from 2 views (bars/cards) to 6 views
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
+    
+    const VIEW_OPTIONS = [
+        { value: 'bars', label: 'Bars' },
+        { value: 'cards', label: 'Cards' },
+        { value: 'health-cards', label: 'Health Cards' },
+        { value: 'circular', label: 'Circular' },
+        { value: 'compact', label: 'Compact' },
+        { value: 'grid', label: 'Grid' }
+    ];
 
     // 2. Sync local state when global settings update (e.g. from Settings page or DB load)
     useEffect(() => {
@@ -38,7 +53,8 @@ export default function BudgetBars({
     }, [settings.budgetViewMode]);
 
     const [customStartIndex, setCustomStartIndex] = useState(0);
-    const barsPerPage = viewMode === 'cards' ? 4 : 7;
+    // UPDATED 02-Feb-2026: Adjusted pagination for new view modes
+    const barsPerPage = ['cards', 'health-cards', 'circular', 'compact', 'grid'].includes(viewMode) ? 4 : 7;
 
     // UPDATED 15-Jan-2026: BudgetBars now always calculates its own stats using the latest getCustomBudgetStats
     const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } = 
@@ -48,10 +64,8 @@ export default function BudgetBars({
     const canScrollLeft = customStartIndex > 0;
     const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
 
-    // 3. Local-only toggle handler
-    // This allows the user to temporarily switch views without affecting their saved preference
-    const handleViewModeChange = (checked) => {
-        const newMode = checked ? 'cards' : 'bars';
+    // UPDATED 02-Feb-2026: Changed from toggle handler to segmented control handler
+    const handleViewModeChange = (newMode) => {
         setViewMode(newMode);
     };
 
@@ -67,39 +81,56 @@ export default function BudgetBars({
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
+                        {/* UPDATED 02-Feb-2026: Replaced Switch with SegmentedControl */}
                         <div className="flex items-center justify-end gap-2 mb-4">
-                            <Label htmlFor="view-mode-custom" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
-                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
-                            </Label>
-                            <Switch
-                                id="view-mode-custom"
-                                checked={viewMode === 'cards'}
-                                onCheckedChange={handleViewModeChange}
+                            <SegmentedControl
+                                options={VIEW_OPTIONS}
+                                value={viewMode}
+                                onChange={handleViewModeChange}
                             />
                         </div>
-                        <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
-                            {systemBudgetsData.map((budget) => (
-                                viewMode === 'bars' ? (
-                                    <BudgetBar
-                                        key={budget.id}
-                                        budget={budget}
-                                        isCustom={false}
-                                        isSavings={budget.systemBudgetType === 'savings'}
-                                        settings={settings}
-                                        hideActions={true}
-                                    />
-                                ) : (
-                                    <div key={budget.id} className="flex-1 min-w-0">
-                                        <BudgetCard
-                                            budget={{ ...budget, isSystemBudget: true }}
-                                            stats={budget.stats}
+                        {/* UPDATED 02-Feb-2026: Added support for 6 view modes */}
+                        {viewMode === 'health-cards' && (
+                            <BudgetHealthCards 
+                                budgets={systemBudgetsData}
+                                totalSpent={systemBudgetsData.reduce((sum, b) => sum + (b.spent || 0), 0)}
+                                totalBudget={systemBudgetsData.reduce((sum, b) => sum + (b.budgetAmount || 0), 0)}
+                            />
+                        )}
+                        {viewMode === 'circular' && (
+                            <BudgetHealthCircular budgets={systemBudgetsData} />
+                        )}
+                        {viewMode === 'compact' && (
+                            <BudgetHealthCompact budgets={systemBudgetsData} />
+                        )}
+                        {viewMode === 'grid' && (
+                            <BudgetHealthGrid budgets={systemBudgetsData} />
+                        )}
+                        {(viewMode === 'bars' || viewMode === 'cards') && (
+                            <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
+                                {systemBudgetsData.map((budget) => (
+                                    viewMode === 'bars' ? (
+                                        <BudgetBar
+                                            key={budget.id}
+                                            budget={budget}
+                                            isCustom={false}
+                                            isSavings={budget.systemBudgetType === 'savings'}
                                             settings={settings}
-                                            size="sm"
+                                            hideActions={true}
                                         />
-                                    </div>
-                                )
-                            ))}
-                        </div>
+                                    ) : (
+                                        <div key={budget.id} className="flex-1 min-w-0">
+                                            <BudgetCard
+                                                budget={{ ...budget, isSystemBudget: true }}
+                                                stats={budget.stats}
+                                                settings={settings}
+                                                size="sm"
+                                            />
+                                        </div>
+                                    )
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )}
@@ -144,40 +175,57 @@ export default function BudgetBars({
                         </div>
                     </CardHeader>
                     <CardContent>
+                        {/* UPDATED 02-Feb-2026: Replaced Switch with SegmentedControl */}
                         <div className="flex items-center justify-end gap-2 mb-4">
-                            <Label htmlFor="view-mode-custom" className="text-sm text-gray-500 cursor-pointer min-w-[65px] text-right">
-                                {viewMode === 'cards' ? 'Card View' : 'Bar View'}
-                            </Label>
-                            <Switch
-                                id="view-mode-custom"
-                                checked={viewMode === 'cards'}
-                                onCheckedChange={handleViewModeChange}
+                            <SegmentedControl
+                                options={VIEW_OPTIONS}
+                                value={viewMode}
+                                onChange={handleViewModeChange}
                             />
                         </div>
-                        <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
-                            {visibleCustomBudgets.map((budget) => (
-                                viewMode === 'bars' ? (
-                                    <BudgetBar
-                                        key={budget.id}
-                                        budget={budget}
-                                        stats={budget.stats}
-                                        isCustom={true}
-                                        settings={settings}
-                                        hideActions={true}
-                                    />
-                                ) : (
-                                    <div key={budget.id} className="flex-1 min-w-0">
-                                        <BudgetCard
+                        {/* UPDATED 02-Feb-2026: Added support for 6 view modes */}
+                        {viewMode === 'health-cards' && (
+                            <BudgetHealthCards 
+                                budgets={visibleCustomBudgets}
+                                totalSpent={visibleCustomBudgets.reduce((sum, b) => sum + (b.spent || 0), 0)}
+                                totalBudget={visibleCustomBudgets.reduce((sum, b) => sum + (b.allocatedAmount || 0), 0)}
+                            />
+                        )}
+                        {viewMode === 'circular' && (
+                            <BudgetHealthCircular budgets={visibleCustomBudgets} />
+                        )}
+                        {viewMode === 'compact' && (
+                            <BudgetHealthCompact budgets={visibleCustomBudgets} />
+                        )}
+                        {viewMode === 'grid' && (
+                            <BudgetHealthGrid budgets={visibleCustomBudgets} />
+                        )}
+                        {(viewMode === 'bars' || viewMode === 'cards') && (
+                            <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
+                                {visibleCustomBudgets.map((budget) => (
+                                    viewMode === 'bars' ? (
+                                        <BudgetBar
                                             key={budget.id}
                                             budget={budget}
                                             stats={budget.stats}
+                                            isCustom={true}
                                             settings={settings}
-                                            size="sm"
+                                            hideActions={true}
                                         />
-                                    </div>
-                                )
-                            ))}
-                        </div>
+                                    ) : (
+                                        <div key={budget.id} className="flex-1 min-w-0">
+                                            <BudgetCard
+                                                key={budget.id}
+                                                budget={budget}
+                                                stats={budget.stats}
+                                                settings={settings}
+                                                size="sm"
+                                            />
+                                        </div>
+                                    )
+                                ))}
+                            </div>
+                        )}
 
                         {customBudgetsData.length > barsPerPage && (
                             <div className="flex justify-center gap-1 mt-4">
