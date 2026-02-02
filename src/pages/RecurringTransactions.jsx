@@ -1,12 +1,15 @@
 import React, { useState, useMemo, useCallback, memo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Play } from "lucide-react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useCategories } from "../components/hooks/useBase44Entities";
 import { useRecurringTransactions, useRecurringTransactionActions } from "../components/hooks/useRecurringTransactions";
 import RecurringTransactionForm from "../components/recurring/RecurringTransactionForm";
 import RecurringTransactionList from "../components/recurring/RecurringTransactionList";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
     const { user } = useSettings();
@@ -16,6 +19,7 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
 
     const [showForm, setShowForm] = useState(false);
     const [editingRecurring, setEditingRecurring] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     // Separate active and paused
     const { activeRecurring, pausedRecurring } = useMemo(() => {
@@ -47,6 +51,41 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
         handleOpenForm(recurring);
     }, [handleOpenForm]);
 
+    const handleProcessRecurring = useCallback(async () => {
+        setIsProcessing(true);
+        const toastId = toast.loading('Processing recurring transactions...');
+
+        try {
+            const currentDate = new Date();
+            const userLocalDate = format(currentDate, 'yyyy-MM-dd');
+            
+            const response = await base44.functions.invoke('processRecurringTransactions', {
+                userLocalDate
+            });
+
+            if (response.data.success) {
+                const { processed, skipped, errors } = response.data;
+                
+                if (processed > 0) {
+                    toast.success(`Successfully processed ${processed} transaction${processed !== 1 ? 's' : ''}`, { id: toastId });
+                } else {
+                    toast.success('No new transactions to process', { id: toastId });
+                }
+
+                if (errors && errors.length > 0) {
+                    console.warn('Processing errors:', errors);
+                }
+            } else {
+                toast.error('Failed to process recurring transactions', { id: toastId });
+            }
+        } catch (error) {
+            console.error('Process recurring error:', error);
+            toast.error('Error processing recurring transactions', { id: toastId });
+        } finally {
+            setIsProcessing(false);
+        }
+    }, []);
+
     return (
         <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-4xl mx-auto space-y-6">
@@ -56,10 +95,22 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Recurring Transactions</h1>
                         <p className="text-gray-500 mt-1">Automate your regular income and expenses</p>
                     </div>
-                    <CustomButton variant="create" onClick={() => handleOpenForm()}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Recurring
-                    </CustomButton>
+                    <div className="flex gap-2">
+                        {user?.role === 'admin' && (
+                            <CustomButton 
+                                variant="info" 
+                                onClick={handleProcessRecurring}
+                                disabled={isProcessing}
+                            >
+                                <Play className={`w-4 h-4 mr-2 ${isProcessing ? 'animate-spin' : ''}`} />
+                                Process Now
+                            </CustomButton>
+                        )}
+                        <CustomButton variant="create" onClick={() => handleOpenForm()}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Recurring
+                        </CustomButton>
+                    </div>
                 </div>
 
                 {/* Active Section */}
