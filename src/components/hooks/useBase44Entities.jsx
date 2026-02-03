@@ -62,7 +62,7 @@ export const useGoals = (user) => {
 // RENAMED: 03-Feb-2026 - Was useCustomBudgetsAll, now useCustomBudgetsForPeriod for clarity
 export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = null) => {
     const { data: customBudgets = [], isLoading } = useQuery({
-        queryKey: [QUERY_KEYS.CUSTOM_BUDGETS, monthStart, monthEnd],
+        queryKey: [QUERY_KEYS.CUSTOM_BUDGETS, user?.email, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
 
@@ -83,6 +83,7 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
         },
         keepPreviousData: true,
         enabled: !!user,
+        initialData: [], // ADDED: 03-Feb-2026 - Prevent undefined returns
     });
 
     return { customBudgets, isLoading };
