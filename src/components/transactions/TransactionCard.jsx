@@ -1,6 +1,7 @@
 import { Trash2, Check, Clock, Banknote } from "lucide-react";
 import { format } from "date-fns";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion"; // ADDED 03-Feb-2026: Layout transitions
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
@@ -8,13 +9,14 @@ import QuickAddTransaction from "./QuickAddTransaction";
 import { useTransactions, useCategories } from "../hooks/useBase44Entities";
 import { CustomButton } from "@/components/ui/CustomButton";
 
+// COMMENTED OUT 03-Feb-2026: Replaced with Framer Motion layout transitions
+// import { useRef, useEffect } from "react";
+
 export default function TransactionCard({ transaction, category, onEdit, onDelete }) {
     const { settings } = useSettings();
     const { transactions } = useTransactions();
     const { categories } = useCategories();
     const [isHovered, setIsHovered] = useState(false);
-    const [offsetX, setOffsetX] = useState(0);
-    const anchorRef = useRef(null);
 
     const isIncome = transaction.type === 'income';
     const isPaid = transaction.isPaid;
@@ -25,35 +27,30 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
     const categoryColor = isIncome ? '#10B981' : (category?.color || '#6B7280');
     const categoryName = isIncome ? 'Income' : (category?.name || 'Uncategorized');
 
-    // ADDED: 16-Jan-2026 - Calculate offset to keep expansion centered and within viewport
-    useEffect(() => {
-        if (isHovered && anchorRef.current) {
-            const anchorRect = anchorRef.current.getBoundingClientRect();
-            const expandedWidth = 280;
-            const collapsedWidth = 140;
-            const expansion = expandedWidth - collapsedWidth; // 140px total expansion
-
-            // Calculate centered position
-            const centerOffset = -expansion / 2; // -70px to center
-            const leftEdge = anchorRect.left + centerOffset;
-            const rightEdge = anchorRect.right + centerOffset + expansion;
-
-            let finalOffset = centerOffset;
-
-            // Clamp within viewport with 20px padding
-            if (leftEdge < 20) {
-                finalOffset = 20 - anchorRect.left;
-            } else if (rightEdge > window.innerWidth - 20) {
-                finalOffset = (window.innerWidth - 20) - anchorRect.right - expansion;
-            }
-
-            setOffsetX(finalOffset);
-        }
-    }, [isHovered]);
+    // COMMENTED OUT 03-Feb-2026: Manual offset calculation replaced with Framer Motion layout
+    // const [offsetX, setOffsetX] = useState(0);
+    // const anchorRef = useRef(null);
+    // useEffect(() => {
+    //     if (isHovered && anchorRef.current) {
+    //         const anchorRect = anchorRef.current.getBoundingClientRect();
+    //         const expandedWidth = 280;
+    //         const collapsedWidth = 140;
+    //         const expansion = expandedWidth - collapsedWidth;
+    //         const centerOffset = -expansion / 2;
+    //         const leftEdge = anchorRect.left + centerOffset;
+    //         const rightEdge = anchorRect.right + centerOffset + expansion;
+    //         let finalOffset = centerOffset;
+    //         if (leftEdge < 20) {
+    //             finalOffset = 20 - anchorRect.left;
+    //         } else if (rightEdge > window.innerWidth - 20) {
+    //             finalOffset = (window.innerWidth - 20) - anchorRect.right - expansion;
+    //         }
+    //         setOffsetX(finalOffset);
+    //     }
+    // }, [isHovered]);
 
     return (
-        <div
-            ref={anchorRef}
+        <motion.div
             className="relative flex-shrink-0"
             style={{
                 width: '140px',
@@ -61,129 +58,155 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            layout // ADDED 03-Feb-2026: Enable Framer Motion layout animations
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-            {/* Absolutely Positioned Card - Expands from Center */}
-            <div
-                className={`absolute top-0 bg-white border border-gray-200 transition-all duration-300 ease-out ${isHovered ? 'shadow-xl z-50' : 'shadow-sm z-10' // Increased Z-Index to overlap neighbors
-                    }`}
-                style={{
-                    borderRadius: '16px',
+            {/* REFACTORED 03-Feb-2026: Using Framer Motion layout transitions */}
+            <motion.div
+                className="absolute top-0 bg-white border border-gray-200 rounded-2xl"
+                layout // Enable smooth layout transitions
+                animate={{
                     width: isHovered ? '280px' : '140px',
+                    boxShadow: isHovered 
+                        ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                        : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                    zIndex: isHovered ? 50 : 1,
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                style={{
                     height: '140px',
-                    left: isHovered ? `${offsetX}px` : '0px',
-                    zIndex: isHovered ? 10 : 1,
+                    left: '0px',
                 }}
             >
                 {/* Collapsed State - Vertical Layout */}
-                <div
-                    className={`absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 transition-opacity duration-200 ${isHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                        }`}
-                >
-                    {/* Icon Circle */}
-                    <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: `${categoryColor}20` }}
-                    >
-                        <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
-                    </div>
+                <AnimatePresence mode="wait">
+                    {!isHovered && (
+                        <motion.div
+                            key="collapsed"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4"
+                        >
+                            {/* Icon Circle */}
+                            <motion.div
+                                layout
+                                className="w-12 h-12 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: `${categoryColor}20` }}
+                            >
+                                <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
+                            </motion.div>
 
-                    {/* Category Name */}
-                    <p className="text-sm font-semibold text-gray-900 text-center line-clamp-1">
-                        {categoryName}
-                    </p>
+                            {/* Category Name */}
+                            <motion.p layout className="text-sm font-semibold text-gray-900 text-center line-clamp-1">
+                                {categoryName}
+                            </motion.p>
 
-                    {/* Price Pill - Light/Ghosted for Unpaid, Dark for Paid */}
-                    <div
-                        className="px-3 py-1 rounded-full"
-                        style={{
-                            backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
-                            color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
-                        }}
-                    >
-                        <p className="text-sm font-bold">
-                            {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
-                        </p>
-                    </div>
-                </div>
+                            {/* Price Pill */}
+                            <motion.div
+                                layout
+                                className="px-3 py-1 rounded-full"
+                                style={{
+                                    backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
+                                    color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
+                                }}
+                            >
+                                <p className="text-sm font-bold">
+                                    {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                                </p>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Expanded State - Horizontal Layout */}
-                <div
-                    className={`absolute inset-0 flex items-center gap-3 p-4 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                        }`}
-                >
-                    {/* Left Side - Icon and Price */}
-                    <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                        <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: `${categoryColor}20` }}
+                <AnimatePresence mode="wait">
+                    {isHovered && (
+                        <motion.div
+                            key="expanded"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute inset-0 flex items-center gap-3 p-4"
                         >
-                            <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
-                        </div>
-                        {/* Price Pill - Dark for Paid, Light/Ghosted for Unpaid */}
-                        <div
-                            className="px-2.5 py-1 rounded-full"
-                            style={{
-                                backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
-                                color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
-                            }}
-                        >
-                            <p className="text-xs font-bold whitespace-nowrap">
-                                {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
-                            </p>
-                        </div>
-                    </div>
+                            {/* Left Side - Icon and Price */}
+                            <motion.div layout className="flex flex-col items-center gap-2 flex-shrink-0">
+                                <motion.div
+                                    layout
+                                    className="w-12 h-12 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: `${categoryColor}20` }}
+                                >
+                                    <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
+                                </motion.div>
+                                <motion.div
+                                    layout
+                                    className="px-2.5 py-1 rounded-full"
+                                    style={{
+                                        backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
+                                        color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
+                                    }}
+                                >
+                                    <p className="text-xs font-bold whitespace-nowrap">
+                                        {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                                    </p>
+                                </motion.div>
+                            </motion.div>
 
-                    {/* Right Side - Merchant Name and Date */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <p className="text-base font-semibold text-gray-900 line-clamp-2 mb-0.5">
-                            {transaction.title}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                            {format(new Date(transaction.date), "MMM d, yyyy")}
-                        </p>
-                    </div>
+                            {/* Right Side - Merchant Name and Date */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                <p className="text-base font-semibold text-gray-900 line-clamp-2 mb-0.5">
+                                    {transaction.title}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {format(new Date(transaction.date), "MMM d, yyyy")}
+                                </p>
+                            </div>
 
-                    {/* Payment Status Indicator */}
-                    {!isIncome && (
-                        <div className="flex-shrink-0">
-                            {isPaid ? (
-                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                                    <Check className="w-4 h-4 text-green-600" />
-                                </div>
-                            ) : (
-                                <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                                    <Clock className="w-4 h-4 text-orange-600" />
+                            {/* Payment Status Indicator */}
+                            {!isIncome && (
+                                <div className="flex-shrink-0">
+                                    {isPaid ? (
+                                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                            <Check className="w-4 h-4 text-green-600" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+                                            <Clock className="w-4 h-4 text-orange-600" />
+                                        </div>
+                                    )}
                                 </div>
                             )}
-                        </div>
-                    )}
 
-                    {/* Action buttons - only visible on hover */}
-                    <div className="absolute top-2 right-2 flex gap-1">
-                        <QuickAddTransaction
-                            transaction={transaction}
-                            categories={categories}
-                            customBudgets={[]}
-                            onSubmit={(data) => onEdit(transaction, data)}
-                            isSubmitting={false}
-                            transactions={transactions}
-                            renderTrigger={true}
-                        />
-                        <CustomButton
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(transaction.id);
-                            }}
-                            className="hover:bg-red-50 hover:text-red-600 h-6 w-6"
-                        >
-                            <Trash2 className="w-3.5 h-3.5" />
-                        </CustomButton>
-                    </div>
-                </div>
-            </div>
-        </div>
+                            {/* Action buttons - only visible on hover */}
+                            <div className="absolute top-2 right-2 flex gap-1">
+                                <QuickAddTransaction
+                                    transaction={transaction}
+                                    categories={categories}
+                                    customBudgets={[]}
+                                    onSubmit={(data) => onEdit(transaction, data)}
+                                    isSubmitting={false}
+                                    transactions={transactions}
+                                    renderTrigger={true}
+                                />
+                                <CustomButton
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(transaction.id);
+                                    }}
+                                    className="hover:bg-red-50 hover:text-red-600 h-6 w-6"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </CustomButton>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </motion.div>
     );
 }
 

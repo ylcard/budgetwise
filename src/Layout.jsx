@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Wallet, LogOut, ChevronLeft } from "lucide-react";
-import { useMemo } from "react"; // ADDED 03-Feb-2026: For page title calculation
+import { useMemo, useRef, useEffect } from "react"; // UPDATED 03-Feb-2026: Added useRef, useEffect for navigation history
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
@@ -26,17 +26,68 @@ const LayoutContent = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     
+    // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
+    const navigationHistory = useRef({});
+    const currentTab = useRef(null);
+
     // ADDED 17-Jan-2026: Trigger recurring transaction processing on app load
     useRecurringProcessor();
 
     // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
-    const { currentPageTitle, isRootPage } = useMemo(() => {
+    const { currentPageTitle, isRootPage, activeTab } = useMemo(() => {
         const route = navigationItems.find(item => location.pathname === item.url);
+        const tabUrl = route?.url || navigationItems.find(item => 
+            location.pathname.startsWith(item.url.split('?')[0])
+        )?.url;
+        
         return {
             currentPageTitle: route?.title || 'BudgetWise',
-            isRootPage: !!route
+            isRootPage: !!route,
+            activeTab: tabUrl
         };
     }, [location.pathname]);
+
+    // ADDED 03-Feb-2026: Track navigation history per tab
+    useEffect(() => {
+        if (activeTab) {
+            // Initialize history for this tab if it doesn't exist
+            if (!navigationHistory.current[activeTab]) {
+                navigationHistory.current[activeTab] = [];
+            }
+
+            // If switching tabs, save the new tab as current
+            if (currentTab.current !== activeTab) {
+                currentTab.current = activeTab;
+            }
+
+            // Add current path to this tab's history if it's not already the last entry
+            const tabHistory = navigationHistory.current[activeTab];
+            if (tabHistory[tabHistory.length - 1] !== location.pathname) {
+                navigationHistory.current[activeTab] = [...tabHistory, location.pathname];
+            }
+        }
+    }, [location.pathname, activeTab]);
+
+    // ADDED 03-Feb-2026: Enhanced back button handler that respects tab history
+    const handleBackNavigation = () => {
+        if (activeTab && navigationHistory.current[activeTab]) {
+            const tabHistory = navigationHistory.current[activeTab];
+            
+            // If there's history in this tab (more than current page), go back within tab
+            if (tabHistory.length > 1) {
+                // Remove current page from history
+                navigationHistory.current[activeTab] = tabHistory.slice(0, -1);
+                const previousPage = tabHistory[tabHistory.length - 2];
+                navigate(previousPage);
+            } else {
+                // No history in this tab, use browser back
+                navigate(-1);
+            }
+        } else {
+            // Fallback to browser back
+            navigate(-1);
+        }
+    };
 
     return (
         <SidebarProvider>
@@ -45,7 +96,7 @@ const LayoutContent = ({ children }) => {
                 <div className="flex items-center justify-center h-14 px-4 relative">
                     {!isRootPage && (
                         <button
-                            onClick={() => navigate(-1)}
+                            onClick={handleBackNavigation}
                             className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent rounded-lg transition-colors"
                             aria-label="Go back"
                         >
