@@ -27,13 +27,6 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
         return Plane;
     };
 
-    const getBorderColor = (budget) => {
-        if (budget.systemBudgetType === 'needs') return 'border-cyan-500/50';
-        if (budget.systemBudgetType === 'wants') return 'border-purple-500/50';
-        // UPDATED 03-Feb-2026: Use custom budget color instead of default orange
-        return budget.color ? `border-[${budget.color}]/50` : 'border-orange-500/50';
-    };
-
     const getCircleColor = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'stroke-cyan-400';
         if (budget.systemBudgetType === 'wants') return 'stroke-purple-500';
@@ -66,19 +59,19 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
 
     return (
         <div
-            className={`bg-[#252838] h-full rounded-2xl p-4 border-2 ${getBorderColor(budget)} shadow-lg flex flex-col items-center justify-between min-h-[180px]`}
+            className={`bg-white h-full rounded-2xl p-4 border border-gray-200 shadow-sm flex flex-col items-center justify-between min-h-[180px]`}
         >
             {/* Header: Title Centered */}
             <div className="w-full relative flex justify-center mb-2 px-1">
                 <Link
                     to={`/BudgetDetail?id=${budget.id}`}
                     state={{ from: '/Dashboard' }}
-                    className="text-white font-semibold text-sm text-center truncate max-w-[85%] cursor-pointer hover:opacity-80 transition-opacity"
+                    className="text-gray-900 font-semibold text-sm text-center truncate max-w-[85%] cursor-pointer hover:opacity-80 transition-opacity"
                     title={getBudgetLabel(budget)}
                 >
                     {getBudgetLabel(budget)}
                 </Link>
-                <Icon className="absolute right-0 top-0.5 w-4 h-4 text-gray-500" />
+                <Icon className="absolute right-0 top-0.5 w-4 h-4 text-gray-400" />
             </div>
 
             {/* Center: Semi-Circular Progress */}
@@ -87,7 +80,7 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
                     {/* Background Semi-Circle */}
                     <path
                         d="M 8 56 A 40 40 0 0 1 88 56"
-                        stroke="rgba(255,255,255,0.1)"
+                        stroke="#E5E7EB"
                         strokeWidth="8"
                         fill="none"
                         strokeLinecap="round"
@@ -107,17 +100,17 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
                 </svg>
                 {/* Percentage Text: Aligned to bottom of arc */}
                 <div className="absolute inset-0 flex items-end justify-center pb-1">
-                    <span className="text-white text-xl font-bold">{percentage}%</span>
+                    <span className="text-gray-900 text-xl font-bold">{percentage}%</span>
                 </div>
             </div>
             {/* Bottom: Budget Details */}
             <div className="w-full text-center">
-                <div className="text-white text-xl font-bold mb-1 truncate">
+                <div className="text-gray-900 text-xl font-bold mb-1 truncate">
                     {formatCurrency(remaining, settings)}
                 </div>
-                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Remaining</p>
+                <p className="text-gray-500 text-[10px] uppercase tracking-wider">Remaining</p>
                 {/* Optional: Show spent/total if needed, or keep clean like Cards view */}
-                <p className="text-gray-500 text-[10px] mt-1">
+                <p className="text-gray-400 text-[10px] mt-1">
                     {formatCurrency(spent, settings)} / {formatCurrency(total, settings)}
                 </p>
             </div>
