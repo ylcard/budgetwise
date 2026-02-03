@@ -7,6 +7,7 @@ import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, Star, Clock, CheckCircle } fro
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
 import CategorySelect from "@/components/ui/CategorySelect";
 import { parseDate, formatDate, isDateInRange } from "@/components/utils/dateUtils";
@@ -195,7 +196,7 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                     </TableCell>
                                     <TableCell>
                                         {row.type === 'expense' ? (
-                                            <Select
+                                            <MobileDrawerSelect
                                                 value={row.customBudgetId || "system"}
                                                 onValueChange={(val) => {
                                                     if (val === "system") {
@@ -209,61 +210,41 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                         });
                                                     }
                                                 }}
-                                            >
-                                                <SelectTrigger className="w-full h-8 text-xs">
-                                                    <SelectValue placeholder="Select Budget" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="system">
-                                                        <div className="flex items-center">
-                                                            <Star className="w-3 h-3 text-blue-600 mr-2" />
-                                                            <span>
-                                                                {row.financial_priority ? row.financial_priority.charAt(0).toUpperCase() + row.financial_priority.slice(1) : 'System Budget'}
-                                                                {(() => {
-                                                                    const d = parseDate(row.date);
-                                                                    if (!d) return null;
-                                                                    const isCurr = d.getFullYear() === new Date().getFullYear();
-                                                                    return <span className="ml-1 text-gray-400 font-normal">({formatDate(d, isCurr ? "MMM" : "MMM yyyy")})</span>;
-                                                                })()}
-                                                            </span>
-                                                        </div>
-                                                    </SelectItem>
-                                                    {sortedCustomBudgets.length > 0 && (
-                                                        <SelectGroup>
-                                                            <SelectLabel>Custom Budgets</SelectLabel>
-                                                            {sortedCustomBudgets.map(cb => (
-                                                                <SelectItem key={cb.id} value={cb.id}>
-                                                                    <div className="flex items-center">
-                                                                        {cb.status === 'active' && <Clock className="w-3 h-3 text-orange-500 mr-2" />}
-                                                                        {cb.status === 'planned' && <Clock className="w-3 h-3 text-blue-500 mr-2" />}
-                                                                        {cb.status === 'completed' && <CheckCircle className="w-3 h-3 text-green-500 mr-2" />}
-                                                                        <span className="truncate max-w-[140px]" title={cb.name}>{cb.name}</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectGroup>
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
+                                                placeholder="Select Budget"
+                                                options={[
+                                                    {
+                                                        value: "system",
+                                                        label: `${row.financial_priority ? row.financial_priority.charAt(0).toUpperCase() + row.financial_priority.slice(1) : 'System Budget'} (${(() => {
+                                                            const d = parseDate(row.date);
+                                                            if (!d) return '';
+                                                            const isCurr = d.getFullYear() === new Date().getFullYear();
+                                                            return formatDate(d, isCurr ? "MMM" : "MMM yyyy");
+                                                        })()})`
+                                                    },
+                                                    ...sortedCustomBudgets.map(cb => ({
+                                                        value: cb.id,
+                                                        label: cb.name
+                                                    }))
+                                                ]}
+                                                className="w-full h-8 text-xs"
+                                            />
                                         ) : (
                                             <span className="text-gray-400 text-xs">-</span>
                                         )}
                                     </TableCell>
                                     <TableCell>
                                         {row.type === 'expense' ? (
-                                            <Select
+                                            <MobileDrawerSelect
                                                 value={row.financial_priority || 'wants'}
                                                 onValueChange={(val) => onUpdateRow(row.originalIndex, { financial_priority: val })}
-                                            >
-                                                <SelectTrigger className="w-full h-8 text-xs">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="needs">Needs</SelectItem>
-                                                    <SelectItem value="wants">Wants</SelectItem>
-                                                    <SelectItem value="savings">Savings</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                                placeholder="Select priority"
+                                                options={[
+                                                    { value: "needs", label: "Needs" },
+                                                    { value: "wants", label: "Wants" },
+                                                    { value: "savings", label: "Savings" }
+                                                ]}
+                                                className="w-full h-8 text-xs"
+                                            />
                                         ) : (
                                             <span className="text-gray-400 text-xs">-</span>
                                         )}
