@@ -5,7 +5,7 @@ import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsAll,
+    useCustomBudgetsForPeriod, // RENAMED 03-Feb-2026: Was useCustomBudgetsAll
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -49,7 +49,7 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd); // RENAMED 03-Feb-2026
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
@@ -274,12 +274,12 @@ export default function Dashboard() {
                                     triggerVariant="primary"
                                     triggerSize="sm"
                                     triggerClassName="w-full justify-start"
-                                    />
-                                    }
-                                    />
-                                    </div>
-                                    </div>
-                                    </div>
+                                />
+                            }
+                        />
+                        </div>
+                    </div>
+                </div>
 
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
