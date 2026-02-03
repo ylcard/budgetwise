@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
@@ -7,20 +7,30 @@ import VerticalBar from "../custombudgets/VerticalBar";
 import BudgetCard from "../budgets/BudgetCard";
 import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
 import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
+import { useSettings } from "../utils/SettingsContext";
+import { usePeriod } from "../hooks/usePeriod";
+import { useCustomBudgetsForPeriod, useTransactionsForCustomBudgets } from "../hooks/useBase44Entities";
 
 /**
  * CREATED: 03-Feb-2026
  * Renamed from BudgetBars to CustomBudgetsDisplay
  * UPDATED: 03-Feb-2026 - Now receives raw budgets + transactions, each view calculates its own stats
+ * UPDATED: 03-Feb-2026 - Now self-fetches custom budgets for period and their transactions
  * Displays ONLY custom budgets (no system budgets) in various view modes
  */
 
 export default function CustomBudgetsDisplay({
-    budgets,
-    transactions,
-    settings,
     onCreateBudget,
 }) {
+    const { user, settings } = useSettings();
+    const { monthStart, monthEnd } = usePeriod();
+    
+    // Fetch custom budgets for the selected period
+    const { customBudgets: budgets = [] } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
+    
+    // Extract custom budget IDs and fetch all their transactions
+    const customBudgetIds = useMemo(() => budgets.map(b => b.id), [budgets]);
+    const { transactions = [] } = useTransactionsForCustomBudgets(customBudgetIds);
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
     
     const VIEW_OPTIONS = [
