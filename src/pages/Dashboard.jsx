@@ -27,7 +27,7 @@ import {
 } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
-import BudgetBars from "../components/dashboard/BudgetBars";
+import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
@@ -225,26 +225,9 @@ export default function Dashboard() {
 
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
-                        <BudgetBars
-                            systemBudgets={systemBudgets}
-                            customBudgets={activeCustomBudgets}
-                            allCustomBudgets={allCustomBudgets}
-                            // Pass pre-calculated data to avoid double calculation
-                            preCalculatedSystemData={systemBudgetsData}
-                            preCalculatedCustomData={customBudgetsData}
-                            preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
-                            // transactions={transactions}
-                            transactions={bridgedTransactions}
-                            showSystem={false}
-                            categories={categories}
-                            currentMonth={selectedMonth}
-                            currentYear={selectedYear}
+                        <CustomBudgetsDisplay
+                            customBudgetsData={customBudgetsData}
                             settings={settings}
-                            goals={goals}
-                            monthlyIncome={monthlyIncome}
-                            baseCurrency={settings.baseCurrency}
-                            onDeleteBudget={budgetActions.handleDelete}
-                            onCompleteBudget={(id) => budgetActions.handleStatusChange(id, 'completed')}
                             onCreateBudget={() => setShowQuickAddBudget(true)}
                         />
                     </div>

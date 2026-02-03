@@ -1,16 +1,18 @@
-import React from 'react';
-import { useSettings } from '../utils/SettingsContext';
-import { formatCurrency } from '../utils/currencyUtils';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+// COMMENTED OUT 03-Feb-2026: File deprecated per user request
+// This view has been removed from the application
+// import React from 'react';
+// import { useSettings } from '../utils/SettingsContext';
+// import { formatCurrency } from '../utils/currencyUtils';
+// import { useNavigate } from 'react-router-dom';
+// import { createPageUrl } from '../../utils';
 
 /**
- * CREATED: 02-Feb-2026
+ * DEPRECATED: 03-Feb-2026
  * Budget Health Grid - Variation C: Minimalist Data Grid with Background Fill
  * Grid layout with gradient background fills
  */
 
-const BudgetHealthGrid = ({ budgets }) => {
+// const BudgetHealthGrid = ({ budgets }) => {
     const { settings } = useSettings();
     const navigate = useNavigate();
 
@@ -80,7 +82,7 @@ const BudgetHealthGrid = ({ budgets }) => {
             </div>
             */}
         </div>
-    );
-};
+    // );
+// };
 
-export default BudgetHealthGrid;
+// export default BudgetHealthGrid;

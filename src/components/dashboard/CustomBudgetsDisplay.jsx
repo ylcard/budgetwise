@@ -1,53 +1,35 @@
-// COMMENTED OUT 03-Feb-2026: File renamed to CustomBudgetsDisplay.jsx
-// This file is deprecated. Use components/dashboard/CustomBudgetsDisplay.jsx instead.
-// import { useState, useEffect } from "react";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { CustomButton } from "@/components/ui/CustomButton";
-// import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
-// import { formatCurrency } from "../utils/currencyUtils";
-// import { useBudgetBarsData } from "../hooks/useDerivedData";
-// import BudgetBar from "../custombudgets/BudgetBar";
-// import BudgetCard from "../budgets/BudgetCard";
-// COMMENTED OUT 02-Feb-2026: Replaced Switch with SegmentedControl
-// import { Label } from "@/components/ui/label";
-// import { Switch } from "@/components/ui/switch";
-// import SegmentedControl from "@/components/ui/SegmentedControl";
-// import BudgetHealthCards from "../custombudgets/BudgetHealthCards";
-// import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
-// import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
-// import BudgetHealthGrid from "../custombudgets/BudgetHealthGrid";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomButton } from "@/components/ui/CustomButton";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import VerticalBar from "../custombudgets/VerticalBar";
+import BudgetCard from "../budgets/BudgetCard";
+import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
+import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
 
-// export default function BudgetBars({
-    systemBudgets,
-    customBudgets,
-    allCustomBudgets = [],
-    transactions,
-    categories,
+/**
+ * CREATED: 03-Feb-2026
+ * Renamed from BudgetBars to CustomBudgetsDisplay
+ * Displays ONLY custom budgets (no system budgets) in various view modes
+ * Receives pre-calculated budget data from parent (Dashboard)
+ */
+
+export default function CustomBudgetsDisplay({
+    customBudgetsData,
     settings,
-    goals,
-    monthlyIncome,
-    baseCurrency,
     onCreateBudget,
-    // REMOVED 15-Jan-2026: Eliminated preCalculated props - BudgetBars now calculates its own stats
-    // preCalculatedSystemData,
-    // preCalculatedCustomData,
-    // preCalculatedSavings,
-    showSystem = true
 }) {
-
-    // UPDATED 02-Feb-2026: Expanded from 2 views (bars/cards) to 6 views
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
     
     const VIEW_OPTIONS = [
         { value: 'bars', label: 'Bars' },
         { value: 'cards', label: 'Cards' },
-        { value: 'health-cards', label: 'Health Cards' },
         { value: 'circular', label: 'Circular' },
         { value: 'compact', label: 'Compact' },
-        { value: 'grid', label: 'Grid' }
     ];
 
-    // 2. Sync local state when global settings update (e.g. from Settings page or DB load)
+    // Sync local state when global settings update
     useEffect(() => {
         if (settings.budgetViewMode) {
             setViewMode(settings.budgetViewMode);
@@ -55,88 +37,18 @@
     }, [settings.budgetViewMode]);
 
     const [customStartIndex, setCustomStartIndex] = useState(0);
-    // UPDATED 02-Feb-2026: Adjusted pagination for new view modes
-    const barsPerPage = ['cards', 'health-cards', 'circular', 'compact', 'grid'].includes(viewMode) ? 4 : 7;
-
-    // UPDATED 15-Jan-2026: BudgetBars now always calculates its own stats using the latest getCustomBudgetStats
-    const { systemBudgetsData, customBudgetsData, totalActualSavings, savingsTarget, savingsShortfall } = 
-        useBudgetBarsData(systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings);
+    const barsPerPage = ['cards', 'circular', 'compact'].includes(viewMode) ? 4 : 7;
 
     const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
     const canScrollLeft = customStartIndex > 0;
     const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
 
-    // UPDATED 02-Feb-2026: Changed from toggle handler to segmented control handler
     const handleViewModeChange = (newMode) => {
         setViewMode(newMode);
     };
 
     return (
         <div className="space-y-6">
-            {showSystem && systemBudgetsData.length > 0 && (
-                <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <span className="px-3 py-1 rounded-lg text-sm bg-blue-50 text-blue-600">
-                                System Budgets
-                            </span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {/* UPDATED 02-Feb-2026: Replaced Switch with SegmentedControl */}
-                        <div className="flex items-center justify-end gap-2 mb-4">
-                            <SegmentedControl
-                                options={VIEW_OPTIONS}
-                                value={viewMode}
-                                onChange={handleViewModeChange}
-                            />
-                        </div>
-                        {/* UPDATED 02-Feb-2026: Added support for 6 view modes */}
-                        {viewMode === 'health-cards' && (
-                            <BudgetHealthCards 
-                                budgets={systemBudgetsData}
-                                totalSpent={systemBudgetsData.reduce((sum, b) => sum + (b.spent || 0), 0)}
-                                totalBudget={systemBudgetsData.reduce((sum, b) => sum + (b.budgetAmount || 0), 0)}
-                            />
-                        )}
-                        {viewMode === 'circular' && (
-                            <BudgetHealthCircular budgets={systemBudgetsData} />
-                        )}
-                        {viewMode === 'compact' && (
-                            <BudgetHealthCompact budgets={systemBudgetsData} />
-                        )}
-                        {viewMode === 'grid' && (
-                            <BudgetHealthGrid budgets={systemBudgetsData} />
-                        )}
-                        {(viewMode === 'bars' || viewMode === 'cards') && (
-                            <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
-                                {systemBudgetsData.map((budget) => (
-                                    viewMode === 'bars' ? (
-                                        <BudgetBar
-                                            key={budget.id}
-                                            budget={budget}
-                                            isCustom={false}
-                                            isSavings={budget.systemBudgetType === 'savings'}
-                                            settings={settings}
-                                            hideActions={true}
-                                        />
-                                    ) : (
-                                        <div key={budget.id} className="flex-1 min-w-0">
-                                            <BudgetCard
-                                                budget={{ ...budget, isSystemBudget: true }}
-                                                stats={budget.stats}
-                                                settings={settings}
-                                                size="sm"
-                                            />
-                                        </div>
-                                    )
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
             {customBudgetsData.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -177,7 +89,6 @@
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {/* UPDATED 02-Feb-2026: Replaced Switch with SegmentedControl */}
                         <div className="flex items-center justify-end gap-2 mb-4">
                             <SegmentedControl
                                 options={VIEW_OPTIONS}
@@ -185,28 +96,18 @@
                                 onChange={handleViewModeChange}
                             />
                         </div>
-                        {/* UPDATED 02-Feb-2026: Added support for 6 view modes */}
-                        {viewMode === 'health-cards' && (
-                            <BudgetHealthCards 
-                                budgets={visibleCustomBudgets}
-                                totalSpent={visibleCustomBudgets.reduce((sum, b) => sum + (b.spent || 0), 0)}
-                                totalBudget={visibleCustomBudgets.reduce((sum, b) => sum + (b.allocatedAmount || 0), 0)}
-                            />
-                        )}
+                        
                         {viewMode === 'circular' && (
                             <BudgetHealthCircular budgets={visibleCustomBudgets} />
                         )}
                         {viewMode === 'compact' && (
                             <BudgetHealthCompact budgets={visibleCustomBudgets} />
                         )}
-                        {viewMode === 'grid' && (
-                            <BudgetHealthGrid budgets={visibleCustomBudgets} />
-                        )}
                         {(viewMode === 'bars' || viewMode === 'cards') && (
                             <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
                                 {visibleCustomBudgets.map((budget) => (
                                     viewMode === 'bars' ? (
-                                        <BudgetBar
+                                        <VerticalBar
                                             key={budget.id}
                                             budget={budget}
                                             stats={budget.stats}
@@ -264,5 +165,5 @@
                 </Card>
             )}
         </div>
-    // );
-// }
+    );
+}

@@ -1,17 +1,19 @@
-import React from 'react';
-import { Home, Heart, Plane } from 'lucide-react';
-import { useSettings } from '../utils/SettingsContext';
-import { formatCurrency } from '../utils/currencyUtils';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+// COMMENTED OUT 03-Feb-2026: File deprecated per user request
+// This view has been removed from the application
+// import React from 'react';
+// import { Home, Heart, Plane } from 'lucide-react';
+// import { useSettings } from '../utils/SettingsContext';
+// import { formatCurrency } from '../utils/currencyUtils';
+// import { useNavigate } from 'react-router-dom';
+// import { createPageUrl } from '../../utils';
 
 /**
- * CREATED: 02-Feb-2026
+ * DEPRECATED: 03-Feb-2026
  * Budget Health Cards - Horizontal cards with gradient borders and progress bars
  * Main view from screenshot 1
  */
 
-const BudgetHealthCards = ({ budgets, totalSpent, totalBudget }) => {
+// const BudgetHealthCards = ({ budgets, totalSpent, totalBudget }) => {
     const { settings } = useSettings();
     const navigate = useNavigate();
 
@@ -115,7 +117,7 @@ const BudgetHealthCards = ({ budgets, totalSpent, totalBudget }) => {
                 })}
             </div>
         </div>
-    );
-};
+    // );
+// };
 
-export default BudgetHealthCards;
+// export default BudgetHealthCards;
