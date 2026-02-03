@@ -58,17 +58,13 @@ export const useGoals = (user) => {
     return { goals, isLoading };
 };
 
-// Hook for fetching all custom budgets for a user
-// DEPRECATED: export const useCustomBudgetsAll = (user) => {
-// OPTIMIZATION: Added date filtering for Dashboard overlap logic
-export const useCustomBudgetsAll = (user, monthStart = null, monthEnd = null) => {
-    const { data: allCustomBudgets = [], isLoading } = useQuery({
-        // DEPRECATED: queryKey: [QUERY_KEYS.CUSTOM_BUDGETS],
+// Hook for fetching custom budgets filtered by period
+// RENAMED: 03-Feb-2026 - Was useCustomBudgetsAll, now useCustomBudgetsForPeriod for clarity
+export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = null) => {
+    const { data: customBudgets = [], isLoading } = useQuery({
         queryKey: [QUERY_KEYS.CUSTOM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            // DEPRECATED: const all = await base44.entities.CustomBudget.list('-startDate');
-            // DEPRECATED: return all.filter(cb => cb.user_email === user.email);
 
             if (monthStart && monthEnd) {
                 // Overlap Logic: Start <= EndSelected AND End >= StartSelected
@@ -79,23 +75,35 @@ export const useCustomBudgetsAll = (user, monthStart = null, monthEnd = null) =>
                 });
             }
 
-            // BLOCK DEPRECATED
-            // Fallback for non-dated views
-            // const all = await base44.entities.CustomBudget.list('-startDate', 100);
-            // return all.filter(cb => cb.user_email === user.email); // Double check email client side if list used
-
             return await base44.entities.CustomBudget.filter(
                 { user_email: user.email },
                 '-startDate',
                 100
             );
         },
-        // initialData: [],
         keepPreviousData: true,
         enabled: !!user,
     });
 
-    return { allCustomBudgets, isLoading };
+    return { customBudgets, isLoading };
+};
+
+// Hook for fetching transactions associated with specific custom budgets
+// CREATED: 03-Feb-2026 - Fetches all transactions for given custom budget IDs (no date filtering)
+export const useTransactionsForCustomBudgets = (customBudgetIds = []) => {
+    const { data: transactions = [], isLoading } = useQuery({
+        queryKey: [QUERY_KEYS.TRANSACTIONS, 'custom-budgets', customBudgetIds],
+        queryFn: async () => {
+            if (!customBudgetIds || customBudgetIds.length === 0) return [];
+            return await base44.entities.Transaction.filter({
+                customBudgetId: { $in: customBudgetIds }
+            });
+        },
+        keepPreviousData: true,
+        enabled: customBudgetIds && customBudgetIds.length > 0,
+    });
+
+    return { transactions, isLoading };
 };
 
 // Hook for fetching all system budgets for a user
