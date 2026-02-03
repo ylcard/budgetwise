@@ -61,6 +61,12 @@ const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
         return Math.round((spent / total) * 100);
     };
 
+    const getGlowColor = (budget) => {
+        if (budget.systemBudgetType === 'needs') return '#22d3ee'; // cyan-400 equivalent
+        if (budget.systemBudgetType === 'wants') return '#e879f9'; // purple-400 equivalent
+        return budget.color || '#F97316';
+    };
+
     return (
         <div className="w-full max-w-md bg-[#1a1d29] p-6 rounded-2xl">
             <div className="space-y-6">
@@ -75,13 +81,13 @@ const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
                         <div key={budget.id} className="bg-[#252838] rounded-xl p-4 border border-gray-700/50">
                             {/* Header */}
                             <div className="flex items-center gap-3 mb-3">
-                                <div 
+                                <div
                                     className={`w-8 h-8 rounded-lg bg-gray-700/50 flex items-center justify-center ${budget.systemBudgetType ? getIconColor(budget) : ''}`}
                                     style={!budget.systemBudgetType ? { color: getIconColor(budget) } : {}}
                                 >
                                     <Icon className="w-5 h-5" />
                                 </div>
-                                <Link 
+                                <Link
                                     to={`/BudgetDetail?id=${budget.id}`}
                                     state={{ from: '/Dashboard' }}
                                     className="text-white font-semibold text-base cursor-pointer hover:opacity-80 transition-opacity"
@@ -92,14 +98,20 @@ const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
 
                             {/* Progress Bar */}
                             <div className="relative mb-2">
-                                <div className="bg-gray-700 rounded-full h-6 overflow-hidden">
+                                <div className="bg-gray-700/50 rounded-full h-6 overflow-hidden shadow-inner">
                                     <div
-                                        className={`h-full ${budget.systemBudgetType ? getBarGradient(budget) : ''} transition-all duration-300`}
-                                        style={{ 
+                                        className={`h-full ${budget.systemBudgetType ? getBarGradient(budget) : ''} transition-all duration-500 relative`}
+                                        style={{
                                             width: `${percentage}%`,
-                                            background: !budget.systemBudgetType ? getBarGradient(budget) : undefined
+                                            background: !budget.systemBudgetType ? getBarGradient(budget) : undefined,
+                                            boxShadow: `0 0 10px 1px ${getGlowColor(budget)}50`
                                         }}
-                                    />
+                                    >
+                                        {/* Top Gloss Sheen */}
+                                        <div className="absolute inset-x-0 top-0 h-[40%] bg-gradient-to-b from-white/30 to-transparent" />
+                                        {/* Leading Spark Edge */}
+                                        <div className="absolute right-0 top-0 bottom-0 w-[1.5px] bg-white/90 shadow-[0_0_6px_2px_rgba(255,255,255,0.8)]" />
+                                    </div>
                                 </div>
                             </div>
 
