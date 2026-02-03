@@ -275,6 +275,7 @@ export default function Dashboard() {
                     isSubmitting={budgetActions.isSubmitting}
                     baseCurrency={settings.baseCurrency}
                 />
+                </div>
             </div>
         </PullToRefresh>
     );

@@ -208,6 +208,7 @@ export default function Transactions() {
                     onDeleteSelected={handleDeleteSelected}
                     isBulkDeleting={isBulkDeleting}
                 />
+                </div>
             </div>
         </PullToRefresh>
     );
