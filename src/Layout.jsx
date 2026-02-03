@@ -133,6 +133,13 @@ const LayoutContent = ({ children }) => {
                                     <Link
                                         key={item.title}
                                         to={item.url}
+                                        onClick={(e) => {
+                                            // ADDED 03-Feb-2026: If clicking active tab, scroll to top
+                                            if (isActive) {
+                                                e.preventDefault();
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }
+                                        }}
                                         className={`flex flex-1 flex-col items-center justify-center gap-1 py-1 rounded-lg transition-all duration-200 min-w-0 select-none ${isActive
                                             ? 'text-blue-600 bg-blue-50/50'
                                             : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'

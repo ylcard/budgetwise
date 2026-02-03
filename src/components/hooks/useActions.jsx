@@ -12,13 +12,35 @@ import { createPageUrl } from "@/utils";
 import { useSettings } from "../utils/SettingsContext";
 
 // Hook for transaction actions (CRUD operations - Transactions page)
+// UPDATED 03-Feb-2026: Added optimistic UI updates for immediate feedback
 export const useTransactionActions = (config = {}) => {
     const { setShowForm, setEditingTransaction, ...options } = config;
+    const queryClient = useQueryClient();
 
-    // CREATE: Use generic hook with cash wallet preprocessing
+    // CREATE: Use generic hook with cash wallet preprocessing + optimistic updates
     const createMutation = useCreateEntity({
         entityName: 'Transaction',
         queryKeysToInvalidate: [QUERY_KEYS.TRANSACTIONS, QUERY_KEYS.SYSTEM_BUDGETS],
+        // ADDED 03-Feb-2026: Optimistic create - immediately add to cache
+        onMutate: async (newTransaction) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+
+            // Snapshot previous value
+            const previousTransactions = queryClient.getQueryData([QUERY_KEYS.TRANSACTIONS]);
+
+            // Optimistically add new transaction with temporary ID
+            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], (old = []) => [
+                { ...newTransaction, id: `temp-${Date.now()}`, _optimistic: true },
+                ...old
+            ]);
+
+            return { previousTransactions };
+        },
+        onError: (err, newTransaction, context) => {
+            // Rollback on error
+            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
+        },
         onAfterSuccess: () => {
             if (setShowForm) setShowForm(false);
             if (setEditingTransaction) setEditingTransaction(null);
@@ -26,22 +48,54 @@ export const useTransactionActions = (config = {}) => {
         }
     });
 
-    // UPDATE: Use generic hook with complex cash transaction handling
+    // UPDATE: Use generic hook with complex cash transaction handling + optimistic updates
     const updateMutation = useUpdateEntity({
         entityName: 'Transaction',
         queryKeysToInvalidate: [QUERY_KEYS.TRANSACTIONS],
+        // ADDED 03-Feb-2026: Optimistic update - immediately update cache
+        onMutate: async ({ id, data }) => {
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+
+            const previousTransactions = queryClient.getQueryData([QUERY_KEYS.TRANSACTIONS]);
+
+            // Optimistically update transaction
+            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], (old = []) =>
+                old.map(t => t.id === id ? { ...t, ...data, _optimistic: true } : t)
+            );
+
+            return { previousTransactions };
+        },
+        onError: (err, variables, context) => {
+            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
+        },
         onAfterSuccess: () => {
             if (setShowForm) setShowForm(false);
             if (setEditingTransaction) setEditingTransaction(null);
         }
     });
 
-    // DELETE: Use generic hook with cash wallet reversal
+    // DELETE: Use generic hook with cash wallet reversal + optimistic updates
     const { handleDelete: handleDeleteTransaction } = useDeleteEntity({
         entityName: 'Transaction',
         queryKeysToInvalidate: [QUERY_KEYS.TRANSACTIONS],
         confirmTitle: "Delete Transaction",
         confirmMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
+        // ADDED 03-Feb-2026: Optimistic delete - immediately remove from cache
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+
+            const previousTransactions = queryClient.getQueryData([QUERY_KEYS.TRANSACTIONS]);
+
+            // Optimistically remove transaction
+            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], (old = []) =>
+                old.filter(t => t.id !== id)
+            );
+
+            return { previousTransactions };
+        },
+        onError: (err, id, context) => {
+            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
+        }
     });
 
     const handleSubmit = (data, editingTransaction) => {

@@ -6,6 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useTransactions, useCategories, useCustomBudgetsForPeriod } from "../components/hooks/useBase44Entities";
 import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedData";
 import { useTransactionActions } from "../components/hooks/useActions";
@@ -121,9 +122,16 @@ export default function Transactions() {
         );
     };
 
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+    };
+
     return (
-        <div className="min-h-screen p-4 md:p-8" style={{ scrollbarGutter: 'stable' }}>
-            <div className="max-w-6xl mx-auto space-y-6">
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="min-h-screen p-4 md:p-8" style={{ scrollbarGutter: 'stable' }}>
+                <div className="max-w-6xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Transactions</h1>
@@ -201,6 +209,6 @@ export default function Transactions() {
                     isBulkDeleting={isBulkDeleting}
                 />
             </div>
-        </div>
+        </PullToRefresh>
     );
 }
