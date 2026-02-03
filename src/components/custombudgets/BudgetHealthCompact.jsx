@@ -39,13 +39,15 @@ const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
     const getBarGradient = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'bg-gradient-to-r from-cyan-500 to-cyan-400';
         if (budget.systemBudgetType === 'wants') return 'bg-gradient-to-r from-purple-500 to-pink-500';
-        return 'bg-gradient-to-r from-orange-500 to-amber-500';
+        // UPDATED 03-Feb-2026: Use custom budget color instead of default orange
+        return budget.color || '#F97316'; // orange-500 as fallback
     };
 
     const getIconColor = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'text-cyan-400';
         if (budget.systemBudgetType === 'wants') return 'text-purple-400';
-        return 'text-orange-400';
+        // UPDATED 03-Feb-2026: Use custom budget color instead of default orange
+        return budget.color || '#FB923C'; // orange-400 as fallback
     };
 
     const getBudgetLabel = (budget) => {
@@ -73,7 +75,10 @@ const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
                         <div key={budget.id} className="bg-[#252838] rounded-xl p-4 border border-gray-700/50">
                             {/* Header */}
                             <div className="flex items-center gap-3 mb-3">
-                                <div className={`w-8 h-8 rounded-lg bg-gray-700/50 flex items-center justify-center ${getIconColor(budget)}`}>
+                                <div 
+                                    className={`w-8 h-8 rounded-lg bg-gray-700/50 flex items-center justify-center ${budget.systemBudgetType ? getIconColor(budget) : ''}`}
+                                    style={!budget.systemBudgetType ? { color: getIconColor(budget) } : {}}
+                                >
                                     <Icon className="w-5 h-5" />
                                 </div>
                                 <Link 
@@ -89,8 +94,11 @@ const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
                             <div className="relative mb-2">
                                 <div className="bg-gray-700 rounded-full h-6 overflow-hidden">
                                     <div
-                                        className={`h-full ${getBarGradient(budget)} transition-all duration-300`}
-                                        style={{ width: `${percentage}%` }}
+                                        className={`h-full ${budget.systemBudgetType ? getBarGradient(budget) : ''} transition-all duration-300`}
+                                        style={{ 
+                                            width: `${percentage}%`,
+                                            background: !budget.systemBudgetType ? getBarGradient(budget) : undefined
+                                        }}
                                     />
                                 </div>
                             </div>

@@ -39,13 +39,15 @@ const BudgetHealthCircular = ({ budgets, transactions, settings }) => {
     const getBorderColor = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'border-cyan-500/50';
         if (budget.systemBudgetType === 'wants') return 'border-purple-500/50';
-        return 'border-orange-500/50';
+        // UPDATED 03-Feb-2026: Use custom budget color instead of default orange
+        return budget.color ? `border-[${budget.color}]/50` : 'border-orange-500/50';
     };
 
     const getCircleColor = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'stroke-cyan-400';
         if (budget.systemBudgetType === 'wants') return 'stroke-purple-500';
-        return 'stroke-orange-500';
+        // UPDATED 03-Feb-2026: Use custom budget color instead of default orange
+        return budget.color || '#F97316'; // orange-500
     };
 
     // UPDATED 02-Feb-2026: Removed parenthetical labels, just use budget name
@@ -94,7 +96,8 @@ const BudgetHealthCircular = ({ budgets, transactions, settings }) => {
                                     {/* Progress Semi-Circle */}
                                     <path
                                         d="M 8 56 A 40 40 0 0 1 88 56"
-                                        className={getCircleColor(budget)}
+                                        stroke={budget.systemBudgetType ? undefined : getCircleColor(budget)}
+                                        className={budget.systemBudgetType ? getCircleColor(budget) : undefined}
                                         strokeWidth="8"
                                         fill="none"
                                         strokeDasharray={circumference}
