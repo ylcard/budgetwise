@@ -66,59 +66,60 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
 
     return (
         <div
-            className={`bg-[#252838] h-full rounded-2xl p-5 border-2 ${getBorderColor(budget)} shadow-lg flex flex-col justify-center`}
+            className={`bg-[#252838] h-full rounded-2xl p-4 border-2 ${getBorderColor(budget)} shadow-lg flex flex-col items-center justify-between min-h-[180px]`}
         >
-            <div className="flex items-center justify-between">
-                {/* Left: Semi-Circular Progress (Speedometer Style) */}
-                <div className="relative w-24 h-16 flex-shrink-0">
-                    <svg className="w-24 h-16" viewBox="0 0 96 60">
-                        {/* Background Semi-Circle */}
-                        <path
-                            d="M 8 56 A 40 40 0 0 1 88 56"
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="8"
-                            fill="none"
-                            strokeLinecap="round"
-                        />
-                        {/* Progress Semi-Circle */}
-                        <path
-                            d="M 8 56 A 40 40 0 0 1 88 56"
-                            stroke={budget.systemBudgetType ? undefined : getCircleColor(budget)}
-                            className={budget.systemBudgetType ? getCircleColor(budget) : undefined}
-                            strokeWidth="8"
-                            fill="none"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={offset}
-                            strokeLinecap="round"
-                            style={{ transition: 'stroke-dashoffset 0.3s ease' }}
-                        />
-                    </svg>
-                    {/* Percentage Text */}
-                    <div className="absolute inset-0 flex items-center justify-center pt-2">
-                        <span className="text-white text-lg font-bold">{percentage}%</span>
-                    </div>
-                </div>
+            {/* Header: Title Centered */}
+            <div className="w-full relative flex justify-center mb-2 px-1">
+                <Link
+                    to={`/BudgetDetail?id=${budget.id}`}
+                    state={{ from: '/Dashboard' }}
+                    className="text-white font-semibold text-sm text-center truncate max-w-[85%] cursor-pointer hover:opacity-80 transition-opacity"
+                    title={getBudgetLabel(budget)}
+                >
+                    {getBudgetLabel(budget)}
+                </Link>
+                <Icon className="absolute right-0 top-0.5 w-4 h-4 text-gray-500" />
+            </div>
 
-                {/* Right: Budget Details */}
-                <div className="flex-1 ml-5">
-                    <div className="flex items-center justify-between mb-2">
-                        <Link
-                            to={`/BudgetDetail?id=${budget.id}`}
-                            state={{ from: '/Dashboard' }}
-                            className="text-white font-semibold text-base cursor-pointer hover:opacity-80 transition-opacity truncate mr-2"
-                        >
-                            {getBudgetLabel(budget)}
-                        </Link>
-                        <Icon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    </div>
-                    <div className="text-white text-2xl lg:text-3xl font-bold mb-1 truncate">
-                        {formatCurrency(remaining, settings)}
-                    </div>
-                    <p className="text-gray-400 text-xs">Remaining</p>
-                    <p className="text-gray-500 text-xs mt-2">
-                        {formatCurrency(spent, settings)} / {formatCurrency(total, settings)}
-                    </p>
+            {/* Center: Semi-Circular Progress */}
+            <div className="relative w-32 h-20 flex-shrink-0 my-1">
+                <svg className="w-full h-full" viewBox="0 0 96 60">
+                    {/* Background Semi-Circle */}
+                    <path
+                        d="M 8 56 A 40 40 0 0 1 88 56"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeLinecap="round"
+                    />
+                    {/* Progress Semi-Circle */}
+                    <path
+                        d="M 8 56 A 40 40 0 0 1 88 56"
+                        stroke={budget.systemBudgetType ? undefined : getCircleColor(budget)}
+                        className={budget.systemBudgetType ? getCircleColor(budget) : undefined}
+                        strokeWidth="8"
+                        fill="none"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={offset}
+                        strokeLinecap="round"
+                        style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+                    />
+                </svg>
+                {/* Percentage Text: Aligned to bottom of arc */}
+                <div className="absolute inset-0 flex items-end justify-center pb-1">
+                    <span className="text-white text-xl font-bold">{percentage}%</span>
                 </div>
+            </div>
+            {/* Bottom: Budget Details */}
+            <div className="w-full text-center">
+                <div className="text-white text-xl font-bold mb-1 truncate">
+                    {formatCurrency(remaining, settings)}
+                </div>
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Remaining</p>
+                {/* Optional: Show spent/total if needed, or keep clean like Cards view */}
+                <p className="text-gray-500 text-[10px] mt-1">
+                    {formatCurrency(spent, settings)} / {formatCurrency(total, settings)}
+                </p>
             </div>
         </div>
     );
