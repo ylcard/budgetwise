@@ -163,6 +163,7 @@ export default function Dashboard() {
                         {/* ADDED 03-Feb-2026: Conditional rendering - Mobile uses donut chart, Desktop uses bar chart */}
                         <div className="block md:hidden">
                             <MobileRemainingBudgetCard
+                                breakdown={detailedBreakdown}
                                 currentMonthIncome={currentMonthIncome}
                                 currentMonthExpenses={currentMonthExpenses}
                                 settings={settings}
