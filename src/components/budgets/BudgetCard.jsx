@@ -6,8 +6,6 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { parseDate } from "../utils/dateUtils";
 import { motion } from "framer-motion";
 import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
-
-import { useMemo } from "react";
 import { getCustomBudgetStats } from "../utils/financialCalculations";
 
 export default function BudgetCard({ budgets, transactions, settings, onActivateBudget, size = 'md' }) {
