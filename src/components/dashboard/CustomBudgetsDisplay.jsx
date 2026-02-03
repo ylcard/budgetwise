@@ -24,15 +24,15 @@ export default function CustomBudgetsDisplay({
 }) {
     const { user, settings } = useSettings();
     const { monthStart, monthEnd } = usePeriod();
-    
+
     // Fetch custom budgets for the selected period
     const { customBudgets: budgets = [] } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
-    
+
     // Extract custom budget IDs and fetch all their transactions
     const customBudgetIds = useMemo(() => budgets.map(b => b.id), [budgets]);
     const { transactions = [] } = useTransactionsForCustomBudgets(customBudgetIds);
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
-    
+
     const VIEW_OPTIONS = [
         { value: 'bars', label: 'Bars' },
         { value: 'cards', label: 'Cards' },
@@ -107,45 +107,44 @@ export default function CustomBudgetsDisplay({
                                 onChange={handleViewModeChange}
                             />
                         </div>
-                        
-                        {viewMode === 'circular' && (
-                            <BudgetHealthCircular 
-                                budgets={visibleBudgets} 
-                                transactions={transactions}
-                                settings={settings}
-                            />
-                        )}
-                        {viewMode === 'compact' && (
-                            <BudgetHealthCompact 
-                                budgets={visibleBudgets}
-                                transactions={transactions}
-                                settings={settings}
-                            />
-                        )}
-                        {(viewMode === 'bars' || viewMode === 'cards') && (
-                            <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
-                                {visibleBudgets.map((budget) => (
-                                    viewMode === 'bars' ? (
+
+                        {/* Unified Grid Layout: Loop first, then render specific component */}
+                        <div className={`flex ${viewMode === 'bars' ? 'flex-wrap justify-center gap-4' : 'w-full gap-4'}`}>
+                            {visibleBudgets.map((budget) => (
+                                <div key={budget.id} className={viewMode === 'bars' ? '' : 'flex-1 min-w-0'}>
+                                    {viewMode === 'bars' && (
                                         <VerticalBar
-                                            key={budget.id}
                                             budget={budget}
                                             transactions={transactions}
                                             settings={settings}
                                             isCustom={true}
                                         />
-                                    ) : (
-                                        <div key={budget.id} className="flex-1 min-w-0">
-                                            <BudgetCard
-                                                key={budget.id}
-                                                budgets={[budget]}
-                                                transactions={transactions}
-                                                settings={settings}
-                                            />
-                                        </div>
-                                    )
-                                ))}
-                            </div>
-                        )}
+                                    )}
+                                    {viewMode === 'cards' && (
+                                        <BudgetCard
+                                            // BudgetCard still expects an array, so we wrap it
+                                            budgets={[budget]}
+                                            transactions={transactions}
+                                            settings={settings}
+                                        />
+                                    )}
+                                    {viewMode === 'circular' && (
+                                        <BudgetHealthCircular
+                                            budget={budget} // Passing SINGLE budget
+                                            transactions={transactions}
+                                            settings={settings}
+                                        />
+                                    )}
+                                    {viewMode === 'compact' && (
+                                        <BudgetHealthCompact
+                                            budget={budget} // Passing SINGLE budget
+                                            transactions={transactions}
+                                            settings={settings}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
 
                         {budgets.length > barsPerPage && (
                             <div className="flex justify-center gap-1 mt-4">
