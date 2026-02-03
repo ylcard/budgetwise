@@ -305,7 +305,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
                     <AnimatePresence>
                         {isFabOpen && (
-                            <>
+                            <div className="flex flex-col-reverse items-stretch gap-3">
                                 {/* Import Button */}
                                 <motion.div
                                     key="import-btn"
@@ -313,7 +313,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                     animate={{ scale: 1, opacity: 1, y: 0 }}
                                     exit={{ scale: 0, opacity: 0, y: 20 }}
                                     transition={{ duration: 0.2, delay: 0 }}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center"
                                     onClick={() => setIsFabOpen(false)}
                                 >
                                     {importDataButton}
@@ -326,7 +326,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                     animate={{ scale: 1, opacity: 1, y: 0 }}
                                     exit={{ scale: 0, opacity: 0, y: 20 }}
                                     transition={{ duration: 0.2, delay: 0.05 }}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center"
                                     onClick={() => setIsFabOpen(false)}
                                 >
                                     {addExpenseButton}
@@ -339,14 +339,14 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                     animate={{ scale: 1, opacity: 1, y: 0 }}
                                     exit={{ scale: 0, opacity: 0, y: 20 }}
                                     transition={{ duration: 0.2, delay: 0.1 }}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center"
                                     onClick={() => setIsFabOpen(false)}
                                 >
                                     {isEmptyMonth ? (
                                         <motion.div
                                             animate={{ scale: [1, 1.1, 1] }}
                                             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                            className="relative"
+                                            className="relative w-full"
                                         >
                                             <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
                                             <div className="relative">{addIncomeButton}</div>
@@ -355,7 +355,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                         addIncomeButton
                                     )}
                                 </motion.div>
-                            </>
+                            </div>
                         )}
                     </AnimatePresence>
                 </div>
