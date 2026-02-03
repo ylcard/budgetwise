@@ -7,13 +7,25 @@ import { createPageUrl } from '../../utils';
 
 /**
  * CREATED: 02-Feb-2026
+ * UPDATED: 03-Feb-2026 - Standardized to receive budgets + transactions
  * Budget Health Compact - Variation B: Compact List View with Stacked Bars
  * Horizontal bar-based list view
  */
 
-const BudgetHealthCompact = ({ budgets }) => {
-    const { settings } = useSettings();
+import { useMemo } from 'react';
+import { getCustomBudgetStats } from '../utils/financialCalculations';
+
+const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
     const navigate = useNavigate();
+
+    // Calculate stats for all budgets
+    const budgetsWithStats = useMemo(() => {
+        return budgets.map(budget => {
+            const budgetTransactions = transactions.filter(t => t.customBudgetId === budget.id);
+            const stats = getCustomBudgetStats(budget, budgetTransactions);
+            return { ...budget, stats };
+        });
+    }, [budgets, transactions]);
 
     const getBudgetIcon = (budget) => {
         if (budget.systemBudgetType === 'needs') return Home;
@@ -47,10 +59,10 @@ const BudgetHealthCompact = ({ budgets }) => {
     return (
         <div className="w-full max-w-md bg-[#1a1d29] p-6 rounded-2xl">
             <div className="space-y-6">
-                {budgets.map((budget) => {
+                {budgetsWithStats.map((budget) => {
                     const Icon = getBudgetIcon(budget);
-                    const spent = budget.spent || 0;
-                    const total = budget.allocatedAmount || budget.budgetAmount || 0;
+                    const spent = budget.stats.spent || 0;
+                    const total = budget.allocatedAmount || 0;
                     const remaining = total - spent;
                     const percentage = calculatePercentage(spent, total);
 
