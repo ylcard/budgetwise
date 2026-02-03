@@ -128,9 +128,10 @@ export default function CustomBudgetsDisplay({
                                     viewMode === 'bars' ? (
                                         <VerticalBar
                                             key={budget.id}
-                                            budgets={[budget]}
+                                            budget={budget}
                                             transactions={transactions}
                                             settings={settings}
+                                            isCustom={true}
                                         />
                                     ) : (
                                         <div key={budget.id} className="flex-1 min-w-0">
