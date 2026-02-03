@@ -290,7 +290,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 </div>
 
                 {/* --- FLOATING ACTION BUTTON (FAB) --- */}
-                <div className="fixed bottom-6 right-4 flex flex-col items-end gap-3 z-50">
+                <div className="fixed bottom-24 right-4 flex flex-col items-end gap-3 z-50">
                     <AnimatePresence>
                         {isFabOpen && (
                             <div className="flex flex-col gap-3 items-end mb-2">
