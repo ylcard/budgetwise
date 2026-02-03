@@ -5,14 +5,12 @@ import {
     useTransactions,
     useCategories,
     useGoals,
-    // COMMENTED OUT: 03-Feb-2026 - No longer needed in Dashboard, CustomBudgetsDisplay fetches its own data
-    // useCustomBudgetsForPeriod,
+    useCustomBudgetsAll,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
 } from "../components/hooks/useBase44Entities";
 import {
-    usePaidTransactions,
     useMonthlyIncome,
     useDashboardSummary,
     useActiveBudgets,
@@ -28,15 +26,19 @@ import {
 } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
-import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
+import BudgetBars from "../components/dashboard/BudgetBars";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
+import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
+import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
+    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
@@ -49,72 +51,76 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    // COMMENTED OUT: 03-Feb-2026 - CustomBudgetsDisplay now fetches its own custom budgets and transactions
-    // const { allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
-    // const activeCustomBudgetIds = useMemo(() => allCustomBudgets.map(cb => cb.id), [allCustomBudgets]);
-    // const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
+    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+
+    // BRIDGE SET: Fetch transactions linked to active custom budgets (regardless of date)
+    const activeCustomBudgetIds = useMemo(() =>
+        allCustomBudgets.map(cb => cb.id),
+        [allCustomBudgets]);
+
+    // Fetching the second set specifically for budget bars
+    const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
 
     // System budget management (auto-creation/update)
     useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
 
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
-    // COMMENTED OUT: 03-Feb-2026 - allCustomBudgets no longer available in Dashboard
-    // Passing empty array for allCustomBudgets since CustomBudgetsDisplay handles its own data
-    const { remainingBudget, currentMonthIncome, currentMonthExpenses, bonusSavingsPotential } = useDashboardSummary(
+    // Dashboard summary with categories parameter for granular expense calculations
+    const { currentMonthIncome, currentMonthExpenses, bonusSavingsPotential } = useDashboardSummary(
         transactions,
         selectedMonth,
         selectedYear,
-        [], // allCustomBudgets - empty array, not needed for dashboard summary
+        allCustomBudgets,
         systemBudgets,
         categories,
         settings
     );
 
     // Global breakdown stays strictly Month-Only
-    const { aggregateNeedsTotal, aggregateWantsTotal, detailedBreakdown } = useMonthlyBreakdown(
+    const { detailedBreakdown } = useMonthlyBreakdown(
         transactions,
         categories,
         monthlyIncome,
-        [], // allCustomBudgets - empty array, not needed for monthly breakdown
+        allCustomBudgets,
         selectedMonth,
         selectedYear
     );
 
-    // COMMENTED OUT: 03-Feb-2026 - activeCustomBudgets no longer needed in Dashboard
-    // const { activeCustomBudgets } = useActiveBudgets(
-    //     allCustomBudgets,
-    //     allSystemBudgets,
-    //     selectedMonth,
-    //     selectedYear
-    // );
+    const { activeCustomBudgets } = useActiveBudgets(
+        allCustomBudgets,
+        allSystemBudgets,
+        selectedMonth,
+        selectedYear
+    );
 
     // Direct Calculation: System Budgets (Month-Only Transactions)
     const systemBudgetsData = useMemo(() => {
         return systemBudgets.map(sb => ({
             ...sb, // CRITICAL: Keep id, systemBudgetType, etc.
             ...getSystemBudgetStats(
-                sb, 
-                transactions, 
-                categories, 
-                [], // allCustomBudgets - empty array, not needed for system budget stats
-                monthStart, 
-                monthEnd, 
-                monthlyIncome, 
+                sb,
+                transactions,
+                categories,
+                allCustomBudgets,
+                monthStart,
+                monthEnd,
+                monthlyIncome,
                 settings
             )
         }));
-    }, [systemBudgets, transactions, categories, monthStart, monthEnd, monthlyIncome, settings]);
+    }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
-    // COMMENTED OUT: 03-Feb-2026 - customBudgetsData no longer needed in Dashboard
-    // const customBudgetsData = useMemo(() => {
-    //     return activeCustomBudgets.map(cb => {
-    //         const budgetTransactions = bridgedTransactions.filter(t => t.customBudgetId === cb.id);
-    //         return getCustomBudgetStats(cb, budgetTransactions);
-    //     });
-    // }, [activeCustomBudgets, bridgedTransactions]);
+    // Direct Calculation: Custom Budgets (Bridged Transactions)
+    const customBudgetsData = useMemo(() => {
+        return activeCustomBudgets.map(cb => {
+            // Filter bridged set specifically for this budget's ID
+            const budgetTransactions = bridgedTransactions.filter(t => t.customBudgetId === cb.id);
+            return getCustomBudgetStats(cb, budgetTransactions);
+        });
+    }, [activeCustomBudgets, bridgedTransactions]);
 
     // Savings Logic (Month-Only Transactions)
     const savingsTarget = useMemo(() => {
@@ -144,9 +150,17 @@ export default function Dashboard() {
         }
     });
 
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
+    };
+
     return (
-        <div className="min-h-screen p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="min-h-screen p-4 md:p-8">
+                <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
@@ -158,7 +172,7 @@ export default function Dashboard() {
                     <div className="md:col-span-3">
                         <RemainingBudgetCard
                             breakdown={detailedBreakdown}
-                            systemBudgets={systemBudgetsData} // NEW: Budgets with calculated stats
+                            systemBudgets={systemBudgetsData}
                             bonusSavingsPotential={bonusSavingsPotential}
                             currentMonthIncome={currentMonthIncome}
                             currentMonthExpenses={currentMonthExpenses}
@@ -166,8 +180,6 @@ export default function Dashboard() {
                             settings={settings}
                             selectedMonth={selectedMonth}
                             selectedYear={selectedYear}
-                            // aggregateNeedsTotal={aggregateNeedsTotal}
-                            // aggregateWantsTotal={aggregateWantsTotal}
                             monthNavigator={
                                 <MonthNavigator
                                     currentMonth={selectedMonth}
@@ -199,7 +211,7 @@ export default function Dashboard() {
                                     selectedYear={selectedYear}
                                     onOpenChange={setShowQuickAdd}
                                     categories={categories}
-                                    customBudgets={[]}
+                                    customBudgets={activeCustomBudgets}
                                     onSubmit={transactionActions.handleSubmit}
                                     isSubmitting={transactionActions.isSubmitting}
                                     transactions={transactions}
@@ -221,7 +233,25 @@ export default function Dashboard() {
 
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
-                        <CustomBudgetsDisplay
+                        <BudgetBars
+                            systemBudgets={systemBudgets}
+                            customBudgets={activeCustomBudgets}
+                            allCustomBudgets={allCustomBudgets}
+                            // Pass pre-calculated data to avoid double calculation
+                            preCalculatedSystemData={systemBudgetsData}
+                            preCalculatedCustomData={customBudgetsData}
+                            preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
+                            transactions={bridgedTransactions}
+                            showSystem={false}
+                            categories={categories}
+                            currentMonth={selectedMonth}
+                            currentYear={selectedYear}
+                            settings={settings}
+                            goals={goals}
+                            monthlyIncome={monthlyIncome}
+                            baseCurrency={settings.baseCurrency}
+                            onDeleteBudget={budgetActions.handleDelete}
+                            onCompleteBudget={(id) => budgetActions.handleStatusChange(id, 'completed')}
                             onCreateBudget={() => setShowQuickAddBudget(true)}
                         />
                     </div>
@@ -229,7 +259,8 @@ export default function Dashboard() {
                     <div className="lg:col-span-1 flex flex-col">
                         <RecentTransactions
                             categories={categories}
-                            customBudgets={[]}
+                            settings={settings}
+                            customBudgets={allCustomBudgets}
                             onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
                             onDelete={transactionActions.handleDelete}
                         />
@@ -245,6 +276,6 @@ export default function Dashboard() {
                     baseCurrency={settings.baseCurrency}
                 />
             </div>
-        </div>
+        </PullToRefresh>
     );
 }
