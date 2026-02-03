@@ -192,6 +192,7 @@ export default function Dashboard() {
                                         renderTrigger={true}
                                         triggerVariant="success"
                                         triggerSize="sm"
+                                        triggerClassName="w-full"
                                     />
                                 }
                                 addExpenseButton={
@@ -208,6 +209,7 @@ export default function Dashboard() {
                                         renderTrigger={true}
                                         triggerVariant="warning"
                                         triggerSize="sm"
+                                        triggerClassName="w-full"
                                     />
                                 }
                                 importDataButton={
@@ -252,6 +254,7 @@ export default function Dashboard() {
                                     renderTrigger={true}
                                     triggerVariant="success"
                                     triggerSize="sm"
+                                    triggerClassName="w-full"
                                 />
                             }
                             addExpenseButton={
@@ -268,6 +271,7 @@ export default function Dashboard() {
                                     renderTrigger={true}
                                     triggerVariant="warning"
                                     triggerSize="sm"
+                                    triggerClassName="w-full"
                                 />
                             }
                             importDataButton={
