@@ -7,7 +7,7 @@ import { usePeriod } from "../components/hooks/usePeriod";
 import {
     useTransactions,
     useCategories,
-    useCustomBudgetsAll,
+    useCustomBudgetsForPeriod,
     useSystemBudgetsForPeriod,
 } from "../components/hooks/useBase44Entities";
 import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
@@ -23,7 +23,7 @@ export default function Budgets() {
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
     const { transactions } = useTransactions();
     const { categories } = useCategories();
-    const { allCustomBudgets } = useCustomBudgetsAll(user);
+    const { allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
     const { customBudgets, systemBudgetsWithStats } = useBudgetsAggregates(
         transactions,
