@@ -34,8 +34,8 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     const needsTotal = (needsData.paid || 0) + (needsData.unpaid || 0);
 
     const wantsData = breakdown?.wants || {};
-    const wantsTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) + 
-                       (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
+    const wantsTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) +
+        (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
 
     // Calculate Percentages based on Income (or Expenses if over limit)
     const calculationBase = isTotalOver ? currentMonthExpenses : safeIncome;
@@ -165,7 +165,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                         stroke="#F3F4F6"
                                         strokeWidth={strokeWidth}
                                     />
-                                    
+
                                     {/* Needs segment (Essential Expenses) */}
                                     {needsLength > 0 && (
                                         <motion.circle
@@ -186,7 +186,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                             }}
                                         />
                                     )}
-                                    
+
                                     {/* Wants segment (Lifestyle Expenses) */}
                                     {wantsLength > 0 && (
                                         <motion.circle
@@ -207,7 +207,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                             }}
                                         />
                                     )}
-                                    
+
                                     {/* Savings segment */}
                                     {savingsLength > 0 && (
                                         <motion.circle
@@ -292,14 +292,26 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
                 {/* Floating Action Button (FAB) - Bottom Right */}
                 <div className="fixed bottom-20 right-4 z-50 flex flex-col-reverse items-end gap-3">
+                    {/* Main FAB Toggle Button */}
+                    <motion.button
+                        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center"
+                        onClick={() => setIsFabOpen(!isFabOpen)}
+                        whileTap={{ scale: 0.9 }}
+                        animate={{ rotate: isFabOpen ? 45 : 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Plus className="w-6 h-6" />
+                    </motion.button>
+
                     <AnimatePresence>
                         {isFabOpen && (
                             <>
                                 {/* Import Button */}
                                 <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
+                                    key="import-btn"
+                                    initial={{ scale: 0, opacity: 0, y: 20 }}
+                                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                                    exit={{ scale: 0, opacity: 0, y: 20 }}
                                     transition={{ duration: 0.2, delay: 0 }}
                                     className="flex items-center gap-2"
                                     onClick={() => setIsFabOpen(false)}
@@ -309,9 +321,10 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
                                 {/* Expense Button */}
                                 <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
+                                    key="expense-btn"
+                                    initial={{ scale: 0, opacity: 0, y: 20 }}
+                                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                                    exit={{ scale: 0, opacity: 0, y: 20 }}
                                     transition={{ duration: 0.2, delay: 0.05 }}
                                     className="flex items-center gap-2"
                                     onClick={() => setIsFabOpen(false)}
@@ -321,9 +334,10 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
                                 {/* Income Button */}
                                 <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
+                                    key="income-btn"
+                                    initial={{ scale: 0, opacity: 0, y: 20 }}
+                                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                                    exit={{ scale: 0, opacity: 0, y: 20 }}
                                     transition={{ duration: 0.2, delay: 0.1 }}
                                     className="flex items-center gap-2"
                                     onClick={() => setIsFabOpen(false)}
@@ -344,17 +358,6 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                             </>
                         )}
                     </AnimatePresence>
-
-                    {/* Main FAB Toggle Button */}
-                    <motion.button
-                        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center"
-                        onClick={() => setIsFabOpen(!isFabOpen)}
-                        whileTap={{ scale: 0.9 }}
-                        animate={{ rotate: isFabOpen ? 45 : 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Plus className="w-6 h-6" />
-                    </motion.button>
                 </div>
             </CardContent>
         </Card>
