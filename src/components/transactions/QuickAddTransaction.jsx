@@ -11,7 +11,8 @@ import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
 // import { useAllBudgets } from "../hooks/useBase44Entities";
 // import { formatDateString, getFirstDayOfMonth } from "../utils/dateUtils";
-import { useCustomBudgetsAll, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
+// UPDATED: 03-Feb-2026 - useCustomBudgetsAll renamed to useCustomBudgetsForPeriod
+import { useCustomBudgetsForPeriod, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "../utils/dateUtils";
 import TransactionFormContent from "./TransactionFormContent";
 

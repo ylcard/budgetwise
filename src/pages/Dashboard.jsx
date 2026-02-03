@@ -199,7 +199,7 @@ export default function Dashboard() {
                                     selectedYear={selectedYear}
                                     onOpenChange={setShowQuickAdd}
                                     categories={categories}
-                                    customBudgets={[]} {/* UPDATED: 03-Feb-2026 - Empty array, QuickAddTransaction will fetch its own */}
+                                    customBudgets={[]}
                                     onSubmit={transactionActions.handleSubmit}
                                     isSubmitting={transactionActions.isSubmitting}
                                     transactions={transactions}
@@ -229,7 +229,7 @@ export default function Dashboard() {
                     <div className="lg:col-span-1 flex flex-col">
                         <RecentTransactions
                             categories={categories}
-                            customBudgets={[]} {/* UPDATED: 03-Feb-2026 - RecentTransactions fetches its own data */}
+                            customBudgets={[]}
                             onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
                             onDelete={transactionActions.handleDelete}
                         />
