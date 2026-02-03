@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Calendar, Wallet } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Calendar, Wallet, Plus, X } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
-import { memo, useMemo, useEffect, useRef } from "react";
+import { memo, useMemo, useEffect, useRef, useState } from "react";
 import { getMonthName } from "../utils/dateUtils";
 import confetti from "canvas-confetti";
 
@@ -124,29 +124,16 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
 
+    // FAB state management
+    const [isFabOpen, setIsFabOpen] = useState(false);
+
     return (
-        <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
+        <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col relative">
             <CardContent className="p-4 flex-1 flex flex-col">
-                {/* Top Navigation Bar */}
+                {/* Top Navigation Bar - Month Navigator Only */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex-1">
                         {monthNavigator}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {importDataButton}
-                        {addExpenseButton}
-                        {isEmptyMonth && addIncomeButton ? (
-                            <motion.div
-                                animate={{ scale: [1, 1.1, 1] }}
-                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                className="relative z-10"
-                            >
-                                <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
-                                <div className="relative">{addIncomeButton}</div>
-                            </motion.div>
-                        ) : (
-                            addIncomeButton
-                        )}
                     </div>
                 </div>
 
@@ -301,6 +288,73 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                             </div>
                         </>
                     )}
+                </div>
+
+                {/* Floating Action Button (FAB) - Bottom Right */}
+                <div className="fixed bottom-20 right-4 z-50 flex flex-col-reverse items-end gap-3">
+                    <AnimatePresence>
+                        {isFabOpen && (
+                            <>
+                                {/* Import Button */}
+                                <motion.div
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2, delay: 0 }}
+                                    className="flex items-center gap-2"
+                                    onClick={() => setIsFabOpen(false)}
+                                >
+                                    {importDataButton}
+                                </motion.div>
+
+                                {/* Expense Button */}
+                                <motion.div
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2, delay: 0.05 }}
+                                    className="flex items-center gap-2"
+                                    onClick={() => setIsFabOpen(false)}
+                                >
+                                    {addExpenseButton}
+                                </motion.div>
+
+                                {/* Income Button */}
+                                <motion.div
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2, delay: 0.1 }}
+                                    className="flex items-center gap-2"
+                                    onClick={() => setIsFabOpen(false)}
+                                >
+                                    {isEmptyMonth ? (
+                                        <motion.div
+                                            animate={{ scale: [1, 1.1, 1] }}
+                                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                            className="relative"
+                                        >
+                                            <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
+                                            <div className="relative">{addIncomeButton}</div>
+                                        </motion.div>
+                                    ) : (
+                                        addIncomeButton
+                                    )}
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Main FAB Toggle Button */}
+                    <motion.button
+                        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center"
+                        onClick={() => setIsFabOpen(!isFabOpen)}
+                        whileTap={{ scale: 0.9 }}
+                        animate={{ rotate: isFabOpen ? 45 : 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Plus className="w-6 h-6" />
+                    </motion.button>
                 </div>
             </CardContent>
         </Card>
