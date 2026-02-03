@@ -1,11 +1,14 @@
 import { useState, useMemo } from "react";
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
+import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
+import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsAll,
+    useCustomBudgetsForPeriod, // RENAMED: 03-Feb-2026 - Was useCustomBudgetsAll
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -49,9 +52,18 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd); // RENAMED: 03-Feb-2026
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
+    };
 
     // BRIDGE SET: Fetch transactions linked to active custom budgets (regardless of date)
     const activeCustomBudgetIds = useMemo(() =>
