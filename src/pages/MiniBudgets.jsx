@@ -8,7 +8,7 @@ import { usePeriod } from "../components/hooks/usePeriod";
 // import { useTransactions, useMiniBudgetsAll } from "../components/hooks/useBase44Entities";
 // import { useMiniBudgetsFiltered } from "../components/hooks/useDerivedData";
 // import { useMiniBudgetActions } from "../components/hooks/useActions";
-import { useTransactions, useCustomBudgetsAll } from "../components/hooks/useBase44Entities";
+import { useTransactions, useCustomBudgetsForPeriod } from "../components/hooks/useBase44Entities";
 import { useCustomBudgetsFiltered } from "../components/hooks/useDerivedData";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
 import {
@@ -42,7 +42,7 @@ export default function MiniBudgets() {
   // Data fetching
   const { transactions } = useTransactions();
   // UPDATED 13-Jan-2026: Replaced useMiniBudgetsAll with useCustomBudgetsAll
-  const { allCustomBudgets: allMiniBudgets, isLoading } = useCustomBudgetsAll(user);
+  const { allCustomBudgets: allMiniBudgets, isLoading } = useCustomBudgetsForPeriod(user);
   const miniBudgets = useCustomBudgetsFiltered(allMiniBudgets, selectedMonth, selectedYear);
 
   // Actions (CRUD operations) - UPDATED 13-Jan-2026: Use useCustomBudgetActions
