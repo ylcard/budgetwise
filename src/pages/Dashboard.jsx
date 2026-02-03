@@ -274,11 +274,12 @@ export default function Dashboard() {
                                     triggerVariant="primary"
                                     triggerSize="sm"
                                     triggerClassName="w-full justify-start"
-                                />
-                            }
-                        />
-                    </div>
-                </div>
+                                    />
+                                    }
+                                    />
+                                    </div>
+                                    </div>
+                                    </div>
 
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col">
