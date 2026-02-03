@@ -2,6 +2,8 @@ import React, { useState, useMemo, useCallback, memo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, RefreshCw, Play } from "lucide-react";
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
+import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
 import { useSettings } from "../components/utils/SettingsContext";
 import { useCategories } from "../components/hooks/useBase44Entities";
 import { useRecurringTransactions, useRecurringTransactionActions } from "../components/hooks/useRecurringTransactions";
@@ -13,6 +15,7 @@ import { format } from "date-fns";
 
 const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
     const { user } = useSettings();
+    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
     const { categories } = useCategories();
     const { recurringTransactions, isLoading } = useRecurringTransactions(user);
     const { handleCreate, handleUpdate, handleDelete, handleToggleActive, isSubmitting } = useRecurringTransactionActions(user);
@@ -50,6 +53,12 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
     const handleEdit = useCallback((recurring) => {
         handleOpenForm(recurring);
     }, [handleOpenForm]);
+
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    const handleRefreshData = useCallback(async () => {
+        await queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
+        await queryClient.invalidateQueries({ queryKey: ['CATEGORIES'] });
+    }, [queryClient]);
 
     const handleProcessRecurring = useCallback(async () => {
         setIsProcessing(true);
@@ -90,8 +99,9 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
     }, []);
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
-            <div className="max-w-4xl mx-auto space-y-6">
+        <PullToRefresh onRefresh={handleRefreshData}>
+            <div className="min-h-screen p-4 md:p-8">
+                <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -166,8 +176,9 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
                         />
                     </DialogContent>
                 </Dialog>
+                </div>
             </div>
-        </div>
+        </PullToRefresh>
     );
 });
 

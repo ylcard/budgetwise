@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
+import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
+import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -19,6 +22,7 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 
 export default function Budgets() {
     const { user, settings } = useSettings();
+    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
     const { transactions } = useTransactions();
@@ -37,6 +41,14 @@ export default function Budgets() {
     const handleActivateBudget = (budgetId) => {
         customBudgetActions.handleStatusChange(budgetId, 'active');
     };
+
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+    };
+
     const sortedCustomBudgets = useMemo(() => {
         const now = new Date();
         return [...customBudgets].sort((a, b) => {
@@ -58,8 +70,9 @@ export default function Budgets() {
     }, [customBudgets]);
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="min-h-screen p-4 md:p-8">
+                <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Budgets</h1>
@@ -184,7 +197,8 @@ export default function Budgets() {
                     allBudgets={allCustomBudgets}
                 />
 
+                </div>
             </div>
-        </div>
+        </PullToRefresh>
     );
 }

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
+import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
+import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
 import { useCategories } from "../components/hooks/useBase44Entities";
 import { useCategoryActions } from "../components/hooks/useActions";
 import CategoryForm from "../components/categories/CategoryForm";
@@ -10,6 +13,7 @@ export default function Categories() {
     // UI state
     const [showForm, setShowForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
+    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
 
     // Data fetching
     const { categories, isLoading } = useCategories();
@@ -20,9 +24,15 @@ export default function Categories() {
         setEditingCategory
     );
 
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+    };
+
     return (
-        <div className="min-h-screen p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="min-h-screen p-4 md:p-8">
+                <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Categories</h1>
@@ -58,7 +68,8 @@ export default function Categories() {
                     onDelete={handleDelete}
                     isLoading={isLoading}
                 />
+                </div>
             </div>
-        </div>
+        </PullToRefresh>
     );
 }

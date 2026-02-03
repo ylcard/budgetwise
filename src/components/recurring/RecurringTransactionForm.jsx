@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -206,38 +207,24 @@ export default function RecurringTransactionForm({
             {/* Frequency */}
             <div className="space-y-2">
                 <Label>Frequency</Label>
-                <Select
+                <MobileDrawerSelect
                     value={formData.frequency}
                     onValueChange={(value) => setFormData({ ...formData, frequency: value })}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {FREQUENCY_OPTIONS.map(opt => (
-                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                    placeholder="Select frequency"
+                    options={FREQUENCY_OPTIONS}
+                />
             </div>
 
             {/* Day of Week (for weekly/biweekly) */}
             {showDayOfWeek && (
                 <div className="space-y-2">
                     <Label>Day of Week</Label>
-                    <Select
+                    <MobileDrawerSelect
                         value={String(formData.dayOfWeek)}
                         onValueChange={(value) => setFormData({ ...formData, dayOfWeek: parseInt(value) })}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {DAY_OF_WEEK_OPTIONS.map(opt => (
-                                <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        placeholder="Select day"
+                        options={DAY_OF_WEEK_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    />
                 </div>
             )}
 
@@ -245,19 +232,12 @@ export default function RecurringTransactionForm({
             {showDayOfMonth && (
                 <div className="space-y-2">
                     <Label>Day of Month</Label>
-                    <Select
+                    <MobileDrawerSelect
                         value={String(formData.dayOfMonth)}
                         onValueChange={(value) => setFormData({ ...formData, dayOfMonth: parseInt(value) })}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {dayOfMonthOptions.map(opt => (
-                                <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        placeholder="Select day"
+                        options={dayOfMonthOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    />
                 </div>
             )}
 
@@ -294,19 +274,16 @@ export default function RecurringTransactionForm({
                     </div>
                     <div className="space-y-2">
                         <Label>Financial Priority</Label>
-                        <Select
+                        <MobileDrawerSelect
                             value={formData.financial_priority || ''}
                             onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select priority" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="needs">Needs</SelectItem>
-                                <SelectItem value="wants">Wants</SelectItem>
-                                <SelectItem value="savings">Savings</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            placeholder="Select priority"
+                            options={[
+                                { value: "needs", label: "Needs" },
+                                { value: "wants", label: "Wants" },
+                                { value: "savings", label: "Savings" }
+                            ]}
+                        />
                     </div>
                 </div>
             )}

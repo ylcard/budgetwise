@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -637,19 +638,16 @@ export default function TransactionFormContent({
                         {/* Financial Priority */}
                         <div className="space-y-2">
                             <Label htmlFor="financial_priority">Financial Priority</Label>
-                            <Select
+                            <MobileDrawerSelect
                                 value={formData.financial_priority || ''}
                                 onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select priority" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="needs">Needs</SelectItem>
-                                    <SelectItem value="wants">Wants</SelectItem>
-                                    <SelectItem value="savings">Savings</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                placeholder="Select priority"
+                                options={[
+                                    { value: "needs", label: "Needs" },
+                                    { value: "wants", label: "Wants" },
+                                    { value: "savings", label: "Savings" }
+                                ]}
+                            />
                         </div>
                     </div>
                     {/* Budget (REQUIRED for expenses) */}
