@@ -154,8 +154,11 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                     ) : (
                         <>
                             {/* Donut Chart */}
-                            <div className="relative">
-                                <svg width={size} height={size} className="transform -rotate-90">
+                            <div className="relative w-full max-w-[180px] aspect-square mx-auto">
+                                <svg 
+                                    viewBox={`0 0 ${size} ${size}`} 
+                                    className="w-full h-full transform -rotate-90"
+                                >
                                     {/* Background circle */}
                                     <circle
                                         cx={size / 2}
@@ -268,7 +271,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 </div>
 
                                 {/* Legend */}
-                                <div className="flex justify-center items-center gap-4 text-xs">
+                                <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[11px] sm:text-xs px-2">
                                     <div className="flex items-center gap-1.5">
                                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: needsColor }}></div>
                                         <span className="text-gray-600">{FINANCIAL_PRIORITIES.needs.label}</span>
