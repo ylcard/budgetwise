@@ -2,8 +2,10 @@ import React from 'react';
 import { Home, Heart, Plane } from 'lucide-react';
 import { useSettings } from '../utils/SettingsContext';
 import { formatCurrency } from '../utils/currencyUtils';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { Link } from 'react-router-dom';
+// COMMENTED OUT 03-Feb-2026: Replaced navigate with Link for proper routing
+// import { useNavigate } from 'react-router-dom';
+// import { createPageUrl } from '../../utils';
 
 /**
  * CREATED: 02-Feb-2026
@@ -16,7 +18,8 @@ import { useMemo } from 'react';
 import { getCustomBudgetStats } from '../utils/financialCalculations';
 
 const BudgetHealthCircular = ({ budgets, transactions, settings }) => {
-    const navigate = useNavigate();
+    // COMMENTED OUT 03-Feb-2026: Replaced navigate with Link for proper routing
+    // const navigate = useNavigate();
 
     // Calculate stats for all budgets
     const budgetsWithStats = useMemo(() => {
@@ -109,12 +112,13 @@ const BudgetHealthCircular = ({ budgets, transactions, settings }) => {
                             {/* Right: Budget Details */}
                             <div className="flex-1 ml-5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <h3 
+                                    <Link 
+                                        to={`/BudgetDetail?id=${budget.id}`}
+                                        state={{ from: '/Dashboard' }}
                                         className="text-white font-semibold text-base cursor-pointer hover:opacity-80 transition-opacity"
-                                        onClick={() => navigate(createPageUrl('BudgetDetail', { id: budget.id }))}
                                     >
                                         {getBudgetLabel(budget)}
-                                    </h3>
+                                    </Link>
                                     <Icon className="w-5 h-5 text-gray-400" />
                                 </div>
                                 <div className="text-white text-3xl font-bold mb-1">

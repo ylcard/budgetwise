@@ -2,8 +2,10 @@ import React from 'react';
 import { Home, Heart, Plane } from 'lucide-react';
 import { useSettings } from '../utils/SettingsContext';
 import { formatCurrency } from '../utils/currencyUtils';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { Link } from 'react-router-dom';
+// COMMENTED OUT 03-Feb-2026: Replaced navigate with Link for proper routing
+// import { useNavigate } from 'react-router-dom';
+// import { createPageUrl } from '../../utils';
 
 /**
  * CREATED: 02-Feb-2026
@@ -16,7 +18,8 @@ import { useMemo } from 'react';
 import { getCustomBudgetStats } from '../utils/financialCalculations';
 
 const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
-    const navigate = useNavigate();
+    // COMMENTED OUT 03-Feb-2026: Replaced navigate with Link for proper routing
+    // const navigate = useNavigate();
 
     // Calculate stats for all budgets
     const budgetsWithStats = useMemo(() => {
@@ -73,12 +76,13 @@ const BudgetHealthCompact = ({ budgets, transactions, settings }) => {
                                 <div className={`w-8 h-8 rounded-lg bg-gray-700/50 flex items-center justify-center ${getIconColor(budget)}`}>
                                     <Icon className="w-5 h-5" />
                                 </div>
-                                <h3 
+                                <Link 
+                                    to={`/BudgetDetail?id=${budget.id}`}
+                                    state={{ from: '/Dashboard' }}
                                     className="text-white font-semibold text-base cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => navigate(createPageUrl('BudgetDetail', { id: budget.id }))}
                                 >
                                     {getBudgetLabel(budget)}
-                                </h3>
+                                </Link>
                             </div>
 
                             {/* Progress Bar */}
