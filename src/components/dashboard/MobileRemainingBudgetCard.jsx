@@ -54,14 +54,16 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
 
-    // Calculate stroke dash offsets for each segment
+    // Calculate segment lengths and rotation angles
+    // Each segment is drawn from 0 degrees, then rotated to its position
     const needsLength = (needsPct / 100) * circumference;
     const wantsLength = (wantsPct / 100) * circumference;
     const savingsLength = (savingsPct / 100) * circumference;
 
-    const needsOffset = 0;
-    const wantsOffset = needsLength;
-    const savingsOffset = needsLength + wantsLength;
+    // Rotation angles for each segment (in degrees)
+    const needsRotation = 0; // Starts at top (12 o'clock due to -rotate-90)
+    const wantsRotation = needsPct * 3.6; // 3.6 degrees per percentage point
+    const savingsRotation = (needsPct + wantsPct) * 3.6;
 
     // Empty month detection
     const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
@@ -177,60 +179,68 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                         strokeWidth={strokeWidth}
                                     />
                                     
-                                    {/* Needs segment */}
-                                    <motion.circle
-                                        cx={size / 2}
-                                        cy={size / 2}
-                                        r={radius}
-                                        fill="none"
-                                        stroke={needsColor}
-                                        strokeWidth={strokeWidth}
-                                        strokeDasharray={circumference}
-                                        initial={{ strokeDashoffset: circumference }}
-                                        animate={{ strokeDashoffset: circumference - needsLength }}
-                                        transition={{ duration: 1, ease: "easeOut" }}
-                                        strokeLinecap="round"
-                                    />
+                                    {/* Needs segment (Essential Expenses) */}
+                                    {needsLength > 0 && (
+                                        <motion.circle
+                                            cx={size / 2}
+                                            cy={size / 2}
+                                            r={radius}
+                                            fill="none"
+                                            stroke={needsColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeDasharray={`${needsLength} ${circumference}`}
+                                            initial={{ strokeDashoffset: circumference }}
+                                            animate={{ strokeDashoffset: 0 }}
+                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            strokeLinecap="butt"
+                                            style={{
+                                                transformOrigin: 'center',
+                                                transform: `rotate(${needsRotation}deg)`
+                                            }}
+                                        />
+                                    )}
                                     
-                                    {/* Wants segment */}
-                                    <motion.circle
-                                        cx={size / 2}
-                                        cy={size / 2}
-                                        r={radius}
-                                        fill="none"
-                                        stroke={wantsColor}
-                                        strokeWidth={strokeWidth}
-                                        strokeDasharray={circumference}
-                                        initial={{ strokeDashoffset: circumference }}
-                                        animate={{ strokeDashoffset: circumference - wantsLength }}
-                                        transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-                                        strokeLinecap="round"
-                                        style={{
-                                            strokeDashoffset: circumference - wantsOffset,
-                                            transform: `rotate(${(needsPct / 100) * 360}deg)`,
-                                            transformOrigin: 'center'
-                                        }}
-                                    />
+                                    {/* Wants segment (Lifestyle Expenses) */}
+                                    {wantsLength > 0 && (
+                                        <motion.circle
+                                            cx={size / 2}
+                                            cy={size / 2}
+                                            r={radius}
+                                            fill="none"
+                                            stroke={wantsColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeDasharray={`${wantsLength} ${circumference}`}
+                                            initial={{ strokeDashoffset: circumference }}
+                                            animate={{ strokeDashoffset: 0 }}
+                                            transition={{ duration: 1, ease: "easeOut", delay: 0.15 }}
+                                            strokeLinecap="butt"
+                                            style={{
+                                                transformOrigin: 'center',
+                                                transform: `rotate(${wantsRotation}deg)`
+                                            }}
+                                        />
+                                    )}
                                     
                                     {/* Savings segment */}
-                                    <motion.circle
-                                        cx={size / 2}
-                                        cy={size / 2}
-                                        r={radius}
-                                        fill="none"
-                                        stroke={savingsColor}
-                                        strokeWidth={strokeWidth}
-                                        strokeDasharray={circumference}
-                                        initial={{ strokeDashoffset: circumference }}
-                                        animate={{ strokeDashoffset: circumference - savingsLength }}
-                                        transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-                                        strokeLinecap="round"
-                                        style={{
-                                            strokeDashoffset: circumference - savingsOffset,
-                                            transform: `rotate(${((needsPct + wantsPct) / 100) * 360}deg)`,
-                                            transformOrigin: 'center'
-                                        }}
-                                    />
+                                    {savingsLength > 0 && (
+                                        <motion.circle
+                                            cx={size / 2}
+                                            cy={size / 2}
+                                            r={radius}
+                                            fill="none"
+                                            stroke={savingsColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeDasharray={`${savingsLength} ${circumference}`}
+                                            initial={{ strokeDashoffset: circumference }}
+                                            animate={{ strokeDashoffset: 0 }}
+                                            transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                                            strokeLinecap="butt"
+                                            style={{
+                                                transformOrigin: 'center',
+                                                transform: `rotate(${savingsRotation}deg)`
+                                            }}
+                                        />
+                                    )}
                                 </svg>
 
                                 {/* Center Text */}
