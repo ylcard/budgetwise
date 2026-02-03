@@ -1,9 +1,10 @@
-
 import { useMemo, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
+import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
 import { Badge } from "@/components/ui/badge";
 import {
     Popover,
@@ -319,6 +320,15 @@ export default function BudgetDetail() {
         );
     };
 
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+        await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        await queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+        await queryClient.invalidateQueries({ queryKey: ['allCustomBudgets'] });
+    };
+
     // Auto-redirect effect
     useEffect(() => {
         if (!budgetId || (budget === null && !budgetLoading)) {
@@ -351,8 +361,9 @@ export default function BudgetDetail() {
     const totalRemaining = budget.isSystemBudget ? (stats.remaining || 0) : (totalBudget - (stats?.totalSpentUnits || 0));
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="min-h-screen p-4 md:p-8">
+                <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex items-center gap-4">
                     <CustomButton variant="ghost" size="icon" onClick={() => navigate(location.state?.from || '/Budgets')}>
                         <ArrowLeft className="w-5 h-5" />
@@ -537,7 +548,8 @@ export default function BudgetDetail() {
                         </div>
                     </CardContent>
                 </Card>
+                </div>
             </div>
-        </div>
+        </PullToRefresh>
     );
 }

@@ -151,9 +151,9 @@ const LayoutContent = ({ children }) => {
                     </nav>
                     */}
 
-                    {/* ADDED 03-Feb-2026: Mobile Bottom Tab Bar (iOS native standard) */}
+                    {/* UPDATED 03-Feb-2026: Mobile Bottom Tab Bar with select-none for iOS native feel */}
                     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[100] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex w-full items-center px-1 py-2">
+                        <div className="flex w-full items-center px-1 py-2 select-none">
                             {navigationItems.map((item) => {
                                 const isActive = location.pathname === item.url;
                                 return (

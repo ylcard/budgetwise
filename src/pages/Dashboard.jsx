@@ -5,7 +5,7 @@ import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsForPeriod, // RENAMED: 03-Feb-2026 - Was useCustomBudgetsAll
+    useCustomBudgetsAll,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -36,6 +36,7 @@ import { ImportWizardDialog } from "../components/import/ImportWizard";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
+    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
@@ -48,7 +49,7 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd); // RENAMED: 03-Feb-2026
+    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
@@ -148,8 +149,9 @@ export default function Dashboard() {
     });
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="min-h-screen p-4 md:p-8">
+                <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
@@ -264,7 +266,8 @@ export default function Dashboard() {
                     isSubmitting={budgetActions.isSubmitting}
                     baseCurrency={settings.baseCurrency}
                 />
+                </div>
             </div>
-        </div>
+        </PullToRefresh>
     );
 }
