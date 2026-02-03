@@ -1,5 +1,4 @@
 import React from 'react';
-import { Home, Heart, Plane } from 'lucide-react';
 import { formatCurrency } from '../utils/currencyUtils';
 import { Link } from 'react-router-dom';
 
@@ -21,12 +20,6 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
         return getCustomBudgetStats(budget, budgetTransactions);
     }, [budget, transactions]);
 
-    const getBudgetIcon = (b) => {
-        if (b.systemBudgetType === 'needs') return Home;
-        if (b.systemBudgetType === 'wants') return Heart;
-        return Plane;
-    };
-
     const getCircleColor = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'stroke-cyan-400';
         if (budget.systemBudgetType === 'wants') return 'stroke-purple-500';
@@ -46,7 +39,6 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
         return Math.round((spent / total) * 100);
     };
 
-    const Icon = getBudgetIcon(budget);
     const spent = stats.spent || 0;
     const total = budget.allocatedAmount || 0;
     const remaining = total - spent;
@@ -71,7 +63,6 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
                 >
                     {getBudgetLabel(budget)}
                 </Link>
-                <Icon className="absolute right-0 top-0.5 w-4 h-4 text-gray-400" />
             </div>
 
             {/* Center: Semi-Circular Progress */}
