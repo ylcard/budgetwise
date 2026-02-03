@@ -18,34 +18,35 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     importDataButton,
     systemBudgets = [],
     selectedMonth,
+    breakdown,
     selectedYear
 }) {
     if (!settings) return null;
 
     const safeIncome = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
-    
-    // Extract budget data
-    const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
-    const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
-    const savingsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'savings');
-
-    const needsLimit = needsBudget?.targetAmount || needsBudget?.budgetAmount || 0;
-    const wantsLimit = wantsBudget?.targetAmount || wantsBudget?.budgetAmount || 0;
-    const savingsLimit = savingsBudget?.targetAmount || savingsBudget?.budgetAmount || 0;
 
     const totalSpent = currentMonthExpenses;
     const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
+    const isTotalOver = totalSpent > currentMonthIncome;
+
+    // --- LOGIC FIX: Use Actual Breakdown (Paid + Unpaid) instead of Limits ---
+    const needsData = breakdown?.needs || { paid: 0, unpaid: 0 };
+    const needsTotal = (needsData.paid || 0) + (needsData.unpaid || 0);
+
+    const wantsData = breakdown?.wants || {};
+    const wantsTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) + 
+                       (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
+
+    // Calculate Percentages based on Income (or Expenses if over limit)
+    const calculationBase = isTotalOver ? currentMonthExpenses : safeIncome;
+    const needsPct = (needsTotal / calculationBase) * 100;
+    const wantsPct = (wantsTotal / calculationBase) * 100;
+    const savingsPct = isTotalOver ? 0 : Math.max(0, 100 - needsPct - wantsPct);
 
     // Donut chart calculations
     const needsColor = FINANCIAL_PRIORITIES.needs.color;
     const wantsColor = FINANCIAL_PRIORITIES.wants.color;
     const savingsColor = FINANCIAL_PRIORITIES.savings.color;
-
-    // Calculate proportions based on limits (goals)
-    const totalBudget = needsLimit + wantsLimit + savingsLimit;
-    const needsPct = totalBudget > 0 ? (needsLimit / totalBudget) * 100 : 33.33;
-    const wantsPct = totalBudget > 0 ? (wantsLimit / totalBudget) * 100 : 33.33;
-    const savingsPct = totalBudget > 0 ? (savingsLimit / totalBudget) * 100 : 33.34;
 
     // Donut SVG parameters
     const size = 200;
@@ -120,7 +121,6 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     }, [currentMonthIncome, selectedMonth, selectedYear]);
 
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
-    const isTotalOver = totalSpent > currentMonthIncome;
 
     return (
         <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
