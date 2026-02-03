@@ -11,12 +11,13 @@ import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
 /**
  * CREATED: 03-Feb-2026
  * Renamed from BudgetBars to CustomBudgetsDisplay
+ * UPDATED: 03-Feb-2026 - Now receives raw budgets + transactions, each view calculates its own stats
  * Displays ONLY custom budgets (no system budgets) in various view modes
- * Receives pre-calculated budget data from parent (Dashboard)
  */
 
 export default function CustomBudgetsDisplay({
-    customBudgetsData,
+    budgets,
+    transactions,
     settings,
     onCreateBudget,
 }) {
@@ -39,9 +40,9 @@ export default function CustomBudgetsDisplay({
     const [customStartIndex, setCustomStartIndex] = useState(0);
     const barsPerPage = ['cards', 'circular', 'compact'].includes(viewMode) ? 4 : 7;
 
-    const visibleCustomBudgets = customBudgetsData.slice(customStartIndex, customStartIndex + barsPerPage);
+    const visibleBudgets = budgets.slice(customStartIndex, customStartIndex + barsPerPage);
     const canScrollLeft = customStartIndex > 0;
-    const canScrollRight = customStartIndex + barsPerPage < customBudgetsData.length;
+    const canScrollRight = customStartIndex + barsPerPage < budgets.length;
 
     const handleViewModeChange = (newMode) => {
         setViewMode(newMode);
@@ -49,7 +50,7 @@ export default function CustomBudgetsDisplay({
 
     return (
         <div className="space-y-6">
-            {customBudgetsData.length > 0 && (
+            {budgets.length > 0 && (
                 <Card className="border-none shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -58,7 +59,7 @@ export default function CustomBudgetsDisplay({
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            {customBudgetsData.length > barsPerPage && (
+                            {budgets.length > barsPerPage && (
                                 <>
                                     <CustomButton
                                         variant="outline"
@@ -98,31 +99,36 @@ export default function CustomBudgetsDisplay({
                         </div>
                         
                         {viewMode === 'circular' && (
-                            <BudgetHealthCircular budgets={visibleCustomBudgets} />
+                            <BudgetHealthCircular 
+                                budgets={visibleBudgets} 
+                                transactions={transactions}
+                                settings={settings}
+                            />
                         )}
                         {viewMode === 'compact' && (
-                            <BudgetHealthCompact budgets={visibleCustomBudgets} />
+                            <BudgetHealthCompact 
+                                budgets={visibleBudgets}
+                                transactions={transactions}
+                                settings={settings}
+                            />
                         )}
                         {(viewMode === 'bars' || viewMode === 'cards') && (
                             <div className={`flex ${viewMode === 'cards' ? 'w-full gap-4' : 'flex-wrap justify-center gap-4'}`}>
-                                {visibleCustomBudgets.map((budget) => (
+                                {visibleBudgets.map((budget) => (
                                     viewMode === 'bars' ? (
                                         <VerticalBar
                                             key={budget.id}
-                                            budget={budget}
-                                            stats={budget.stats}
-                                            isCustom={true}
+                                            budgets={[budget]}
+                                            transactions={transactions}
                                             settings={settings}
-                                            hideActions={true}
                                         />
                                     ) : (
                                         <div key={budget.id} className="flex-1 min-w-0">
                                             <BudgetCard
                                                 key={budget.id}
-                                                budget={budget}
-                                                stats={budget.stats}
+                                                budgets={[budget]}
+                                                transactions={transactions}
                                                 settings={settings}
-                                                size="sm"
                                             />
                                         </div>
                                     )
@@ -130,9 +136,9 @@ export default function CustomBudgetsDisplay({
                             </div>
                         )}
 
-                        {customBudgetsData.length > barsPerPage && (
+                        {budgets.length > barsPerPage && (
                             <div className="flex justify-center gap-1 mt-4">
-                                {Array.from({ length: Math.ceil(customBudgetsData.length / barsPerPage) }).map((_, idx) => (
+                                {Array.from({ length: Math.ceil(budgets.length / barsPerPage) }).map((_, idx) => (
                                     <div
                                         key={idx}
                                         className={`h-2 rounded-full transition-all ${Math.floor(customStartIndex / barsPerPage) === idx
@@ -146,7 +152,7 @@ export default function CustomBudgetsDisplay({
                     </CardContent>
                 </Card>
             )}
-            {customBudgetsData.length === 0 && (
+            {budgets.length === 0 && (
                 <Card className="border-2 border-dashed border-gray-200 bg-gray-50/50 shadow-sm hover:border-purple-200 hover:bg-purple-50/30 transition-all duration-300">
                     <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                         <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
