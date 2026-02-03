@@ -83,7 +83,8 @@ export default function QuickAddTransaction({
     );
     
     // Custom: Unconstrained (Fetch "All" - handled by hook limit)
-    const { allCustomBudgets } = useCustomBudgetsAll(user, null, null);
+    // UPDATED: 03-Feb-2026 - Using renamed hook
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, null, null);
 
     // 3. Prepare & Sort the Dropdown List
     const allBudgets = useMemo(() => {
