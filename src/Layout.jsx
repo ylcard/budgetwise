@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { PeriodProvider } from "./components/hooks/usePeriod";
 import { CustomButton } from "@/components/ui/CustomButton";
+import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-Feb-2026: For iOS-style page transitions
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
@@ -91,11 +92,14 @@ const LayoutContent = ({ children }) => {
                     </Sidebar>
 
                     <main className="flex-1 flex flex-col relative">
-                    <div className="flex-1 overflow-auto pt-20 md:pb-0">
-                        {children}
+                    {/* UPDATED 03-Feb-2026: Removed top padding on mobile, added bottom padding for iOS safe area */}
+                    <div className="flex-1 overflow-auto md:pb-0 pb-[calc(4rem+env(safe-area-inset-bottom))]">
+                        <RouteTransition>
+                            {children}
+                        </RouteTransition>
                     </div>
 
-                    {/* Mobile Top Navigation */}
+                    {/* COMMENTED OUT 03-Feb-2026: Moved mobile nav from top to bottom per iOS native standards
                     <nav className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[100] shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
                         <div className="flex w-full items-center px-1 py-2">
                             {navigationItems.map((item) => {
@@ -118,7 +122,32 @@ const LayoutContent = ({ children }) => {
                             })}
                         </div>
                     </nav>
-                </main>
+                    */}
+
+                    {/* ADDED 03-Feb-2026: Mobile Bottom Tab Bar (iOS native standard) */}
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[100] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                        <div className="flex w-full items-center px-1 py-2">
+                            {navigationItems.map((item) => {
+                                const isActive = location.pathname === item.url;
+                                return (
+                                    <Link
+                                        key={item.title}
+                                        to={item.url}
+                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1 rounded-lg transition-all duration-200 min-w-0 select-none ${isActive
+                                            ? 'text-blue-600 bg-blue-50/50'
+                                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                                        <span className={`text-[9px] sm:text-[10px] font-medium truncate max-w-full px-0.5 ${isActive ? 'font-semibold' : ''}`}>
+                                            {item.title}
+                                        </span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </nav>
+                    </main>
             </div>
         </SidebarProvider>
     );

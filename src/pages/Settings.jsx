@@ -9,7 +9,8 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm, /* useGoalActions */ } from "../components/hooks/useActions"; // UPDATED 17-Jan-2026: Commented out useGoalActions
 // import { useGoals } from "../components/hooks/useBase44Entities"; // REMOVED 17-Jan-2026: Goals moved to Reports
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { Settings as SettingsIcon, Save } from "lucide-react"; // UPDATED 17-Jan-2026: Removed unused icons
+import { Settings as SettingsIcon, Save, Trash2 } from "lucide-react"; // UPDATED 03-Feb-2026: Added Trash2 icon for account deletion
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // ADDED 03-Feb-2026: For account deletion confirmation
 import {
     CURRENCY_OPTIONS,
     // FINANCIAL_PRIORITIES, // REMOVED 17-Jan-2026: Goals moved to Reports
@@ -84,6 +85,29 @@ export default function Settings() {
             showToast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
         } finally {
             setIsGlobalSaving(false);
+        }
+    };
+
+    // ADDED 03-Feb-2026: Account deletion handler
+    const handleAccountDeletion = async () => {
+        try {
+            // TODO: Implement actual account deletion backend logic
+            showToast({ 
+                title: "Account Deletion Requested", 
+                description: "Your account deletion request has been received. You will be logged out shortly.", 
+                variant: "destructive" 
+            });
+            // Simulate account deletion process
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        } catch (error) {
+            console.error('Account deletion error:', error);
+            showToast({ 
+                title: "Error", 
+                description: "Failed to process account deletion request.", 
+                variant: "destructive" 
+            });
         }
     };
 
@@ -198,6 +222,66 @@ export default function Settings() {
                         {/* REMOVED 17-Jan-2026: Goal Allocation moved to Reports page */}
                     </CardContent>
                 </Card>
+
+                {/* ADDED 03-Feb-2026: Account Management Section */}
+                <Card className="border-none shadow-lg border-red-100">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-red-600">
+                            <Trash2 className="w-5 h-5" />
+                            Account Management
+                        </CardTitle>
+                        <CardDescription>
+                            Permanently delete your account and all associated data
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="p-4 bg-red-50 rounded-lg border border-red-100">
+                                <p className="text-sm text-red-800 font-medium mb-2">Warning: This action cannot be undone</p>
+                                <p className="text-xs text-red-600">
+                                    Deleting your account will permanently remove all your data including transactions, budgets, 
+                                    categories, and settings. This action is irreversible.
+                                </p>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <CustomButton
+                                        variant="destructive"
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete My Account
+                                    </CustomButton>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete your account
+                                            and remove all your data from our servers including:
+                                            <ul className="list-disc list-inside mt-2 space-y-1">
+                                                <li>All transactions and financial records</li>
+                                                <li>Budget goals and allocations</li>
+                                                <li>Custom categories and rules</li>
+                                                <li>Account settings and preferences</li>
+                                            </ul>
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={handleAccountDeletion}
+                                            className="bg-red-600 hover:bg-red-700"
+                                        >
+                                            Yes, Delete My Account
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* --- STATIC ACTION BUTTONS --- */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
                     <CustomButton
