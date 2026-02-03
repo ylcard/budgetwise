@@ -6,7 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
-import { useTransactions, useCategories, useCustomBudgetsAll } from "../components/hooks/useBase44Entities";
+import { useTransactions, useCategories, useCustomBudgetsForPeriod } from "../components/hooks/useBase44Entities";
 import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedData";
 import { useTransactionActions } from "../components/hooks/useActions";
 import { useSettings } from "../components/utils/SettingsContext";
@@ -36,7 +36,7 @@ export default function Transactions() {
     // Data fetching
     const { transactions, isLoading } = useTransactions();
     const { categories } = useCategories();
-    const { allCustomBudgets } = useCustomBudgetsAll(user);
+    const { allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
     // Advanced Filtering logic
     const { filters, setFilters, filteredTransactions } = useAdvancedTransactionFiltering(transactions);
