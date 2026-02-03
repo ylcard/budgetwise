@@ -102,6 +102,7 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = []) => {
         },
         keepPreviousData: true,
         enabled: customBudgetIds && customBudgetIds.length > 0,
+        initialData: [], // ADDED: 03-Feb-2026 - Prevent undefined returns when query is disabled
     });
 
     return { transactions, isLoading };
