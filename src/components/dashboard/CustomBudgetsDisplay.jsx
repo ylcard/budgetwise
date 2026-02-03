@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, BarChart2, LayoutGrid, CircleDot, StretchHorizontal } from "lucide-react";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import VerticalBar from "../custombudgets/VerticalBar";
 import BudgetCard from "../budgets/BudgetCard";
@@ -34,10 +34,10 @@ export default function CustomBudgetsDisplay({
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
 
     const VIEW_OPTIONS = [
-        { value: 'bars', label: 'Bars' },
-        { value: 'cards', label: 'Cards' },
-        { value: 'circular', label: 'Circular' },
-        { value: 'compact', label: 'Compact' },
+        { value: 'bars', label: <BarChart2 className="w-4 h-4" />, desktopLabel: 'Bars' },
+        { value: 'cards', label: <LayoutGrid className="w-4 h-4" />, desktopLabel: 'Cards' },
+        { value: 'circular', label: <CircleDot className="w-4 h-4" />, desktopLabel: 'Circular' },
+        { value: 'compact', label: <StretchHorizontal className="w-4 h-4" />, desktopLabel: 'Compact' },
     ];
 
     // Sync local state when global settings update
@@ -58,6 +58,10 @@ export default function CustomBudgetsDisplay({
         setViewMode(newMode);
     };
 
+    // On Desktop, we paginate. On Mobile, we show all so the user can swipe through the whole list.
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const displayBudgets = isMobile ? budgets : visibleBudgets;
+
     return (
         <div className="space-y-6">
             {budgets.length > 0 && (
@@ -68,7 +72,7 @@ export default function CustomBudgetsDisplay({
                                 Custom Budgets
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="hidden md:flex items-center gap-2">
                             {budgets.length > barsPerPage && (
                                 <>
                                     <CustomButton
@@ -102,16 +106,30 @@ export default function CustomBudgetsDisplay({
                     <CardContent>
                         <div className="flex items-center justify-end gap-2 mb-4">
                             <SegmentedControl
-                                options={VIEW_OPTIONS}
+                                options={VIEW_OPTIONS.map(opt => ({
+                                    ...opt,
+                                    label: <span className="flex items-center gap-2">{opt.label} <span className="hidden md:inline">{opt.desktopLabel}</span></span>
+                                }))}
                                 value={viewMode}
                                 onChange={handleViewModeChange}
                             />
                         </div>
 
-                        {/* Unified Grid Layout: Loop first, then render specific component */}
-                        <div className={`flex ${viewMode === 'bars' ? 'flex-wrap justify-center gap-4' : 'w-full gap-4'}`}>
-                            {visibleBudgets.map((budget) => (
-                                <div key={budget.id} className={viewMode === 'bars' ? '' : 'flex-1 min-w-0'}>
+                        {/* Carousel for Mobile, Grid for Desktop */}
+                        <div className={`
+                            flex overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x 
+                            md:overflow-x-visible md:pb-0 md:mx-0 md:px-0 md:flex-wrap md:justify-center md:gap-4
+                            ${viewMode === 'bars' ? 'items-end' : 'items-stretch'}
+                        `}>
+                            {displayBudgets.map((budget) => (
+                                <div
+                                    key={budget.id}
+                                    className={`
+                                        shrink-0 snap-center first:pl-0 last:pr-4 
+                                        md:shrink md:snap-align-none md:last:pr-0
+                                        ${viewMode === 'bars' ? 'w-auto' : 'w-[280px] md:flex-1 md:min-w-0'}
+                                    `}
+                                >
                                     {viewMode === 'bars' && (
                                         <VerticalBar
                                             budget={budget}
