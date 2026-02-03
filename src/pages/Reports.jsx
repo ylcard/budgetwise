@@ -51,7 +51,7 @@ export default function Reports() {
     const { transactions, isLoading: loadingTransactions } = useTransactions(healthWindow.from, healthWindow.to);
     const { categories, isLoading: loadingCategories } = useCategories();
     const { goals, isLoading: loadingGoals } = useGoals(user);
-    const { allCustomBudgets } = useCustomBudgetsForPeriod(user);
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
     // ADDED 17-Jan-2026: Goal Settings state management

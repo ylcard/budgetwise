@@ -23,7 +23,7 @@ export default function Budgets() {
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
     const { transactions } = useTransactions();
     const { categories } = useCategories();
-    const { allCustomBudgets } = useCustomBudgetsForPeriod(user);
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
     const { customBudgets, systemBudgetsWithStats } = useBudgetsAggregates(
         transactions,

@@ -42,7 +42,7 @@ export default function MiniBudgets() {
   // Data fetching
   const { transactions } = useTransactions();
   // UPDATED 13-Jan-2026: Replaced useMiniBudgetsAll with useCustomBudgetsAll
-  const { allCustomBudgets: allMiniBudgets, isLoading } = useCustomBudgetsForPeriod(user);
+  const { customBudgets: allMiniBudgets, isLoading } = useCustomBudgetsForPeriod(user);
   const miniBudgets = useCustomBudgetsFiltered(allMiniBudgets, selectedMonth, selectedYear);
 
   // Actions (CRUD operations) - UPDATED 13-Jan-2026: Use useCustomBudgetActions

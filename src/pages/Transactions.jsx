@@ -36,7 +36,7 @@ export default function Transactions() {
     // Data fetching
     const { transactions, isLoading } = useTransactions();
     const { categories } = useCategories();
-    const { allCustomBudgets } = useCustomBudgetsForPeriod(user);
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
     // Advanced Filtering logic
     const { filters, setFilters, filteredTransactions } = useAdvancedTransactionFiltering(transactions);
