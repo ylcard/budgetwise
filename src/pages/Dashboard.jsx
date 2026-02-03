@@ -1,14 +1,11 @@
 import { useState, useMemo } from "react";
-import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
-import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
-import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsForPeriod, // RENAMED: 03-Feb-2026 - Was useCustomBudgetsAll
+    useCustomBudgetsAll,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -29,6 +26,7 @@ import {
 } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
+import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard"; // ADDED 03-Feb-2026: Mobile-optimized donut chart version
 // import BudgetBars from "../components/dashboard/BudgetBars";
 import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
@@ -39,7 +37,6 @@ import { ImportWizardDialog } from "../components/import/ImportWizard";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
-    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
@@ -52,18 +49,9 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd); // RENAMED: 03-Feb-2026
+    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
-
-    // ADDED 03-Feb-2026: Pull-to-refresh handler
-    const handleRefresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
-    };
 
     // BRIDGE SET: Fetch transactions linked to active custom budgets (regardless of date)
     const activeCustomBudgetIds = useMemo(() =>
@@ -161,9 +149,8 @@ export default function Dashboard() {
     });
 
     return (
-        <PullToRefresh onRefresh={handleRefresh}>
-            <div className="min-h-screen p-4 md:p-8">
-                <div className="max-w-7xl mx-auto space-y-6">
+        <div className="min-h-screen p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
@@ -173,7 +160,66 @@ export default function Dashboard() {
 
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-3">
-                        <RemainingBudgetCard
+                        {/* ADDED 03-Feb-2026: Conditional rendering - Mobile uses donut chart, Desktop uses bar chart */}
+                        <div className="block md:hidden">
+                            <MobileRemainingBudgetCard
+                                currentMonthIncome={currentMonthIncome}
+                                currentMonthExpenses={currentMonthExpenses}
+                                settings={settings}
+                                selectedMonth={selectedMonth}
+                                selectedYear={selectedYear}
+                                systemBudgets={systemBudgetsData}
+                                monthNavigator={
+                                    <MonthNavigator
+                                        currentMonth={selectedMonth}
+                                        currentYear={selectedYear}
+                                        resetPosition="right"
+                                        onMonthChange={(month, year) => {
+                                            setSelectedMonth(month);
+                                            setSelectedYear(year);
+                                        }}
+                                    />
+                                }
+                                addIncomeButton={
+                                    <QuickAddIncome
+                                        open={showQuickAddIncome}
+                                        selectedMonth={selectedMonth}
+                                        selectedYear={selectedYear}
+                                        onOpenChange={setShowQuickAddIncome}
+                                        onSubmit={transactionActions.handleSubmit}
+                                        isSubmitting={transactionActions.isSubmitting}
+                                        renderTrigger={true}
+                                        triggerVariant="success"
+                                        triggerSize="sm"
+                                    />
+                                }
+                                addExpenseButton={
+                                    <QuickAddTransaction
+                                        open={showQuickAdd}
+                                        selectedMonth={selectedMonth}
+                                        selectedYear={selectedYear}
+                                        onOpenChange={setShowQuickAdd}
+                                        categories={categories}
+                                        customBudgets={activeCustomBudgets}
+                                        onSubmit={transactionActions.handleSubmit}
+                                        isSubmitting={transactionActions.isSubmitting}
+                                        transactions={transactions}
+                                        renderTrigger={true}
+                                        triggerVariant="warning"
+                                        triggerSize="sm"
+                                    />
+                                }
+                                importDataButton={
+                                    <ImportWizardDialog
+                                        triggerVariant="primary"
+                                        triggerSize="sm"
+                                        triggerClassName="w-full justify-start"
+                                    />
+                                }
+                            />
+                        </div>
+                        <div className="hidden md:block">
+                            <RemainingBudgetCard
                             breakdown={detailedBreakdown}
                             systemBudgets={systemBudgetsData}
                             bonusSavingsPotential={bonusSavingsPotential}
@@ -278,8 +324,7 @@ export default function Dashboard() {
                     isSubmitting={budgetActions.isSubmitting}
                     baseCurrency={settings.baseCurrency}
                 />
-                </div>
             </div>
-        </PullToRefresh>
+        </div>
     );
 }
