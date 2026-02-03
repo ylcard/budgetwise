@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
-import { Wallet, LogOut } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Wallet, LogOut, ChevronLeft } from "lucide-react";
 import { useMemo } from "react"; // ADDED 03-Feb-2026: For page title calculation
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
@@ -24,22 +24,35 @@ import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-F
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     
     // ADDED 17-Jan-2026: Trigger recurring transaction processing on app load
     useRecurringProcessor();
 
-    // ADDED 03-Feb-2026: Get current page title for mobile header
-    const currentPageTitle = useMemo(() => {
+    // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
+    const { currentPageTitle, isRootPage } = useMemo(() => {
         const route = navigationItems.find(item => location.pathname === item.url);
-        return route?.title || 'BudgetWise';
+        return {
+            currentPageTitle: route?.title || 'BudgetWise',
+            isRootPage: !!route
+        };
     }, [location.pathname]);
 
     return (
         <SidebarProvider>
-            {/* ADDED 03-Feb-2026: Mobile-only fixed top header (iOS native standard) */}
-            <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                <div className="flex items-center justify-center h-14 px-4">
-                    <h1 className="text-lg font-semibold text-gray-900">{currentPageTitle}</h1>
+            {/* UPDATED 03-Feb-2026: Mobile-only fixed top header with dynamic back button (iOS native standard) */}
+            <header className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+                <div className="flex items-center justify-center h-14 px-4 relative">
+                    {!isRootPage && (
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent rounded-lg transition-colors"
+                            aria-label="Go back"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                    )}
+                    <h1 className="text-lg font-semibold text-foreground">{currentPageTitle}</h1>
                 </div>
             </header>
 
