@@ -29,7 +29,6 @@ const LayoutContent = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-    const { buttons: fabButtons } = useFAB(); // ADDED 04-Feb-2026: Get FAB buttons from context
 
     // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
     const navigationHistory = useRef({});
@@ -189,7 +188,8 @@ const LayoutContent = ({ children }) => {
                     <nav className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[100] shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
                         <div className="flex w-full items-center px-1 py-2">
                             {navigationItems.map((item) => {
-                                const isActive = location.pathname === item.url;
+                                // UPDATED: Use activeTab to support sub-page highlighting/resetting
+                                const isTabActive = activeTab === item.url
                                 return (
                                     <Link
                                         key={item.title}
@@ -220,19 +220,20 @@ const LayoutContent = ({ children }) => {
                                         key={item.title}
                                         to={item.url}
                                         onClick={(e) => {
-                                            if (isActive) {
+                                            if (isTabActive) {
                                                 // If already active, reset this tab's history and go to root
-                                                navigationHistory.current[item.url] = [item.url];
-                                                navigate(item.url);
+                                                e.preventDefault(); // Stop default Link behavior to handle manually
+                                                navigationHistory.current[activeTab] = [item.url];
+                                                navigate(item.url, { replace: true });
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }
                                         }}
-                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 ${isActive
+                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 ${isTabActive
                                             ? 'text-blue-600 bg-blue-50/50'
                                             : 'text-gray-400'
                                             }`}
                                     >
-                                        <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                                        <item.icon className={`w-6 h-6 ${isTabActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
                                         <span className="text-[10px] font-medium truncate w-full text-center px-1">
                                             {item.title}
                                         </span>
@@ -278,9 +279,9 @@ const LayoutContent = ({ children }) => {
                             )}
                         </div>
                     </nav>
+                    {/* GlobalFAB now consumes context internally */}
+                    <GlobalFAB />
                 </main>
-                {/* GlobalFAB placed outside main to avoid relative positioning issues */}
-                <GlobalFAB />
             </div>
         </SidebarProvider>
     );
