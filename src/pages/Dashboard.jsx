@@ -1,12 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
-import { useFAB } from "../components/hooks/FABContext";
 import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsForPeriod, // UPDATED 04-Feb-2026: Was useCustomBudgetsAll
+    useCustomBudgetsAll,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -40,8 +39,6 @@ export default function Dashboard() {
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-    const [showImportWizard, setShowImportWizard] = useState(false);
-    const { setFabButtons, clearFabButtons } = useFAB();
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
@@ -51,7 +48,7 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd); // UPDATED 04-Feb-2026
+    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
@@ -149,40 +146,6 @@ export default function Dashboard() {
             setShowQuickAddBudget(false);
         }
     });
-
-    // ADDED 04-Feb-2026: Check if current month is empty to highlight income button
-    const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
-
-    // ADDED 04-Feb-2026: FAB Configuration
-    const fabButtons = useMemo(() => [
-        {
-            key: 'import',
-            label: 'Import Data',
-            icon: 'FileUp',
-            variant: 'primary',
-            onClick: () => setShowImportWizard(true)
-        },
-        {
-            key: 'expense',
-            label: 'Add Expense',
-            icon: 'MinusCircle',
-            variant: 'warning',
-            onClick: () => setShowQuickAdd(true)
-        },
-        {
-            key: 'income',
-            label: 'Add Income',
-            icon: 'PlusCircle',
-            variant: 'success',
-            onClick: () => setShowQuickAddIncome(true),
-            highlighted: isEmptyMonth
-        }
-    ], [isEmptyMonth]);
-
-    useEffect(() => {
-        setFabButtons(fabButtons);
-        return () => clearFabButtons();
-    }, [fabButtons, setFabButtons, clearFabButtons]);
 
     return (
         <div className="min-h-screen p-4 md:p-8">
@@ -300,12 +263,6 @@ export default function Dashboard() {
                     onCancel={() => setShowQuickAddBudget(false)}
                     isSubmitting={budgetActions.isSubmitting}
                     baseCurrency={settings.baseCurrency}
-                />
-
-                <ImportWizardDialog
-                    open={showImportWizard}
-                    onOpenChange={setShowImportWizard}
-                    renderTrigger={false}
                 />
             </div>
         </div>
