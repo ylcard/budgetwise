@@ -256,15 +256,17 @@ const LayoutContent = ({ children }) => {
                                         </SheetHeader>
                                         <div className="grid grid-cols-1 divide-y divide-gray-100">
                                             {secondaryNav.map((item) => (
-                                                <Link
+                                                <button
                                                     key={item.title}
-                                                    to={item.url}
-                                                    onClick={() => setIsMoreMenuOpen(false)}
-                                                    className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                                                    onClick={() => {
+                                                        navigate(item.url);
+                                                        setIsMoreMenuOpen(false);
+                                                    }}
+                                                    className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left w-full"
                                                 >
                                                     <item.icon className="w-5 h-5 text-gray-500" />
                                                     <span className="font-medium text-gray-900">{item.title}</span>
-                                                </Link>
+                                                </button>
                                             ))}
                                             <button
                                                 onClick={() => base44.auth.logout()}
