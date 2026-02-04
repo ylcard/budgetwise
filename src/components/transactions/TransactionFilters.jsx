@@ -16,6 +16,98 @@ import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 
+// Move helpers OUTSIDE to prevent re-mounting on every state change
+const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) => {
+    const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder || value;
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden text-gray-900">
+                    <span className="truncate">{selectedLabel}</span>
+                    <ChevronRight className="h-4 w-4 opacity-50" />
+                </button>
+            </DrawerTrigger>
+            <DrawerContent>
+                <DrawerHeader>
+                    <DrawerTitle>{label}</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 space-y-1 max-h-[60vh] overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    {options.map((opt) => (
+                        <DrawerClose key={opt.value} asChild>
+                            <button
+                                onClick={() => onSelect(opt.value)}
+                                className={cn(
+                                    "w-full text-left px-4 py-4 rounded-xl text-base font-medium transition-colors",
+                                    value === opt.value ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                )}
+                            >
+                                {opt.label}
+                            </button>
+                        </DrawerClose>
+                    ))}
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
+
+const MobileCategoryTrigger = ({ filters, categories, onCategoryChange }) => {
+    const selectedCount = filters.category.length;
+    const label = selectedCount === 0 ? "All Categories" : `${selectedCount} Selected`;
+
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden text-gray-900">
+                    <span className="truncate">{label}</span>
+                    <Tag className="h-4 w-4 opacity-50" />
+                </button>
+            </DrawerTrigger>
+            <DrawerContent>
+                <DrawerHeader>
+                    <DrawerTitle>Select Categories</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 space-y-1 max-h-[50vh] overflow-y-auto">
+                    {categories.map((cat) => {
+                        const isSelected = filters.category.includes(cat.id);
+                        const Icon = getCategoryIcon(cat.icon);
+                        return (
+                            <button
+                                key={cat.id}
+                                onClick={() => {
+                                    const newCats = isSelected
+                                        ? filters.category.filter(id => id !== cat.id)
+                                        : [...filters.category, cat.id];
+                                    onCategoryChange(newCats);
+                                }}
+                                className={cn(
+                                    "w-full flex items-center justify-between px-4 py-4 rounded-xl text-base font-medium transition-colors",
+                                    isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${cat.color}20` }}>
+                                        <Icon className="w-4 h-4" style={{ color: cat.color }} />
+                                    </div>
+                                    <span>{cat.name}</span>
+                                </div>
+                                {isSelected && <Check className="w-5 h-5" />}
+                            </button>
+                        );
+                    })}
+                </div>
+                <div className="p-4 border-t bg-gray-50/50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                    <DrawerClose asChild>
+                        <CustomButton variant="primary" className="w-full h-12 text-base font-bold">
+                            Apply Categories
+                        </CustomButton>
+                    </DrawerClose>
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
+
 export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [] }) {
     const { monthStart, monthEnd } = usePeriod();
     const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -76,94 +168,6 @@ export default function TransactionFilters({ filters, setFilters, categories, al
     const selectedRange = {
         from: filters.startDate ? new Date(filters.startDate) : undefined,
         to: filters.endDate ? new Date(filters.endDate) : undefined
-    };
-
-    // Helper to render native-like selection for mobile
-    const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) => {
-        const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder || value;
-        return (
-            <Drawer>
-                <DrawerTrigger asChild>
-                    <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden">
-                        <span className="truncate">{selectedLabel}</span>
-                        <ChevronRight className="h-4 w-4 opacity-50" />
-                    </button>
-                </DrawerTrigger>
-                <DrawerContent>
-                    <DrawerHeader>
-                        <DrawerTitle>{label}</DrawerTitle>
-                    </DrawerHeader>
-                    <div className="p-4 space-y-1 max-h-[60vh] overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                        {options.map((opt) => (
-                            <DrawerClose key={opt.value} asChild>
-                                <button
-                                    onClick={() => {
-                                        onSelect(opt.value);
-                                    }}
-                                    className={cn(
-                                        "w-full text-left px-4 py-4 rounded-xl text-base font-medium transition-colors",
-                                        value === opt.value ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
-                                    )}
-                                >
-                                    {opt.label}
-                                </button>
-                            </DrawerClose>
-                        ))}
-                    </div>
-                </DrawerContent>
-            </Drawer>
-        );
-    };
-
-    // NEW: Specialized multi-select trigger for Categories
-    const MobileCategoryTrigger = () => {
-        const selectedCount = filters.category.length;
-        const label = selectedCount === 0 ? "All Categories" : `${selectedCount} Selected`;
-
-        return (
-            <Drawer>
-                <DrawerTrigger asChild>
-                    <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden">
-                        <span className="truncate">{label}</span>
-                        <Tag className="h-4 w-4 opacity-50" />
-                    </button>
-                </DrawerTrigger>
-                <DrawerContent>
-                    <DrawerHeader>
-                        <DrawerTitle>Select Categories</DrawerTitle>
-                    </DrawerHeader>
-                    <div className="p-4 space-y-1 max-h-[60vh] overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                        {categories.map((cat) => {
-                            const isSelected = filters.category.includes(cat.id);
-                            const Icon = getCategoryIcon(cat.icon);
-                            return (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => {
-                                        const newCats = isSelected
-                                            ? filters.category.filter(id => id !== cat.id)
-                                            : [...filters.category, cat.id];
-                                        handleCategoryChange(newCats);
-                                    }}
-                                    className={cn(
-                                        "w-full flex items-center justify-between px-4 py-4 rounded-xl text-base font-medium transition-colors",
-                                        isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${cat.color}20` }}>
-                                            <Icon className="w-4 h-4" style={{ color: cat.color }} />
-                                        </div>
-                                        <span>{cat.name}</span>
-                                    </div>
-                                    {isSelected && <Check className="w-5 h-5" />}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </DrawerContent>
-            </Drawer>
-        );
     };
 
     return (
@@ -305,7 +309,11 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                 multiple={true}
                             />
                         </div>
-                        <MobileCategoryTrigger />
+                        <MobileCategoryTrigger
+                            filters={filters}
+                            categories={categories}
+                            onCategoryChange={handleCategoryChange}
+                        />
                     </div>
 
                     {/* Financial Priority */}
