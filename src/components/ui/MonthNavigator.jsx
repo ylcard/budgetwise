@@ -44,12 +44,12 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
 
     return (
         <div className={`flex items-center gap-2 w-fit ${config.container}`}>
-            <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+            <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
                 <CustomButton
                     variant="ghost"
                     size="icon"
                     onClick={goToPreviousMonth}
-                    className="h-8 w-8 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
+                    className="h-8 w-8 shrink-0 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </CustomButton>
@@ -60,7 +60,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
                     onMonthChange={onMonthChange}
                 >
                     <button
-                        className="px-4 py-1 min-w-[160px] text-center font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer rounded hover:bg-blue-50"
+                        className="px-2 sm:px-4 py-1 min-w-[130px] sm:min-w-[160px] text-sm sm:text-base text-center font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer rounded hover:bg-blue-50 truncate"
                     >
                         {getMonthName(currentMonth)} {currentYear}
                     </button>
@@ -70,7 +70,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
                     variant="ghost"
                     size="icon"
                     onClick={goToNextMonth}
-                    className="h-8 w-8 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
+                    className="h-8 w-8 shrink-0 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
                 >
                     <ChevronRight className="w-5 h-5" />
                 </CustomButton>
