@@ -6,7 +6,7 @@ import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsAll,
+    useCustomBudgetsForPeriod, // UPDATED 04-Feb-2026: Was useCustomBudgetsAll
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -50,7 +50,7 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd); // UPDATED 04-Feb-2026: Hook renamed
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
