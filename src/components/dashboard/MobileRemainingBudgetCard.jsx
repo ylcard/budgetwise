@@ -138,13 +138,13 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 </div>
 
                 {/* Main Content */}
-                <div className="flex flex-col items-center justify-center flex-1 gap-4">
+                <div className="flex flex-col items-center justify-center flex-1 gap-4 min-h-0">
                     {isEmptyMonth ? (
-                        <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in fade-in zoom-in-95 duration-500">
+                        <div className="flex flex-col items-center justify-center py-6 text-center space-y-5 animate-in fade-in zoom-in-95 duration-500 w-full max-w-[280px] mx-auto">
                             <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm">
                                 <Calendar className="w-8 h-8 text-emerald-600" />
                             </div>
-                            <div className="space-y-2 max-w-sm">
+                            <div className="space-y-2">
                                 <h3 className="text-xl font-bold text-gray-900">Ready to plan for {monthName}?</h3>
                                 <p className="text-gray-500 text-sm leading-relaxed">
                                     Start by adding your expected income to see your savings potential and unlock your budget goals.
@@ -155,8 +155,8 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                         <>
                             {/* Donut Chart */}
                             <div className="relative w-full max-w-[180px] aspect-square mx-auto">
-                                <svg 
-                                    viewBox={`0 0 ${size} ${size}`} 
+                                <svg
+                                    viewBox={`0 0 ${size} ${size}`}
                                     className="w-full h-full transform -rotate-90"
                                 >
                                     {/* Background circle */}
@@ -271,19 +271,19 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 </div>
 
                                 {/* Legend */}
-                                <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[11px] sm:text-xs px-2">
+                                <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-[10px] sm:text-xs px-1">
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: needsColor }}></div>
+                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: needsColor }}></div>
                                         <span className="text-gray-600">{FINANCIAL_PRIORITIES.needs.label}</span>
                                         <span className="font-bold text-gray-900">{Math.round(needsPct)}%</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: wantsColor }}></div>
+                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: wantsColor }}></div>
                                         <span className="text-gray-600">{FINANCIAL_PRIORITIES.wants.label}</span>
                                         <span className="font-bold text-gray-900">{Math.round(wantsPct)}%</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: savingsColor }}></div>
+                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: savingsColor }}></div>
                                         <span className="text-gray-600">Savings</span>
                                         <span className="font-bold text-gray-900">{Math.round(savingsPct)}%</span>
                                     </div>
@@ -294,10 +294,10 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 </div>
 
                 {/* Floating Action Button (FAB) - Bottom Right */}
-                <div className="fixed bottom-20 right-4 z-50 flex flex-col-reverse items-end gap-3">
+                <div className="fixed bottom-6 right-4 z-50 flex flex-col-reverse items-end gap-3 pointer-events-none">
                     {/* Main FAB Toggle Button */}
                     <motion.button
-                        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center"
+                        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center pointer-events-auto"
                         onClick={() => setIsFabOpen(!isFabOpen)}
                         whileTap={{ scale: 0.9 }}
                         animate={{ rotate: isFabOpen ? 45 : 0 }}
@@ -308,7 +308,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
                     <AnimatePresence>
                         {isFabOpen && (
-                            <div className="flex flex-col-reverse items-stretch gap-3">
+                            <div className="flex flex-col-reverse items-end gap-3 w-max max-w-[calc(100vw-2rem)] pointer-events-auto">
                                 {/* Import Button */}
                                 <motion.div
                                     key="import-btn"
