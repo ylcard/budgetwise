@@ -27,7 +27,7 @@ import {
 } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
-// import BudgetBars from "../components/dashboard/BudgetBars";
+import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard";
 import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
@@ -41,6 +41,15 @@ export default function Dashboard() {
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const { setFabButtons, clearFabButtons } = useFAB();
+
+    // ADDED: Simple mobile detection for component swapping
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
@@ -203,64 +212,51 @@ export default function Dashboard() {
 
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-3">
-                        <RemainingBudgetCard
-                            breakdown={detailedBreakdown}
-                            systemBudgets={systemBudgetsData}
-                            bonusSavingsPotential={bonusSavingsPotential}
-                            currentMonthIncome={currentMonthIncome}
-                            currentMonthExpenses={currentMonthExpenses}
-                            goals={goals}
-                            settings={settings}
-                            selectedMonth={selectedMonth}
-                            selectedYear={selectedYear}
-                            monthNavigator={
-                                <MonthNavigator
-                                    currentMonth={selectedMonth}
-                                    currentYear={selectedYear}
-                                    resetPosition="right"
-                                    onMonthChange={(month, year) => {
-                                        setSelectedMonth(month);
-                                        setSelectedYear(year);
-                                    }}
-                                />
-                            }
-                            addIncomeButton={
-                                <QuickAddIncome
-                                    open={showQuickAddIncome}
-                                    selectedMonth={selectedMonth}
-                                    selectedYear={selectedYear}
-                                    onOpenChange={setShowQuickAddIncome}
-                                    onSubmit={transactionActions.handleSubmit}
-                                    isSubmitting={transactionActions.isSubmitting}
-                                    renderTrigger={true}
-                                    triggerVariant="success"
-                                    triggerSize="sm"
-                                />
-                            }
-                            addExpenseButton={
-                                <QuickAddTransaction
-                                    open={showQuickAdd}
-                                    selectedMonth={selectedMonth}
-                                    selectedYear={selectedYear}
-                                    onOpenChange={setShowQuickAdd}
-                                    categories={categories}
-                                    customBudgets={activeCustomBudgets}
-                                    onSubmit={transactionActions.handleSubmit}
-                                    isSubmitting={transactionActions.isSubmitting}
-                                    transactions={transactions}
-                                    renderTrigger={true}
-                                    triggerVariant="warning"
-                                    triggerSize="sm"
-                                />
-                            }
-                            importDataButton={
-                                <ImportWizardDialog
-                                    triggerVariant="primary"
-                                    triggerSize="sm"
-                                    triggerClassName="w-full justify-start"
-                                />
-                            }
-                        />
+                        {isMobile ? (
+                            <MobileRemainingBudgetCard
+                                breakdown={detailedBreakdown}
+                                systemBudgets={systemBudgetsData}
+                                currentMonthIncome={currentMonthIncome}
+                                currentMonthExpenses={currentMonthExpenses}
+                                settings={settings}
+                                selectedMonth={selectedMonth}
+                                selectedYear={selectedYear}
+                                monthNavigator={
+                                    <MonthNavigator
+                                        currentMonth={selectedMonth}
+                                        currentYear={selectedYear}
+                                        resetPosition="right"
+                                        onMonthChange={(month, year) => {
+                                            setSelectedMonth(month);
+                                            setSelectedYear(year);
+                                        }}
+                                    />
+                                }
+                            />
+                        ) : (
+                            <RemainingBudgetCard
+                                breakdown={detailedBreakdown}
+                                systemBudgets={systemBudgetsData}
+                                bonusSavingsPotential={bonusSavingsPotential}
+                                currentMonthIncome={currentMonthIncome}
+                                currentMonthExpenses={currentMonthExpenses}
+                                goals={goals}
+                                settings={settings}
+                                selectedMonth={selectedMonth}
+                                selectedYear={selectedYear}
+                                monthNavigator={
+                                    <MonthNavigator
+                                        currentMonth={selectedMonth}
+                                        currentYear={selectedYear}
+                                        resetPosition="right"
+                                        onMonthChange={(month, year) => {
+                                            setSelectedMonth(month);
+                                            setSelectedYear(year);
+                                        }}
+                                    />
+                                }
+                            />
+                        )}
                     </div>
                 </div>
 
