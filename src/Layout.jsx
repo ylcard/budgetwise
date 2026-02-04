@@ -22,11 +22,14 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import { PeriodProvider } from "./components/hooks/usePeriod";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-Feb-2026: For iOS-style page transitions
+import { FABProvider, useFAB } from "./components/hooks/FABContext"; // ADDED 04-Feb-2026: For GlobalFAB management
+import GlobalFAB from "@/components/ui/GlobalFAB"; // ADDED 04-Feb-2026: Floating Action Button
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+    const { buttons: fabButtons } = useFAB(); // ADDED 04-Feb-2026: Get FAB buttons from context
 
     // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
     const navigationHistory = useRef({});
@@ -267,6 +270,9 @@ const LayoutContent = ({ children }) => {
                             )}
                         </div>
                     </nav>
+
+                    {/* ADDED 04-Feb-2026: GlobalFAB controlled by pages via FABContext */}
+                    <GlobalFAB buttons={fabButtons} />
                 </main>
             </div>
         </SidebarProvider>
@@ -278,7 +284,9 @@ export default function Layout({ children }) {
         <SettingsProvider>
             <PeriodProvider>
                 <ConfirmDialogProvider>
-                    <LayoutContent>{children}</LayoutContent>
+                    <FABProvider>
+                        <LayoutContent>{children}</LayoutContent>
+                    </FABProvider>
                 </ConfirmDialogProvider>
             </PeriodProvider>
         </SettingsProvider>
