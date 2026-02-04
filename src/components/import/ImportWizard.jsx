@@ -389,8 +389,7 @@ export function ImportWizardDialog({
     triggerVariant = "default",
     triggerSize = "default",
     triggerClassName = "",
-    renderTrigger = true,
-    triggerProps = {} // ADDED 04-Feb-2026: Allow passing additional props to trigger button
+    renderTrigger = true
 }) {
     const [open, setOpen] = useState(false);
 
@@ -402,7 +401,6 @@ export function ImportWizardDialog({
                         variant={triggerVariant}
                         size={triggerSize}
                         className={triggerClassName}
-                        {...triggerProps}
                     >
                         <Upload className="w-4 h-4 mr-2" />
                         Import Data

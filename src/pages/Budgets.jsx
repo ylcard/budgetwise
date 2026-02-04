@@ -1,11 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
 import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
-import { useFAB } from "../components/hooks/FABContext"; // ADDED 04-Feb-2026: GlobalFAB integration
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -24,7 +23,6 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 export default function Budgets() {
     const { user, settings } = useSettings();
     const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
-    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026: GlobalFAB management
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
     const { transactions } = useTransactions();
@@ -50,21 +48,6 @@ export default function Budgets() {
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
     };
-
-    // ADDED 04-Feb-2026: Configure GlobalFAB buttons for Budgets page
-    useEffect(() => {
-        setFabButtons([
-            {
-                key: 'budget',
-                label: 'Create Budget',
-                icon: 'PlusCircle',
-                variant: 'create',
-                onClick: () => setShowQuickAddBudget(true)
-            }
-        ]);
-
-        return () => clearFabButtons();
-    }, [setFabButtons, clearFabButtons]);
 
     const sortedCustomBudgets = useMemo(() => {
         const now = new Date();
@@ -153,8 +136,7 @@ export default function Budgets() {
                                         Custom Budgets
                                     </span>
                                 </div>
-                                {/* UPDATED 04-Feb-2026: Desktop-only button (mobile uses GlobalFAB) */}
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:inline-flex">
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>
@@ -179,8 +161,7 @@ export default function Budgets() {
                                         Custom budgets containing wants expenses, sorted by status and date
                                     </p>
                                 </div>
-                                {/* UPDATED 04-Feb-2026: Desktop-only button (mobile uses GlobalFAB) */}
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:inline-flex">
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>

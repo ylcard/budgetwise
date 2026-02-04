@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
 import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
-import { useFAB } from "../components/hooks/FABContext"; // ADDED 04-Feb-2026: GlobalFAB integration
 import { useCategories } from "../components/hooks/useBase44Entities";
 import { useCategoryActions } from "../components/hooks/useActions";
 import CategoryForm from "../components/categories/CategoryForm";
@@ -15,7 +14,6 @@ export default function Categories() {
     const [showForm, setShowForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
-    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026: GlobalFAB management
 
     // Data fetching
     const { categories, isLoading } = useCategories();
@@ -31,24 +29,6 @@ export default function Categories() {
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
     };
 
-    // ADDED 04-Feb-2026: Configure GlobalFAB buttons for Categories page
-    useEffect(() => {
-        setFabButtons([
-            {
-                key: 'category',
-                label: 'Add Category',
-                icon: 'PlusCircle',
-                variant: 'create',
-                onClick: () => {
-                    setEditingCategory(null);
-                    setShowForm(true);
-                }
-            }
-        ]);
-
-        return () => clearFabButtons();
-    }, [setFabButtons, clearFabButtons]);
-
     return (
         <PullToRefresh onRefresh={handleRefresh}>
             <div className="min-h-screen p-4 md:p-8">
@@ -58,14 +38,12 @@ export default function Categories() {
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Categories</h1>
                         <p className="text-gray-500 mt-1">Organize your transactions with custom categories</p>
                     </div>
-                    {/* UPDATED 04-Feb-2026: Desktop-only button (mobile uses GlobalFAB) */}
                     <CustomButton
                         onClick={() => {
                             setEditingCategory(null);
                             setShowForm(!showForm);
                         }}
                         variant="create"
-                        className="hidden md:inline-flex"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Category

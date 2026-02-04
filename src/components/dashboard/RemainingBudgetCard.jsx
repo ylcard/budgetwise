@@ -895,8 +895,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 )}
                             </AnimatePresence>
                         </motion.div>
-                        {/* UPDATED 04-Feb-2026: Keep action buttons for desktop (hidden on mobile via hidden md:flex) */}
-                        <div className="hidden md:flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                             {importDataButton}
                             {addExpenseButton}
                             {/* Conditionally highlight the Add Income button if the month is empty */}

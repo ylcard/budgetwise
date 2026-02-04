@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, ArrowDown } from "lucide-react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
@@ -7,7 +7,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
-import { useFAB } from "../components/hooks/FABContext"; // ADDED 04-Feb-2026: GlobalFAB integration
 import { useTransactions, useCategories, useCustomBudgetsForPeriod } from "../components/hooks/useBase44Entities";
 import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedData";
 import { useTransactionActions } from "../components/hooks/useActions";
@@ -21,7 +20,6 @@ import TransactionFilters from "../components/transactions/TransactionFilters";
 
 export default function Transactions() {
     const { user } = useSettings();
-    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026: GlobalFAB management
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -130,28 +128,6 @@ export default function Transactions() {
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
     };
 
-    // ADDED 04-Feb-2026: Configure GlobalFAB buttons for Transactions page
-    useEffect(() => {
-        setFabButtons([
-            {
-                key: 'expense',
-                label: 'Add Expense',
-                icon: 'PlusCircle',
-                variant: 'create',
-                onClick: () => setShowAddExpense(true)
-            },
-            {
-                key: 'income',
-                label: 'Add Income',
-                icon: 'PlusCircle',
-                variant: 'success',
-                onClick: () => setShowAddIncome(true)
-            }
-        ]);
-
-        return () => clearFabButtons();
-    }, [setFabButtons, clearFabButtons]);
-
     return (
         <PullToRefresh onRefresh={handleRefresh}>
             <div className="min-h-screen p-4 md:p-8" style={{ scrollbarGutter: 'stable' }}>
@@ -161,8 +137,7 @@ export default function Transactions() {
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Transactions</h1>
                         <p className="text-gray-500 mt-1">Track your income and expenses</p>
                     </div>
-                    <div className="hidden md:flex flex-wrap items-center gap-4">
-                        {/* UPDATED 04-Feb-2026: Desktop-only buttons (mobile uses GlobalFAB) */}
+                    <div className="flex flex-wrap items-center gap-4">
                         {/* Add Income - Success Variant (Green) */}
                         <CustomButton
                             variant="success"
@@ -180,10 +155,8 @@ export default function Transactions() {
                             <Plus className="w-4 h-4 mr-2" />
                             Add Expense
                         </CustomButton>
-                    </div>
 
                         {/* Modals (Logic only, no triggers) */}
-                        <div className="hidden">{/* ADDED 04-Feb-2026: Hidden container for modals */}
                         <QuickAddIncome
                             open={showAddIncome}
                             onOpenChange={setShowAddIncome}
@@ -201,7 +174,7 @@ export default function Transactions() {
                             transactions={transactions}
                             renderTrigger={false}
                         />
-                        </div>
+                    </div>
                 </div>
 
                 <TransactionFilters
