@@ -171,7 +171,7 @@ export default function Transactions() {
                             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Transactions</h1>
                             <p className="text-gray-500 mt-1">Track your income and expenses</p>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4">
+                        <div className="hidden md:flex flex-wrap items-center gap-4">
                             {/* Add Income - Success Variant (Green) */}
                             <CustomButton
                                 variant="success"
