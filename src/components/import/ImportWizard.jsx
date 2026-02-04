@@ -389,12 +389,20 @@ export function ImportWizardDialog({
     triggerVariant = "default",
     triggerSize = "default",
     triggerClassName = "",
-    renderTrigger = true
+    renderTrigger = true,
+    open,
+    onOpenChange
 }) {
-    const [open, setOpen] = useState(false);
+
+    // Support controlled or uncontrolled state
+    const [internalOpen, setInternalOpen] = useState(false);
+    
+    const isControlled = open !== undefined;
+    const finalOpen = isControlled ? open : internalOpen;
+    const finalOnOpenChange = isControlled ? onOpenChange : setInternalOpen;
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={finalOpen} onOpenChange={finalOnOpenChange}>
             {renderTrigger && (
                 <DialogTrigger asChild>
                     <CustomButton
@@ -413,7 +421,7 @@ export function ImportWizardDialog({
                     <DialogTitle>Import Data</DialogTitle>
                     <DialogDescription>Upload and import transactions from CSV files</DialogDescription>
                 </DialogHeader>
-                <ImportWizard onSuccess={() => setOpen(false)} />
+                <ImportWizard onSuccess={() => finalOnOpenChange(false)} />
             </DialogContent>
         </Dialog>
     );
