@@ -231,6 +231,43 @@ const LayoutContent = ({ children }) => {
                                     </Link>
                                 );
                             })}
+
+                            {/* More Menu Trigger */}
+                            {secondaryNav.length > 0 && (
+                                <Sheet open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
+                                    <SheetTrigger asChild>
+                                        <button className="flex flex-1 flex-col items-center justify-center gap-1 py-1.5 text-gray-400 min-w-0">
+                                            <MoreHorizontal className="w-6 h-6" />
+                                            <span className="text-[10px] font-medium">More</span>
+                                        </button>
+                                    </SheetTrigger>
+                                    <SheetContent side="bottom" className="rounded-t-[20px] px-0 pb-10">
+                                        <SheetHeader className="px-6 pb-4 border-b">
+                                            <SheetTitle>More Options</SheetTitle>
+                                        </SheetHeader>
+                                        <div className="grid grid-cols-1 divide-y divide-gray-100">
+                                            {secondaryNav.map((item) => (
+                                                <Link
+                                                    key={item.title}
+                                                    to={item.url}
+                                                    onClick={() => setIsMoreMenuOpen(false)}
+                                                    className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                                                >
+                                                    <item.icon className="w-5 h-5 text-gray-500" />
+                                                    <span className="font-medium text-gray-900">{item.title}</span>
+                                                </Link>
+                                            ))}
+                                            <button
+                                                onClick={() => base44.auth.logout()}
+                                                className="flex items-center gap-4 px-6 py-4 text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <LogOut className="w-5 h-5" />
+                                                <span className="font-medium">Logout</span>
+                                            </button>
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
+                            )}
                         </div>
                     </nav>
                 </main>
