@@ -6,7 +6,7 @@ import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsForPeriod, // UPDATED 04-Feb-2026: Was useCustomBudgetsAll
+    useCustomBudgetsAll,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -33,14 +33,14 @@ import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
-// COMMENTED OUT 04-Feb-2026: Import no longer needed, FAB buttons use simple configs
-// import { ImportWizardDialog } from "../components/import/ImportWizard";
+import { ImportWizardDialog } from "../components/import/ImportWizard";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
+    const [showImportDialog, setShowImportDialog] = useState(false);
     const { setFabButtons, clearFabButtons } = useFAB();
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -58,7 +58,7 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
+    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
@@ -148,7 +148,7 @@ export default function Dashboard() {
         }
     });
 
-    // UPDATED 04-Feb-2026: FAB buttons use simple configs with onClick handlers
+    // UPDATED 04-Feb-2026: FAB buttons for mobile only
     const fabButtons = useMemo(() => {
         const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
         return [
@@ -157,10 +157,7 @@ export default function Dashboard() {
                 label: 'Import Data',
                 icon: 'FileUp',
                 variant: 'primary',
-                onClick: () => {
-                    // TODO: Open import dialog - needs ImportWizard refactor
-                    console.log('Import clicked');
-                }
+                onClick: () => setShowImportDialog(true)
             },
             {
                 key: 'expense',
@@ -240,6 +237,43 @@ export default function Dashboard() {
                                         }}
                                     />
                                 }
+                                addIncomeButton={
+                                    <QuickAddIncome
+                                        open={showQuickAddIncome}
+                                        selectedMonth={selectedMonth}
+                                        selectedYear={selectedYear}
+                                        onOpenChange={setShowQuickAddIncome}
+                                        onSubmit={transactionActions.handleSubmit}
+                                        isSubmitting={transactionActions.isSubmitting}
+                                        renderTrigger={true}
+                                        triggerVariant="success"
+                                        triggerSize="sm"
+                                    />
+                                }
+                                addExpenseButton={
+                                    <QuickAddTransaction
+                                        open={showQuickAdd}
+                                        selectedMonth={selectedMonth}
+                                        selectedYear={selectedYear}
+                                        onOpenChange={setShowQuickAdd}
+                                        categories={categories}
+                                        customBudgets={activeCustomBudgets}
+                                        onSubmit={transactionActions.handleSubmit}
+                                        isSubmitting={transactionActions.isSubmitting}
+                                        transactions={transactions}
+                                        renderTrigger={true}
+                                        triggerVariant="warning"
+                                        triggerSize="sm"
+                                    />
+                                }
+                                importDataButton={
+                                    <ImportWizardDialog
+                                        triggerVariant="primary"
+                                        triggerSize="sm"
+                                        triggerClassName="w-full justify-start"
+                                        renderTrigger={true}
+                                    />
+                                }
                             />
                         )}
                     </div>
@@ -280,7 +314,13 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Hidden dialog components - opened by FAB button onClick handlers */}
+                {/* Hidden dialog components - opened by FAB (mobile) or desktop buttons */}
+                <ImportWizardDialog
+                    open={showImportDialog}
+                    onOpenChange={setShowImportDialog}
+                    renderTrigger={false}
+                />
+
                 <QuickAddTransaction
                     open={showQuickAdd}
                     selectedMonth={selectedMonth}
