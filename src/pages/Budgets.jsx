@@ -153,7 +153,8 @@ export default function Budgets() {
                                         Custom Budgets
                                     </span>
                                 </div>
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                                {/* UPDATED 04-Feb-2026: Desktop-only button (mobile uses GlobalFAB) */}
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:inline-flex">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>
@@ -178,7 +179,8 @@ export default function Budgets() {
                                         Custom budgets containing wants expenses, sorted by status and date
                                     </p>
                                 </div>
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                                {/* UPDATED 04-Feb-2026: Desktop-only button (mobile uses GlobalFAB) */}
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:inline-flex">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>
