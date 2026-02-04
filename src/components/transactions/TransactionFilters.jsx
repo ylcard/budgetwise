@@ -92,11 +92,13 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     <DrawerHeader>
                         <DrawerTitle>{label}</DrawerTitle>
                     </DrawerHeader>
-                    <div className="p-4 pb-8 space-y-1">
+                    <div className="p-4 pb-8 space-y-1 max-h-[60vh] overflow-y-auto">
                         {options.map((opt) => (
                             <button
                                 key={opt.value}
-                                onClick={() => onSelect(opt.value)}
+                                onClick={() => {
+                                    onSelect(opt.value);
+                                }}
                                 className={cn(
                                     "w-full text-left px-4 py-4 rounded-xl text-base font-medium transition-colors",
                                     value === opt.value ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
@@ -280,58 +282,87 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     {/* Custom Budget */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Budget</Label>
-                        <Select
+                        <div className="hidden md:block">
+                            <Select
+                                value={filters.customBudgetId}
+                                onValueChange={(value) => setFilters({ ...filters, customBudgetId: value })}
+                            >
+                                <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="All Budgets" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Budgets</SelectItem>
+                                    {filteredCustomBudgets.map(b => (
+                                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <MobileSelectTrigger
+                            label="Linked Budget"
                             value={filters.customBudgetId}
-                            onValueChange={(value) => setFilters({ ...filters, customBudgetId: value })}
-                        >
-                            <SelectTrigger className="h-9">
-                                <SelectValue placeholder="All Budgets" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Budgets</SelectItem>
-                                {filteredCustomBudgets.map(b => (
-                                    <SelectItem key={b.id} value={b.id}>
-                                        {b.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            options={[
+                                { value: 'all', label: 'All Budgets' },
+                                ...filteredCustomBudgets.map(b => ({ value: b.id, label: b.name }))
+                            ]}
+                            onSelect={(val) => setFilters({ ...filters, customBudgetId: val })}
+                        />
                     </div>
 
                     {/* Payment Status */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Payment</Label>
-                        <Select
+                        <div className="hidden md:block">
+                            <Select
+                                value={filters.paymentStatus}
+                                onValueChange={(value) => setFilters({ ...filters, paymentStatus: value })}
+                            >
+                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="paid">Paid</SelectItem>
+                                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <MobileSelectTrigger
+                            label="Payment Status"
                             value={filters.paymentStatus}
-                            onValueChange={(value) => setFilters({ ...filters, paymentStatus: value })}
-                        >
-                            <SelectTrigger className="h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="paid">Paid</SelectItem>
-                                <SelectItem value="unpaid">Unpaid</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            options={[
+                                { value: 'all', label: 'All Status' },
+                                { value: 'paid', label: 'Paid' },
+                                { value: 'unpaid', label: 'Unpaid' }
+                            ]}
+                            onSelect={(val) => setFilters({ ...filters, paymentStatus: val })}
+                        />
                     </div>
 
                     {/* Cash Status */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Cash</Label>
-                        <Select
+                        <div className="hidden md:block">
+                            <Select
+                                value={filters.cashStatus}
+                                onValueChange={(value) => setFilters({ ...filters, cashStatus: value })}
+                            >
+                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All</SelectItem>
+                                    <SelectItem value="cash_only">Cash</SelectItem>
+                                    <SelectItem value="exclude_cash">Card</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <MobileSelectTrigger
+                            label="Cash/Card"
                             value={filters.cashStatus}
-                            onValueChange={(value) => setFilters({ ...filters, cashStatus: value })}
-                        >
-                            <SelectTrigger className="h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="cash_only">Cash</SelectItem>
-                                <SelectItem value="exclude_cash">Card</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            options={[
+                                { value: 'all', label: 'All' },
+                                { value: 'cash_only', label: 'Cash Only' },
+                                { value: 'exclude_cash', label: 'Card Only' }
+                            ]}
+                            onSelect={(val) => setFilters({ ...filters, cashStatus: val })}
+                        />
                     </div>
                 </div>
             </CardContent>
