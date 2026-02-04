@@ -1,8 +1,9 @@
 
-import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw } from "lucide-react";
+import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw, Link2 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 export const navigationItems = [
+    // Primary Nav (Items 1-4)
     {
         title: "Dashboard",
         url: createPageUrl("Dashboard"),
@@ -23,6 +24,7 @@ export const navigationItems = [
         url: createPageUrl("Budgets"),
         icon: Calendar,
     },
+    // Secondary Nav (Moved to "More" menu)
     {
         title: "Categories",
         url: createPageUrl("Categories"),
@@ -36,7 +38,7 @@ export const navigationItems = [
     {
         title: "Bank Sync",
         url: createPageUrl("BankSync"),
-        icon: BarChart3,
+        icon: Link2,
     },
     {
         title: "Settings",
