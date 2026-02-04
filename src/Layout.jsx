@@ -219,6 +219,14 @@ const LayoutContent = ({ children }) => {
                                     <Link
                                         key={item.title}
                                         to={item.url}
+                                        onClick={(e) => {
+                                            if (isActive) {
+                                                // If already active, reset this tab's history and go to root
+                                                navigationHistory.current[item.url] = [item.url];
+                                                navigate(item.url);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }
+                                        }}
                                         className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 ${isActive
                                             ? 'text-blue-600 bg-blue-50/50'
                                             : 'text-gray-400'
@@ -270,10 +278,9 @@ const LayoutContent = ({ children }) => {
                             )}
                         </div>
                     </nav>
-
-                    {/* ADDED 04-Feb-2026: GlobalFAB controlled by pages via FABContext */}
-                    <GlobalFAB buttons={fabButtons} />
                 </main>
+                {/* GlobalFAB placed outside main to avoid relative positioning issues */}
+                <GlobalFAB />
             </div>
         </SidebarProvider>
     );
