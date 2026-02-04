@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PullToRefresh } from "../components/ui/PullToRefresh";
-import { useQueryClient } from "@tanstack/react-query";
-import { QUERY_KEYS } from "../components/hooks/queryKeys";
-import { useFAB } from "../components/hooks/FABContext"; // ADDED 04-Feb-2026
+import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
+import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
+import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -23,8 +22,7 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 
 export default function Budgets() {
     const { user, settings } = useSettings();
-    const queryClient = useQueryClient();
-    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026
+    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
     const { transactions } = useTransactions();
@@ -44,22 +42,7 @@ export default function Budgets() {
         customBudgetActions.handleStatusChange(budgetId, 'active');
     };
 
-    // ADDED 04-Feb-2026: FAB button for mobile
-    const fabButtons = useMemo(() => [
-        {
-            key: 'add-budget',
-            label: 'Create Budget',
-            icon: 'PlusCircle',
-            variant: 'create',
-            onClick: () => setShowQuickAddBudget(true)
-        }
-    ], []);
-
-    useEffect(() => {
-        setFabButtons(fabButtons);
-        return () => clearFabButtons();
-    }, [fabButtons, setFabButtons, clearFabButtons]);
-
+    // ADDED 03-Feb-2026: Pull-to-refresh handler
     const handleRefresh = async () => {
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
@@ -106,6 +89,7 @@ export default function Budgets() {
                         }}
                     />
 
+                    {/* System Budgets Section */}
                     {systemBudgetsWithStats.length > 0 && (
                         <Card className="border-none shadow-lg">
                             <CardHeader>
@@ -143,6 +127,7 @@ export default function Budgets() {
                         </Card>
                     )}
 
+                    {/* Custom Budgets Section */}
                     {sortedCustomBudgets.length === 0 ? (
                         <Card className="border-none shadow-lg">
                             <CardHeader className="flex flex-row items-center justify-between">
@@ -151,8 +136,7 @@ export default function Budgets() {
                                         Custom Budgets
                                     </span>
                                 </div>
-                                {/* UPDATED 04-Feb-2026: Desktop button only (mobile uses FAB) */}
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:flex">
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>
@@ -177,8 +161,7 @@ export default function Budgets() {
                                         Custom budgets containing wants expenses, sorted by status and date
                                     </p>
                                 </div>
-                                {/* UPDATED 04-Feb-2026: Desktop button only (mobile uses FAB) */}
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:flex">
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>
@@ -203,7 +186,6 @@ export default function Budgets() {
                         </Card>
                     )}
 
-                    {/* Hidden dialog (opened by FAB or desktop buttons) */}
                     <QuickAddBudget
                         open={showQuickAddBudget}
                         onOpenChange={setShowQuickAddBudget}
