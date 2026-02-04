@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, ArrowDown } from "lucide-react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
@@ -8,6 +8,7 @@ import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useTransactions, useCategories, useCustomBudgetsForPeriod } from "../components/hooks/useBase44Entities";
+import { useFAB } from "../components/hooks/FABContext";
 import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedData";
 import { useTransactionActions } from "../components/hooks/useActions";
 import { useSettings } from "../components/utils/SettingsContext";
@@ -17,6 +18,7 @@ import QuickAddTransaction from "../components/transactions/QuickAddTransaction"
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import TransactionList from "../components/transactions/TransactionList";
 import TransactionFilters from "../components/transactions/TransactionFilters";
+import { ImportWizardDialog } from "../components/import/ImportWizard";
 
 export default function Transactions() {
     const { user } = useSettings();
@@ -25,7 +27,9 @@ export default function Transactions() {
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [showAddIncome, setShowAddIncome] = useState(false);
     const [showAddExpense, setShowAddExpense] = useState(false);
+    const [showImportWizard, setShowImportWizard] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
+    const { setFabButtons, clearFabButtons } = useFAB();
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -128,86 +132,121 @@ export default function Transactions() {
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
     };
 
+    // FAB Configuration
+    const fabButtons = useMemo(() => [
+        {
+            key: 'import',
+            label: 'Import Data',
+            icon: 'FileUp',
+            variant: 'primary',
+            onClick: () => setShowImportWizard(true)
+        },
+        {
+            key: 'expense',
+            label: 'Add Expense',
+            icon: 'MinusCircle',
+            variant: 'warning',
+            onClick: () => setShowAddExpense(true)
+        },
+        {
+            key: 'income',
+            label: 'Add Income',
+            icon: 'PlusCircle',
+            variant: 'success',
+            onClick: () => setShowAddIncome(true)
+        }
+    ], []);
+
+    useEffect(() => {
+        setFabButtons(fabButtons);
+        return () => clearFabButtons();
+    }, [fabButtons, setFabButtons, clearFabButtons]);
+
     return (
         <PullToRefresh onRefresh={handleRefresh}>
             <div className="min-h-screen p-4 md:p-8" style={{ scrollbarGutter: 'stable' }}>
                 <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Transactions</h1>
-                        <p className="text-gray-500 mt-1">Track your income and expenses</p>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Transactions</h1>
+                            <p className="text-gray-500 mt-1">Track your income and expenses</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4">
+                            {/* Add Income - Success Variant (Green) */}
+                            <CustomButton
+                                variant="success"
+                                onClick={() => setShowAddIncome(true)}
+                            >
+                                <ArrowDown className="w-4 h-4 mr-2" />
+                                Add Income
+                            </CustomButton>
+
+                            {/* Add Expense - Create Variant (Blue/Purple Gradient) */}
+                            <CustomButton
+                                variant="create"
+                                onClick={() => setShowAddExpense(true)}
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Expense
+                            </CustomButton>
+
+                            {/* Modals (Logic only, no triggers) */}
+                            <QuickAddIncome
+                                open={showAddIncome}
+                                onOpenChange={setShowAddIncome}
+                                onSubmit={handleSubmit}
+                                isSubmitting={isSubmitting}
+                                renderTrigger={false}
+                            />
+                            <QuickAddTransaction
+                                open={showAddExpense}
+                                onOpenChange={setShowAddExpense}
+                                categories={categories}
+                                customBudgets={allCustomBudgets}
+                                onSubmit={handleSubmit}
+                                isSubmitting={isSubmitting}
+                                transactions={transactions}
+                                renderTrigger={false}
+                            />
+                            <ImportWizardDialog
+                                open={showImportWizard}
+                                onOpenChange={setShowImportWizard}
+                                renderTrigger={false}
+                            />
+                        </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4">
-                        {/* Add Income - Success Variant (Green) */}
-                        <CustomButton
-                            variant="success"
-                            onClick={() => setShowAddIncome(true)}
-                        >
-                            <ArrowDown className="w-4 h-4 mr-2" />
-                            Add Income
-                        </CustomButton>
 
-                        {/* Add Expense - Create Variant (Blue/Purple Gradient) */}
-                        <CustomButton
-                            variant="create"
-                            onClick={() => setShowAddExpense(true)}
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Expense
-                        </CustomButton>
+                    <TransactionFilters
+                        filters={filters}
+                        setFilters={setFilters}
+                        categories={categories}
+                        allCustomBudgets={allCustomBudgets}
+                    />
 
-                        {/* Modals (Logic only, no triggers) */}
-                        <QuickAddIncome
-                            open={showAddIncome}
-                            onOpenChange={setShowAddIncome}
-                            onSubmit={handleSubmit}
-                            isSubmitting={isSubmitting}
-                            renderTrigger={false}
-                        />
-                        <QuickAddTransaction
-                            open={showAddExpense}
-                            onOpenChange={setShowAddExpense}
-                            categories={categories}
-                            customBudgets={allCustomBudgets}
-                            onSubmit={handleSubmit}
-                            isSubmitting={isSubmitting}
-                            transactions={transactions}
-                            renderTrigger={false}
-                        />
-                    </div>
-                </div>
-
-                <TransactionFilters
-                    filters={filters}
-                    setFilters={setFilters}
-                    categories={categories}
-                    allCustomBudgets={allCustomBudgets}
-                />
-
-                <TransactionList
-                    transactions={paginatedTransactions}
-                    categories={categories}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    isLoading={isLoading}
-                    onSubmit={handleSubmit}
-                    isSubmitting={isSubmitting}
-                    customBudgets={allCustomBudgets}
-                    monthStart={monthStart}
-                    monthEnd={monthEnd}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    itemsPerPage={itemsPerPage}
-                    onItemsPerPageChange={setItemsPerPage}
-                    totalItems={filteredTransactions.length}
-                    selectedIds={selectedIds}
-                    onToggleSelection={handleToggleSelection}
-                    onSelectAll={handleSelectAllPage}
-                    onClearSelection={handleClearSelection}
-                    onDeleteSelected={handleDeleteSelected}
-                    isBulkDeleting={isBulkDeleting}
-                />
+                    <TransactionList
+                        transactions={paginatedTransactions}
+                        categories={categories}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        isLoading={isLoading}
+                        onSubmit={handleSubmit}
+                        isSubmitting={isSubmitting}
+                        customBudgets={allCustomBudgets}
+                        monthStart={monthStart}
+                        monthEnd={monthEnd}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        totalItems={filteredTransactions.length}
+                        selectedIds={selectedIds}
+                        onToggleSelection={handleToggleSelection}
+                        onSelectAll={handleSelectAllPage}
+                        onClearSelection={handleClearSelection}
+                        onDeleteSelected={handleDeleteSelected}
+                        isBulkDeleting={isBulkDeleting}
+                    />
                 </div>
             </div>
         </PullToRefresh>
