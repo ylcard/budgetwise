@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, /* CardFooter */ } from "@/components/ui/card"; // UPDATED 17-Jan-2026: Commented out CardFooter
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "../components/utils/SettingsContext";
@@ -143,41 +142,36 @@ export default function Settings() {
                             {/* ... Currency Inputs ... */}
                             <div className="space-y-2">
                                 <Label htmlFor="currency">Currency</Label>
-                                <MobileDrawerSelect
-                                    value={formData.baseCurrency || 'USD'}
-                                    onValueChange={handleCurrencyChange}
-                                    placeholder="Select currency"
-                                    options={CURRENCY_OPTIONS.map(c => ({ 
-                                        value: c.code, 
-                                        label: `${c.symbol} - ${c.name} (${c.code})` 
-                                    }))}
-                                />
+                                <Select value={formData.baseCurrency || 'USD'} onValueChange={handleCurrencyChange}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {CURRENCY_OPTIONS.map((c) => (
+                                            <SelectItem key={c.code} value={c.code}>{c.symbol} - {c.name} ({c.code})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label>Position</Label>
-                                    <MobileDrawerSelect
-                                        value={formData.currencyPosition}
-                                        onValueChange={(v) => handleFormChange('currencyPosition', v)}
-                                        placeholder="Select position"
-                                        options={[
-                                            { value: "before", label: `Before (${formData.currencySymbol}100)` },
-                                            { value: "after", label: `After (100${formData.currencySymbol})` }
-                                        ]}
-                                    />
+                                    <Select value={formData.currencyPosition} onValueChange={(v) => handleFormChange('currencyPosition', v)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="before">Before ({formData.currencySymbol}100)</SelectItem>
+                                            <SelectItem value="after">After (100{formData.currencySymbol})</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>View Mode</Label>
-                                    <MobileDrawerSelect
-                                        value={formData.budgetViewMode || 'bars'}
-                                        onValueChange={(v) => handleFormChange('budgetViewMode', v)}
-                                        placeholder="Select view mode"
-                                        options={[
-                                            { value: "bars", label: "Bars" },
-                                            { value: "cards", label: "Cards" }
-                                        ]}
-                                    />
+                                    <Select value={formData.budgetViewMode || 'bars'} onValueChange={(v) => handleFormChange('budgetViewMode', v)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="bars">Bars</SelectItem>
+                                            <SelectItem value="cards">Cards</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 
@@ -185,28 +179,24 @@ export default function Settings() {
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label>Thousand Separator</Label>
-                                    <MobileDrawerSelect
-                                        value={formData.thousandSeparator}
-                                        onValueChange={(v) => handleFormChange('thousandSeparator', v)}
-                                        placeholder="Select separator"
-                                        options={[
-                                            { value: ",", label: "Comma (,)" },
-                                            { value: ".", label: "Period (.)" },
-                                            { value: " ", label: "Space" }
-                                        ]}
-                                    />
+                                    <Select value={formData.thousandSeparator} onValueChange={(v) => handleFormChange('thousandSeparator', v)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value=",">Comma (,)</SelectItem>
+                                            <SelectItem value=".">Period (.)</SelectItem>
+                                            <SelectItem value=" ">Space</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Decimal Separator</Label>
-                                    <MobileDrawerSelect
-                                        value={formData.decimalSeparator}
-                                        onValueChange={(v) => handleFormChange('decimalSeparator', v)}
-                                        placeholder="Select separator"
-                                        options={[
-                                            { value: ".", label: "Period (.)" },
-                                            { value: ",", label: "Comma (,)" }
-                                        ]}
-                                    />
+                                    <Select value={formData.decimalSeparator} onValueChange={(v) => handleFormChange('decimalSeparator', v)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value=".">Period (.)</SelectItem>
+                                            <SelectItem value=",">Comma (,)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 
