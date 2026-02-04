@@ -9,7 +9,8 @@ export default function GlobalFAB({ buttons = [] }) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="fixed bottom-6 right-4 z-50 flex flex-col-reverse items-end gap-3 pointer-events-none">
+        // <div className="fixed bottom-6 right-4 z-50 flex flex-col-reverse items-end gap-3 pointer-events-none">
+        <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-[110] flex flex-col-reverse items-end gap-3 pointer-events-none">
             {/* Main FAB Toggle Button */}
             <motion.button
                 className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center pointer-events-auto"
