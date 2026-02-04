@@ -55,7 +55,7 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
             <PopoverTrigger asChild>
                 {children}
             </PopoverTrigger>
-            <PopoverContent className="w-[380px] p-8" align="center">
+            <PopoverContent className="max-w-[90vw] p-8" align="center">
                 <div className="space-y-8">
                     {/* Year Navigation */}
                     <div className="flex items-center justify-between">
