@@ -8,14 +8,17 @@ import { motion } from "framer-motion";
 import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { getCustomBudgetStats } from "../utils/financialCalculations";
 
-export default function BudgetCard({ budgets, transactions, settings, onActivateBudget, size = 'md' }) {
-    const budget = budgets[0];
+export default function BudgetCard({ budgets = [], transactions = [], settings, onActivateBudget, size = 'md' }) {
+    const budget = budgets?.[0];
+
+    if (!budget) return null;
 
     // Calculate stats from raw data
     const stats = useMemo(() => {
-        const budgetTransactions = transactions.filter(t => t.customBudgetId === budget.id);
+        const budgetTransactions = transactions?.filter(t => t.customBudgetId === budget.id) || [];
         return getCustomBudgetStats(budget, budgetTransactions);
     }, [budget, transactions]);
+
     const isSystemBudget = budget.isSystemBudget || false;
     const isSavings = isSystemBudget && budget.systemBudgetType === 'savings';
 
@@ -149,7 +152,7 @@ export default function BudgetCard({ budgets, transactions, settings, onActivate
     // REVERSE LOGIC for Needs/Wants
     let displayPercentage = 0;
     let mainOffset = 0;
-    
+
     if (isSavings) {
         // Savings: Grow from 0 -> 100%
         displayPercentage = Math.min(percentage, 100);
