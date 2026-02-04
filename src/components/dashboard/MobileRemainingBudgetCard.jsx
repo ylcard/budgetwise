@@ -1,24 +1,17 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Calendar, Wallet } from "lucide-react";
+import { AlertCircle, Calendar, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
-import { memo, useMemo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { getMonthName } from "../utils/dateUtils";
 import confetti from "canvas-confetti";
-// COMMENTED OUT 04-Feb-2026: GlobalFAB now managed in Layout via FABContext
-// import GlobalFAB from "../ui/GlobalFAB";
 
-// CREATED 03-Feb-2026: Mobile-optimized version with donut chart for Essential/Lifestyle/Savings visualization
 const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     currentMonthIncome,
     currentMonthExpenses,
     settings,
     monthNavigator,
-    addIncomeButton,
-    addExpenseButton,
-    importDataButton,
-    systemBudgets = [],
     selectedMonth,
     breakdown,
     selectedYear
@@ -125,31 +118,6 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     }, [currentMonthIncome, selectedMonth, selectedYear]);
 
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
-
-    // COMMENTED OUT 04-Feb-2026: FAB buttons now managed by parent page via FABContext
-    // const fabButtons = useMemo(() => [
-    //     {
-    //         key: 'import',
-    //         content: importDataButton
-    //     },
-    //     {
-    //         key: 'expense',
-    //         content: addExpenseButton
-    //     },
-    //     {
-    //         key: 'income',
-    //         content: isEmptyMonth ? (
-    //             <motion.div
-    //                 animate={{ scale: [1, 1.1, 1] }}
-    //                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-    //                 className="relative w-full"
-    //             >
-    //                 <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
-    //                 <div className="relative">{addIncomeButton}</div>
-    //             </motion.div>
-    //         ) : addIncomeButton
-    //     }
-    // ], [importDataButton, addExpenseButton, addIncomeButton, isEmptyMonth]);
 
     return (
         <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col relative">
@@ -316,9 +284,6 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                         </>
                     )}
                 </div>
-
-                {/* COMMENTED OUT 04-Feb-2026: GlobalFAB now rendered in Layout, controlled via FABContext */}
-                {/* <GlobalFAB buttons={fabButtons} /> */}
             </CardContent>
         </Card>
     );
