@@ -214,7 +214,7 @@ const LayoutContent = ({ children }) => {
                     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                         <div className="flex w-full items-center px-2 py-2 select-none">
                             {primaryNav.map((item) => {
-                                const isActive = location.pathname === item.url;
+                                const isTabActive = activeTab === item.url;
                                 return (
                                     <Link
                                         key={item.title}
@@ -223,7 +223,7 @@ const LayoutContent = ({ children }) => {
                                             if (isTabActive) {
                                                 // If already active, reset this tab's history and go to root
                                                 e.preventDefault(); // Stop default Link behavior to handle manually
-                                                navigationHistory.current[activeTab] = [item.url];
+                                                navigationHistory.current[item.url] = [item.url];
                                                 navigate(item.url, { replace: true });
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }
