@@ -65,6 +65,7 @@ export default function GlobalFAB() {
                                         variant={button.variant}
                                         size="sm"
                                         onClick={() => handleButtonClick(button.onClick)}
+                                        disabled={button.disabled}
                                         className="w-full justify-start relative"
                                     >
                                         {Icon && <Icon className="w-4 h-4" />}
