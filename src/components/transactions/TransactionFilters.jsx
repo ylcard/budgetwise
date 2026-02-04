@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import CategorySelect from "../ui/CategorySelect";
 import { useState, useMemo, useCallback } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 
@@ -92,20 +92,21 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     <DrawerHeader>
                         <DrawerTitle>{label}</DrawerTitle>
                     </DrawerHeader>
-                    <div className="p-4 pb-8 space-y-1 max-h-[60vh] overflow-y-auto">
+                    <div className="p-4 space-y-1 max-h-[60vh] overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
                         {options.map((opt) => (
-                            <button
-                                key={opt.value}
-                                onClick={() => {
-                                    onSelect(opt.value);
-                                }}
-                                className={cn(
-                                    "w-full text-left px-4 py-4 rounded-xl text-base font-medium transition-colors",
-                                    value === opt.value ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
-                                )}
-                            >
-                                {opt.label}
-                            </button>
+                            <DrawerClose key={opt.value} asChild>
+                                <button
+                                    onClick={() => {
+                                        onSelect(opt.value);
+                                    }}
+                                    className={cn(
+                                        "w-full text-left px-4 py-4 rounded-xl text-base font-medium transition-colors",
+                                        value === opt.value ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                    )}
+                                >
+                                    {opt.label}
+                                </button>
+                            </DrawerClose>
                         ))}
                     </div>
                 </DrawerContent>
