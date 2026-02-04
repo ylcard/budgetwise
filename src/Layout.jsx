@@ -36,7 +36,10 @@ const LayoutContent = ({ children }) => {
     useRecurringProcessor();
 
     // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
-    const { currentPageTitle, isRootPage, activeTab, primaryNav, secondaryNav } = useMemo(() => {
+    const primaryNav = navigationItems.slice(0, 4);
+    const secondaryNav = navigationItems.slice(4);
+
+    const { currentPageTitle, isRootPage, activeTab } = useMemo(() => {
         const route = navigationItems.find(item => location.pathname === item.url.split('?')[0]);
         const tabUrl = route?.url || navigationItems.find(item =>
             location.pathname.startsWith(item.url.split('?')[0])
@@ -45,9 +48,7 @@ const LayoutContent = ({ children }) => {
         return {
             currentPageTitle: route?.title || 'BudgetWise',
             isRootPage: !!route,
-            activeTab: tabUrl,
-            primaryNav,
-            secondaryNav
+            activeTab: tabUrl
         };
     }, [location.pathname]);
 
