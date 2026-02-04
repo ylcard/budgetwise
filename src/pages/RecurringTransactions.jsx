@@ -118,7 +118,8 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
                 label: 'Process Now',
                 icon: 'Play',
                 variant: 'info',
-                onClick: handleProcessRecurring
+                onClick: handleProcessRecurring,
+                disabled: isProcessing
             });
         }
 
