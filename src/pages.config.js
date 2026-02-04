@@ -49,9 +49,7 @@
  */
 import BankSync from './pages/BankSync';
 import BudgetDetail from './pages/BudgetDetail';
-import Budgets from './pages/Budgets';
 import Categories from './pages/Categories';
-import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
 import MiniBudgets from './pages/MiniBudgets';
@@ -66,9 +64,7 @@ import __Layout from './Layout.jsx';
 export const PAGES = {
     "BankSync": BankSync,
     "BudgetDetail": BudgetDetail,
-    "Budgets": Budgets,
     "Categories": Categories,
-    "Dashboard": Dashboard,
     "Home": Home,
     "ImportData": ImportData,
     "MiniBudgets": MiniBudgets,
@@ -80,7 +76,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Dashboard",
+    mainPage: "BankSync",
     Pages: PAGES,
     Layout: __Layout,
 };
