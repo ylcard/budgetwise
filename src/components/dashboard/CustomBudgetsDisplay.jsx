@@ -10,7 +10,12 @@ import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
 import { useSettings } from "../utils/SettingsContext";
 import { usePeriod } from "../hooks/usePeriod";
 import { useCustomBudgetsForPeriod, useTransactionsForCustomBudgets } from "../hooks/useBase44Entities";
-import useEmblaCarousel from 'embla-carousel-react'; // ADDED: Carousel logic
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselDots
+} from "@/components/ui/carousel";
 
 /**
  * CREATED: 03-Feb-2026
@@ -34,28 +39,6 @@ export default function CustomBudgetsDisplay({
     const { transactions = [] } = useTransactionsForCustomBudgets(customBudgetIds);
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
 
-    // --- EMBLA CAROUSEL SETUP ---
-    const [emblaRef, emblaApi] = useEmblaCarousel({
-        align: 'start',
-        containScroll: 'trimSnaps',
-        loop: false
-    });
-
-    const [canScrollPrev, setCanScrollPrev] = useState(false);
-    const [canScrollNext, setCanScrollNext] = useState(false);
-
-    const onSelect = useCallback((api) => {
-        if (!api) return;
-        setCanScrollPrev(api.canScrollPrev());
-        setCanScrollNext(api.canScrollNext());
-    }, []);
-
-    useEffect(() => {
-        if (!emblaApi) return;
-        onSelect(emblaApi);
-        emblaApi.on('reInit', onSelect).on('select', onSelect);
-    }, [emblaApi, onSelect]);
-
     const VIEW_OPTIONS = [
         { value: 'bars', label: <BarChart2 className="w-4 h-4" />, desktopLabel: 'Bars' },
         { value: 'cards', label: <LayoutGrid className="w-4 h-4" />, desktopLabel: 'Cards' },
@@ -69,13 +52,6 @@ export default function CustomBudgetsDisplay({
             setViewMode(settings.budgetViewMode);
         }
     }, [settings.budgetViewMode]);
-
-    const handleViewModeChange = (newMode) => {
-        setViewMode(newMode);
-    };
-
-    const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
-    const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
 
     // Helper to determine card size based on screen width
     const [isMobile, setIsMobile] = useState(false);
@@ -100,22 +76,6 @@ export default function CustomBudgetsDisplay({
                         </div>
                         <div className="hidden md:flex items-center gap-2">
                             <CustomButton
-                                variant="outline"
-                                size="icon"
-                                onClick={scrollPrev}
-                                disabled={!canScrollPrev}
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </CustomButton>
-                            <CustomButton
-                                variant="outline"
-                                size="icon"
-                                onClick={scrollNext}
-                                disabled={!canScrollNext}
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </CustomButton>
-                            <CustomButton
                                 variant="create"
                                 size="sm"
                                 onClick={onCreateBudget}
@@ -133,29 +93,21 @@ export default function CustomBudgetsDisplay({
                                     label: <span className="flex items-center gap-2">{opt.label} <span className="hidden md:inline">{opt.desktopLabel}</span></span>
                                 }))}
                                 value={viewMode}
-                                onChange={handleViewModeChange}
+                                onChange={setViewMode}
                             />
                         </div>
 
-                        {/* EMBLA CAROUSEL WRAPPER */}
-                        {/* overflow-hidden is CRITICAL here - it stops the page from expanding */}
-                        <div className="overflow-hidden" ref={emblaRef}>
-                            <div className={`
-                                flex touch-pan-y
-                                ${viewMode === 'bars' ? 'items-end' : 'items-stretch'}
-                            `}>
+                        <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                            <CarouselContent className={viewMode === 'bars' ? 'items-end' : 'items-stretch'}>
                                 {budgets.map((budget) => (
-                                    <div
+                                    <CarouselItem
                                         key={budget.id}
                                         className={`
-                                        flex-[0_0_100%] min-w-0
-                                        sm:flex-[0_0_50%] 
-                                        md:flex-[0_0_33.33%] 
-                                        lg:flex-[0_0_25%]
-                                        /* Added padding only for Desktop grid spacing if needed, 
-                                           but for carousel 100% width is safer clean */
-                                        pr-4 last:pr-0 md:pr-0 md:pl-4 md:last:pr-0
-                                    `}
+                                            basis-full 
+                                            sm:basis-1/2 
+                                            md:basis-1/3 
+                                            lg:basis-1/4
+                                        `}
                                     >
                                         {viewMode === 'bars' && (
                                             <VerticalBar
@@ -188,10 +140,11 @@ export default function CustomBudgetsDisplay({
                                                 settings={settings}
                                             />
                                         )}
-                                    </div>
+                                    </CarouselItem>
                                 ))}
-                            </div>
-                        </div>
+                            </CarouselContent>
+                            <CarouselDots />
+                        </Carousel>
                     </CardContent>
                 </Card>
             )}
