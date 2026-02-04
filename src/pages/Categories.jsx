@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
@@ -8,12 +8,14 @@ import { useCategories } from "../components/hooks/useBase44Entities";
 import { useCategoryActions } from "../components/hooks/useActions";
 import CategoryForm from "../components/categories/CategoryForm";
 import CategoryGrid from "../components/categories/CategoryGrid";
+import { useFAB } from "../components/hooks/FABContext";
 
 export default function Categories() {
     // UI state
     const [showForm, setShowForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
-    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
+    const queryClient = useQueryClient();
+    const { setFabButtons, clearFabButtons } = useFAB();
 
     // Data fetching
     const { categories, isLoading } = useCategories();
@@ -29,45 +31,65 @@ export default function Categories() {
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
     };
 
+    // FAB Configuration
+    const fabButtons = useMemo(() => [
+        {
+            key: 'add-category',
+            label: 'Add Category',
+            icon: 'PlusCircle',
+            variant: 'create',
+            onClick: () => {
+                setEditingCategory(null);
+                setShowForm(true); // Always open, don't toggle from FAB
+            }
+        }
+    ], []);
+
+    useEffect(() => {
+        setFabButtons(fabButtons);
+        return () => clearFabButtons();
+    }, [fabButtons, setFabButtons, clearFabButtons]);
+
     return (
         <PullToRefresh onRefresh={handleRefresh}>
             <div className="min-h-screen p-4 md:p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Categories</h1>
-                        <p className="text-gray-500 mt-1">Organize your transactions with custom categories</p>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Categories</h1>
+                            <p className="text-gray-500 mt-1">Organize your transactions with custom categories</p>
+                        </div>
+                        <CustomButton
+                            onClick={() => {
+                                setEditingCategory(null);
+                                setShowForm(!showForm);
+                            }}
+                            variant="create"
+                            className="hidden md:flex"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Category
+                        </CustomButton>
                     </div>
-                    <CustomButton
-                        onClick={() => {
-                            setEditingCategory(null);
-                            setShowForm(!showForm);
-                        }}
-                        variant="create"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Category
-                    </CustomButton>
-                </div>
 
-                {showForm && (
-                    <CategoryForm
-                        category={editingCategory}
-                        onSubmit={(data) => handleSubmit(data, editingCategory)}
-                        onCancel={() => {
-                            setShowForm(false);
-                            setEditingCategory(null);
-                        }}
-                        isSubmitting={isSubmitting}
+                    {showForm && (
+                        <CategoryForm
+                            category={editingCategory}
+                            onSubmit={(data) => handleSubmit(data, editingCategory)}
+                            onCancel={() => {
+                                setShowForm(false);
+                                setEditingCategory(null);
+                            }}
+                            isSubmitting={isSubmitting}
+                        />
+                    )}
+
+                    <CategoryGrid
+                        categories={categories}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        isLoading={isLoading}
                     />
-                )}
-
-                <CategoryGrid
-                    categories={categories}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    isLoading={isLoading}
-                />
                 </div>
             </div>
         </PullToRefresh>
