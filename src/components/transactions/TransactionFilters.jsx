@@ -99,7 +99,7 @@ const MobileCategoryTrigger = ({ filters, categories, onCategoryChange }) => {
                 <div className="p-4 border-t bg-gray-50/50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                     <DrawerClose asChild>
                         <CustomButton variant="primary" className="w-full h-12 text-base font-bold">
-                            Apply Categories
+                            Apply
                         </CustomButton>
                     </DrawerClose>
                 </div>
