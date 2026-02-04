@@ -6,8 +6,7 @@ import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsAll,
-    useSystemBudgetsAll,
+    useCustomBudgetsForPeriod,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
 } from "../components/hooks/useBase44Entities";
@@ -50,8 +49,7 @@ export default function Dashboard() {
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
-    const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
     // BRIDGE SET: Fetch transactions linked to active custom budgets (regardless of date)
