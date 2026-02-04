@@ -143,16 +143,18 @@ export default function CustomBudgetsDisplay({
                             <div className={`
                                 flex touch-pan-y
                                 ${viewMode === 'bars' ? 'items-end' : 'items-stretch'}
-                                -ml-4 /* Compensation for padding-left on slides */
                             `}>
                                 {budgets.map((budget) => (
                                     <div
                                         key={budget.id}
                                         className={`
-                                        flex-[0_0_100%] min-w-0 pl-4
+                                        flex-[0_0_100%] min-w-0
                                         sm:flex-[0_0_50%] 
                                         md:flex-[0_0_33.33%] 
                                         lg:flex-[0_0_25%]
+                                        /* Added padding only for Desktop grid spacing if needed, 
+                                           but for carousel 100% width is safer clean */
+                                        pr-4 last:pr-0 md:pr-0 md:pl-4 md:last:pr-0
                                     `}
                                     >
                                         {viewMode === 'bars' && (
