@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
-import { useFAB } from "../components/hooks/FABContext";
+import { useFAB } from "../components/hooks/FABContext"; // ADDED 04-Feb-2026: GlobalFAB integration
 import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsForPeriod, // UPDATED 04-Feb-2026: Was useCustomBudgetsAll
+    useCustomBudgetsAll,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
@@ -27,51 +27,47 @@ import {
 } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
-import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard";
+// import BudgetBars from "../components/dashboard/BudgetBars";
 import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
-// COMMENTED OUT 04-Feb-2026: Import no longer needed, FAB buttons use simple configs
-// import { ImportWizardDialog } from "../components/import/ImportWizard";
+import { ImportWizardDialog } from "../components/import/ImportWizard";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
+    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026: GlobalFAB management
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-    const { setFabButtons, clearFabButtons } = useFAB();
-
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
 
     // Data fetching
+    // GLOBAL SET: Strictly transactions within this month's dates
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useCategories();
     const { goals } = useGoals(user);
-    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
+    const { allCustomBudgets } = useCustomBudgetsAll(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
+    // BRIDGE SET: Fetch transactions linked to active custom budgets (regardless of date)
     const activeCustomBudgetIds = useMemo(() =>
         allCustomBudgets.map(cb => cb.id),
         [allCustomBudgets]);
 
+    // Fetching the second set specifically for budget bars
     const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
 
+    // System budget management (auto-creation/update)
     useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
 
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
+    // Dashboard summary with categories parameter for granular expense calculations
     const { currentMonthIncome, currentMonthExpenses, bonusSavingsPotential } = useDashboardSummary(
         transactions,
         selectedMonth,
@@ -82,6 +78,7 @@ export default function Dashboard() {
         settings
     );
 
+    // Global breakdown stays strictly Month-Only
     const { detailedBreakdown } = useMonthlyBreakdown(
         transactions,
         categories,
@@ -98,9 +95,10 @@ export default function Dashboard() {
         selectedYear
     );
 
+    // Direct Calculation: System Budgets (Month-Only Transactions)
     const systemBudgetsData = useMemo(() => {
         return systemBudgets.map(sb => ({
-            ...sb,
+            ...sb, // CRITICAL: Keep id, systemBudgetType, etc.
             ...getSystemBudgetStats(
                 sb,
                 transactions,
@@ -114,13 +112,16 @@ export default function Dashboard() {
         }));
     }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
+    // Direct Calculation: Custom Budgets (Bridged Transactions)
     const customBudgetsData = useMemo(() => {
         return activeCustomBudgets.map(cb => {
+            // Filter bridged set specifically for this budget's ID
             const budgetTransactions = bridgedTransactions.filter(t => t.customBudgetId === cb.id);
             return getCustomBudgetStats(cb, budgetTransactions);
         });
     }, [activeCustomBudgets, bridgedTransactions]);
 
+    // Savings Logic (Month-Only Transactions)
     const savingsTarget = useMemo(() => {
         const savingsGoal = goals.find(g => g.priority === 'savings');
         return savingsGoal ? (monthlyIncome * (savingsGoal.target_percentage / 100)) : 0;
@@ -148,18 +149,20 @@ export default function Dashboard() {
         }
     });
 
-    // UPDATED 04-Feb-2026: FAB buttons use simple configs with onClick handlers
-    const fabButtons = useMemo(() => {
-        const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
-        return [
+    // ADDED 04-Feb-2026: Configure GlobalFAB buttons for Dashboard
+    // Check if month is empty to highlight income button
+    const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
+
+    useEffect(() => {
+        setFabButtons([
             {
                 key: 'import',
                 label: 'Import Data',
                 icon: 'FileUp',
                 variant: 'primary',
                 onClick: () => {
-                    // TODO: Open import dialog - needs ImportWizard refactor
-                    console.log('Import clicked');
+                    // ImportWizardDialog controls its own open state, trigger it
+                    document.querySelector('[data-import-trigger]')?.click();
                 }
             },
             {
@@ -177,13 +180,10 @@ export default function Dashboard() {
                 highlighted: isEmptyMonth,
                 onClick: () => setShowQuickAddIncome(true)
             }
-        ];
-    }, [currentMonthIncome, currentMonthExpenses]);
+        ]);
 
-    useEffect(() => {
-        setFabButtons(fabButtons);
         return () => clearFabButtons();
-    }, [fabButtons, setFabButtons, clearFabButtons]);
+    }, [setFabButtons, clearFabButtons, isEmptyMonth]);
 
     return (
         <div className="min-h-screen p-4 md:p-8">
@@ -197,51 +197,65 @@ export default function Dashboard() {
 
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-3">
-                        {isMobile ? (
-                            <MobileRemainingBudgetCard
-                                breakdown={detailedBreakdown}
-                                systemBudgets={systemBudgetsData}
-                                currentMonthIncome={currentMonthIncome}
-                                currentMonthExpenses={currentMonthExpenses}
-                                settings={settings}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
-                                monthNavigator={
-                                    <MonthNavigator
-                                        currentMonth={selectedMonth}
-                                        currentYear={selectedYear}
-                                        resetPosition="right"
-                                        onMonthChange={(month, year) => {
-                                            setSelectedMonth(month);
-                                            setSelectedYear(year);
-                                        }}
-                                    />
-                                }
-                            />
-                        ) : (
-                            <RemainingBudgetCard
-                                breakdown={detailedBreakdown}
-                                systemBudgets={systemBudgetsData}
-                                bonusSavingsPotential={bonusSavingsPotential}
-                                currentMonthIncome={currentMonthIncome}
-                                currentMonthExpenses={currentMonthExpenses}
-                                goals={goals}
-                                settings={settings}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
-                                monthNavigator={
-                                    <MonthNavigator
-                                        currentMonth={selectedMonth}
-                                        currentYear={selectedYear}
-                                        resetPosition="right"
-                                        onMonthChange={(month, year) => {
-                                            setSelectedMonth(month);
-                                            setSelectedYear(year);
-                                        }}
-                                    />
-                                }
-                            />
-                        )}
+                        <RemainingBudgetCard
+                            breakdown={detailedBreakdown}
+                            systemBudgets={systemBudgetsData}
+                            bonusSavingsPotential={bonusSavingsPotential}
+                            currentMonthIncome={currentMonthIncome}
+                            currentMonthExpenses={currentMonthExpenses}
+                            goals={goals}
+                            settings={settings}
+                            selectedMonth={selectedMonth}
+                            selectedYear={selectedYear}
+                            monthNavigator={
+                                <MonthNavigator
+                                    currentMonth={selectedMonth}
+                                    currentYear={selectedYear}
+                                    resetPosition="right"
+                                    onMonthChange={(month, year) => {
+                                        setSelectedMonth(month);
+                                        setSelectedYear(year);
+                                    }}
+                                />
+                            }
+                            addIncomeButton={
+                                <QuickAddIncome
+                                    open={showQuickAddIncome}
+                                    selectedMonth={selectedMonth}
+                                    selectedYear={selectedYear}
+                                    onOpenChange={setShowQuickAddIncome}
+                                    onSubmit={transactionActions.handleSubmit}
+                                    isSubmitting={transactionActions.isSubmitting}
+                                    renderTrigger={true}
+                                    triggerVariant="success"
+                                    triggerSize="sm"
+                                />
+                            }
+                            addExpenseButton={
+                                <QuickAddTransaction
+                                    open={showQuickAdd}
+                                    selectedMonth={selectedMonth}
+                                    selectedYear={selectedYear}
+                                    onOpenChange={setShowQuickAdd}
+                                    categories={categories}
+                                    customBudgets={activeCustomBudgets}
+                                    onSubmit={transactionActions.handleSubmit}
+                                    isSubmitting={transactionActions.isSubmitting}
+                                    transactions={transactions}
+                                    renderTrigger={true}
+                                    triggerVariant="warning"
+                                    triggerSize="sm"
+                                />
+                            }
+                            importDataButton={
+                                <ImportWizardDialog
+                                    triggerVariant="primary"
+                                    triggerSize="sm"
+                                    triggerClassName="w-full justify-start"
+                                    triggerProps={{ "data-import-trigger": true }}
+                                />
+                            }
+                        />
                     </div>
                 </div>
 
@@ -251,6 +265,7 @@ export default function Dashboard() {
                             systemBudgets={systemBudgets}
                             customBudgets={activeCustomBudgets}
                             allCustomBudgets={allCustomBudgets}
+                            // Pass pre-calculated data to avoid double calculation
                             preCalculatedSystemData={systemBudgetsData}
                             preCalculatedCustomData={customBudgetsData}
                             preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
@@ -279,30 +294,6 @@ export default function Dashboard() {
                         />
                     </div>
                 </div>
-
-                {/* Hidden dialog components - opened by FAB button onClick handlers */}
-                <QuickAddTransaction
-                    open={showQuickAdd}
-                    selectedMonth={selectedMonth}
-                    selectedYear={selectedYear}
-                    onOpenChange={setShowQuickAdd}
-                    categories={categories}
-                    customBudgets={activeCustomBudgets}
-                    onSubmit={transactionActions.handleSubmit}
-                    isSubmitting={transactionActions.isSubmitting}
-                    transactions={transactions}
-                    renderTrigger={false}
-                />
-
-                <QuickAddIncome
-                    open={showQuickAddIncome}
-                    selectedMonth={selectedMonth}
-                    selectedYear={selectedYear}
-                    onOpenChange={setShowQuickAddIncome}
-                    onSubmit={transactionActions.handleSubmit}
-                    isSubmitting={transactionActions.isSubmitting}
-                    renderTrigger={false}
-                />
 
                 <QuickAddBudget
                     open={showQuickAddBudget}
