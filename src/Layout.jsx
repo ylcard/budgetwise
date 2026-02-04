@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Wallet, LogOut, ChevronLeft } from "lucide-react";
-import { useMemo, useRef, useEffect } from "react"; // UPDATED 03-Feb-2026: Added useRef, useEffect for navigation history
+import { Wallet, LogOut, ChevronLeft, MoreHorizontal } from "lucide-react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
@@ -18,6 +18,7 @@ import {
     SidebarFooter,
     SidebarProvider,
 } from "@/components/ui/sidebar";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PeriodProvider } from "./components/hooks/usePeriod";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-Feb-2026: For iOS-style page transitions
@@ -25,7 +26,8 @@ import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-F
 const LayoutContent = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    
+    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+
     // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
     const navigationHistory = useRef({});
     const currentTab = useRef(null);
@@ -35,15 +37,21 @@ const LayoutContent = ({ children }) => {
 
     // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
     const { currentPageTitle, isRootPage, activeTab } = useMemo(() => {
-        const route = navigationItems.find(item => location.pathname === item.url);
-        const tabUrl = route?.url || navigationItems.find(item => 
+        const route = navigationItems.find(item => location.pathname === item.url.split('?')[0]);
+        const tabUrl = route?.url || navigationItems.find(item =>
             location.pathname.startsWith(item.url.split('?')[0])
         )?.url;
-        
+
+        // Split items into Primary (first 4) and Secondary (the rest)
+        const primaryNav = navigationItems.slice(0, 4);
+        const secondaryNav = navigationItems.slice(4);
+
         return {
             currentPageTitle: route?.title || 'BudgetWise',
             isRootPage: !!route,
-            activeTab: tabUrl
+            activeTab: tabUrl,
+            primaryNav,
+            secondaryNav
         };
     }, [location.pathname]);
 
@@ -72,7 +80,7 @@ const LayoutContent = ({ children }) => {
     const handleBackNavigation = () => {
         if (activeTab && navigationHistory.current[activeTab]) {
             const tabHistory = navigationHistory.current[activeTab];
-            
+
             // If there's history in this tab (more than current page), go back within tab
             if (tabHistory.length > 1) {
                 // Remove current page from history
@@ -103,7 +111,7 @@ const LayoutContent = ({ children }) => {
                             <ChevronLeft className="w-6 h-6" />
                         </button>
                     )}
-                    <h1 className="text-lg font-semibold text-foreground">{currentPageTitle}</h1>
+                    <h1 className="text-lg font-semibold text-foreground truncate max-w-[60%]">{currentPageTitle}</h1>
                 </div>
             </header>
 
@@ -167,9 +175,9 @@ const LayoutContent = ({ children }) => {
                             <span className="font-medium">Logout</span>
                         </CustomButton>
                     </SidebarFooter>
-                    </Sidebar>
+                </Sidebar>
 
-                    <main className="flex-1 flex flex-col relative">
+                <main className="flex-1 flex flex-col relative">
                     {/* UPDATED 03-Feb-2026: Added top padding for mobile fixed header, bottom padding for iOS safe area */}
                     <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0 pb-[calc(4rem+env(safe-area-inset-bottom))]">
                         <RouteTransition>
@@ -203,28 +211,21 @@ const LayoutContent = ({ children }) => {
                     */}
 
                     {/* UPDATED 03-Feb-2026: Mobile Bottom Tab Bar with select-none for iOS native feel */}
-                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[100] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex w-full items-center px-1 py-2 select-none">
-                            {navigationItems.map((item) => {
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                        <div className="flex w-full items-center px-2 py-2 select-none">
+                            {primaryNav.map((item) => {
                                 const isActive = location.pathname === item.url;
                                 return (
                                     <Link
                                         key={item.title}
                                         to={item.url}
-                                        onClick={(e) => {
-                                            // ADDED 03-Feb-2026: If clicking active tab, scroll to top
-                                            if (isActive) {
-                                                e.preventDefault();
-                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                            }
-                                        }}
-                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1 rounded-lg transition-all duration-200 min-w-0 select-none ${isActive
+                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 ${isActive
                                             ? 'text-blue-600 bg-blue-50/50'
-                                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                            : 'text-gray-400'
                                             }`}
                                     >
-                                        <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                                        <span className={`text-[9px] sm:text-[10px] font-medium truncate max-w-full px-0.5 ${isActive ? 'font-semibold' : ''}`}>
+                                        <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                                        <span className="text-[10px] font-medium truncate w-full text-center px-1">
                                             {item.title}
                                         </span>
                                     </Link>
@@ -232,7 +233,7 @@ const LayoutContent = ({ children }) => {
                             })}
                         </div>
                     </nav>
-                    </main>
+                </main>
             </div>
         </SidebarProvider>
     );
