@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,11 +19,13 @@ import { getCustomBudgetStats } from "../components/utils/financialCalculations"
 import BudgetCard from "../components/budgets/BudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
+import { useFAB } from "../components/hooks/FABContext";
 
 export default function Budgets() {
     const { user, settings } = useSettings();
     const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
+    const { setFabButtons, clearFabButtons } = useFAB();
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
     const { transactions } = useTransactions();
     const { categories } = useCategories();
@@ -68,6 +70,22 @@ export default function Budgets() {
             return aDistance - bDistance;
         });
     }, [customBudgets]);
+
+    // FAB Configuration
+    const fabButtons = useMemo(() => [
+        {
+            key: 'add-budget',
+            label: 'Create Budget',
+            icon: 'PlusCircle',
+            variant: 'create',
+            onClick: () => setShowQuickAddBudget(true)
+        }
+    ], []);
+
+    useEffect(() => {
+        setFabButtons(fabButtons);
+        return () => clearFabButtons();
+    }, [fabButtons, setFabButtons, clearFabButtons]);
 
     return (
         <PullToRefresh onRefresh={handleRefresh}>
@@ -136,7 +154,7 @@ export default function Budgets() {
                                         Custom Budgets
                                     </span>
                                 </div>
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:flex">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>
@@ -161,7 +179,7 @@ export default function Budgets() {
                                         Custom budgets containing wants expenses, sorted by status and date
                                     </p>
                                 </div>
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)} className="hidden md:flex">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Custom Budget
                                 </CustomButton>
