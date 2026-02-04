@@ -66,15 +66,15 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
     return (
         <>
             <Card className="border-none shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
                     <CardTitle>Recent Transactions</CardTitle>
                     <Link to={createPageUrl("Transactions")} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
                         View All
                         <ArrowRight className="w-4 h-4" />
                     </Link>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-2">
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    <div className="space-y-1">
                         {transactions.map((transaction) => {
                             const category = categoryMap[transaction.category_id];
                             const customBudget = transaction.customBudgetId ? customBudgetMap[transaction.customBudgetId] : null;
@@ -94,36 +94,34 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                             return (
                                 <div
                                     key={transaction.id}
-                                    className="relative flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                                    className="relative flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors group overflow-hidden"
                                 >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                         {isIncome ? (
                                             <div
-                                                className="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+                                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
                                                 style={{ backgroundColor: '#10B98120' }}
                                             >
                                                 <Banknote className="w-5 h-5" style={{ color: '#10B981' }} />
                                             </div>
                                         ) : category && (
                                             <div
-                                                className="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+                                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
                                                 style={{ backgroundColor: `${category.color}20` }}
                                             >
                                                 <IconComponent className="w-5 h-5" style={{ color: category.color }} />
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-medium text-gray-900 truncate">{transaction.title}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                                <p className="text-sm text-gray-500">
+                                            <p className="font-medium text-gray-900 truncate text-sm sm:text-base">{transaction.title}</p>
+                                            <div className="flex items-center gap-x-1 gap-y-0.5 mt-0.5 flex-wrap">
+                                                <p className="text-[11px] sm:text-sm text-gray-500 whitespace-nowrap">
                                                     {format(new Date(transaction.date), "MMM d, yyyy")}
                                                 </p>
                                                 {!isIncome && transaction.paidDate && (
                                                     <>
-                                                        <span className="text-gray-300">•</span>
-                                                        <p className="text-xs text-green-600">
+                                                        <span className="text-gray-300 hidden sm:inline">•</span>
+                                                        <p className="text-[10px] sm:text-xs text-green-600 whitespace-nowrap">
                                                             Paid {format(new Date(transaction.paidDate), showYear ? "MMM d, yyyy" : "MMM d")}
                                                         </p>
                                                     </>
@@ -131,18 +129,18 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                                 {/* UPDATED 13-Jan-2026: Always show CB badge if assigned */}
                                                 {customBudget && (
                                                     <>
-                                                        <span className="text-gray-300">•</span>
+                                                        <span className="text-gray-300 hidden sm:inline">•</span>
                                                         <Badge
                                                             variant="outline"
-                                                            className={`text-xs px-2 py-0.5 font-medium ${crossPeriodInfo.isCrossPeriod
+                                                            className={`text-[10px] px-1.5 py-0 font-medium max-w-[120px] truncate ${crossPeriodInfo.isCrossPeriod
                                                                 ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-200 hover:border-orange-300 hover:text-orange-900'
                                                                 : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-200 hover:border-gray-300 hover:text-gray-900'
-                                                                } transition-all cursor-pointer`}
+                                                                } transition-all cursor-pointer inline-flex items-center gap-1`}
                                                         >
-                                                            <Link to={`/BudgetDetail?id=${customBudget.id}`} className="flex items-center gap-1">
+                                                            <Link to={`/BudgetDetail?id=${customBudget.id}`} className="truncate">
                                                                 {customBudget.name}
-                                                                <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                                                             </Link>
+                                                            <ExternalLink className="w-2 h-2 opacity-60 shrink-0" />
                                                         </Badge>
                                                     </>
                                                 )}
@@ -150,8 +148,8 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                         </div>
                                     </div>
                                     {/* UPDATED: Sliding Swap Animation */}
-                                    <div className="relative flex items-center justify-end shrink-0 min-w-[100px] overflow-hidden">
-                                        <p className={`font-bold transition-all duration-300 ease-in-out group-hover:translate-x-full group-hover:opacity-0 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                    <div className="relative flex items-center justify-end shrink-0 min-w-[80px] sm:min-w-[100px] ml-2">
+                                        <p className={`text-sm sm:text-base font-bold transition-all duration-300 ease-in-out group-hover:translate-x-full group-hover:opacity-0 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                                             {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </p>
 
