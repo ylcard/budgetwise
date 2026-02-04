@@ -1,15 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useFAB } from "../hooks/FABContext";
 
 // CREATED 04-Feb-2026: Reusable Floating Action Button component that accepts an array of buttons
 // Usage: <GlobalFAB buttons={[{key: "income", content: <Button>Add Income</Button>}, ...]} />
 
-export default function GlobalFAB({ buttons = [] }) {
+export default function GlobalFAB() {
     const [isOpen, setIsOpen] = useState(false);
+    const { buttons } = useFAB();
+
+    // Auto-close when buttons change (usually means page navigation)
+    useEffect(() => setIsOpen(false), [buttons]);
+
+    if (!buttons || buttons.length === 0) return null;
 
     return (
-        // <div className="fixed bottom-6 right-4 z-50 flex flex-col-reverse items-end gap-3 pointer-events-none">
         <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-[110] flex flex-col-reverse items-end gap-3 pointer-events-none">
             {/* Main FAB Toggle Button */}
             <motion.button
