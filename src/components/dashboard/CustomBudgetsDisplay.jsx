@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, ChevronLeft, ChevronRight, BarChart2, LayoutGrid, CircleDot, StretchHorizontal } from "lucide-react";
@@ -10,6 +10,7 @@ import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
 import { useSettings } from "../utils/SettingsContext";
 import { usePeriod } from "../hooks/usePeriod";
 import { useCustomBudgetsForPeriod, useTransactionsForCustomBudgets } from "../hooks/useBase44Entities";
+import useEmblaCarousel from 'embla-carousel-react'; // ADDED: Carousel logic
 
 /**
  * CREATED: 03-Feb-2026
@@ -33,6 +34,28 @@ export default function CustomBudgetsDisplay({
     const { transactions = [] } = useTransactionsForCustomBudgets(customBudgetIds);
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
 
+    // --- EMBLA CAROUSEL SETUP ---
+    const [emblaRef, emblaApi] = useEmblaCarousel({
+        align: 'start',
+        containScroll: 'trimSnaps',
+        loop: false
+    });
+
+    const [canScrollPrev, setCanScrollPrev] = useState(false);
+    const [canScrollNext, setCanScrollNext] = useState(false);
+
+    const onSelect = useCallback((api) => {
+        if (!api) return;
+        setCanScrollPrev(api.canScrollPrev());
+        setCanScrollNext(api.canScrollNext());
+    }, []);
+
+    useEffect(() => {
+        if (!emblaApi) return;
+        onSelect(emblaApi);
+        emblaApi.on('reInit', onSelect).on('select', onSelect);
+    }, [emblaApi, onSelect]);
+
     const VIEW_OPTIONS = [
         { value: 'bars', label: <BarChart2 className="w-4 h-4" />, desktopLabel: 'Bars' },
         { value: 'cards', label: <LayoutGrid className="w-4 h-4" />, desktopLabel: 'Cards' },
@@ -47,20 +70,12 @@ export default function CustomBudgetsDisplay({
         }
     }, [settings.budgetViewMode]);
 
-    const [customStartIndex, setCustomStartIndex] = useState(0);
-    const barsPerPage = ['cards', 'circular', 'compact'].includes(viewMode) ? 4 : 7;
-
-    const visibleBudgets = budgets.slice(customStartIndex, customStartIndex + barsPerPage);
-    const canScrollLeft = customStartIndex > 0;
-    const canScrollRight = customStartIndex + barsPerPage < budgets.length;
-
     const handleViewModeChange = (newMode) => {
         setViewMode(newMode);
     };
 
-    // On Desktop, we paginate. On Mobile, we show all so the user can swipe through the whole list.
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const displayBudgets = isMobile ? budgets : visibleBudgets;
+    const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
+    const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
 
     return (
         <div className="space-y-6">
@@ -73,26 +88,22 @@ export default function CustomBudgetsDisplay({
                             </span>
                         </div>
                         <div className="hidden md:flex items-center gap-2">
-                            {budgets.length > barsPerPage && (
-                                <>
-                                    <CustomButton
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setCustomStartIndex(Math.max(0, customStartIndex - 1))}
-                                        disabled={!canScrollLeft}
-                                    >
-                                        <ChevronLeft className="w-4 h-4" />
-                                    </CustomButton>
-                                    <CustomButton
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setCustomStartIndex(customStartIndex + 1)}
-                                        disabled={!canScrollRight}
-                                    >
-                                        <ChevronRight className="w-4 h-4" />
-                                    </CustomButton>
-                                </>
-                            )}
+                            <CustomButton
+                                variant="outline"
+                                size="icon"
+                                onClick={scrollPrev}
+                                disabled={!canScrollPrev}
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </CustomButton>
+                            <CustomButton
+                                variant="outline"
+                                size="icon"
+                                onClick={scrollNext}
+                                disabled={!canScrollNext}
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </CustomButton>
                             <CustomButton
                                 variant="create"
                                 size="sm"
@@ -115,68 +126,58 @@ export default function CustomBudgetsDisplay({
                             />
                         </div>
 
-                        {/* Carousel for Mobile, Grid for Desktop */}
-                        <div className={`
-                            flex overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x 
-                            md:overflow-x-visible md:pb-0 md:mx-0 md:px-0 md:flex-wrap md:justify-center md:gap-4
-                            ${viewMode === 'bars' ? 'items-end' : 'items-stretch'}
-                        `}>
-                            {displayBudgets.map((budget) => (
-                                <div
-                                    key={budget.id}
-                                    className={`
-                                        shrink-0 snap-center first:pl-0 last:pr-4 
-                                        md:shrink md:snap-align-none md:last:pr-0
-                                        ${viewMode === 'bars' ? 'w-auto' : 'w-[280px] md:flex-1 md:min-w-0'}
-                                    `}
-                                >
-                                    {viewMode === 'bars' && (
-                                        <VerticalBar
-                                            budget={budget}
-                                            transactions={transactions}
-                                            settings={settings}
-                                            isCustom={true}
-                                        />
-                                    )}
-                                    {viewMode === 'cards' && (
-                                        <BudgetCard
-                                            // BudgetCard still expects an array, so we wrap it
-                                            budgets={[budget]}
-                                            transactions={transactions}
-                                            settings={settings}
-                                        />
-                                    )}
-                                    {viewMode === 'circular' && (
-                                        <BudgetHealthCircular
-                                            budget={budget} // Passing SINGLE budget
-                                            transactions={transactions}
-                                            settings={settings}
-                                        />
-                                    )}
-                                    {viewMode === 'compact' && (
-                                        <BudgetHealthCompact
-                                            budget={budget} // Passing SINGLE budget
-                                            transactions={transactions}
-                                            settings={settings}
-                                        />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        {budgets.length > barsPerPage && (
-                            <div className="flex justify-center gap-1 mt-4">
-                                {Array.from({ length: Math.ceil(budgets.length / barsPerPage) }).map((_, idx) => (
+                        {/* EMBLA CAROUSEL WRAPPER */}
+                        {/* overflow-hidden is CRITICAL here - it stops the page from expanding */}
+                        <div className="overflow-hidden" ref={emblaRef}>
+                            <div className={`
+                                flex touch-pan-y
+                                ${viewMode === 'bars' ? 'items-end' : 'items-stretch'}
+                                -ml-4 /* Compensation for padding-left on slides */
+                            `}>
+                                {budgets.map((budget) => (
                                     <div
-                                        key={idx}
-                                        className={`h-2 rounded-full transition-all ${Math.floor(customStartIndex / barsPerPage) === idx
-                                            ? 'w-8 bg-purple-600'
-                                            : 'w-2 bg-gray-300'
-                                            }`}
-                                    />
+                                        key={budget.id}
+                                        className={`
+                                        flex-[0_0_85%] min-w-0 pl-4
+                                        sm:flex-[0_0_50%] 
+                                        md:flex-[0_0_33.33%] 
+                                        lg:flex-[0_0_25%]
+                                    `}
+                                    >
+                                        {viewMode === 'bars' && (
+                                            <VerticalBar
+                                                budget={budget}
+                                                transactions={transactions}
+                                                settings={settings}
+                                                isCustom={true}
+                                            />
+                                        )}
+                                        {viewMode === 'cards' && (
+                                            <BudgetCard
+                                                // BudgetCard still expects an array, so we wrap it
+                                                budgets={[budget]}
+                                                transactions={transactions}
+                                                settings={settings}
+                                            />
+                                        )}
+                                        {viewMode === 'circular' && (
+                                            <BudgetHealthCircular
+                                                budget={budget} // Passing SINGLE budget
+                                                transactions={transactions}
+                                                settings={settings}
+                                            />
+                                        )}
+                                        {viewMode === 'compact' && (
+                                            <BudgetHealthCompact
+                                                budget={budget} // Passing SINGLE budget
+                                                transactions={transactions}
+                                                settings={settings}
+                                            />
+                                        )}
+                                    </div>
                                 ))}
                             </div>
-                        )}
+                        </div>
                     </CardContent>
                 </Card>
             )}
