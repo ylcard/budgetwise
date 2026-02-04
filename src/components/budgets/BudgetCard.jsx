@@ -129,9 +129,9 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
             statLabel: 'text-[10px]', statVal: 'text-[11px]', gap: 'gap-x-2 gap-y-1'
         },
         md: {
-            radius: 42, stroke: 8, p: 'p-5', title: 'text-sm', mb: 'mb-4',
-            circleText: 'text-xl', overText: 'text-[10px] px-1.5 py-0.5 mt-0.5',
-            statLabel: 'text-xs', statVal: 'text-sm', gap: 'gap-x-4 gap-y-3'
+            radius: 42, stroke: 8, p: 'p-4 md:p-5', title: 'text-sm', mb: 'mb-3 md:mb-4',
+            circleText: 'text-lg md:text-xl', overText: 'text-[10px] px-1.5 py-0.5 mt-0.5',
+            statLabel: 'text-xs', statVal: 'text-sm', gap: 'gap-x-3 gap-y-2 md:gap-x-4 md:gap-y-3'
         },
         lg: {
             radius: 56, stroke: 10, p: 'p-6', title: 'text-lg', mb: 'mb-6',
