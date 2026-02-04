@@ -1,11 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Calendar, Wallet, Plus, X } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Calendar, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
-import { memo, useMemo, useEffect, useRef, useState } from "react";
+import { memo, useMemo, useEffect, useRef } from "react";
 import { getMonthName } from "../utils/dateUtils";
 import confetti from "canvas-confetti";
+import GlobalFAB from "../ui/GlobalFAB";
 
 // CREATED 03-Feb-2026: Mobile-optimized version with donut chart for Essential/Lifestyle/Savings visualization
 const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
@@ -124,8 +125,30 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
 
-    // FAB state management
-    const [isFabOpen, setIsFabOpen] = useState(false);
+    // Prepare FAB buttons
+    const fabButtons = useMemo(() => [
+        {
+            key: 'import',
+            content: importDataButton
+        },
+        {
+            key: 'expense',
+            content: addExpenseButton
+        },
+        {
+            key: 'income',
+            content: isEmptyMonth ? (
+                <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="relative w-full"
+                >
+                    <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
+                    <div className="relative">{addIncomeButton}</div>
+                </motion.div>
+            ) : addIncomeButton
+        }
+    ], [importDataButton, addExpenseButton, addIncomeButton, isEmptyMonth]);
 
     return (
         <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col relative">
@@ -293,75 +316,8 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                     )}
                 </div>
 
-                {/* Floating Action Button (FAB) - Bottom Right */}
-                <div className="fixed bottom-6 right-4 z-50 flex flex-col-reverse items-end gap-3 pointer-events-none">
-                    {/* Main FAB Toggle Button */}
-                    <motion.button
-                        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center pointer-events-auto"
-                        onClick={() => setIsFabOpen(!isFabOpen)}
-                        whileTap={{ scale: 0.9 }}
-                        animate={{ rotate: isFabOpen ? 45 : 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Plus className="w-6 h-6" />
-                    </motion.button>
-
-                    <AnimatePresence>
-                        {isFabOpen && (
-                            <div className="flex flex-col-reverse items-end gap-3 w-max max-w-[calc(100vw-2rem)] pointer-events-auto">
-                                {/* Import Button */}
-                                <motion.div
-                                    key="import-btn"
-                                    initial={{ scale: 0, opacity: 0, y: 20 }}
-                                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                                    exit={{ scale: 0, opacity: 0, y: 20 }}
-                                    transition={{ duration: 0.2, delay: 0 }}
-                                    className="flex items-center"
-                                    onClick={() => setIsFabOpen(false)}
-                                >
-                                    {importDataButton}
-                                </motion.div>
-
-                                {/* Expense Button */}
-                                <motion.div
-                                    key="expense-btn"
-                                    initial={{ scale: 0, opacity: 0, y: 20 }}
-                                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                                    exit={{ scale: 0, opacity: 0, y: 20 }}
-                                    transition={{ duration: 0.2, delay: 0.05 }}
-                                    className="flex items-center"
-                                    onClick={() => setIsFabOpen(false)}
-                                >
-                                    {addExpenseButton}
-                                </motion.div>
-
-                                {/* Income Button */}
-                                <motion.div
-                                    key="income-btn"
-                                    initial={{ scale: 0, opacity: 0, y: 20 }}
-                                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                                    exit={{ scale: 0, opacity: 0, y: 20 }}
-                                    transition={{ duration: 0.2, delay: 0.1 }}
-                                    className="flex items-center"
-                                    onClick={() => setIsFabOpen(false)}
-                                >
-                                    {isEmptyMonth ? (
-                                        <motion.div
-                                            animate={{ scale: [1, 1.1, 1] }}
-                                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                            className="relative w-full"
-                                        >
-                                            <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
-                                            <div className="relative">{addIncomeButton}</div>
-                                        </motion.div>
-                                    ) : (
-                                        addIncomeButton
-                                    )}
-                                </motion.div>
-                            </div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                {/* GlobalFAB with pluggable buttons */}
+                <GlobalFAB buttons={fabButtons} />
             </CardContent>
         </Card>
     );
