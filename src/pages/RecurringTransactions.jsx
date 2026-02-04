@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback, memo } from "react";
+import React, { useState, useMemo, useCallback, memo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, RefreshCw, Play } from "lucide-react";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
+import { useFAB } from "../components/hooks/FABContext"; // ADDED 04-Feb-2026: GlobalFAB integration
 import { useSettings } from "../components/utils/SettingsContext";
 import { useCategories } from "../components/hooks/useBase44Entities";
 import { useRecurringTransactions, useRecurringTransactionActions } from "../components/hooks/useRecurringTransactions";
@@ -16,6 +17,7 @@ import { format } from "date-fns";
 const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
     const { user } = useSettings();
     const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
+    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026: GlobalFAB management
     const { categories } = useCategories();
     const { recurringTransactions, isLoading } = useRecurringTransactions(user);
     const { handleCreate, handleUpdate, handleDelete, handleToggleActive, isSubmitting } = useRecurringTransactionActions(user);
@@ -98,6 +100,21 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
         }
     }, []);
 
+    // ADDED 04-Feb-2026: Configure GlobalFAB buttons for Recurring Transactions page
+    useEffect(() => {
+        setFabButtons([
+            {
+                key: 'recurring',
+                label: 'Add Recurring',
+                icon: 'PlusCircle',
+                variant: 'create',
+                onClick: () => handleOpenForm()
+            }
+        ]);
+
+        return () => clearFabButtons();
+    }, [setFabButtons, clearFabButtons, handleOpenForm]);
+
     return (
         <PullToRefresh onRefresh={handleRefreshData}>
             <div className="min-h-screen p-4 md:p-8">
@@ -108,7 +125,8 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Recurring Transactions</h1>
                         <p className="text-gray-500 mt-1">Automate your regular income and expenses</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="hidden md:flex gap-2">
+                        {/* UPDATED 04-Feb-2026: Desktop-only buttons (mobile uses GlobalFAB for Add) */}
                         {user?.role === 'admin' && (
                             <CustomButton 
                                 variant="info" 
