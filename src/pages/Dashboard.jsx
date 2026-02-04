@@ -40,7 +40,7 @@ export default function Dashboard() {
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026: For GlobalFAB management
+    const { setFabButtons, clearFabButtons } = useFAB();
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
@@ -149,80 +149,47 @@ export default function Dashboard() {
         }
     });
 
-    // ADDED 04-Feb-2026: Set FAB buttons for this page
-    useEffect(() => {
+    // ADDED 04-Feb-2026: Memoized buttons and stabilized Effect to prevent infinite loop
+    const fabButtons = useMemo(() => {
         const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
-        
-        setFabButtons([
+        return [
             {
                 key: 'import',
-                content: (
-                    <ImportWizardDialog
-                        triggerVariant="primary"
-                        triggerSize="sm"
-                        triggerClassName="w-full justify-start"
-                    />
-                )
+                content: <ImportWizardDialog triggerVariant="primary" triggerSize="sm" triggerClassName="w-full justify-start" />
             },
             {
                 key: 'expense',
                 content: (
                     <QuickAddTransaction
-                        open={showQuickAdd}
-                        selectedMonth={selectedMonth}
-                        selectedYear={selectedYear}
-                        onOpenChange={setShowQuickAdd}
-                        categories={categories}
-                        customBudgets={activeCustomBudgets}
-                        onSubmit={transactionActions.handleSubmit}
-                        isSubmitting={transactionActions.isSubmitting}
-                        transactions={transactions}
-                        renderTrigger={true}
-                        triggerVariant="warning"
-                        triggerSize="sm"
+                        open={showQuickAdd} selectedMonth={selectedMonth} selectedYear={selectedYear}
+                        onOpenChange={setShowQuickAdd} categories={categories} customBudgets={activeCustomBudgets}
+                        onSubmit={transactionActions.handleSubmit} isSubmitting={transactionActions.isSubmitting}
+                        transactions={transactions} renderTrigger={true} triggerVariant="warning" triggerSize="sm"
                         triggerClassName="w-full justify-start"
                     />
                 )
             },
             {
                 key: 'income',
-                content: isEmptyMonth ? (
-                    <div className="relative w-full">
-                        <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
-                        <div className="relative">
-                            <QuickAddIncome
-                                open={showQuickAddIncome}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
-                                onOpenChange={setShowQuickAddIncome}
-                                onSubmit={transactionActions.handleSubmit}
-                                isSubmitting={transactionActions.isSubmitting}
-                                renderTrigger={true}
-                                triggerVariant="success"
-                                triggerSize="sm"
-                                triggerClassName="w-full justify-start"
-                            />
-                        </div>
+                content: (
+                    <div className={isEmptyMonth ? "relative w-full" : ""}>
+                        {isEmptyMonth && <div className="absolute -inset-2 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>}
+                        <QuickAddIncome
+                            open={showQuickAddIncome} selectedMonth={selectedMonth} selectedYear={selectedYear}
+                            onOpenChange={setShowQuickAddIncome} onSubmit={transactionActions.handleSubmit}
+                            isSubmitting={transactionActions.isSubmitting} renderTrigger={true}
+                            triggerVariant="success" triggerSize="sm" triggerClassName="w-full justify-start"
+                        />
                     </div>
-                ) : (
-                    <QuickAddIncome
-                        open={showQuickAddIncome}
-                        selectedMonth={selectedMonth}
-                        selectedYear={selectedYear}
-                        onOpenChange={setShowQuickAddIncome}
-                        onSubmit={transactionActions.handleSubmit}
-                        isSubmitting={transactionActions.isSubmitting}
-                        renderTrigger={true}
-                        triggerVariant="success"
-                        triggerSize="sm"
-                        triggerClassName="w-full justify-start"
-                    />
                 )
             }
-        ]);
+        ];
+    }, [currentMonthIncome, currentMonthExpenses, showQuickAdd, showQuickAddIncome, selectedMonth, selectedYear, categories, activeCustomBudgets, transactions, transactionActions]);
 
+    useEffect(() => {
+        setFabButtons(fabButtons);
         return () => clearFabButtons();
-    }, [currentMonthIncome, currentMonthExpenses, showQuickAdd, showQuickAddIncome, selectedMonth, selectedYear, categories, activeCustomBudgets, transactions, transactionActions, setFabButtons, clearFabButtons]);
+    }, [fabButtons, setFabButtons, clearFabButtons]);
 
     return (
         <div className="min-h-screen p-4 md:p-8">
