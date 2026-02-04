@@ -33,14 +33,14 @@ import RecentTransactions from "../components/dashboard/RecentTransactions";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
-// COMMENTED OUT 04-Feb-2026: Import no longer needed, FAB buttons use simple configs
-// import { ImportWizardDialog } from "../components/import/ImportWizard";
+import { ImportWizardDialog } from "../components/import/ImportWizard";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
+    const [showImportWizard, setShowImportWizard] = useState(false);
     const { setFabButtons, clearFabButtons } = useFAB();
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -158,8 +158,7 @@ export default function Dashboard() {
                 icon: 'FileUp',
                 variant: 'primary',
                 onClick: () => {
-                    // TODO: Open import dialog - needs ImportWizard refactor
-                    console.log('Import clicked');
+                    setShowImportWizard(true);
                 }
             },
             {
@@ -311,6 +310,12 @@ export default function Dashboard() {
                     onCancel={() => setShowQuickAddBudget(false)}
                     isSubmitting={budgetActions.isSubmitting}
                     baseCurrency={settings.baseCurrency}
+                />
+
+                <ImportWizardDialog
+                    open={showImportWizard}
+                    onOpenChange={setShowImportWizard}
+                    renderTrigger={false}
                 />
             </div>
         </div>
