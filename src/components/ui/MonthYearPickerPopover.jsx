@@ -17,21 +17,8 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
     const [open, setOpen] = useState(false);
     const [tempYear, setTempYear] = useState(currentYear);
 
-    // Months in reverse chronological order (12 -> 1)
-    const months = [
-        { index: 2, label: "March" },
-        { index: 1, label: "February" },
-        { index: 0, label: "January" },
-        { index: 5, label: "June" },
-        { index: 4, label: "May" },
-        { index: 3, label: "April" },
-        { index: 8, label: "September" },
-        { index: 7, label: "August" },
-        { index: 6, label: "July" },
-        { index: 11, label: "December" },
-        { index: 10, label: "November" },
-        { index: 9, label: "October" },
-    ];
+    // Generate 0-11 array to ensure natural chronological sorting
+    const monthIndices = Array.from({ length: 12 }, (_, i) => i);
 
     const handleYearChange = (delta) => {
         setTempYear(prev => prev + delta);
@@ -55,8 +42,8 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
             <PopoverTrigger asChild>
                 {children}
             </PopoverTrigger>
-            <PopoverContent className="max-w-[90vw] p-8" align="center">
-                <div className="space-y-8">
+            <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[380px] p-4 sm:p-8" align="center">
+                <div className="space-y-6 sm:space-y-8">
                     {/* Year Navigation */}
                     <div className="flex items-center justify-between">
                         <CustomButton
@@ -67,7 +54,7 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
                         >
                             <ChevronLeft className="h-5 w-5 text-cyan-500" />
                         </CustomButton>
-                        <h2 className="text-2xl font-semibold text-gray-700">
+                        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700">
                             {tempYear}
                         </h2>
                         <CustomButton
@@ -81,22 +68,26 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
                     </div>
 
                     {/* Month Grid - 3x4 */}
-                    <div className="grid grid-cols-3 gap-4">
-                        {months.map(({ index, label }) => {
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                        {monthIndices.map((index) => {
                             const isSelected = index === currentMonth && tempYear === currentYear;
+                            const fullLabel = getMonthName(index);
+                            const shortLabel = fullLabel.substring(0, 3);
+
                             return (
                                 <button
                                     key={index}
                                     onClick={() => handleMonthSelect(index)}
                                     className={`
-                                        py-3 px-4 rounded-2xl text-base font-medium transition-all
-                                        ${isSelected 
-                                            ? 'bg-cyan-400 text-white shadow-md' 
+                                        py-3 px-2 sm:px-4 rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium transition-all
+                                        ${isSelected
+                                            ? 'bg-cyan-400 text-white shadow-md'
                                             : 'text-gray-600 hover:bg-gray-100'
                                         }
                                     `}
                                 >
-                                    {label}
+                                    <span className="hidden sm:block">{fullLabel}</span>
+                                    <span className="block sm:hidden">{shortLabel}</span>
                                 </button>
                             );
                         })}
@@ -106,14 +97,3 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
         </Popover>
     );
 }
-
-// COMMENTED OUT: 17-Jan-2026 - Old select-based implementation replaced with modern grid design
-// import {
-//     Select,
-//     SelectContent,
-//     SelectItem,
-//     SelectTrigger,
-//     SelectValue,
-// } from "@/components/ui/select";
-// 
-// Old implementation with dropdowns and Apply/Cancel buttons removed
