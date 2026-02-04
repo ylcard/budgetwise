@@ -1,73 +1,50 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
-import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
-import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
-import { useSettings } from "../components/utils/SettingsContext";
-import { usePeriod } from "../components/hooks/usePeriod";
-import {
-    useTransactions,
-    useCategories,
-    useCustomBudgetsForPeriod,
-    useSystemBudgetsForPeriod,
-} from "../components/hooks/useBase44Entities";
-import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
-import { useCustomBudgetActions } from "../components/hooks/useActions";
-import { getCustomBudgetStats } from "../components/utils/financialCalculations";
-import BudgetCard from "../components/budgets/BudgetCard";
-import MonthNavigator from "../components/ui/MonthNavigator";
-import QuickAddBudget from "../components/dashboard/QuickAddBudget";
+import { PullToRefresh } from "../components/ui/PullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "../components/hooks/queryKeys";
+import { useFAB } from "../components/hooks/FABContext"; // ADDED 04-Feb-2026
+import { useCategories } from "../components/hooks/useBase44Entities";
+import { useCategoryActions } from "../components/hooks/useActions";
+import CategoryForm from "../components/categories/CategoryForm";
+import CategoryGrid from "../components/categories/CategoryGrid";
 
-export default function Budgets() {
-    const { user, settings } = useSettings();
-    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
-    const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-    const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
-    const { transactions } = useTransactions();
-    const { categories } = useCategories();
-    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
-    const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
-    const { customBudgets, systemBudgetsWithStats } = useBudgetsAggregates(
-        transactions,
-        categories,
-        allCustomBudgets,
-        systemBudgets,
-        selectedMonth,
-        selectedYear
+export default function Categories() {
+    const [showForm, setShowForm] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+    const queryClient = useQueryClient();
+    const { setFabButtons, clearFabButtons } = useFAB(); // ADDED 04-Feb-2026
+
+    const { categories, isLoading } = useCategories();
+
+    const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useCategoryActions(
+        setShowForm,
+        setEditingCategory
     );
-    const customBudgetActions = useCustomBudgetActions({ transactions });
-    const handleActivateBudget = (budgetId) => {
-        customBudgetActions.handleStatusChange(budgetId, 'active');
-    };
 
-    // ADDED 03-Feb-2026: Pull-to-refresh handler
-    const handleRefresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CUSTOM_BUDGETS] });
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-    };
-
-    const sortedCustomBudgets = useMemo(() => {
-        const now = new Date();
-        return [...customBudgets].sort((a, b) => {
-            const statusPriority = { active: 1, planned: 2, completed: 3 };
-            const aPriority = statusPriority[a.status] || 999;
-            const bPriority = statusPriority[b.status] || 999;
-
-            if (aPriority !== bPriority) {
-                return aPriority - bPriority;
+    // ADDED 04-Feb-2026: FAB button for mobile
+    const fabButtons = useMemo(() => [
+        {
+            key: 'add-category',
+            label: 'Add Category',
+            icon: 'PlusCircle',
+            variant: 'create',
+            onClick: () => {
+                setEditingCategory(null);
+                setShowForm(true);
             }
+        }
+    ], []);
 
-            const aStart = new Date(a.startDate);
-            const bStart = new Date(b.startDate);
-            const aDistance = Math.abs(aStart - now);
-            const bDistance = Math.abs(bStart - now);
+    useEffect(() => {
+        setFabButtons(fabButtons);
+        return () => clearFabButtons();
+    }, [fabButtons, setFabButtons, clearFabButtons]);
 
-            return aDistance - bDistance;
-        });
-    }, [customBudgets]);
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+    };
 
     return (
         <PullToRefresh onRefresh={handleRefresh}>
@@ -75,128 +52,41 @@ export default function Budgets() {
                 <div className="max-w-7xl mx-auto space-y-6">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Budgets</h1>
-                            <p className="text-gray-500 mt-1">Manage your budgets for {displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Categories</h1>
+                            <p className="text-gray-500 mt-1">Organize your transactions with custom categories</p>
                         </div>
+                        {/* UPDATED 04-Feb-2026: Desktop button only (mobile uses FAB) */}
+                        <CustomButton
+                            onClick={() => {
+                                setEditingCategory(null);
+                                setShowForm(!showForm);
+                            }}
+                            variant="create"
+                            className="hidden md:flex"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Category
+                        </CustomButton>
                     </div>
 
-                    <MonthNavigator
-                        currentMonth={selectedMonth}
-                        currentYear={selectedYear}
-                        onMonthChange={(month, year) => {
-                            setSelectedMonth(month);
-                            setSelectedYear(year);
-                        }}
-                    />
-
-                    {/* System Budgets Section */}
-                    {systemBudgetsWithStats.length > 0 && (
-                        <Card className="border-none shadow-lg">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <span className="px-3 py-1 rounded-lg text-sm bg-blue-50 text-blue-600">
-                                        System Budgets
-                                    </span>
-                                    <span className="text-gray-400">({systemBudgetsWithStats.length})</span>
-                                </CardTitle>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Automatically managed based on your budget goals. These update based on your monthly income.
-                                </p>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                                    {systemBudgetsWithStats.map((budget) => {
-                                        const adaptedBudget = {
-                                            ...budget,
-                                            allocatedAmount: budget.budgetAmount,
-                                            status: 'active',
-                                            isSystemBudget: true
-                                        };
-
-                                        return (
-                                            <BudgetCard
-                                                key={budget.id}
-                                                budgets={[adaptedBudget]}
-                                                transactions={transactions}
-                                                settings={settings}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {showForm && (
+                        <CategoryForm
+                            category={editingCategory}
+                            onSubmit={(data) => handleSubmit(data, editingCategory)}
+                            onCancel={() => {
+                                setShowForm(false);
+                                setEditingCategory(null);
+                            }}
+                            isSubmitting={isSubmitting}
+                        />
                     )}
 
-                    {/* Custom Budgets Section */}
-                    {sortedCustomBudgets.length === 0 ? (
-                        <Card className="border-none shadow-lg">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
-                                        Custom Budgets
-                                    </span>
-                                </div>
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Create Custom Budget
-                                </CustomButton>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-40 flex items-center justify-center text-gray-400">
-                                    <p>No custom budgets yet. Create your first one!</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <Card className="border-none shadow-lg">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
-                                            Custom Budgets
-                                        </span>
-                                        <span className="text-gray-400">({sortedCustomBudgets.length})</span>
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                        Custom budgets containing wants expenses, sorted by status and date
-                                    </p>
-                                </div>
-                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Create Custom Budget
-                                </CustomButton>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                                    {sortedCustomBudgets.map((budget) => {
-                                        const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
-
-                                        return (
-                                            <BudgetCard
-                                                key={budget.id}
-                                                budgets={[budget]}
-                                                transactions={transactions}
-                                                settings={settings}
-                                                onActivateBudget={handleActivateBudget}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    <QuickAddBudget
-                        open={showQuickAddBudget}
-                        onOpenChange={setShowQuickAddBudget}
-                        onSubmit={customBudgetActions.handleSubmit}
-                        onCancel={() => setShowQuickAddBudget(false)}
-                        isSubmitting={customBudgetActions.isSubmitting}
-                        baseCurrency={settings.baseCurrency}
-                        transactions={transactions}
-                        allBudgets={allCustomBudgets}
+                    <CategoryGrid
+                        categories={categories}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        isLoading={isLoading}
                     />
-
                 </div>
             </div>
         </PullToRefresh>
