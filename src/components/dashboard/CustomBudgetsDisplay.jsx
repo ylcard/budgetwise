@@ -33,12 +33,12 @@ export default function CustomBudgetsDisplay({
     const customBudgetIds = useMemo(() => budgets.map(b => b.id), [budgets]);
     const { transactions = [] } = useTransactionsForCustomBudgets(customBudgetIds);
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
-
+    
     // --- EMBLA CAROUSEL SETUP ---
-    const [emblaRef, emblaApi] = useEmblaCarousel({
-        align: 'start',
+    const [emblaRef, emblaApi] = useEmblaCarousel({ 
+        align: 'start', 
         containScroll: 'trimSnaps',
-        loop: false
+        loop: false 
     });
 
     const [canScrollPrev, setCanScrollPrev] = useState(false);
@@ -135,47 +135,47 @@ export default function CustomBudgetsDisplay({
                                 -ml-4 /* Compensation for padding-left on slides */
                             `}>
                                 {budgets.map((budget) => (
-                                    <div
-                                        key={budget.id}
-                                        className={`
+                                <div
+                                    key={budget.id}
+                                    className={`
                                         flex-[0_0_85%] min-w-0 pl-4
                                         sm:flex-[0_0_50%] 
                                         md:flex-[0_0_33.33%] 
                                         lg:flex-[0_0_25%]
                                     `}
-                                    >
-                                        {viewMode === 'bars' && (
-                                            <VerticalBar
-                                                budget={budget}
-                                                transactions={transactions}
-                                                settings={settings}
-                                                isCustom={true}
-                                            />
-                                        )}
-                                        {viewMode === 'cards' && (
-                                            <BudgetCard
-                                                // BudgetCard still expects an array, so we wrap it
-                                                budgets={[budget]}
-                                                transactions={transactions}
-                                                settings={settings}
-                                            />
-                                        )}
-                                        {viewMode === 'circular' && (
-                                            <BudgetHealthCircular
-                                                budget={budget} // Passing SINGLE budget
-                                                transactions={transactions}
-                                                settings={settings}
-                                            />
-                                        )}
-                                        {viewMode === 'compact' && (
-                                            <BudgetHealthCompact
-                                                budget={budget} // Passing SINGLE budget
-                                                transactions={transactions}
-                                                settings={settings}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
+                                >
+                                    {viewMode === 'bars' && (
+                                        <VerticalBar
+                                            budget={budget}
+                                            transactions={transactions}
+                                            settings={settings}
+                                            isCustom={true}
+                                        />
+                                    )}
+                                    {viewMode === 'cards' && (
+                                        <BudgetCard
+                                            // BudgetCard still expects an array, so we wrap it
+                                            budgets={[budget]}
+                                            transactions={transactions}
+                                            settings={settings}
+                                        />
+                                    )}
+                                    {viewMode === 'circular' && (
+                                        <BudgetHealthCircular
+                                            budget={budget} // Passing SINGLE budget
+                                            transactions={transactions}
+                                            settings={settings}
+                                        />
+                                    )}
+                                    {viewMode === 'compact' && (
+                                        <BudgetHealthCompact
+                                            budget={budget} // Passing SINGLE budget
+                                            transactions={transactions}
+                                            settings={settings}
+                                        />
+                                    )}
+                                </div>
+                            ))}
                             </div>
                         </div>
                     </CardContent>
