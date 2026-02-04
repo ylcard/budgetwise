@@ -10,7 +10,8 @@ import { Calendar as CalendarIcon, Search, X, ChevronLeft, ChevronRight } from "
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import CategorySelect from "../ui/CategorySelect";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 
@@ -74,6 +75,40 @@ export default function TransactionFilters({ filters, setFilters, categories, al
     const selectedRange = {
         from: filters.startDate ? new Date(filters.startDate) : undefined,
         to: filters.endDate ? new Date(filters.endDate) : undefined
+    };
+
+    // Helper to render native-like selection for mobile
+    const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) => {
+        const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder || value;
+        return (
+            <Drawer>
+                <DrawerTrigger asChild>
+                    <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden">
+                        <span className="truncate">{selectedLabel}</span>
+                        <ChevronRight className="h-4 w-4 opacity-50" />
+                    </button>
+                </DrawerTrigger>
+                <DrawerContent>
+                    <DrawerHeader>
+                        <DrawerTitle>{label}</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="p-4 pb-8 space-y-1">
+                        {options.map((opt) => (
+                            <button
+                                key={opt.value}
+                                onClick={() => onSelect(opt.value)}
+                                className={cn(
+                                    "w-full text-left px-4 py-4 rounded-xl text-base font-medium transition-colors",
+                                    value === opt.value ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                )}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                </DrawerContent>
+            </Drawer>
+        );
     };
 
     return (
@@ -181,19 +216,26 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     {/* Type */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Type</Label>
-                        <Select
+                        <div className="hidden md:block">
+                            <Select value={filters.type} onValueChange={(value) => setFilters({ ...filters, type: value })}>
+                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Types</SelectItem>
+                                    <SelectItem value="income">Income</SelectItem>
+                                    <SelectItem value="expense">Expense</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <MobileSelectTrigger
+                            label="Transaction Type"
                             value={filters.type}
-                            onValueChange={(value) => setFilters({ ...filters, type: value })}
-                        >
-                            <SelectTrigger className="h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
-                                <SelectItem value="income">Income</SelectItem>
-                                <SelectItem value="expense">Expense</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            options={[
+                                { value: 'all', label: 'All Types' },
+                                { value: 'income', label: 'Income' },
+                                { value: 'expense', label: 'Expense' }
+                            ]}
+                            onSelect={(val) => setFilters({ ...filters, type: val })}
+                        />
                     </div>
 
                     {/* Category (Multi-select) */}
@@ -211,20 +253,28 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     {/* Financial Priority */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Priority</Label>
-                        <Select
+                        <div className="hidden md:block">
+                            <Select value={filters.financialPriority} onValueChange={(value) => setFilters({ ...filters, financialPriority: value })}>
+                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Priorities</SelectItem>
+                                    <SelectItem value="needs">Needs</SelectItem>
+                                    <SelectItem value="wants">Wants</SelectItem>
+                                    <SelectItem value="savings">Savings</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <MobileSelectTrigger
+                            label="Financial Priority"
                             value={filters.financialPriority}
-                            onValueChange={(value) => setFilters({ ...filters, financialPriority: value })}
-                        >
-                            <SelectTrigger className="h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Priorities</SelectItem>
-                                <SelectItem value="needs">Needs</SelectItem>
-                                <SelectItem value="wants">Wants</SelectItem>
-                                <SelectItem value="savings">Savings</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            options={[
+                                { value: 'all', label: 'All Priorities' },
+                                { value: 'needs', label: 'Needs' },
+                                { value: 'wants', label: 'Wants' },
+                                { value: 'savings', label: 'Savings' }
+                            ]}
+                            onSelect={(val) => setFilters({ ...filters, financialPriority: val })}
+                        />
                     </div>
 
                     {/* Custom Budget */}
