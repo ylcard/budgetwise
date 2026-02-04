@@ -389,12 +389,16 @@ export function ImportWizardDialog({
     triggerVariant = "default",
     triggerSize = "default",
     triggerClassName = "",
-    renderTrigger = true
+    renderTrigger = true,
+    open: externalOpen, // UPDATED 04-Feb-2026: Support programmatic open via props
+    onOpenChange: externalOnOpenChange
 }) {
-    const [open, setOpen] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const open = externalOpen !== undefined ? externalOpen : internalOpen;
+    const onOpenChange = externalOnOpenChange || setInternalOpen;
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             {renderTrigger && (
                 <DialogTrigger asChild>
                     <CustomButton
