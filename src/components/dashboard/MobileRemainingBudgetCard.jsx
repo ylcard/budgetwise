@@ -122,11 +122,9 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     return (
         <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col relative">
             <CardContent className="p-4 flex-1 flex flex-col">
-                {/* Top Navigation Bar - Month Navigator Only */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex-1">
-                        {monthNavigator}
-                    </div>
+                {/* Top Navigation Bar - Centered Month Navigator */}
+                <div className="flex justify-center mb-6">
+                    {monthNavigator}
                 </div>
 
                 {/* Main Content */}
