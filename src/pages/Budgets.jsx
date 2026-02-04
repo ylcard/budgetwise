@@ -73,129 +73,129 @@ export default function Budgets() {
         <PullToRefresh onRefresh={handleRefresh}>
             <div className="min-h-screen p-4 md:p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Budgets</h1>
-                        <p className="text-gray-500 mt-1">Manage your budgets for {displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Budgets</h1>
+                            <p className="text-gray-500 mt-1">Manage your budgets for {displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                        </div>
                     </div>
-                </div>
 
-                <MonthNavigator
-                    currentMonth={selectedMonth}
-                    currentYear={selectedYear}
-                    onMonthChange={(month, year) => {
-                        setSelectedMonth(month);
-                        setSelectedYear(year);
-                    }}
-                />
+                    <MonthNavigator
+                        currentMonth={selectedMonth}
+                        currentYear={selectedYear}
+                        onMonthChange={(month, year) => {
+                            setSelectedMonth(month);
+                            setSelectedYear(year);
+                        }}
+                    />
 
-                {/* System Budgets Section */}
-                {systemBudgetsWithStats.length > 0 && (
-                    <Card className="border-none shadow-lg">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <span className="px-3 py-1 rounded-lg text-sm bg-blue-50 text-blue-600">
-                                    System Budgets
-                                </span>
-                                <span className="text-gray-400">({systemBudgetsWithStats.length})</span>
-                            </CardTitle>
-                            <p className="text-sm text-gray-500 mt-2">
-                                Automatically managed based on your budget goals. These update based on your monthly income.
-                            </p>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                {systemBudgetsWithStats.map((budget) => {
-                                    const adaptedBudget = {
-                                        ...budget,
-                                        allocatedAmount: budget.budgetAmount,
-                                        status: 'active',
-                                        isSystemBudget: true
-                                    };
+                    {/* System Budgets Section */}
+                    {systemBudgetsWithStats.length > 0 && (
+                        <Card className="border-none shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <span className="px-3 py-1 rounded-lg text-sm bg-blue-50 text-blue-600">
+                                        System Budgets
+                                    </span>
+                                    <span className="text-gray-400">({systemBudgetsWithStats.length})</span>
+                                </CardTitle>
+                                <p className="text-sm text-gray-500 mt-2">
+                                    Automatically managed based on your budget goals. These update based on your monthly income.
+                                </p>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+                                    {systemBudgetsWithStats.map((budget) => {
+                                        const adaptedBudget = {
+                                            ...budget,
+                                            allocatedAmount: budget.budgetAmount,
+                                            status: 'active',
+                                            isSystemBudget: true
+                                        };
 
-                                    return (
-                                        <BudgetCard
-                                            key={budget.id}
-                                            budget={adaptedBudget}
-                                            stats={budget.preCalculatedStats}
-                                            settings={settings}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                                        return (
+                                            <BudgetCard
+                                                key={budget.id}
+                                                budgets={[adaptedBudget]}
+                                                transactions={transactions}
+                                                settings={settings}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
-                {/* Custom Budgets Section */}
-                {sortedCustomBudgets.length === 0 ? (
-                    <Card className="border-none shadow-lg">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
-                                    Custom Budgets
-                                </span>
-                            </div>
-                            <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Custom Budget
-                            </CustomButton>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-40 flex items-center justify-center text-gray-400">
-                                <p>No custom budgets yet. Create your first one!</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card className="border-none shadow-lg">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <div className="flex items-center gap-2 mb-2">
+                    {/* Custom Budgets Section */}
+                    {sortedCustomBudgets.length === 0 ? (
+                        <Card className="border-none shadow-lg">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div className="flex items-center gap-2">
                                     <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
                                         Custom Budgets
                                     </span>
-                                    <span className="text-gray-400">({sortedCustomBudgets.length})</span>
                                 </div>
-                                <p className="text-sm text-gray-500">
-                                    Custom budgets containing wants expenses, sorted by status and date
-                                </p>
-                            </div>
-                            <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Custom Budget
-                            </CustomButton>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                {sortedCustomBudgets.map((budget) => {
-                                    const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create Custom Budget
+                                </CustomButton>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-40 flex items-center justify-center text-gray-400">
+                                    <p>No custom budgets yet. Create your first one!</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <Card className="border-none shadow-lg">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
+                                            Custom Budgets
+                                        </span>
+                                        <span className="text-gray-400">({sortedCustomBudgets.length})</span>
+                                    </div>
+                                    <p className="text-sm text-gray-500">
+                                        Custom budgets containing wants expenses, sorted by status and date
+                                    </p>
+                                </div>
+                                <CustomButton variant="create" onClick={() => setShowQuickAddBudget(true)}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create Custom Budget
+                                </CustomButton>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+                                    {sortedCustomBudgets.map((budget) => {
+                                        const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
 
-                                    return (
-                                        <BudgetCard
-                                            key={budget.id}
-                                            budget={budget}
-                                            stats={stats}
-                                            settings={settings}
-                                            onActivateBudget={handleActivateBudget}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                                        return (
+                                            <BudgetCard
+                                                key={budget.id}
+                                                budgets={[budget]}
+                                                transactions={transactions}
+                                                settings={settings}
+                                                onActivateBudget={handleActivateBudget}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
-                <QuickAddBudget
-                    open={showQuickAddBudget}
-                    onOpenChange={setShowQuickAddBudget}
-                    onSubmit={customBudgetActions.handleSubmit}
-                    onCancel={() => setShowQuickAddBudget(false)}
-                    isSubmitting={customBudgetActions.isSubmitting}
-                    baseCurrency={settings.baseCurrency}
-                    transactions={transactions}
-                    allBudgets={allCustomBudgets}
-                />
+                    <QuickAddBudget
+                        open={showQuickAddBudget}
+                        onOpenChange={setShowQuickAddBudget}
+                        onSubmit={customBudgetActions.handleSubmit}
+                        onCancel={() => setShowQuickAddBudget(false)}
+                        isSubmitting={customBudgetActions.isSubmitting}
+                        baseCurrency={settings.baseCurrency}
+                        transactions={transactions}
+                        allBudgets={allCustomBudgets}
+                    />
 
                 </div>
             </div>
