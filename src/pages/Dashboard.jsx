@@ -6,7 +6,7 @@ import {
     useTransactions,
     useCategories,
     useGoals,
-    useCustomBudgetsForPeriod,
+    useCustomBudgetsForPeriod, // UPDATED 04-Feb-2026: Was useCustomBudgetsAll
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
