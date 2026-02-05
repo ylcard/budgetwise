@@ -117,12 +117,13 @@ export default function Dashboard() {
         }));
     }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
-    const customBudgetsData = useMemo(() => {
-        return activeCustomBudgets.map(cb => {
-            const budgetTransactions = bridgedTransactions.filter(t => t.budgetId === cb.id);
-            return getCustomBudgetStats(cb, budgetTransactions);
-        });
-    }, [activeCustomBudgets, bridgedTransactions]);
+    // Seemingly unused
+    // const customBudgetsData = useMemo(() => {
+    //     return activeCustomBudgets.map(cb => {
+    //         const budgetTransactions = bridgedTransactions.filter(t => t.budgetId === cb.id);
+    //         return getCustomBudgetStats(cb, budgetTransactions);
+    //     });
+    // }, [activeCustomBudgets, bridgedTransactions]);
 
     const savingsTarget = useMemo(() => {
         const savingsGoal = goals.find(g => g.priority === 'savings');
@@ -135,7 +136,8 @@ export default function Dashboard() {
             .reduce((sum, t) => sum + (t.amount || 0), 0);
     }, [transactions, categories]);
 
-    const savingsShortfall = useMemo(() => Math.max(0, savingsTarget - totalActualSavings), [savingsTarget, totalActualSavings]);
+    // Seemingly unused
+    // const savingsShortfall = useMemo(() => Math.max(0, savingsTarget - totalActualSavings), [savingsTarget, totalActualSavings]);
 
     const transactionActions = useTransactionActions({
         onSuccess: () => {
