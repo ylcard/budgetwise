@@ -9,6 +9,7 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command";
+import { X } from "lucide-react";
 import {
     Popover,
     PopoverContent,
@@ -96,17 +97,30 @@ export default function CategorySelect({ value, onValueChange, categories, place
                             <span className="text-muted-foreground">{placeholder}</span>
                         )
                     )}
+                    
+                    {/* Implementation of handleClear UI */}
+                    {!multiple && value && (
+                        <div 
+                            className="ml-auto hover:bg-gray-100 p-0.5 rounded-full transition-colors"
+                            onClick={handleClear}
+                        >
+                            <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+                        </div>
+                    )}
+                    
+                    {/* Fallback chevron if no value or if multiple */}
+                    {(!value || multiple) && <div className="ml-auto opacity-50">▼</div>}
                 </CustomButton>
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0" align="start">
                 <Command className="h-auto w-full overflow-visible">
                     <CommandInput placeholder="Search category..." />
                     <CommandList className="max-h-64 overflow-y-auto overflow-x-hidden">
-                        <CommandEmpty>No category found.</CommandEmpty>
+                        <CommandEmpty>No category found.</CommandEmpty>                        
                         {/* Group by Priority for better scannability */}
                         {['needs', 'wants', 'other'].map((priority) => {
-                            const groupCategories = sortedCategories.filter(c =>
-                                priority === 'other'
+                            const groupCategories = sortedCategories.filter(c => 
+                                priority === 'other' 
                                     ? !['needs', 'wants'].includes((c.priority || '').toLowerCase())
                                     : (c.priority || '').toLowerCase() === priority
                             );
@@ -114,8 +128,8 @@ export default function CategorySelect({ value, onValueChange, categories, place
                             if (groupCategories.length === 0) return null;
 
                             return (
-                                <CommandGroup
-                                    key={priority}
+                                <CommandGroup 
+                                    key={priority} 
                                     heading={FINANCIAL_PRIORITIES[priority]?.label || "Other"}
                                     className="overflow-visible"
                                 >
@@ -131,17 +145,17 @@ export default function CategorySelect({ value, onValueChange, categories, place
                                                 value={category.name}
                                                 onSelect={() => handleSelect(category.id)}
                                             >
-                                                <Check
-                                                    className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
-                                                />
-                                                <div
-                                                    className="w-5 h-5 rounded flex items-center justify-center mr-2"
-                                                    style={{ backgroundColor: `${category.color}20` }}
-                                                >
-                                                    <Icon className="w-3 h-3" style={{ color: category.color }} />
-                                                </div>
-                                                {category.name}
-                                            </CommandItem>
+                                        <Check
+                                            className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
+                                        />
+                                        <div
+                                            className="w-5 h-5 rounded flex items-center justify-center mr-2"
+                                            style={{ backgroundColor: `${category.color}20` }}
+                                        >
+                                            <Icon className="w-3 h-3" style={{ color: category.color }} />
+                                        </div>
+                                        {category.name}
+                                    </CommandItem>
                                         );
                                     })}
                                 </CommandGroup>
