@@ -40,7 +40,7 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
         
         // Filter transactions for this budget
         const budgetTransactions = transactions.filter(t => 
-            t.customBudgetId === budget.id && t.type === 'expense'
+            t.budgetId === budget.id && t.type === 'expense'
         );
 
         if (budgetTransactions.length === 0) return null;
