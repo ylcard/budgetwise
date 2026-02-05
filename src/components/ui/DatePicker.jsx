@@ -79,7 +79,7 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
                     showOutsideDays
                     fixedWeeks
                     captionLayout="dropdown-buttons"
-                    startMonth={new Date(2024, 0)}
+                    startMonth={new Date(2000, 0)}
                     endMonth={new Date(2100, 11)}
                     classNames={{
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
