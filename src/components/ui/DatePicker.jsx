@@ -31,7 +31,15 @@ import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
  * @param {string} [props.className=""] - Additional class names for the trigger button.
  * @returns {JSX.Element} The date picker component.
  */
-export default function DatePicker({ value, onChange, placeholder = "Pick a date", className = "" }) {
+
+export default function DatePicker({
+    value,
+    onChange,
+    placeholder = "Pick a date",
+    className = "",
+    // Allow overriding these defaults via props
+    ...dayPickerProps
+}) {
     const { settings } = useSettings();
 
     /**
@@ -73,14 +81,16 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
                     mode="single"
                     selected={dateValue}
                     onSelect={handleSelect}
-                    defaultMonth={dateValue}
                     className="p-3"
                     weekStartsOn={1}
                     showOutsideDays
                     fixedWeeks
-                    captionLayout="dropdown-buttons"
-                    fromYear={2000}
+                    // Defaults (can be overridden by ...dayPickerProps)
+                    captionLayout="dropdown"
+                    fromYear={1900}
                     toYear={2100}
+                    // Spread parent props last to allow overrides
+                    {...dayPickerProps}
                     classNames={{
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                         month: "space-y-4",
