@@ -208,7 +208,7 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                 options={[
                                                     {
                                                         value: "system",
-                                                        label: `${row.financial_priority ? row.financial_priority.charAt(0).toUpperCase() + row.financial_priority.slice(1) : 'System Budget'} (${(() => {
+                                                        label: `${FINANCIAL_PRIORITIES[row.financial_priority]?.label || 'System Budget'} (${(() => {
                                                             // Use paidDate if available to match import logic (Cash Flow)
                                                             const effectiveDate = (row.isPaid && row.paidDate) ? row.paidDate : row.date;
                                                             const d = parseDate(effectiveDate);
