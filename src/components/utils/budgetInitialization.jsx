@@ -11,6 +11,7 @@
 
 import { base44 } from "@/api/base44Client";
 import { getMonthBoundaries } from "./dateUtils";
+import { FINANCIAL_PRIORITIES } from "./constants";
 
 /**
  * ADDED 05-Feb-2026: Helper function to get or create a SystemBudget for a specific transaction.
@@ -90,17 +91,6 @@ export const ensureSystemBudgetsExist = async (
     const priorityTypes = ['needs', 'wants'];
     const results = {};
 
-    // Color and name mappings for system budgets
-    const colorMap = {
-        needs: '#EF4444',
-        wants: '#F59E0B'
-    };
-
-    const nameMap = {
-        needs: 'Essentials',
-        wants: 'Lifestyle'
-    };
-
     // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
     // This prevents race conditions during concurrent operations
     const existingBudgetsForMonth = await base44.entities.SystemBudget.filter({
@@ -137,11 +127,11 @@ export const ensureSystemBudgetsExist = async (
             // If no goal exists at all, budgetAmount remains 0 (default budget)
 
             const newBudget = await base44.entities.SystemBudget.create({
-                name: nameMap[priorityType],
+                name: FINANCIAL_PRIORITIES[priorityType].label,
                 budgetAmount,
                 startDate,
                 endDate,
-                color: colorMap[priorityType],
+                color: FINANCIAL_PRIORITIES[priorityType].color,
                 user_email: userEmail,
                 systemBudgetType: priorityType,
                 // Store the goal data for reference if available
