@@ -27,19 +27,22 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     // We use a local state to "hold" the previous view during loading
     const [displayAsEmpty, setDisplayAsEmpty] = useState(isEmptyMonth);
     const [stableMonth, setStableMonth] = useState(selectedMonth);
-    const [isTransitioning, setIsTransitioning] = useState(isLoading);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const wasLoading = useRef(isLoading);
 
     useEffect(() => {
-        if (wasLoading.current && !isLoading) {
-            // Data fetch just finished: Update everything at once
+        // Scenario A: Initial Load or Data just finished fetching
+        if (!isLoading) {
             setDisplayAsEmpty(isEmptyMonth);
             setStableMonth(selectedMonth);
             setIsTransitioning(false);
         }
-        setIsTransitioning(isLoading);
+        // Scenario B: User clicked a new month, network is busy
+        else {
+            setIsTransitioning(true);
+        }
         wasLoading.current = isLoading;
-    }, [isLoading, isEmptyMonth, selectedMonth]);
+    }, [isLoading, isEmptyMonth, selectedMonth, selectedYear]);
 
     const totalSpent = currentMonthExpenses;
     const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
