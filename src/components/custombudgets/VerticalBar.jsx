@@ -1,9 +1,9 @@
+import { useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { CheckCircle, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "../utils/currencyUtils";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
-import { useMemo } from "react";
 
 /**
  * CREATED: 03-Feb-2026
