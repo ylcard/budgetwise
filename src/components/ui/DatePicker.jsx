@@ -79,13 +79,15 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
                     showOutsideDays
                     fixedWeeks
                     captionLayout="dropdown-buttons"
-                    startMonth={new Date(2000, 0)}
-                    endMonth={new Date(2100, 11)}
+                    fromYear={2000}
+                    toYear={2100}
                     classNames={{
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                         month: "space-y-4",
+                        // Ensure the container is centered and relatively positioned
                         caption: "flex justify-center pt-1 relative items-center",
-                        caption_label: "text-sm font-medium",
+                        // Hide the static text label when dropdowns are active to prevent duplication
+                        caption_label: "hidden",
                         caption_dropdowns: "flex justify-center gap-1",
                         nav: "space-x-1 flex items-center absolute right-1",
                         nav_button: cn(
@@ -110,9 +112,9 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
                         disabled: "text-muted-foreground opacity-50",
                         range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
                         hidden: "invisible",
-                        // Styles for the dropdowns (native select elements)
-                        dropdown: "p-1 bg-transparent outline-none cursor-pointer hover:bg-accent rounded-sm text-sm font-medium",
-                        dropdown_icon: "hidden", // Hide default dropdown icon if it clashes
+                        // Styles for the dropdowns (native select elements styled to look like buttons)
+                        dropdown: "appearance-none p-1 bg-transparent outline-none cursor-pointer hover:bg-accent/50 rounded-sm text-sm font-medium text-center",
+                        dropdown_icon: "", // Removing 'hidden' allows the chevron to show, or keep hidden for cleaner look
                         dropdown_month: "mr-2",
                         dropdown_year: "",
                     }}
