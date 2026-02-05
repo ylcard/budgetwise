@@ -123,8 +123,10 @@ export default function DatePicker({
                             );
                         },
                         Chevron: ({ orientation }) => {
-                            const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
-                            return <Icon className="h-4 w-4" />;
+                            // In v9, ensure orientation strictly maps to the correct icon
+                            return orientation === "left"
+                                ? <ChevronLeft className="h-4 w-4" />
+                                : <ChevronRight className="h-4 w-4" />;
                         }
                     }}
                     // Spread parent props last to allow overrides
@@ -132,17 +134,17 @@ export default function DatePicker({
                     classNames={{
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                         month: "space-y-4",
-                        month_caption: "flex justify-center pt-1 relative items-center",
+                        month_caption: "flex items-center justify-start px-2 pt-1 relative h-10",
                         caption_label: "hidden",
-                        caption_dropdowns: "flex justify-center gap-1",
-                        nav: "space-x-1 flex items-center absolute right-1",
+                        caption_dropdowns: "flex flex-row items-center gap-1 z-10",
+                        nav: "flex items-center gap-1 absolute right-2 top-1",
                         button_previous: cn(
                             buttonVariants({ variant: "outline" }),
-                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1 border-none"
+                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none"
                         ),
                         button_next: cn(
                             buttonVariants({ variant: "outline" }),
-                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1 border-none"
+                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none"
                         ),
                         month_grid: "w-full border-collapse space-y-1",
                         weekdays: "flex",
