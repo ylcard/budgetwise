@@ -6,6 +6,8 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
+import { Input } from "@/components/ui/input";
+import { Check, X, RefreshCw } from "lucide-react";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
 import CategorySelect from "@/components/ui/CategorySelect";
@@ -16,6 +18,21 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
     const { settings } = useSettings();
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [selectedIndices, setSelectedIndices] = useState(new Set());
+
+    const [editingTitle, setEditingTitle] = useState({ index: null, value: "" });
+
+    const startEditing = (index, currentTitle) => {
+        setEditingTitle({ index, value: currentTitle });
+    };
+
+    const saveTitle = (index) => {
+        onUpdateRow(index, { title: editingTitle.value });
+        setEditingTitle({ index: null, value: "" });
+    };
+
+    const cancelEditing = () => {
+        setEditingTitle({ index: null, value: "" });
+    };
 
     // Requires refactor to allow intelligent filter, not just "active" CBs. For back-filling. */}
     // --- Sorting Logic ---
@@ -170,7 +187,47 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                         {row.date}
                                     </TableCell>
                                     <TableCell className="max-w-[200px] truncate" title={row.title}>
-                                        {row.title}
+                                        {editingTitle.index === row.originalIndex ? (
+                                            <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
+                                                <Input
+                                                    value={editingTitle.value}
+                                                    onChange={(e) => setEditingTitle(prev => ({ ...prev, value: e.target.value }))}
+                                                    className="h-8 text-sm"
+                                                    autoFocus
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') saveTitle(row.originalIndex);
+                                                        if (e.key === 'Escape') cancelEditing();
+                                                    }}
+                                                />
+                                                <button onClick={() => saveTitle(row.originalIndex)} className="text-green-600 hover:bg-green-50 p-1 rounded">
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={cancelEditing} className="text-red-600 hover:bg-red-50 p-1 rounded">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span
+                                                onClick={() => startEditing(row.originalIndex, row.title)}
+                                                className="cursor-pointer hover:underline decoration-dotted underline-offset-4"
+                                            >
+                                                {row.title}
+                                            </span>
+                                        )}
+                                    </TableCell>
+                                    {/* Type Toggle for AI Mistakes */}
+                                    <TableCell>
+                                        <CustomButton
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 px-2 text-[10px] uppercase font-bold tracking-tight"
+                                            onClick={() => onUpdateRow(row.originalIndex, {
+                                                type: row.type === 'expense' ? 'income' : 'expense'
+                                            })}
+                                        >
+                                            <RefreshCw className="w-3 h-3 mr-1 opacity-50" />
+                                            {row.type}
+                                        </CustomButton>
                                     </TableCell>
                                     <TableCell>
                                         {row.type === 'expense' ? (
