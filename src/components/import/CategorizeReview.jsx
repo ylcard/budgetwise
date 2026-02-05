@@ -3,14 +3,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, Star, Clock, CheckCircle } from "lucide-react";
+import { Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
 import CategorySelect from "@/components/ui/CategorySelect";
-import { parseDate, formatDate, isDateInRange } from "@/components/utils/dateUtils";
+import { FINANCIAL_PRIORITIES } from "@/components/utils/constants";
+import { parseDate, formatDate } from "@/components/utils/dateUtils";
 
 export default function CategorizeReview({ data, categories, allBudgets = [], onUpdateRow, onDeleteRows }) {
     const { settings } = useSettings();
@@ -70,10 +70,6 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
         onDeleteRows(Array.from(selectedIndices));
         setSelectedIndices(new Set());
     };
-
-    // DEPRECATED: Show ALL budgets, but sort by relevance to the import dates.
-    // const sortedCustomBudgets = useMemo(() => {
-    //     if (data.length === 0) return customBudgets;
 
     // Separate Custom vs System budgets for the UI
     const customBudgets = useMemo(() => allBudgets.filter(b => !b.isSystemBudget), [allBudgets]);
@@ -238,11 +234,12 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                 value={row.financial_priority || 'wants'}
                                                 onValueChange={(val) => onUpdateRow(row.originalIndex, { financial_priority: val })}
                                                 placeholder="Select priority"
-                                                options={[
-                                                    { value: "needs", label: "Needs" },
-                                                    { value: "wants", label: "Wants" },
-                                                    { value: "savings", label: "Savings" }
-                                                ]}
+                                                options={Object.entries(FINANCIAL_PRIORITIES)
+                                                    .filter(([key]) => key !== 'savings')
+                                                    .map(([key, config]) => ({
+                                                        value: key,
+                                                        label: config.label
+                                                    }))}
                                                 className="w-full h-8 text-xs"
                                             />
                                         ) : (
