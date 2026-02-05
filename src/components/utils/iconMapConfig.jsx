@@ -64,7 +64,8 @@ export const ICON_OPTIONS = [
     { value: 'PiggyBank', label: 'Savings', tags: ['invest', 'future'] },
     { value: 'CreditCard', label: 'Debt/Payment', tags: ['loan', 'credit', 'pay'] },
     { value: 'Wallet', label: 'General', tags: ['cash', 'spending', 'misc'] },
-    { value: 'Hotel', label: 'Hotel', tags: ['stay', 'airbnb', 'travel'] }
+    { value: 'Hotel', label: 'Hotel', tags: ['stay', 'airbnb', 'travel'] },
+    { value: 'CircleQuestionMark', label: 'Uncategorized', tags: ['idk', 'uncategorized', '?'] }
 ];
 
 /**
