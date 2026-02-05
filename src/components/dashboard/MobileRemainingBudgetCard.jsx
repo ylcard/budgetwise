@@ -159,7 +159,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                         strokeWidth={strokeWidth}
                                     />
 
-                                    {/* Needs segment (Essential Expenses) */}
+                                    {/* Needs segment */}
                                     {needsLength > 0 && (
                                         <motion.circle
                                             cx={size / 2}
@@ -169,9 +169,9 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                             stroke={needsColor}
                                             strokeWidth={strokeWidth}
                                             strokeDasharray={`${needsLength} ${circumference}`}
-                                            initial={{ strokeDashoffset: circumference }}
+                                            initial={{ strokeDashoffset: needsLength }}
                                             animate={{ strokeDashoffset: 0 }}
-                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            transition={{ duration: 0.5, ease: "linear" }}
                                             strokeLinecap="butt"
                                             style={{
                                                 transformOrigin: 'center',
@@ -180,7 +180,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                         />
                                     )}
 
-                                    {/* Wants segment (Lifestyle Expenses) */}
+                                    {/* Wants segment */}
                                     {wantsLength > 0 && (
                                         <motion.circle
                                             cx={size / 2}
@@ -190,9 +190,9 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                             stroke={wantsColor}
                                             strokeWidth={strokeWidth}
                                             strokeDasharray={`${wantsLength} ${circumference}`}
-                                            initial={{ strokeDashoffset: circumference }}
+                                            initial={{ strokeDashoffset: wantsLength }}
                                             animate={{ strokeDashoffset: 0 }}
-                                            transition={{ duration: 1, ease: "easeOut", delay: 0.15 }}
+                                            transition={{ duration: 0.4, ease: "linear", delay: 0.5 }}
                                             strokeLinecap="butt"
                                             style={{
                                                 transformOrigin: 'center',
@@ -211,9 +211,9 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                             stroke={savingsColor}
                                             strokeWidth={strokeWidth}
                                             strokeDasharray={`${savingsLength} ${circumference}`}
-                                            initial={{ strokeDashoffset: circumference }}
+                                            initial={{ strokeDashoffset: savingsLength }}
                                             animate={{ strokeDashoffset: 0 }}
-                                            transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                                            transition={{ duration: 0.3, ease: "linear", delay: 0.9 }}
                                             strokeLinecap="butt"
                                             style={{
                                                 transformOrigin: 'center',
@@ -226,9 +226,9 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 {/* Center Text */}
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                                     <motion.div
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
                                         className="text-center"
                                     >
                                         <div className="text-3xl font-extrabold text-gray-900">
