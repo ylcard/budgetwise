@@ -3,7 +3,7 @@ import {
     Gift, Music, Dumbbell, Book, Briefcase, DollarSign, CreditCard, Wallet,
     PiggyBank, Laptop, Smartphone, Tv, Pizza, Fuel, Bus, HandCoins, Beer,
     Popcorn, Gamepad2, Wifi, Droplets, Podcast, Hotel, Banknote, Cross, Pill, Guitar,
-    Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House
+    Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark
 } from "lucide-react";
 
 // Central icon map - single source of truth for all category icons
@@ -11,7 +11,7 @@ export const iconMap = {
     Circle, Home, ShoppingCart, Coffee, Car, Plane, Utensils, Shirt, Heart, Zap, Gift, Music,
     Dumbbell, Book, Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, Laptop, Smartphone,
     Tv, Pizza, Fuel, Bus, HandCoins, Beer, Popcorn, Gamepad2, Wifi, Droplets, Podcast, Hotel, Banknote,
-    Cross, Pill, Guitar, Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House
+    Cross, Pill, Guitar, Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark
 };
 
 // Legacy support if needed, but we prefer ICON_OPTIONS now
