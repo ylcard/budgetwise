@@ -14,6 +14,10 @@ import { getMonthBoundaries } from "./dateUtils";
 import { FINANCIAL_PRIORITIES } from "./constants";
 import { resolveBudgetLimit } from "./financialCalculations";
 
+// In-memory lock to prevent race conditions during concurrent budget creation
+const inFlightRequests = new Map();
+
+
 /**
  * ADDED 05-Feb-2026: Helper function to get or create a SystemBudget for a specific transaction.
  * This is the PRIMARY function to use when adding/importing transactions.
@@ -98,61 +102,81 @@ export const ensureSystemBudgetsExist = async (
         throw new Error('ensureSystemBudgetsExist: userEmail, startDate, and endDate are required');
     }
 
-    const priorityTypes = ['needs', 'wants'];
-    const results = {};
+    // 1. Create a unique key for this specific user and month
+    const lockKey = `${userEmail}:${startDate}`;
 
-    // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
-    // This prevents race conditions during concurrent operations
-    const existingBudgetsForMonth = await base44.entities.SystemBudget.filter({
-        user_email: userEmail,
-        startDate: startDate,
-        endDate: endDate
-    });
-
-    for (const priorityType of priorityTypes) {
-        const existingForThisPriority = existingBudgetsForMonth.find(
-            (b) => b.systemBudgetType === priorityType
-        );
-
-        if (existingForThisPriority) {
-            const goal = budgetGoals.find(g => g.priority === priorityType);
-            const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
-
-            // Update logic: Only update if allowed, or if the budget is currently uninitialized (0)
-            const needsUpdate = (options.allowUpdates || existingForThisPriority.budgetAmount === 0) &&
-                Math.abs(existingForThisPriority.budgetAmount - calculatedAmount) > 0.01;
-
-            if (needsUpdate) {
-                const updated = await base44.entities.SystemBudget.update(existingForThisPriority.id, {
-                    budgetAmount: calculatedAmount,
-                    target_percentage: goal?.target_percentage || 0,
-                    target_amount: goal?.target_amount || 0
-                });
-                results[priorityType] = updated;
-            } else {
-                results[priorityType] = existingForThisPriority;
-            }
-        } else {
-            // Create a new SystemBudget
-            const goal = budgetGoals.find(g => g.priority === priorityType);
-            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
-
-            const newBudget = await base44.entities.SystemBudget.create({
-                name: FINANCIAL_PRIORITIES[priorityType].label,
-                budgetAmount,
-                startDate,
-                endDate,
-                color: FINANCIAL_PRIORITIES[priorityType].color,
-                user_email: userEmail,
-                systemBudgetType: priorityType,
-                // Store the goal data for reference if available
-                target_percentage: goal?.target_percentage || 0,
-                target_amount: goal?.target_amount || 0
-            });
-
-            results[priorityType] = newBudget;
-        }
+    // 2. If a request for this month is already in flight, return that promise
+    if (inFlightRequests.has(lockKey)) {
+        return inFlightRequests.get(lockKey);
     }
 
-    return results;
+    // 3. Define the work as a self-executing async promise
+    const work = (async () => {
+        try {
+            const priorityTypes = ['needs', 'wants'];
+            const results = {};
+
+            // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
+            // This prevents race conditions during concurrent operations
+            const existingBudgetsForMonth = await base44.entities.SystemBudget.filter({
+                user_email: userEmail,
+                startDate: startDate,
+                endDate: endDate
+            });
+
+            for (const priorityType of priorityTypes) {
+                const existingForThisPriority = existingBudgetsForMonth.find(
+                    (b) => b.systemBudgetType === priorityType
+                );
+
+                if (existingForThisPriority) {
+                    const goal = budgetGoals.find(g => g.priority === priorityType);
+                    const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
+
+                    // Update logic: Only update if allowed, or if the budget is currently uninitialized (0)
+                    const needsUpdate = (options.allowUpdates || existingForThisPriority.budgetAmount === 0) &&
+                        Math.abs(existingForThisPriority.budgetAmount - calculatedAmount) > 0.01;
+
+                    if (needsUpdate) {
+                        const updated = await base44.entities.SystemBudget.update(existingForThisPriority.id, {
+                            budgetAmount: calculatedAmount,
+                            target_percentage: goal?.target_percentage || 0,
+                            target_amount: goal?.target_amount || 0
+                        });
+                        results[priorityType] = updated;
+                    } else {
+                        results[priorityType] = existingForThisPriority;
+                    }
+                } else {
+                    // Create a new SystemBudget
+                    const goal = budgetGoals.find(g => g.priority === priorityType);
+                    const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
+
+                    const newBudget = await base44.entities.SystemBudget.create({
+                        name: FINANCIAL_PRIORITIES[priorityType].label,
+                        budgetAmount,
+                        startDate,
+                        endDate,
+                        color: FINANCIAL_PRIORITIES[priorityType].color,
+                        user_email: userEmail,
+                        systemBudgetType: priorityType,
+                        // Store the goal data for reference if available
+                        target_percentage: goal?.target_percentage || 0,
+                        target_amount: goal?.target_amount || 0
+                    });
+
+                    results[priorityType] = newBudget;
+                }
+            }
+
+            return results;
+        } finally {
+            // 4. Always clean up the lock when the work is finished (success or error)
+            inFlightRequests.delete(lockKey);
+        }
+    })();
+
+    // 5. Register the promise in the lock map so other callers can wait for it
+    inFlightRequests.set(lockKey, work);
+    return work;
 };
