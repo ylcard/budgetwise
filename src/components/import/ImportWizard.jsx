@@ -14,7 +14,7 @@ import { categorizeTransaction } from "@/components/utils/transactionCategorizat
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { formatDateString } from "../utils/dateUtils";
+import { formatDateString, isDateInRange } from "../utils/dateUtils";
 
 const STEPS = [
     { id: 1, label: "Upload" },
@@ -38,7 +38,7 @@ const findMatchingSystemBudget = (budgets, date, priority) => {
     return budgets.find(b =>
         b.isSystemBudget &&
         b.systemBudgetType === priority &&
-        date >= b.startDate && date <= b.endDate
+        isDateInRange(date, b.startDate, b.endDate)
     )?.id || null;
 };
 
@@ -239,28 +239,32 @@ export default function ImportWizard({ onSuccess }) {
                 const isExpense = item.type === 'expense';
                 const finalAmount = Math.abs(item.amount);
 
+                // Normalize dates to YYYY-MM-DD for consistent database storage and budget lookup
+                const formattedTxDate = formatDateString(item.date);
+                const formattedPaidDate = (isExpense && item.paidDate) ? formatDateString(item.paidDate) : null;
+
+                // Determine which date dictates the budget (Paid Date takes precedence for cash flow)
+                const effectiveBudgetParamsDate = (isExpense && item.isPaid && formattedPaidDate)
+                    ? formattedPaidDate
+                    : formattedTxDate;
+
                 // If no custom budget was manually picked, try to find the matching system budget
                 const resolvedBudgetId = item.customBudgetId || (isExpense ?
-                    findMatchingSystemBudget(allBudgets, item.date, item.financial_priority) :
+                    findMatchingSystemBudget(allBudgets, effectiveBudgetParamsDate, item.financial_priority) :
                     null);
 
                 return {
                     title: item.title,
                     amount: finalAmount,
                     type: item.type,
-                    // Trying to fix expenses not being assigned to budgets
-                    // date: new Date(item.date).toISOString().split('T')[0],
-                    date: formatDateString(item.date),
+                    date: formattedTxDate,
                     category_id: isExpense ? (item.categoryId || categories.find(c => c.name === 'Uncategorized')?.id) : null,
                     financial_priority: isExpense ? item.financial_priority : null,
-                    // customBudgetId: isExpense ? item.customBudgetId : null,
                     customBudgetId: resolvedBudgetId,
                     originalAmount: item.originalAmount,
                     originalCurrency: item.originalCurrency,
                     isPaid: isExpense ? (item.isPaid || false) : null,
-                    // Trying to fix expenses not being assigned to budgets
-                    // paidDate: (isExpense && item.paidDate) ? new Date(item.paidDate).toISOString().split('T')[0] : null
-                    paidDate: (isExpense && item.paidDate) ? formatDateString(item.paidDate) : null
+                    paidDate: formattedPaidDate
                 };
             });
 
@@ -396,7 +400,7 @@ export function ImportWizardDialog({
 
     // Support controlled or uncontrolled state
     const [internalOpen, setInternalOpen] = useState(false);
-    
+
     const isControlled = open !== undefined;
     const finalOpen = isControlled ? open : internalOpen;
     const finalOnOpenChange = isControlled ? onOpenChange : setInternalOpen;
