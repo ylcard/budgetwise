@@ -35,9 +35,9 @@ export default function ImportWizard({ onSuccess }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState(null);
     const { user, settings } = useSettings();
-    const { categories } = useCategories();
+    const { categories, isLoading: categoriesLoading } = useCategories();
     const { rules } = useCategoryRules(user);
-    const { goals } = useGoals(user);
+    const { goals, isLoading: goalsLoading } = useGoals(user);
     const { allBudgets } = useAllBudgets(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
@@ -223,6 +223,13 @@ export default function ImportWizard({ onSuccess }) {
     const handleImport = async () => {
         setIsProcessing(true);
         try {
+            // Pre-flight data check
+            if (categoriesLoading || goalsLoading || !categories.length || !goals.length) {
+                showToast({ title: "System warming up", description: "Still loading your categories and goals. Please try again in a second." });
+                setIsProcessing(false);
+                return;
+            }
+
             // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
             const expenseItems = processedData.filter(item => item.type === 'expense');
             const uniqueSyncKeys = new Set();
@@ -255,7 +262,7 @@ export default function ImportWizard({ onSuccess }) {
                     amount: Math.abs(item.amount),
                     type: item.type,
                     date,
-                    category_id: isExpense ? (item.categoryId || categories.find(c => c.name.toLowerCase().includes('uncategorized'))?.id) : null,
+                    category_id: isExpense ? (item.categoryId || categories.find(c => c.name?.toLowerCase().includes('uncategorized'))?.id) : null,
                     financial_priority: isExpense ? (item.financial_priority || 'wants') : null,
                     budgetId: isExpense ? (item.budgetId || budgetMap[syncKey]) : null,
                     originalAmount: Math.abs(item.amount),
@@ -390,8 +397,12 @@ export default function ImportWizard({ onSuccess }) {
                                 // If we have CSV data, go back to mapper, otherwise file uploader
                                 if (csvData.data.length > 0) setShowColumnMapper(true);
                             }}>Back</CustomButton>
-                            <CustomButton variant="primary" onClick={handleImport} disabled={isProcessing}>
-                                {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                            <CustomButton
+                                variant="primary"
+                                onClick={handleImport}
+                                disabled={isProcessing || categoriesLoading || goalsLoading}
+                            >
+                                {isProcessing || categoriesLoading || goalsLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
                                 Import {processedData.length} Transactions
                             </CustomButton>
                         </div>
