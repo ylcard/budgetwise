@@ -12,6 +12,7 @@
 import { base44 } from "@/api/base44Client";
 import { getMonthBoundaries } from "./dateUtils";
 import { FINANCIAL_PRIORITIES } from "./constants";
+import { resolveBudgetLimit } from "./financialCalculations";
 
 /**
  * ADDED 05-Feb-2026: Helper function to get or create a SystemBudget for a specific transaction.
@@ -23,6 +24,9 @@ import { FINANCIAL_PRIORITIES } from "./constants";
  * @param {Array} budgetGoals - Array of BudgetGoal entities (for initial amounts)
  * @param {Object} settings - App settings (for calculating initial amounts)
  * @param {number} monthlyIncome - Monthly income for the period (optional)
+ * @param {Object} options - Options for the operation
+ * @param {boolean} options.allowUpdates - Whether to update existing budgets if amounts changed
+ * @param {number} options.historicalAverage - Average income for Inflation Protection logic
  * @returns {Promise<string>} The ID of the existing or newly created SystemBudget
  */
 export const getOrCreateSystemBudgetForTransaction = async (
@@ -31,7 +35,8 @@ export const getOrCreateSystemBudgetForTransaction = async (
     financialPriority,
     budgetGoals = [],
     settings = {},
-    monthlyIncome = 0
+    monthlyIncome = 0,
+    options = { allowUpdates: false, historicalAverage: 0 }
 ) => {
     if (!userEmail || !transactionDate || !financialPriority) {
         throw new Error('getOrCreateSystemBudgetForTransaction: userEmail, transactionDate, and financialPriority are required');
@@ -105,26 +110,27 @@ export const ensureSystemBudgetsExist = async (
         );
 
         if (existingForThisPriority) {
-            // Budget already exists - use it
-            results[priorityType] = existingForThisPriority;
+            const goal = budgetGoals.find(g => g.priority === priorityType);
+            const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage);
+
+            // Update logic: Only update if allowed, or if the budget is currently uninitialized (0)
+            const needsUpdate = (options.allowUpdates || existingForThisPriority.budgetAmount === 0) &&
+                Math.abs(existingForThisPriority.budgetAmount - calculatedAmount) > 0.01;
+
+            if (needsUpdate) {
+                const updated = await base44.entities.SystemBudget.update(existingForThisPriority.id, {
+                    budgetAmount: calculatedAmount,
+                    target_percentage: goal?.target_percentage || 0,
+                    target_amount: goal?.target_amount || 0
+                });
+                results[priorityType] = updated;
+            } else {
+                results[priorityType] = existingForThisPriority;
+            }
         } else {
             // Create a new SystemBudget
             const goal = budgetGoals.find(g => g.priority === priorityType);
-            let budgetAmount = 0;
-
-            // Calculate initial budget amount based on mode and available data
-            if (settings.goalMode === false && goal) {
-                // Absolute mode: Use the target amount directly
-                budgetAmount = goal.target_amount || 0;
-            } else if (goal && monthlyIncome > 0) {
-                // Percentage mode: Calculate based on income and percentage
-                budgetAmount = (monthlyIncome * (goal.target_percentage || 0)) / 100;
-            } else if (goal) {
-                // If we have a goal but no income yet, use the percentage with 0 income
-                // This creates the budget structure even if there's no income yet
-                budgetAmount = 0;
-            }
-            // If no goal exists at all, budgetAmount remains 0 (default budget)
+            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage);
 
             const newBudget = await base44.entities.SystemBudget.create({
                 name: FINANCIAL_PRIORITIES[priorityType].label,
