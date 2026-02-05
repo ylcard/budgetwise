@@ -10,7 +10,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Loader2, Upload } from "lucide-react";
-import { useCategories, useCategoryRules, useAllBudgets, useGoals } from "@/components/hooks/useBase44Entities";
+import { useCategories, useCategoryRules, useAllBudgets, useGoals, QUERY_KEYS } from "@/components/hooks/useBase44Entities";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
@@ -279,7 +279,7 @@ export default function ImportWizard({ onSuccess }) {
 
             showToast({
                 title: "Import Complete",
-                description: `Successfully added ${transactionsToCreate.length} transactions across ${uniqueMonths.size} month(s) (${Array.from(uniqueMonths).join(', ')}).`
+                description: `Successfully added ${transactionsToCreate.length} transactions across ${uniqueMonths.size} month(s).`
             });
             if (onSuccess) {
                 onSuccess();
@@ -287,8 +287,12 @@ export default function ImportWizard({ onSuccess }) {
                 navigate(createPageUrl("Dashboard"));
             }
         } catch (error) {
-            console.error(error);
-            showToast({ title: "Error", description: "Failed to import transactions.", variant: "destructive" });
+            console.error("IMPORT ERROR:", error);
+            showToast({
+                title: "Import Failed",
+                description: error.message || "An unexpected error occurred during import.",
+                variant: "destructive"
+            });
         } finally {
             setIsProcessing(false);
         }
