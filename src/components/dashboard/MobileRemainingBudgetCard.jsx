@@ -19,38 +19,44 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 }) {
     if (!settings) return null;
 
-    const safeIncome = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
-
-    // --- Programmatic Transition Logic ---
-    const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
-
-    // We use a local state to "hold" the previous view during loading
-    const [displayAsEmpty, setDisplayAsEmpty] = useState(isEmptyMonth);
-    const [isTransitioning, setIsTransitioning] = useState(isLoading);
+    // --- Data Holding Logic ---
+    // We hold the data in local state and only update it when loading is finished.
+    // This prevents the UI from flashing "Empty" or 0% values while fetching the new month.
+    const [displayedData, setDisplayedData] = useState({
+        income: currentMonthIncome,
+        expenses: currentMonthExpenses,
+        breakdown: breakdown
+    });
 
     useEffect(() => {
         if (!isLoading) {
-            setDisplayAsEmpty(isEmptyMonth);
-            setIsTransitioning(false);
-        } else {
-            setIsTransitioning(true);
+            setDisplayedData({
+                income: currentMonthIncome,
+                expenses: currentMonthExpenses,
+                breakdown: breakdown
+            });
         }
-    }, [isLoading, isEmptyMonth]);
+    }, [isLoading, currentMonthIncome, currentMonthExpenses, breakdown]);
 
-    const totalSpent = currentMonthExpenses;
-    const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
-    const isTotalOver = totalSpent > currentMonthIncome;
+    const { income, expenses, breakdown: displayBreakdown } = displayedData;
+
+    const safeIncome = income && income > 0 ? income : 1;
+    const isDisplayedEmpty = (!income || income === 0) && (!expenses || expenses === 0);
+
+    const totalSpent = expenses;
+    const savingsAmount = Math.max(0, income - totalSpent);
+    const isTotalOver = totalSpent > income;
 
     // --- LOGIC FIX: Use Actual Breakdown (Paid + Unpaid) instead of Limits ---
-    const needsData = breakdown?.needs || { paid: 0, unpaid: 0 };
+    const needsData = displayBreakdown?.needs || { paid: 0, unpaid: 0 };
     const needsTotal = (needsData.paid || 0) + (needsData.unpaid || 0);
 
-    const wantsData = breakdown?.wants || {};
+    const wantsData = displayBreakdown?.wants || {};
     const wantsTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) +
         (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
 
     // Calculate Percentages based on Income (or Expenses if over limit)
-    const calculationBase = isTotalOver ? currentMonthExpenses : safeIncome;
+    const calculationBase = isTotalOver ? expenses : safeIncome;
     const needsPct = (needsTotal / calculationBase) * 100;
     const wantsPct = (wantsTotal / calculationBase) * 100;
     const savingsPct = isTotalOver ? 0 : Math.max(0, 100 - needsPct - wantsPct);
@@ -143,7 +149,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 {/* Main Content */}
                 <div className="relative flex flex-col items-center justify-center flex-1 gap-4 min-h-[320px]">
                     <AnimatePresence mode="wait">
-                        {displayAsEmpty ? (
+                        {isDisplayedEmpty ? (
                             <motion.div
                                 key="empty"
                                 initial={{ opacity: 0, y: 10 }}
@@ -165,7 +171,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                             <motion.div
                                 key="chart"
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: isTransitioning ? 0.4 : 1 }}
+                                animate={{ opacity: isLoading ? 0.5 : 1 }}
                                 exit={{ opacity: 0 }}
                                 className="w-full space-y-4"
                             >
@@ -267,7 +273,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                             </h3>
                                         ) : (
                                             <p className="text-sm font-medium text-gray-500">
-                                                Spent <strong className="text-gray-900">{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong>
+                                                Spent <strong className="text-gray-900">{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(income, settings)}</strong>
                                             </p>
                                         )}
                                         {!isTotalOver && (
