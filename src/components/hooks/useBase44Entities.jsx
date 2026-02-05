@@ -248,9 +248,11 @@ export const useCategoryRules = (user) => {
     return { rules, isLoading };
 };
 
+// DEPRECATION WARNING
+// Currently being deprecated in favor of budgetInitialization being the single source of truth for system budget creation
 // Hook for managing system budgets (create/update logic)
 // IMPORTANT: This hook's duplicate detection logic must NOT be modified
-export const useSystemBudgetManagement = (
+/*export const useSystemBudgetManagement = (
     user,
     selectedMonth,
     selectedYear,
@@ -413,4 +415,4 @@ export const useSystemBudgetManagement = (
             ensureSystemBudgets();
         }
     }, [user, selectedMonth, selectedYear, goals, systemBudgets, monthStart, monthEnd, queryClient, transactions]);
-};
+};*/
