@@ -4,6 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "../hooks/queryKeys";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,6 +36,7 @@ export default function TransactionFormContent({
     onCancel,
     isSubmitting = false,
 }) {
+    const queryClient = useQueryClient();
     const { settings, user } = useSettings();
     const { toast } = useToast();
     const { confirmAction } = useConfirm();
@@ -134,50 +137,42 @@ export default function TransactionFormContent({
         }
     }, [formData.title, rules, categories, initialTransaction, formData.category_id]);
 
-    // Auto-select System Budget based on Priority
-    // If priority changes to 'wants', try to find a budget named 'Wants'
+    // ATOMIC SYNC: Ensure budget exists for the selected date/priority
     useEffect(() => {
-        // Prevent auto-switching when editing an existing transaction unless the user actually changes the priority.
-        if (initialTransaction &&
-            formData.budgetId === initialTransaction.budgetId &&
-            formData.financial_priority === (initialTransaction.financial_priority || '')) {
-            return;
-        }
+        const syncBudget = async () => {
+            if (!formData.financial_priority || !formData.date || !user) return;
 
-        // Determine the relevant date for budget selection (match logic in visibleOptions)
-        const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate
-            ? formData.paidDate
-            : formData.date;
+            const relevantDate = formData.isPaid && formData.paidDate ? formData.paidDate : formData.date;
 
-        if (formData.financial_priority && mergedBudgets.length > 0) {
-            // Find a matching system budget (case-insensitive)
-            const matchingSystemBudget = mergedBudgets.find(b =>
-                b.isSystemBudget &&
-                b.name.toLowerCase() === formData.financial_priority.toLowerCase() &&
-                isDateInRange(relevantDate, b.startDate, b.endDate)
-            );
+            try {
+                // This call ensures the budget exists in the DB. 
+                // If it already exists, it just returns the ID immediately.
+                const budgetId = await getOrCreateSystemBudgetForTransaction(
+                    user.email,
+                    relevantDate,
+                    formData.financial_priority,
+                    goals,
+                    settings
+                );
 
-            if (matchingSystemBudget) {
-                // Only auto-switch if we currently have NO budget selected, 
-                // or if the currently selected budget is also a system budget.
-                // We don't want to kick the user out of a specific custom budget (e.g., "Trip 2025").
+                // Only auto-update the selection if the user hasn't manually 
+                // picked a different specific custom budget.
                 const currentBudget = mergedBudgets.find(b => b.id === formData.budgetId);
-                const canAutoSwitch = !formData.budgetId || (currentBudget && currentBudget.isSystemBudget);
+                const isSystemOrEmpty = !formData.budgetId || (currentBudget && currentBudget.isSystemBudget);
 
-                if (canAutoSwitch) {
-                    setFormData(prev => ({ ...prev, budgetId: matchingSystemBudget.id }));
+                if (budgetId && isSystemOrEmpty) {
+                    // Trigger a refetch so the new month's budgets appear in the dropdown
+                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
+                    setFormData(prev => ({ ...prev, budgetId }));
                 }
-            } else {
-                // If we can't find a matching system budget (e.g. future month not generated),
-                // and we are currently pointing to a system budget, we should clear it to avoid 
-                // pointing to the WRONG month (like November budget for January expense).
-                const currentBudget = mergedBudgets.find(b => b.id === formData.budgetId);
-                if (currentBudget && currentBudget.isSystemBudget) {
-                    setFormData(prev => ({ ...prev, budgetId: '' }));
-                }
+            } catch (err) {
+                console.error("Failed to atomic-sync budget:", err);
             }
-        }
-    }, [formData.financial_priority, mergedBudgets, formData.date, formData.isPaid, formData.paidDate, formData.type]);
+        };
+
+        syncBudget();
+    }, [formData.financial_priority, formData.date, formData.paidDate, formData.isPaid, user, goals, settings]);
 
     // 3. Filter Options (Search only)
     // We rely on the parent component to provide the correct order (System > Active > Planned)
