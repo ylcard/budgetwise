@@ -92,14 +92,14 @@ export default function DatePicker({
                     toYear={2100}
                     // Replace the native native dropdowns with Shadcn Select
                     components={{
-                        Dropdown: ({ value, onChange, children }) => {
-                            const options = React.Children.toArray(children);
-                            const handleChange = (value) => {
-                                const changeEvent = {
-                                    target: { value },
+                        Dropdown: ({ value, onChange, options }) => {
+                            const handleChange = (newValue) => {
+                                const syntheticEvent = {
+                                    target: { value: newValue }
                                 };
-                                onChange?.(changeEvent);
+                                onChange?.(syntheticEvent);
                             };
+
                             return (
                                 <Select
                                     value={value?.toString()}
@@ -109,40 +109,42 @@ export default function DatePicker({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent position="popper" className="max-h-[240px] overflow-y-auto min-w-[120px] bg-white z-50">
-                                        {options.map((option) => (
+                                        {options?.map((option) => (
                                             <SelectItem
-                                                key={option.props.value}
-                                                value={option.props.value?.toString() ?? ""}
+                                                key={option.value}
+                                                value={option.value.toString()}
                                                 className="text-sm"
                                             >
-                                                {option.props.children}
+                                                {option.label}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             );
                         },
-                        IconLeft: ({ ...props }) => <ChevronLeft {...props} className="h-4 w-4" />,
-                        IconRight: ({ ...props }) => <ChevronRight {...props} className="h-4 w-4" />,
+                        Chevron: ({ orientation }) => {
+                            const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
+                            return <Icon className="h-4 w-4" />;
+                        }
                     }}
                     // Spread parent props last to allow overrides
                     {...dayPickerProps}
                     classNames={{
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                         month: "space-y-4",
-                        // Ensure the container is centered and relatively positioned
-                        caption: "flex justify-center pt-1 relative items-center",
-                        // Hide the static text label when dropdowns are active to prevent duplication
+                        month_caption: "flex justify-center pt-1 relative items-center",
                         caption_label: "hidden",
                         caption_dropdowns: "flex justify-center gap-1",
                         nav: "space-x-1 flex items-center absolute right-1",
-                        nav_button: cn(
+                        button_previous: cn(
                             buttonVariants({ variant: "outline" }),
-                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1 border-none"
                         ),
-                        nav_button_previous: "absolute left-1 border-none",
-                        nav_button_next: "absolute right-1 border-none",
-                        table: "w-full border-collapse space-y-1",
+                        button_next: cn(
+                            buttonVariants({ variant: "outline" }),
+                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1 border-none"
+                        ),
+                        month_grid: "w-full border-collapse space-y-1",
                         weekdays: "flex",
                         weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
                         week: "flex w-full mt-2",
