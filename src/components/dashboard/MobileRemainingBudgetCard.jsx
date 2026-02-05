@@ -160,75 +160,67 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                     />
 
                                     {/* Needs segment */}
-                                    {needsLength > 0 && (
-                                        <motion.circle
-                                            cx={size / 2}
-                                            cy={size / 2}
-                                            r={radius}
-                                            fill="none"
-                                            stroke={needsColor}
-                                            strokeWidth={strokeWidth}
-                                            strokeDasharray={`${needsLength} ${circumference}`}
-                                            initial={{ strokeDashoffset: needsLength }}
-                                            animate={{ strokeDashoffset: 0 }}
-                                            transition={{ duration: 0.5, ease: "linear" }}
-                                            strokeLinecap="butt"
-                                            style={{
-                                                transformOrigin: 'center',
-                                                transform: `rotate(${needsRotation}deg)`
-                                            }}
-                                        />
-                                    )}
+                                    <motion.circle
+                                        cx={size / 2}
+                                        cy={size / 2}
+                                        r={radius}
+                                        fill="none"
+                                        stroke={needsColor}
+                                        strokeWidth={strokeWidth}
+                                        strokeLinecap="butt"
+                                        style={{ transformOrigin: 'center' }}
+                                        // Initial is only for the very first mount
+                                        initial={{ strokeDasharray: `0 ${circumference}`, rotate: 0 }}
+                                        // Animate will catch every subsequent change in variables
+                                        animate={{
+                                            strokeDasharray: `${needsLength} ${circumference}`,
+                                            rotate: needsRotation
+                                        }}
+                                        transition={{ duration: 0.8, ease: "easeInOut" }}
+                                    />
 
                                     {/* Wants segment */}
-                                    {wantsLength > 0 && (
-                                        <motion.circle
-                                            cx={size / 2}
-                                            cy={size / 2}
-                                            r={radius}
-                                            fill="none"
-                                            stroke={wantsColor}
-                                            strokeWidth={strokeWidth}
-                                            strokeDasharray={`${wantsLength} ${circumference}`}
-                                            initial={{ strokeDashoffset: wantsLength }}
-                                            animate={{ strokeDashoffset: 0 }}
-                                            transition={{ duration: 0.4, ease: "linear", delay: 0.5 }}
-                                            strokeLinecap="butt"
-                                            style={{
-                                                transformOrigin: 'center',
-                                                transform: `rotate(${wantsRotation}deg)`
-                                            }}
-                                        />
-                                    )}
+                                    <motion.circle
+                                        cx={size / 2}
+                                        cy={size / 2}
+                                        r={radius}
+                                        fill="none"
+                                        stroke={wantsColor}
+                                        strokeWidth={strokeWidth}
+                                        strokeLinecap="butt"
+                                        style={{ transformOrigin: 'center' }}
+                                        initial={{ strokeDasharray: `0 ${circumference}`, rotate: 0 }}
+                                        animate={{
+                                            strokeDasharray: `${wantsLength} ${circumference}`,
+                                            rotate: wantsRotation
+                                        }}
+                                        transition={{ duration: 0.8, ease: "easeInOut" }}
+                                    />
 
                                     {/* Savings segment */}
-                                    {savingsLength > 0 && (
-                                        <motion.circle
-                                            cx={size / 2}
-                                            cy={size / 2}
-                                            r={radius}
-                                            fill="none"
-                                            stroke={savingsColor}
-                                            strokeWidth={strokeWidth}
-                                            strokeDasharray={`${savingsLength} ${circumference}`}
-                                            initial={{ strokeDashoffset: savingsLength }}
-                                            animate={{ strokeDashoffset: 0 }}
-                                            transition={{ duration: 0.3, ease: "linear", delay: 0.9 }}
-                                            strokeLinecap="butt"
-                                            style={{
-                                                transformOrigin: 'center',
-                                                transform: `rotate(${savingsRotation}deg)`
-                                            }}
-                                        />
-                                    )}
+                                    <motion.circle
+                                        cx={size / 2}
+                                        cy={size / 2}
+                                        r={radius}
+                                        fill="none"
+                                        stroke={savingsColor}
+                                        strokeWidth={strokeWidth}
+                                        strokeLinecap="butt"
+                                        style={{ transformOrigin: 'center' }}
+                                        initial={{ strokeDasharray: `0 ${circumference}`, rotate: 0 }}
+                                        animate={{
+                                            strokeDasharray: `${savingsLength} ${circumference}`,
+                                            rotate: savingsRotation
+                                        }}
+                                        transition={{ duration: 0.8, ease: "easeInOut" }}
+                                    />
                                 </svg>
 
                                 {/* Center Text */}
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                                     <motion.div
-                                        initial={{ scale: 0, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
+                                        animate={{ scale: [0.95, 1], opacity: 1 }}
+                                        transition={{ duration: 0.3 }}
                                         className="text-center"
                                     >
                                         <div className="text-3xl font-extrabold text-gray-900">
