@@ -407,9 +407,8 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
     if (!updatedGoal || !settings || !userEmail) return;
 
     const now = new Date();
-    const currentMonthStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
 
-    // Phase 1: Ensure all three system budgets exist for each of the next 12 months
+    // Unified Logic: Ensure and update budgets for the next 12 months
     const horizonMonths = 12;
     for (let i = 0; i < horizonMonths; i++) {
         const monthDate = addMonths(now, i);
@@ -423,61 +422,15 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
             created_by: userEmail
         }).then(txs => txs.reduce((sum, t) => sum + t.amount, 0));
 
+        // The Engine now handles both creation and goal-based updates in one call
         await ensureSystemBudgetsExist(
             userEmail,
             monthStart,
             monthEnd,
             allGoals,
             settings,
-            monthlyIncome
+            monthlyIncome,
+            { allowUpdates: true, historicalAverage: 0 }
         );
     }
-
-    // Phase 2: Now that all budgets are guaranteed to exist, fetch and update the relevant ones
-    const budgetsToUpdate = await base44.entities.SystemBudget.filter({
-        user_email: userEmail,
-        systemBudgetType: updatedGoal.priority,
-        startDate: { $gte: currentMonthStart }
-    });
-
-    if (budgetsToUpdate.length === 0) return;
-
-    // Pre-fetch transactions for income calculation if in percentage mode
-    let transactionsForIncomeCalc = [];
-    if (settings.goalMode !== false) {
-        transactionsForIncomeCalc = await base44.entities.Transaction.filter({
-            type: 'income',
-            date: { $gte: currentMonthStart },
-            created_by: userEmail
-        });
-    }
-
-    const updatePromises = budgetsToUpdate.map(async (budget) => {
-        let newAmount = 0;
-
-        if (settings.goalMode === false) {
-            newAmount = updatedGoal.target_amount || 0;
-        } else {
-            const bDate = parseDate(budget.startDate);
-
-            const monthIncome = transactionsForIncomeCalc
-                .filter(t => {
-                    const tDate = parseDate(t.date);
-                    return tDate.getFullYear() === bDate.getFullYear() && tDate.getMonth() === bDate.getMonth();
-                })
-                .reduce((sum, t) => sum + t.amount, 0);
-
-            newAmount = (monthIncome * (updatedGoal.target_percentage / 100));
-        }
-
-        if (Math.abs((budget.budgetAmount || 0) - newAmount) > 0.01) {
-            return base44.entities.SystemBudget.update(budget.id, {
-                budgetAmount: newAmount,
-                target_amount: settings.goalMode === false ? updatedGoal.target_amount : 0,
-                target_percentage: settings.goalMode !== false ? updatedGoal.target_percentage : 0
-            });
-        }
-    });
-
-    await Promise.all(updatePromises.filter(Boolean));
 };
