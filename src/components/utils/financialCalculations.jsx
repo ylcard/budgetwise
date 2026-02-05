@@ -29,6 +29,7 @@ export const isTransactionInDateRange = (transaction, startDate, endDate) => {
 
 /**
  * Helper to determine if a budget ID corresponds to an actual custom budget.
+ * UPDATED 05-Feb-2026: Renamed parameter from customBudgetId to budgetId
  */
 const isActualCustomBudget = (budgetId, allCustomBudgets) => {
     if (!budgetId) return false;
@@ -73,6 +74,7 @@ export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
 /**
  * Helper: Resolves the budget limit (Goal) based on the active mode.
  * This centralizes the logic so we don't repeat (Income * %) everywhere.
+ * UPDATED 05-Feb-2026: Added export for external use in budgetInitialization
  * @param {Object} goal - The budget goal (needs target_percentage and/or target_amount)
  * @param {number} monthlyIncome - The total monthly income
  * @param {Object} settings - App settings (must include goalMode and fixedLifestyleMode)
@@ -140,12 +142,14 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
         const effectiveDate = (t.isPaid && t.paidDate) ? t.paidDate : t.date;
         if (dayLimit && parseDate(effectiveDate).getDate() > dayLimit) return;
 
-        const isCustom = isActualCustomBudget(t.customBudgetId, allCustomBudgets);
+        // UPDATED 05-Feb-2026: Renamed customBudgetId to budgetId
+        const isCustom = isActualCustomBudget(t.budgetId, allCustomBudgets);
         const category = categories ? categories.find(c => c.id === t.category_id) : null;
         // Priority hierarchy: Transaction > Category > Default 'wants'
         const priority = t.financial_priority || category?.priority || 'wants';
 
         // CRITICAL FIX 05-Feb-2026: Expenses in Custom Budgets should NEVER appear in System Budget "DIRECT" calculations
+        // UPDATED 05-Feb-2026: Renamed customBudgetId references to budgetId
         // The word "DIRECT" means expenses directly assigned to that priority, NOT via a custom budget.
         // Custom Budget expenses are aggregated separately and shown only in the Custom Budget views.
         if (isCustom) {
@@ -186,9 +190,10 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
 
 /**
  * CRITICAL FIX 15-Jan-2026: Calculates statistics for a single custom budget.
+ * UPDATED 05-Feb-2026: Renamed customBudgetId references to budgetId
  * 
  * UNIFIED CALCULATION LOGIC:
- * - Aggregates ALL transactions linked to the custom budget (by customBudgetId)
+ * - Aggregates ALL transactions linked to the custom budget (by budgetId)
  * - IGNORES payment dates and transaction dates completely
  * - Paid amount = Sum of all paid expenses linked to this budget (t.isPaid === true)
  * - Unpaid amount = Sum of all unpaid expenses linked to this budget (t.isPaid === false)
@@ -204,16 +209,16 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
  * custom budget statistics.
  * 
  * @param {Object} customBudget - The custom budget entity
- * @param {Array} transactions - ALL transactions (will be filtered by customBudgetId)
+ * @param {Array} transactions - ALL transactions (will be filtered by budgetId)
  * @param {string} monthStart - IGNORED (kept for API compatibility)
  * @param {string} monthEnd - IGNORED (kept for API compatibility)
  * @param {string} baseCurrency - Base currency for display (default: 'USD')
  * @returns {Object} Budget statistics with paid, unpaid, spent, remaining amounts
  */
 export const getCustomBudgetStats = (customBudget, transactions) => {
-    // CRITICAL: Filter ONLY by customBudgetId - NO date filtering
+    // CRITICAL: Filter ONLY by budgetId - NO date filtering
     // Custom budgets show ALL expenses linked to them, regardless of when they were paid
-    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+    const budgetTransactions = transactions.filter(t => t.budgetId === customBudget.id);
 
     const expenses = budgetTransactions.filter(t => t.type === 'expense');
     const allocated = customBudget.allocatedAmount || 0;
@@ -307,9 +312,10 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
 
 /**
  * Calculates allocation statistics for a custom budget's categories.
+ * UPDATED 05-Feb-2026: Renamed customBudgetId to budgetId
  */
 export const getCustomBudgetAllocationStats = (customBudget, allocations, transactions) => {
-    const budgetTransactions = transactions.filter(t => t.customBudgetId === customBudget.id);
+    const budgetTransactions = transactions.filter(t => t.budgetId === customBudget.id);
     const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
     const unallocated = customBudget.allocatedAmount - totalAllocated;
 

@@ -2,7 +2,7 @@
  * @file Budget Initialization Utilities
  * @description Centralizes the creation and validation of SystemBudget entities.
  * @created 17-Jan-2026
- * @updated 17-Jan-2026 - OPTIMIZED: Single query to fetch all existing budgets for a month
+ * @updated 05-Feb-2026 - ADDED: getOrCreateSystemBudgetForTransaction helper function
  * 
  * CRITICAL: This is the SINGLE SOURCE OF TRUTH for creating SystemBudget entities.
  * All code that needs to create or ensure SystemBudgets exist must call ensureSystemBudgetsExist.
@@ -10,6 +10,49 @@
  */
 
 import { base44 } from "@/api/base44Client";
+import { getMonthBoundaries } from "./dateUtils";
+
+/**
+ * ADDED 05-Feb-2026: Helper function to get or create a SystemBudget for a specific transaction.
+ * This is the PRIMARY function to use when adding/importing transactions.
+ * 
+ * @param {string} userEmail - User's email address
+ * @param {string} transactionDate - Transaction date (or paidDate for expenses) in YYYY-MM-DD format
+ * @param {string} financialPriority - 'needs', 'wants', or 'savings'
+ * @param {Array} budgetGoals - Array of BudgetGoal entities (for initial amounts)
+ * @param {Object} settings - App settings (for calculating initial amounts)
+ * @param {number} monthlyIncome - Monthly income for the period (optional)
+ * @returns {Promise<string>} The ID of the existing or newly created SystemBudget
+ */
+export const getOrCreateSystemBudgetForTransaction = async (
+    userEmail,
+    transactionDate,
+    financialPriority,
+    budgetGoals = [],
+    settings = {},
+    monthlyIncome = 0
+) => {
+    if (!userEmail || !transactionDate || !financialPriority) {
+        throw new Error('getOrCreateSystemBudgetForTransaction: userEmail, transactionDate, and financialPriority are required');
+    }
+
+    // Extract month/year from transaction date
+    const date = new Date(transactionDate);
+    const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
+
+    // Ensure all three system budgets exist for this month
+    const budgets = await ensureSystemBudgetsExist(
+        userEmail,
+        monthStart,
+        monthEnd,
+        budgetGoals,
+        settings,
+        monthlyIncome
+    );
+
+    // Return the ID of the specific budget for this priority
+    return budgets[financialPriority]?.id || null;
+};
 
 /**
  * Ensures SystemBudget entities exist for a given user, month, and priority types.
