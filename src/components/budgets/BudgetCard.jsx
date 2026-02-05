@@ -20,7 +20,6 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
     }, [budget, transactions]);
 
     const isSystemBudget = budget.isSystemBudget || false;
-    const isSavings = isSystemBudget && budget.systemBudgetType === 'savings';
 
     // Check if planned budget's start date has arrived
     const shouldActivate = useMemo(() => {
@@ -59,30 +58,13 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
         let rem = Math.max(0, alloc - used);
         let over = Math.max(0, used - alloc);
 
-        // SAVINGS LOGIC INVERSION:
-        // For savings, "Allocated" is the Target. "Used" is Actual Savings.
-        // "Over Budget" means we exceeded our savings target (GOOD).
-        // "Remaining" means we are short of our target (BAD).
-
-        // Refactoring Nov 26
-        // CEILING LOGIC: For Needs/Wants, being "under" is neutral/good (Blue), not "Success" (Green).
-        // let statColor = isOver ? 'text-red-500' : 'text-emerald-600';
-        // let statLabel = isOver ? 'Over by' : 'Remaining';
         let statColor = isOver ? 'text-red-500' : 'text-blue-600';
         let statLabel = isOver ? 'Over Limit' : 'Under Limit';
 
-        if (isSavings) {
-            // If savings (actual) > target (alloc), we have a surplus (GOOD - Green)
-            // If savings (actual) < target (alloc), we have a shortfall (BAD - Orange)
-            statColor = isOver ? 'text-emerald-600' : 'text-amber-600';
-            statLabel = isOver ? 'Surplus' : 'Shortfall';
-            // Refactoring Nov 26
-        } else {
-            // For Needs/Wants (Ceilings), "Remaining" sounds like "Spend me!".
-            // We change this to "Under Limit" (Blue) to indicate capacity, not wealth.
-            if (!isOver) {
-                statColor = 'text-blue-600';
-            }
+        // For Needs/Wants (Ceilings), "Remaining" sounds like "Spend me!".
+        // We change this to "Under Limit" (Blue) to indicate capacity, not wealth.
+        if (!isOver) {
+            statColor = 'text-blue-600';
         }
 
         return {
@@ -96,7 +78,7 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
             statusColor: statColor,
             statusLabel: statLabel
         };
-    }, [stats, isSystemBudget, budget, isSavings]);
+    }, [stats, isSystemBudget, budget]);
 
     // Visual Theme Helper
     const theme = useMemo(() => {
@@ -153,18 +135,12 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
     let displayPercentage = 0;
     let mainOffset = 0;
 
-    if (isSavings) {
-        // Savings: Grow from 0 -> 100%
-        displayPercentage = Math.min(percentage, 100);
-        mainOffset = circumference - (displayPercentage / 100) * circumference;
-    } else {
-        // Needs/Wants: Shrink from 100% -> 0%
-        // If percentage (used) is 20%, we want to show 80% full.
-        // If percentage is 110%, we show 0% full (empty).
-        const remainingPct = Math.max(0, 100 - percentage);
-        displayPercentage = remainingPct;
-        mainOffset = circumference - (remainingPct / 100) * circumference;
-    }
+    // Needs/Wants: Shrink from 100% -> 0%
+    // If percentage (used) is 20%, we want to show 80% full.
+    // If percentage is 110%, we show 0% full (empty).
+    const remainingPct = Math.max(0, 100 - percentage);
+    displayPercentage = remainingPct;
+    mainOffset = circumference - (remainingPct / 100) * circumference;
 
     // Overlay progress (amount over 100%, capped purely for visual sanity if needed)
     // const overlayProgress = Math.max(0, percentage - 100);
@@ -259,9 +235,9 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
                                     className="transition-all duration-1000 ease-out"
                                 />
 
-                                {/* Overlay Ring (if > 100%) - Green for Savings, Red for Expenses */}
-                                {/* For Needs/Wants, if overbudget, maybe show a thin red warning ring? */}
-                                {isOverBudget && !isSavings && (
+                                {/* Overlay Ring (if > 100%) - Red for Expenses */}
+                                {/* For Needs/Wants, if overbudget, show a thin red warning ring */}
+                                {isOverBudget && (
                                     <circle
                                         cx="50%" cy="50%" r={normalizedRadius}
                                         stroke={theme.overlay}
@@ -275,19 +251,6 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
                                         className="transition-all duration-1000 ease-out opacity-90"
                                     />
                                 )}
-                                {/* Savings Overlay (Surplus) - Use main theme color or distinct surplus color */}
-                                {isOverBudget && isSavings && (
-                                    <circle
-                                        cx="50%" cy="50%" r={normalizedRadius}
-                                        stroke="#059669" // Emerald 600 for surplus
-                                        strokeWidth={currentStyle.stroke}
-                                        fill="none"
-                                        strokeDasharray={circumference}
-                                        strokeDashoffset={overlayOffset}
-                                        strokeLinecap="round"
-                                        className="transition-all duration-1000 ease-out opacity-90"
-                                    />
-                                )}
                             </svg>
 
                             {/* Center Content */}
@@ -295,14 +258,9 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
                                 <span className={`font-bold ${theme.text} ${currentStyle.circleText}`}>
                                     {Math.round(percentage)}%
                                 </span>
-                                {isOverBudget && !isSavings && (
+                                {isOverBudget && (
                                     <span className={`font-bold text-white bg-red-500 rounded uppercase shadow-sm ${currentStyle.overText}`}>
                                         Over
-                                    </span>
-                                )}
-                                {isOverBudget && isSavings && (
-                                    <span className={`font-bold text-white bg-emerald-500 rounded uppercase shadow-sm ${currentStyle.overText}`}>
-                                        +{(percentage - 100).toFixed(0)}%
                                     </span>
                                 )}
                             </div>
@@ -313,7 +271,7 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
                     <div className={`grid grid-cols-2 mt-auto ${currentStyle.gap}`}>
                         {/* Row 1: Budget & Remaining */}
                         <div>
-                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>{isSavings ? 'Target' : 'Budget'}</p>
+                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Budget</p>
                             <p className={`font-semibold text-gray-700 truncate ${currentStyle.statVal}`}>
                                 {formatCurrency(allocated, settings)}
                             </p>
@@ -325,8 +283,8 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
                             <p className={`font-semibold truncate ${statusColor} ${currentStyle.statVal}`}>
                                 {formatCurrency(isOverBudget ? overAmount : remaining, settings)}
                             </p>
-                            {/* Subliminal reinforcement: If it's not a savings budget and we are under limit, hint that this is savings */}
-                            {!isSavings && !isOverBudget && (
+                            {/* Subliminal reinforcement: If we are under limit, hint that this is savings */}
+                            {!isOverBudget && (
                                 <p className="text-[9px] md:text-[10px] text-emerald-600/80 font-medium mt-0.5 text-right">
                                     (Potential Savings)
                                 </p>
@@ -338,27 +296,18 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
 
                         {/* Row 2: Paid & Unpaid */}
                         <div>
-                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>{isSavings ? 'Actual' : 'Paid'}</p>
+                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Paid</p>
                             <p className={`font-semibold text-gray-900 truncate ${currentStyle.statVal}`}>
                                 {formatCurrency(paid, settings)}
                             </p>
                         </div>
                         <div className="text-right">
-                            {/* Hide Unpaid for Savings as it doesn't apply */}
-                            {!isSavings ? (
-                                <>
-                                    <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Unpaid</p>
-                                    <div className="flex items-center justify-end gap-1">
-                                        <p className={`font-semibold truncate ${unpaid > 0 ? 'text-amber-600' : 'text-gray-300'} ${currentStyle.statVal}`}>
-                                            {formatCurrency(unpaid, settings)}
-                                        </p>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="h-full flex items-end justify-end">
-                                    <span className="text-xs text-gray-300 italic">Net Flow</span>
-                                </div>
-                            )}
+                            <p className={`text-gray-400 mb-px ${currentStyle.statLabel}`}>Unpaid</p>
+                            <div className="flex items-center justify-end gap-1">
+                                <p className={`font-semibold truncate ${unpaid > 0 ? 'text-amber-600' : 'text-gray-300'} ${currentStyle.statVal}`}>
+                                    {formatCurrency(unpaid, settings)}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
