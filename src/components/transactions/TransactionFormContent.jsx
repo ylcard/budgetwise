@@ -3,8 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
+import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,14 +17,14 @@ import CategorySelect from "../ui/CategorySelect";
 import AnimatePresenceContainer from "../ui/AnimatePresenceContainer";
 import { useSettings } from "../utils/SettingsContext";
 import { useExchangeRates } from "../hooks/useExchangeRates";
-import { getCurrencySymbol } from "../utils/currencyUtils";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
-import { SUPPORTED_CURRENCIES } from "../utils/constants";
-import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "../utils/dateUtils";
+import { formatDateString, isDateInRange, formatDate } from "../utils/dateUtils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
 import { normalizeAmount } from "../utils/generalUtils";
-import { useCategoryRules, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
+import { useCategoryRules, useGoals } from "../hooks/useBase44Entities";
 import { categorizeTransaction } from "../utils/transactionCategorization";
+import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
 export default function TransactionFormContent({
     initialTransaction = null,
@@ -40,6 +39,7 @@ export default function TransactionFormContent({
     const { confirmAction } = useConfirm();
     const { exchangeRates, refreshRates, isRefreshing, refetch, isLoading } = useExchangeRates();
     const { rules } = useCategoryRules(user);
+    const { goals } = useGoals(user);
 
     // Force fetch rates on mount if empty
     useEffect(() => {
@@ -67,64 +67,12 @@ export default function TransactionFormContent({
     const [budgetSearchTerm, setBudgetSearchTerm] = useState("");
     const [validationError, setValidationError] = useState(null);
 
-    // ADDED 01-Feb-2026: Dynamically fetch system budgets for the transaction date's month
-    // This ensures we have budgets available for any date the user enters, not just the viewed month
-    const transactionDateBounds = useMemo(() => {
-        if (!formData.date) return null;
-        const txDate = new Date(formData.date);
-        if (isNaN(txDate)) return null;
-        return getMonthBoundaries(txDate.getMonth(), txDate.getFullYear());
-    }, [formData.date]);
-
-    const paidDateBounds = useMemo(() => {
-        if (!formData.isPaid || !formData.paidDate) return null;
-        const paidDate = new Date(formData.paidDate);
-        if (isNaN(paidDate)) return null;
-        return getMonthBoundaries(paidDate.getMonth(), paidDate.getFullYear());
-    }, [formData.isPaid, formData.paidDate]);
-
-    // Check if parent (allBudgets) already provides system budgets for these dates
-    // This prevents redundant fetching which triggers parent re-renders and form resets
-    const hasParentBudgetsForTxDate = useMemo(() => {
-        if (!transactionDateBounds) return false;
-        return allBudgets.some(b => b.isSystemBudget && b.startDate <= transactionDateBounds.monthEnd && b.endDate >= transactionDateBounds.monthStart);
-    }, [allBudgets, transactionDateBounds]);
-
-    const hasParentBudgetsForPaidDate = useMemo(() => {
-        if (!paidDateBounds) return false;
-        return allBudgets.some(b => b.isSystemBudget && b.startDate <= paidDateBounds.monthEnd && b.endDate >= paidDateBounds.monthStart);
-    }, [allBudgets, paidDateBounds]);
-
-    const { systemBudgets: txDateSystemBudgets } = useSystemBudgetsForPeriod(
-        user,
-        hasParentBudgetsForTxDate ? null : transactionDateBounds?.monthStart,
-        hasParentBudgetsForTxDate ? null : transactionDateBounds?.monthEnd
-    );
-
-    const { systemBudgets: paidDateSystemBudgets } = useSystemBudgetsForPeriod(
-        user,
-        hasParentBudgetsForPaidDate ? null : paidDateBounds?.monthStart,
-        hasParentBudgetsForPaidDate ? null : paidDateBounds?.monthEnd
-    );
-
     // Merge all system budgets (from parent + transaction date + paid date) with custom budgets from parent
     const mergedBudgets = useMemo(() => {
         const systemFromParent = allBudgets.filter(b => b.isSystemBudget);
         const customFromParent = allBudgets.filter(b => !b.isSystemBudget);
 
-        // Combine all system budgets and deduplicate by ID
-        const allSystemBudgets = [
-            ...systemFromParent,
-            ...(txDateSystemBudgets || []),
-            ...(paidDateSystemBudgets || [])
-        ];
-
-        const uniqueSystemBudgets = Array.from(
-            new Map(allSystemBudgets.map(sb => [sb.id, sb])).values()
-        );
-
-        // Format system budgets to match expected structure
-        const formattedSystem = uniqueSystemBudgets.map(sb => ({
+        const formattedSystem = systemFromParent.map(sb => ({
             ...sb,
             isSystemBudget: true,
             allocatedAmount: sb.budgetAmount || sb.allocatedAmount
@@ -132,7 +80,7 @@ export default function TransactionFormContent({
 
         // Return system budgets first, then custom budgets
         return [...formattedSystem, ...customFromParent];
-    }, [allBudgets, txDateSystemBudgets, paidDateSystemBudgets]);
+    }, [allBudgets]);
 
     // Initialize form data from initialTransaction (for editing)
     useEffect(() => {
@@ -155,11 +103,6 @@ export default function TransactionFormContent({
     }, [initialTransaction]);
 
     const isForeignCurrency = formData.originalCurrency !== (settings?.baseCurrency || 'USD');
-
-    // DEPRECATED? Get currency symbol for the selected currency
-    // const selectedCurrencySymbol = SUPPORTED_CURRENCIES.find(
-    //     c => c.code === formData.originalCurrency
-    // )?.symbol || getCurrencySymbol(formData.originalCurrency);
 
     // Auto-set Priority based on Category
     useEffect(() => {
@@ -319,13 +262,29 @@ export default function TransactionFormContent({
         const normalizedAmount = normalizeAmount(formData.amount);
         const originalAmount = parseFloat(normalizedAmount);
 
-        // Validation: Budget is required for expenses
-        if (formData.type === 'expense' && !formData.budgetId) {
-            setValidationError("Please select a budget for this expense.");
+        let finalAmount = originalAmount;
+        let finalBudgetId = formData.budgetId;
+
+        // ATOMIC CREATION: If priority is set but no specific custom budget is picked, 
+        // ensure the system budget exists for the relevant month right now.
+        if (formData.type === 'expense' && formData.financial_priority) {
+            const relevantDate = formData.isPaid && formData.paidDate ? formData.paidDate : formData.date;
+
+            // This call is synchronized via our Map lock in budgetInitialization
+            finalBudgetId = await getOrCreateSystemBudgetForTransaction(
+                user.email,
+                relevantDate,
+                formData.financial_priority,
+                goals,
+                settings
+            );
+        }
+
+        if (formData.type === 'expense' && !finalBudgetId) {
+            setValidationError("A budget allocation is required for expenses.");
             return;
         }
 
-        let finalAmount = originalAmount;
         let exchangeRateUsed = null;
 
         // Perform currency conversion if needed
@@ -389,7 +348,7 @@ export default function TransactionFormContent({
         if (formData.type === 'expense') {
             submitData.isPaid = formData.isCashExpense ? true : formData.isPaid;
             submitData.paidDate = formData.isCashExpense ? formData.date : (formData.isPaid ? (formData.paidDate || formData.date) : null);
-            submitData.budgetId = formData.budgetId || null;
+            submitData.budgetId = finalBudgetId || null;
             submitData.isCashTransaction = formData.isCashExpense;
             submitData.cashTransactionType = null;
         } else {
@@ -562,11 +521,10 @@ export default function TransactionFormContent({
                                 value={formData.financial_priority || ''}
                                 onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
                                 placeholder="Select priority"
-                                options={[
-                                    { value: "needs", label: "Needs" },
-                                    { value: "wants", label: "Wants" },
-                                    { value: "savings", label: "Savings" }
-                                ]}
+                                options={Object.entries(FINANCIAL_PRIORITIES).map(([key, config]) => ({
+                                    value: key,
+                                    label: config.label
+                                }))}
                             />
                         </div>
                     </div>
