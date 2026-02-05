@@ -708,7 +708,7 @@ export const useAdvancedTransactionFiltering = (transactions) => {
         paymentStatus: 'all',
         cashStatus: 'all', // 'all', 'cash_only', 'exclude_cash'
         financialPriority: 'all', // 'all', 'needs', 'wants', 'savings'
-        customBudgetId: 'all',
+        budgetId: 'all',
         startDate: currentMonthStart,
         endDate: currentMonthEnd
     });
@@ -765,8 +765,8 @@ export const useAdvancedTransactionFiltering = (transactions) => {
             }
 
             // 7. Custom Budget
-            if (filters.customBudgetId !== 'all') {
-                if (t.customBudgetId !== filters.customBudgetId) return false;
+            if (filters.budgetId !== 'all') {
+                if (t.budgetId !== filters.budgetId) return false;
             }
 
             // 8. Date Range
