@@ -203,10 +203,8 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                         onUpdateRow(row.originalIndex, { customBudgetId: null });
                                                     } else {
                                                         // Selected a Custom Budget
-                                                        // When assigning to a custom budget, default to 'wants' but allow override later
                                                         onUpdateRow(row.originalIndex, {
-                                                            customBudgetId: val,
-                                                            financial_priority: 'wants'
+                                                            customBudgetId: val
                                                         });
                                                     }
                                                 }}
@@ -215,7 +213,9 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                     {
                                                         value: "system",
                                                         label: `${row.financial_priority ? row.financial_priority.charAt(0).toUpperCase() + row.financial_priority.slice(1) : 'System Budget'} (${(() => {
-                                                            const d = parseDate(row.date);
+                                                            // Use paidDate if available to match import logic (Cash Flow)
+                                                            const effectiveDate = (row.isPaid && row.paidDate) ? row.paidDate : row.date;
+                                                            const d = parseDate(effectiveDate);
                                                             if (!d) return '';
                                                             const isCurr = d.getFullYear() === new Date().getFullYear();
                                                             return formatDate(d, isCurr ? "MMM" : "MMM yyyy");
