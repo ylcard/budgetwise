@@ -15,6 +15,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { iconMap } from "../utils/iconMapConfig";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
@@ -102,33 +103,50 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     <CommandInput placeholder="Search category..." />
                     <CommandList className="max-h-64 overflow-y-auto overflow-x-hidden">
                         <CommandEmpty>No category found.</CommandEmpty>
-                        <CommandGroup className="overflow-visible">
-                            {sortedCategories.map((category) => {
-                                const Icon = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
-                                const isSelected = multiple
-                                    ? (Array.isArray(value) && value.includes(category.id))
-                                    : value === category.id;
+                        {/* Group by Priority for better scannability */}
+                        {['needs', 'wants', 'other'].map((priority) => {
+                            const groupCategories = sortedCategories.filter(c =>
+                                priority === 'other'
+                                    ? !['needs', 'wants'].includes((c.priority || '').toLowerCase())
+                                    : (c.priority || '').toLowerCase() === priority
+                            );
 
-                                return (
-                                    <CommandItem
-                                        key={category.id}
-                                        value={category.name}
-                                        onSelect={() => handleSelect(category.id)}
-                                    >
-                                        <Check
-                                            className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
-                                        />
-                                        <div
-                                            className="w-5 h-5 rounded flex items-center justify-center mr-2"
-                                            style={{ backgroundColor: `${category.color}20` }}
-                                        >
-                                            <Icon className="w-3 h-3" style={{ color: category.color }} />
-                                        </div>
-                                        {category.name}
-                                    </CommandItem>
-                                );
-                            })}
-                        </CommandGroup>
+                            if (groupCategories.length === 0) return null;
+
+                            return (
+                                <CommandGroup
+                                    key={priority}
+                                    heading={FINANCIAL_PRIORITIES[priority]?.label || "Other"}
+                                    className="overflow-visible"
+                                >
+                                    {groupCategories.map((category) => {
+                                        const Icon = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
+                                        const isSelected = multiple
+                                            ? (Array.isArray(value) && value.includes(category.id))
+                                            : value === category.id;
+
+                                        return (
+                                            <CommandItem
+                                                key={category.id}
+                                                value={category.name}
+                                                onSelect={() => handleSelect(category.id)}
+                                            >
+                                                <Check
+                                                    className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
+                                                />
+                                                <div
+                                                    className="w-5 h-5 rounded flex items-center justify-center mr-2"
+                                                    style={{ backgroundColor: `${category.color}20` }}
+                                                >
+                                                    <Icon className="w-3 h-3" style={{ color: category.color }} />
+                                                </div>
+                                                {category.name}
+                                            </CommandItem>
+                                        );
+                                    })}
+                                </CommandGroup>
+                            );
+                        })}
                     </CommandList>
                 </Command>
             </PopoverContent>
