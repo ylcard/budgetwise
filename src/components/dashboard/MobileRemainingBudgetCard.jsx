@@ -19,40 +19,42 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 }) {
     if (!settings) return null;
 
-    const safeIncome = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
-
-    // --- Programmatic Transition Logic ---
-    const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
-
-    // We use a local state to "hold" the previous view during loading
-    const [displayAsEmpty, setDisplayAsEmpty] = useState(isEmptyMonth);
-    const [stableMonth, setStableMonth] = useState(selectedMonth);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const wasLoading = useRef(isLoading);
+    // --- Data Freezing Logic ---
+    // This state captures a "snapshot" of the data to keep it visible during loading
+    const [visualState, setVisualState] = useState({
+        income: currentMonthIncome,
+        expenses: currentMonthExpenses,
+        breakdown: breakdown,
+        month: selectedMonth,
+        isEmpty: (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0)
+    });
+    const [isTransitioning, setIsTransitioning] = useState(isLoading)
 
     useEffect(() => {
-        // Scenario A: Initial Load or Data just finished fetching
         if (!isLoading) {
-            setDisplayAsEmpty(isEmptyMonth);
-            setStableMonth(selectedMonth);
+            setVisualState({
+                income: currentMonthIncome,
+                expenses: currentMonthExpenses,
+                breakdown: breakdown,
+                month: selectedMonth,
+                isEmpty: (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0)
+            });
             setIsTransitioning(false);
-        }
-        // Scenario B: User clicked a new month, network is busy
-        else {
+        } else {
             setIsTransitioning(true);
         }
-        wasLoading.current = isLoading;
-    }, [isLoading, isEmptyMonth, selectedMonth, selectedYear]);
+    }, [isLoading, currentMonthIncome, currentMonthExpenses, breakdown, selectedMonth, selectedYear]);
 
-    const totalSpent = currentMonthExpenses;
-    const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
-    const isTotalOver = totalSpent > currentMonthIncome;
+    // Use the FROZEN visualState for all calculations below
+    const safeIncome = visualState.income && visualState.income > 0 ? visualState.income : 1;
+    const totalSpent = visualState.expenses || 0;
+    const savingsAmount = Math.max(0, (visualState.income || 0) - totalSpent);
+    const isTotalOver = totalSpent > (visualState.income || 0);
 
-    // --- LOGIC FIX: Use Actual Breakdown (Paid + Unpaid) instead of Limits ---
-    const needsData = breakdown?.needs || { paid: 0, unpaid: 0 };
+    const needsData = visualState.breakdown?.needs || { paid: 0, unpaid: 0 };
     const needsTotal = (needsData.paid || 0) + (needsData.unpaid || 0);
 
-    const wantsData = breakdown?.wants || {};
+    const wantsData = visualState.breakdown?.wants || {};
     const wantsTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) +
         (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
 
@@ -151,20 +153,20 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                     <motion.div
                         initial={false}
                         animate={{
-                            opacity: displayAsEmpty ? 1 : 0,
-                            y: displayAsEmpty ? 0 : 20,
-                            scale: displayAsEmpty ? 1 : 0.95,
-                            filter: displayAsEmpty ? 'blur(0px)' : 'blur(4px)'
+                            opacity: visualState.isEmpty ? 1 : 0,
+                            y: visualState.isEmpty ? 0 : 20,
+                            scale: visualState.isEmpty ? 1 : 0.95,
+                            filter: visualState.isEmpty ? 'blur(0px)' : 'blur(4px)'
                         }}
                         transition={{ duration: 0.4 }}
-                        style={{ pointerEvents: displayAsEmpty ? 'auto' : 'none' }}
+                        style={{ pointerEvents: visualState.isEmpty ? 'auto' : 'none' }}
                         className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-5 px-6 z-10"
                     >
                         <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm">
                             <Calendar className="w-8 h-8 text-emerald-600" />
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-gray-900">Ready to plan for {getMonthName(stableMonth)}?</h3>
+                            <h3 className="text-xl font-bold text-gray-900">Ready to plan for {getMonthName(visualState.month)}?</h3>
                             <p className="text-gray-500 text-sm leading-relaxed">
                                 Start by adding your expected income to see your savings potential and unlock your budget goals.
                             </p>
@@ -175,8 +177,8 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                     <motion.div
                         initial={false}
                         animate={{
-                            opacity: displayAsEmpty ? 0 : (isTransitioning ? 0.4 : 1),
-                            scale: displayAsEmpty ? 1.05 : 1,
+                            opacity: visualState.isEmpty ? 0 : (isTransitioning ? 0.4 : 1),
+                            scale: visualState.isEmpty ? 1.05 : 1,
                             filter: isTransitioning ? 'blur(2px)' : 'blur(0px)'
                         }}
                         transition={{ duration: 0.4 }}
