@@ -40,13 +40,13 @@ Deno.serve(async (req) => {
 
         for (const recurring of activeRecurring) {
             let iterationCount = 0;
-            
+
             try {
                 let nextDate = startOfDay(parseISO(recurring.nextOccurrence));
 
                 // MODIFIED: 17-Jan-2026 - Added while loop for catch-up with safety guard
                 while (
-                    !isAfter(nextDate, today) && 
+                    !isAfter(nextDate, today) &&
                     iterationCount < MAX_ITERATIONS_PER_RECURRING
                 ) {
                     iterationCount++;
@@ -82,6 +82,11 @@ Deno.serve(async (req) => {
 
                         if (matchingBudget) {
                             budgetId = matchingBudget.id;
+                        } else {
+                            // LOG: This happens if snapshotFutureBudgets hasn't run for this month yet.
+                            // The transaction will be created with budgetId: null, and the 
+                            // Frontend will fix the link next time the user opens the Dashboard.
+                            console.warn(`No system budget found for ${recurring.financial_priority} in ${monthStart}`);
                         }
                     }
 
@@ -112,7 +117,7 @@ Deno.serve(async (req) => {
 
                     // Calculate next occurrence for the next iteration
                     const newNextOccurrence = calculateNextOccurrence(recurring, nextDate);
-                    
+
                     if (!newNextOccurrence) {
                         // No more occurrences - deactivate
                         await base44.asServiceRole.entities.RecurringTransaction.update(recurring.id, {
@@ -141,10 +146,10 @@ Deno.serve(async (req) => {
                     skipped++;
                 } else if (iterationCount >= MAX_ITERATIONS_PER_RECURRING) {
                     // Safety limit reached - log error
-                    errors.push({ 
-                        id: recurring.id, 
-                        title: recurring.title, 
-                        error: `Safety limit reached (${MAX_ITERATIONS_PER_RECURRING} iterations)` 
+                    errors.push({
+                        id: recurring.id,
+                        title: recurring.title,
+                        error: `Safety limit reached (${MAX_ITERATIONS_PER_RECURRING} iterations)`
                     });
                 }
             } catch (err) {
