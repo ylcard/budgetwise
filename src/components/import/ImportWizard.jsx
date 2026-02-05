@@ -14,7 +14,7 @@ import { categorizeTransaction } from "@/components/utils/transactionCategorizat
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { formatDateString, isDateInRange } from "../utils/dateUtils";
+import { formatDateString } from "../utils/dateUtils";
 import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
 
 const STEPS = [
@@ -22,26 +22,6 @@ const STEPS = [
     { id: 2, label: "Review" },
     { id: 3, label: "Finish" }
 ];
-
-// Helper: parses any string into a clean absolute float
-// Removes currency symbols, handles "50.00-" or "(50.00)" accounting formats
-const parseCleanRawAmount = (value) => {
-    if (!value) return 0;
-    const str = value.toString();
-    // Remove everything that isn't a digit or a dot
-    const cleanStr = str.replace(/[^0-9.]/g, "");
-    return parseFloat(cleanStr) || 0;
-};
-
-// Helper to find a matching system budget for a transaction
-const findMatchingSystemBudget = (budgets, date, priority) => {
-    if (!priority || !date) return null;
-    return budgets.find(b =>
-        b.isSystemBudget &&
-        b.systemBudgetType === priority &&
-        isDateInRange(date, b.startDate, b.endDate)
-    )?.id || null;
-};
 
 export default function ImportWizard({ onSuccess }) {
     const [step, setStep] = useState(1);
@@ -51,11 +31,10 @@ export default function ImportWizard({ onSuccess }) {
     const [mappings, setMappings] = useState({});
     const [processedData, setProcessedData] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [error, setError] = useState(null); // CREATED 19-Nov-2025: Error state for permanent display
+    const [error, setError] = useState(null);
     const { user, settings } = useSettings();
     const { categories } = useCategories();
     const { rules } = useCategoryRules(user);
-    // const { allCustomBudgets } = useCustomBudgetsAll(user);
     const { allBudgets } = useAllBudgets(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
@@ -133,7 +112,6 @@ export default function ImportWizard({ onSuccess }) {
                         pdDate = item.date;
                     }
                 }
-
 
                 // Enhanced categorization using rules and patterns
                 const catResult = categorizeTransaction(
@@ -374,7 +352,6 @@ export default function ImportWizard({ onSuccess }) {
                         <CategorizeReview
                             data={processedData}
                             categories={categories}
-                            // customBudgets={allCustomBudgets}
                             allBudgets={allBudgets}
                             onUpdateRow={handleUpdateRow}
                             onDeleteRows={handleDeleteRows}
