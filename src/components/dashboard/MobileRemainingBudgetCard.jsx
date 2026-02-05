@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Calendar, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { memo, useEffect, useRef, useState } from "react";
 import { getMonthName } from "../utils/dateUtils";
@@ -19,19 +19,29 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 }) {
     if (!settings) return null;
 
-    // 1. Simple, direct logic. No intermediate states to cause "wobble".
+    const safeIncome = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
+
+    // --- Programmatic Transition Logic ---
     const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
 
-    // 2. Only show the "Ready to plan" screen if we are definitely NOT loading 
-    // and the month is definitely empty.
-    const showPlaceholder = !isLoading && isEmptyMonth;
+    // We use a local state to "hold" the previous view during loading
+    const [displayAsEmpty, setDisplayAsEmpty] = useState(isEmptyMonth);
+    const [isTransitioning, setIsTransitioning] = useState(isLoading);
 
-    // 3. Math stays tied directly to props for frame-perfect accuracy
-    const safeIncome = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
-    const totalSpent = currentMonthExpenses || 0;
+    useEffect(() => {
+        if (!isLoading) {
+            setDisplayAsEmpty(isEmptyMonth);
+            setIsTransitioning(false);
+        } else {
+            setIsTransitioning(true);
+        }
+    }, [isLoading, isEmptyMonth]);
+
+    const totalSpent = currentMonthExpenses;
     const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
     const isTotalOver = totalSpent > currentMonthIncome;
 
+    // --- LOGIC FIX: Use Actual Breakdown (Paid + Unpaid) instead of Limits ---
     const needsData = breakdown?.needs || { paid: 0, unpaid: 0 };
     const needsTotal = (needsData.paid || 0) + (needsData.unpaid || 0);
 
@@ -129,103 +139,164 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 <div className="flex justify-center mb-6">
                     {monthNavigator}
                 </div>
-                <div className="relative flex flex-col items-center justify-center flex-1 min-h-[350px]">
-                    {/* 1. Placeholder Layer (Fades in when empty) */}
-                    <motion.div
-                        initial={false}
-                        animate={{
-                            opacity: showPlaceholder ? 1 : 0,
-                            y: showPlaceholder ? 0 : 20,
-                            scale: showPlaceholder ? 1 : 0.95,
-                        }}
-                        transition={{ duration: 0.4 }}
-                        style={{ pointerEvents: showPlaceholder ? 'auto' : 'none' }}
-                        className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-5 px-6 z-10"
-                    >
-                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm">
-                            <Calendar className="w-8 h-8 text-emerald-600" />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-gray-900">Ready to plan for {getMonthName(selectedMonth)}?</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed">
-                                Start by adding your expected income to see your savings potential and unlock your budget goals.
-                            </p>
-                        </div>
-                    </motion.div>
 
-                    {/* 2. Chart & Stats Layer (Stays mounted to allow morphing) */}
-                    <motion.div
-                        initial={false}
-                        animate={{
-                            opacity: showPlaceholder ? 0 : (isLoading ? 0.4 : 1),
-                            scale: showPlaceholder ? 1.05 : 1,
-                            filter: isLoading ? 'blur(2px)' : 'blur(0px)'
-                        }}
-                        transition={{ duration: 0.4 }}
-                        className="w-full flex flex-col items-center space-y-8"
-                    >
-                        <div className="relative w-full max-w-[180px] aspect-square mx-auto">
-                            <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full transform -rotate-90">
-                                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#F3F4F6" strokeWidth={strokeWidth} />
-                                <motion.circle
-                                    cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={needsColor} strokeWidth={strokeWidth}
-                                    animate={{ strokeDasharray: `${needsLength} ${circumference}`, rotate: needsRotation }}
-                                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                                    style={{ transformOrigin: 'center' }}
-                                />
-                                <motion.circle
-                                    cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={wantsColor} strokeWidth={strokeWidth}
-                                    animate={{ strokeDasharray: `${wantsLength} ${circumference}`, rotate: wantsRotation }}
-                                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                                    style={{ transformOrigin: 'center' }}
-                                />
-                                <motion.circle
-                                    cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={savingsColor} strokeWidth={strokeWidth}
-                                    animate={{ strokeDasharray: `${savingsLength} ${circumference}`, rotate: savingsRotation }}
-                                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                                    style={{ transformOrigin: 'center' }}
-                                />
-                            </svg>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <div className="text-3xl font-extrabold text-gray-900">{Math.round(savingsPctDisplay)}%</div>
-                                <div className="text-xs font-semibold text-emerald-600">Saved</div>
-                            </div>
-                        </div>
-
-                        <div className="w-full space-y-4">
-                            <div className="text-center space-y-2">
-                                {isTotalOver ? (
-                                    <h3 className="text-lg font-bold text-red-600 flex items-center justify-center gap-2">
-                                        Over Limit <AlertCircle className="w-5 h-5" />
-                                    </h3>
-                                ) : (
-                                    <p className="text-sm font-medium text-gray-500">
-                                        Spent <strong className="text-gray-900">{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong>
+                {/* Main Content */}
+                <div className="relative flex flex-col items-center justify-center flex-1 gap-4 min-h-[320px]">
+                    <AnimatePresence mode="wait">
+                        {displayAsEmpty ? (
+                            <motion.div
+                                key="empty"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="flex flex-col items-center justify-center py-6 text-center space-y-5 w-full max-w-[280px] mx-auto"
+                            >
+                                <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm">
+                                    <Calendar className="w-8 h-8 text-emerald-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-bold text-gray-900">Ready to plan for {getMonthName(selectedMonth)}?</h3>
+                                    <p className="text-gray-500 text-sm leading-relaxed">
+                                        Start by adding your expected income to see your savings potential and unlock your budget goals.
                                     </p>
-                                )}
-                                {!isTotalOver && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100">
-                                        <Wallet className="w-3.5 h-3.5 text-gray-500" />
-                                        <span className="text-sm font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="chart"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: isTransitioning ? 0.4 : 1 }}
+                                exit={{ opacity: 0 }}
+                                className="w-full space-y-4"
+                            >
+                                {/* Donut Chart */}
+                                <div className="relative w-full max-w-[180px] aspect-square mx-auto">
+                                    <svg
+                                        viewBox={`0 0 ${size} ${size}`}
+                                        className="w-full h-full transform -rotate-90"
+                                    >
+                                        {/* Background circle */}
+                                        <circle
+                                            cx={size / 2}
+                                            cy={size / 2}
+                                            r={radius}
+                                            fill="none"
+                                            stroke="#F3F4F6"
+                                            strokeWidth={strokeWidth}
+                                        />
+
+                                        {/* Needs segment */}
+                                        <motion.circle
+                                            cx={size / 2}
+                                            cy={size / 2}
+                                            r={radius}
+                                            fill="none"
+                                            stroke={needsColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeLinecap="butt"
+                                            style={{ transformOrigin: 'center' }}
+                                            // Initial is only for the very first mount
+                                            initial={{ strokeDasharray: `0 ${circumference}`, rotate: 0 }}
+                                            // Animate will catch every subsequent change in variables
+                                            animate={{
+                                                strokeDasharray: `${needsLength} ${circumference}`,
+                                                rotate: needsRotation
+                                            }}
+                                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                                        />
+
+                                        {/* Wants segment */}
+                                        <motion.circle
+                                            cx={size / 2}
+                                            cy={size / 2}
+                                            r={radius}
+                                            fill="none"
+                                            stroke={wantsColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeLinecap="butt"
+                                            style={{ transformOrigin: 'center' }}
+                                            initial={{ strokeDasharray: `0 ${circumference}`, rotate: 0 }}
+                                            animate={{
+                                                strokeDasharray: `${wantsLength} ${circumference}`,
+                                                rotate: wantsRotation
+                                            }}
+                                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                                        />
+
+                                        {/* Savings segment */}
+                                        <motion.circle
+                                            cx={size / 2}
+                                            cy={size / 2}
+                                            r={radius}
+                                            fill="none"
+                                            stroke={savingsColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeLinecap="butt"
+                                            style={{ transformOrigin: 'center' }}
+                                            initial={{ strokeDasharray: `0 ${circumference}`, rotate: 0 }}
+                                            animate={{
+                                                strokeDasharray: `${savingsLength} ${circumference}`,
+                                                rotate: savingsRotation
+                                            }}
+                                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                                        />
+                                    </svg>
+
+                                    {/* Center Text */}
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <motion.div
+                                            animate={{ scale: [0.95, 1], opacity: 1 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="text-center"
+                                        >
+                                            <div className="text-3xl font-extrabold text-gray-900">
+                                                {Math.round(savingsPctDisplay)}%
+                                            </div>
+                                            <div className="text-xs font-semibold text-emerald-600">Saved</div>
+                                        </motion.div>
                                     </div>
-                                )}
-                            </div>
-                            <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs px-1">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold" style={{ color: needsColor }}>{FINANCIAL_PRIORITIES.needs.label}</span>
-                                    <span className="font-bold text-gray-900">{Math.round(needsPct)}%</span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold" style={{ color: wantsColor }}>{FINANCIAL_PRIORITIES.wants.label}</span>
-                                    <span className="font-bold text-gray-900">{Math.round(wantsPct)}%</span>
+
+                                {/* Summary Stats */}
+                                <div className="w-full space-y-3">
+                                    {/* Income/Spent Summary */}
+                                    <div className="text-center space-y-1">
+                                        {isTotalOver ? (
+                                            <h3 className="text-lg font-bold text-red-600 flex items-center justify-center gap-2">
+                                                Over Limit <AlertCircle className="w-5 h-5" />
+                                            </h3>
+                                        ) : (
+                                            <p className="text-sm font-medium text-gray-500">
+                                                Spent <strong className="text-gray-900">{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong>
+                                            </p>
+                                        )}
+                                        {!isTotalOver && (
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100">
+                                                <Wallet className="w-3.5 h-3.5 text-gray-500" />
+                                                <span className="text-sm font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Legend */}
+                                    <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs px-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold" style={{ color: needsColor }}>{FINANCIAL_PRIORITIES.needs.label}</span>
+                                            <span className="font-bold text-gray-900">{Math.round(needsPct)}%</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold" style={{ color: wantsColor }}>{FINANCIAL_PRIORITIES.wants.label}</span>
+                                            <span className="font-bold text-gray-900">{Math.round(wantsPct)}%</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold" style={{ color: savingsColor }}>Savings</span>
+                                            <span className="font-bold text-gray-900">{Math.round(savingsPct)}%</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold" style={{ color: savingsColor }}>Savings</span>
-                                    <span className="font-bold text-gray-900">{Math.round(savingsPct)}%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </CardContent>
         </Card>
