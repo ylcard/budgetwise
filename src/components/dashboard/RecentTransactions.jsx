@@ -77,7 +77,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                     <div className="space-y-1">
                         {transactions.map((transaction) => {
                             const category = categoryMap[transaction.category_id];
-                            const customBudget = transaction.customBudgetId ? customBudgetMap[transaction.customBudgetId] : null;
+                            const customBudget = transaction.budgetId ? customBudgetMap[transaction.budgetId] : null;
                             const isIncome = transaction.type === 'income';
                             const IconComponent = getCategoryIcon(category?.icon);
 
