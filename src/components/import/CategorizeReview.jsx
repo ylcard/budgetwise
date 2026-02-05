@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Check, X, Tag, Calendar } from "lucide-react";
+import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Check, X, Tag, Calendar, Wallet, ShieldCheck, Sparkles, LayoutGrid } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { Input } from "@/components/ui/input";
@@ -149,7 +149,7 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                         >
                             {/* Header: Identity & Amount */}
                             <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 overflow-hidden">
                                     <Checkbox
                                         checked={selectedIndices.has(row.originalIndex)}
                                         onCheckedChange={() => toggleSelectRow(row.originalIndex)}
@@ -162,78 +162,86 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                 className="h-7 text-sm"
                                                 autoFocus
                                                 onBlur={() => saveTitle(row.originalIndex)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') saveTitle(row.originalIndex);
+                                                    if (e.key === 'Escape') cancelEditing();
+                                                }}
                                             />
                                         ) : (
-                                            <span onClick={() => startEditing(row.originalIndex, row.title)} className="font-bold text-gray-900 leading-none truncate max-w-[140px]">
+                                            <span onClick={() => startEditing(row.originalIndex, row.title)} className="font-bold text-gray-900 leading-none truncate max-w-[140px] sm:max-w-[200px]">
                                                 {row.title}
                                             </span>
                                         )}
-                                        <span className="text-[10px] text-gray-400 font-medium mt-1">{row.date}</span>
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">{row.date}</span>
                                     </div>
                                 </div>
                                 <div
                                     className={`text-right cursor-pointer`}
                                     onClick={() => onUpdateRow(row.originalIndex, { type: row.type === 'expense' ? 'income' : 'expense' })}
                                 >
-                                    <div className={`text-lg font-black ${row.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
+                                    <div className={`text-lg font-black flex items-center justify-end gap-1 leading-none ${row.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
                                         {formatCurrency(row.amount, settings)}
+                                        <RefreshCw className="w-3 h-3 opacity-30" />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Actions Stack: Zero Labels, Just Icons */}
-                            <div className="space-y-2 pt-2 border-t border-gray-50">
+                            {/* Actions Stack: Semantic Icons */}
+                            <div className="space-y-2 pt-2 border-t border-gray-100">
                                 {/* Row 1: Category */}
-                                <div className="flex items-center gap-3 active:opacity-60 transition-opacity">
-                                    <CategorySelect
-                                        value={row.categoryId}
-                                        categories={categories}
-                                        className="border-none bg-transparent h-auto p-0 shadow-none hover:bg-transparent"
-                                        onValueChange={(value) => {
-                                            const cat = categories.find(c => c.id === value);
-                                            onUpdateRow(row.originalIndex, {
-                                                categoryId: value,
-                                                category: cat ? cat.name : 'Uncategorized',
-                                                financial_priority: cat ? (cat.priority || 'wants') : row.financial_priority
-                                            });
-                                        }}
-                                    />
-                                </div>
+                                <CategorySelect
+                                    value={row.categoryId}
+                                    categories={categories}
+                                    className="border-none bg-gray-50/60 h-9 px-3 shadow-none hover:bg-gray-100 justify-start w-full text-xs font-medium"
+                                    onValueChange={(value) => {
+                                        const cat = categories.find(c => c.id === value);
+                                        onUpdateRow(row.originalIndex, {
+                                            categoryId: value,
+                                            category: cat ? cat.name : 'Uncategorized',
+                                            financial_priority: cat ? (cat.priority || 'wants') : row.financial_priority
+                                        });
+                                    }}
+                                />
 
                                 {/* Row 2: Priority */}
-                                <div className="flex items-center gap-3">
-                                    <MobileDrawerSelect
-                                        value={row.financial_priority || 'wants'}
-                                        onValueChange={(val) => onUpdateRow(row.originalIndex, { financial_priority: val })}
-                                        options={Object.entries(FINANCIAL_PRIORITIES).filter(([k]) => k !== 'savings').map(([k, v]) => ({ value: k, label: v.label }))}
-                                        className="border-none bg-transparent h-auto p-0 shadow-none justify-start font-medium text-xs text-gray-600"
-                                        customTrigger={
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="w-4 h-4 text-blue-500" />
-                                                <span>{FINANCIAL_PRIORITIES[row.financial_priority]?.label}</span>
-                                            </div>
-                                        }
-                                    />
-                                </div>
+                                <MobileDrawerSelect
+                                    value={row.financial_priority || 'wants'}
+                                    onValueChange={(val) => onUpdateRow(row.originalIndex, { financial_priority: val })}
+                                    options={Object.entries(FINANCIAL_PRIORITIES).filter(([k]) => k !== 'savings').map(([k, v]) => ({ value: k, label: v.label }))}
+                                    customTrigger={
+                                        <button className="w-full flex items-center gap-3 px-3 h-9 rounded-lg bg-gray-50/60 hover:bg-gray-100 transition-colors text-left">
+                                            {row.financial_priority === 'needs' ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <Sparkles className="w-4 h-4 text-amber-500" />}
+                                            <span className="text-xs font-medium text-gray-700">{FINANCIAL_PRIORITIES[row.financial_priority]?.label}</span>
+                                        </button>
+                                    }
+                                />
 
                                 {/* Row 3: Budget */}
-                                <div className="flex items-center gap-3">
-                                    <MobileDrawerSelect
-                                        value={row.budgetId || "system"}
-                                        onValueChange={(val) => onUpdateRow(row.originalIndex, { budgetId: val === "system" ? null : val })}
-                                        options={[
-                                            { value: "system", label: `Linked to ${FINANCIAL_PRIORITIES[row.financial_priority]?.label}` },
-                                            ...sortedCustomBudgets.map(cb => ({ value: cb.id, label: cb.name }))
-                                        ]}
-                                        className="border-none bg-transparent h-auto p-0 shadow-none justify-start font-medium text-xs text-gray-600"
-                                        customTrigger={
-                                            <div className="flex items-center gap-2">
-                                                <Wallet className="w-4 h-4 text-purple-500" />
-                                                <span>{row.budgetId ? sortedCustomBudgets.find(b => b.id === row.budgetId)?.name : "System Budget"}</span>
-                                            </div>
-                                        }
-                                    />
-                                </div>
+                                <MobileDrawerSelect
+                                    value={row.budgetId || "system"}
+                                    onValueChange={(val) => onUpdateRow(row.originalIndex, { budgetId: val === "system" ? null : val })}
+                                    options={[
+                                        {
+                                            value: "system",
+                                            label: `System: ${FINANCIAL_PRIORITIES[row.financial_priority]?.label} (${(() => {
+                                                const effectiveDate = (row.isPaid && row.paidDate) ? row.paidDate : row.date;
+                                                const d = parseDate(effectiveDate);
+                                                if (!d) return '';
+                                                const isCurr = d.getFullYear() === new Date().getFullYear();
+                                                return formatDate(d, isCurr ? "MMM" : "MMM yyyy");
+                                            })()})`
+                                        },
+                                        ...sortedCustomBudgets.map(cb => ({ value: cb.id, label: cb.name }))
+                                    ]}
+                                    customTrigger={
+                                        <button className="w-full flex items-center gap-3 px-3 h-9 rounded-lg bg-gray-50/60 hover:bg-gray-100 transition-colors text-left overflow-hidden">
+                                            <Wallet className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                                            <span className="text-xs font-medium text-gray-700 truncate pr-2">
+                                                {row.budgetId ? sortedCustomBudgets.find(b => b.id === row.budgetId)?.name : "System Budget"}
+                                            </span>
+                                        </button>
+                                    }
+                                />
                             </div>
                         </div>
                     ))}
