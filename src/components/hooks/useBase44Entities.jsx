@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
@@ -206,15 +206,28 @@ export const useSystemBudgetManagement = (
     const queryClient = useQueryClient();
     const { settings } = useSettings();
 
+    // ADDED: Prevent sync if one is already happening in this specific component instance
+    const isSyncing = useRef(false);
+    // ADDED: Track the last synced month/year to prevent redundant calls on re-renders
+    const lastSyncedKey = useRef("");
+
     useEffect(() => {
         const sync = async () => {
             if (!user || goals.length === 0 || systemBudgets === undefined) return;
+
+            const syncKey = `${selectedMonth}-${selectedYear}-${goals.length}-${settings.goalMode}-${settings.fixedLifestyleMode}`;
+
+            // OPTIMIZATION: If we already synced this specific state, don't do it again
+            // This prevents the "Invalidate -> Re-fetch -> Re-trigger" loop
+            if (isSyncing.current || lastSyncedKey.current === syncKey) return;
 
             const now = new Date();
             const isPastMonth = selectedYear < now.getFullYear() ||
                 (selectedYear === now.getFullYear() && selectedMonth < now.getMonth());
 
             try {
+                isSyncing.current = true;
+
                 const income = getMonthlyIncome(transactions, monthStart, monthEnd);
                 const history = getHistoricalAverageIncome(transactions, selectedMonth, selectedYear);
 
@@ -229,14 +242,21 @@ export const useSystemBudgetManagement = (
                     { allowUpdates: !isPastMonth, historicalAverage: history }
                 );
 
+                lastSyncedKey.current = syncKey;
+
                 // Centralized Invalidation
-                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
+                // We only invalidate if there were NO budgets before, or if we allowed updates
+                if (systemBudgets.length === 0 || !isPastMonth) {
+                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
+                }
             } catch (err) {
                 console.error('System Budget Sync Failed:', err);
+            } finally {
+                isSyncing.current = false;
             }
         };
 
         sync();
-    }, [user, selectedMonth, selectedYear, goals, transactions, settings, monthStart, monthEnd, queryClient, systemBudgets]);
+    }, [user, selectedMonth, selectedYear, goals, transactions, settings, monthStart, monthEnd, queryClient]);
 };
