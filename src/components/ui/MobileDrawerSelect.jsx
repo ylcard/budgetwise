@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, ChevronDown } from 'lucide-react';
@@ -19,8 +19,15 @@ export function MobileDrawerSelect({
     placeholder = 'Select an option',
     className,
     title,
-    trigger
+    customTrigger // Renamed from trigger for clarity in our Atomic design
 }) {
+
+    // Support uncontrolled state so each row doesn't need its own 'open' state
+    const [internalOpen, setInternalOpen] = useState(false);
+
+    const isControlled = open !== undefined;
+    const finalOpen = isControlled ? open : internalOpen;
+    const finalOnOpenChange = isControlled ? onOpenChange : setInternalOpen;
 
     // Find the label for the currently selected value
     const selectedOption = options.find(opt => opt.value === value);
@@ -52,9 +59,9 @@ export function MobileDrawerSelect({
 
             {/* MOBILE VIEW: Drawer */}
             <div className="md:hidden w-full">
-                <Drawer open={open} onOpenChange={onOpenChange}>
+                <Drawer open={finalOpen} onOpenChange={finalOnOpenChange}>
                     <DrawerTrigger asChild>
-                        {trigger ? trigger : (
+                        {customTrigger ? customTrigger : (
                             <button className={defaultTriggerClass}>
                                 <span className="truncate">{displayLabel}</span>
                                 <ChevronDown className="h-4 w-4 opacity-50" />
@@ -72,14 +79,8 @@ export function MobileDrawerSelect({
                                         key={option.value}
                                         onClick={() => {
                                             onValueChange(option.value);
-                                            // If onOpenChange is provided (controlled), call it, 
-                                            // otherwise we rely on the drawer's internal close behavior via trigger click
-                                            // but since we are inside the content, we usually need a way to close.
-                                            // Standard DrawerTrigger usage handles open, but closing usually needs a separate state or 
-                                            // the parent to handle onOpenChange(false).
-                                            // Assuming parent handles state if onOpenChange provided, 
-                                            // OR this is a simple uncontrolled implementation (less likely given usage).
-                                            if (onOpenChange) onOpenChange(false);
+                                            // Close drawer automatically on selection
+                                            finalOnOpenChange(false);
                                         }}
                                         className={cn(
                                             'w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left text-sm',
