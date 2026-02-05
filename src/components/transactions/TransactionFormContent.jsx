@@ -23,7 +23,7 @@ import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from 
 import { formatDateString, isDateInRange, formatDate } from "../utils/dateUtils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
 import { normalizeAmount } from "../utils/generalUtils";
-import { useCategoryRules, useGoals } from "../hooks/useBase44Entities";
+import { useCategoryRules, useGoals, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { categorizeTransaction } from "../utils/transactionCategorization";
 import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
@@ -70,12 +70,33 @@ export default function TransactionFormContent({
     const [budgetSearchTerm, setBudgetSearchTerm] = useState("");
     const [validationError, setValidationError] = useState(null);
 
+    // 1. Calculate boundaries for the CURRENTLY SELECTED date in the form
+    const selectedDateBounds = useMemo(() => {
+        if (!formData.date) return null;
+        const date = new Date(formData.date);
+        return getMonthBoundaries(date.getMonth(), date.getFullYear());
+    }, [formData.date]);
+
+    // 2. Fetch budgets specifically for the date chosen in the form
+    // This ensures that even if the Dashboard is on February, the Form can "see" January.
+    const { systemBudgets: localSystemBudgets } = useSystemBudgetsForPeriod(
+        user,
+        selectedDateBounds?.monthStart,
+        selectedDateBounds?.monthEnd
+    );
+
     // Merge all system budgets (from parent + transaction date + paid date) with custom budgets from parent
     const mergedBudgets = useMemo(() => {
         const systemFromParent = allBudgets.filter(b => b.isSystemBudget);
         const customFromParent = allBudgets.filter(b => !b.isSystemBudget);
 
-        const formattedSystem = systemFromParent.map(sb => ({
+        // Combine parent-provided budgets with locally fetched budgets for the selected date
+        const combinedSystem = [...systemFromParent, ...(localSystemBudgets || [])];
+
+        // Deduplicate by ID
+        const uniqueSystem = Array.from(new Map(combinedSystem.map(s => [s.id, s])).values());
+
+        const formattedSystem = uniqueSystem.map(sb => ({
             ...sb,
             isSystemBudget: true,
             allocatedAmount: sb.budgetAmount || sb.allocatedAmount
@@ -83,7 +104,7 @@ export default function TransactionFormContent({
 
         // Return system budgets first, then custom budgets
         return [...formattedSystem, ...customFromParent];
-    }, [allBudgets]);
+    }, [allBudgets, localSystemBudgets]);
 
     // Initialize form data from initialTransaction (for editing)
     useEffect(() => {
@@ -161,9 +182,9 @@ export default function TransactionFormContent({
                 const isSystemOrEmpty = !formData.budgetId || (currentBudget && currentBudget.isSystemBudget);
 
                 if (budgetId && isSystemOrEmpty) {
-                    // Trigger a refetch so the new month's budgets appear in the dropdown
-                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-                    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
+                    // Invalidate specifically to trigger the localSystemBudgets hook to update
+                    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+                    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
                     setFormData(prev => ({ ...prev, budgetId }));
                 }
             } catch (err) {
@@ -516,10 +537,12 @@ export default function TransactionFormContent({
                                 value={formData.financial_priority || ''}
                                 onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
                                 placeholder="Select priority"
-                                options={Object.entries(FINANCIAL_PRIORITIES).map(([key, config]) => ({
-                                    value: key,
-                                    label: config.label
-                                }))}
+                                options={Object.entries(FINANCIAL_PRIORITIES)
+                                    .filter(([key]) => key !== 'savings')
+                                    .map(([key, cfg]) => ({
+                                        value: key,
+                                        label: cfg.label
+                                    }))}
                             />
                         </div>
                     </div>
