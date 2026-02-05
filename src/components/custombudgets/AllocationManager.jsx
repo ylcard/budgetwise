@@ -29,7 +29,7 @@ export default function AllocationManager({
         } else {
             onCreateAllocation({
                 ...data,
-                customBudgetId: customBudget.id
+                budgetId: customBudget.id
             });
         }
         setShowForm(false);
