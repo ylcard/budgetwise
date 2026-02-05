@@ -7,6 +7,7 @@ import { parseDate } from "../utils/dateUtils";
 import { motion } from "framer-motion";
 import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { getCustomBudgetStats } from "../utils/financialCalculations";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
 export default function BudgetCard({ budgets = [], transactions = [], settings, onActivateBudget, size = 'md' }) {
     const budget = budgets?.[0];
@@ -82,25 +83,31 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
 
     // Visual Theme Helper
     const theme = useMemo(() => {
+        // 1. Priority: Use System Budget Type definition from Constants
+        if (isSystemBudget && budget.systemBudgetType && FINANCIAL_PRIORITIES[budget.systemBudgetType]) {
+            const config = FINANCIAL_PRIORITIES[budget.systemBudgetType];
+            return {
+                main: config.color,
+                overlay: config.color, // Using main color as overlay foundation
+                textStyle: { color: config.color }
+            };
+        }
+
+        // 2. Fallback: Legacy Name Matching (mapping to constants to ensure consistency)
         const name = budget.name?.toLowerCase() || '';
+        if (name.includes('need')) return { main: FINANCIAL_PRIORITIES.needs.color, overlay: FINANCIAL_PRIORITIES.needs.color, textStyle: { color: FINANCIAL_PRIORITIES.needs.color } };
+        if (name.includes('want')) return { main: FINANCIAL_PRIORITIES.wants.color, overlay: FINANCIAL_PRIORITIES.wants.color, textStyle: { color: FINANCIAL_PRIORITIES.wants.color } };
 
-        // Needs (Red)
-        if (name.includes('need')) {
-            return { main: '#EF4444', overlay: '#991B1B', bg: '#FEF2F2', text: 'text-red-600' };
-        }
-        // Wants (Amber/Orange)
-        if (name.includes('want')) {
-            return { main: '#F59E0B', overlay: '#B45309', bg: '#FFFBEB', text: 'text-amber-600' };
-        }
-        // Savings (Green)
+        // Keep Savings visual support even if not a system budget anymore
         if (name.includes('saving') || name.includes('invest')) {
-            return { main: '#10B981', overlay: '#047857', bg: '#ECFDF5', text: 'text-emerald-600' };
+            const savingsColor = FINANCIAL_PRIORITIES.savings?.color || '#10B981';
+            return { main: savingsColor, overlay: savingsColor, textStyle: { color: savingsColor } };
         }
 
-        // Default (Blue)
+        // 3. Default (Custom Budgets)
         const defaultColor = budget.color || '#3B82F6';
-        return { main: defaultColor, overlay: '#1E40AF', bg: '#EFF6FF', text: 'text-blue-600' };
-    }, [budget.name, budget.color]);
+        return { main: defaultColor, overlay: defaultColor, textStyle: { color: defaultColor } };
+    }, [budget.name, budget.color, budget.systemBudgetType, isSystemBudget]);
 
     // SVG Calculations
     // Size Configuration
@@ -255,7 +262,7 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
 
                             {/* Center Content */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className={`font-bold ${theme.text} ${currentStyle.circleText}`}>
+                                <span className={`font-bold ${currentStyle.circleText}`} style={theme.textStyle}>
                                     {Math.round(percentage)}%
                                 </span>
                                 {isOverBudget && (
