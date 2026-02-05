@@ -197,14 +197,14 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                     <TableCell>
                                         {row.type === 'expense' ? (
                                             <MobileDrawerSelect
-                                                value={row.customBudgetId || "system"}
+                                                value={row.budgetId || "system"}
                                                 onValueChange={(val) => {
                                                     if (val === "system") {
-                                                        onUpdateRow(row.originalIndex, { customBudgetId: null });
+                                                        onUpdateRow(row.originalIndex, { budgetId: null });
                                                     } else {
                                                         // Selected a Custom Budget
                                                         onUpdateRow(row.originalIndex, {
-                                                            customBudgetId: val
+                                                            budgetId: val
                                                         });
                                                     }
                                                 }}

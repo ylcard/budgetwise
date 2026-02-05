@@ -91,13 +91,14 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
 
 // Hook for fetching transactions associated with specific custom budgets
 // CREATED: 03-Feb-2026 - Fetches all transactions for given custom budget IDs (no date filtering)
+// UPDATED: 05-Feb-2026 - Renamed customBudgetId to budgetId
 export const useTransactionsForCustomBudgets = (customBudgetIds = []) => {
     const { data: transactions = [], isLoading } = useQuery({
         queryKey: [QUERY_KEYS.TRANSACTIONS, 'custom-budgets', customBudgetIds],
         queryFn: async () => {
             if (!customBudgetIds || customBudgetIds.length === 0) return [];
             return await base44.entities.Transaction.filter({
-                customBudgetId: { $in: customBudgetIds }
+                budgetId: { $in: customBudgetIds }
             });
         },
         keepPreviousData: true,

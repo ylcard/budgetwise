@@ -58,7 +58,7 @@ export default function TransactionFormContent({
         date: formatDateString(new Date()),
         isPaid: false,
         paidDate: '',
-        customBudgetId: '',
+        budgetId: '',
         isCashExpense: false,
         notes: ''
     });
@@ -147,7 +147,7 @@ export default function TransactionFormContent({
                 date: initialTransaction.date || formatDateString(new Date()),
                 isPaid: initialTransaction.type === 'expense' ? (initialTransaction.isPaid || false) : false,
                 paidDate: initialTransaction.paidDate || '',
-                customBudgetId: initialTransaction.customBudgetId || '',
+                budgetId: initialTransaction.budgetId || '',
                 isCashExpense: initialTransaction.isCashTransaction || false,
                 notes: initialTransaction.notes || ''
             });
@@ -196,7 +196,7 @@ export default function TransactionFormContent({
     useEffect(() => {
         // Prevent auto-switching when editing an existing transaction unless the user actually changes the priority.
         if (initialTransaction &&
-            formData.customBudgetId === initialTransaction.customBudgetId &&
+            formData.budgetId === initialTransaction.budgetId &&
             formData.financial_priority === (initialTransaction.financial_priority || '')) {
             return;
         }
@@ -218,19 +218,19 @@ export default function TransactionFormContent({
                 // Only auto-switch if we currently have NO budget selected, 
                 // or if the currently selected budget is also a system budget.
                 // We don't want to kick the user out of a specific custom budget (e.g., "Trip 2025").
-                const currentBudget = mergedBudgets.find(b => b.id === formData.customBudgetId);
-                const canAutoSwitch = !formData.customBudgetId || (currentBudget && currentBudget.isSystemBudget);
+                const currentBudget = mergedBudgets.find(b => b.id === formData.budgetId);
+                const canAutoSwitch = !formData.budgetId || (currentBudget && currentBudget.isSystemBudget);
 
                 if (canAutoSwitch) {
-                    setFormData(prev => ({ ...prev, customBudgetId: matchingSystemBudget.id }));
+                    setFormData(prev => ({ ...prev, budgetId: matchingSystemBudget.id }));
                 }
             } else {
                 // If we can't find a matching system budget (e.g. future month not generated),
                 // and we are currently pointing to a system budget, we should clear it to avoid 
                 // pointing to the WRONG month (like November budget for January expense).
-                const currentBudget = mergedBudgets.find(b => b.id === formData.customBudgetId);
+                const currentBudget = mergedBudgets.find(b => b.id === formData.budgetId);
                 if (currentBudget && currentBudget.isSystemBudget) {
-                    setFormData(prev => ({ ...prev, customBudgetId: '' }));
+                    setFormData(prev => ({ ...prev, budgetId: '' }));
                 }
             }
         }
@@ -320,7 +320,7 @@ export default function TransactionFormContent({
         const originalAmount = parseFloat(normalizedAmount);
 
         // Validation: Budget is required for expenses
-        if (formData.type === 'expense' && !formData.customBudgetId) {
+        if (formData.type === 'expense' && !formData.budgetId) {
             setValidationError("Please select a budget for this expense.");
             return;
         }
@@ -389,14 +389,14 @@ export default function TransactionFormContent({
         if (formData.type === 'expense') {
             submitData.isPaid = formData.isCashExpense ? true : formData.isPaid;
             submitData.paidDate = formData.isCashExpense ? formData.date : (formData.isPaid ? (formData.paidDate || formData.date) : null);
-            submitData.customBudgetId = formData.customBudgetId || null;
+            submitData.budgetId = formData.budgetId || null;
             submitData.isCashTransaction = formData.isCashExpense;
             submitData.cashTransactionType = null;
         } else {
             submitData.isPaid = false;
             submitData.paidDate = null;
             submitData.category_id = null;
-            submitData.customBudgetId = null;
+            submitData.budgetId = null;
             submitData.isCashTransaction = false;
             submitData.cashTransactionType = null;
             submitData.cashAmount = null;
@@ -581,8 +581,8 @@ export default function TransactionFormContent({
                                     aria-expanded={isBudgetOpen}
                                     className="w-full justify-between font-normal"
                                 >
-                                    {formData.customBudgetId
-                                        ? mergedBudgets.find((b) => b.id === formData.customBudgetId)?.name
+                                    {formData.budgetId
+                                        ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
                                         : "Select budget..."}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </CustomButton>
@@ -601,12 +601,12 @@ export default function TransactionFormContent({
                                                     key={budget.id}
                                                     value={budget.name}
                                                     onSelect={() => {
-                                                        setFormData({ ...formData, customBudgetId: budget.id });
+                                                        setFormData({ ...formData, budgetId: budget.id });
                                                         setIsBudgetOpen(false);
                                                     }}
                                                 >
                                                     <Check
-                                                        className={`mr-2 h-4 w-4 ${formData.customBudgetId === budget.id ? "opacity-100" : "opacity-0"}`}
+                                                        className={`mr-2 h-4 w-4 ${formData.budgetId === budget.id ? "opacity-100" : "opacity-0"}`}
                                                     />
                                                     <div className="flex items-center text-sm">
                                                         {budget.isSystemBudget ? (
