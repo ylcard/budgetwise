@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Calendar, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { memo, useEffect, useRef, useState } from "react";
 import { getMonthName } from "../utils/dateUtils";
