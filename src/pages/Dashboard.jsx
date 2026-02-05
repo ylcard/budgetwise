@@ -55,8 +55,9 @@ export default function Dashboard() {
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
 
     // Data fetching
-    const { transactions } = useTransactions(monthStart, monthEnd);
-    const { categories } = useCategories();
+    // CRITICAL: Extract isLoading states to control the UI transitions
+    const { transactions, isLoading: transactionsLoading } = useTransactions(monthStart, monthEnd);
+    const { categories, isLoading: categoriesLoading } = useCategories();
     const { goals } = useGoals(user);
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
@@ -184,6 +185,9 @@ export default function Dashboard() {
         return () => clearFabButtons();
     }, [fabButtons, setFabButtons, clearFabButtons]);
 
+    // Combine loading states. The dashboard summary relies heavily on transactions and categories.
+    const isLoading = transactionsLoading || categoriesLoading;
+
     return (
         <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -203,6 +207,7 @@ export default function Dashboard() {
                                 currentMonthIncome={currentMonthIncome}
                                 currentMonthExpenses={currentMonthExpenses}
                                 settings={settings}
+                                isLoading={isLoading}
                                 selectedMonth={selectedMonth}
                                 selectedYear={selectedYear}
                                 monthNavigator={
