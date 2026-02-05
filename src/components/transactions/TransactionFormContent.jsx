@@ -111,25 +111,25 @@ export default function TransactionFormContent({
     const mergedBudgets = useMemo(() => {
         const systemFromParent = allBudgets.filter(b => b.isSystemBudget);
         const customFromParent = allBudgets.filter(b => !b.isSystemBudget);
-        
+
         // Combine all system budgets and deduplicate by ID
         const allSystemBudgets = [
             ...systemFromParent,
             ...(txDateSystemBudgets || []),
             ...(paidDateSystemBudgets || [])
         ];
-        
+
         const uniqueSystemBudgets = Array.from(
             new Map(allSystemBudgets.map(sb => [sb.id, sb])).values()
         );
-        
+
         // Format system budgets to match expected structure
         const formattedSystem = uniqueSystemBudgets.map(sb => ({
             ...sb,
             isSystemBudget: true,
             allocatedAmount: sb.budgetAmount || sb.allocatedAmount
         }));
-        
+
         // Return system budgets first, then custom budgets
         return [...formattedSystem, ...customFromParent];
     }, [allBudgets, txDateSystemBudgets, paidDateSystemBudgets]);
@@ -191,35 +191,6 @@ export default function TransactionFormContent({
         }
     }, [formData.title, rules, categories, initialTransaction, formData.category_id]);
 
-    // Smart Date for Custom Budgets
-    // If a custom budget is selected and the current date is outside its range, default to the start date.
-    useEffect(() => {
-        if (formData.customBudgetId) {
-            const selectedBudget = allBudgets.find(b => b.id === formData.customBudgetId);
-            if (selectedBudget && !selectedBudget.isSystemBudget && selectedBudget.startDate && selectedBudget.endDate) {
-                const txDate = new Date(formData.date);
-                const startDate = new Date(selectedBudget.startDate);
-                const endDate = new Date(selectedBudget.endDate);
-
-                // Reset times for comparison
-                txDate.setHours(0, 0, 0, 0);
-                startDate.setHours(0, 0, 0, 0);
-                endDate.setHours(0, 0, 0, 0);
-
-                if (txDate < startDate || txDate > endDate) {
-                    setFormData(prev => ({
-                        ...prev,
-                        date: formatDateString(startDate)
-                    }));
-                    toast({
-                        title: "Date Updated",
-                        description: `Date adjusted to match "${selectedBudget.name}" period.`,
-                    });
-                }
-            }
-        }
-    }, [formData.customBudgetId, allBudgets]);
-
     // Auto-select System Budget based on Priority
     // If priority changes to 'wants', try to find a budget named 'Wants'
     useEffect(() => {
@@ -230,10 +201,10 @@ export default function TransactionFormContent({
             return;
         }
 
-       // Determine the relevant date for budget selection (match logic in visibleOptions)
-       const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate 
-           ? formData.paidDate 
-           : formData.date;
+        // Determine the relevant date for budget selection (match logic in visibleOptions)
+        const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate
+            ? formData.paidDate
+            : formData.date;
 
         if (formData.financial_priority && mergedBudgets.length > 0) {
             // Find a matching system budget (case-insensitive)
@@ -265,54 +236,6 @@ export default function TransactionFormContent({
         }
     }, [formData.financial_priority, mergedBudgets, formData.date, formData.isPaid, formData.paidDate, formData.type]);
 
-    /* Removing Sorting Logic from the Form
-        // Filter budgets to show active + planned statuses + relevant completed budgets
-        // This allows linking expenses to future/past budgets while keeping the list manageable
-        const smartSortedBudgets = useMemo(() => {
-            const userRealNow = startOfDay(new Date()); // User's actual current life date
-            const currentPriority = (formData.financial_priority || '').toLowerCase();
-    
-            // 1. Intelligent Filtering
-            const relevantBudgets = allBudgets.filter(b => {
-                if (b.isSystemBudget) {
-                    // RULE: Never show Savings System Budgets (user preference)
-                    if (b.systemBudgetType === 'savings' || b.name.toLowerCase().includes('savings')) return false;
-    
-                    // RULE: If priority is NOT 'needs', don't show Needs System Budget
-                    if (currentPriority !== 'needs' && b.systemBudgetType === 'needs') return false;
-    
-                    // Only show system budgets relevant to the Transaction Date (otherwise list is huge)
-                    return isDateInRange(formData.date, b.startDate, b.endDate);
-                }
-    
-                // Custom Budgets: Keep them all available for search, 
-                // but we will prioritize them in the sort.
-                return true;
-            });
-    
-            // 2. Proximity Scoring & Sorting
-            return relevantBudgets.map(b => {
-                // Calculate distance from Real Life Today to Budget Start
-                // This helps surface the budget that is happening NOW or SOON
-                const startDate = parseISO(b.startDate);
-                const distanceToNow = Math.abs(differenceInDays(userRealNow, startDate));
-    
-                return { ...b, distanceToNow };
-            }).sort((a, b) => {
-                // Always float the currently selected budget to the top if editing
-                if (a.id === formData.customBudgetId) return -1;
-                if (b.id === formData.customBudgetId) return 1;
-    
-                // System budgets for the current priority usually go first
-                if (a.isSystemBudget && !b.isSystemBudget) return -1;
-                if (!a.isSystemBudget && b.isSystemBudget) return 1;
-    
-                // Sort by proximity to user's real today
-                return a.distanceToNow - b.distanceToNow;
-            });
-        }, [allBudgets, formData.date, formData.financial_priority, formData.customBudgetId]);
-    */
-
     // 3. Filter Options (Search only)
     // We rely on the parent component to provide the correct order (System > Active > Planned)
     // FIXED 01-Feb-2026: Use transaction date (or paid date) for filtering, not current date
@@ -331,10 +254,10 @@ export default function TransactionFormContent({
 
         // B. Date-Based Filter for System Budgets
         // CRITICAL FIX: Use the paid date if available (for paid expenses), otherwise use transaction date
-        const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate 
-            ? formData.paidDate 
+        const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate
+            ? formData.paidDate
             : formData.date;
-        
+
         filtered = filtered.filter(b => {
             if (!b.isSystemBudget) return true; // Always show Custom Budgets
             // Only show system budgets relevant to the transaction/paid date
@@ -347,8 +270,6 @@ export default function TransactionFormContent({
                 b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
             );
         }
-        // DEPRECATED:     return smartSortedBudgets.slice(0, 5);
-        // DEPRECATED: }, [smartSortedBudgets, budgetSearchTerm]);
         return filtered;
     }, [mergedBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type]);
 
@@ -408,7 +329,6 @@ export default function TransactionFormContent({
         let exchangeRateUsed = null;
 
         // Perform currency conversion if needed
-        // if (isForeignCurrency && !formData.isCashExpense) {
         if (isForeignCurrency) {
             let sourceRate = getRateForDate(exchangeRates, formData.originalCurrency, formData.date);
             let targetRate = getRateForDate(exchangeRates, settings?.baseCurrency || 'USD', formData.date);
