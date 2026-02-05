@@ -10,6 +10,7 @@
  */
 
 import { base44 } from "@/api/base44Client";
+import { resolveBudgetLimit } from "./financialCalculations";
 import { getMonthBoundaries } from "./dateUtils";
 
 /**
@@ -90,22 +91,6 @@ export const ensureSystemBudgetsExist = async (
     const priorityTypes = ['needs', 'wants', 'savings'];
     const results = {};
 
-    // Calculate raw amounts based on current Settings Mode (Absolute vs Percentage)
-    const calculateAmount = (type, goal, income) => {
-        const rawAmount = resolveBudgetLimit(goal, income, settings);
-
-        // FIXED LIFESTYLE LOGIC: Move this here so it's applied during creation
-        if (settings.goalMode !== false && settings.fixedLifestyleMode && type === 'needs') {
-            const existingNeeds = existingBudgetsForMonth.find(b => b.systemBudgetType === 'needs');
-            if (existingNeeds && existingNeeds.budgetAmount > 0 && income > 0) {
-                if (rawAmount > existingNeeds.budgetAmount) {
-                    return existingNeeds.budgetAmount;
-                }
-            }
-        }
-        return parseFloat(rawAmount.toFixed(2));
-    };
-
     // Color and name mappings for system budgets
     const colorMap = {
         needs: '#EF4444',
@@ -138,11 +123,12 @@ export const ensureSystemBudgetsExist = async (
         } else {
             // Create a new SystemBudget
             const goal = budgetGoals.find(g => g.priority === priorityType);
-            const budgetAmount = calculateAmount(priorityType, goal, monthlyIncome);
+            // Use the centralized helper for the math
+            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings);
 
             const newBudget = await base44.entities.SystemBudget.create({
                 name: nameMap[priorityType],
-                budgetAmount,
+                budgetAmount: parseFloat(budgetAmount.toFixed(2)),
                 startDate,
                 endDate,
                 color: colorMap[priorityType],
