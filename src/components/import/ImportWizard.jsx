@@ -35,9 +35,19 @@ export default function ImportWizard({ onSuccess }) {
     const { user, settings } = useSettings();
     const { categories } = useCategories();
     const { rules } = useCategoryRules(user);
+    const { goals } = useGoals(user);
     const { allBudgets } = useAllBudgets(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+
+    // Helper to clean strings into numbers while preserving the sign for detection
+    const parseAmountWithSign = (value) => {
+        if (!value && value !== 0) return 0;
+        const str = value.toString();
+        // Keep digits, dots, and the minus sign
+        const cleanStr = str.replace(/[^0-9.-]/g, "");
+        return parseFloat(cleanStr) || 0;
+    };
 
     const handleFileSelect = async (selectedFile) => {
         setFile(selectedFile);
@@ -90,11 +100,12 @@ export default function ImportWizard({ onSuccess }) {
             const extractedData = result.output?.transactions || [];
 
             const processed = extractedData.map(item => {
-                // Always treat amounts as positive magnitude
-                const magnitude = Math.abs(parseCleanRawAmount(item.amount));
+                // 1. Parse while preserving the sign for a moment
+                const rawVal = parseAmountWithSign(item.amount);
 
-                // Simplified type detection
-                const type = item.amount < 0 ? 'expense' : 'income';
+                // 2. Determine type and then force absolute magnitude
+                const type = rawVal < 0 ? 'expense' : 'income';
+                const magnitude = Math.abs(rawVal);
 
                 // 3. Date Logic Correction: Ensure Transaction Date <= Paid Date
                 // Banks sometimes flip these or the AI extracts them swapped.
@@ -155,17 +166,14 @@ export default function ImportWizard({ onSuccess }) {
 
     const processData = () => {
         const processed = csvData.data.map(row => {
-            const amountRaw = row[mappings.amount];
-            // 1. Clean data to pure number
-            const rawMagnitude = parseCleanRawAmount(amountRaw);
+            const rawVal = parseAmountWithSign(row[mappings.amount]);
+            const magnitude = Math.abs(rawVal);
 
             let type = 'expense';
             if (mappings.type && row[mappings.type]) {
                 type = row[mappings.type].toLowerCase().includes('income') ? 'income' : 'expense';
             } else {
-                // Auto-detect if no type column: check for minus sign or parens in amount
-                const isNegative = amountRaw && (amountRaw.includes('-') || amountRaw.includes('('));
-                type = isNegative ? 'expense' : 'income';
+                type = rawVal < 0 ? 'expense' : 'income';
             }
 
             // Enhanced categorization
@@ -192,8 +200,8 @@ export default function ImportWizard({ onSuccess }) {
             return {
                 date: row[mappings.date],
                 title: row[mappings.title] || 'Untitled Transaction',
-                amount: rawMagnitude,
-                originalAmount: rawMagnitude,
+                amount: magnitude,
+                originalAmount: magnitude,
                 originalCurrency: settings?.baseCurrency || 'USD',
                 type,
                 category: catResult.categoryName || 'Uncategorized',
@@ -227,7 +235,8 @@ export default function ImportWizard({ onSuccess }) {
             const budgetMap = {};
             const syncPromises = Array.from(uniqueSyncKeys).map(async (key) => {
                 const [date, priority] = key.split('|');
-                const id = await getOrCreateSystemBudgetForTransaction(user.email, date, priority, [], settings);
+                // Initializing with $0 is fine; the engine handles existing budgets
+                const id = await getOrCreateSystemBudgetForTransaction(user.email, date, priority, goals, settings);
                 budgetMap[key] = id;
             });
             await Promise.all(syncPromises);
@@ -255,6 +264,9 @@ export default function ImportWizard({ onSuccess }) {
             });
 
             await base44.entities.Transaction.bulkCreate(transactionsToCreate);
+
+            // Refresh all related data so the $0 budgets update to their real limits
+            await queryClient.invalidateQueries();
 
             showToast({ title: "Success", description: `Imported ${transactionsToCreate.length} transactions.` });
             if (onSuccess) {
