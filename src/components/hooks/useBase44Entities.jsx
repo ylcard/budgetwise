@@ -1,24 +1,22 @@
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
 import { getMonthlyIncome, resolveBudgetLimit } from "../utils/financialCalculations";
+import { ensureSystemBudgetsExist } from "../utils/budgetInitialization";
 import { useSettings } from "../utils/SettingsContext";
 
 // Hook to fetch transactions
-// DEPRECATED: export const useTransactions = () => {
 // OPTIMIZATION: Accepts start/end date for server-side range filtering
 export const useTransactions = (startDate = null, endDate = null) => {
     const { data: transactions = [], isLoading, error } = useQuery({
-        // DEPRECATED: queryKey: [QUERY_KEYS.TRANSACTIONS],
-        // DEPRECATED: queryFn: () => base44.entities.Transaction.list('date', 1000),
         queryKey: [QUERY_KEYS.TRANSACTIONS, startDate, endDate],
         queryFn: async () => {
             if (startDate && endDate) {
                 // When a range is requested (for Reports/Health), we need 
                 // the full set for mathematical accuracy.
-                return await base44.entities.Transaction.filter({ 
-                    date: { $gte: startDate, $lte: endDate } 
+                return await base44.entities.Transaction.filter({
+                    date: { $gte: startDate, $lte: endDate }
                 }, '-date', 5000); // Increased limit to cover extreme high-frequency users
             }
             return await base44.entities.Transaction.list('-date', 500); // Smaller default list for general views
@@ -46,8 +44,6 @@ export const useGoals = (user) => {
         queryKey: [QUERY_KEYS.GOALS],
         queryFn: async () => {
             if (!user) return [];
-            // DEPRECATED: const allGoals = await base44.entities.BudgetGoal.list();
-            // DEPRECATED: return allGoals.filter(g => g.user_email === user.email);
             // OPTIMIZATION: Server-side email filter
             return await base44.entities.BudgetGoal.filter({ user_email: user.email });
         },
@@ -110,16 +106,12 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = []) => {
 };
 
 // Hook for fetching all system budgets for a user
-// DEPRECATED: export const useSystemBudgetsAll = (user) => {
 // OPTIMIZATION: Added date filtering
 export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) => {
     const { data: allSystemBudgets = [], isLoading } = useQuery({
-        // DEPRECATED: queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS],
         queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            // DEPRECATED: const all = await base44.entities.SystemBudget.list();
-            // DEPRECATED: return all.filter(sb => sb.user_email === user.email);
 
             if (monthStart && monthEnd) {
                 return await base44.entities.SystemBudget.filter({
@@ -132,7 +124,6 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
             // OPTIMIZATION: Server-side email filter
             return await base44.entities.SystemBudget.filter({ user_email: user.email });
         },
-        // initialData: [],
         keepPreviousData: true,
         enabled: !!user,
     });
@@ -146,13 +137,6 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
         queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            // BLOCK DEPRECATED
-            // const all = await base44.entities.SystemBudget.list();
-            // return all.filter(sb =>
-            //     sb.user_email === user.email &&
-            //     sb.startDate === monthStart &&
-            //     sb.endDate === monthEnd
-            // );
 
             // OPTIMIZATION: Exact match filter
             return await base44.entities.SystemBudget.filter({
@@ -174,9 +158,6 @@ export const useAllocations = (budgetId) => {
     const { data: allocations = [], isLoading } = useQuery({
         queryKey: [QUERY_KEYS.ALLOCATIONS, budgetId],
         queryFn: async () => {
-            // DEPRECATED: const all = await base44.entities.CustomBudgetAllocation.list();
-            // DEPRECATED: return all.filter(a => a.customBudgetId === budgetId);
-
             // OPTIMIZATION: Server-side ID filter
             return await base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId });
         },
@@ -194,28 +175,13 @@ export const useAllBudgets = (user) => {
         queryFn: async () => {
             if (!user) return [];
 
-            // DEPRECATED: const customBudgets = await base44.entities.CustomBudget.list();
-            // DEPRECATED: const systemBudgets = await base44.entities.SystemBudget.list();
-
             // OPTIMIZATION: Filter by email at source
             const customBudgets = await base44.entities.CustomBudget.filter({ user_email: user.email });
             const systemBudgets = await base44.entities.SystemBudget.filter({ user_email: user.email });
 
-            // BLOCK DEPRECATED
-            // Include ALL custom budgets (both active and completed) - removed status filter
-            // const userCustomBudgets = customBudgets.filter(cb => cb.user_email === user.email);
-            // const userSystemBudgets = systemBudgets
-            // .filter(sb => sb.user_email === user.email)
-            // .map(sb => ({
-            //     ...sb,
-            //     isSystemBudget: true,
-            //     allocatedAmount: sb.budgetAmount
-            // }));
-
             const formattedSystem = systemBudgets.map(sb => ({
                 ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount
             }));
-            // DEPRECATED: return [...userSystemBudgets, ...userCustomBudgets];
             return [...formattedSystem, ...customBudgets];
         },
         initialData: [],
@@ -231,14 +197,11 @@ export const useCategoryRules = (user) => {
         queryKey: ['CATEGORY_RULES'],
         queryFn: async () => {
             if (!user) return [];
-            // DEPRECATED: const allRules = await base44.entities.CategoryRule.list();
-            // Filter by user and sort by priority (ascending)
 
             // OPTIMIZATION: Filter by email
             const allRules = await base44.entities.CategoryRule.filter({ user_email: user.email })
 
             return allRules
-                // DEPRECATED .filter(r => r.user_email === user.email)
                 .sort((a, b) => (a.priority || 0) - (b.priority || 0));
         },
         initialData: [],
@@ -285,117 +248,34 @@ export const useSystemBudgetManagement = (
             const allowUpdates = !isPastMonth;
 
             try {
-                const systemTypes = ['needs', 'wants', 'savings'];
-                const colors = { needs: '#448eefff', wants: '#F59E0B', savings: '#10B981' };
-
                 // Use getMonthlyIncome from financialCalculations
                 const currentMonthIncome = getMonthlyIncome(transactions, monthStart, monthEnd);
 
-                // DEPRECATED
-                // const goalMap = goals.reduce((acc, goal) => {
-                //     acc[goal.priority] = goal.target_percentage;
-                //     return acc;
-                // }, {});
+                // SINGLE SOURCE OF TRUTH: delegate creation and existence check
+                const budgets = await ensureSystemBudgetsExist(
+                    user.email,
+                    monthStart,
+                    monthEnd,
+                    goals,
+                    settings,
+                    currentMonthIncome
+                );
 
                 let needsInvalidation = false;
 
-                // --- Fixed Lifestyle Logic ---
-                // Calculate raw amounts based on current Settings Mode (Absolute vs Percentage)
-                let amounts = {};
-                systemTypes.forEach(type => {
-                    const goal = goals.find(g => g.priority === type);
+                // Check for necessary updates on existing budgets
+                for (const budget of Object.values(budgets)) {
+                    const goal = goals.find(g => g.priority === budget.systemBudgetType);
+                    const targetAmount = resolveBudgetLimit(goal, currentMonthIncome, settings);
 
-                    // DEPRECATED BLOCK
-                    // ABSOLUTE MODE CHECK (From Entity)
-                    // if (goal && goal.is_absolute) {
-                    //     amounts[type] = parseFloat(goal.target_amount || 0);
-                    // } else {
-                    //     // STANDARD PERCENTAGE MODE
-                    //     const percentage = goalMap[type] || 0;
-                    //     amounts[type] = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
-                    // }
+                    const shouldUpdate = (allowUpdates || budget.budgetAmount === 0) &&
+                        Math.abs((budget.budgetAmount || 0) - targetAmount) > 0.01;
 
-                    // Use centralized helper to determine the amount based on settings.goalMode
-                    const rawAmount = resolveBudgetLimit(goal, currentMonthIncome, settings.goalMode);
-                    amounts[type] = parseFloat(rawAmount.toFixed(2));
-                });
-
-                // DEPRECATED BLOCK
-                // If Mode is ON, check if we should cap 'needs' and move surplus to 'savings'
-                // if (settings?.fixedLifestyleMode && systemBudgets) {
-                // Only applies if 'needs' is NOT absolute
-                // const needsGoal = goals.find(g => g.priority === 'needs');
-                // if ((!needsGoal || !needsGoal.is_absolute) && settings?.fixedLifestyleMode && systemBudgets) {
-
-                // This logic ONLY applies in Percentage Mode. In Absolute Mode, the budget is already fixed by definition.
-                const isPercentageMode = settings.goalMode !== false; // Default to true
-                if (isPercentageMode && settings?.fixedLifestyleMode && systemBudgets) {
-                    const existingNeeds = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
-
-                    // Only apply logic if we have a previous budget to compare against and income > 0
-                    if (existingNeeds && existingNeeds.budgetAmount > 0 && currentMonthIncome > 0) {
-                        // If the NEW calculated needs is higher than OLD needs, cap it.
-                        if (amounts['needs'] > existingNeeds.budgetAmount) {
-                            const surplus = amounts['needs'] - existingNeeds.budgetAmount;
-                            amounts['needs'] = existingNeeds.budgetAmount; // Cap Needs
-                            amounts['savings'] += surplus; // Move surplus to Savings
-                            // 'wants' stays as calculated (percentage based)
-                        }
-                    }
-                }
-
-                for (const type of systemTypes) {
-                    const existingBudget = systemBudgets.find(sb => sb.systemBudgetType === type);
-                    // const percentage = goalMap[type] || 0;
-                    // const amount = parseFloat(((currentMonthIncome * percentage) / 100).toFixed(2));
-                    const amount = amounts[type];
-
-                    if (existingBudget) {
-                        // Only update if the calculated amount significantly differs to avoid unnecessary writes
-                        // AND only if it's the current month (preserve history), OR if the existing amount is 0 (fix uninitialized history)
-                        // const shouldUpdate = (isCurrentMonth || existingBudget.budgetAmount === 0) && Math.abs(existingBudget.budgetAmount - amount) > 0.01;
-                        // AND only if it's NOT a past month (preserve history), OR if the existing amount is 0 (fix uninitialized history)
-                        const shouldUpdate = (allowUpdates || existingBudget.budgetAmount === 0) && Math.abs(existingBudget.budgetAmount - amount) > 0.01;
-
-                        if (shouldUpdate) {
-                            await base44.entities.SystemBudget.update(existingBudget.id, {
-                                budgetAmount: amount
-                            });
-                            needsInvalidation = true;
-                        }
-                    } else {
-                        // Check for duplicates before creating to prevent race conditions or multiple creations
-
-                        // BLOCK DEPRECATED
-                        // const allSystemBudgetsCheck = await base44.entities.SystemBudget.list();
-                        // const duplicateCheck = allSystemBudgetsCheck.find(sb =>
-                        //     sb.user_email === user.email &&
-                        //     sb.systemBudgetType === type &&
-                        //     sb.startDate === monthStart &&
-                        //     sb.endDate === monthEnd
-                        // );
-
-                        // OPTIMIZATION: Use .filter() instead of downloading list()
-                        const duplicates = await base44.entities.SystemBudget.filter({
-                            user_email: user.email,
-                            systemBudgetType: type,
-                            startDate: monthStart,
-                            endDate: monthEnd
+                    if (shouldUpdate) {
+                        await base44.entities.SystemBudget.update(budget.id, {
+                            budgetAmount: parseFloat(targetAmount.toFixed(2))
                         });
-
-                        // DEPRECATED: if (!duplicateCheck) {
-                        if (duplicates.length === 0) {
-                            await base44.entities.SystemBudget.create({
-                                name: type.charAt(0).toUpperCase() + type.slice(1),
-                                budgetAmount: amount,
-                                startDate: monthStart,
-                                endDate: monthEnd,
-                                color: colors[type],
-                                user_email: user.email,
-                                systemBudgetType: type
-                            });
-                            needsInvalidation = true;
-                        }
+                        needsInvalidation = true;
                     }
                 }
 
