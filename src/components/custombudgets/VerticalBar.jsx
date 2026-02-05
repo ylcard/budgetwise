@@ -2,6 +2,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { CheckCircle, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "../utils/currencyUtils";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
 /**
  * CREATED: 03-Feb-2026
@@ -12,7 +13,6 @@ import { formatCurrency } from "../utils/currencyUtils";
 export default function VerticalBar({
     budget,
     isCustom = false,
-    isSavings = false,
     settings,
     onDelete,
     onComplete,
@@ -28,18 +28,21 @@ export default function VerticalBar({
     } = budget;
 
     const isCompleted = budget.status === 'completed';
-    const barColor = budget.color || '#3B82F6';
+
+    // Determine color from constants if it's a system budget
+    const barColor = useMemo(() => {
+        if (budget.systemBudgetType && FINANCIAL_PRIORITIES[budget.systemBudgetType]) {
+            return FINANCIAL_PRIORITIES[budget.systemBudgetType].color;
+        }
+        return budget.color || '#3B82F6';
+    }, [budget.color, budget.systemBudgetType]);
 
     // --- Unified Data Calculation ---
     let allocated = 0;
     let paidAmount = 0;
     let unpaidAmount = 0;
 
-    if (isSavings) {
-        allocated = savingsTarget || 0;
-        paidAmount = actualSavings || 0;
-        unpaidAmount = 0;
-    } else if (isCustom && stats) {
+    if (isCustom && stats) {
         allocated = stats.totalBudget || 0;
         paidAmount = stats.paidAmount || 0;
         unpaidAmount = expectedAmount;
@@ -58,48 +61,16 @@ export default function VerticalBar({
     const safeAllocated = allocated > 0 ? allocated : 1;
 
     // VISUAL LOGIC:
-    // Savings: Bar grows from 0 -> Target (Standard Progress)
-    // Needs/Wants: Bar starts Full -> Shrinks to 0 (Depleting Bucket)
-    let primaryBarHeightPct = 0;
-    
-    if (isSavings) {
-        primaryBarHeightPct = (paidAmount / safeMaxHeight) * 100;
-    } else {
-        const remaining = Math.max(0, allocated - used);
-        primaryBarHeightPct = (remaining / safeAllocated) * 100;
-    }
+    // Standardized for all budgets: Bar starts Full -> Shrinks to 0 (Depleting Bucket)
+    const remaining = Math.max(0, allocated - used);
+    const primaryBarHeightPct = (remaining / safeAllocated) * 100;
 
     const expectedHeightPct = (unpaidAmount / safeMaxHeight) * 100;
-    
-    const showTargetLine = isSavings && allocated > 0;
-    const targetLinePosition = (allocated / safeMaxHeight) * 100;
 
     // Labels & Colors
-    let remainingDisplay = 0;
-    let statusLabel = '';
-    let statusColor = '';
-
-    if (isSavings) {
-        if (isOver) {
-            remainingDisplay = used - allocated;
-            statusLabel = 'Surplus';
-            statusColor = 'text-emerald-600';
-        } else {
-            remainingDisplay = allocated - used;
-            statusLabel = 'Shortfall';
-            statusColor = 'text-amber-600';
-        }
-    } else {
-        if (isOver) {
-            remainingDisplay = used - allocated;
-            statusLabel = 'Over Limit';
-            statusColor = 'text-red-600';
-        } else {
-            remainingDisplay = allocated - used;
-            statusLabel = 'Under Limit';
-            statusColor = 'text-blue-600';
-        }
-    }
+    const remainingDisplay = isOver ? used - allocated : allocated - used;
+    const statusLabel = isOver ? 'Over Limit' : 'Under Limit';
+    const statusColor = isOver ? 'text-red-600' : 'text-blue-600';
 
     return (
         <Link
@@ -109,39 +80,16 @@ export default function VerticalBar({
         >
             <div className="flex flex-col items-center gap-2 group cursor-pointer">
                 {/* Bar Graph */}
-                <div className={`relative w-16 bg-gray-100 rounded-xl h-48 overflow-hidden hover:shadow-lg transition-all ${isOver && !isSavings ? 'border-2 border-red-100 bg-red-50' : ''}`}>
+                <div className={`relative w-16 bg-gray-100 rounded-xl h-48 overflow-hidden hover:shadow-lg transition-all ${isOver ? 'border-2 border-red-100 bg-red-50' : ''}`}>
                     {/* Paid Bar */}
                     <div
                         className="absolute bottom-0 w-full rounded-b-xl transition-all duration-300"
                         style={{
                             height: `${primaryBarHeightPct}%`,
-                            backgroundColor: isSavings ? barColor : `${barColor}`,
-                            opacity: isSavings ? 1 : 0.8
+                            backgroundColor: barColor,
+                            opacity: 0.8
                         }}
                     />
-
-                    {/* Unpaid "Ghost" Load - Only for Savings */}
-                    {unpaidAmount > 0 && isSavings && (
-                        <div
-                            className="absolute w-full transition-all duration-300"
-                            style={{
-                                bottom: `${primaryBarHeightPct}%`,
-                                height: `${expectedHeightPct}%`,
-                                opacity: 0.6,
-                                backgroundImage: `linear-gradient(45deg,rgba(255,255,255,.3) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.3) 75%,transparent 75%,transparent)`,
-                                backgroundSize: '8px 8px',
-                                borderTop: `1px solid ${barColor}`
-                            }}
-                        />
-                    )}
-
-                    {/* Target Line */}
-                    {showTargetLine && (
-                        <div
-                            className="absolute w-full border-t-2 border-dashed border-gray-800 z-10 opacity-50"
-                            style={{ bottom: `${Math.min(targetLinePosition, 100)}%` }}
-                        />
-                    )}
 
                     {/* Completed badge */}
                     {isCompleted && (
@@ -195,7 +143,7 @@ export default function VerticalBar({
                     <div className="grid grid-cols-2 gap-y-1 gap-x-1 text-[10px] leading-tight">
                         {/* Row 1 */}
                         <div className="text-left">
-                            <p className="text-gray-400">{isSavings ? 'Target' : 'Budget'}</p>
+                            <p className="text-gray-400">Budget</p>
                             <p className="font-semibold text-gray-700 truncate" title={formatCurrency(allocated, settings)}>
                                 {formatCurrency(allocated, settings)}
                             </p>
@@ -205,7 +153,7 @@ export default function VerticalBar({
                             <p className={`font-semibold truncate ${statusColor}`} title={formatCurrency(remainingDisplay, settings)}>
                                 {formatCurrency(remainingDisplay, settings)}
                             </p>
-                            {!isSavings && !isOver && (
+                            {!isOver && (
                                 <p className="text-[8px] text-emerald-600/80 leading-none mt-0.5 transform scale-90 origin-right font-medium">
                                     (Save it!)
                                 </p>
@@ -214,24 +162,16 @@ export default function VerticalBar({
 
                         {/* Row 2 */}
                         <div className="text-left">
-                            <p className="text-gray-400">{isSavings ? 'Actual' : 'Paid'}</p>
+                            <p className="text-gray-400">Paid</p>
                             <p className="font-semibold text-gray-900 truncate" title={formatCurrency(paidAmount, settings)}>
                                 {formatCurrency(paidAmount, settings)}
                             </p>
                         </div>
                         <div className="text-right">
-                            {!isSavings ? (
-                                <>
-                                    <p className="text-gray-400">Unpaid</p>
-                                    <p className={`font-semibold truncate ${unpaidAmount > 0 ? 'text-amber-600' : 'text-gray-300'}`} title={formatCurrency(unpaidAmount, settings)}>
-                                        {formatCurrency(unpaidAmount, settings)}
-                                    </p>
-                                </>
-                            ) : (
-                                <div className="h-full flex items-end justify-end">
-                                    <span className="text-[9px] text-gray-300 italic">Net Flow</span>
-                                </div>
-                            )}
+                            <p className="text-gray-400">Unpaid</p>
+                            <p className={`font-semibold truncate ${unpaidAmount > 0 ? 'text-amber-600' : 'text-gray-300'}`} title={formatCurrency(unpaidAmount, settings)}>
+                                {formatCurrency(unpaidAmount, settings)}
+                            </p>
                         </div>
                     </div>
                 </div>
