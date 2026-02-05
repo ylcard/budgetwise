@@ -413,15 +413,14 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
     const horizonMonths = 12;
     for (let i = 0; i < horizonMonths; i++) {
         const monthDate = addMonths(now, i);
-        const monthStart = getFirstDayOfMonth(monthDate.getMonth(), monthDate.getFullYear());
-        const monthEnd = getLastDayOfMonth(monthDate.getMonth(), monthDate.getFullYear());
+        const { monthStart, monthEnd } = getMonthBoundaries(monthDate.getMonth(), monthDate.getFullYear());
 
-        // Fetch income for this specific month to pass to ensureSystemBudgetsExist
+        // Calculate income for this month using the utility function already in this file
         const monthlyIncome = await base44.entities.Transaction.filter({
             type: 'income',
             date: { $gte: monthStart, $lte: monthEnd },
             created_by: userEmail
-        }).then(txs => txs.reduce((sum, t) => sum + t.amount, 0));
+        }).then(txs => getMonthlyIncome(txs, monthStart, monthEnd));
 
         await ensureSystemBudgetsExist(
             userEmail,
@@ -442,39 +441,28 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
 
     if (budgetsToUpdate.length === 0) return;
 
-    // Pre-fetch transactions for income calculation if in percentage mode
-    let transactionsForIncomeCalc = [];
-    if (settings.goalMode !== false) {
-        transactionsForIncomeCalc = await base44.entities.Transaction.filter({
-            type: 'income',
-            date: { $gte: currentMonthStart },
-            created_by: userEmail
-        });
-    }
+    // Pre-fetch transactions once for the entire horizon to avoid N+1 queries
+    const horizonEnd = getLastDayOfMonth(addMonths(now, horizonMonths - 1).getMonth(), addMonths(now, horizonMonths - 1).getFullYear());
+    const transactionsForIncomeCalc = await base44.entities.Transaction.filter({
+        type: 'income',
+        date: { $gte: currentMonthStart, $lte: horizonEnd },
+        created_by: userEmail
+    });
 
     const updatePromises = budgetsToUpdate.map(async (budget) => {
-        let newAmount = 0;
+        const bDate = parseDate(budget.startDate);
+        const { monthStart, monthEnd } = getMonthBoundaries(bDate.getMonth(), bDate.getFullYear());
 
-        if (settings.goalMode === false) {
-            newAmount = updatedGoal.target_amount || 0;
-        } else {
-            const bDate = parseDate(budget.startDate);
+        const monthIncome = getMonthlyIncome(transactionsForIncomeCalc, monthStart, monthEnd);
 
-            const monthIncome = transactionsForIncomeCalc
-                .filter(t => {
-                    const tDate = parseDate(t.date);
-                    return tDate.getFullYear() === bDate.getFullYear() && tDate.getMonth() === bDate.getMonth();
-                })
-                .reduce((sum, t) => sum + t.amount, 0);
-
-            newAmount = (monthIncome * (updatedGoal.target_percentage / 100));
-        }
+        // UNIFIED MATH: Use the resolveBudgetLimit helper instead of manual calculation
+        const newAmount = resolveBudgetLimit(updatedGoal, monthIncome, settings);
 
         if (Math.abs((budget.budgetAmount || 0) - newAmount) > 0.01) {
             return base44.entities.SystemBudget.update(budget.id, {
-                budgetAmount: newAmount,
-                target_amount: settings.goalMode === false ? updatedGoal.target_amount : 0,
-                target_percentage: settings.goalMode !== false ? updatedGoal.target_percentage : 0
+                budgetAmount: parseFloat(newAmount.toFixed(2)),
+                target_amount: updatedGoal.target_amount || 0,
+                target_percentage: updatedGoal.target_percentage || 0
             });
         }
     });
