@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
-import { getMonthlyIncome, getHistoricalAverageIncome } from "../utils/financialCalculations";
+import { getMonthlyIncome, getHistoricalAverageIncome, snapshotFutureBudgets } from "../utils/financialCalculations";
 import { ensureSystemBudgetsExist } from "../utils/budgetInitialization";
 import { useSettings } from "../utils/SettingsContext";
 
@@ -222,6 +222,7 @@ export const useSystemBudgetManagement = (
             if (isSyncing.current || lastSyncedKey.current === syncKey) return;
 
             const now = new Date();
+            const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
             const isPastMonth = selectedYear < now.getFullYear() ||
                 (selectedYear === now.getFullYear() && selectedMonth < now.getMonth());
 
@@ -241,6 +242,12 @@ export const useSystemBudgetManagement = (
                     income,
                     { allowUpdates: !isPastMonth, historicalAverage: history }
                 );
+
+                // PROACTIVE TRIGGER: If viewing current month, ensure the 12-month horizon is synced.
+                // This fixes the "empty future months" issue without waiting for a goal update.
+                if (isCurrentMonth && goals.length > 0) {
+                    snapshotFutureBudgets(goals[0], settings, user.email, goals);
+                }
 
                 lastSyncedKey.current = syncKey;
 
