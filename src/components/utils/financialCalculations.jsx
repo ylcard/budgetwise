@@ -6,9 +6,8 @@
  */
 
 import { base44 } from "@/api/base44Client";
-import { parseDate, getFirstDayOfMonth, getLastDayOfMonth, isDateInRange, getMonthBoundaries } from "./dateUtils";
+import { parseDate, getFirstDayOfMonth, isDateInRange, getMonthBoundaries } from "./dateUtils";
 import { ensureSystemBudgetsExist } from "./budgetInitialization";
-import { addMonths } from 'date-fns';
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -407,30 +406,27 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
     if (!updatedGoal || !settings || !userEmail) return;
 
     const now = new Date();
+    const currentMonthStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
 
-    // Unified Logic: Ensure and update budgets for the next 12 months
-    const horizonMonths = 12;
-    for (let i = 0; i < horizonMonths; i++) {
-        const monthDate = addMonths(now, i);
-        const monthStart = getFirstDayOfMonth(monthDate.getMonth(), monthDate.getFullYear());
-        const monthEnd = getLastDayOfMonth(monthDate.getMonth(), monthDate.getFullYear());
+    // ATOMIC CHANGE: Only update budgets that the user has already "activated" 
+    // by viewing or adding transactions to.
+    const activeSystemBudgets = await base44.entities.SystemBudget.filter({
+        user_email: userEmail,
+        startDate: { $gte: currentMonthStart }
+    });
 
-        // Fetch income for this specific month to pass to ensureSystemBudgetsExist
-        const monthlyIncome = await base44.entities.Transaction.filter({
-            type: 'income',
-            date: { $gte: monthStart, $lte: monthEnd },
-            created_by: userEmail
-        }).then(txs => txs.reduce((sum, t) => sum + t.amount, 0));
-
-        // The Engine now handles both creation and goal-based updates in one call
-        await ensureSystemBudgetsExist(
+    const updatePromises = activeSystemBudgets.map(async (budget) => {
+        // We trigger a re-sync for existing future budgets to reflect the new goal
+        return ensureSystemBudgetsExist(
             userEmail,
-            monthStart,
-            monthEnd,
+            budget.startDate,
+            budget.endDate,
             allGoals,
             settings,
-            monthlyIncome,
-            { allowUpdates: true, historicalAverage: 0 }
+            0, // Income will be handled by the Dashboard sync
+            { allowUpdates: true }
         );
-    }
+    });
+
+    await Promise.all(updatePromises);
 };
