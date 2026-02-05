@@ -10,7 +10,6 @@
  */
 
 import { base44 } from "@/api/base44Client";
-import { resolveBudgetLimit } from "./financialCalculations";
 import { getMonthBoundaries } from "./dateUtils";
 
 /**
@@ -77,11 +76,11 @@ export const getOrCreateSystemBudgetForTransaction = async (
  * @returns {Promise<Object>} Object with budgets by type: { needs: Budget, wants: Budget, savings: Budget }
  */
 export const ensureSystemBudgetsExist = async (
-    userEmail,
-    startDate,
-    endDate,
-    budgetGoals = [],
-    settings = {},
+    userEmail, 
+    startDate, 
+    endDate, 
+    budgetGoals = [], 
+    settings = {}, 
     monthlyIncome = 0
 ) => {
     if (!userEmail || !startDate || !endDate) {
@@ -123,12 +122,25 @@ export const ensureSystemBudgetsExist = async (
         } else {
             // Create a new SystemBudget
             const goal = budgetGoals.find(g => g.priority === priorityType);
-            // If income is 0, the limit is 0 (or the absolute amount if in absolute mode)
-            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome || 0, settings);
+            let budgetAmount = 0;
+
+            // Calculate initial budget amount based on mode and available data
+            if (settings.goalMode === false && goal) {
+                // Absolute mode: Use the target amount directly
+                budgetAmount = goal.target_amount || 0;
+            } else if (goal && monthlyIncome > 0) {
+                // Percentage mode: Calculate based on income and percentage
+                budgetAmount = (monthlyIncome * (goal.target_percentage || 0)) / 100;
+            } else if (goal) {
+                // If we have a goal but no income yet, use the percentage with 0 income
+                // This creates the budget structure even if there's no income yet
+                budgetAmount = 0;
+            }
+            // If no goal exists at all, budgetAmount remains 0 (default budget)
 
             const newBudget = await base44.entities.SystemBudget.create({
                 name: nameMap[priorityType],
-                budgetAmount: parseFloat((budgetAmount || 0).toFixed(2)),
+                budgetAmount,
                 startDate,
                 endDate,
                 color: colorMap[priorityType],

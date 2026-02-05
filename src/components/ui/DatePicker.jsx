@@ -5,10 +5,9 @@
  * UPDATED: 17-Jan-2026 - Migrated to react-day-picker v9 with dropdown navigation
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
@@ -32,15 +31,7 @@ import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
  * @param {string} [props.className=""] - Additional class names for the trigger button.
  * @returns {JSX.Element} The date picker component.
  */
-
-export default function DatePicker({
-    value,
-    onChange,
-    placeholder = "Pick a date",
-    className = "",
-    // Allow overriding these defaults via props
-    ...dayPickerProps
-}) {
+export default function DatePicker({ value, onChange, placeholder = "Pick a date", className = "" }) {
     const { settings } = useSettings();
 
     /**
@@ -82,71 +73,28 @@ export default function DatePicker({
                     mode="single"
                     selected={dateValue}
                     onSelect={handleSelect}
+                    defaultMonth={dateValue}
                     className="p-3"
                     weekStartsOn={1}
                     showOutsideDays
                     fixedWeeks
-                    // Defaults (can be overridden by ...dayPickerProps)
-                    captionLayout="dropdown"
-                    fromYear={1900}
-                    toYear={2100}
-                    // Replace the native native dropdowns with Shadcn Select
-                    components={{
-                        Dropdown: ({ value, onChange, options }) => {
-                            const handleChange = (newValue) => {
-                                const syntheticEvent = {
-                                    target: { value: newValue }
-                                };
-                                onChange?.(syntheticEvent);
-                            };
-
-                            return (
-                                <Select
-                                    value={value?.toString()}
-                                    onValueChange={handleChange}
-                                >
-                                    <SelectTrigger className="h-7 w-fit gap-1 border-none bg-transparent p-0 pl-2 pr-1 font-medium hover:bg-accent/50 focus:ring-0 shadow-none text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent position="popper" className="max-h-[240px] overflow-y-auto min-w-[120px] bg-white z-50">
-                                        {options?.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value.toString()}
-                                                className="text-sm"
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            );
-                        },
-                        Chevron: ({ orientation }) => {
-                            // In v9, ensure orientation strictly maps to the correct icon
-                            return orientation === "left"
-                                ? <ChevronLeft className="h-4 w-4" />
-                                : <ChevronRight className="h-4 w-4" />;
-                        }
-                    }}
-                    // Spread parent props last to allow overrides
-                    {...dayPickerProps}
+                    captionLayout="dropdown-buttons"
+                    startMonth={new Date(2024, 0)}
+                    endMonth={new Date(2100, 11)}
                     classNames={{
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                         month: "space-y-4",
-                        month_caption: "flex items-center justify-start px-2 pt-2 relative h-12 w-full",
-                        caption_label: "hidden",
-                        caption_dropdowns: "flex items-center inline-flex flex-row gap-1 z-10",
-                        nav: "flex items-center gap-1 absolute right-0 top-2.5",
-                        button_previous: cn(
+                        caption: "flex justify-center pt-1 relative items-center",
+                        caption_label: "text-sm font-medium",
+                        caption_dropdowns: "flex justify-center gap-1",
+                        nav: "space-x-1 flex items-center absolute right-1",
+                        nav_button: cn(
                             buttonVariants({ variant: "outline" }),
-                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none relative z-20"
+                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
                         ),
-                        button_next: cn(
-                            buttonVariants({ variant: "outline" }),
-                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none relative z-20"
-                        ),
-                        month_grid: "w-full border-collapse space-y-1",
+                        nav_button_previous: "absolute left-1",
+                        nav_button_next: "absolute right-1",
+                        table: "w-full border-collapse space-y-1",
                         weekdays: "flex",
                         weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
                         week: "flex w-full mt-2",
@@ -162,11 +110,15 @@ export default function DatePicker({
                         disabled: "text-muted-foreground opacity-50",
                         range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
                         hidden: "invisible",
-                        // Removing default styles since we are replacing the component entirely
-                        dropdown: "",
-                        dropdown_icon: "hidden",
-                        dropdown_month: "mr-1",
-                        dropdown_year: "mr-1",
+                        // Styles for the dropdowns (native select elements)
+                        dropdown: "p-1 bg-transparent outline-none cursor-pointer hover:bg-accent rounded-sm text-sm font-medium",
+                        dropdown_icon: "hidden", // Hide default dropdown icon if it clashes
+                        dropdown_month: "mr-2",
+                        dropdown_year: "",
+                    }}
+                    components={{
+                        IconLeft: ({ ...props }) => <ChevronLeft {...props} className="h-4 w-4" />,
+                        IconRight: ({ ...props }) => <ChevronRight {...props} className="h-4 w-4" />,
                     }}
                 />
             </PopoverContent>

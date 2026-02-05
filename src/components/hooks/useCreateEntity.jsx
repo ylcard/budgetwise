@@ -54,19 +54,6 @@ export const useCreateEntity = ({
         mutationFn: async (data) => {
             // Execute preprocessing logic if provided
             let processedData = data;
-
-            // SILENT JIT BUDGET RESOLUTION for manual transactions
-            if (entityName === 'Transaction' && !processedData.budgetId && processedData.type === 'expense') {
-                const resolvedId = await getOrCreateSystemBudgetForTransaction(
-                    processedData.created_by,
-                    processedData.date,
-                    processedData.financial_priority,
-                    data.goals, // Passed in from the form component
-                    data.settings
-                );
-                processedData.budgetId = resolvedId;
-            }
-
             if (onBeforeCreate) {
                 processedData = await onBeforeCreate(data);
             }
