@@ -26,16 +26,20 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
     // We use a local state to "hold" the previous view during loading
     const [displayAsEmpty, setDisplayAsEmpty] = useState(isEmptyMonth);
+    const [stableMonth, setStableMonth] = useState(selectedMonth);
     const [isTransitioning, setIsTransitioning] = useState(isLoading);
+    const wasLoading = useRef(isLoading);
 
     useEffect(() => {
-        if (!isLoading) {
+        if (wasLoading.current && !isLoading) {
+            // Data fetch just finished: Update everything at once
             setDisplayAsEmpty(isEmptyMonth);
+            setStableMonth(selectedMonth);
             setIsTransitioning(false);
-        } else {
-            setIsTransitioning(true);
         }
-    }, [isLoading, isEmptyMonth]);
+        setIsTransitioning(isLoading);
+        wasLoading.current = isLoading;
+    }, [isLoading, isEmptyMonth, selectedMonth]);
 
     const totalSpent = currentMonthExpenses;
     const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
@@ -157,7 +161,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                             <Calendar className="w-8 h-8 text-emerald-600" />
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-gray-900">Ready to plan for {getMonthName(selectedMonth)}?</h3>
+                            <h3 className="text-xl font-bold text-gray-900">Ready to plan for {getMonthName(stableMonth)}?</h3>
                             <p className="text-gray-500 text-sm leading-relaxed">
                                 Start by adding your expected income to see your savings potential and unlock your budget goals.
                             </p>
