@@ -3,11 +3,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Check, X } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { Input } from "@/components/ui/input";
-import { Check, X, RefreshCw } from "lucide-react";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
 import CategorySelect from "@/components/ui/CategorySelect";
@@ -141,8 +140,83 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="rounded-md border overflow-auto max-h-[600px]">
-                    <Table>
+                {/* --- MOBILE VIEW (Cards) --- */}
+                <div className="block md:hidden space-y-4">
+                    {sortedData.map((row) => (
+                        <div
+                            key={row.originalIndex}
+                            className={`p-4 rounded-xl border bg-white shadow-sm space-y-4 ${selectedIndices.has(row.originalIndex) ? "border-blue-500 bg-blue-50/30" : "border-gray-200"}`}
+                        >
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3">
+                                    <Checkbox
+                                        checked={selectedIndices.has(row.originalIndex)}
+                                        onCheckedChange={() => toggleSelectRow(row.originalIndex)}
+                                    />
+                                    <div className="flex flex-col">
+                                        {editingTitle.index === row.originalIndex ? (
+                                            <div className="flex items-center gap-1">
+                                                <Input
+                                                    value={editingTitle.value}
+                                                    onChange={(e) => setEditingTitle(prev => ({ ...prev, value: e.target.value }))}
+                                                    className="h-8 text-sm"
+                                                    autoFocus
+                                                />
+                                                <button onClick={() => saveTitle(row.originalIndex)} className="text-green-600"><Check className="w-5 h-5" /></button>
+                                            </div>
+                                        ) : (
+                                            <span onClick={() => startEditing(row.originalIndex, row.title)} className="font-bold text-gray-900 leading-tight">
+                                                {row.title}
+                                            </span>
+                                        )}
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">{row.date}</span>
+                                    </div>
+                                </div>
+                                <div
+                                    className={`flex flex-col items-end cursor-pointer p-1 rounded hover:bg-gray-50 transition-colors`}
+                                    onClick={() => onUpdateRow(row.originalIndex, { type: row.type === 'expense' ? 'income' : 'expense' })}
+                                >
+                                    <div className={`text-base font-black flex items-center gap-1 ${row.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
+                                        {formatCurrency(row.amount, settings)}
+                                        <RefreshCw className="w-3 h-3 opacity-30" />
+                                    </div>
+                                    <Badge variant="outline" className="text-[9px] h-4 px-1 leading-none uppercase">{row.type}</Badge>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1 text-[10px] text-gray-400 font-black uppercase"><Tag className="w-3 h-3" /> Category</div>
+                                    <CategorySelect
+                                        value={row.categoryId}
+                                        categories={categories}
+                                        onValueChange={(value) => {
+                                            const cat = categories.find(c => c.id === value);
+                                            onUpdateRow(row.originalIndex, {
+                                                categoryId: value,
+                                                category: cat ? cat.name : 'Uncategorized',
+                                                financial_priority: cat ? (cat.priority || 'wants') : row.financial_priority
+                                            });
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1 text-[10px] text-gray-400 font-black uppercase"><Calendar className="w-3 h-3" /> Priority</div>
+                                    <MobileDrawerSelect
+                                        value={row.financial_priority || 'wants'}
+                                        onValueChange={(val) => onUpdateRow(row.originalIndex, { financial_priority: val })}
+                                        options={Object.entries(FINANCIAL_PRIORITIES).filter(([k]) => k !== 'savings').map(([k, v]) => ({ value: k, label: v.label }))}
+                                        className="h-9 text-xs"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* --- DESKTOP VIEW (Refined Table) --- */}
+                <div className="hidden md:block rounded-md border overflow-auto max-h-[600px]">
+                    <Table className="relative">
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[40px]">
@@ -152,82 +226,57 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                     />
                                 </TableHead>
                                 <TableHead
-                                    className="cursor-pointer hover:bg-gray-50 transition-colors whitespace-nowrap"
-                                    onClick={() => handleSort('date')}
-                                >
-                                    <div className="flex items-center">Date {getSortIcon('date')}</div>
-                                </TableHead>
-                                <TableHead
                                     className="cursor-pointer hover:bg-gray-50 transition-colors"
                                     onClick={() => handleSort('title')}
                                 >
-                                    <div className="flex items-center">Title {getSortIcon('title')}</div>
+                                    <div className="flex items-center">Transaction {getSortIcon('title')}</div>
                                 </TableHead>
-                                <TableHead className="w-[200px]">Category</TableHead>
-                                <TableHead className="w-[180px]">Budget</TableHead>
-                                <TableHead className="w-[110px]">Priority</TableHead>
+                                <TableHead className="w-[180px]">Category</TableHead>
+                                <TableHead className="w-[160px]">Budget</TableHead>
+                                <TableHead className="w-[120px]">Priority</TableHead>
                                 <TableHead
                                     className="text-right cursor-pointer hover:bg-gray-50 transition-colors"
                                     onClick={() => handleSort('amount')}
                                 >
-                                    <div className="flex items-center justify-end">Amount {getSortIcon('amount')}</div>
+                                    <div className="flex items-center justify-end">Amount/Type {getSortIcon('amount')}</div>
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {sortedData.map((row) => (
-                                <TableRow key={row.originalIndex} className={selectedIndices.has(row.originalIndex) ? "bg-blue-50/50" : ""}>
+                                <TableRow key={row.originalIndex} className={`${selectedIndices.has(row.originalIndex) ? "bg-blue-50/30" : ""} group`}>
                                     <TableCell>
                                         <Checkbox
                                             checked={selectedIndices.has(row.originalIndex)}
                                             onCheckedChange={() => toggleSelectRow(row.originalIndex)}
                                         />
                                     </TableCell>
-                                    <TableCell className="whitespace-nowrap font-medium text-gray-700">
-                                        {row.date}
-                                    </TableCell>
-                                    <TableCell className="max-w-[200px] truncate" title={row.title}>
-                                        {editingTitle.index === row.originalIndex ? (
-                                            <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
-                                                <Input
-                                                    value={editingTitle.value}
-                                                    onChange={(e) => setEditingTitle(prev => ({ ...prev, value: e.target.value }))}
-                                                    className="h-8 text-sm"
-                                                    autoFocus
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') saveTitle(row.originalIndex);
-                                                        if (e.key === 'Escape') cancelEditing();
-                                                    }}
-                                                />
-                                                <button onClick={() => saveTitle(row.originalIndex)} className="text-green-600 hover:bg-green-50 p-1 rounded">
-                                                    <Check className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={cancelEditing} className="text-red-600 hover:bg-red-50 p-1 rounded">
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <span
-                                                onClick={() => startEditing(row.originalIndex, row.title)}
-                                                className="cursor-pointer hover:underline decoration-dotted underline-offset-4"
-                                            >
-                                                {row.title}
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                    {/* Type Toggle for AI Mistakes */}
-                                    <TableCell>
-                                        <CustomButton
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 px-2 text-[10px] uppercase font-bold tracking-tight"
-                                            onClick={() => onUpdateRow(row.originalIndex, {
-                                                type: row.type === 'expense' ? 'income' : 'expense'
-                                            })}
-                                        >
-                                            <RefreshCw className="w-3 h-3 mr-1 opacity-50" />
-                                            {row.type}
-                                        </CustomButton>
+                                    <TableCell className="max-w-[220px]">
+                                        <div className="flex flex-col">
+                                            {editingTitle.index === row.originalIndex ? (
+                                                <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
+                                                    <Input
+                                                        value={editingTitle.value}
+                                                        onChange={(e) => setEditingTitle(prev => ({ ...prev, value: e.target.value }))}
+                                                        className="h-8 text-sm"
+                                                        autoFocus
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') saveTitle(row.originalIndex);
+                                                            if (e.key === 'Escape') cancelEditing();
+                                                        }}
+                                                    />
+                                                    <button onClick={() => saveTitle(row.originalIndex)} className="text-green-600 hover:bg-green-50 p-1 rounded"><Check className="w-4 h-4" /></button>
+                                                </div>
+                                            ) : (
+                                                <span
+                                                    onClick={() => startEditing(row.originalIndex, row.title)}
+                                                    className="font-medium text-gray-900 cursor-pointer hover:underline decoration-dotted truncate"
+                                                >
+                                                    {row.title}
+                                                </span>
+                                            )}
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{row.date}</span>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         {row.type === 'expense' ? (
@@ -303,8 +352,18 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                             <span className="text-gray-400 text-xs">-</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className={`text-right font-medium ${row.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
-                                        {formatCurrency(Math.abs(row.amount), settings)}
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-2 group/amount">
+                                            <button
+                                                onClick={() => onUpdateRow(row.originalIndex, { type: row.type === 'expense' ? 'income' : 'expense' })}
+                                                className="opacity-0 group-hover/amount:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600"
+                                            >
+                                                <RefreshCw className="w-3.5 h-3.5" />
+                                            </button>
+                                            <span className={`font-bold ${row.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
+                                                {formatCurrency(row.amount, settings)}
+                                            </span>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
