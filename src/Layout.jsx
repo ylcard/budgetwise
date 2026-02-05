@@ -1,276 +1,634 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Wallet, LogOut, ChevronLeft, MoreHorizontal } from "lucide-react";
-import { useMemo, useRef, useEffect, useState } from "react";
-import { SettingsProvider } from "./components/utils/SettingsContext";
-import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
-import { navigationItems } from "./components/utils/navigationConfig";
-import { useRecurringProcessor } from "./components/hooks/useRecurringProcessor";
-import { base44 } from "@/api/base44Client";
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarHeader,
-    SidebarFooter,
-    SidebarProvider,
-} from "@/components/ui/sidebar";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { PeriodProvider } from "./components/hooks/usePeriod";
+import { useState, useEffect, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-Feb-2026: For iOS-style page transitions
-import { FABProvider, useFAB } from "./components/hooks/FABContext"; // ADDED 04-Feb-2026: For GlobalFAB management
-import GlobalFAB from "@/components/ui/GlobalFAB"; // ADDED 04-Feb-2026: Floating Action Button
+import { Label } from "@/components/ui/label";
+import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "../hooks/queryKeys";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RefreshCw, AlertCircle, Check, ChevronsUpDown } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
+import { useConfirm } from "../ui/ConfirmDialogProvider";
+import AmountInput from "../ui/AmountInput";
+import DatePicker from "../ui/DatePicker";
+import CategorySelect from "../ui/CategorySelect";
+import AnimatePresenceContainer from "../ui/AnimatePresenceContainer";
+import { useSettings } from "../utils/SettingsContext";
+import { useExchangeRates } from "../hooks/useExchangeRates";
+import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
+import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "../utils/dateUtils";
+import { differenceInDays, parseISO, startOfDay } from "date-fns";
+import { normalizeAmount } from "../utils/generalUtils";
+import { useCategoryRules, useGoals, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
+import { categorizeTransaction } from "../utils/transactionCategorization";
+import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
-const LayoutContent = ({ children }) => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+export default function TransactionFormContent({
+    initialTransaction = null,
+    categories = [],
+    allBudgets = [],
+    onSubmit,
+    onCancel,
+    isSubmitting = false,
+}) {
+    const queryClient = useQueryClient();
+    const { settings, user } = useSettings();
+    const { toast } = useToast();
+    const { confirmAction } = useConfirm();
+    const { exchangeRates, refreshRates, isRefreshing, refetch, isLoading } = useExchangeRates();
+    const { rules } = useCategoryRules(user);
+    const { goals } = useGoals(user);
 
-    // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
-    const navigationHistory = useRef({});
-    const currentTab = useRef(null);
-
-    // ADDED 17-Jan-2026: Trigger recurring transaction processing on app load
-    useRecurringProcessor();
-
-    // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
-    const primaryNav = navigationItems.slice(0, 4);
-    const secondaryNav = navigationItems.slice(4);
-
-    const { currentPageTitle, isRootPage, activeTab } = useMemo(() => {
-        const route = navigationItems.find(item => location.pathname === item.url.split('?')[0]);
-        const tabUrl = route?.url || navigationItems.find(item =>
-            location.pathname.startsWith(item.url.split('?')[0])
-        )?.url;
-
-        return {
-            currentPageTitle: route?.title || 'BudgetWise',
-            isRootPage: !!route,
-            activeTab: tabUrl
-        };
-    }, [location.pathname]);
-
-    // ADDED 03-Feb-2026: Track navigation history per tab
+    // Force fetch rates on mount if empty
     useEffect(() => {
-        if (activeTab) {
-            // Initialize history for this tab if it doesn't exist
-            if (!navigationHistory.current[activeTab]) {
-                navigationHistory.current[activeTab] = [];
+        if (exchangeRates.length === 0) {
+            refetch();
+        }
+    }, [exchangeRates.length, refetch]);
+
+    const [formData, setFormData] = useState({
+        title: '',
+        amount: null,
+        originalCurrency: settings?.baseCurrency || 'USD',
+        type: 'expense',
+        category_id: '',
+        financial_priority: '',
+        date: formatDateString(new Date()),
+        isPaid: false,
+        paidDate: '',
+        budgetId: '',
+        isCashExpense: false,
+        notes: ''
+    });
+
+    const [isBudgetOpen, setIsBudgetOpen] = useState(false);
+    const [budgetSearchTerm, setBudgetSearchTerm] = useState("");
+    const [validationError, setValidationError] = useState(null);
+
+    // 1. Calculate boundaries for the CURRENTLY SELECTED date in the form
+    const selectedDateBounds = useMemo(() => {
+        if (!formData.date) return null;
+        const date = new Date(formData.date);
+        return getMonthBoundaries(date.getMonth(), date.getFullYear());
+    }, [formData.date]);
+
+    // 2. Fetch budgets specifically for the date chosen in the form
+    // This ensures that even if the Dashboard is on February, the Form can "see" January.
+    const { systemBudgets: localSystemBudgets } = useSystemBudgetsForPeriod(
+        user,
+        selectedDateBounds?.monthStart,
+        selectedDateBounds?.monthEnd
+    );
+
+    // Merge all system budgets (from parent + transaction date + paid date) with custom budgets from parent
+    const mergedBudgets = useMemo(() => {
+        const systemFromParent = allBudgets.filter(b => b.isSystemBudget);
+        const customFromParent = allBudgets.filter(b => !b.isSystemBudget);
+        
+        // Combine parent-provided budgets with locally fetched budgets for the selected date
+        const combinedSystem = [...systemFromParent, ...(localSystemBudgets || [])];
+        
+        // Deduplicate by ID
+        const uniqueSystem = Array.from(new Map(combinedSystem.map(s => [s.id, s])).values());
+
+        const formattedSystem = uniqueSystem.map(sb => ({
+            ...sb,
+            isSystemBudget: true,
+            allocatedAmount: sb.budgetAmount || sb.allocatedAmount
+        }));
+
+        // Return system budgets first, then custom budgets
+        return [...formattedSystem, ...customFromParent];
+    }, [allBudgets, localSystemBudgets]);
+
+    // Initialize form data from initialTransaction (for editing)
+    useEffect(() => {
+        if (initialTransaction) {
+            setFormData({
+                title: initialTransaction.title || '',
+                amount: initialTransaction.originalAmount || initialTransaction.amount || null,
+                originalCurrency: initialTransaction.originalCurrency || settings?.baseCurrency || 'USD',
+                type: initialTransaction.type || 'expense',
+                category_id: initialTransaction.category_id || '',
+                financial_priority: initialTransaction.financial_priority || '',
+                date: initialTransaction.date || formatDateString(new Date()),
+                isPaid: initialTransaction.type === 'expense' ? (initialTransaction.isPaid || false) : false,
+                paidDate: initialTransaction.paidDate || '',
+                budgetId: initialTransaction.budgetId || '',
+                isCashExpense: initialTransaction.isCashTransaction || false,
+                notes: initialTransaction.notes || ''
+            });
+        }
+    }, [initialTransaction]);
+
+    const isForeignCurrency = formData.originalCurrency !== (settings?.baseCurrency || 'USD');
+
+    // Auto-set Priority based on Category
+    useEffect(() => {
+        if (formData.category_id) {
+            // Prevent overwriting existing priority on initial load of an edit
+            if (initialTransaction && formData.category_id === initialTransaction.category_id) {
+                // If we are editing and the category hasn't changed, respect the saved priority
+                return;
             }
 
-            // If switching tabs, save the new tab as current
-            if (currentTab.current !== activeTab) {
-                currentTab.current = activeTab;
-            }
-
-            // Add current path to this tab's history if it's not already the last entry
-            const tabHistory = navigationHistory.current[activeTab];
-            if (tabHistory[tabHistory.length - 1] !== location.pathname) {
-                navigationHistory.current[activeTab] = [...tabHistory, location.pathname];
+            const selectedCategory = categories.find(c => c.id === formData.category_id);
+            if (selectedCategory && selectedCategory.priority) {
+                setFormData(prev => ({ ...prev, financial_priority: selectedCategory.priority }));
             }
         }
-    }, [location.pathname, activeTab]);
+    }, [formData.category_id, categories, initialTransaction]);
 
-    // ADDED 03-Feb-2026: Enhanced back button handler that respects tab history
-    const handleBackNavigation = () => {
-        if (activeTab && navigationHistory.current[activeTab]) {
-            const tabHistory = navigationHistory.current[activeTab];
-
-            // If there's history in this tab (more than current page), go back within tab
-            if (tabHistory.length > 1) {
-                // Remove current page from history
-                navigationHistory.current[activeTab] = tabHistory.slice(0, -1);
-                const previousPage = tabHistory[tabHistory.length - 2];
-                navigate(previousPage);
-            } else {
-                // No history in this tab, use browser back
-                navigate(-1);
+    // Auto-Categorize based on Title
+    useEffect(() => {
+        if (formData.title && !formData.category_id && !initialTransaction) {
+            const result = categorizeTransaction({ title: formData.title }, rules, categories);
+            if (result.categoryId) {
+                setFormData(prev => ({
+                    ...prev,
+                    category_id: result.categoryId
+                    // Priority will be set by the useEffect above when category_id changes
+                }));
             }
+        }
+    }, [formData.title, rules, categories, initialTransaction, formData.category_id]);
+
+    // ATOMIC SYNC: Ensure budget exists for the selected date/priority
+    useEffect(() => {
+        const syncBudget = async () => {
+            if (!formData.financial_priority || !formData.date || !user) return;
+
+            const relevantDate = formData.isPaid && formData.paidDate ? formData.paidDate : formData.date;
+
+            try {
+                // This call ensures the budget exists in the DB. 
+                // If it already exists, it just returns the ID immediately.
+                const budgetId = await getOrCreateSystemBudgetForTransaction(
+                    user.email,
+                    relevantDate,
+                    formData.financial_priority,
+                    goals,
+                    settings
+                );
+
+                // Only auto-update the selection if the user hasn't manually 
+                // picked a different specific custom budget.
+                const currentBudget = mergedBudgets.find(b => b.id === formData.budgetId);
+                const isSystemOrEmpty = !formData.budgetId || (currentBudget && currentBudget.isSystemBudget);
+
+                if (budgetId && isSystemOrEmpty) {
+                    // Invalidate specifically to trigger the localSystemBudgets hook to update
+                    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+                    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
+                    setFormData(prev => ({ ...prev, budgetId }));
+                }
+            } catch (err) {
+                console.error("Failed to atomic-sync budget:", err);
+            }
+        };
+
+        syncBudget();
+    }, [formData.financial_priority, formData.date, formData.paidDate, formData.isPaid, user, goals, settings]);
+
+    // 3. Filter Options (Search only)
+    // We rely on the parent component to provide the correct order (System > Active > Planned)
+    // FIXED 01-Feb-2026: Use transaction date (or paid date) for filtering, not current date
+    const visibleOptions = useMemo(() => {
+        let filtered = mergedBudgets;
+
+        // A. Mutual Exclusivity for System Budgets based on Priority
+        // If "Needs" is selected, hide "Wants" system budget, and vice versa.
+        if (formData.financial_priority) {
+            filtered = filtered.filter(b => {
+                if (!b.isSystemBudget) return true; // Always show Custom Budgets
+                // Only show the system budget that matches the selected priority
+                return b.systemBudgetType === formData.financial_priority;
+            });
+        }
+
+        // B. Date-Based Filter for System Budgets
+        // CRITICAL FIX: Use the paid date if available (for paid expenses), otherwise use transaction date
+        const relevantDate = formData.type === 'expense' && formData.isPaid && formData.paidDate
+            ? formData.paidDate
+            : formData.date;
+
+        filtered = filtered.filter(b => {
+            if (!b.isSystemBudget) return true; // Always show Custom Budgets
+            // Only show system budgets relevant to the transaction/paid date
+            return isDateInRange(relevantDate, b.startDate, b.endDate);
+        });
+
+        // C. Search Filter
+        if (budgetSearchTerm && budgetSearchTerm.length > 0) {
+            filtered = filtered.filter(b =>
+                b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
+            );
+        }
+        return filtered;
+    }, [mergedBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type]);
+
+    const executeRefresh = async (force) => {
+        const result = await refreshRates(
+            formData.originalCurrency,
+            settings?.baseCurrency || 'USD',
+            formData.date,
+            force
+        );
+
+        if (result.success) {
+            toast({
+                title: result.alreadyFresh ? "Rates Up to Date" : (result.skipped ? "Historical Rate Skipped" : "Success"),
+                description: result.message,
+                variant: result.skipped ? "warning" : "default"
+            });
         } else {
-            // Fallback to browser back
-            navigate(-1);
+            toast({
+                title: "Error",
+                description: result.message,
+                variant: "destructive",
+            });
         }
     };
 
-    return (
-        <SidebarProvider>
-            {/* UPDATED 03-Feb-2026: Mobile-only fixed top header with dynamic back button (iOS native standard) */}
-            <header className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                <div className="flex items-center justify-center h-14 px-4 relative">
-                    {!isRootPage && (
-                        <button
-                            onClick={handleBackNavigation}
-                            className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent rounded-lg transition-colors"
-                            aria-label="Go back"
-                        >
-                            <ChevronLeft className="w-6 h-6" />
-                        </button>
-                    )}
-                    <h1 className="text-lg font-semibold text-foreground truncate max-w-[60%]">{currentPageTitle}</h1>
-                </div>
-            </header>
+    const handleRefreshRates = async () => {
+        // Check if rate already exists
+        const existingRateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
 
-            <style>{`
-              :root {
-                --primary-50: #F0F9FF;
-          --primary-100: #E0F2FE;
-          --primary-500: #0EA5E9;
-          --primary-600: #0284C7;
-          --primary-700: #0369A1;
-          --success: #10B981;
-          --warning: #F59E0B;
-          --error: #EF4444;
-          --bg-subtle: #FAFAF9;
+        if (existingRateDetails) {
+            confirmAction(
+                "Update Exchange Rate?",
+                `A rate for this date already exists (${existingRateDetails.rate} from ${formatDate(existingRateDetails.date)}). Do you want to fetch a new one?`,
+                () => executeRefresh(true),
+                { confirmText: "Update" }
+            );
+        } else {
+            await executeRefresh(false);
         }
-      `}</style>
-            <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--bg-subtle)' }}>
-                <Sidebar className="hidden md:flex border-r border-gray-200">
-                    <SidebarHeader className="border-b border-gray-200 p-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                                <Wallet className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-gray-900 text-lg">BudgetWise</h2>
-                                <p className="text-xs text-gray-500">Personal Finance</p>
-                            </div>
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setValidationError(null);
+
+        const normalizedAmount = normalizeAmount(formData.amount);
+        const originalAmount = parseFloat(normalizedAmount);
+
+        let finalAmount = originalAmount;
+        let finalBudgetId = formData.budgetId;
+
+        // ATOMIC CREATION: If priority is set but no specific custom budget is picked, 
+        // ensure the system budget exists for the relevant month right now.
+        if (formData.type === 'expense' && formData.financial_priority) {
+            const relevantDate = formData.isPaid && formData.paidDate ? formData.paidDate : formData.date;
+
+            // This call is synchronized via our Map lock in budgetInitialization
+            finalBudgetId = await getOrCreateSystemBudgetForTransaction(
+                user.email,
+                relevantDate,
+                formData.financial_priority,
+                goals,
+                settings
+            );
+        }
+
+        if (formData.type === 'expense' && !finalBudgetId) {
+            setValidationError("A budget allocation is required for expenses.");
+            return;
+        }
+
+        let exchangeRateUsed = null;
+
+        // Perform currency conversion if needed
+        if (isForeignCurrency) {
+            let sourceRate = getRateForDate(exchangeRates, formData.originalCurrency, formData.date);
+            let targetRate = getRateForDate(exchangeRates, settings?.baseCurrency || 'USD', formData.date);
+
+            // AUTO-FETCH ON SUBMIT: If rate is missing and not paid, try to fetch it now
+            if ((!sourceRate || !targetRate) && !formData.isPaid) {
+                toast({ title: "Fetching Exchange Rates...", description: "Please wait while we update rates." });
+
+                const result = await refreshRates(
+                    formData.originalCurrency,
+                    settings?.baseCurrency || 'USD',
+                    formData.date
+                );
+
+                if (!result.success) {
+                    setValidationError("Failed to fetch exchange rates. Please try again or enter amount manually.");
+                    return;
+                }
+
+                setValidationError("Exchange rates updated. Please review the rate and click Save again.");
+                return;
+            }
+
+            if (!sourceRate || !targetRate) {
+                if (!formData.isPaid) {
+                    setValidationError("Exchange rate is missing. Please fetch rates manually or mark as paid.");
+                    return;
+                }
+            }
+
+            // MODIFIED: 17-Jan-2026 - Updated parameter names from USD to EUR
+            if (sourceRate && targetRate) {
+                const conversion = calculateConvertedAmount(
+                    originalAmount,
+                    formData.originalCurrency,
+                    settings?.baseCurrency || 'USD',
+                    { sourceToEUR: sourceRate, targetToEUR: targetRate }
+                );
+
+                finalAmount = conversion.convertedAmount;
+                exchangeRateUsed = conversion.exchangeRateUsed;
+            }
+        }
+
+        const submitData = {
+            title: formData.title,
+            amount: finalAmount,
+            originalAmount: originalAmount,
+            originalCurrency: formData.originalCurrency,
+            exchangeRateUsed: exchangeRateUsed,
+            type: formData.type,
+            category_id: formData.category_id || null,
+            financial_priority: formData.financial_priority || null, // ADDED 20-Jan-2025
+            date: formData.date,
+            notes: formData.notes || null
+        };
+
+        if (formData.type === 'expense') {
+            submitData.isPaid = formData.isCashExpense ? true : formData.isPaid;
+            submitData.paidDate = formData.isCashExpense ? formData.date : (formData.isPaid ? (formData.paidDate || formData.date) : null);
+            submitData.budgetId = finalBudgetId || null;
+            submitData.isCashTransaction = formData.isCashExpense;
+            submitData.cashTransactionType = null;
+        } else {
+            submitData.isPaid = false;
+            submitData.paidDate = null;
+            submitData.category_id = null;
+            submitData.budgetId = null;
+            submitData.isCashTransaction = false;
+            submitData.cashTransactionType = null;
+            submitData.cashAmount = null;
+            submitData.cashCurrency = null;
+        }
+
+        onSubmit(submitData);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            {validationError && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{validationError}</AlertDescription>
+                </Alert>
+            )}
+
+            {/* Title */}
+            <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g., Salary, Groceries, Coffee"
+                    required
+                    autoComplete="off"
+                />
+            </div>
+
+            {/* Amount and Currency (Combined) */}
+            <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                    <Label htmlFor="amount">Amount</Label>
+                    {isForeignCurrency && (
+                        <div className="flex items-center gap-2">
+                            {(() => {
+                                const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
+                                if (rateDetails) {
+                                    const rateDate = startOfDay(parseISO(rateDetails.date));
+                                    const txDate = startOfDay(parseISO(formData.date));
+                                    const age = Math.abs(differenceInDays(txDate, rateDate));
+                                    const isOld = age > 14;
+
+                                    return (
+                                        <span
+                                            className={`text-xs ${isOld ? 'text-amber-600' : 'text-gray-500'}`}
+                                            title={`Rate: ${rateDetails.rate} (from ${formatDate(rateDetails.date)}) - ${age} days diff`}
+                                        >
+                                            Rate: {rateDetails.rate} ({formatDate(rateDetails.date, 'MMM d')}{isOld ? ', Old' : ''})
+                                        </span>
+                                    );
+                                }
+                                if (isLoading) return <span className="text-xs text-gray-400">Loading...</span>;
+                                return <span className="text-xs text-amber-600">No rate</span>;
+                            })()}
+                            <CustomButton
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleRefreshRates}
+                                disabled={isRefreshing || isLoading}
+                                className="h-6 px-2 text-blue-600 hover:text-blue-700"
+                            >
+                                <RefreshCw className={`w-3 h-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                <span className="text-xs">Fetch Rate</span>
+                            </CustomButton>
                         </div>
-                    </SidebarHeader>
+                    )}
+                </div>
+                <AmountInput
+                    id="amount"
+                    value={formData.amount}
+                    onChange={(value) => setFormData({ ...formData, amount: value })}
+                    placeholder="0.00"
+                    currency={formData.originalCurrency}
+                    onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
+                    required
+                />
+            </div>
 
-                    <SidebarContent className="p-3">
-                        <SidebarGroup>
-                            <SidebarGroupContent>
-                                <SidebarMenu>
-                                    {navigationItems.map((item) => (
-                                        <SidebarMenuItem key={item.title}>
-                                            <SidebarMenuButton
-                                                asChild
-                                                className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-xl mb-1 ${location.pathname === item.url ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 shadow-sm' : ''
-                                                    }`}
-                                            >
-                                                <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
-                                                    <item.icon className="w-5 h-5" />
-                                                    <span className="font-medium">{item.title}</span>
-                                                </Link>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    ))}
-                                </SidebarMenu>
-                            </SidebarGroupContent>
-                        </SidebarGroup>
-                    </SidebarContent>
+            {/* Paid with cash checkbox - right below amount/currency */}
+            {formData.type === 'expense' && (
+                <div className="flex items-center space-x-2">
+                    <Checkbox
+                        id="isCashExpense"
+                        checked={formData.isCashExpense}
+                        onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            isCashExpense: checked,
+                            isPaid: checked ? true : formData.isPaid
+                        })}
+                    />
+                    <Label htmlFor="isCashExpense" className="cursor-pointer flex items-center gap-2">
+                        Paid with cash
+                    </Label>
+                </div>
+            )}
 
-                    <SidebarFooter className="p-3 border-t border-gray-200">
-                        <CustomButton
-                            variant="ghost"
-                            className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => base44.auth.logout()}
-                        >
-                            <LogOut className="w-5 h-5 mr-3" />
-                            <span className="font-medium">Logout</span>
-                        </CustomButton>
-                    </SidebarFooter>
-                </Sidebar>
-
-                <main className="flex-1 flex flex-col relative">
-                    {/* UPDATED 03-Feb-2026: Added top padding for mobile fixed header, bottom padding for iOS safe area */}
-                    <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0 pb-[calc(4rem+env(safe-area-inset-bottom))]">
-                        <RouteTransition>
-                            {children}
-                        </RouteTransition>
+            {/* Date picker and Mark as paid checkbox */}
+            <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Date</Label>
+                        <DatePicker
+                            value={formData.date}
+                            onChange={(value) => setFormData({ ...formData, date: value })}
+                            placeholder="Select date"
+                        />
                     </div>
 
-                    {/* UPDATED 03-Feb-2026: Mobile Bottom Tab Bar with select-none for iOS native feel */}
-                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex w-full items-center px-2 py-2 select-none">
-                            {primaryNav.map((item) => {
-                                const isTabActive = activeTab === item.url;
-                                return (
-                                    <Link
-                                        key={item.title}
-                                        to={item.url}
-                                        onClick={(e) => {
-                                            if (isTabActive) {
-                                                // If already active, reset this tab's history and go to root
-                                                e.preventDefault(); // Stop default Link behavior to handle manually
-                                                navigationHistory.current[item.url] = [item.url];
-                                                navigate(item.url, { replace: true });
-                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                            }
-                                        }}
-                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 ${isTabActive
-                                            ? 'text-blue-600 bg-blue-50/50'
-                                            : 'text-gray-400'
-                                            }`}
-                                    >
-                                        <item.icon className={`w-6 h-6 ${isTabActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                                        <span className="text-[10px] font-medium truncate w-full text-center px-1">
-                                            {item.title}
-                                        </span>
-                                    </Link>
-                                );
-                            })}
-
-                            {/* More Menu Trigger */}
-                            {secondaryNav.length > 0 && (
-                                <Sheet open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
-                                    <SheetTrigger asChild>
-                                        <button className="flex flex-1 flex-col items-center justify-center gap-1 py-1.5 text-gray-400 min-w-0">
-                                            <MoreHorizontal className="w-6 h-6" />
-                                            <span className="text-[10px] font-medium">More</span>
-                                        </button>
-                                    </SheetTrigger>
-                                    <SheetContent side="bottom" className="rounded-t-[20px] px-0 pb-10">
-                                        <SheetHeader className="px-6 pb-4 border-b">
-                                            <SheetTitle>More Options</SheetTitle>
-                                        </SheetHeader>
-                                        <div className="grid grid-cols-1 divide-y divide-gray-100">
-                                            {secondaryNav.map((item) => (
-                                                <Link
-                                                    key={item.title}
-                                                    to={item.url}
-                                                    onClick={() => setIsMoreMenuOpen(false)}
-                                                    className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                                                >
-                                                    <item.icon className="w-5 h-5 text-gray-500" />
-                                                    <span className="font-medium text-gray-900">{item.title}</span>
-                                                </Link>
-                                            ))}
-                                            <button
-                                                onClick={() => base44.auth.logout()}
-                                                className="flex items-center gap-4 px-6 py-4 text-red-600 hover:bg-red-50 transition-colors"
-                                            >
-                                                <LogOut className="w-5 h-5" />
-                                                <span className="font-medium">Logout</span>
-                                            </button>
-                                        </div>
-                                    </SheetContent>
-                                </Sheet>
-                            )}
+                    {/* Payment Date - appears next to Date when isPaid is checked */}
+                    <AnimatePresenceContainer show={formData.type === 'expense' && formData.isPaid && !formData.isCashExpense}>
+                        <div className="space-y-2">
+                            <Label htmlFor="paidDate">Payment Date</Label>
+                            <DatePicker
+                                value={formData.paidDate || formData.date}
+                                onChange={(value) => setFormData({ ...formData, paidDate: value })}
+                                placeholder="Payment date"
+                            />
                         </div>
-                    </nav>
-                    {/* GlobalFAB now consumes context internally */}
-                    <GlobalFAB />
-                </main>
-            </div>
-        </SidebarProvider>
-    );
-};
+                    </AnimatePresenceContainer>
+                </div>
 
-export default function Layout({ children }) {
-    return (
-        <SettingsProvider>
-            <PeriodProvider>
-                <ConfirmDialogProvider>
-                    <FABProvider>
-                        <LayoutContent>{children}</LayoutContent>
-                    </FABProvider>
-                </ConfirmDialogProvider>
-            </PeriodProvider>
-        </SettingsProvider>
+                {/* Mark as paid checkbox - below date fields */}
+                {formData.type === 'expense' && !formData.isCashExpense && (
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="isPaid"
+                            checked={formData.isPaid}
+                            onCheckedChange={(checked) => setFormData({
+                                ...formData,
+                                isPaid: checked,
+                                paidDate: checked ? (formData.paidDate || formData.date) : ''
+                            })}
+                        />
+                        <Label htmlFor="isPaid" className="cursor-pointer">
+                            Mark as paid
+                        </Label>
+                    </div>
+                )}
+            </div>
+
+            {/* Category, Budget Assignment, and Budget (grid layout) */}
+            {formData.type === 'expense' && (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Category */}
+                        <div className="space-y-2">
+                            <Label htmlFor="category">Category</Label>
+                            <CategorySelect
+                                value={formData.category_id}
+                                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                                categories={categories}
+                            />
+                        </div>
+
+                        {/* Financial Priority */}
+                        <div className="space-y-2">
+                            <Label htmlFor="financial_priority">Financial Priority</Label>
+                            <MobileDrawerSelect
+                                value={formData.financial_priority || ''}
+                                onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
+                                placeholder="Select priority"
+                                options={Object.entries(FINANCIAL_PRIORITIES)
+                                    .filter(([key]) => key !== 'savings')
+                                    .map(([key, cfg]) => ({
+                                        value: key,
+                                        label: cfg.label
+                                    }))}
+                            />
+                        </div>
+                    </div>
+                    {/* Budget (REQUIRED for expenses) */}
+                    <div className="space-y-2">
+                        <Label htmlFor="customBudget">Budget Allocation</Label>
+                        <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen} modal={true}>
+                            <PopoverTrigger asChild>
+                                <CustomButton
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={isBudgetOpen}
+                                    className="w-full justify-between font-normal"
+                                >
+                                    {formData.budgetId
+                                        ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
+                                        : "Select budget..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </CustomButton>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                                <Command shouldFilter={false} className="h-auto overflow-hidden">
+                                    <CommandInput
+                                        placeholder="Search budgets..."
+                                        onValueChange={setBudgetSearchTerm}
+                                    />
+                                    <CommandList>
+                                        <CommandEmpty>No relevant budget found.</CommandEmpty>
+                                        <CommandGroup heading={budgetSearchTerm ? "Search Results" : undefined}>
+                                            {visibleOptions.map((budget) => (
+                                                <CommandItem
+                                                    key={budget.id}
+                                                    value={budget.name}
+                                                    onSelect={() => {
+                                                        setFormData({ ...formData, budgetId: budget.id });
+                                                        setIsBudgetOpen(false);
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={`mr-2 h-4 w-4 ${formData.budgetId === budget.id ? "opacity-100" : "opacity-0"}`}
+                                                    />
+                                                    <div className="flex items-center text-sm">
+                                                        {budget.isSystemBudget ? (
+                                                            <span className="text-blue-600 mr-2">★</span>
+                                                        ) : (
+                                                            <span className={`w-2 h-2 rounded-full mr-2 ${budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                        )}
+                                                        {budget.name}
+                                                        {budget.isSystemBudget && <span className="ml-1 text-xs text-gray-400">({formatDate(budget.startDate, 'MMM')})</span>}
+                                                    </div>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Additional details..."
+                    rows={2}
+                />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-2">
+                <CustomButton type="button" variant="outline" onClick={onCancel}>
+                    Cancel
+                </CustomButton>
+                <CustomButton
+                    type="submit"
+                    disabled={isSubmitting}
+                    variant="primary"
+                >
+                    {isSubmitting ? 'Saving...' : (initialTransaction && initialTransaction.id) ? 'Update' : 'Add'}
+                </CustomButton>
+            </div>
+        </form>
     );
 }
