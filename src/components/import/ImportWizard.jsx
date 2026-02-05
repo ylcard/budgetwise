@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Steps } from "@/components/ui/steps"; // Assuming Steps component exists or I'll mimic it
+import { Steps } from "@/components/ui/steps";
 import FileUploader from "./FileUploader";
 import ColumnMapper from "./ColumnMapper";
 import CategorizeReview from "./CategorizeReview";
@@ -8,13 +8,14 @@ import { parseCSV } from "@/components/utils/simpleCsvParser";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
-import { ArrowRight, Loader2, Upload, Star } from "lucide-react";
+import { ArrowRight, Loader2, Upload } from "lucide-react";
 import { useCategories, useCategoryRules, useAllBudgets } from "@/components/hooks/useBase44Entities";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { formatDateString, isDateInRange } from "../utils/dateUtils";
+import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
 
 const STEPS = [
     { id: 1, label: "Upload" },
@@ -95,7 +96,7 @@ export default function ImportWizard({ onSuccess }) {
                                     "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
                                     "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
                                     "reason": { "type": "string", "description": "Merchant or description" },
-                                    "amount": { "type": "number", "description": "Transaction amount. Negative for expenses, positive for income." }
+                                    "amount": { "type": "number", "description": "Transaction amount (absolute value)." }
                                 },
                                 "required": ["date", "reason", "amount"]
                             }
@@ -110,12 +111,11 @@ export default function ImportWizard({ onSuccess }) {
             const extractedData = result.output?.transactions || [];
 
             const processed = extractedData.map(item => {
-                // 1. Get raw magnitude (absolute value)
-                const rawMagnitude = parseCleanRawAmount(item.amount);
+                // Always treat amounts as positive magnitude
+                const magnitude = Math.abs(parseCleanRawAmount(item.amount));
 
-                // 2. Determine type based on original string indicators
-                const isNegative = item.amount.toString().includes('-') || item.amount.toString().includes('(');
-                const type = isNegative ? 'expense' : 'income';
+                // Simplified type detection
+                const type = item.amount < 0 ? 'expense' : 'income';
 
                 // 3. Date Logic Correction: Ensure Transaction Date <= Paid Date
                 // Banks sometimes flip these or the AI extracts them swapped.
@@ -145,8 +145,8 @@ export default function ImportWizard({ onSuccess }) {
                 return {
                     date: txDate,
                     title: item.reason || 'Untitled Transaction',
-                    amount: rawMagnitude, // UI always sees positive
-                    originalAmount: isNegative ? -rawMagnitude : rawMagnitude, // Keep record of original sign
+                    amount: magnitude,
+                    originalAmount: magnitude,
                     originalCurrency: settings?.baseCurrency || 'USD',
                     type,
                     category: catResult.categoryName || 'Uncategorized',
@@ -214,8 +214,8 @@ export default function ImportWizard({ onSuccess }) {
             return {
                 date: row[mappings.date],
                 title: row[mappings.title] || 'Untitled Transaction',
-                amount: rawMagnitude, // Store as positive for Review UI
-                originalAmount: type === 'expense' ? -rawMagnitude : rawMagnitude,
+                amount: rawMagnitude,
+                originalAmount: rawMagnitude,
                 originalCurrency: settings?.baseCurrency || 'USD',
                 type,
                 category: catResult.categoryName || 'Uncategorized',
@@ -235,36 +235,44 @@ export default function ImportWizard({ onSuccess }) {
     const handleImport = async () => {
         setIsProcessing(true);
         try {
+            // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
+            const expenseItems = processedData.filter(item => item.type === 'expense');
+            const uniqueSyncKeys = new Set();
+
+            expenseItems.forEach(item => {
+                const date = formatDateString(item.paidDate || item.date);
+                const priority = item.financial_priority || 'wants';
+                uniqueSyncKeys.add(`${date}|${priority}`);
+            });
+
+            // 2. BATCH ENSURE: Create/Get all necessary budgets in parallel
+            const budgetMap = {};
+            const syncPromises = Array.from(uniqueSyncKeys).map(async (key) => {
+                const [date, priority] = key.split('|');
+                const id = await getOrCreateSystemBudgetForTransaction(user.email, date, priority, [], settings);
+                budgetMap[key] = id;
+            });
+            await Promise.all(syncPromises);
+
+            // 3. MAP TRANSACTIONS: Build final objects with verified IDs
             const transactionsToCreate = processedData.map(item => {
                 const isExpense = item.type === 'expense';
-                const finalAmount = Math.abs(item.amount);
-
-                // Normalize dates to YYYY-MM-DD for consistent database storage and budget lookup
-                const formattedTxDate = formatDateString(item.date);
-                const formattedPaidDate = (isExpense && item.paidDate) ? formatDateString(item.paidDate) : null;
-
-                // Determine which date dictates the budget (Paid Date takes precedence for cash flow)
-                const effectiveBudgetParamsDate = (isExpense && item.isPaid && formattedPaidDate)
-                    ? formattedPaidDate
-                    : formattedTxDate;
-
-                // If no custom budget was manually picked, try to find the matching system budget
-                const resolvedBudgetId = item.budgetId || (isExpense ?
-                    findMatchingSystemBudget(allBudgets, effectiveBudgetParamsDate, item.financial_priority) :
-                    null);
+                const date = formatDateString(item.date);
+                const paidDate = item.paidDate ? formatDateString(item.paidDate) : null;
+                const syncKey = `${paidDate || date}|${item.financial_priority || 'wants'}`;
 
                 return {
                     title: item.title,
-                    amount: finalAmount,
+                    amount: Math.abs(item.amount),
                     type: item.type,
-                    date: formattedTxDate,
-                    category_id: isExpense ? (item.categoryId || categories.find(c => c.name === 'Uncategorized')?.id) : null,
-                    financial_priority: isExpense ? item.financial_priority : null,
-                    budgetId: resolvedBudgetId,
-                    originalAmount: item.originalAmount,
+                    date,
+                    category_id: isExpense ? (item.categoryId || categories.find(c => c.name.toLowerCase().includes('uncategorized'))?.id) : null,
+                    financial_priority: isExpense ? (item.financial_priority || 'wants') : null,
+                    budgetId: isExpense ? (item.budgetId || budgetMap[syncKey]) : null,
+                    originalAmount: Math.abs(item.amount),
                     originalCurrency: item.originalCurrency,
-                    isPaid: isExpense ? (item.isPaid || false) : null,
-                    paidDate: formattedPaidDate
+                    isPaid: isExpense ? true : null,
+                    paidDate
                 };
             });
 
