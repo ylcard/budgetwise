@@ -34,6 +34,8 @@ import QuickAddTransaction from "../components/transactions/QuickAddTransaction"
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
+import { Button } from "@/components/ui/button";
+import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -233,6 +235,24 @@ export default function Dashboard() {
                                 settings={settings}
                                 selectedMonth={selectedMonth}
                                 selectedYear={selectedYear}
+                                importDataButton={
+                                    <Button variant="outline" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
+                                        <FileUp className="h-3.5 w-3.5" />
+                                        <span className="hidden xl:inline">Import</span>
+                                    </Button>
+                                }
+                                addIncomeButton={
+                                    <Button size="sm" onClick={() => setShowQuickAddIncome(true)} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">
+                                        <PlusCircle className="h-3.5 w-3.5" />
+                                        <span className="hidden xl:inline">Income</span>
+                                    </Button>
+                                }
+                                addExpenseButton={
+                                    <Button variant="destructive" size="sm" onClick={() => setShowQuickAdd(true)} className="gap-2 h-8 text-xs">
+                                        <MinusCircle className="h-3.5 w-3.5" />
+                                        <span className="hidden xl:inline">Expense</span>
+                                    </Button>
+                                }
                                 monthNavigator={
                                     <MonthNavigator
                                         currentMonth={selectedMonth}
