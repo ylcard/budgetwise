@@ -96,11 +96,14 @@ export const ensureSystemBudgetsExist = async (
     budgetGoals = [],
     settings = {},
     monthlyIncome = 0,
-    options = { allowUpdates: false, historicalAverage: 0 }
+    options = {}
 ) => {
     if (!userEmail || !startDate || !endDate) {
         throw new Error('ensureSystemBudgetsExist: userEmail, startDate, and endDate are required');
     }
+
+    // Destructure options with defaults to ensure properties aren't undefined if the object is partially provided
+    const { allowUpdates = false, historicalAverage = 0 } = options;
 
     // 1. Create a unique key for this specific user and month
     const lockKey = `${userEmail}:${startDate}`;
@@ -131,10 +134,10 @@ export const ensureSystemBudgetsExist = async (
 
                 if (existingForThisPriority) {
                     const goal = budgetGoals.find(g => g.priority === priorityType);
-                    const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
+                    const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
 
                     // Update logic: Only update if allowed, or if the budget is currently uninitialized (0)
-                    const needsUpdate = (options.allowUpdates || existingForThisPriority.budgetAmount === 0) &&
+                    const needsUpdate = (allowUpdates || existingForThisPriority.budgetAmount === 0) &&
                         Math.abs(existingForThisPriority.budgetAmount - calculatedAmount) > 0.01;
 
                     if (needsUpdate) {
@@ -150,7 +153,7 @@ export const ensureSystemBudgetsExist = async (
                 } else {
                     // Create a new SystemBudget
                     const goal = budgetGoals.find(g => g.priority === priorityType);
-                    const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
+                    const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
 
                     const newBudget = await base44.entities.SystemBudget.create({
                         name: FINANCIAL_PRIORITIES[priorityType].label,
