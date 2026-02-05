@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
@@ -89,6 +90,42 @@ export default function DatePicker({
                     captionLayout="dropdown"
                     fromYear={1900}
                     toYear={2100}
+                    // Replace the native native dropdowns with Shadcn Select
+                    components={{
+                        Dropdown: ({ value, onChange, children }) => {
+                            const options = React.Children.toArray(children);
+                            const selected = options.find((child) => child.props.value === value);
+                            const handleChange = (value) => {
+                                const changeEvent = {
+                                    target: { value },
+                                };
+                                onChange?.(changeEvent);
+                            };
+                            return (
+                                <Select
+                                    value={value?.toString()}
+                                    onValueChange={handleChange}
+                                >
+                                    <SelectTrigger className="h-7 w-fit gap-1 border-none bg-transparent p-0 pl-1 pr-1 font-medium hover:bg-accent/50 focus:ring-0 text-sm">
+                                        <SelectValue>{selected?.props?.children}</SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" className="max-h-[200px] overflow-y-auto min-w-[100px]">
+                                        {options.map((option) => (
+                                            <SelectItem
+                                                key={option.props.value}
+                                                value={option.props.value?.toString() ?? ""}
+                                                className="text-sm"
+                                            >
+                                                {option.props.children}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            );
+                        },
+                        IconLeft: ({ ...props }) => <ChevronLeft {...props} className="h-4 w-4" />,
+                        IconRight: ({ ...props }) => <ChevronRight {...props} className="h-4 w-4" />,
+                    }}
                     // Spread parent props last to allow overrides
                     {...dayPickerProps}
                     classNames={{
@@ -104,8 +141,8 @@ export default function DatePicker({
                             buttonVariants({ variant: "outline" }),
                             "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
                         ),
-                        nav_button_previous: "absolute left-1",
-                        nav_button_next: "absolute right-1",
+                        nav_button_previous: "absolute left-1 border-none",
+                        nav_button_next: "absolute right-1 border-none",
                         table: "w-full border-collapse space-y-1",
                         weekdays: "flex",
                         weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
@@ -122,15 +159,11 @@ export default function DatePicker({
                         disabled: "text-muted-foreground opacity-50",
                         range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
                         hidden: "invisible",
-                        // Styles for the dropdowns (native select elements styled to look like buttons)
-                        dropdown: "appearance-none p-1 bg-transparent outline-none cursor-pointer hover:bg-accent/50 rounded-sm text-sm font-medium text-center",
-                        dropdown_icon: "", // Removing 'hidden' allows the chevron to show, or keep hidden for cleaner look
-                        dropdown_month: "mr-2",
-                        dropdown_year: "",
-                    }}
-                    components={{
-                        IconLeft: ({ ...props }) => <ChevronLeft {...props} className="h-4 w-4" />,
-                        IconRight: ({ ...props }) => <ChevronRight {...props} className="h-4 w-4" />,
+                        // Removing default styles since we are replacing the component entirely
+                        dropdown: "",
+                        dropdown_icon: "hidden",
+                        dropdown_month: "mr-1",
+                        dropdown_year: "mr-1",
                     }}
                 />
             </PopoverContent>
