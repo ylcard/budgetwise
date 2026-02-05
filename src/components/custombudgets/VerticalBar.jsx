@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { formatCurrency } from "../utils/currencyUtils";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { useMemo } from "react";
-import { CustomButton } from "@/components/ui/CustomButton";
 
 /**
  * CREATED: 03-Feb-2026
