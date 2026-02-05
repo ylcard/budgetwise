@@ -22,8 +22,8 @@ import { parseDate } from "./dateUtils";
  */
 export const getTransactionEffectivePriority = (transaction, categories = [], allCustomBudgets = []) => {
     // If assigned to a Custom Budget (non-system), always treat as 'wants'
-    if (transaction.customBudgetId) {
-        const customBudget = allCustomBudgets.find(cb => cb.id === transaction.customBudgetId);
+    if (transaction.budgetId) {
+        const customBudget = allCustomBudgets.find(cb => cb.id === transaction.budgetId);
         if (customBudget && !customBudget.isSystemBudget) {
             return 'wants';
         }
@@ -57,7 +57,7 @@ export const calculateCommitmentView = (bucketId, expenses) => {
     if (!bucketId || !expenses) return 0;
 
     return expenses
-        .filter(e => e.bucketId === bucketId || e.customBudgetId === bucketId)
+        .filter(e => e.bucketId === bucketId || e.budgetId === bucketId)
         .reduce((sum, e) => sum + (e.amount || 0), 0);
 };
 
@@ -114,7 +114,7 @@ export const detectCrossPeriodSettlement = (transaction, currentPeriodStart, cur
     }
 
     // Only check paid transactions with Custom Budget assignment
-    if (!transaction.isPaid || !transaction.paidDate || !transaction.customBudgetId) {
+    if (!transaction.isPaid || !transaction.paidDate || !transaction.budgetId) {
         return { isCrossPeriod: false };
     }
 
@@ -133,7 +133,7 @@ export const detectCrossPeriodSettlement = (transaction, currentPeriodStart, cur
 
     if (paidInCurrentPeriod && transactionOutsidePeriod) {
         // Find the budget
-        const budget = allBudgets.find(b => b.id === transaction.customBudgetId);
+        const budget = allBudgets.find(b => b.id === transaction.budgetId);
 
         // Determine original period (month/year of transaction date)
         const originalPeriod = transactionDate.toLocaleDateString('en-US', {
@@ -164,22 +164,22 @@ export const detectCrossPeriodSettlement = (transaction, currentPeriodStart, cur
  */
 export const migrateSystemBudgetOnDateChange = (expense, newPaidDate, allSystemBudgets) => {
     // Only apply to expenses with System Budget assignment
-    if (!expense.customBudgetId) {
-        return { customBudgetId: expense.customBudgetId }; // No change
+    if (!expense.budgetId) {
+        return { budgetId: expense.budgetId }; // No change
     }
 
     // Find current bucket to determine its priority
-    const currentBucket = allSystemBudgets.find(b => b.id === expense.customBudgetId);
+    const currentBucket = allSystemBudgets.find(b => b.id === expense.budgetId);
 
     // If not a system budget, don't migrate (Custom Budget - Context Sticky)
     if (!currentBucket || currentBucket.isSystemBudget === false) {
-        return { customBudgetId: expense.customBudgetId }; // No change
+        return { budgetId: expense.budgetId }; // No change
     }
 
     // Find target System Budget matching priority and the new paid date's month
     const newDate = parseDate(newPaidDate);
     if (!newDate) {
-        return { customBudgetId: expense.customBudgetId }; // Invalid date, no change
+        return { budgetId: expense.budgetId }; // Invalid date, no change
     }
 
     const targetBucket = allSystemBudgets.find(b => {
@@ -196,7 +196,7 @@ export const migrateSystemBudgetOnDateChange = (expense, newPaidDate, allSystemB
     });
 
     return {
-        customBudgetId: targetBucket ? targetBucket.id : expense.customBudgetId // Fallback to current if not found
+        budgetId: targetBucket ? targetBucket.id : expense.budgetId // Fallback to current if not found
     };
 };
 
