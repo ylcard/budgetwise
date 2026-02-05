@@ -322,7 +322,7 @@ export const useCustomBudgetActions = (config = {}) => {
             }
 
             // Delete all associated transactions
-            const budgetTransactions = transactions.filter(t => t.customBudgetId === budgetId);
+            const budgetTransactions = transactions.filter(t => t.budgetId === budgetId);
 
             for (const transaction of budgetTransactions) {
                 await base44.entities.Transaction.delete(transaction.id);
@@ -349,7 +349,7 @@ export const useCustomBudgetActions = (config = {}) => {
 
             if (data.status === 'completed') {
                 // Calculate actual spent amount
-                const budgetTransactions = transactions.filter(t => t.customBudgetId === id && t.isPaid);
+                const budgetTransactions = transactions.filter(t => t.budgetId === id && t.isPaid);
                 const actualSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
 
                 return {
