@@ -11,7 +11,7 @@ import { showToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Loader2, Upload } from "lucide-react";
 import { useCategories, useCategoryRules, useAllBudgets, useGoals } from "@/components/hooks/useBase44Entities";
-import { QUERY_KEYS } from "./queryKeys";
+import { QUERY_KEYS } from "../hooks/queryKeys";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
