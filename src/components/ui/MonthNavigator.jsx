@@ -9,17 +9,21 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
     const isCurrentMonth = currentMonth === now.getMonth() && currentYear === now.getFullYear();
 
     // Configuration map for ABSOLUTE positioning
-    // We use absolute positioning so the "Reset" button doesn't affect the layout width/height,
-    // preventing the main navigator from "jumping" when the button appears.
+    // We use absolute positioning so the "Reset" button doesn't affect the layout width/height.
+    // NOTE: We removed the translate-x/y classes here because Framer Motion overwrites CSS transforms.
+    // We will handle centering in the motion props instead.
     const positionConfig = {
-        bottom: { className: "top-full left-1/2 -translate-x-1/2 mt-2" },
-        top: { className: "bottom-full left-1/2 -translate-x-1/2 mb-2" },
-        left: { className: "right-full top-1/2 -translate-y-1/2 mr-2" },
-        right: { className: "left-full top-1/2 -translate-y-1/2 ml-2" },
+        bottom: { className: "top-full left-1/2 mt-2", axis: "x" },
+        top: { className: "bottom-full left-1/2 mb-2", axis: "x" },
+        left: { className: "right-full top-1/2 mr-2", axis: "y" },
+        right: { className: "left-full top-1/2 ml-2", axis: "y" },
     };
 
     // Fallback to 'bottom' if an invalid prop is passed
     const config = positionConfig[resetPosition] || positionConfig.bottom;
+
+    // Determine which axis needs to be centered (-50%)
+    const centerTransform = config.axis === "x" ? { x: "-50%" } : { y: "-50%" };
 
     const goToPreviousMonth = () => {
         if (currentMonth === 0) {
@@ -79,10 +83,10 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
             <AnimatePresence>
                 {!isCurrentMonth && (
                     <motion.div
-                        // Removed width/height animation since it's now absolute
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.5 }}
+                        // Apply the centering transform (x or y) here so Framer doesn't overwrite it
+                        initial={{ opacity: 0, scale: 0.5, ...centerTransform }}
+                        animate={{ opacity: 1, scale: 1, ...centerTransform }}
+                        exit={{ opacity: 0, scale: 0.5, ...centerTransform }}
                         className={`absolute ${config.className}`}
                     >
                         <CustomButton
