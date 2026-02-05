@@ -45,6 +45,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
     const totalSpent = expenses;
     const savingsAmount = Math.max(0, income - totalSpent);
+    const overAmount = Math.max(0, totalSpent - income); // Calculate how much we are over
     const isTotalOver = totalSpent > income;
 
     // --- LOGIC FIX: Use Actual Breakdown (Paid + Unpaid) instead of Limits ---
@@ -175,7 +176,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
                         {/* Donut Chart - Always Rendered, even if 0 */}
                         <motion.div
-                            animate={{ opacity: isLoading ? 0.5 : 1 }}
+                            animate={{ opacity: 1 }}
                             transition={{ duration: 0.3 }}
                         >
                             <div className="relative w-full max-w-[180px] aspect-square mx-auto">
@@ -275,21 +276,26 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                             >
                                 {/* Income/Spent Summary */}
                                 <div className="text-center space-y-1">
-                                    {isTotalOver ? (
-                                        <h3 className="text-lg font-bold text-red-600 flex items-center justify-center gap-2">
-                                            Over Limit <AlertCircle className="w-5 h-5" />
-                                        </h3>
-                                    ) : (
-                                        <p className="text-sm font-medium text-gray-500">
-                                            Spent <strong className="text-gray-900">{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(income, settings)}</strong>
-                                        </p>
-                                    )}
-                                    {!isTotalOver && (
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100">
-                                            <Wallet className="w-3.5 h-3.5 text-gray-500" />
-                                            <span className="text-sm font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
-                                        </div>
-                                    )}
+                                    {/* Always show the math, but highlight text in red if over */}
+                                    <p className="text-sm font-medium text-gray-500">
+                                        Spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>
+                                            {formatCurrency(totalSpent, settings)}
+                                        </strong> of <strong>{formatCurrency(income, settings)}</strong>
+                                    </p>
+
+                                    {/* Dynamic Pill: Changes color and icon based on status, but layout stays stable */}
+                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors duration-300 ${isTotalOver
+                                            ? "bg-red-50 border-red-100 text-red-700"
+                                            : "bg-gray-50 border-gray-100 text-gray-600"
+                                        }`}>
+                                        {isTotalOver ? <AlertCircle className="w-3.5 h-3.5" /> : <Wallet className="w-3.5 h-3.5" />}
+                                        <span className="text-sm font-medium">
+                                            {isTotalOver
+                                                ? `Over: ${formatCurrency(overAmount, settings)}`
+                                                : `Left: ${formatCurrency(savingsAmount, settings)}`
+                                            }
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {/* Legend */}
