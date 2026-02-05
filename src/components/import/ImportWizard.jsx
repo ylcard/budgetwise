@@ -25,7 +25,7 @@ const STEPS = [
 ];
 
 export default function ImportWizard({ onSuccess }) {
-	const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
     const [step, setStep] = useState(1);
     const [file, setFile] = useState(null);
     const [csvData, setCsvData] = useState({ headers: [], data: [] });
@@ -37,7 +37,7 @@ export default function ImportWizard({ onSuccess }) {
     const { user, settings } = useSettings();
     const { categories } = useCategories();
     const { rules } = useCategoryRules(user);
-	const { goals } = useGoals(user);
+    const { goals } = useGoals(user);
     const { allBudgets } = useAllBudgets(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
@@ -104,7 +104,7 @@ export default function ImportWizard({ onSuccess }) {
             const processed = extractedData.map(item => {
                 // 1. Parse while preserving the sign for a moment
                 const rawVal = parseAmountWithSign(item.amount);
-                
+
                 // 2. Determine type and then force absolute magnitude
                 const type = rawVal < 0 ? 'expense' : 'income';
                 const magnitude = Math.abs(rawVal);
@@ -267,10 +267,20 @@ export default function ImportWizard({ onSuccess }) {
 
             await base44.entities.Transaction.bulkCreate(transactionsToCreate);
 
-            // Refresh all related data so the $0 budgets update to their real limits
-            await queryClient.invalidateQueries();
+            // Force a hard refresh of the cache to ensure $0 budgets recalculate
+            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
 
-            showToast({ title: "Success", description: `Imported ${transactionsToCreate.length} transactions.` });
+            const uniqueMonths = new Set(processedData.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleString('default', { month: 'long' });
+            }));
+
+            showToast({
+                title: "Import Complete",
+                description: `Successfully added ${transactionsToCreate.length} transactions across ${uniqueMonths.size} month(s) (${Array.from(uniqueMonths).join(', ')}).`
+            });
             if (onSuccess) {
                 onSuccess();
             } else {
