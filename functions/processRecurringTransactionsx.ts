@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
                     }
 
                     // Find appropriate system budget for expenses
-                    let customBudgetId = null;
+                    let budgetId = null;
                     if (recurring.type === 'expense' && recurring.financial_priority) {
                         // Find the system budget for the transaction's month that matches the priority
                         const txMonth = nextDate.getMonth();
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
                         );
 
                         if (matchingBudget) {
-                            customBudgetId = matchingBudget.id;
+                            budgetId = matchingBudget.id;
                         }
                     }
 
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
                     if (recurring.type === 'expense') {
                         transactionData.category_id = recurring.category_id || null;
                         transactionData.financial_priority = recurring.financial_priority || null;
-                        transactionData.customBudgetId = customBudgetId;
+                        transactionData.budgetId = budgetId;
                         transactionData.isPaid = recurring.autoMarkPaid || false;
                         transactionData.paidDate = recurring.autoMarkPaid ? currentOccurrenceStr : null;
                         transactionData.isCashTransaction = false;
