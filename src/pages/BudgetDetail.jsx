@@ -128,13 +128,13 @@ export default function BudgetDetail() {
         queryKey: ['transactions', budget?.id, relatedCustomBudgetIds],
         queryFn: async () => {
             if (!budget.isSystemBudget) {
-                return await base44.entities.Transaction.filter({ customBudgetId: budgetId });
+                return await base44.entities.Transaction.filter({ budgetId: budgetId });
             }
             return await base44.entities.Transaction.filter({
                 $or: [
                     { date: { $gte: budget.startDate, $lte: budget.endDate } },
-                    { customBudgetId: budgetId },
-                    { customBudgetId: { $in: relatedCustomBudgetIds } }
+                    { budgetId: budgetId },
+                    { budgetId: { $in: relatedCustomBudgetIds } }
                 ]
             });
         },
@@ -165,7 +165,7 @@ export default function BudgetDetail() {
     const { data: allocations = [] } = useQuery({
         queryKey: ['allocations', budgetId],
         queryFn: async () => {
-            return await base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId });
+            return await base44.entities.CustomBudgetAllocation.filter({ budgetId: budgetId });
         },
         initialData: [],
         enabled: !!budgetId && !!budget && !budget.isSystemBudget,
@@ -225,14 +225,14 @@ export default function BudgetDetail() {
             // FIXED: 16-Jan-2026 - System budgets should only show direct expenses within date range
             return transactions.filter(t => {
                 // If transaction is explicitly assigned to THIS system budget, include it (with date validation)
-                if (t.customBudgetId === budget.id) {
+                if (t.budgetId === budget.id) {
                     const compDate = t.isPaid && t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
                     return compDate >= budgetStart && compDate <= budgetEnd;
                 }
                 
                 // Otherwise, only include unassigned expenses that match priority and date range
                 if (t.type !== 'expense' || !t.category_id) return false;
-                if (t.customBudgetId) return false; // Exclude if assigned to any custom budget
+                if (t.budgetId) return false; // Exclude if assigned to any custom budget
                 
                 const category = categories.find(c => c.id === t.category_id);
                 const effectivePriority = t.financial_priority || (category ? category.priority : null);
@@ -242,7 +242,7 @@ export default function BudgetDetail() {
                 return compDate >= budgetStart && compDate <= budgetEnd;
             });
         }
-        return transactions.filter(t => t.customBudgetId === budgetId);
+        return transactions.filter(t => t.budgetId === budgetId);
     }, [transactions, budgetId, budget, categories, allCustomBudgets]);
 
     // ADDED: 16-Jan-2026 - Filtered transactions based on user filters
