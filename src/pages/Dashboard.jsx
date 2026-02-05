@@ -272,23 +272,6 @@ export default function Dashboard() {
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 flex flex-col min-w-0">
                         <CustomBudgetsDisplay
-                            systemBudgets={systemBudgets}
-                            customBudgets={activeCustomBudgets}
-                            allCustomBudgets={allCustomBudgets}
-                            preCalculatedSystemData={systemBudgetsData}
-                            preCalculatedCustomData={customBudgetsData}
-                            preCalculatedSavings={{ totalActualSavings, savingsTarget, savingsShortfall }}
-                            transactions={bridgedTransactions}
-                            showSystem={false}
-                            categories={categories}
-                            currentMonth={selectedMonth}
-                            currentYear={selectedYear}
-                            settings={settings}
-                            goals={goals}
-                            monthlyIncome={monthlyIncome}
-                            baseCurrency={settings.baseCurrency}
-                            onDeleteBudget={budgetActions.handleDelete}
-                            onCompleteBudget={(id) => budgetActions.handleStatusChange(id, 'completed')}
                             onCreateBudget={() => setShowQuickAddBudget(true)}
                         />
                     </div>
