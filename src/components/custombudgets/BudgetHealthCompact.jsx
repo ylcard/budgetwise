@@ -16,7 +16,7 @@ const BudgetHealthCompact = ({ budget, transactions, settings }) => {
 
     // Calculate stats for this specific budget
     const stats = useMemo(() => {
-        const budgetTransactions = transactions.filter(t => t.customBudgetId === budget.id);
+        const budgetTransactions = transactions.filter(t => t.budgetId === budget.id);
         return getCustomBudgetStats(budget, budgetTransactions);
     }, [budget, transactions]);
 
