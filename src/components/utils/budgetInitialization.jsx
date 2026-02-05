@@ -18,7 +18,7 @@ import { getMonthBoundaries } from "./dateUtils";
  * 
  * @param {string} userEmail - User's email address
  * @param {string} transactionDate - Transaction date (or paidDate for expenses) in YYYY-MM-DD format
- * @param {string} financialPriority - 'needs', 'wants', or 'savings'
+ * @param {string} financialPriority - 'needs' or 'wants'
  * @param {Array} budgetGoals - Array of BudgetGoal entities (for initial amounts)
  * @param {Object} settings - App settings (for calculating initial amounts)
  * @param {number} monthlyIncome - Monthly income for the period (optional)
@@ -73,34 +73,32 @@ export const getOrCreateSystemBudgetForTransaction = async (
  * @param {Array} budgetGoals - Array of BudgetGoal entities (optional, for initial amounts)
  * @param {Object} settings - App settings (optional, for calculating initial amounts)
  * @param {number} monthlyIncome - Monthly income for the period (optional, for percentage-based calculation)
- * @returns {Promise<Object>} Object with budgets by type: { needs: Budget, wants: Budget, savings: Budget }
+ * @returns {Promise<Object>} Object with budgets by type: { needs: Budget, wants: Budget }
  */
 export const ensureSystemBudgetsExist = async (
-    userEmail, 
-    startDate, 
-    endDate, 
-    budgetGoals = [], 
-    settings = {}, 
+    userEmail,
+    startDate,
+    endDate,
+    budgetGoals = [],
+    settings = {},
     monthlyIncome = 0
 ) => {
     if (!userEmail || !startDate || !endDate) {
         throw new Error('ensureSystemBudgetsExist: userEmail, startDate, and endDate are required');
     }
 
-    const priorityTypes = ['needs', 'wants', 'savings'];
+    const priorityTypes = ['needs', 'wants'];
     const results = {};
 
     // Color and name mappings for system budgets
     const colorMap = {
         needs: '#EF4444',
-        wants: '#F59E0B',
-        savings: '#10B981'
+        wants: '#F59E0B'
     };
 
     const nameMap = {
-        needs: 'Needs',
-        wants: 'Wants',
-        savings: 'Savings'
+        needs: 'Essentials',
+        wants: 'Lifestyle'
     };
 
     // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
@@ -146,7 +144,6 @@ export const ensureSystemBudgetsExist = async (
                 color: colorMap[priorityType],
                 user_email: userEmail,
                 systemBudgetType: priorityType,
-                cashAllocations: [],
                 // Store the goal data for reference if available
                 target_percentage: goal?.target_percentage || 0,
                 target_amount: goal?.target_amount || 0
