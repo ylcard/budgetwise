@@ -12,15 +12,17 @@ import { addMonths } from 'date-fns';
 
 /**
  * Helper to check if a transaction falls within a date range.
+ * CRITICAL FIX 05-Feb-2026: For expenses, ALWAYS use paidDate if available, regardless of isPaid status.
+ * This ensures expenses that were incurred in one month but paid in another are counted in the correct month.
  */
 export const isTransactionInDateRange = (transaction, startDate, endDate) => {
     if (transaction.type === 'income') {
         return isDateInRange(transaction.date, startDate, endDate);
     }
-    // Paid transactions use paidDate, fallback to date. Unpaid use date.
-    const effectiveDate = (transaction.isPaid && transaction.paidDate)
-        ? transaction.paidDate
-        : transaction.date;
+    // CRITICAL FIX 05-Feb-2026: For expenses, use paidDate if it exists (bank processing date),
+    // otherwise fall back to transaction date. This handles cases where an expense from October
+    // is paid in November - it should count toward November's budget.
+    const effectiveDate = transaction.paidDate || transaction.date;
 
     return isDateInRange(effectiveDate, startDate, endDate);
 };
@@ -143,13 +145,15 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
         // Priority hierarchy: Transaction > Category > Default 'wants'
         const priority = t.financial_priority || category?.priority || 'wants';
 
-        // CRITICAL FIX 13-Jan-2026: Expenses in CBs should NEVER appear in SB direct calculations
-        // If assigned to a CB, skip this transaction for system budget direct calculations
+        // CRITICAL FIX 05-Feb-2026: Expenses in Custom Budgets should NEVER appear in System Budget "DIRECT" calculations
+        // The word "DIRECT" means expenses directly assigned to that priority, NOT via a custom budget.
+        // Custom Budget expenses are aggregated separately and shown only in the Custom Budget views.
         if (isCustom) {
-            // "Indirect" Wants (Vacations, etc.) - Only count in customPaid/customUnpaid
+            // These are "Indirect" expenses (via Custom Budgets like Vacations, Trips, Events)
+            // They count toward the overall Wants total but NOT toward "Direct Wants"
             if (t.isPaid) result.wants.customPaid += t.amount;
             else result.wants.customUnpaid += t.amount;
-            return; // CRITICAL: Exit early to prevent double-counting in direct
+            return; // CRITICAL: Exit early to prevent these from being counted as "direct" expenses
         }
 
         // 1. NEEDS Logic (Direct only - CBs never contain needs)
