@@ -14,12 +14,20 @@ export const FINANCIAL_PRIORITIES = {
         color: "#F59E0B",
         bg: "bg-orange-50",
         order: 1
+    },
+    savings: {
+        label: "Savings",
+        description: "Savings after expenses",
+        color: "#10B981",
+        bg: "bg-green-50",
+        order: 2
     }
 };
 
 // Derived array for Dropdowns (Form) - Automatically sorted by 'order'
 // This creates: [{ value: 'needs', label: 'Needs', ... }, ...]
 export const PRIORITY_OPTIONS = Object.entries(FINANCIAL_PRIORITIES)
+    .filter(([key]) => key !== 'savings')
     .map(([key, config]) => ({
         value: key, // The key (e.g. 'needs') becomes the database value
         ...config
