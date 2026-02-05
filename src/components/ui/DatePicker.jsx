@@ -94,7 +94,6 @@ export default function DatePicker({
                     components={{
                         Dropdown: ({ value, onChange, children }) => {
                             const options = React.Children.toArray(children);
-                            const selected = options.find((child) => child.props.value?.toString() === value?.toString());
                             const handleChange = (value) => {
                                 const changeEvent = {
                                     target: { value },
@@ -107,7 +106,7 @@ export default function DatePicker({
                                     onValueChange={handleChange}
                                 >
                                     <SelectTrigger className="h-7 w-fit gap-1 border-none bg-transparent p-0 pl-2 pr-1 font-medium hover:bg-accent/50 focus:ring-0 shadow-none text-sm">
-                                        <SelectValue>{selected?.props?.children}</SelectValue>
+                                        <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent position="popper" className="max-h-[240px] overflow-y-auto min-w-[120px] bg-white z-50">
                                         {options.map((option) => (
