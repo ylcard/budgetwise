@@ -190,7 +190,7 @@ export default function QuickAddTransaction({
                     initialTransaction={isEditMode ? transaction : (defaultCustomBudgetId ? {
                         amount: null,
                         date: getInitialDate(),
-                        customBudgetId: defaultCustomBudgetId
+                        budgetId: defaultCustomBudgetId
                     } : { date: getInitialDate() })}
                     categories={categories}
                     allBudgets={allBudgets}
