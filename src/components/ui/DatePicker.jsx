@@ -5,7 +5,7 @@
  * UPDATED: 17-Jan-2026 - Migrated to react-day-picker v9 with dropdown navigation
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -94,7 +94,7 @@ export default function DatePicker({
                     components={{
                         Dropdown: ({ value, onChange, children }) => {
                             const options = React.Children.toArray(children);
-                            const selected = options.find((child) => child.props.value === value);
+                            const selected = options.find((child) => child.props.value?.toString() === value?.toString());
                             const handleChange = (value) => {
                                 const changeEvent = {
                                     target: { value },
@@ -106,10 +106,10 @@ export default function DatePicker({
                                     value={value?.toString()}
                                     onValueChange={handleChange}
                                 >
-                                    <SelectTrigger className="h-7 w-fit gap-1 border-none bg-transparent p-0 pl-1 pr-1 font-medium hover:bg-accent/50 focus:ring-0 text-sm">
+                                    <SelectTrigger className="h-7 w-fit gap-1 border-none bg-transparent p-0 pl-2 pr-1 font-medium hover:bg-accent/50 focus:ring-0 shadow-none text-sm">
                                         <SelectValue>{selected?.props?.children}</SelectValue>
                                     </SelectTrigger>
-                                    <SelectContent position="popper" className="max-h-[200px] overflow-y-auto min-w-[100px]">
+                                    <SelectContent position="popper" className="max-h-[240px] overflow-y-auto min-w-[120px] bg-white z-50">
                                         {options.map((option) => (
                                             <SelectItem
                                                 key={option.props.value}
