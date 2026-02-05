@@ -8,19 +8,18 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
     const now = new Date();
     const isCurrentMonth = currentMonth === now.getMonth() && currentYear === now.getFullYear();
 
-    // Configuration map for dynamic positioning
+    // Configuration map for ABSOLUTE positioning
+    // We use absolute positioning so the "Reset" button doesn't affect the layout width/height,
+    // preventing the main navigator from "jumping" when the button appears.
     const positionConfig = {
-        bottom: { container: "flex-col", margin: "mt-1", isHorizontal: false },
-        top: { container: "flex-col-reverse", margin: "mb-1", isHorizontal: false },
-        left: { container: "flex-row-reverse", margin: "mr-1", isHorizontal: true },
-        right: { container: "flex-row", margin: "ml-1", isHorizontal: true },
+        bottom: { className: "top-full left-1/2 -translate-x-1/2 mt-2" },
+        top: { className: "bottom-full left-1/2 -translate-x-1/2 mb-2" },
+        left: { className: "right-full top-1/2 -translate-y-1/2 mr-2" },
+        right: { className: "left-full top-1/2 -translate-y-1/2 ml-2" },
     };
 
     // Fallback to 'bottom' if an invalid prop is passed
     const config = positionConfig[resetPosition] || positionConfig.bottom;
-
-    // Used for animation direction (width vs height)
-    const { isHorizontal } = config;
 
     const goToPreviousMonth = () => {
         if (currentMonth === 0) {
@@ -43,7 +42,8 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
     };
 
     return (
-        <div className={`flex items-center gap-2 w-fit ${config.container}`}>
+        // 'relative' is needed so the absolute child positions itself relative to this container
+        <div className="relative flex items-center justify-center w-fit z-20">
             <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
                 <CustomButton
                     variant="ghost"
@@ -79,16 +79,17 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
             <AnimatePresence>
                 {!isCurrentMonth && (
                     <motion.div
-                        // Animate width for horizontal, height for vertical
-                        initial={{ opacity: 0, scale: 0.8, [isHorizontal ? "width" : "height"]: 0 }}
-                        animate={{ opacity: 1, scale: 1, [isHorizontal ? "width" : "height"]: "auto" }}
-                        exit={{ opacity: 0, scale: 0.8, [isHorizontal ? "width" : "height"]: 0 }}
+                        // Removed width/height animation since it's now absolute
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        className={`absolute ${config.className}`}
                     >
                         <CustomButton
                             variant="ghost"
                             size="icon"
                             onClick={goToCurrentMonth}
-                            className={`h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 ${config.margin}`}
+                            className="h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 bg-white/50 backdrop-blur-sm border border-transparent hover:border-blue-100 shadow-sm"
                             title="Reset to Current Month"
                         >
                             <RotateCcw className="w-3 h-3" />
