@@ -87,8 +87,8 @@ export default function ImportWizard({ onSuccess }) {
                                 "properties": {
                                     "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
                                     "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
-                                    "reason": { "type": "string", "description": "Merchant or description" },
-                                    "amount": { "type": "number", "description": "Transaction amount as it appears on the statement (e.g. -50 for expense)." }
+                                    "reason": { "type": "string", "description": "Merchant name exactly as it appears. Do not summarize." },
+                                    "amount": { "type": "number", "description": "Raw numeric value. Negative for debits/expenses, positive for credits/income." }
                                 },
                                 "required": ["date", "reason", "amount"]
                             }
