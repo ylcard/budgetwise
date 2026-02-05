@@ -261,20 +261,17 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 </div>
 
                                 {/* Legend */}
-                                <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-[10px] sm:text-xs px-1">
+                                <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs px-1">
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: needsColor }}></div>
-                                        <span className="text-gray-600">{FINANCIAL_PRIORITIES.needs.label}</span>
+                                        <span className="font-semibold" style={{ color: needsColor }}>{FINANCIAL_PRIORITIES.needs.label}</span>
                                         <span className="font-bold text-gray-900">{Math.round(needsPct)}%</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: wantsColor }}></div>
-                                        <span className="text-gray-600">{FINANCIAL_PRIORITIES.wants.label}</span>
+                                        <span className="font-semibold" style={{ color: wantsColor }}>{FINANCIAL_PRIORITIES.wants.label}</span>
                                         <span className="font-bold text-gray-900">{Math.round(wantsPct)}%</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: savingsColor }}></div>
-                                        <span className="text-gray-600">Savings</span>
+                                        <span className="font-semibold" style={{ color: savingsColor }}>Savings</span>
                                         <span className="font-bold text-gray-900">{Math.round(savingsPct)}%</span>
                                     </div>
                                 </div>
