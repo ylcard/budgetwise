@@ -235,7 +235,10 @@ export default function ImportWizard({ onSuccess }) {
     const handleImport = async () => {
         setIsProcessing(true);
         try {
-            const transactionsToCreate = processedData.map(item => {
+            // Local cache to prevent redundant API calls for the same month/priority
+            const resolvedBudgetsCache = new Map();
+
+            const transactionsToCreate = await Promise.all(processedData.map(async (item) => {
                 const isExpense = item.type === 'expense';
                 const finalAmount = Math.abs(item.amount);
 
@@ -248,10 +251,25 @@ export default function ImportWizard({ onSuccess }) {
                     ? formattedPaidDate
                     : formattedTxDate;
 
-                // If no custom budget was manually picked, try to find the matching system budget
-                const resolvedBudgetId = item.budgetId || (isExpense ?
-                    findMatchingSystemBudget(allBudgets, effectiveBudgetParamsDate, item.financial_priority) :
-                    null);
+                let resolvedBudgetId = item.budgetId;
+
+                // Silent JIT Resolution: Create the shell if it doesn't exist
+                if (isExpense && !resolvedBudgetId) {
+                    const cacheKey = `${effectiveBudgetParamsDate.substring(0, 7)}-${item.financial_priority}`;
+
+                    if (!resolvedBudgetsCache.has(cacheKey)) {
+                        const id = await getOrCreateSystemBudgetForTransaction(
+                            user.email,
+                            effectiveBudgetParamsDate,
+                            item.financial_priority,
+                            goals, // Still pass goals so the shell knows its % rule
+                            settings,
+                            0 // Initialize with 0 income
+                        );
+                        resolvedBudgetsCache.set(cacheKey, id);
+                    }
+                    resolvedBudgetId = resolvedBudgetsCache.get(cacheKey);
+                }
 
                 return {
                     title: item.title,
@@ -266,7 +284,7 @@ export default function ImportWizard({ onSuccess }) {
                     isPaid: isExpense ? (item.isPaid || false) : null,
                     paidDate: formattedPaidDate
                 };
-            });
+            }));
 
             await base44.entities.Transaction.bulkCreate(transactionsToCreate);
 
