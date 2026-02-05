@@ -5,7 +5,7 @@
  * UPDATED: 17-Jan-2026 - Migrated to react-day-picker v9 with dropdown navigation
  */
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
