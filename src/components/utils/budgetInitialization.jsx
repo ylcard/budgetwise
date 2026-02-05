@@ -123,12 +123,12 @@ export const ensureSystemBudgetsExist = async (
         } else {
             // Create a new SystemBudget
             const goal = budgetGoals.find(g => g.priority === priorityType);
-            // Use the centralized helper for the math
-            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings);
+            // If income is 0, the limit is 0 (or the absolute amount if in absolute mode)
+            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome || 0, settings);
 
             const newBudget = await base44.entities.SystemBudget.create({
                 name: nameMap[priorityType],
-                budgetAmount: parseFloat(budgetAmount.toFixed(2)),
+                budgetAmount: parseFloat((budgetAmount || 0).toFixed(2)),
                 startDate,
                 endDate,
                 color: colorMap[priorityType],
