@@ -46,14 +46,15 @@ export const getOrCreateSystemBudgetForTransaction = async (
     const date = new Date(transactionDate);
     const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
-    // Ensure all three system budgets exist for this month
+    // Ensure system budgets exist for this month, passing through options
     const budgets = await ensureSystemBudgetsExist(
         userEmail,
         monthStart,
         monthEnd,
         budgetGoals,
         settings,
-        monthlyIncome
+        monthlyIncome,
+        options
     );
 
     // Return the ID of the specific budget for this priority
@@ -79,6 +80,9 @@ export const getOrCreateSystemBudgetForTransaction = async (
  * @param {Array} budgetGoals - Array of BudgetGoal entities (optional, for initial amounts)
  * @param {Object} settings - App settings (optional, for calculating initial amounts)
  * @param {number} monthlyIncome - Monthly income for the period (optional, for percentage-based calculation)
+ * @param {Object} options - Options for the operation
+ * @param {boolean} options.allowUpdates - Whether to update existing budgets if amounts changed
+ * @param {number} options.historicalAverage - Average income for Inflation Protection logic
  * @returns {Promise<Object>} Object with budgets by type: { needs: Budget, wants: Budget }
  */
 export const ensureSystemBudgetsExist = async (
@@ -87,7 +91,8 @@ export const ensureSystemBudgetsExist = async (
     endDate,
     budgetGoals = [],
     settings = {},
-    monthlyIncome = 0
+    monthlyIncome = 0,
+    options = { allowUpdates: false, historicalAverage: 0 }
 ) => {
     if (!userEmail || !startDate || !endDate) {
         throw new Error('ensureSystemBudgetsExist: userEmail, startDate, and endDate are required');
@@ -111,7 +116,7 @@ export const ensureSystemBudgetsExist = async (
 
         if (existingForThisPriority) {
             const goal = budgetGoals.find(g => g.priority === priorityType);
-            const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage);
+            const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
 
             // Update logic: Only update if allowed, or if the budget is currently uninitialized (0)
             const needsUpdate = (options.allowUpdates || existingForThisPriority.budgetAmount === 0) &&
@@ -130,7 +135,7 @@ export const ensureSystemBudgetsExist = async (
         } else {
             // Create a new SystemBudget
             const goal = budgetGoals.find(g => g.priority === priorityType);
-            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage);
+            const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, options.historicalAverage || 0);
 
             const newBudget = await base44.entities.SystemBudget.create({
                 name: FINANCIAL_PRIORITIES[priorityType].label,
