@@ -14,13 +14,6 @@ export const FINANCIAL_PRIORITIES = {
         color: "#F59E0B",
         bg: "bg-orange-50",
         order: 1
-    },
-    savings: {
-        label: "Savings",
-        description: "Savings after expenses",
-        color: "#10B981",
-        bg: "bg-green-50",
-        order: 2
     }
 };
 
