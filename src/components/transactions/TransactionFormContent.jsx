@@ -161,31 +161,37 @@ export default function TransactionFormContent({
     // ATOMIC SYNC: Ensure budget exists for the selected date/priority
     useEffect(() => {
         const syncBudget = async () => {
-            if (!formData.financial_priority || !formData.date || !user) return;
+            if (!formData.date || !user) return;
 
             const relevantDate = formData.isPaid && formData.paidDate ? formData.paidDate : formData.date;
+            const prioritiesToSync = ['needs', 'wants'];
 
             try {
-                // This call ensures the budget exists in the DB. 
-                // If it already exists, it just returns the ID immediately.
-                const budgetId = await getOrCreateSystemBudgetForTransaction(
-                    user.email,
-                    relevantDate,
-                    formData.financial_priority,
-                    goals,
-                    settings
+                // Proactively ensure both system budgets exist for this month
+                const results = await Promise.all(
+                    prioritiesToSync.map(priority =>
+                        getOrCreateSystemBudgetForTransaction(
+                            user.email,
+                            relevantDate,
+                            priority,
+                            goals,
+                            settings
+                        )
+                    )
                 );
 
-                // Only auto-update the selection if the user hasn't manually 
-                // picked a different specific custom budget.
+                // 1. Refresh the local hook data so the dropdown shows the new budgets
+                await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+                await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
+
+                // 2. If a priority is ALREADY selected, auto-select the budget ID
                 const currentBudget = mergedBudgets.find(b => b.id === formData.budgetId);
                 const isSystemOrEmpty = !formData.budgetId || (currentBudget && currentBudget.isSystemBudget);
 
-                if (budgetId && isSystemOrEmpty) {
-                    // Invalidate specifically to trigger the localSystemBudgets hook to update
-                    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-                    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
-                    setFormData(prev => ({ ...prev, budgetId }));
+                if (formData.financial_priority && isSystemOrEmpty) {
+                    const priorityIndex = prioritiesToSync.indexOf(formData.financial_priority);
+                    const targetId = results[priorityIndex];
+                    if (targetId) setFormData(prev => ({ ...prev, budgetId: targetId }));
                 }
             } catch (err) {
                 console.error("Failed to atomic-sync budget:", err);
