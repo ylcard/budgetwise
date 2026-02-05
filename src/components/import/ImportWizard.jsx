@@ -154,7 +154,7 @@ export default function ImportWizard({ onSuccess }) {
                     financial_priority: catResult.priority || 'wants',
                     isPaid: !!pdDate,
                     paidDate: pdDate || null,
-                    customBudgetId: null,
+                    budgetId: null,
                     originalData: item
                 };
             }).filter(item => item.amount !== 0 && item.date);
@@ -223,7 +223,7 @@ export default function ImportWizard({ onSuccess }) {
                 financial_priority: catResult.priority || 'wants',
                 isPaid: true, // Assume bank import data is already paid/settled
                 paidDate: row[mappings.date],
-                customBudgetId: null,
+                budgetId: null,
                 originalData: row
             };
         }).filter(item => item.amount !== 0 && item.date);
@@ -249,7 +249,7 @@ export default function ImportWizard({ onSuccess }) {
                     : formattedTxDate;
 
                 // If no custom budget was manually picked, try to find the matching system budget
-                const resolvedBudgetId = item.customBudgetId || (isExpense ?
+                const resolvedBudgetId = item.budgetId || (isExpense ?
                     findMatchingSystemBudget(allBudgets, effectiveBudgetParamsDate, item.financial_priority) :
                     null);
 
@@ -260,7 +260,7 @@ export default function ImportWizard({ onSuccess }) {
                     date: formattedTxDate,
                     category_id: isExpense ? (item.categoryId || categories.find(c => c.name === 'Uncategorized')?.id) : null,
                     financial_priority: isExpense ? item.financial_priority : null,
-                    customBudgetId: resolvedBudgetId,
+                    budgetId: resolvedBudgetId,
                     originalAmount: item.originalAmount,
                     originalCurrency: item.originalCurrency,
                     isPaid: isExpense ? (item.isPaid || false) : null,
