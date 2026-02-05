@@ -134,7 +134,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
             paymentStatus: 'all',
             cashStatus: 'all',
             financialPriority: 'all',
-            customBudgetId: 'all',
+            budgetId: 'all',
             startDate: monthStart,
             endDate: monthEnd
         });
@@ -160,7 +160,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
         filters.paymentStatus !== 'all',
         filters.cashStatus !== 'all',
         filters.financialPriority !== 'all',
-        filters.customBudgetId !== 'all',
+        filters.budgetId !== 'all',
         isDateChanged
     ].filter(Boolean).length;
 
@@ -348,8 +348,8 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         <Label className="text-xs text-gray-500">Budget</Label>
                         <div className="hidden md:block">
                             <Select
-                                value={filters.customBudgetId}
-                                onValueChange={(value) => setFilters({ ...filters, customBudgetId: value })}
+                                value={filters.budgetId}
+                                onValueChange={(value) => setFilters({ ...filters, budgetId: value })}
                             >
                                 <SelectTrigger className="h-9">
                                     <SelectValue placeholder="All Budgets" />
@@ -364,12 +364,12 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         </div>
                         <MobileSelectTrigger
                             label="Linked Budget"
-                            value={filters.customBudgetId}
+                            value={filters.budgetId}
                             options={[
                                 { value: 'all', label: 'All Budgets' },
                                 ...filteredCustomBudgets.map(b => ({ value: b.id, label: b.name }))
                             ]}
-                            onSelect={(val) => setFilters({ ...filters, customBudgetId: val })}
+                            onSelect={(val) => setFilters({ ...filters, budgetId: val })}
                         />
                     </div>
 
