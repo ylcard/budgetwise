@@ -119,7 +119,7 @@ export default function Dashboard() {
 
     const customBudgetsData = useMemo(() => {
         return activeCustomBudgets.map(cb => {
-            const budgetTransactions = bridgedTransactions.filter(t => t.customBudgetId === cb.id);
+            const budgetTransactions = bridgedTransactions.filter(t => t.budgetId === cb.id);
             return getCustomBudgetStats(cb, budgetTransactions);
         });
     }, [activeCustomBudgets, bridgedTransactions]);
