@@ -8,8 +8,9 @@ import { parseCSV } from "@/components/utils/simpleCsvParser";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Loader2, Upload } from "lucide-react";
-import { useCategories, useCategoryRules, useAllBudgets } from "@/components/hooks/useBase44Entities";
+import { useCategories, useCategoryRules, useAllBudgets, useGoals } from "@/components/hooks/useBase44Entities";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ const STEPS = [
 ];
 
 export default function ImportWizard({ onSuccess }) {
+	const queryClient = useQueryClient();
     const [step, setStep] = useState(1);
     const [file, setFile] = useState(null);
     const [csvData, setCsvData] = useState({ headers: [], data: [] });
@@ -35,7 +37,7 @@ export default function ImportWizard({ onSuccess }) {
     const { user, settings } = useSettings();
     const { categories } = useCategories();
     const { rules } = useCategoryRules(user);
-    const { goals } = useGoals(user);
+	const { goals } = useGoals(user);
     const { allBudgets } = useAllBudgets(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
@@ -85,7 +87,7 @@ export default function ImportWizard({ onSuccess }) {
                                     "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
                                     "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
                                     "reason": { "type": "string", "description": "Merchant or description" },
-                                    "amount": { "type": "number", "description": "Transaction amount (absolute value)." }
+                                    "amount": { "type": "number", "description": "Transaction amount as it appears on the statement (e.g. -50 for expense)." }
                                 },
                                 "required": ["date", "reason", "amount"]
                             }
@@ -102,7 +104,7 @@ export default function ImportWizard({ onSuccess }) {
             const processed = extractedData.map(item => {
                 // 1. Parse while preserving the sign for a moment
                 const rawVal = parseAmountWithSign(item.amount);
-
+                
                 // 2. Determine type and then force absolute magnitude
                 const type = rawVal < 0 ? 'expense' : 'income';
                 const magnitude = Math.abs(rawVal);
