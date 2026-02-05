@@ -19,9 +19,9 @@ import { iconMap } from "../utils/iconMapConfig";
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
 
-    // SORTING LOGIC: Needs -> Wants -> Savings -> Others (then Alphabetical)
+    // SORTING LOGIC: Needs -> Wants -> Others (then Alphabetical)
     const sortedCategories = useMemo(() => {
-        const priorityOrder = { needs: 1, wants: 2, savings: 3 };
+        const priorityOrder = { needs: 1, wants: 2 };
 
         return [...categories].sort((a, b) => {
             // Safe access + case insensitive
