@@ -147,13 +147,6 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
         queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            // BLOCK DEPRECATED
-            // const all = await base44.entities.SystemBudget.list();
-            // return all.filter(sb =>
-            //     sb.user_email === user.email &&
-            //     sb.startDate === monthStart &&
-            //     sb.endDate === monthEnd
-            // );
 
             // OPTIMIZATION: Exact match filter
             return await base44.entities.SystemBudget.filter({
