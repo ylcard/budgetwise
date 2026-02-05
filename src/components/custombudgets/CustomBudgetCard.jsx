@@ -27,7 +27,7 @@ export default function CustomBudgetCard({
         }
 
         // Calculate stats inline (same logic as getCustomBudgetStats)
-        const budgetTransactions = transactions.filter(t => t.customBudgetId === budget.id);
+        const budgetTransactions = transactions.filter(t => t.budgetId === budget.id);
 
         const allocated = budget.allocatedAmount || 0;
 
