@@ -134,17 +134,17 @@ export default function DatePicker({
                     classNames={{
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                         month: "space-y-4",
-                        month_caption: "flex items-center justify-start px-2 pt-2 relative h-10",
+                        month_caption: "flex items-center justify-start px-2 pt-2 relative h-12 w-full",
                         caption_label: "hidden",
-                        caption_dropdowns: "flex flex-row items-center gap-0.5 z-10",
-                        nav: "flex items-center gap-1 absolute right-2 top-2.5",
+                        caption_dropdowns: "flex items-center inline-flex flex-row gap-1 z-10",
+                        nav: "flex items-center gap-1 absolute right-0 top-2.5",
                         button_previous: cn(
                             buttonVariants({ variant: "outline" }),
-                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none"
+                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none relative z-20"
                         ),
                         button_next: cn(
                             buttonVariants({ variant: "outline" }),
-                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none"
+                            "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-none relative z-20"
                         ),
                         month_grid: "w-full border-collapse space-y-1",
                         weekdays: "flex",
