@@ -6,7 +6,8 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar, StickyNote } from "lucide-react";
 import AmountInput from "../ui/AmountInput";
-import DatePicker from "../ui/DatePicker";
+//import DatePicker from "../ui/DatePicker";
+import { CalendarView } from "../ui/DatePicker";
 import { formatDateString, getFirstDayOfMonth, formatDate } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 import { useSettings } from "../utils/SettingsContext";
@@ -108,10 +109,12 @@ export default function IncomeFormContent({
                     </PopoverTrigger>
                     {/* Use the exact class from your expense form here */}
                     <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
-                        <DatePicker
-                            value={formData.date}
-                            onChange={(d) => setFormData({ ...formData, date: d })}
-                            className="w-full border-0 shadow-none px-0 h-auto justify-center"
+                        <CalendarView
+                            selected={formData.date ? new Date(formData.date) : new Date()}
+                            onSelect={(date) => {
+                                if (date) setFormData({ ...formData, date: formatDateString(date) });
+                            }}
+                            className="p-0"
                         />
                     </PopoverContent>
                 </Popover>
