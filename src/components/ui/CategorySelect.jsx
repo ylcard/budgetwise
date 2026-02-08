@@ -75,7 +75,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between h-12 px-3 font-normal text-base"
+            className="w-full justify-between h-14 px-3 font-normal text-base"
         >
             {multiple ? (
                 selectedCategories.length > 0 ? (
@@ -115,7 +115,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
     );
 
     const ListContent = (
-        <Command className={isMobile ? "h-full" : "h-auto w-full overflow-visible"}>
+        <Command className={isMobile ? "h-[50vh]" : "h-auto w-full overflow-visible"}>
             <CommandInput placeholder="Search category..." />
             <CommandList className={isMobile ? "max-h-[60vh] overflow-y-auto" : "max-h-64 overflow-y-auto overflow-x-hidden"}>
                 <CommandEmpty>No category found.</CommandEmpty>
@@ -169,11 +169,13 @@ export default function CategorySelect({ value, onValueChange, categories, place
 
     if (isMobile) {
         return (
-            <Drawer open={open} onOpenChange={setOpen}>
+            <Drawer open={open} onOpenChange={setOpen} modal={true}>
                 <DrawerTrigger asChild>
                     {TriggerContent}
                 </DrawerTrigger>
-                <DrawerContent>
+
+                {/* Added mb-24 to keep the drawer above the bottom nav bar area */}
+                <DrawerContent className="mb-24 z-[110] max-h-[70vh]">
                     <div className="mt-4 border-t">
                         {ListContent}
                     </div>
