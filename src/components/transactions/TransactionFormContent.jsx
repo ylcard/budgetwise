@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RefreshCw, AlertCircle, Check, ChevronsUpDown, Calendar, CreditCard, Banknote, Clock, StickyNote, Tag, ChevronRight } from "lucide-react";
+import { RefreshCw, AlertCircle, Check, ChevronsUpDown, Calendar, CreditCard, Banknote, Clock, StickyNote, Tag, ChevronRight, Search } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -132,6 +132,138 @@ const MobilePriorityFormSelect = ({ value, onSelect, placeholder }) => {
                             </DrawerClose>
                         );
                     })}
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
+
+const MobileDateStatusForm = ({ formData, setFormData, trigger }) => {
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                {trigger}
+            </DrawerTrigger>
+            <DrawerContent className="z-[200] flex flex-col max-h-[90dvh]">
+                <DrawerHeader>
+                    <DrawerTitle>Date & Status</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    <div className="flex justify-center border-b pb-4 mb-4">
+                        <CalendarComponent
+                            mode="single"
+                            selected={formData.date ? new Date(formData.date) : undefined}
+                            onSelect={(date) => date && setFormData({ ...formData, date: formatDateString(date) })}
+                            initialFocus
+                        />
+                    </div>
+
+                    {formData.type === 'expense' && (
+                        <div className="space-y-4 px-2">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="mobile-paid-switch" className="flex flex-col">
+                                    <span className="text-base font-medium">Mark as Paid</span>
+                                    <span className="text-xs text-muted-foreground font-normal">Transaction completed</span>
+                                </Label>
+                                <Switch
+                                    id="mobile-paid-switch"
+                                    checked={formData.isPaid}
+                                    onCheckedChange={(c) => setFormData(prev => ({ ...prev, isPaid: c, isCashExpense: c ? prev.isCashExpense : false }))}
+                                />
+                            </div>
+
+                            {formData.isPaid && (
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="mobile-cash-switch" className="flex flex-col">
+                                        <span className="text-base font-medium">Paid with Cash</span>
+                                        <span className="text-xs text-muted-foreground font-normal">No bank record</span>
+                                    </Label>
+                                    <Switch
+                                        id="mobile-cash-switch"
+                                        checked={formData.isCashExpense}
+                                        onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
+
+const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchTerm, onSearchChange }) => {
+    const selectedBudget = options.find(b => b.id === value);
+    const label = selectedBudget ? selectedBudget.name : placeholder;
+
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                <CustomButton
+                    variant="outline"
+                    className="w-full justify-between h-12 px-3 font-normal text-sm"
+                >
+                    <span className={cn("truncate", !selectedBudget && "text-muted-foreground")}>
+                        {label}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </CustomButton>
+            </DrawerTrigger>
+            <DrawerContent className="z-[200] flex flex-col max-h-[85dvh]">
+                <DrawerHeader>
+                    <DrawerTitle>Select Budget</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search budgets..."
+                            className="pl-9 h-10 bg-muted/30"
+                            value={searchTerm}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <div className="p-4 space-y-1 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    {options.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">No budgets found.</div>
+                    ) : (
+                        options.map((budget) => {
+                            const isSelected = value === budget.id;
+                            return (
+                                <DrawerClose key={budget.id} asChild>
+                                    <button
+                                        onClick={() => onSelect(budget.id)}
+                                        className={cn(
+                                            "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-medium transition-colors",
+                                            isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                        )}
+                                    >
+                                        <div className="flex items-center text-left">
+                                            {budget.isSystemBudget ? (
+                                                <span className="text-blue-600 mr-3 text-lg">★</span>
+                                            ) : (
+                                                <span className={cn(
+                                                    "w-2.5 h-2.5 rounded-full mr-3 shrink-0",
+                                                    budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
+                                                )} />
+                                            )}
+                                            <div>
+                                                <div className="font-medium">{budget.name}</div>
+                                                {budget.isSystemBudget && (
+                                                    <div className="text-xs text-muted-foreground font-normal">
+                                                        {formatDate(budget.startDate, 'MMM yyyy')}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {isSelected && <Check className="w-5 h-5" />}
+                                    </button>
+                                </DrawerClose>
+                            );
+                        })
+                    )}
                 </div>
             </DrawerContent>
         </Drawer>
@@ -583,58 +715,78 @@ export default function TransactionFormContent({
 
                 {/* Unified Status/Date Button */}
                 <div className="pt-0">
-                    <Popover modal={true}>
-                        <PopoverTrigger asChild>
-                            <CustomButton
-                                type="button"
-                                variant="outline"
-                                className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-sm"
-                            >
-                                {getStatusButtonContent()}
-                            </CustomButton>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
-                            <div className="space-y-4">
-                                <div className="border-b pb-4">
-                                    <CalendarComponent
-                                        mode="single"
-                                        selected={formData.date ? new Date(formData.date) : undefined}
-                                        onSelect={(date) => date && setFormData({ ...formData, date: formatDateString(date) })}
-                                        initialFocus
-                                    />
-                                </div>
-                                {formData.type === 'expense' && (
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <Label htmlFor="paid-switch" className="flex flex-col">
-                                                <span>Mark as Paid</span>
-                                                <span className="text-xs text-muted-foreground font-normal">Transaction completed</span>
-                                            </Label>
-                                            <Switch
-                                                id="paid-switch"
-                                                checked={formData.isPaid}
-                                                onCheckedChange={(c) => setFormData(prev => ({ ...prev, isPaid: c, isCashExpense: c ? prev.isCashExpense : false }))}
-                                            />
-                                        </div>
-
-                                        {formData.isPaid && (
+                    {/* Desktop Date Picker */}
+                    <div className="hidden md:block">
+                        <Popover modal={true}>
+                            <PopoverTrigger asChild>
+                                <CustomButton
+                                    type="button"
+                                    variant="outline"
+                                    className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-sm"
+                                >
+                                    {getStatusButtonContent()}
+                                </CustomButton>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
+                                {/* ... (Existing Desktop Content) ... */}
+                                <div className="space-y-4">
+                                    <div className="border-b pb-4">
+                                        <CalendarComponent
+                                            mode="single"
+                                            selected={formData.date ? new Date(formData.date) : undefined}
+                                            onSelect={(date) => date && setFormData({ ...formData, date: formatDateString(date) })}
+                                            initialFocus
+                                        />
+                                    </div>
+                                    {formData.type === 'expense' && (
+                                        <div className="space-y-3">
                                             <div className="flex items-center justify-between">
-                                                <Label htmlFor="cash-switch" className="flex flex-col">
-                                                    <span>Paid with Cash</span>
-                                                    <span className="text-xs text-muted-foreground font-normal">No bank record</span>
+                                                <Label htmlFor="paid-switch" className="flex flex-col">
+                                                    <span>Mark as Paid</span>
+                                                    <span className="text-xs text-muted-foreground font-normal">Transaction completed</span>
                                                 </Label>
                                                 <Switch
-                                                    id="cash-switch"
-                                                    checked={formData.isCashExpense}
-                                                    onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
+                                                    id="paid-switch"
+                                                    checked={formData.isPaid}
+                                                    onCheckedChange={(c) => setFormData(prev => ({ ...prev, isPaid: c, isCashExpense: c ? prev.isCashExpense : false }))}
                                                 />
                                             </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </PopoverContent>
-                    </Popover>
+                                            {formData.isPaid && (
+                                                <div className="flex items-center justify-between">
+                                                    <Label htmlFor="cash-switch" className="flex flex-col">
+                                                        <span>Paid with Cash</span>
+                                                        <span className="text-xs text-muted-foreground font-normal">No bank record</span>
+                                                    </Label>
+                                                    <Switch
+                                                        id="cash-switch"
+                                                        checked={formData.isCashExpense}
+                                                        onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    {/* Mobile Date Drawer */}
+                    <div className="md:hidden">
+                        <MobileDateStatusForm
+                            formData={formData}
+                            setFormData={setFormData}
+                            trigger={
+                                <CustomButton
+                                    type="button"
+                                    variant="outline"
+                                    className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-sm"
+                                >
+                                    {getStatusButtonContent()}
+                                </CustomButton>
+                            }
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -697,57 +849,72 @@ export default function TransactionFormContent({
 
                     {/* Budget (REQUIRED for expenses) - Full width */}
                     <div>
-                        <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen} modal={true}>
-                            <PopoverTrigger asChild>
-                                <CustomButton
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={isBudgetOpen}
-                                    className="w-full justify-between font-normal h-12 text-sm"
-                                >
-                                    {formData.budgetId
-                                        ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
-                                        : "Select budget..."}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </CustomButton>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[300px] p-0" align="start">
-                                <Command shouldFilter={false} className="h-auto overflow-hidden">
-                                    <CommandInput
-                                        placeholder="Search budgets..."
-                                        onValueChange={setBudgetSearchTerm}
-                                    />
-                                    <CommandList>
-                                        <CommandEmpty>No relevant budget found.</CommandEmpty>
-                                        <CommandGroup heading={budgetSearchTerm ? "Search Results" : undefined}>
-                                            {visibleOptions.map((budget) => (
-                                                <CommandItem
-                                                    key={budget.id}
-                                                    value={budget.name}
-                                                    onSelect={() => {
-                                                        setFormData({ ...formData, budgetId: budget.id });
-                                                        setIsBudgetOpen(false);
-                                                    }}
-                                                >
-                                                    <Check
-                                                        className={`mr-2 h-4 w-4 ${formData.budgetId === budget.id ? "opacity-100" : "opacity-0"}`}
-                                                    />
-                                                    <div className="flex items-center text-sm">
-                                                        {budget.isSystemBudget ? (
-                                                            <span className="text-blue-600 mr-2">★</span>
-                                                        ) : (
-                                                            <span className={`w-2 h-2 rounded-full mr-2 ${budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                        )}
-                                                        {budget.name}
-                                                        {budget.isSystemBudget && <span className="ml-1 text-xs text-gray-400">({formatDate(budget.startDate, 'MMM')})</span>}
-                                                    </div>
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                        {/* Desktop Budget Select */}
+                        <div className="hidden md:block">
+                            <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen} modal={true}>
+                                <PopoverTrigger asChild>
+                                    <CustomButton
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={isBudgetOpen}
+                                        className="w-full justify-between font-normal h-12 text-sm"
+                                    >
+                                        {formData.budgetId
+                                            ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
+                                            : "Select budget..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </CustomButton>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0" align="start">
+                                    <Command shouldFilter={false} className="h-auto overflow-hidden">
+                                        <CommandInput
+                                            placeholder="Search budgets..."
+                                            onValueChange={setBudgetSearchTerm}
+                                        />
+                                        <CommandList>
+                                            <CommandEmpty>No relevant budget found.</CommandEmpty>
+                                            <CommandGroup heading={budgetSearchTerm ? "Search Results" : undefined}>
+                                                {visibleOptions.map((budget) => (
+                                                    <CommandItem
+                                                        key={budget.id}
+                                                        value={budget.name}
+                                                        onSelect={() => {
+                                                            setFormData({ ...formData, budgetId: budget.id });
+                                                            setIsBudgetOpen(false);
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={`mr-2 h-4 w-4 ${formData.budgetId === budget.id ? "opacity-100" : "opacity-0"}`}
+                                                        />
+                                                        <div className="flex items-center text-sm">
+                                                            {budget.isSystemBudget ? (
+                                                                <span className="text-blue-600 mr-2">★</span>
+                                                            ) : (
+                                                                <span className={`w-2 h-2 rounded-full mr-2 ${budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                            )}
+                                                            {budget.name}
+                                                            {budget.isSystemBudget && <span className="ml-1 text-xs text-gray-400">({formatDate(budget.startDate, 'MMM')})</span>}
+                                                        </div>
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {/* Mobile Budget Drawer */}
+                        <div className="md:hidden">
+                            <MobileBudgetFormSelect
+                                value={formData.budgetId}
+                                onSelect={(val) => setFormData({ ...formData, budgetId: val })}
+                                options={visibleOptions}
+                                placeholder="Select budget..."
+                                searchTerm={budgetSearchTerm}
+                                onSearchChange={setBudgetSearchTerm}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
