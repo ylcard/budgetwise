@@ -68,7 +68,7 @@ export function MobileDrawerSelect({
                             </button>
                         )}
                     </DrawerTrigger>
-                    <DrawerContent className="max-h-[70vh] z-[105]" style={{ marginBottom: 'var(--safe-bottom)' }}>
+                    <DrawerContent className="max-h-[70vh] z-[60] outline-none" style={{ marginBottom: 'var(--nav-total-height)' }}>
                         <DrawerHeader>
                             <DrawerTitle>{title || placeholder}</DrawerTitle>
                         </DrawerHeader>
