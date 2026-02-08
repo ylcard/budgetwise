@@ -168,10 +168,10 @@ export default function QuickAddTransaction({
                 </DialogTrigger>
             )}
             
-            {/* MODAL FIX: Z-50 puts it above FAB (40) but below Nav (100). Bottom padding ensures it sits on nav. */}
             <DialogContent 
+                overlayClassName="z-40 bg-black/60"
                 className="fixed left-0 w-full z-50 gap-0 border bg-background p-0 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-1/2 data-[state=open]:slide-in-from-bottom-1/2 rounded-t-xl translate-x-0 translate-y-0 sm:rounded-lg sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-[500px] sm:mb-0"
-                style={{ bottom: 'var(--nav-total-height)', maxHeight: 'calc(100dvh - var(--nav-total-height) - var(--header-total-height))', overflowY: 'auto' }}
+                style={{ bottom: 'var(--nav-total-height)', maxHeight: 'calc(100dvh - var(--nav-total-height) - var(--header-total-height))' }}
             >
                 <div className="p-6 pb-2">
                     <DialogHeader>
