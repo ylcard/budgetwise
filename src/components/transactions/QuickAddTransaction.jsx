@@ -6,6 +6,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
@@ -31,6 +33,8 @@ export default function QuickAddTransaction({
     selectedYear
 }) {
     const { user } = useSettings();
+    const isMobile = useIsMobile();
+
     // If editing, use the transaction's month/year. Otherwise, use the viewed month/year.
     const dateContext = useMemo(() => {
         if (transaction?.date) {
@@ -157,6 +161,48 @@ export default function QuickAddTransaction({
         return getFirstDayOfMonth(dateContext.month, dateContext.year);
     };
 
+    const formContent = (
+        <TransactionFormContent
+            initialTransaction={isEditMode ? transaction : (defaultCustomBudgetId ? {
+                amount: null,
+                date: getInitialDate(),
+                budgetId: defaultCustomBudgetId
+            } : { date: getInitialDate() })}
+            categories={categories}
+            allBudgets={allBudgets}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            isSubmitting={isSubmitting}
+            transactions={transactions}
+        />
+    );
+
+    // Mobile View: Bottom Drawer
+    if (isMobile) {
+        return (
+            <Drawer open={showDialog} onOpenChange={handleOpenChange}>
+                {renderTrigger && (
+                    <DrawerTrigger asChild>
+                        <span className="inline-block cursor-pointer" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+                            {trigger || defaultTrigger}
+                        </span>
+                    </DrawerTrigger>
+                )}
+                <DrawerContent className="max-h-[90vh]">
+                    <DrawerHeader className="text-left">
+                        <DrawerTitle>
+                            {isEditMode ? 'Edit Transaction' : 'Quick Add Expense'}
+                        </DrawerTitle>
+                    </DrawerHeader>
+                    <div className="px-4 pb-4 overflow-y-auto">
+                        {formContent}
+                    </div>
+                </DrawerContent>
+            </Drawer>
+        );
+    }
+
+    // Desktop View: Standard Dialog
     return (
         <Dialog open={showDialog} onOpenChange={handleOpenChange}>
             {renderTrigger && (
@@ -167,34 +213,15 @@ export default function QuickAddTransaction({
                     </span>
                 </DialogTrigger>
             )}
-            
-            <DialogContent
-                overlayClassName="z-[110] bg-black/60 backdrop-blur-[2px]"
-                className="fixed left-0 bottom-[var(--nav-total-height)] top-auto w-full z-[120] gap-0 border-x-0 border-b-0 border-t bg-background p-0 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] ease-[cubic-bezier(0.32,0.72,0,1)] duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full rounded-t-[20px] transform-none sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-[500px] sm:rounded-lg sm:border sm:translate-x-[-50%] sm:translate-y-[-50%] sm:duration-200 sm:ease-in-out"
-                style={{ 
-                    maxHeight: 'calc(100dvh - var(--nav-total-height) - var(--header-total-height))' 
-                }}
-            >
-                <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted/40 sm:hidden" />
+
+            <DialogContent className="sm:max-w-[500px]">
                 <div className="p-6 pb-2">
                     <DialogHeader>
                         <DialogTitle>
                             {isEditMode ? 'Edit Transaction' : 'Quick Add Expense'}
                         </DialogTitle>
                     </DialogHeader>
-                    <TransactionFormContent
-                        initialTransaction={isEditMode ? transaction : (defaultCustomBudgetId ? {
-                            amount: null,
-                            date: getInitialDate(),
-                            budgetId: defaultCustomBudgetId
-                        } : { date: getInitialDate() })}
-                        categories={categories}
-                        allBudgets={allBudgets}
-                        onSubmit={handleSubmit}
-                        onCancel={handleCancel}
-                        isSubmitting={isSubmitting}
-                        transactions={transactions}
-                    />
+                    {formContent}
                 </div>
             </DialogContent>
         </Dialog>
