@@ -11,13 +11,13 @@ import { formatDateString, getFirstDayOfMonth, formatDate } from "../utils/dateU
 import { normalizeAmount } from "../utils/generalUtils";
 import { useSettings } from "../utils/SettingsContext";
 
-export default function IncomeFormContent({ 
-    initialTransaction, 
-    onSubmit, 
-    onCancel, 
-    isSubmitting, 
-    selectedMonth, 
-    selectedYear 
+export default function IncomeFormContent({
+    initialTransaction,
+    onSubmit,
+    onCancel,
+    isSubmitting,
+    selectedMonth,
+    selectedYear
 }) {
     const { settings } = useSettings();
     const [showNotes, setShowNotes] = useState(!!initialTransaction?.notes);
@@ -97,13 +97,21 @@ export default function IncomeFormContent({
                 </div>
                 <Popover modal={true}>
                     <PopoverTrigger asChild>
-                        <CustomButton type="button" variant="outline" className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300">
+                        <CustomButton
+                            type="button"
+                            variant="outline"
+                            className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-sm"
+                        >
                             <Calendar className="w-3.5 h-3.5 mr-2 text-green-600" />
                             <span className="text-green-700">{formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date'}</span>
                         </CustomButton>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-4" align="end">
-                        <DatePicker value={formData.date} onChange={(d) => setFormData({ ...formData, date: d })} className="w-full border-0 shadow-none px-0 h-auto" />
+                    <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
+                        <DatePicker
+                            value={formData.date}
+                            onChange={(d) => setFormData({ ...formData, date: d })}
+                            className="w-full border-0 shadow-none px-0 h-auto justify-center"
+                        />
                     </PopoverContent>
                 </Popover>
             </div>
