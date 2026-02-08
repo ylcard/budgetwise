@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * Custom input component designed for monetary amounts.
@@ -56,6 +57,7 @@ export default function AmountInput({
     const { settings: contextSettings } = useSettings();
     const settings = settingsOverride || contextSettings;
     const [open, setOpen] = useState(false);
+    const isMobile = useIsMobile();
 
     // Use provided currencySymbol or fall back to user's base currency
     const displaySymbol = currencySymbol || settings.currencySymbol;
@@ -163,22 +165,9 @@ export default function AmountInput({
             </Command>
         );
 
-        return (
-            <>
-                {/* Desktop Popover */}
-                <div className="hidden md:block h-full">
-                    <Popover open={open} onOpenChange={setOpen}>
-                        <PopoverTrigger asChild>
-                            {TriggerButton}
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[150px] p-0" align="start">
-                            <CurrencyList />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-
-                {/* Mobile Drawer */}
-                <div className="md:hidden h-full">
+        if (isMobile) {
+            return (
+                <div className="h-full">
                     <Drawer open={open} onOpenChange={setOpen}>
                         <DrawerTrigger asChild>
                             {TriggerButton}
@@ -193,7 +182,20 @@ export default function AmountInput({
                         </DrawerContent>
                     </Drawer>
                 </div>
-            </>
+            );
+        }
+
+        return (
+            <div className="h-full">
+                <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                        {TriggerButton}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[150px] p-0" align="start">
+                        <CurrencyList />
+                    </PopoverContent>
+                </Popover>
+            </div>
         );
     };
 
