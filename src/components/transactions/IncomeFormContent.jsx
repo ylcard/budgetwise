@@ -4,13 +4,32 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Calendar, StickyNote } from "lucide-react";
 import AmountInput from "../ui/AmountInput";
-//import DatePicker from "../ui/DatePicker";
 import { CalendarView } from "../ui/DatePicker";
 import { formatDateString, getFirstDayOfMonth, formatDate } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 import { useSettings } from "../utils/SettingsContext";
+
+const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+            <DrawerContent className="z-[200] flex flex-col max-h-[90dvh]">
+                <DrawerHeader><DrawerTitle>Select Date</DrawerTitle></DrawerHeader>
+                <div className="p-4 flex justify-center pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    <CalendarView
+                        selected={value ? new Date(value) : new Date()}
+                        onSelect={(date) => {
+                            if (date) onChange(formatDateString(date));
+                        }}
+                    />
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
 
 export default function IncomeFormContent({
     initialTransaction,
@@ -96,28 +115,47 @@ export default function IncomeFormContent({
                         className="text-2xl h-12 font-semibold"
                     />
                 </div>
-                <Popover modal={true}>
-                    <PopoverTrigger asChild>
-                        <CustomButton
-                            type="button"
-                            variant="outline"
-                            className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-sm"
-                        >
-                            <Calendar className="w-3.5 h-3.5 mr-2 text-green-600" />
-                            <span className="text-green-700">{formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date'}</span>
-                        </CustomButton>
-                    </PopoverTrigger>
-                    {/* Use the exact class from your expense form here */}
-                    <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
-                        <CalendarView
-                            selected={formData.date ? new Date(formData.date) : new Date()}
-                            onSelect={(date) => {
-                                if (date) setFormData({ ...formData, date: formatDateString(date) });
-                            }}
-                            className="p-0"
+
+                <div className="pt-0">
+                    {/* Mobile Date Drawer */}
+                    <div className="md:hidden">
+                        <MobileIncomeDateDrawer
+                            value={formData.date}
+                            onChange={(d) => setFormData({ ...formData, date: d })}
+                            trigger={
+                                <CustomButton type="button" variant="outline" className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 text-sm">
+                                    <Calendar className="w-3.5 h-3.5 mr-2 text-green-600" />
+                                    <span className="text-green-700">{formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date'}</span>
+                                </CustomButton>
+                            }
                         />
-                    </PopoverContent>
-                </Popover>
+                    </div>
+
+                    {/* Desktop Date Popover */}
+                    <div className="hidden md:block">
+                        <Popover modal={true}>
+                            <PopoverTrigger asChild>
+                                <CustomButton
+                                    type="button"
+                                    variant="outline"
+                                    className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-sm"
+                                >
+                                    <Calendar className="w-3.5 h-3.5 mr-2 text-green-600" />
+                                    <span className="text-green-700">{formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date'}</span>
+                                </CustomButton>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
+                                <CalendarView
+                                    selected={formData.date ? new Date(formData.date) : new Date()}
+                                    onSelect={(date) => {
+                                        if (date) setFormData({ ...formData, date: formatDateString(date) });
+                                    }}
+                                    className="p-0"
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
             </div>
 
             {/* Notes Section */}
