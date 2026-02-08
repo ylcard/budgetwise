@@ -9,9 +9,6 @@ import {
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
-// import { useAllBudgets } from "../hooks/useBase44Entities";
-// import { formatDateString, getFirstDayOfMonth } from "../utils/dateUtils";
-// UPDATED: 03-Feb-2026 - useCustomBudgetsAll renamed to useCustomBudgetsForPeriod
 import { useCustomBudgetsForPeriod, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "../utils/dateUtils";
 import TransactionFormContent from "./TransactionFormContent";
@@ -34,23 +31,15 @@ export default function QuickAddTransaction({
     selectedYear
 }) {
     const { user } = useSettings();
-    // DEPRECATED: const { allBudgets } = useAllBudgets(user);
-
-    // Trying to fix expenses not being assigned to budgets when importing
-    // 1. Determine Date Context for System Budgets
-    // Default to current date if not provided (Global Add) or selected date (Dashboard)
-    // const targetMonth = selectedMonth ?? new Date().getMonth();
-    // const targetYear = selectedYear ?? new Date().getFullYear();
-
     // If editing, use the transaction's month/year. Otherwise, use the viewed month/year.
     const dateContext = useMemo(() => {
         if (transaction?.date) {
             const d = new Date(transaction.date);
             if (!isNaN(d)) return { month: d.getMonth(), year: d.getFullYear() };
         }
-        return { 
-            month: selectedMonth ?? new Date().getMonth(), 
-            year: selectedYear ?? new Date().getFullYear() 
+        return {
+            month: selectedMonth ?? new Date().getMonth(),
+            year: selectedYear ?? new Date().getFullYear()
         };
     }, [transaction, selectedMonth, selectedYear]);
 
@@ -64,24 +53,24 @@ export default function QuickAddTransaction({
     // 2. The transaction's original month (so the linked budget appears in dropdown)
     const transactionMonth = transaction?.date ? new Date(transaction.date).getMonth() : null;
     const transactionYear = transaction?.date ? new Date(transaction.date).getFullYear() : null;
-    
+
     const needsSecondFetch = transaction && (
         transactionMonth !== dateContext.month || transactionYear !== dateContext.year
     );
-    
+
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
-    
+
     // If editing a transaction from a different month, fetch that month's system budgets too
-    const transactionMonthBounds = needsSecondFetch 
+    const transactionMonthBounds = needsSecondFetch
         ? getMonthBoundaries(transactionMonth, transactionYear)
         : { monthStart: null, monthEnd: null };
-    
+
     const { systemBudgets: transactionSystemBudgets } = useSystemBudgetsForPeriod(
-        user, 
-        transactionMonthBounds.monthStart, 
+        user,
+        transactionMonthBounds.monthStart,
         transactionMonthBounds.monthEnd
     );
-    
+
     // Custom: Unconstrained (Fetch "All" - handled by hook limit)
     // UPDATED: 03-Feb-2026 - Using renamed hook
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, null, null);
@@ -89,17 +78,17 @@ export default function QuickAddTransaction({
     // 3. Prepare & Sort the Dropdown List
     const allBudgets = useMemo(() => {
         // CRITICAL FIX 17-Jan-2026: Merge system budgets from BOTH date ranges when editing
-        
+
         // A. System Budgets: Combine current month + transaction's month (if different)
-        const combinedSystemBudgets = needsSecondFetch 
+        const combinedSystemBudgets = needsSecondFetch
             ? [...systemBudgets, ...transactionSystemBudgets]
             : systemBudgets;
-        
+
         // Remove duplicates (shouldn't happen, but just in case)
         const uniqueSystemBudgets = Array.from(
             new Map(combinedSystemBudgets.map(sb => [sb.id, sb])).values()
         );
-        
+
         const formattedSystem = uniqueSystemBudgets
             .filter(sb => sb.systemBudgetType !== 'savings') // Rule: Savings is not for expenses
             .map(sb => ({
@@ -161,12 +150,10 @@ export default function QuickAddTransaction({
     const getInitialDate = () => {
         const now = new Date();
         // If selected month/year matches current real-time, use today
-        // DEPRECATED: if (selectedMonth === now.getMonth() && selectedYear === now.getFullYear()) {
         if (dateContext.month === now.getMonth() && dateContext.year === now.getFullYear()) {
             return formatDateString(now);
         }
         // Otherwise default to the 1st of the selected month
-        // DEPRECATED: return getFirstDayOfMonth(selectedMonth, selectedYear);
         return getFirstDayOfMonth(dateContext.month, dateContext.year);
     };
 
@@ -180,7 +167,7 @@ export default function QuickAddTransaction({
                     </span>
                 </DialogTrigger>
             )}
-            <DialogContent className="sm:max-w-[500px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <DialogContent className="fixed left-0 bottom-0 w-full z-50 gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-1/2 data-[state=open]:slide-in-from-bottom-1/2 rounded-t-xl sm:rounded-lg sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-[500px] mb-20 sm:mb-0">
                 <DialogHeader>
                     <DialogTitle>
                         {isEditMode ? 'Edit Transaction' : 'Quick Add Expense'}
