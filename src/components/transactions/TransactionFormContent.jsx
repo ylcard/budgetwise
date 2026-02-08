@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -713,9 +713,12 @@ export default function TransactionFormContent({
             exchangeRateUsed: exchangeRateUsed,
             type: formData.type,
             category_id: formData.category_id || null,
-            financial_priority: formData.financial_priority || null, // ADDED 20-Jan-2025
+            financial_priority: formData.financial_priority || null,
             date: formData.date,
-            notes: formData.notes || null
+            notes: formData.notes || null,
+            isPaid: false,
+            paidDate: null,
+            budgetId: null
         };
 
         if (formData.type === 'expense') {
