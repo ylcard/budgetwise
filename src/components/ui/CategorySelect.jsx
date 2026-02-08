@@ -75,7 +75,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between h-14 px-3 font-normal text-base"
+            className="w-full justify-between h-12 px-3 font-normal text-sm"
         >
             {multiple ? (
                 selectedCategories.length > 0 ? (
@@ -174,9 +174,8 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     {TriggerContent}
                 </DrawerTrigger>
 
-                {/* Added mb-24 to keep the drawer above the bottom nav bar area */}
-                {/* z-[105] places it above the modal (95) and layout (100) so it is interactive, but we visually offset it */}
-                <DrawerContent className="z-[105] max-h-[70vh]" style={{ marginBottom: 'var(--safe-bottom)' }}>
+                {/* z-[60] places it below the nav (100) so nav stays clickable. marginBottom ensures visual clearance */}
+                <DrawerContent className="z-[60] max-h-[70vh] outline-none" style={{ marginBottom: 'var(--nav-total-height)' }}>
                     <div className="mt-4 border-t">
                         {ListContent}
                     </div>
