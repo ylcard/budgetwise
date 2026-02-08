@@ -177,14 +177,14 @@ const LayoutContent = ({ children }) => {
                 </Sidebar>
 
                 <main className="flex-1 flex flex-col relative">
-                    <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0 pb-[calc(4rem+env(safe-area-inset-bottom))]">
+                    <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
                         <RouteTransition>
                             {children}
                         </RouteTransition>
                     </div>
 
-                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex w-full items-center px-2 py-2 select-none">
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'var(--safe-bottom-inset)', height: 'var(--nav-total-height)' }}>
+                        <div className="flex w-full items-center px-2 py-2 select-none h-[var(--mobile-bottom-nav-height)]">
                             {primaryNav.map((item) => {
                                 const isTabActive = activeTab === item.url;
                                 return (
