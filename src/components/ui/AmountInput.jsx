@@ -14,6 +14,7 @@ import {
     CommandGroup,
     CommandInput,
     CommandItem,
+    CommandList
 } from "@/components/ui/command";
 import {
     Popover,
@@ -21,6 +22,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { SUPPORTED_CURRENCIES } from "../utils/constants";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
 /**
  * Custom input component designed for monetary amounts.
@@ -121,44 +123,77 @@ export default function AmountInput({
 
     // Render the Currency Selector Trigger
     const renderCurrencySelector = () => {
-        const selectedCurrency = SUPPORTED_CURRENCIES.find(c => c.code === currency);
+        //const selectedCurrency = SUPPORTED_CURRENCIES.find(c => c.code === currency);
+        const selectedCurrencyObj = SUPPORTED_CURRENCIES.find(c => c.code === currency);
+
+        const TriggerButton = (
+            <CustomButton
+                variant="ghost"
+                role="combobox"
+                aria-expanded={open}
+                className="h-full rounded-r-none border-r border-gray-200 px-3 hover:bg-gray-50 text-gray-600 font-medium"
+            >
+                <span className="mr-1">{selectedCurrencyObj?.symbol || displaySymbol}</span>
+                <span>{currency}</span>
+            </CustomButton>
+        );
+
+        const CurrencyList = ({ mobile = false }) => (
+            <Command className={mobile ? "h-full" : ""}>
+                <CommandInput placeholder="Search currency..." className={mobile ? "h-12 text-base" : "h-8 text-xs"} />
+                <CommandList>
+                    <CommandEmpty>No currency.</CommandEmpty>
+                    <CommandGroup className={mobile ? "overflow-y-auto" : "max-h-64 overflow-y-auto [&::-webkit-scrollbar]:hidden"}>
+                        {SUPPORTED_CURRENCIES.map((c) => (
+                            <CommandItem
+                                key={c.code}
+                                value={`${c.code} ${c.name}`}
+                                onSelect={() => {
+                                    onCurrencyChange(c.code);
+                                    setOpen(false);
+                                }}
+                                className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${currency === c.code ? 'bg-blue-50 text-blue-700' : ''} ${mobile ? 'py-3' : ''}`}
+                            >
+                                <span className="w-4 text-center text-gray-500 font-medium text-xs">{c.symbol}</span>
+                                <span className="font-medium text-sm">{c.code}</span>
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                </CommandList>
+            </Command>
+        );
 
         return (
-            <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <CustomButton
-                        variant="ghost"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="h-full rounded-r-none border-r border-gray-200 px-3 hover:bg-gray-50 text-gray-600 font-medium"
-                    >
-                        <span className="mr-1">{selectedCurrency?.symbol || displaySymbol}</span>
-                        <span>{currency}</span>
-                    </CustomButton>
-                </PopoverTrigger>
-                <PopoverContent className="w-[120px] p-0" align="start">
-                    <Command>
-                        <CommandInput placeholder="Search..." className="h-8 text-xs" />
-                        <CommandEmpty>No currency.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-                            {SUPPORTED_CURRENCIES.map((c) => (
-                                <CommandItem
-                                    key={c.code}
-                                    value={`${c.code} ${c.name}`}
-                                    onSelect={() => {
-                                        onCurrencyChange(c.code);
-                                        setOpen(false);
-                                    }}
-                                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${currency === c.code ? 'bg-blue-50 text-blue-700' : ''}`}
-                                >
-                                    <span className="w-4 text-center text-gray-500 font-medium text-xs">{c.symbol}</span>
-                                    <span className="font-medium text-sm">{c.code}</span>
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </Command>
-                </PopoverContent>
-            </Popover>
+            <>
+                {/* Desktop Popover */}
+                <div className="hidden md:block h-full">
+                    <Popover open={open} onOpenChange={setOpen}>
+                        <PopoverTrigger asChild>
+                            {TriggerButton}
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[150px] p-0" align="start">
+                            <CurrencyList />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+
+                {/* Mobile Drawer */}
+                <div className="md:hidden h-full">
+                    <Drawer open={open} onOpenChange={setOpen}>
+                        <DrawerTrigger asChild>
+                            {TriggerButton}
+                        </DrawerTrigger>
+                        <DrawerContent className="z-[200] flex flex-col max-h-[85dvh]">
+                            <DrawerHeader>
+                                <DrawerTitle>Select Currency</DrawerTitle>
+                            </DrawerHeader>
+                            <div className="flex-1 overflow-hidden p-4 pt-0">
+                                <CurrencyList mobile={true} />
+                            </div>
+                        </DrawerContent>
+                    </Drawer>
+                </div>
+            </>
         );
     };
 
