@@ -167,7 +167,15 @@ export default function QuickAddTransaction({
                     </span>
                 </DialogTrigger>
             )}
-            <DialogContent className="fixed left-0 bottom-24 w-full z-[100] gap-4 border bg-background p-6 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-1/2 data-[state=open]:slide-in-from-bottom-1/2 rounded-t-xl translate-x-0 translate-y-0 max-h-[calc(100vh-180px)] overflow-y-auto sm:rounded-lg sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-[500px] sm:mb-0">
+            <DialogContent 
+                className="fixed left-0 w-full gap-4 border bg-background p-6 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-1/2 data-[state=open]:slide-in-from-bottom-1/2 rounded-t-xl translate-x-0 translate-y-0 overflow-y-auto sm:rounded-lg sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-[500px] sm:mb-0 z-[95] sm:z-50"
+                style={{
+                    /* PROGRAMMATIC POSITIONING: */
+                    bottom: 'var(--safe-bottom)', /* Sits exactly on top of the nav bar */
+                    /* Max height fits exactly between header and footer */
+                    maxHeight: 'calc(100dvh - var(--safe-top) - var(--safe-bottom) - 10px)' 
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>
                         {isEditMode ? 'Edit Transaction' : 'Quick Add Expense'}
