@@ -170,13 +170,12 @@ export default function QuickAddTransaction({
             
             <DialogContent
                 overlayClassName="z-[110] bg-black/60 backdrop-blur-[2px]"
-                className="fixed left-0 w-full z-[120] gap-0 border-x-0 border-b-0 border-t bg-background p-0 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] ease-[cubic-bezier(0.32,0.72,0,1)] duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full rounded-t-[20px] translate-x-0 translate-y-0 sm:rounded-lg sm:border sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-[500px] sm:mb-0"
+                className="fixed left-0 bottom-[var(--nav-total-height)] top-auto w-full z-[120] gap-0 border-x-0 border-b-0 border-t bg-background p-0 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] ease-[cubic-bezier(0.32,0.72,0,1)] duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full rounded-t-[20px] transform-none sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-[500px] sm:rounded-lg sm:border sm:translate-x-[-50%] sm:translate-y-[-50%] sm:duration-200 sm:ease-in-out"
                 style={{ 
-                    bottom: 'var(--nav-total-height)', 
-                    top: 'auto', 
                     maxHeight: 'calc(100dvh - var(--nav-total-height) - var(--header-total-height))' 
                 }}
             >
+                <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted/40 sm:hidden" />
                 <div className="p-6 pb-2">
                     <DialogHeader>
                         <DialogTitle>
