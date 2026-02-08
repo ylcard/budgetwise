@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Check, Circle } from "lucide-react";
+import { Check, Circle, ChevronDown } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import {
     Command,
@@ -17,9 +17,12 @@ import {
 } from "@/components/ui/popover";
 import { iconMap } from "../utils/iconMapConfig";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
+    const isMobile = useIsMobile();
 
     // SORTING LOGIC: Needs -> Wants -> Others (then Alphabetical)
     const sortedCategories = useMemo(() => {
@@ -67,84 +70,83 @@ export default function CategorySelect({ value, onValueChange, categories, place
         ? iconMap[selectedCategory.icon]
         : Circle;
 
-    return (
-        <Popover open={open} onOpenChange={setOpen} modal={true}>
-            <PopoverTrigger asChild>
-                <CustomButton
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    className="w-full justify-between h-9 px-3 font-normal"
-                >
-                    {multiple ? (
-                        selectedCategories.length > 0 ? (
-                            <span>{selectedCategories.length} selected</span>
-                        ) : (
-                            <span className="text-muted-foreground">{placeholder}</span>
-                        )
-                    ) : (
-                        selectedCategory ? (
-                            <div className="flex items-center gap-2">
-                                <div
-                                    className="w-4 h-4 rounded flex items-center justify-center"
-                                    style={{ backgroundColor: `${selectedCategory.color}20` }}
-                                >
-                                    <IconComponent className="w-2.5 h-2.5" style={{ color: selectedCategory.color }} />
-                                </div>
-                                <span>{selectedCategory.name}</span>
-                            </div>
-                        ) : (
-                            <span className="text-muted-foreground">{placeholder}</span>
-                        )
-                    )}
-                    
-                    {/* Implementation of handleClear UI */}
-                    {!multiple && value && (
-                        <div 
-                            className="ml-auto hover:bg-gray-100 p-0.5 rounded-full transition-colors"
-                            onClick={handleClear}
+    const TriggerContent = (
+        <CustomButton
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between h-12 px-3 font-normal text-base"
+        >
+            {multiple ? (
+                selectedCategories.length > 0 ? (
+                    <span>{selectedCategories.length} selected</span>
+                ) : (
+                    <span className="text-muted-foreground">{placeholder}</span>
+                )
+            ) : (
+                selectedCategory ? (
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-4 h-4 rounded flex items-center justify-center"
+                            style={{ backgroundColor: `${selectedCategory.color}20` }}
                         >
-                            <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+                            <IconComponent className="w-2.5 h-2.5" style={{ color: selectedCategory.color }} />
                         </div>
-                    )}
-                    
-                    {/* Fallback chevron if no value or if multiple */}
-                    {(!value || multiple) && <div className="ml-auto opacity-50">▼</div>}
-                </CustomButton>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="start">
-                <Command className="h-auto w-full overflow-visible">
-                    <CommandInput placeholder="Search category..." />
-                    <CommandList className="max-h-64 overflow-y-auto overflow-x-hidden">
-                        <CommandEmpty>No category found.</CommandEmpty>                        
-                        {/* Group by Priority for better scannability */}
-                        {['needs', 'wants', 'other'].map((priority) => {
-                            const groupCategories = sortedCategories.filter(c => 
-                                priority === 'other' 
-                                    ? !['needs', 'wants'].includes((c.priority || '').toLowerCase())
-                                    : (c.priority || '').toLowerCase() === priority
-                            );
+                        <span>{selectedCategory.name}</span>
+                    </div>
+                ) : (
+                    <span className="text-muted-foreground">{placeholder}</span>
+                )
+            )}
 
-                            if (groupCategories.length === 0) return null;
+            {/* Implementation of handleClear UI */}
+            {!multiple && value && (
+                <div
+                    className="ml-auto hover:bg-gray-100 p-0.5 rounded-full transition-colors"
+                    onClick={handleClear}
+                >
+                    <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+                </div>
+            )}
 
-                            return (
-                                <CommandGroup 
-                                    key={priority} 
-                                    heading={FINANCIAL_PRIORITIES[priority]?.label || "Other"}
-                                    className="overflow-visible"
-                                >
-                                    {groupCategories.map((category) => {
-                                        const Icon = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
-                                        const isSelected = multiple
-                                            ? (Array.isArray(value) && value.includes(category.id))
-                                            : value === category.id;
+            {/* Fallback chevron if no value or if multiple */}
+            {(!value || multiple) && <ChevronDown className="ml-auto h-4 w-4 opacity-50" />}
+        </CustomButton>
+    );
 
-                                        return (
-                                            <CommandItem
-                                                key={category.id}
-                                                value={category.name}
-                                                onSelect={() => handleSelect(category.id)}
-                                            >
+    const ListContent = (
+        <Command className={isMobile ? "h-full" : "h-auto w-full overflow-visible"}>
+            <CommandInput placeholder="Search category..." />
+            <CommandList className={isMobile ? "max-h-[60vh] overflow-y-auto" : "max-h-64 overflow-y-auto overflow-x-hidden"}>
+                <CommandEmpty>No category found.</CommandEmpty>
+                {/* Group by Priority for better scannability */}
+                {['needs', 'wants', 'other'].map((priority) => {
+                    const groupCategories = sortedCategories.filter(c =>
+                        priority === 'other'
+                            ? !['needs', 'wants'].includes((c.priority || '').toLowerCase())
+                            : (c.priority || '').toLowerCase() === priority
+                    );
+
+                    if (groupCategories.length === 0) return null;
+
+                    return (
+                        <CommandGroup
+                            key={priority}
+                            heading={FINANCIAL_PRIORITIES[priority]?.label || "Other"}
+                            className="overflow-visible"
+                        >
+                            {groupCategories.map((category) => {
+                                const Icon = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
+                                const isSelected = multiple
+                                    ? (Array.isArray(value) && value.includes(category.id))
+                                    : value === category.id;
+
+                                return (
+                                    <CommandItem
+                                        key={category.id}
+                                        value={category.name}
+                                        onSelect={() => handleSelect(category.id)}
+                                    >
                                         <Check
                                             className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
                                         />
@@ -156,13 +158,35 @@ export default function CategorySelect({ value, onValueChange, categories, place
                                         </div>
                                         {category.name}
                                     </CommandItem>
-                                        );
-                                    })}
-                                </CommandGroup>
-                            );
-                        })}
-                    </CommandList>
-                </Command>
+                                );
+                            })}
+                        </CommandGroup>
+                    );
+                })}
+            </CommandList>
+        </Command>
+    );
+
+    if (isMobile) {
+        return (
+            <Drawer open={open} onOpenChange={setOpen}>
+                <DrawerTrigger asChild>
+                    {TriggerContent}
+                </DrawerTrigger>
+                <DrawerContent>
+                    <div className="mt-4 border-t">
+                        {ListContent}
+                    </div>
+                </DrawerContent>
+            </Drawer>
+        );
+    }
+
+    return (
+        <Popover open={open} onOpenChange={setOpen} modal={true}>
+            <PopoverTrigger asChild>{TriggerContent}</PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0" align="start">
+                {ListContent}
             </PopoverContent>
         </Popover>
     );
