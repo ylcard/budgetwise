@@ -140,6 +140,32 @@ const MobilePriorityFormSelect = ({ value, onSelect, placeholder }) => {
 };
 
 const MobileDateStatusForm = ({ formData, setFormData, trigger }) => {
+    // State to toggle which date we are currently editing on the calendar
+    const [activeField, setActiveField] = useState('date'); // 'date' or 'paidDate'
+
+    // Helper: When "Paid" is toggled on, verify logic
+    const handlePaidToggle = (isChecked) => {
+        setFormData(prev => ({
+            ...prev,
+            isPaid: isChecked,
+            isCashExpense: isChecked ? prev.isCashExpense : false,
+            // If turning ON paid, and no paid date exists, default to transaction date
+            paidDate: isChecked ? (prev.paidDate || prev.date) : ''
+        }));
+        // If turning ON, switch view to Paid Date for convenience
+        if (isChecked) setActiveField('paidDate');
+    };
+
+    // Select the correct date object based on active tab
+    const currentSelectedDate = activeField === 'date'
+        ? (formData.date ? new Date(formData.date) : undefined)
+        : (formData.paidDate ? new Date(formData.paidDate) : undefined);
+
+    // Identify the "other" date to show as a ghost marker
+    const otherDate = activeField === 'date'
+        ? (formData.isPaid && formData.paidDate ? new Date(formData.paidDate) : undefined)
+        : (formData.date ? new Date(formData.date) : undefined);
+
     return (
         <Drawer>
             <DrawerTrigger asChild>
@@ -150,18 +176,10 @@ const MobileDateStatusForm = ({ formData, setFormData, trigger }) => {
                     <DrawerTitle>Date & Status</DrawerTitle>
                 </DrawerHeader>
                 <div className="p-4 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                    <div className="flex justify-center border-b pb-4 mb-4">
-                        <CalendarComponent
-                            mode="single"
-                            selected={formData.date ? new Date(formData.date) : undefined}
-                            onSelect={(date) => date && setFormData({ ...formData, date: formatDateString(date) })}
-                            initialFocus
-                        />
-                    </div>
 
                     {formData.type === 'expense' && (
-                        <div className="space-y-4 px-2">
-                            <div className="flex items-center justify-between">
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
                                 <Label htmlFor="mobile-paid-switch" className="flex flex-col">
                                     <span className="text-base font-medium">Mark as Paid</span>
                                     <span className="text-xs text-muted-foreground font-normal">Transaction completed</span>
@@ -169,25 +187,85 @@ const MobileDateStatusForm = ({ formData, setFormData, trigger }) => {
                                 <Switch
                                     id="mobile-paid-switch"
                                     checked={formData.isPaid}
-                                    onCheckedChange={(c) => setFormData(prev => ({ ...prev, isPaid: c, isCashExpense: c ? prev.isCashExpense : false }))}
+                                    onCheckedChange={handlePaidToggle}
                                 />
                             </div>
 
-                            {formData.isPaid && (
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="mobile-cash-switch" className="flex flex-col">
-                                        <span className="text-base font-medium">Paid with Cash</span>
-                                        <span className="text-xs text-muted-foreground font-normal">No bank record</span>
-                                    </Label>
-                                    <Switch
-                                        id="mobile-cash-switch"
-                                        checked={formData.isCashExpense}
-                                        onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
-                                    />
+                            {formData.isPaid ? (
+                                <div className="space-y-4">
+                                    {/* Tab Switcher for Dates */}
+                                    <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveField('date')}
+                                            className={cn(
+                                                "py-2 text-sm font-medium rounded-md transition-all",
+                                                activeField === 'date'
+                                                    ? "bg-white shadow text-foreground"
+                                                    : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            Transaction Date
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveField('paidDate')}
+                                            className={cn(
+                                                "py-2 text-sm font-medium rounded-md transition-all",
+                                                activeField === 'paidDate'
+                                                    ? "bg-white shadow text-foreground"
+                                                    : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            Paid Date
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center justify-between px-2">
+                                        <Label htmlFor="mobile-cash-switch" className="flex flex-col">
+                                            <span className="text-base font-medium">Paid with Cash</span>
+                                            <span className="text-xs text-muted-foreground font-normal">No bank record</span>
+                                        </Label>
+                                        <Switch
+                                            id="mobile-cash-switch"
+                                            checked={formData.isCashExpense}
+                                            onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center text-sm text-gray-500 py-2">
+                                    Editing Transaction Date
                                 </div>
                             )}
                         </div>
                     )}
+
+                    {/* 2. The Calendar (Reusable View) */}
+                    <div className="flex justify-center mt-4">
+                        <CalendarView
+                            selected={currentSelectedDate}
+                            onSelect={(date) => {
+                                if (date) {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        [activeField]: formatDateString(date)
+                                    }));
+                                }
+                            }}
+                            // Visual hint for the "other" date
+                            modifiers={{
+                                otherDate: otherDate ? [otherDate] : []
+                            }}
+                            modifiersStyles={{
+                                otherDate: {
+                                    border: '2px solid rgba(37, 99, 235, 0.4)',
+                                    borderRadius: '50%',
+                                    color: 'inherit'
+                                }
+                            }}
+                        />
+                    </div>
                 </div>
             </DrawerContent>
         </Drawer>
@@ -732,11 +810,11 @@ export default function TransactionFormContent({
                                 {/* ... (Existing Desktop Content) ... */}
                                 <div className="space-y-4">
                                     <div className="border-b pb-4">
-                                        <CalendarComponent
-                                            mode="single"
-                                            selected={formData.date ? new Date(formData.date) : undefined}
-                                            onSelect={(date) => date && setFormData({ ...formData, date: formatDateString(date) })}
-                                            initialFocus
+                                        {/* Use your custom DatePicker here, it handles the calendar styles correctly */}
+                                        <DatePicker
+                                            value={formData.date}
+                                            onChange={(d) => setFormData({ ...formData, date: d })}
+                                            className="w-full border-0 shadow-none px-0 h-auto justify-center"
                                         />
                                     </div>
                                     {formData.type === 'expense' && (
