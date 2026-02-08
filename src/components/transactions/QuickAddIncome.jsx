@@ -3,7 +3,8 @@ import {
     Dialog,
     DialogContent,
     DialogHeader,
-    DialogTitle
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -66,7 +67,13 @@ export default function QuickAddIncome({
     if (isMobile) {
         return (
             <Drawer open={showDialog} onOpenChange={handleOpenChange}>
-                {renderTrigger && <DrawerTrigger asChild>{defaultTrigger}</DrawerTrigger>}
+                {renderTrigger && (
+                    <DrawerTrigger asChild>
+                        <span className="inline-block cursor-pointer" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+                            {defaultTrigger}
+                        </span>
+                    </DrawerTrigger>
+                )}
                 <DrawerContent className="max-h-[90vh]">
                     <DrawerHeader className="text-left">
                         <DrawerTitle>{isEditMode ? 'Edit Income' : 'Quick Add Income'}</DrawerTitle>
@@ -79,7 +86,13 @@ export default function QuickAddIncome({
 
     return (
         <Dialog open={showDialog} onOpenChange={handleOpenChange}>
-            {renderTrigger && <DialogTrigger asChild>{defaultTrigger}</DialogTrigger>}
+            {renderTrigger && (
+                <DialogTrigger asChild>
+                    <span className="inline-block cursor-pointer" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+                        {defaultTrigger}
+                    </span>
+                </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[450px]">
                 <div className="p-6 pb-2">
                     <DialogHeader><DialogTitle>{isEditMode ? 'Edit Income' : 'Quick Add Income'}</DialogTitle></DialogHeader>
