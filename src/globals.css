@@ -274,21 +274,12 @@
     background-color: var(--rdp-accent-background-color);
 }
 
-
 /* Force Popovers (Calendar) to be top-most */
 .popover-content-z-index {
     z-index: 110 !important;
 }
 
-/* Ensure Drawer Overlay doesn't cover the bottom nav */
-[data-vaul-overlay] {
-    z-index: 60 !important;
-    /* Below Nav (100) but above Form (50) */
-    bottom: var(--nav-total-height) !important;
-    /* Stop at the nav bar */
-}
-
-[data-vaul-drawer] {
-    z-index: 60 !important;
-    /* Drawer content z-index */
+/* Ensure Drawer Overlay and Content are on top of everything */
+[data-vaul-drawer-wrapper] {
+    z-index: 110 !important;
 }
