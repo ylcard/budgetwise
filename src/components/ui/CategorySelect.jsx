@@ -174,8 +174,8 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     {TriggerContent}
                 </DrawerTrigger>
 
-                {/* z-[60] places it below the nav (100) so nav stays clickable. marginBottom ensures visual clearance */}
-                <DrawerContent className="z-[60] max-h-[70vh] outline-none" style={{ marginBottom: 'var(--nav-total-height)' }}>
+                {/* z-[110] places it above the modal and nav bar */}
+                <DrawerContent className="z-[110] max-h-[85vh] outline-none">
                     <div className="mt-4 border-t">
                         {ListContent}
                     </div>
