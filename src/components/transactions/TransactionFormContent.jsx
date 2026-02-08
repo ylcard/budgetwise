@@ -399,7 +399,7 @@ export default function TransactionFormContent({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 pb-2">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             {validationError && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -414,7 +414,7 @@ export default function TransactionFormContent({
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="What is this for?"
-                    className="text-xl font-medium border-0 border-b rounded-none px-0 h-14 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
+                    className="text-lg font-medium border-0 border-b rounded-none px-0 h-10 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
                     required
                     autoComplete="off"
                 />
@@ -466,7 +466,7 @@ export default function TransactionFormContent({
                         currency={formData.originalCurrency}
                         onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
                         required
-                        className="text-3xl h-14 font-semibold"
+                        className="text-2xl h-12 font-semibold"
                     />
                 </div>
 
@@ -477,12 +477,12 @@ export default function TransactionFormContent({
                             <CustomButton
                                 type="button"
                                 variant="outline"
-                                className="h-14 px-4 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-base"
+                                className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-sm"
                             >
                                 {getStatusButtonContent()}
                             </CustomButton>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4" align="end" side="top">
+                        <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
                             <div className="space-y-4">
                                 <div className="border-b pb-4">
                                     <CalendarComponent
@@ -547,9 +547,9 @@ export default function TransactionFormContent({
                                 value={formData.financial_priority || ''}
                                 onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
                                 placeholder="Select priority"
-                                className="h-14"
+                                className="h-12"
                                 customTrigger={
-                                    <button className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                    <button className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground">
                                         <span className="truncate">{formData.financial_priority ? FINANCIAL_PRIORITIES[formData.financial_priority]?.label : 'Priority'}</span>
                                     </button>
                                 }
@@ -571,7 +571,7 @@ export default function TransactionFormContent({
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={isBudgetOpen}
-                                    className="w-full justify-between font-normal h-14 text-base"
+                                    className="w-full justify-between font-normal h-12 text-sm"
                                 >
                                     {formData.budgetId
                                         ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
