@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
@@ -33,8 +34,13 @@ import { getCategoryIcon } from "../utils/iconMapConfig";
 import DatePicker, { CalendarView } from "../ui/DatePicker";
 
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
+    const [searchTerm, setSearchTerm] = useState("");
     const selectedCategory = categories.find(c => c.id === value);
     const label = selectedCategory ? selectedCategory.name : placeholder;
+
+    const filteredCategories = categories.filter(cat =>
+        cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <Drawer>
@@ -50,13 +56,26 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
                 </CustomButton>
             </DrawerTrigger>
             {/* Use flex column to organize header vs list, max-h uses real available space minus a small top gap */}
-            <DrawerContent className="z-[200] flex flex-col max-h-[calc(100dvh-2rem)]">
+            <DrawerContent className="z-[200] flex flex-col max-h-[90dvh]">
                 <DrawerHeader>
                     <DrawerTitle>Select Category</DrawerTitle>
                 </DrawerHeader>
+
+                <div className="px-4 pb-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search categories..."
+                            className="pl-9 h-10 bg-muted/30"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
                 {/* flex-1 lets this container fill all remaining space, then scroll */}
                 <div className="p-4 space-y-1 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                    {categories.map((cat) => {
+                    {filteredCategories.map((cat) => {
                         const isSelected = value === cat.id;
                         const Icon = getCategoryIcon(cat.icon);
                         return (
@@ -191,49 +210,59 @@ const MobileDateStatusForm = ({ formData, setFormData, trigger }) => {
                                 />
                             </div>
 
-                            {formData.isPaid ? (
-                                <div className="space-y-4">
-                                    {/* Tab Switcher for Dates */}
-                                    <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveField('date')}
-                                            className={cn(
-                                                "py-2 text-sm font-medium rounded-md transition-all",
-                                                activeField === 'date'
-                                                    ? "bg-white shadow text-foreground"
-                                                    : "text-muted-foreground hover:text-foreground"
-                                            )}
-                                        >
-                                            Transaction Date
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveField('paidDate')}
-                                            className={cn(
-                                                "py-2 text-sm font-medium rounded-md transition-all",
-                                                activeField === 'paidDate'
-                                                    ? "bg-white shadow text-foreground"
-                                                    : "text-muted-foreground hover:text-foreground"
-                                            )}
-                                        >
-                                            Paid Date
-                                        </button>
-                                    </div>
+                            <AnimatePresence>
+                                {formData.isPaid && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="space-y-4 pt-2 overflow-hidden"
+                                    >
+                                        {/* Tab Switcher for Dates */}
+                                        <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveField('date')}
+                                                className={cn(
+                                                    "py-2 text-sm font-medium rounded-md transition-all",
+                                                    activeField === 'date'
+                                                        ? "bg-white shadow text-foreground"
+                                                        : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                Transaction Date
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveField('paidDate')}
+                                                className={cn(
+                                                    "py-2 text-sm font-medium rounded-md transition-all",
+                                                    activeField === 'paidDate'
+                                                        ? "bg-white shadow text-foreground"
+                                                        : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                Paid Date
+                                            </button>
+                                        </div>
 
-                                    <div className="flex items-center justify-between px-2">
-                                        <Label htmlFor="mobile-cash-switch" className="flex flex-col">
-                                            <span className="text-base font-medium">Paid with Cash</span>
-                                            <span className="text-xs text-muted-foreground font-normal">No bank record</span>
-                                        </Label>
-                                        <Switch
-                                            id="mobile-cash-switch"
-                                            checked={formData.isCashExpense}
-                                            onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
+                                        <div className="flex items-center justify-between px-2">
+                                            <Label htmlFor="mobile-cash-switch" className="flex flex-col">
+                                                <span className="text-base font-medium">Paid with Cash</span>
+                                                <span className="text-xs text-muted-foreground font-normal">No bank record</span>
+                                            </Label>
+                                            <Switch
+                                                id="mobile-cash-switch"
+                                                checked={formData.isCashExpense}
+                                                onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
+                                            />
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {!formData.isPaid && (
                                 <div className="text-center text-sm text-gray-500 py-2">
                                     Editing Transaction Date
                                 </div>
@@ -743,43 +772,34 @@ export default function TransactionFormContent({
             </div>
 
             {/* Row: Amount + Status Button */}
-            <div className="flex items-start gap-3">
-                <div className="flex-1">
-                    {isForeignCurrency && (
-                        <div className="flex items-center gap-2 mb-1">
-                            {(() => {
-                                const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
-                                if (rateDetails) {
-                                    const rateDate = startOfDay(parseISO(rateDetails.date));
-                                    const txDate = startOfDay(parseISO(formData.date));
-                                    const age = Math.abs(differenceInDays(txDate, rateDate));
-                                    const isOld = age > 14;
-
-                                    return (
-                                        <span
-                                            className={`text-xs ${isOld ? 'text-amber-600' : 'text-gray-500'}`}
-                                            title={`Rate: ${rateDetails.rate} (from ${formatDate(rateDetails.date)}) - ${age} days diff`}
-                                        >
-                                            Rate: {rateDetails.rate} ({formatDate(rateDetails.date, 'MMM d')}{isOld ? ', Old' : ''})
-                                        </span>
-                                    );
-                                }
-                                if (isLoading) return <span className="text-xs text-gray-400">Loading...</span>;
-                                return <span className="text-xs text-amber-600">No rate</span>;
-                            })()}
-                            <CustomButton
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleRefreshRates}
-                                disabled={isRefreshing || isLoading}
-                                className="h-6 px-2 text-blue-600 hover:text-blue-700"
-                            >
-                                <RefreshCw className={`w-3 h-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-                                <span className="text-xs">Fetch Rate</span>
-                            </CustomButton>
-                        </div>
-                    )}
+            <div className="flex items-end gap-3">
+                <div className="flex-1 relative">
+                    <div className="absolute top-[-20px] left-0">
+                        <AnimatePresence>
+                            {isForeignCurrency && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0 }}
+                                    className="flex items-center gap-2"
+                                >
+                                    {(() => {
+                                        const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
+                                        if (rateDetails) {
+                                            const isOld = Math.abs(differenceInDays(startOfDay(parseISO(formData.date)), startOfDay(parseISO(rateDetails.date)))) > 14;
+                                            return (
+                                                <span className={`text-[10px] font-bold uppercase tracking-tight ${isOld ? 'text-amber-600' : 'text-gray-400'}`}>
+                                                    1 {formData.originalCurrency} = {rateDetails.rate} {settings?.baseCurrency}
+                                                </span>
+                                            );
+                                        }
+                                        return <span className="text-[10px] text-amber-600 font-bold uppercase">Rate Missing</span>;
+                                    })()}
+                                    <button type="button" onClick={handleRefreshRates} className="text-[10px] text-blue-600 font-bold hover:underline">SYNC</button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                     <AmountInput
                         id="amount"
                         value={formData.amount}
@@ -830,19 +850,26 @@ export default function TransactionFormContent({
                                                     onCheckedChange={(c) => setFormData(prev => ({ ...prev, isPaid: c, isCashExpense: c ? prev.isCashExpense : false }))}
                                                 />
                                             </div>
-                                            {formData.isPaid && (
-                                                <div className="flex items-center justify-between">
-                                                    <Label htmlFor="cash-switch" className="flex flex-col">
-                                                        <span>Paid with Cash</span>
-                                                        <span className="text-xs text-muted-foreground font-normal">No bank record</span>
-                                                    </Label>
-                                                    <Switch
-                                                        id="cash-switch"
-                                                        checked={formData.isCashExpense}
-                                                        onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
-                                                    />
-                                                </div>
-                                            )}
+                                            <AnimatePresence>
+                                                {formData.isPaid && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: "auto", opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        className="flex items-center justify-between pt-2 overflow-hidden"
+                                                    >
+                                                        <Label htmlFor="cash-switch" className="flex flex-col">
+                                                            <span>Paid with Cash</span>
+                                                            <span className="text-xs text-muted-foreground font-normal">No bank record</span>
+                                                        </Label>
+                                                        <Switch
+                                                            id="cash-switch"
+                                                            checked={formData.isCashExpense}
+                                                            onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
+                                                        />
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
                                     )}
                                 </div>
@@ -1000,21 +1027,28 @@ export default function TransactionFormContent({
 
             {/* Notes */}
             <div className="space-y-2 pt-2">
-                {!showNotes && !formData.notes ? (
-                    <CustomButton type="button" variant="ghost" size="sm" onClick={() => setShowNotes(true)} className="text-muted-foreground h-8 px-2">
-                        <StickyNote className="w-3.5 h-3.5 mr-2" />
-                        Add Note
-                    </CustomButton>
-                ) : (
-                    <Textarea
-                        id="notes"
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        placeholder="Add details about this transaction..."
-                        rows={3}
-                        className="resize-none"
-                    />
-                )}
+                <AnimatePresence mode="wait">
+                    {!showNotes && !formData.notes ? (
+                        <motion.div key="add-note-btn" exit={{ opacity: 0, scale: 0.95 }}>
+                            <CustomButton type="button" variant="ghost" size="sm" onClick={() => setShowNotes(true)} className="text-muted-foreground h-8 px-2">
+                                <StickyNote className="w-3.5 h-3.5 mr-2" />
+                                Add Note
+                            </CustomButton>
+                        </motion.div>
+                    ) : (
+                        <motion.div key="notes-area" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                            <Textarea
+                                id="notes"
+                                value={formData.notes}
+                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                placeholder="Add details about this transaction..."
+                                rows={3}
+                                className="resize-none"
+                                autoFocus
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Action Buttons */}
