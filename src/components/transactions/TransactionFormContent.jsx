@@ -482,7 +482,7 @@ export default function TransactionFormContent({
                                 {getStatusButtonContent()}
                             </CustomButton>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4" align="end">
+                        <PopoverContent className="w-auto p-4" align="end" side="top">
                             <div className="space-y-4">
                                 <div className="border-b pb-4">
                                     <CalendarComponent
