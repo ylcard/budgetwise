@@ -3,141 +3,154 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-  }
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 222.2 47.4% 11.2%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 222.2 84% 4.9%;
+        --radius: 0.5rem;
+        --chart-1: 12 76% 61%;
+        --chart-2: 173 58% 39%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
-
-  /* ADDED 03-Feb-2026: Automatic dark mode based on system preference */
-  @media (prefers-color-scheme: dark) {
-    :root:not(.light) {
-      --background: 222.2 84% 4.9%;
-      --foreground: 210 40% 98%;
-      --card: 222.2 84% 4.9%;
-      --card-foreground: 210 40% 98%;
-      --popover: 222.2 84% 4.9%;
-      --popover-foreground: 210 40% 98%;
-      --primary: 210 40% 98%;
-      --primary-foreground: 222.2 47.4% 11.2%;
-      --secondary: 217.2 32.6% 17.5%;
-      --secondary-foreground: 210 40% 98%;
-      --muted: 217.2 32.6% 17.5%;
-      --muted-foreground: 215 20.2% 65.1%;
-      --accent: 217.2 32.6% 17.5%;
-      --accent-foreground: 210 40% 98%;
-      --destructive: 0 62.8% 30.6%;
-      --destructive-foreground: 210 40% 98%;
-      --border: 217.2 32.6% 17.5%;
-      --input: 217.2 32.6% 17.5%;
-      --ring: 212.7 26.8% 83.9%;
-      --chart-1: 220 70% 50%;
-      --chart-2: 160 60% 45%;
-      --chart-3: 30 80% 55%;
-      --chart-4: 280 65% 60%;
-      --chart-5: 340 75% 55%;
+        /* LAYOUT CONSTANTS - The Source of Truth */
+        --mobile-header-height: 3.5rem;
+        /* 56px (h-14) */
+        --mobile-bottom-nav-height: 4.5rem;
+        /* 72px (Enough for content + padding) */
     }
-  }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 210 40% 98%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 212.7 26.8% 83.9%;
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+    }
+
+    /* ADDED 03-Feb-2026: Automatic dark mode based on system preference */
+    @media (prefers-color-scheme: dark) {
+        :root:not(.light) {
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 210 40% 98%;
+            --primary-foreground: 222.2 47.4% 11.2%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 212.7 26.8% 83.9%;
+            --chart-1: 220 70% 50%;
+            --chart-2: 160 60% 45%;
+            --chart-3: 30 80% 55%;
+            --chart-4: 280 65% 60%;
+            --chart-5: 340 75% 55%;
+        }
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    /* ADDED 03-Feb-2026: iOS safe area handling */
-    padding-top: env(safe-area-inset-top);
-  }
+    * {
+        @apply border-border;
+    }
 
-  /* ADDED 03-Feb-2026: iOS native-like behaviors */
-  button,
-  a[role="button"],
-  [role="tab"],
-  nav a {
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
+    body {
+        @apply bg-background text-foreground;
+        /* ADDED 03-Feb-2026: iOS safe area handling */
+        padding-top: env(safe-area-inset-top);
+    }
 
-  /* ADDED 03-Feb-2026: Prevent overscroll bounce on mobile */
-  .overflow-auto,
-  .overflow-y-auto,
-  .overflow-x-auto {
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-  }
+    /* Ensure Modals and Drawers respect the safe layout areas */
+    :root {
+        --safe-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
+        --safe-top: calc(var(--mobile-header-height) + env(safe-area-inset-top));
+    }
 
-  /* ADDED 03-Feb-2026: Minimum touch target size for mobile ergonomics (44px iOS standard) */
-  button,
-  a[role="button"],
-  [role="tab"],
-  input[type="checkbox"],
-  input[type="radio"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
+    /* ADDED 03-Feb-2026: iOS native-like behaviors */
+    button,
+    a[role="button"],
+    [role="tab"],
+    nav a {
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
 
-  /* Exception for icon-only buttons - add padding to reach 44px */
-  button.icon-only,
-  [data-icon-button] {
-    padding: 10px;
-  }
+    /* ADDED 03-Feb-2026: Prevent overscroll bounce on mobile */
+    .overflow-auto,
+    .overflow-y-auto,
+    .overflow-x-auto {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+    }
 
-  /* Exception for inline text links */
-  a:not([role="button"]):not([role="tab"]) {
-    min-height: auto;
-    min-width: auto;
-  }
+    /* ADDED 03-Feb-2026: Minimum touch target size for mobile ergonomics (44px iOS standard) */
+    button,
+    a[role="button"],
+    [role="tab"],
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Exception for icon-only buttons - add padding to reach 44px */
+    button.icon-only,
+    [data-icon-button] {
+        padding: 10px;
+    }
+
+    /* Exception for inline text links */
+    a:not([role="button"]):not([role="tab"]) {
+        min-height: auto;
+        min-width: auto;
+    }
 }
 
 /* COMMENTED OUT: 17-Jan-2026 - react-day-picker v8 custom styles no longer needed with v9 */
@@ -232,27 +245,30 @@
 
 /* ADDED: 17-Jan-2026 - react-day-picker v9 custom styling */
 .rdp {
-  --rdp-accent-color: rgb(59 130 246); /* blue-500 */
-  --rdp-accent-background-color: rgb(239 246 255); /* blue-50 */
+    --rdp-accent-color: rgb(59 130 246);
+    /* blue-500 */
+    --rdp-accent-background-color: rgb(239 246 255);
+    /* blue-50 */
 }
 
 .rdp-day_selected {
-  background-color: var(--rdp-accent-color);
-  color: white;
-  font-weight: 500;
+    background-color: var(--rdp-accent-color);
+    color: white;
+    font-weight: 500;
 }
 
 .rdp-day_selected:hover {
-  background-color: rgb(37 99 235); /* blue-600 */
+    background-color: rgb(37 99 235);
+    /* blue-600 */
 }
 
 .rdp-day_range_middle {
-  background-color: var(--rdp-accent-background-color);
-  color: var(--rdp-accent-color);
+    background-color: var(--rdp-accent-background-color);
+    color: var(--rdp-accent-color);
 }
 
 .rdp-day_today:not(.rdp-day_selected) {
-  font-weight: 600;
-  color: var(--rdp-accent-color);
-  background-color: var(--rdp-accent-background-color);
+    font-weight: 600;
+    color: var(--rdp-accent-color);
+    background-color: var(--rdp-accent-background-color);
 }
