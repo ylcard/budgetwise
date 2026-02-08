@@ -68,7 +68,7 @@ export function MobileDrawerSelect({
                             </button>
                         )}
                     </DrawerTrigger>
-                    <DrawerContent className="max-h-[85vh]">
+                    <DrawerContent className="max-h-[70vh] mb-24 z-[110]">
                         <DrawerHeader>
                             <DrawerTitle>{title || placeholder}</DrawerTitle>
                         </DrawerHeader>
