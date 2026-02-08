@@ -99,8 +99,8 @@ const LayoutContent = ({ children }) => {
     return (
         <SidebarProvider>
             {/* UPDATED 03-Feb-2026: Mobile-only fixed top header with dynamic back button (iOS native standard) */}
-            <header className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                <div className="flex items-center justify-center h-14 px-4 relative">
+            <header className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)', height: 'var(--safe-top)' }}>
+                <div className="flex items-center justify-center h-[var(--mobile-header-height)] px-4 relative">
                     {!isRootPage && (
                         <button
                             onClick={handleBackNavigation}
@@ -177,16 +177,14 @@ const LayoutContent = ({ children }) => {
                 </Sidebar>
 
                 <main className="flex-1 flex flex-col relative">
-                    {/* UPDATED 03-Feb-2026: Added top padding for mobile fixed header, bottom padding for iOS safe area */}
-                    <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0 pb-[calc(4rem+env(safe-area-inset-bottom))]">
+                    <div className="flex-1 overflow-auto md:pt-0 md:pb-0" style={{ paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}>
                         <RouteTransition>
                             {children}
                         </RouteTransition>
                     </div>
 
-                    {/* UPDATED 03-Feb-2026: Mobile Bottom Tab Bar with select-none for iOS native feel */}
-                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex w-full items-center px-2 py-2 select-none">
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'var(--safe-bottom)' }}>
+                        <div className="flex w-full items-center px-2 py-2 select-none h-[var(--mobile-bottom-nav-height)]">
                             {primaryNav.map((item) => {
                                 const isTabActive = activeTab === item.url;
                                 return (
