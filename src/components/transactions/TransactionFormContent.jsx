@@ -47,11 +47,13 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
                     <Tag className="h-4 w-4 opacity-50" />
                 </CustomButton>
             </DrawerTrigger>
-            <DrawerContent className="z-[200] max-h-[85vh]">
+            {/* Use flex column to organize header vs list, max-h uses real available space minus a small top gap */}
+            <DrawerContent className="z-[200] flex flex-col max-h-[calc(100dvh-2rem)]">
                 <DrawerHeader>
                     <DrawerTitle>Select Category</DrawerTitle>
                 </DrawerHeader>
-                <div className="p-4 space-y-1 overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                {/* flex-1 lets this container fill all remaining space, then scroll */}
+                <div className="p-4 space-y-1 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
                     {categories.map((cat) => {
                         const isSelected = value === cat.id;
                         const Icon = getCategoryIcon(cat.icon);
