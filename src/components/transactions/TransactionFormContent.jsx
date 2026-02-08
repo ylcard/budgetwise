@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RefreshCw, AlertCircle, Check, ChevronsUpDown, Calendar, CreditCard, Banknote, Clock, StickyNote } from "lucide-react";
+import { RefreshCw, AlertCircle, Check, ChevronsUpDown, Calendar, CreditCard, Banknote, Clock, StickyNote, Tag, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -21,11 +21,64 @@ import { useExchangeRates } from "../hooks/useExchangeRates";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
 import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "../utils/dateUtils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
-import { normalizeAmount } from "../utils/generalUtils";
+import { normalizeAmount, cn } from "../utils/generalUtils";
 import { useCategoryRules, useGoals, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { categorizeTransaction } from "../utils/transactionCategorization";
 import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
+import { getCategoryIcon } from "../utils/iconMapConfig";
+
+const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
+    const selectedCategory = categories.find(c => c.id === value);
+    const label = selectedCategory ? selectedCategory.name : placeholder;
+
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                <CustomButton
+                    variant="outline"
+                    className="w-full justify-between h-12 px-3 font-normal text-sm"
+                >
+                    <span className={cn("truncate", !selectedCategory && "text-muted-foreground")}>
+                        {label}
+                    </span>
+                    <Tag className="h-4 w-4 opacity-50" />
+                </CustomButton>
+            </DrawerTrigger>
+            <DrawerContent className="z-[150]">
+                <DrawerHeader>
+                    <DrawerTitle>Select Category</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 space-y-1 max-h-[60vh] overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    {categories.map((cat) => {
+                        const isSelected = value === cat.id;
+                        const Icon = getCategoryIcon(cat.icon);
+                        return (
+                            <DrawerClose key={cat.id} asChild>
+                                <button
+                                    onClick={() => onSelect(cat.id)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between px-4 py-4 rounded-xl text-base font-medium transition-colors",
+                                        isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${cat.color}20` }}>
+                                            <Icon className="w-4 h-4" style={{ color: cat.color }} />
+                                        </div>
+                                        <span>{cat.name}</span>
+                                    </div>
+                                    {isSelected && <Check className="w-5 h-5" />}
+                                </button>
+                            </DrawerClose>
+                        );
+                    })}
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
 
 export default function TransactionFormContent({
     initialTransaction = null,
@@ -533,12 +586,24 @@ export default function TransactionFormContent({
                     <div className="flex gap-3">
                         {/* Category - Takes more space */}
                         <div className="flex-[2]">
-                            <CategorySelect
-                                value={formData.category_id}
-                                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                                categories={categories}
-                                placeholder="Category"
-                            />
+                            {/* Desktop: Popover Select */}
+                            <div className="hidden md:block">
+                                <CategorySelect
+                                    value={formData.category_id}
+                                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                                    categories={categories}
+                                    placeholder="Category"
+                                />
+                            </div>
+                            {/* Mobile: Drawer Select */}
+                            <div className="md:hidden">
+                                <MobileCategoryFormSelect
+                                    value={formData.category_id}
+                                    onSelect={(value) => setFormData({ ...formData, category_id: value })}
+                                    categories={categories}
+                                    placeholder="Category"
+                                />
+                            </div>
                         </div>
 
                         {/* Financial Priority - Smaller */}
