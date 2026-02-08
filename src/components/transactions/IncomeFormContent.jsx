@@ -106,6 +106,7 @@ export default function IncomeFormContent({
                             <span className="text-green-700">{formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date'}</span>
                         </CustomButton>
                     </PopoverTrigger>
+                    {/* Use the exact class from your expense form here */}
                     <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
                         <DatePicker
                             value={formData.date}
