@@ -47,11 +47,11 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
                     <Tag className="h-4 w-4 opacity-50" />
                 </CustomButton>
             </DrawerTrigger>
-            <DrawerContent className="z-[150]">
+            <DrawerContent className="z-[200] max-h-[85vh]">
                 <DrawerHeader>
                     <DrawerTitle>Select Category</DrawerTitle>
                 </DrawerHeader>
-                <div className="p-4 space-y-1 max-h-[60vh] overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                <div className="p-4 space-y-1 overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
                     {categories.map((cat) => {
                         const isSelected = value === cat.id;
                         const Icon = getCategoryIcon(cat.icon);
