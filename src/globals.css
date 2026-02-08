@@ -33,8 +33,15 @@
         /* LAYOUT CONSTANTS - The Source of Truth */
         --mobile-header-height: 3.5rem;
         /* 56px (h-14) */
-        --mobile-bottom-nav-height: 4.5rem;
-        /* 72px (Enough for content + padding) */
+        --mobile-bottom-nav-height: 4rem;
+        /* 64px */
+
+        /* SAFE AREAS (Dynamic for iOS) */
+        --safe-top-inset: env(safe-area-inset-top, 0px);
+        --safe-bottom-inset: env(safe-area-inset-bottom, 0px);
+
+        --header-total-height: calc(var(--mobile-header-height) + var(--safe-top-inset));
+        --nav-total-height: calc(var(--mobile-bottom-nav-height) + var(--safe-bottom-inset));
     }
 
     .dark {
@@ -104,12 +111,6 @@
         @apply bg-background text-foreground;
         /* ADDED 03-Feb-2026: iOS safe area handling */
         padding-top: env(safe-area-inset-top);
-    }
-
-    /* Ensure Modals and Drawers respect the safe layout areas */
-    :root {
-        --safe-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
-        --safe-top: calc(var(--mobile-header-height) + env(safe-area-inset-top));
     }
 
     /* ADDED 03-Feb-2026: iOS native-like behaviors */
@@ -271,4 +272,23 @@
     font-weight: 600;
     color: var(--rdp-accent-color);
     background-color: var(--rdp-accent-background-color);
+}
+
+
+/* Force Popovers (Calendar) to be top-most */
+.popover-content-z-index {
+    z-index: 110 !important;
+}
+
+/* Ensure Drawer Overlay doesn't cover the bottom nav */
+[data-vaul-overlay] {
+    z-index: 60 !important;
+    /* Below Nav (100) but above Form (50) */
+    bottom: var(--nav-total-height) !important;
+    /* Stop at the nav bar */
+}
+
+[data-vaul-drawer] {
+    z-index: 60 !important;
+    /* Drawer content z-index */
 }
