@@ -42,7 +42,7 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
                 caption_dropdowns: "flex justify-center gap-1",
                 nav: "space-x-1 flex items-center absolute right-1",
                 nav_button: cn(
-                    buttonVariants({ variant: "outline" }),
+                    buttonVariants({ variant: "ghost" }),
                     "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
                 ),
                 nav_button_previous: "absolute left-1",
@@ -69,8 +69,8 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
                 dropdown_year: "",
             }}
             components={{
-                IconLeft: ({ ...props }) => <ChevronLeft {...props} className="h-4 w-4" />,
-                IconRight: ({ ...props }) => <ChevronRight {...props} className="h-4 w-4" />,
+                IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
+                IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
             }}
             {...props}
         />
