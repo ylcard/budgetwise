@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
-import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
+//import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -71,6 +72,60 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
                                             <Icon className="w-4 h-4" style={{ color: cat.color }} />
                                         </div>
                                         <span>{cat.name}</span>
+                                    </div>
+                                    {isSelected && <Check className="w-5 h-5" />}
+                                </button>
+                            </DrawerClose>
+                        );
+                    })}
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
+
+const MobilePriorityFormSelect = ({ value, onSelect, placeholder }) => {
+    const options = Object.entries(FINANCIAL_PRIORITIES).filter(([k]) => k !== 'savings');
+    const selectedOption = options.find(([key]) => key === value);
+    const label = selectedOption ? selectedOption[1].label : placeholder;
+
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                <CustomButton
+                    variant="outline"
+                    className="w-full justify-between h-12 px-3 font-normal text-sm"
+                >
+                    <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>
+                        {label}
+                    </span>
+                    <Tag className="h-4 w-4 opacity-50" />
+                </CustomButton>
+            </DrawerTrigger>
+            <DrawerContent className="z-[200] flex flex-col max-h-[calc(100dvh-2rem)]">
+                <DrawerHeader>
+                    <DrawerTitle>Select Priority</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 space-y-1 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    {options.map(([key, config]) => {
+                        const isSelected = value === key;
+                        return (
+                            <DrawerClose key={key} asChild>
+                                <button
+                                    onClick={() => onSelect(key)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between px-4 py-4 rounded-xl text-base font-medium transition-colors",
+                                        isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100"
+                                            style={{ backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.1)' : undefined }}
+                                        >
+                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: config.color }} />
+                                        </div>
+                                        <span>{config.label}</span>
                                     </div>
                                     {isSelected && <Check className="w-5 h-5" />}
                                 </button>
@@ -611,23 +666,32 @@ export default function TransactionFormContent({
 
                         {/* Financial Priority - Smaller */}
                         <div className="flex-1">
-                            <MobileDrawerSelect
-                                value={formData.financial_priority || ''}
-                                onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
-                                placeholder="Select priority"
-                                className="h-12"
-                                customTrigger={
-                                    <button className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground">
-                                        <span className="truncate">{formData.financial_priority ? FINANCIAL_PRIORITIES[formData.financial_priority]?.label : 'Priority'}</span>
-                                    </button>
-                                }
-                                options={Object.entries(FINANCIAL_PRIORITIES)
-                                    .filter(([key]) => key !== 'savings')
-                                    .map(([key, cfg]) => ({
-                                        value: key,
-                                        label: cfg.label
-                                    }))}
-                            />
+                            {/* Desktop: Standard Select */}
+                            <div className="hidden md:block">
+                                <Select
+                                    value={formData.financial_priority || ''}
+                                    onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
+                                >
+                                    <SelectTrigger className="h-12">
+                                        <SelectValue placeholder="Priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(FINANCIAL_PRIORITIES)
+                                            .filter(([key]) => key !== 'savings')
+                                            .map(([key, cfg]) => (
+                                                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {/* Mobile: Drawer Select */}
+                            <div className="md:hidden">
+                                <MobilePriorityFormSelect
+                                    value={formData.financial_priority || ''}
+                                    onSelect={(value) => setFormData({ ...formData, financial_priority: value })}
+                                    placeholder="Priority"
+                                />
+                            </div>
                         </div>
                     </div>
 
