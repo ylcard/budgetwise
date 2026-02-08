@@ -8,15 +8,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RefreshCw, AlertCircle, Check, ChevronsUpDown } from "lucide-react";
+import { RefreshCw, AlertCircle, Check, ChevronsUpDown, Calendar, CreditCard, Banknote, Clock, StickyNote } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useConfirm } from "../ui/ConfirmDialogProvider";
 import AmountInput from "../ui/AmountInput";
-import DatePicker from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
-import AnimatePresenceContainer from "../ui/AnimatePresenceContainer";
 import { useSettings } from "../utils/SettingsContext";
 import { useExchangeRates } from "../hooks/useExchangeRates";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
@@ -43,6 +42,7 @@ export default function TransactionFormContent({
     const { exchangeRates, refreshRates, isRefreshing, refetch, isLoading } = useExchangeRates();
     const { rules } = useCategoryRules(user);
     const { goals } = useGoals(user);
+    const [showNotes, setShowNotes] = useState(!!initialTransaction?.notes);
 
     // Force fetch rates on mount if empty
     useEffect(() => {
@@ -387,8 +387,19 @@ export default function TransactionFormContent({
         onSubmit(submitData);
     };
 
+    // Helper to render the Status Button text/icon
+    const getStatusButtonContent = () => {
+        const displayDate = formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date';
+
+        if (formData.type !== 'expense') return <><Calendar className="w-3.5 h-3.5 mr-2" /> {displayDate}</>;
+
+        if (!formData.isPaid) return <><Clock className="w-3.5 h-3.5 mr-2 text-gray-400" /> <span className="text-gray-500">{displayDate}</span></>;
+        if (formData.isCashExpense) return <><Banknote className="w-3.5 h-3.5 mr-2 text-green-600" /> <span className="text-green-700">{displayDate}</span></>;
+        return <><CreditCard className="w-3.5 h-3.5 mr-2 text-blue-600" /> <span className="text-blue-700">{displayDate}</span></>;
+    };
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
             {validationError && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -397,24 +408,23 @@ export default function TransactionFormContent({
             )}
 
             {/* Title */}
-            <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
+            <div>
                 <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g., Salary, Groceries, Coffee"
+                    placeholder="What is this for?"
+                    className="text-lg font-medium border-0 border-b rounded-none px-0 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
                     required
                     autoComplete="off"
                 />
             </div>
 
-            {/* Amount and Currency (Combined) */}
-            <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                    <Label htmlFor="amount">Amount</Label>
+            {/* Row: Amount + Status Button */}
+            <div className="flex items-start gap-3">
+                <div className="flex-1">
                     {isForeignCurrency && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mb-1">
                             {(() => {
                                 const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
                                 if (rateDetails) {
@@ -448,101 +458,101 @@ export default function TransactionFormContent({
                             </CustomButton>
                         </div>
                     )}
-                </div>
-                <AmountInput
-                    id="amount"
-                    value={formData.amount}
-                    onChange={(value) => setFormData({ ...formData, amount: value })}
-                    placeholder="0.00"
-                    currency={formData.originalCurrency}
-                    onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
-                    required
-                />
-            </div>
-
-            {/* Paid with cash checkbox - right below amount/currency */}
-            {formData.type === 'expense' && (
-                <div className="flex items-center space-x-2">
-                    <Checkbox
-                        id="isCashExpense"
-                        checked={formData.isCashExpense}
-                        onCheckedChange={(checked) => setFormData({
-                            ...formData,
-                            isCashExpense: checked,
-                            isPaid: checked ? true : formData.isPaid
-                        })}
+                    <AmountInput
+                        id="amount"
+                        value={formData.amount}
+                        onChange={(value) => setFormData({ ...formData, amount: value })}
+                        placeholder="0.00"
+                        currency={formData.originalCurrency}
+                        onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
+                        required
+                        className="text-2xl h-12"
                     />
-                    <Label htmlFor="isCashExpense" className="cursor-pointer flex items-center gap-2">
-                        Paid with cash
-                    </Label>
-                </div>
-            )}
-
-            {/* Date picker and Mark as paid checkbox */}
-            <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="date">Date</Label>
-                        <DatePicker
-                            value={formData.date}
-                            onChange={(value) => setFormData({ ...formData, date: value })}
-                            placeholder="Select date"
-                        />
-                    </div>
-
-                    {/* Payment Date - appears next to Date when isPaid is checked */}
-                    <AnimatePresenceContainer show={formData.type === 'expense' && formData.isPaid && !formData.isCashExpense}>
-                        <div className="space-y-2">
-                            <Label htmlFor="paidDate">Payment Date</Label>
-                            <DatePicker
-                                value={formData.paidDate || formData.date}
-                                onChange={(value) => setFormData({ ...formData, paidDate: value })}
-                                placeholder="Payment date"
-                            />
-                        </div>
-                    </AnimatePresenceContainer>
                 </div>
 
-                {/* Mark as paid checkbox - below date fields */}
-                {formData.type === 'expense' && !formData.isCashExpense && (
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="isPaid"
-                            checked={formData.isPaid}
-                            onCheckedChange={(checked) => setFormData({
-                                ...formData,
-                                isPaid: checked,
-                                paidDate: checked ? (formData.paidDate || formData.date) : ''
-                            })}
-                        />
-                        <Label htmlFor="isPaid" className="cursor-pointer">
-                            Mark as paid
-                        </Label>
-                    </div>
-                )}
+                {/* Unified Status/Date Button */}
+                <div className="pt-0">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <CustomButton
+                                type="button"
+                                variant="outline"
+                                className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all"
+                            >
+                                {getStatusButtonContent()}
+                            </CustomButton>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-4" align="end">
+                            <div className="space-y-4">
+                                <div className="border-b pb-4">
+                                    <CalendarComponent
+                                        mode="single"
+                                        selected={formData.date ? new Date(formData.date) : undefined}
+                                        onSelect={(date) => date && setFormData({ ...formData, date: formatDateString(date) })}
+                                        initialFocus
+                                    />
+                                </div>
+                                {formData.type === 'expense' && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="paid-switch" className="flex flex-col">
+                                                <span>Mark as Paid</span>
+                                                <span className="text-xs text-muted-foreground font-normal">Transaction completed</span>
+                                            </Label>
+                                            <Switch
+                                                id="paid-switch"
+                                                checked={formData.isPaid}
+                                                onCheckedChange={(c) => setFormData(prev => ({ ...prev, isPaid: c, isCashExpense: c ? prev.isCashExpense : false }))}
+                                            />
+                                        </div>
+
+                                        {formData.isPaid && (
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor="cash-switch" className="flex flex-col">
+                                                    <span>Paid with Cash</span>
+                                                    <span className="text-xs text-muted-foreground font-normal">No bank record</span>
+                                                </Label>
+                                                <Switch
+                                                    id="cash-switch"
+                                                    checked={formData.isCashExpense}
+                                                    onCheckedChange={(c) => setFormData(prev => ({ ...prev, isCashExpense: c }))}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
 
             {/* Category, Budget Assignment, and Budget (grid layout) */}
             {formData.type === 'expense' && (
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Category */}
-                        <div className="space-y-2">
-                            <Label htmlFor="category">Category</Label>
+                <div className="space-y-3">
+                    <div className="flex gap-3">
+                        {/* Category - Takes more space */}
+                        <div className="flex-[2]">
                             <CategorySelect
                                 value={formData.category_id}
                                 onValueChange={(value) => setFormData({ ...formData, category_id: value })}
                                 categories={categories}
+                                placeholder="Category"
                             />
                         </div>
 
-                        {/* Financial Priority */}
-                        <div className="space-y-2">
-                            <Label htmlFor="financial_priority">Financial Priority</Label>
+                        {/* Financial Priority - Smaller */}
+                        <div className="flex-1">
                             <MobileDrawerSelect
                                 value={formData.financial_priority || ''}
                                 onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
                                 placeholder="Select priority"
+                                className="h-12"
+                                customTrigger={
+                                    <button className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                        <span className="truncate">{formData.financial_priority ? FINANCIAL_PRIORITIES[formData.financial_priority]?.label : 'Priority'}</span>
+                                    </button>
+                                }
                                 options={Object.entries(FINANCIAL_PRIORITIES)
                                     .filter(([key]) => key !== 'savings')
                                     .map(([key, cfg]) => ({
@@ -552,16 +562,16 @@ export default function TransactionFormContent({
                             />
                         </div>
                     </div>
-                    {/* Budget (REQUIRED for expenses) */}
-                    <div className="space-y-2">
-                        <Label htmlFor="customBudget">Budget Allocation</Label>
+
+                    {/* Budget (REQUIRED for expenses) - Full width */}
+                    <div>
                         <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen} modal={true}>
                             <PopoverTrigger asChild>
                                 <CustomButton
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={isBudgetOpen}
-                                    className="w-full justify-between font-normal"
+                                    className="w-full justify-between font-normal h-12"
                                 >
                                     {formData.budgetId
                                         ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
@@ -611,15 +621,22 @@ export default function TransactionFormContent({
             )}
 
             {/* Notes */}
-            <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Additional details..."
-                    rows={2}
-                />
+            <div className="space-y-2 pt-2">
+                {!showNotes && !formData.notes ? (
+                    <CustomButton type="button" variant="ghost" size="sm" onClick={() => setShowNotes(true)} className="text-muted-foreground h-8 px-2">
+                        <StickyNote className="w-3.5 h-3.5 mr-2" />
+                        Add Note
+                    </CustomButton>
+                ) : (
+                    <Textarea
+                        id="notes"
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        placeholder="Add details about this transaction..."
+                        rows={3}
+                        className="resize-none"
+                    />
+                )}
             </div>
 
             {/* Action Buttons */}
