@@ -13,7 +13,7 @@ import { RefreshCw, AlertCircle, Check, ChevronsUpDown, Calendar, CreditCard, Ba
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+//import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useConfirm } from "../ui/ConfirmDialogProvider";
 import AmountInput from "../ui/AmountInput";
 import CategorySelect from "../ui/CategorySelect";
@@ -30,6 +30,7 @@ import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitializa
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { getCategoryIcon } from "../utils/iconMapConfig";
+import DatePicker, { CalendarView } from "../ui/DatePicker";
 
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
     const selectedCategory = categories.find(c => c.id === value);
