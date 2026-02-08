@@ -399,7 +399,7 @@ export default function TransactionFormContent({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6 pb-2">
             {validationError && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -414,7 +414,7 @@ export default function TransactionFormContent({
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="What is this for?"
-                    className="text-lg font-medium border-0 border-b rounded-none px-0 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
+                    className="text-xl font-medium border-0 border-b rounded-none px-0 h-14 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
                     required
                     autoComplete="off"
                 />
@@ -466,18 +466,18 @@ export default function TransactionFormContent({
                         currency={formData.originalCurrency}
                         onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
                         required
-                        className="text-2xl h-12"
+                        className="text-3xl h-14 font-semibold"
                     />
                 </div>
 
                 {/* Unified Status/Date Button */}
                 <div className="pt-0">
-                    <Popover>
+                    <Popover modal={true}>
                         <PopoverTrigger asChild>
                             <CustomButton
                                 type="button"
                                 variant="outline"
-                                className="h-12 px-3 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all"
+                                className="h-14 px-4 bg-gray-50/50 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition-all text-base"
                             >
                                 {getStatusButtonContent()}
                             </CustomButton>
@@ -547,7 +547,7 @@ export default function TransactionFormContent({
                                 value={formData.financial_priority || ''}
                                 onValueChange={(value) => setFormData({ ...formData, financial_priority: value || '' })}
                                 placeholder="Select priority"
-                                className="h-12"
+                                className="h-14"
                                 customTrigger={
                                     <button className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                                         <span className="truncate">{formData.financial_priority ? FINANCIAL_PRIORITIES[formData.financial_priority]?.label : 'Priority'}</span>
@@ -571,7 +571,7 @@ export default function TransactionFormContent({
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={isBudgetOpen}
-                                    className="w-full justify-between font-normal h-12"
+                                    className="w-full justify-between font-normal h-14 text-base"
                                 >
                                     {formData.budgetId
                                         ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
