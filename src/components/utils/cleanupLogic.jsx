@@ -10,9 +10,9 @@ export const applyCleanupRules = (rawTitle, rules = []) => {
     const normalizedRaw = rawTitle.trim();
 
     // Find a rule where the 'keyword' matches the raw input AND has a rename instruction
-    const match = rules.find(r => 
-        r.keyword && 
-        r.renamedTitle && 
+    const match = rules.find(r =>
+        r.keyword &&
+        r.renamedTitle &&
         r.keyword.trim() === normalizedRaw
     );
 
@@ -30,32 +30,31 @@ export const applyCleanupRules = (rawTitle, rules = []) => {
  * @returns {Array} - Array of new CategoryRule objects to create
  */
 export const detectRenamingPatterns = (finalTransactions, userEmail) => {
-    const newRules = [];
-    const processedSignatures = new Set(); // Prevent duplicates in the same batch
+    const rulesMap = new Map();
 
     finalTransactions.forEach(tx => {
-        // Only learn if we have original data 
-        if (!tx.originalData || !tx.originalData.reason) return;
+        // Only learn if:
+        // 1. The user hasn't opted out (shouldLearn)
+        // 2. We have the original raw data
+        // 3. The title was actually changed
+        // 4. A category was assigned
+        const original = tx.originalData?.reason?.trim();
+        const final = tx.title?.trim();
+        const isChanged = original && final && original !== final;
 
-        const original = tx.originalData.reason.trim();
-        const final = tx.title.trim();
-
-        // If title changed AND we have a valid category
-        if (original !== final && tx.categoryId) {
-            
-            // Avoid creating duplicate rules for the same merchant in one batch
-            if (processedSignatures.has(original)) return;
-            processedSignatures.add(original);
-
-            newRules.push({
-                keyword: original,       // Match this dirty text
-                renamedTitle: final,     // Change it to this clean text
-                categoryId: tx.categoryId, // Also learn the category
-                user_email: userEmail,
-                priority: 10             // High priority so it overrides defaults
-            });
+        if (tx.shouldLearn && isChanged && tx.categoryId) {
+            // If we haven't already created a rule for this specific messy keyword in this batch
+            if (!rulesMap.has(original)) {
+                rulesMap.set(original, {
+                    keyword: original,       // Match this dirty text
+                    renamedTitle: final,     // Change it to this clean text
+                    categoryId: tx.categoryId, // Also learn the category
+                    user_email: userEmail,
+                    priority: 10             // High priority so it overrides defaults
+                });
+            }
         }
     });
 
-    return newRules;
+    return Array.from(rulesMap.values());
 };
