@@ -173,25 +173,33 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                         />
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* Removed gap-2 to handle spacing via animation */}
+                    <div className="flex items-center">
+                        <div
+                            className={cn(
+                                "overflow-hidden transition-all duration-300 ease-out flex items-center",
+                                activeFilterCount > 0
+                                    ? "w-[85px] opacity-100 translate-x-0 mr-2" // Visible: Width allows content, slides left, adds spacing
+                                    : "w-0 opacity-0 translate-x-8 mr-0"        // Hidden: No width, slides right (into picker), no spacing
+                            )}
+                        >
+                            <CustomButton
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleClearFilters}
+                                className="text-gray-500 hover:text-red-600 whitespace-nowrap"
+                            >
+                                <X className="w-4 h-4 mr-1" />
+                                Clear
+                            </CustomButton>
+                        </div>
 
                         <DateRangePicker
                             startDate={filters.startDate}
                             endDate={filters.endDate}
                             onRangeChange={handleDateRangeChange}
                         />
-
-                        {activeFilterCount > 0 && (
-                            <CustomButton
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleClearFilters}
-                                className="text-gray-500 hover:text-red-600"
-                            >
-                                <X className="w-4 h-4 mr-1" />
-                                Clear
-                            </CustomButton>
-                        )}
                     </div>
                 </div>
 
