@@ -16,13 +16,18 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                         key={option.value}
                         onClick={() => onChange(option.value)}
                         className={cn(
-                            "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                            "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ease-in-out",
                             isActive 
                                 ? "bg-white text-gray-900 shadow-sm" 
                                 : "text-gray-600 hover:text-gray-900"
                         )}
                     >
                         {option.label}
+                        {isActive && option.desktopLabel && (
+                            <span className="hidden md:inline overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-1 duration-300">
+                                {option.desktopLabel}
+                            </span>
+                        )}
                     </button>
                 );
             })}
