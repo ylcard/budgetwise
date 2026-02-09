@@ -192,6 +192,23 @@ export const useCategoryRules = (user) => {
     return { rules, isLoading };
 };
 
+// Hook for fetching text cleanup/renaming rules
+export const useCleanupRules = (user) => {
+    const queryClient = useQueryClient();
+    
+    const { data: cleanupRules = [], isLoading } = useQuery({
+        queryKey: ['CLEANUP_RULES'],
+        queryFn: async () => {
+            if (!user) return [];
+            return await base44.entities.CleanupRule.filter({ user_email: user.email });
+        },
+        initialData: [],
+        enabled: !!user,
+    });
+
+    return { cleanupRules, isLoading };
+};
+
 // Hook for managing system budgets (create/update logic)
 export const useSystemBudgetManagement = (
     user,
