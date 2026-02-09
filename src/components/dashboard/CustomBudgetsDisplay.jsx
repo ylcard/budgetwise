@@ -82,7 +82,7 @@ export default function CustomBudgetsDisplay({
                                 className="rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 hidden md:flex"
                                 onClick={onCreateBudget}
                             >
-                            <Plus className="w-4 h-4" />
+                                <Plus className="w-4 h-4" />
                             </CustomButton>
                         </div>
                         <SegmentedControl
@@ -91,10 +91,13 @@ export default function CustomBudgetsDisplay({
                             onChange={setViewMode}
                         />
                     </CardHeader>
-                    <CardContent 
+                    <CardContent
                         ref={autoHeight.ref}
-                        style={autoHeight.style}
-                        className="pt-4 overflow-hidden"
+                        style={{
+                            ...autoHeight.style,
+                            willChange: "height",
+                        }}
+                        className="pt-4 overflow-hidden transition-all duration-500 ease-in-out"
                     >
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
                             <CarouselContent
