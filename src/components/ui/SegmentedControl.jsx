@@ -42,9 +42,9 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
             ref={containerRef}
             layout
             className={cn(
-                "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg h-[40px] shadow-sm",
-                "md:relative", // Desktop is normal
-                isExpanded ? "absolute right-4 left-4 z-50 shadow-xl" : "relative w-[40px] md:w-auto",
+                "inline-flex items-center gap-1 rounded-lg h-[40px]",
+                "md:relative md:bg-gray-100 md:p-1 md:shadow-sm", 
+                isExpanded ? "absolute right-4 left-4 z-50 shadow-xl bg-gray-100 p-1" : "relative md:w-auto",
                 className
             )}
         >
