@@ -42,7 +42,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
             className={cn(
                 "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg transition-all duration-300 h-[40px] shadow-sm",
                 "md:relative", // Desktop is normal
-                isExpanded ? "absolute right-2 left-2 z-20 shadow-md" : "relative w-[40px] md:w-auto",
+                isExpanded ? "absolute right-4 left-4 z-20 shadow-md" : "relative w-[40px] md:w-auto",
                 className
             )}
         >
