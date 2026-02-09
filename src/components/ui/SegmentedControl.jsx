@@ -9,10 +9,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const SegmentedControl = ({ options, value, onChange, className }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef(null);
 
     // Collapse when clicking outside or scrolling
     useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
         const handleCollapse = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
                 setIsExpanded(false);
@@ -23,13 +28,14 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
         window.addEventListener("scroll", () => setIsExpanded(false), { passive: true });
 
         return () => {
+            window.removeEventListener('resize', checkMobile);
             document.removeEventListener("mousedown", handleCollapse);
             window.removeEventListener("scroll", () => setIsExpanded(false));
         };
     }, []);
 
     const handleSelect = (val) => {
-        if (!isExpanded && window.innerWidth < 768) {
+        if (!isExpanded && isMobile) {
             setIsExpanded(true);
             return;
         }
@@ -52,8 +58,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
             <AnimatePresence mode="popLayout" initial={false}>
                 {options.map((option) => {
                     const isActive = value === option.value;
-                    // const shouldShow = isExpanded || isActive || (typeof window !== 'undefined' && window.innerWidth >= 768);
-                    const shouldShow = isExpanded || isActive || (containerRef.current?.offsetWidth > 100);
+                    const shouldShow = !isMobile || isExpanded || isActive;
 
                     if (!shouldShow) return null;
 
@@ -74,7 +79,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                             )}
                         >
                             {option.label}
-                            {(isActive || (isExpanded && window.innerWidth < 768)) && option.desktopLabel && (
+                            {(isActive || (isExpanded && isMobile)) && option.desktopLabel && (
                                 <motion.span
                                     layout
                                     className="hidden md:inline"
