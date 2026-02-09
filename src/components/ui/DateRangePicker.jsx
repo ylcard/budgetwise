@@ -172,7 +172,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     className="p-3"
                     weekStartsOn={1}
                     showOutsideDays
-                    captionLayout="dropdown-buttons"
+                    captionLayout="dropdown"
                     startMonth={new Date(1986, 0)}
                     endMonth={new Date(2100, 11)}
                     classNames={{
