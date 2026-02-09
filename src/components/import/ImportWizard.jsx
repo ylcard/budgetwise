@@ -287,7 +287,7 @@ export default function ImportWizard({ onSuccess }) {
 
             showToast({
                 title: "Import Complete",
-                description: `Added ${transactionsToCreate.length} transactions. Learned ${newRules.length} new renaming rules.`
+                description: `Successfully added ${transactionsToCreate.length} transactions across ${uniqueMonths.size} month(s).`
             });
             if (onSuccess) {
                 onSuccess();
