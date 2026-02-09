@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, BarChart2, LayoutGrid, CircleDot, StretchHorizontal } from "lucide-react";
@@ -17,6 +17,7 @@ import {
     CarouselDots
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils"
+import { useAutoHeight } from "../hooks/useAutoHeight";
 
 /**
  * CREATED: 03-Feb-2026
@@ -30,6 +31,7 @@ export default function CustomBudgetsDisplay({
     onCreateBudget,
 }) {
     const { user, settings } = useSettings();
+    const autoHeight = useAutoHeight();
     const { monthStart, monthEnd } = usePeriod();
 
     // Fetch custom budgets for the selected period
@@ -89,7 +91,11 @@ export default function CustomBudgetsDisplay({
                             onChange={setViewMode}
                         />
                     </CardHeader>
-                    <CardContent className="pt-4 overflow-hidden transition-[height] duration-500 ease-in-out">
+                    <CardContent
+                        ref={autoHeight.ref}
+                        style={autoHeight.style}
+                        className="pt-4 overflow-hidden"
+                    >
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
                             <CarouselContent
                                 className={cn(
