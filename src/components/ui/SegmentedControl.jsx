@@ -50,7 +50,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
             className={cn(
                 "inline-flex items-center gap-1 rounded-lg h-[40px] transition-colors",
                 "md:relative md:bg-gray-100 md:p-1 md:shadow-sm",
-                isExpanded ? "absolute right-6 left-auto z-50 shadow-xl bg-gray-100 p-1 origin-right flex-row" : "relative md:w-auto",
+                isExpanded ? "absolute right-6 top-1/2 -translate-y-1/2 z-50 shadow-xl bg-white border border-gray-200 p-1 origin-right flex-row" : "relative md:w-auto",
                 className
             )}
         >
@@ -64,10 +64,10 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                     return (
                         <motion.button
                             key={option.value}
-                            layout
+                            layout="position"
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
                             onClick={() => handleSelect(option.value)}
                             className={cn(
                                 "flex-1 flex items-center justify-center gap-2 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
@@ -79,11 +79,11 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                             <span className="flex items-center justify-center shrink-0">
                                 {option.label}
                             </span>
-                            {(isExpanded || !isMobile) && option.desktopLabel && (
+                            {option.desktopLabel && (
                                 <motion.span
-                                    initial={{ opacity: 0, width: 0 }}
-                                    animate={{ opacity: 1, width: "auto" }}
-                                    className={cn("whitespace-nowrap overflow-hidden text-xs md:text-sm")}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="hidden md:inline whitespace-nowrap text-xs md:text-sm"
                                 >
                                     {option.desktopLabel}
                                 </motion.span>
