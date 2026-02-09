@@ -16,6 +16,7 @@ import {
     CarouselItem,
     CarouselDots
 } from "@/components/ui/carousel";
+import { cn } from "@/lib/utils"
 
 /**
  * CREATED: 03-Feb-2026
