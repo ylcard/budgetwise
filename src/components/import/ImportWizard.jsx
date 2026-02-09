@@ -18,7 +18,6 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { formatDateString } from "../utils/dateUtils";
 import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
-import { applyCleanupRules, detectRenamingPatterns } from "@/components/utils/cleanupLogic";
 
 const STEPS = [
     { id: 1, label: "Upload" },
@@ -128,49 +127,27 @@ export default function ImportWizard({ onSuccess }) {
                     }
                 }
 
-                // 4. CLEANUP: Apply "Memory" rules to fix the name *before* categorization
-                // We pass 'rules' because that is where we store the renamedTitle now
-                const cleanedTitle = applyCleanupRules(item.reason, rules);
-                const titleToUse = cleanedTitle || item.reason || 'Untitled Transaction';
-
                 // Enhanced categorization using rules and patterns
                 const catResult = categorizeTransaction(
-                    { title: titleToUse },
+                    { title: item.reason },
                     rules,
                     categories
                 );
 
-                // If we found a specific renaming rule, we should prioritize the category 
-                // attached to that rule over the generic categorization result
-                const matchingRule = cleanedTitle ? rules.find(r => r.keyword === item.reason && r.renamedTitle) : null;
-                let finalCatId = catResult.categoryId;
-                let finalCatName = catResult.categoryName;
-                let finalPriority = catResult.priority;
-
-                if (matchingRule && matchingRule.categoryId) {
-                    const knownCat = categories.find(c => c.id === matchingRule.categoryId);
-                    if (knownCat) {
-                        finalCatId = knownCat.id;
-                        finalCatName = knownCat.name;
-                        finalPriority = knownCat.priority || 'wants';
-                    }
-                }
-
                 return {
                     date: txDate,
-                    title: titleToUse,
+                    title: item.reason || 'Untitled Transaction',
                     amount: magnitude,
                     originalAmount: magnitude,
                     originalCurrency: settings?.baseCurrency || 'USD',
                     type,
-                    category: finalCatName || 'Uncategorized',
-                    categoryId: finalCatId || null,
-                    financial_priority: finalPriority || 'wants',
+                    category: catResult.categoryName || 'Uncategorized',
+                    categoryId: catResult.categoryId || null,
+                    financial_priority: catResult.priority || 'wants',
                     isPaid: !!pdDate,
                     paidDate: pdDate || null,
                     budgetId: null,
-                    originalData: item,
-                    shouldLearn: true
+                    originalData: item
                 };
             }).filter(item => item.amount !== 0 && item.date);
 
@@ -252,20 +229,6 @@ export default function ImportWizard({ onSuccess }) {
                 showToast({ title: "System warming up", description: "Still loading your categories and goals. Please try again in a second." });
                 setIsProcessing(false);
                 return;
-            }
-
-            // 0. LEARN: Identify renaming patterns from user edits
-            const learnableData = processedData.filter(tx => tx.shouldLearn);
-            const newRules = detectRenamingPatterns(learnableData, user.email);
-
-            if (newRules.length > 0) {
-                // We trigger this asynchronously and don't block the import 
-                // Assuming base44 has a bulkCreate or we loop create
-                try {
-                    await base44.entities.CategoryRule.bulkCreate(newRules);
-                } catch (e) {
-                    console.warn("Failed to save learning rules", e);
-                }
             }
 
             // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
