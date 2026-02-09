@@ -10,7 +10,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Loader2, Upload } from "lucide-react";
-import { useCategories, useCategoryRules, useAllBudgets, useGoals } from "@/components/hooks/useBase44Entities";
+import { useCategories, useCategoryRules, useAllBudgets, useGoals, useCleanupRules } from "@/components/hooks/useBase44Entities";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { formatDateString } from "../utils/dateUtils";
 import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
+import { applyCleanupRules, detectRenamingPatterns } from "@/components/utils/cleanupLogic";
 
 const STEPS = [
     { id: 1, label: "Upload" },
@@ -38,6 +39,7 @@ export default function ImportWizard({ onSuccess }) {
     const { user, settings } = useSettings();
     const { categories, isLoading: categoriesLoading } = useCategories();
     const { rules } = useCategoryRules(user);
+    const { cleanupRules } = useCleanupRules(user);
     const { goals, isLoading: goalsLoading } = useGoals(user);
     const { allBudgets } = useAllBudgets(user);
     const navigate = useNavigate();
@@ -127,16 +129,19 @@ export default function ImportWizard({ onSuccess }) {
                     }
                 }
 
+                // 4. CLEANUP: Apply "Memory" rules to fix the name *before* categorization
+                const cleanedTitle = applyCleanupRules(item.reason, cleanupRules);
+
                 // Enhanced categorization using rules and patterns
                 const catResult = categorizeTransaction(
-                    { title: item.reason },
+                    { title: cleanedTitle },
                     rules,
                     categories
                 );
 
                 return {
                     date: txDate,
-                    title: item.reason || 'Untitled Transaction',
+                    title: cleanedTitle || 'Untitled Transaction',
                     amount: magnitude,
                     originalAmount: magnitude,
                     originalCurrency: settings?.baseCurrency || 'USD',
@@ -231,6 +236,19 @@ export default function ImportWizard({ onSuccess }) {
                 return;
             }
 
+            // 0. LEARN: Identify renaming patterns from user edits
+            const newRules = detectRenamingPatterns(processedData);
+
+            if (newRules.length > 0) {
+                // We trigger this asynchronously and don't block the import 
+                // Assuming base44 has a bulkCreate or we loop create
+                try {
+                    await base44.entities.CleanupRule.bulkCreate(newRules);
+                } catch (e) {
+                    console.warn("Failed to save learning rules", e);
+                }
+            }
+
             // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
             const expenseItems = processedData.filter(item => item.type === 'expense');
             const uniqueSyncKeys = new Set();
@@ -287,7 +305,7 @@ export default function ImportWizard({ onSuccess }) {
 
             showToast({
                 title: "Import Complete",
-                description: `Successfully added ${transactionsToCreate.length} transactions across ${uniqueMonths.size} month(s).`
+                description: `Added ${transactionsToCreate.length} transactions. Learned ${newRules.length} new renaming rules.`
             });
             if (onSuccess) {
                 onSuccess();
