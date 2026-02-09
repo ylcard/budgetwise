@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Check, X, Tag, Calendar, Wallet, ShieldCheck, Sparkles, LayoutGrid } from "lucide-react";
+import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Check, X, Tag, Calendar, Wallet, ShieldCheck, Sparkles, Brain, BrainCircuit } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { Input } from "@/components/ui/input";
@@ -163,7 +163,11 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                 autoFocus
                                                 onBlur={() => saveTitle(row.originalIndex)}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') saveTitle(row.originalIndex);
+                                                    if (e.key === 'Enter') {
+                                                        saveTitle(row.originalIndex);
+                                                        // Implicitly ensure learning is on when manually edited
+                                                        onUpdateRow(row.originalIndex, { shouldLearn: true });
+                                                    }
                                                     if (e.key === 'Escape') cancelEditing();
                                                 }}
                                             />
@@ -175,6 +179,16 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                         <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">{row.date}</span>
                                     </div>
                                 </div>
+
+                                {/* Learning Toggle for Mobile */}
+                                {row.originalData?.reason && row.originalData.reason !== row.title && (
+                                    <button
+                                        onClick={() => onUpdateRow(row.originalIndex, { shouldLearn: !row.shouldLearn })}
+                                        className={`p-2 rounded-full transition-colors ${row.shouldLearn ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}
+                                    >
+                                        {row.shouldLearn ? <BrainCircuit className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
+                                    </button>
+                                )}
                                 <div
                                     className={`text-right cursor-pointer`}
                                     onClick={() => onUpdateRow(row.originalIndex, { type: row.type === 'expense' ? 'income' : 'expense' })}
@@ -294,19 +308,33 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                         className="h-8 text-sm"
                                                         autoFocus
                                                         onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') saveTitle(row.originalIndex);
+                                                            if (e.key === 'Enter') {
+                                                                saveTitle(row.originalIndex);
+                                                                onUpdateRow(row.originalIndex, { shouldLearn: true });
+                                                            }
                                                             if (e.key === 'Escape') cancelEditing();
                                                         }}
                                                     />
                                                     <button onClick={() => saveTitle(row.originalIndex)} className="text-green-600 hover:bg-green-50 p-1 rounded"><Check className="w-4 h-4" /></button>
                                                 </div>
                                             ) : (
-                                                <span
-                                                    onClick={() => startEditing(row.originalIndex, row.title)}
-                                                    className="font-medium text-gray-900 cursor-pointer hover:underline decoration-dotted truncate"
-                                                >
-                                                    {row.title}
-                                                </span>
+                                                <div className="flex items-center gap-2 group/title">
+                                                    <span
+                                                        onClick={() => startEditing(row.originalIndex, row.title)}
+                                                        className="font-medium text-gray-900 cursor-pointer hover:underline decoration-dotted truncate"
+                                                    >
+                                                        {row.title}
+                                                    </span>
+                                                    {row.originalData?.reason && row.originalData.reason !== row.title && (
+                                                        <button
+                                                            onClick={() => onUpdateRow(row.originalIndex, { shouldLearn: !row.shouldLearn })}
+                                                            title={row.shouldLearn ? "Learning: System will remember this fix" : "One-off: System will ignore this fix"}
+                                                            className={`opacity-0 group-hover/title:opacity-100 transition-opacity ${row.shouldLearn ? 'text-blue-500' : 'text-gray-300'}`}
+                                                        >
+                                                            <BrainCircuit className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{row.date}</span>
                                         </div>
