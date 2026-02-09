@@ -4,7 +4,7 @@
  * UPDATED: 17-Jan-2026 - Upgraded to react-day-picker v9 with dropdown navigation
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
@@ -22,21 +22,28 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
     const { settings } = useSettings();
     const [open, setOpen] = useState(false);
 
-    const range = {
-        from: startDate ? parseDate(startDate) : undefined,
-        to: endDate ? parseDate(endDate) : undefined
-    };
+    // Internal state to handle the selection process independently of parent state
+    const [internalRange, setInternalRange] = useState(undefined);
+
+    // Sync internal state with props ONLY when the popover opens or props change externally
+    useEffect(() => {
+        if (open) {
+            setInternalRange({
+                from: startDate ? parseDate(startDate) : undefined,
+                to: endDate ? parseDate(endDate) : undefined
+            });
+        }
+    }, [open, startDate, endDate]);
 
     const handleSelect = (selectedRange) => {
+        setInternalRange(selectedRange); // Always update the visual state immediately
+
         if (selectedRange?.from && selectedRange?.to) {
             onRangeChange(
                 formatDateString(selectedRange.from),
                 formatDateString(selectedRange.to)
             );
             setOpen(false);
-        } else if (selectedRange?.from) {
-            // Keep popover open until both dates are selected
-            // Range selection in progress
         }
     };
 
@@ -60,9 +67,9 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
             <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
                 <DayPicker
                     mode="range"
-                    selected={range}
+                    selected={internalRange}
                     onSelect={handleSelect}
-                    defaultMonth={range.from || new Date()}
+                    defaultMonth={internalRange?.from || (startDate ? parseDate(startDate) : new Date())}
                     className="p-3"
                     weekStartsOn={1}
                     showOutsideDays
