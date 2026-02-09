@@ -12,6 +12,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Drawer
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { getCategoryIcon } from "../utils/iconMapConfig";
+import { AnimatePresence, motion } from "framer-motion";
 
 // Move helpers OUTSIDE to prevent re-mounting on every state change
 const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) => {
@@ -174,26 +175,28 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         />
                     </div>
 
-                    {/* Removed gap-2 to handle spacing via animation */}
                     <div className="flex items-center">
-                        <div
-                            className={cn(
-                                "overflow-hidden transition-all duration-300 ease-out flex items-center",
-                                activeFilterCount > 0
-                                    ? "w-[85px] opacity-100 translate-x-0 mr-2" // Visible: Width allows content, slides left, adds spacing
-                                    : "w-0 opacity-0 translate-x-8 mr-0"        // Hidden: No width, slides right (into picker), no spacing
+                        <AnimatePresence>
+                            {activeFilterCount > 0 && (
+                                <motion.div
+                                    initial={{ width: 0, opacity: 0, x: 20 }}
+                                    animate={{ width: "auto", opacity: 1, x: 0 }}
+                                    exit={{ width: 0, opacity: 0, x: 20 }}
+                                    transition={{ duration: 0.2, ease: "easeOut" }}
+                                    className="overflow-hidden flex items-center"
+                                >
+                                    <CustomButton
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleClearFilters}
+                                        className="text-gray-500 hover:text-red-600 mr-2 whitespace-nowrap"
+                                    >
+                                        <X className="w-4 h-4 mr-1" />
+                                        Clear
+                                    </CustomButton>
+                                </motion.div>
                             )}
-                        >
-                            <CustomButton
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleClearFilters}
-                                className="text-gray-500 hover:text-red-600 whitespace-nowrap"
-                            >
-                                <X className="w-4 h-4 mr-1" />
-                                Clear
-                            </CustomButton>
-                        </div>
+                        </AnimatePresence>
 
                         <DateRangePicker
                             startDate={filters.startDate}
