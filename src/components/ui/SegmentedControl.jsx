@@ -38,42 +38,53 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
     };
 
     return (
-        <div
+        <motion.div
             ref={containerRef}
+            layout
             className={cn(
-                "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg transition-all duration-300 h-[40px] shadow-sm",
+                "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg h-[40px] shadow-sm",
                 "md:relative", // Desktop is normal
-                isExpanded ? "absolute right-0 left-0 z-50 shadow-xl" : "relative w-[40px] md:w-auto",
+                isExpanded ? "absolute right-4 left-4 z-50 shadow-xl" : "relative w-[40px] md:w-auto",
                 className
             )}
         >
-            {options.map((option) => {
-                const isActive = value === option.value;
-                const shouldShow = isExpanded || isActive || window.innerWidth >= 768;
+            <AnimatePresence mode="popLayout" initial={false}>
+                {options.map((option) => {
+                    const isActive = value === option.value;
+                    const shouldShow = isExpanded || isActive || (typeof window !== 'undefined' && window.innerWidth >= 768);
 
-                if (!shouldShow) return null;
+                    if (!shouldShow) return null;
 
-                return (
-                    <button
-                        key={option.value}
-                        onClick={() => handleSelect(option.value)}
-                        className={cn(
-                            "flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-300",
-                            isActive
-                                ? "bg-white text-gray-900 shadow-sm"
-                                : "text-gray-600 hover:text-gray-900"
-                        )}
-                    >
-                        {option.label}
-                        {(isActive || (isExpanded && window.innerWidth < 768)) && option.desktopLabel && (
-                            <span className="hidden md:inline">
-                                {option.desktopLabel}
-                            </span>
-                        )}
-                    </button>
-                );
-            })}
-        </div>
+                    return (
+                        <motion.button
+                            key={option.value}
+                            layout
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                            onClick={() => handleSelect(option.value)}
+                            className={cn(
+                                "flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                                isActive
+                                    ? "bg-white text-gray-900 shadow-sm"
+                                    : "text-gray-600 hover:text-gray-900"
+                            )}
+                        >
+                            {option.label}
+                            {(isActive || (isExpanded && window.innerWidth < 768)) && option.desktopLabel && (
+                                <motion.span
+                                    layout
+                                    className="hidden md:inline"
+                                >
+                                    {option.desktopLabel}
+                                </motion.span>
+                            )}
+                        </motion.button>
+                    );
+                })}
+            </AnimatePresence>
+        </motion.div>
     );
 };
 
