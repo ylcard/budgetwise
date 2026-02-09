@@ -52,7 +52,8 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
             <AnimatePresence mode="popLayout" initial={false}>
                 {options.map((option) => {
                     const isActive = value === option.value;
-                    const shouldShow = isExpanded || isActive || (typeof window !== 'undefined' && window.innerWidth >= 768);
+                    // const shouldShow = isExpanded || isActive || (typeof window !== 'undefined' && window.innerWidth >= 768);
+                    const shouldShow = isExpanded || isActive || (containerRef.current?.offsetWidth > 100);
 
                     if (!shouldShow) return null;
 
@@ -62,7 +63,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                             layout="position"
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
+                            exit={{ opacity: 0, scale: 0.8 }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             onClick={() => handleSelect(option.value)}
                             className={cn(
