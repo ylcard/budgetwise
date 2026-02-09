@@ -58,6 +58,7 @@ export default function CustomBudgetsDisplay({
         }
     }, [settings.budgetViewMode]);
 
+    const isMobile = useIsMobile();
     const cardSize = isMobile ? 'sm' : 'md';
 
     return (
