@@ -32,7 +32,7 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
             showOutsideDays
             fixedWeeks
             captionLayout="dropdown-buttons"
-            startMonth={new Date(2024, 0)}
+            startMonth={new Date(1986, 0)}
             endMonth={new Date(2100, 11)}
             classNames={{
                 months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
