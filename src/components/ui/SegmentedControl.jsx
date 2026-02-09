@@ -48,7 +48,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
             className={cn(
                 "inline-flex items-center gap-1 rounded-lg h-[40px]",
                 "md:relative md:bg-gray-100 md:p-1 md:shadow-sm",
-                isExpanded ? "absolute right-4 left-4 z-50 shadow-xl bg-gray-100 p-1 origin-right" : "relative md:w-auto",
+                isExpanded ? "absolute inset-x-4 z-50 shadow-xl bg-gray-100 p-1 origin-right flex-row" : "relative md:w-auto",
                 className
             )}
         >
@@ -69,17 +69,17 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             onClick={() => handleSelect(option.value)}
                             className={cn(
-                                "flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                                "flex-1 flex items-center justify-center gap-2 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
                                 isActive
                                     ? "bg-white text-gray-900 shadow-sm"
                                     : "text-gray-600 hover:text-gray-900"
                             )}
                         >
                             {option.label}
-                            {(isActive || (isExpanded && isMobile)) && option.desktopLabel && (
+                            {(isExpanded || !isMobile) && option.desktopLabel && (
                                 <motion.span
                                     layout
-                                    className="hidden md:inline"
+                                   className={cn("whitespace-nowrap", !isExpanded && "hidden md:inline")}
                                 >
                                     {option.desktopLabel}
                                 </motion.span>
