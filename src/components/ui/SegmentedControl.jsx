@@ -24,7 +24,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                     >
                         {option.label}
                         {isActive && option.desktopLabel && (
-                            <span className="hidden md:inline overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-1 duration-300">
+                            <span className="hidden md:inline animate-in fade-in slide-in-from-left-1 duration-300">
                                 {option.desktopLabel}
                             </span>
                         )}
