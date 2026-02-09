@@ -10,15 +10,21 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const containerRef = useRef(null);
 
-    // Collapse when clicking outside
+    // Collapse when clicking outside or scrolling
     useEffect(() => {
-        const handleClickOutside = (event) => {
+        const handleCollapse = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
                 setIsExpanded(false);
             }
         };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+
+        document.addEventListener("mousedown", handleCollapse);
+        window.addEventListener("scroll", () => setIsExpanded(false), { passive: true });
+
+        return () => {
+            document.removeEventListener("mousedown", handleCollapse);
+            window.removeEventListener("scroll", () => setIsExpanded(false));
+        };
     }, []);
 
     const handleSelect = (val) => {
@@ -34,9 +40,9 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
         <div
             ref={containerRef}
             className={cn(
-                "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg transition-all duration-300",
+                "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg transition-all duration-300 h-[40px]",
                 "md:relative", // Desktop is normal
-                isExpanded ? "absolute right-0 left-0 z-10 shadow-lg mx-4" : "relative", // Mobile morph
+                isExpanded ? "absolute right-0 left-0 z-10 shadow-lg mx-4" : "relative w-[40px] md:w-auto", // Fixed width when collapsed on mobile
                 className
             )}
         >
