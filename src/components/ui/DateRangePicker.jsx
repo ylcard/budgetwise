@@ -61,7 +61,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
             <PopoverTrigger asChild>
                 <CustomButton
                     variant="outline"
-                    className="w-full md:w-auto justify-start text-left font-normal"
+                    className="w-full md:w-auto justify-center md:justify-start text-center md:text-left font-normal"
                 >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {startDate && endDate ? (
