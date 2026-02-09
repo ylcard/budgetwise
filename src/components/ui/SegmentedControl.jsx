@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
  * CREATED: 02-Feb-2026
@@ -9,15 +10,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const SegmentedControl = ({ options, value, onChange, className }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const isMobile = useIsMobile();
     const containerRef = useRef(null);
 
     // Collapse when clicking outside or scrolling
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-
         const handleCollapse = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
                 setIsExpanded(false);
@@ -25,12 +22,12 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
         };
 
         document.addEventListener("mousedown", handleCollapse);
-        window.addEventListener("scroll", () => setIsExpanded(false), { passive: true });
+        const handleScroll = () => setIsExpanded(false);
+        window.addEventListener("scroll", handleScroll, { passive: true });
 
         return () => {
-            window.removeEventListener('resize', checkMobile);
             document.removeEventListener("mousedown", handleCollapse);
-            window.removeEventListener("scroll", () => setIsExpanded(false));
+            window.removeEventListener("scroll", handleScroll);
         };
     }, []);
 
