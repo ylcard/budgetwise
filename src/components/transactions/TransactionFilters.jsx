@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon, Search, X, ChevronLeft, ChevronRight, Check, 
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import CategorySelect from "../ui/CategorySelect";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
@@ -218,12 +218,16 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                     selected={selectedRange}
                                     onSelect={handleRangeSelect}
                                     showOutsideDays={false}
+                                    captionLayout="dropdown-buttons"
+                                    startMonth={new Date(1900, 0)}
+                                    endMonth={new Date(2100, 11)}
                                     className="p-3"
                                     classNames={{
                                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                                         month: "space-y-4",
                                         caption: "flex justify-center pt-1 relative items-center",
                                         caption_label: "text-sm font-medium",
+                                        caption_dropdowns: "flex justify-center gap-1",
                                         nav: "space-x-1 flex items-center absolute right-1",
                                         nav_button: cn(
                                             buttonVariants({ variant: "outline" }),
@@ -247,6 +251,10 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                         disabled: "text-muted-foreground opacity-50",
                                         range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-700 !rounded-none",
                                         hidden: "invisible",
+                                        dropdown: "p-1 bg-transparent outline-none cursor-pointer hover:bg-accent rounded-sm text-sm font-medium",
+                                        dropdown_icon: "hidden",
+                                        dropdown_month: "mr-2",
+                                        dropdown_year: "",
                                     }}
                                     components={{
                                         IconLeft: ({ ...props }) => <ChevronLeft {...props} className="h-4 w-4" />,
