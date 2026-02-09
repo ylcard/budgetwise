@@ -40,9 +40,9 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
         <div
             ref={containerRef}
             className={cn(
-                "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg transition-all duration-300 h-[40px]",
+                "inline-flex items-center gap-1 p-1 bg-gray-100 rounded-lg transition-all duration-300 h-[40px] shadow-sm",
                 "md:relative", // Desktop is normal
-                isExpanded ? "absolute right-0 left-0 z-10 shadow-lg mx-4" : "relative w-[40px] md:w-auto", // Fixed width when collapsed on mobile
+                isExpanded ? "absolute right-2 left-2 z-20 shadow-md" : "relative w-[40px] md:w-auto",
                 className
             )}
         >
