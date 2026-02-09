@@ -35,9 +35,17 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
         }
     }, [open, startDate, endDate]);
 
-    const handleSelect = (selectedRange) => {
-        console.log("DayPicker Emitted:", selectedRange);
-        setInternalRange(selectedRange); // Always update the visual state immediately
+    // We accept triggerDate (the specific day clicked) to handle the reset logic
+    const handleSelect = (selectedRange, triggerDate) => {
+        // If we already have a complete range selected, start a fresh selection
+        // instead of letting the library "extend" the previous range.
+        if (internalRange?.from && internalRange?.to) {
+            setInternalRange({ from: triggerDate, to: undefined });
+            return;
+        }
+
+        // Otherwise, proceed with normal selection logic (e.g., picking the end date)
+        setInternalRange(selectedRange);
 
         if (selectedRange?.from && selectedRange?.to) {
             onRangeChange(
