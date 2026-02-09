@@ -36,6 +36,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
     }, [open, startDate, endDate]);
 
     const handleSelect = (selectedRange) => {
+        console.log("DayPicker Emitted:", selectedRange);
         setInternalRange(selectedRange); // Always update the visual state immediately
 
         if (selectedRange?.from && selectedRange?.to) {
