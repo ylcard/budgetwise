@@ -69,7 +69,7 @@ export default function CustomBudgetsDisplay({
         <div className="space-y-6">
             {budgets.length > 0 && (
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="relative flex flex-row items-center justify-between pb-2 min-h-[60px]">
+                    <CardHeader className="relative flex flex-row items-center justify-between pb-2 min-h-[70px]">
                         <div className="flex items-center gap-3">
                             <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
                                 Custom Budgets
@@ -80,7 +80,7 @@ export default function CustomBudgetsDisplay({
                                 className="rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 hidden md:flex"
                                 onClick={onCreateBudget}
                             >
-                            <Plus className="w-4 h-4" />
+                                <Plus className="w-4 h-4" />
                             </CustomButton>
                         </div>
                         <SegmentedControl
@@ -89,8 +89,7 @@ export default function CustomBudgetsDisplay({
                             onChange={setViewMode}
                         />
                     </CardHeader>
-                    <CardContent className="pt-4">
-
+                    <CardContent className="pt-4 overflow-hidden transition-[height] duration-500 ease-in-out">
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
                             <CarouselContent
                                 className={cn(
