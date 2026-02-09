@@ -40,11 +40,12 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
     return (
         <motion.div
             ref={containerRef}
-            layout
+            layout="position"
+            layoutId="segmented-control-container"
             className={cn(
                 "inline-flex items-center gap-1 rounded-lg h-[40px]",
-                "md:relative md:bg-gray-100 md:p-1 md:shadow-sm", 
-                isExpanded ? "absolute right-4 left-4 z-50 shadow-xl bg-gray-100 p-1" : "relative md:w-auto",
+                "md:relative md:bg-gray-100 md:p-1 md:shadow-sm",
+                isExpanded ? "absolute right-4 left-4 z-50 shadow-xl bg-gray-100 p-1 origin-right" : "relative md:w-auto",
                 className
             )}
         >
@@ -58,11 +59,11 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                     return (
                         <motion.button
                             key={option.value}
-                            layout
-                            initial={{ opacity: 0, scale: 0.9 }}
+                            layout="position"
+                            initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             onClick={() => handleSelect(option.value)}
                             className={cn(
                                 "flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
