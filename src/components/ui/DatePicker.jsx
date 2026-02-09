@@ -31,7 +31,7 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
             weekStartsOn={1}
             showOutsideDays
             fixedWeeks
-            captionLayout="dropdown-buttons"
+            captionLayout="dropdown"
             startMonth={new Date(1986, 0)}
             endMonth={new Date(2100, 11)}
             classNames={{
