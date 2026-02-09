@@ -3,12 +3,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Search, X, Check, Tag } from "lucide-react";
+import { Search, X, Check, Tag, ChevronRight } from "lucide-react";
 import DateRangePicker from "../ui/DateRangePicker";
 import { cn } from "@/lib/utils";
 import CategorySelect from "../ui/CategorySelect";
 import { useMemo } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose, ChevronRight } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { getCategoryIcon } from "../utils/iconMapConfig";
