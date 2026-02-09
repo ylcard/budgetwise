@@ -8,7 +8,7 @@ import DateRangePicker from "../ui/DateRangePicker";
 import { cn } from "@/lib/utils";
 import CategorySelect from "../ui/CategorySelect";
 import { useMemo } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose, ChevronRight } from "@/components/ui/drawer";
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { getCategoryIcon } from "../utils/iconMapConfig";
