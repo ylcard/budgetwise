@@ -98,7 +98,14 @@ export default function CustomBudgetsDisplay({
                         </div>
 
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                            <CarouselContent className={viewMode === 'bars' ? 'items-end' : 'items-stretch'}>
+                            <CarouselContent 
+                                className={cn(
+                                    viewMode === 'bars' ? 'items-end' : 'items-stretch',
+                                    budgets.length < 2 && "sm:justify-center",
+                                    budgets.length < 3 && "md:justify-center",
+                                    budgets.length < 4 && "lg:justify-center"
+                                )}
+                            >
                                 {budgets.map((budget) => (
                                     <CarouselItem
                                         key={budget.id}
