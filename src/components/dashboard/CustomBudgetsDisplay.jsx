@@ -17,7 +17,7 @@ import {
     CarouselDots
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils"
-import { useAutoHeight } from "../hooks/useAutoHeight";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * CREATED: 03-Feb-2026
@@ -25,13 +25,14 @@ import { useAutoHeight } from "../hooks/useAutoHeight";
  * UPDATED: 03-Feb-2026 - Now receives raw budgets + transactions, each view calculates its own stats
  * UPDATED: 03-Feb-2026 - Now self-fetches custom budgets for period and their transactions
  * Displays ONLY custom budgets (no system budgets) in various view modes
+ * UPDATED: 09-Feb-2026 - Replaced manual height hook with Framer Motion for smooth height transitions
+ * and cross-fading view modes.
  */
 
 export default function CustomBudgetsDisplay({
     onCreateBudget,
 }) {
     const { user, settings } = useSettings();
-    const autoHeight = useAutoHeight();
     const { monthStart, monthEnd } = usePeriod();
 
     // Fetch custom budgets for the selected period
@@ -91,66 +92,77 @@ export default function CustomBudgetsDisplay({
                             onChange={setViewMode}
                         />
                     </CardHeader>
-                    <CardContent 
-                        ref={autoHeight.ref}
-                        style={autoHeight.style}
-                        className="pt-4 overflow-hidden transition-[height] duration-500 ease-in-out will-change-[height]"
-                    >
-                        <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                            <CarouselContent
-                                className={cn(
-                                    viewMode === 'bars' ? 'items-end' : 'items-stretch',
-                                    budgets.length < 2 && "sm:justify-center",
-                                    budgets.length < 3 && "md:justify-center",
-                                    budgets.length < 4 && "lg:justify-center"
-                                )}
-                            >
-                                {budgets.map((budget) => (
-                                    <CarouselItem
-                                        key={budget.id}
-                                        className={`
+                    <CardContent className="pt-4 overflow-hidden">
+                        <motion.div
+                            layout
+                            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                        >
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={viewMode}
+                                    initial={{ opacity: 0, scale: 0.98 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.98 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                                        <CarouselContent
+                                            className={cn(
+                                                viewMode === 'bars' ? 'items-end' : 'items-stretch',
+                                                budgets.length < 2 && "sm:justify-center",
+                                                budgets.length < 3 && "md:justify-center",
+                                                budgets.length < 4 && "lg:justify-center"
+                                            )}
+                                        >
+                                            {budgets.map((budget) => (
+                                                <CarouselItem
+                                                    key={budget.id}
+                                                    className={`
                                             basis-full 
                                             sm:basis-1/2 
                                             md:basis-1/3 
                                             lg:basis-1/4
                                         `}
-                                    >
-                                        {viewMode === 'bars' && (
-                                            <VerticalBar
-                                                budget={budget}
-                                                transactions={transactions}
-                                                settings={settings}
-                                                isCustom={true}
-                                            />
-                                        )}
-                                        {viewMode === 'cards' && (
-                                            <BudgetCard
-                                                // BudgetCard still expects an array, so we wrap it
-                                                budgets={[budget]}
-                                                transactions={transactions}
-                                                settings={settings}
-                                                size={cardSize}
-                                            />
-                                        )}
-                                        {viewMode === 'circular' && (
-                                            <BudgetHealthCircular
-                                                budget={budget} // Passing SINGLE budget
-                                                transactions={transactions}
-                                                settings={settings}
-                                            />
-                                        )}
-                                        {viewMode === 'compact' && (
-                                            <BudgetHealthCompact
-                                                budget={budget} // Passing SINGLE budget
-                                                transactions={transactions}
-                                                settings={settings}
-                                            />
-                                        )}
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            <CarouselDots />
-                        </Carousel>
+                                                >
+                                                    {viewMode === 'bars' && (
+                                                        <VerticalBar
+                                                            budget={budget}
+                                                            transactions={transactions}
+                                                            settings={settings}
+                                                            isCustom={true}
+                                                        />
+                                                    )}
+                                                    {viewMode === 'cards' && (
+                                                        <BudgetCard
+                                                            // BudgetCard still expects an array, so we wrap it
+                                                            budgets={[budget]}
+                                                            transactions={transactions}
+                                                            settings={settings}
+                                                            size={cardSize}
+                                                        />
+                                                    )}
+                                                    {viewMode === 'circular' && (
+                                                        <BudgetHealthCircular
+                                                            budget={budget} // Passing SINGLE budget
+                                                            transactions={transactions}
+                                                            settings={settings}
+                                                        />
+                                                    )}
+                                                    {viewMode === 'compact' && (
+                                                        <BudgetHealthCompact
+                                                            budget={budget} // Passing SINGLE budget
+                                                            transactions={transactions}
+                                                            settings={settings}
+                                                        />
+                                                    )}
+                                                </CarouselItem>
+                                            ))}
+                                        </CarouselContent>
+                                        <CarouselDots />
+                                    </Carousel>
+                                </motion.div>
+                            </AnimatePresence>
+                        </motion.div>
                     </CardContent>
                 </Card>
             )}
