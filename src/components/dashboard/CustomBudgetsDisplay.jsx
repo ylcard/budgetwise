@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, ChevronLeft, ChevronRight, BarChart2, LayoutGrid, CircleDot, StretchHorizontal } from "lucide-react";
+import { Plus, BarChart2, LayoutGrid, CircleDot, StretchHorizontal } from "lucide-react";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import VerticalBar from "../custombudgets/VerticalBar";
 import BudgetCard from "../budgets/BudgetCard";
@@ -69,37 +69,30 @@ export default function CustomBudgetsDisplay({
         <div className="space-y-6">
             {budgets.length > 0 && (
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-2">
+                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
+                        <div className="flex items-center gap-3">
                             <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
                                 Custom Budgets
                             </span>
-                        </div>
-                        <div className="hidden md:flex items-center gap-2">
                             <CustomButton
-                                variant="create"
-                                size="sm"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 md:flex hidden"
                                 onClick={onCreateBudget}
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                New Budget
+                                <Plus className="w-4 h-4" />
                             </CustomButton>
                         </div>
+                        <SegmentedControl
+                            options={VIEW_OPTIONS}
+                            value={viewMode}
+                            onChange={setViewMode}
+                        />
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-end gap-2 mb-4">
-                            <SegmentedControl
-                                options={VIEW_OPTIONS.map(opt => ({
-                                    ...opt,
-                                    label: <span className="flex items-center gap-2">{opt.label} <span className="hidden md:inline">{opt.desktopLabel}</span></span>
-                                }))}
-                                value={viewMode}
-                                onChange={setViewMode}
-                            />
-                        </div>
+                    <CardContent className="pt-4">
 
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                            <CarouselContent 
+                            <CarouselContent
                                 className={cn(
                                     viewMode === 'bars' ? 'items-end' : 'items-stretch',
                                     budgets.length < 2 && "sm:justify-center",
