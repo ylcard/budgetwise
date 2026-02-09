@@ -751,10 +751,15 @@ export default function TransactionFormContent({
                 )}
             </div>
 
-            {/* Date Row: 2 Columns if Paid, 1 Column (Full Width) if Unpaid */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Date Row: Flexbox container for smooth animation */}
+            <div className="flex gap-4 overflow-hidden">
                 {/* 1. Transaction Date (Always Visible) */}
-                <div className={cn("flex flex-col gap-1.5", !formData.isPaid && "col-span-2")}>
+                {/* "layout" prop makes it animate resizing automatically */}
+                <motion.div
+                    layout
+                    className="flex-1 flex flex-col gap-1.5 min-w-0"
+                    transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                >
                     <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Transaction Date</Label>
                     <ResponsiveDatePicker
                         value={formData.date}
@@ -762,20 +767,29 @@ export default function TransactionFormContent({
                         placeholder="Select date"
                         className="h-11"
                     />
-                </div>
+                </motion.div>
 
                 {/* 2. Paid Date (Only renders if Paid is active) */}
-                {formData.type === 'expense' && formData.isPaid && (
-                    <div className="flex flex-col gap-1.5">
-                        <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Paid Date</Label>
-                        <ResponsiveDatePicker
-                            value={formData.paidDate}
-                            onChange={(d) => setFormData({ ...formData, paidDate: d })}
-                            className="h-11 border-blue-200 bg-blue-50/30"
-                            placeholder="Paid Date"
-                        />
-                    </div>
-                )}
+                <AnimatePresence mode="popLayout">
+                    {formData.type === 'expense' && formData.isPaid && (
+                        <motion.div
+                            layout
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: "auto", opacity: 1 }} // "auto" lets flexbox decide (50%)
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                            className="flex-1 flex flex-col gap-1.5 min-w-0 overflow-hidden"
+                        >
+                            <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider whitespace-nowrap">Paid Date</Label>
+                            <ResponsiveDatePicker
+                                value={formData.paidDate}
+                                onChange={(d) => setFormData({ ...formData, paidDate: d })}
+                                className="h-11 border-blue-200 bg-blue-50/30"
+                                placeholder="Paid Date"
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Category, Budget Assignment, and Budget (grid layout) */}
