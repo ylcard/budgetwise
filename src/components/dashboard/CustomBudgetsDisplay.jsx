@@ -91,13 +91,10 @@ export default function CustomBudgetsDisplay({
                             onChange={setViewMode}
                         />
                     </CardHeader>
-                    <CardContent
+                    <CardContent 
                         ref={autoHeight.ref}
-                        style={{
-                            ...autoHeight.style,
-                            willChange: "height",
-                        }}
-                        className="pt-4 overflow-hidden transition-all duration-500 ease-in-out"
+                        style={autoHeight.style}
+                        className="pt-4 overflow-hidden transition-[height] duration-500 ease-in-out will-change-[height]"
                     >
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
                             <CarouselContent
