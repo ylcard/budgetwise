@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * CREATED: 03-Feb-2026
@@ -56,15 +57,6 @@ export default function CustomBudgetsDisplay({
             setViewMode(settings.budgetViewMode);
         }
     }, [settings.budgetViewMode]);
-
-    // Helper to determine card size based on screen width
-    const [isMobile, setIsMobile] = useState(false);
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     const cardSize = isMobile ? 'sm' : 'md';
 
