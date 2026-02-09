@@ -10,7 +10,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Loader2, Upload } from "lucide-react";
-import { useCategories, useCategoryRules, useAllBudgets, useGoals, useCleanupRules } from "@/components/hooks/useBase44Entities";
+import { useCategories, useCategoryRules, useAllBudgets, useGoals } from "@/components/hooks/useBase44Entities";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
@@ -21,455 +21,472 @@ import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitializa
 import { applyCleanupRules, detectRenamingPatterns } from "@/components/utils/cleanupLogic";
 
 const STEPS = [
-    { id: 1, label: "Upload" },
-    { id: 2, label: "Review" },
-    { id: 3, label: "Finish" }
+  { id: 1, label: "Upload" },
+  { id: 2, label: "Review" },
+  { id: 3, label: "Finish" }
 ];
 
 export default function ImportWizard({ onSuccess }) {
-    const queryClient = useQueryClient();
-    const [step, setStep] = useState(1);
-    const [file, setFile] = useState(null);
-    const [csvData, setCsvData] = useState({ headers: [], data: [] });
-    const [showColumnMapper, setShowColumnMapper] = useState(false);
-    const [mappings, setMappings] = useState({});
-    const [processedData, setProcessedData] = useState([]);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [error, setError] = useState(null);
-    const { user, settings } = useSettings();
-    const { categories, isLoading: categoriesLoading } = useCategories();
-    const { rules } = useCategoryRules(user);
-    const { cleanupRules } = useCleanupRules(user);
-    const { goals, isLoading: goalsLoading } = useGoals(user);
-    const { allBudgets } = useAllBudgets(user);
-    const navigate = useNavigate();
-    const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const queryClient = useQueryClient();
+  const [step, setStep] = useState(1);
+  const [file, setFile] = useState(null);
+  const [csvData, setCsvData] = useState({ headers: [], data: [] });
+  const [showColumnMapper, setShowColumnMapper] = useState(false);
+  const [mappings, setMappings] = useState({});
+  const [processedData, setProcessedData] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const { user, settings } = useSettings();
+  const { categories, isLoading: categoriesLoading } = useCategories();
+  const { rules } = useCategoryRules(user);
+  const { goals, isLoading: goalsLoading } = useGoals(user);
+  const { allBudgets } = useAllBudgets(user);
+  const navigate = useNavigate();
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
-    // Helper to clean strings into numbers while preserving the sign for detection
-    const parseAmountWithSign = (value) => {
-        if (!value && value !== 0) return 0;
-        const str = value.toString();
-        // Keep digits, dots, and the minus sign
-        const cleanStr = str.replace(/[^0-9.-]/g, "");
-        return parseFloat(cleanStr) || 0;
-    };
+  // Helper to clean strings into numbers while preserving the sign for detection
+  const parseAmountWithSign = (value) => {
+    if (!value && value !== 0) return 0;
+    const str = value.toString();
+    // Keep digits, dots, and the minus sign
+    const cleanStr = str.replace(/[^0-9.-]/g, "");
+    return parseFloat(cleanStr) || 0;
+  };
 
-    const handleFileSelect = async (selectedFile) => {
-        setFile(selectedFile);
-        setError(null); // Clear previous errors on new file select
+  const handleFileSelect = async (selectedFile) => {
+    setFile(selectedFile);
+    setError(null); // Clear previous errors on new file select
 
-        if (selectedFile.name.toLowerCase().endsWith('.pdf') || selectedFile.type === 'application/pdf') {
-            await handlePdfProcessing(selectedFile);
-        } else {
-            const text = await selectedFile.text();
-            const parsed = parseCSV(text);
-            setCsvData(parsed);
-            setShowColumnMapper(true);
-            showToast({ title: "File parsed", description: `Found ${parsed.data.length} rows.` });
+    if (selectedFile.name.toLowerCase().endsWith('.pdf') || selectedFile.type === 'application/pdf') {
+      await handlePdfProcessing(selectedFile);
+    } else {
+      const text = await selectedFile.text();
+      const parsed = parseCSV(text);
+      setCsvData(parsed);
+      setShowColumnMapper(true);
+      showToast({ title: "File parsed", description: `Found ${parsed.data.length} rows.` });
+    }
+  };
+
+  const handlePdfProcessing = async (file) => {
+    setIsLoadingPdf(true);
+    setError(null);
+    try {
+      showToast({ title: "Uploading...", description: "Uploading file for analysis." });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
+
+      showToast({ title: "Analyzing...", description: "Extracting data from PDF. This may take a moment." });
+      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: file_url,
+        json_schema: {
+          "type": "object",
+          "properties": {
+            "transactions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
+                  "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
+                  "reason": { "type": "string", "description": "Merchant name exactly as it appears. Do not summarize." },
+                  "amount": { "type": "number", "description": "Raw numeric value. Negative for debits/expenses, positive for credits/income." }
+                },
+                "required": ["date", "reason", "amount"]
+              }
+            }
+          },
+          "required": ["transactions"]
         }
-    };
+      });
 
-    const handlePdfProcessing = async (file) => {
-        setIsLoadingPdf(true);
-        setError(null);
+      if (result.status === 'error') throw new Error(result.details);
+
+      const extractedData = result.output?.transactions || [];
+
+      const processed = extractedData.map(item => {
+        // 1. Parse while preserving the sign for a moment
+        const rawVal = parseAmountWithSign(item.amount);
+
+        // 2. Determine type and then force absolute magnitude
+        const type = rawVal < 0 ? 'expense' : 'income';
+        const magnitude = Math.abs(rawVal);
+
+        // 3. Date Logic Correction: Ensure Transaction Date <= Paid Date
+        // Banks sometimes flip these or the AI extracts them swapped.
+        // Logic: The earlier date is ALWAYS the transaction date.
+        let txDate = item.date;
+        let pdDate = item.valueDate;
+
+        if (txDate && pdDate) {
+          const d1 = new Date(txDate);
+          const d2 = new Date(pdDate);
+
+          // If transaction date is later than paid date, swap them
+          if (!isNaN(d1) && !isNaN(d2) && d1 > d2) {
+            txDate = item.valueDate;
+            pdDate = item.date;
+          }
+        }
+
+        // 4. CLEANUP: Apply "Memory" rules to fix the name *before* categorization
+        // We pass 'rules' because that is where we store the renamedTitle now
+        const cleanedTitle = applyCleanupRules(item.reason, rules);
+        const titleToUse = cleanedTitle || item.reason || 'Untitled Transaction';
+
+        // Enhanced categorization using rules and patterns
+        const catResult = categorizeTransaction(
+          { title: titleToUse },
+          rules,
+          categories
+        );
+
+        // If we found a specific renaming rule, we should prioritize the category 
+        // attached to that rule over the generic categorization result
+        const matchingRule = cleanedTitle ? rules.find(r => r.keyword === item.reason && r.renamedTitle) : null;
+        let finalCatId = catResult.categoryId;
+        let finalCatName = catResult.categoryName;
+        let finalPriority = catResult.priority;
+
+        if (matchingRule && matchingRule.categoryId) {
+          const knownCat = categories.find(c => c.id === matchingRule.categoryId);
+          if (knownCat) {
+            finalCatId = knownCat.id;
+            finalCatName = knownCat.name;
+            finalPriority = knownCat.priority || 'wants';
+          }
+        }
+
+        return {
+          date: txDate,
+          title: titleToUse,
+          amount: magnitude,
+          originalAmount: magnitude,
+          originalCurrency: settings?.baseCurrency || 'USD',
+          type,
+          category: finalCatName || 'Uncategorized',
+          categoryId: finalCatId || null,
+          financial_priority: finalPriority || 'wants',
+          isPaid: !!pdDate,
+          paidDate: pdDate || null,
+          budgetId: null,
+          originalData: item
+        };
+      }).filter(item => item.amount !== 0 && item.date);
+
+      setProcessedData(processed);
+      setStep(2);
+      showToast({ title: "Success", description: `Extracted ${processed.length} transactions from PDF.` });
+    } catch (error) {
+      console.error('PDF Processing Error:', error);
+      setError(`PDF Processing Failed: ${error.message || "Unknown error"}`);
+      setFile(null);
+    } finally {
+      setIsLoadingPdf(false);
+    }
+  };
+
+  const handleMappingChange = (field, column) => {
+    setMappings(prev => ({ ...prev, [field]: column }));
+  };
+
+  const processData = () => {
+    const processed = csvData.data.map(row => {
+      const rawVal = parseAmountWithSign(row[mappings.amount]);
+      const magnitude = Math.abs(rawVal);
+
+      let type = 'expense';
+      if (mappings.type && row[mappings.type]) {
+        type = row[mappings.type].toLowerCase().includes('income') ? 'income' : 'expense';
+      } else {
+        type = rawVal < 0 ? 'expense' : 'income';
+      }
+
+      // Enhanced categorization
+      // First check if CSV has an explicit category column
+      let catResult = { categoryId: null, categoryName: 'Uncategorized', priority: 'wants' };
+
+      if (mappings.category && row[mappings.category]) {
+        const csvCat = row[mappings.category];
+        const matchedCat = categories.find(c => c.name.toLowerCase() === csvCat.toLowerCase());
+        if (matchedCat) {
+          catResult = { categoryId: matchedCat.id, categoryName: matchedCat.name, priority: matchedCat.priority || 'wants' };
+        }
+      }
+
+      // If no explicit mapping or not found, run auto-categorization
+      if (!catResult.categoryId) {
+        catResult = categorizeTransaction(
+          { title: row[mappings.title] },
+          rules,
+          categories
+        );
+      }
+
+      return {
+        date: row[mappings.date],
+        title: row[mappings.title] || 'Untitled Transaction',
+        amount: magnitude,
+        originalAmount: magnitude,
+        originalCurrency: settings?.baseCurrency || 'USD',
+        type,
+        category: catResult.categoryName || 'Uncategorized',
+        categoryId: catResult.categoryId || null,
+        financial_priority: catResult.priority || 'wants',
+        isPaid: true, // Assume bank import data is already paid/settled
+        paidDate: row[mappings.date],
+        budgetId: null,
+        originalData: row
+      };
+    }).filter(item => item.amount !== 0 && item.date);
+
+    setProcessedData(processed);
+    setStep(2);
+  };
+
+  const handleImport = async () => {
+    setIsProcessing(true);
+    try {
+      // Pre-flight data check
+      if (categoriesLoading || goalsLoading || !categories.length || !goals.length) {
+        showToast({ title: "System warming up", description: "Still loading your categories and goals. Please try again in a second." });
+        setIsProcessing(false);
+        return;
+      }
+
+      // 0. LEARN: Identify renaming patterns from user edits
+      const newRules = detectRenamingPatterns(processedData, user.email);
+
+      if (newRules.length > 0) {
+        // We trigger this asynchronously and don't block the import 
+        // Assuming base44 has a bulkCreate or we loop create
         try {
-            showToast({ title: "Uploading...", description: "Uploading file for analysis." });
-            const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
-
-            showToast({ title: "Analyzing...", description: "Extracting data from PDF. This may take a moment." });
-            const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-                file_url: file_url,
-                json_schema: {
-                    "type": "object",
-                    "properties": {
-                        "transactions": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
-                                    "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
-                                    "reason": { "type": "string", "description": "Merchant name exactly as it appears. Do not summarize." },
-                                    "amount": { "type": "number", "description": "Raw numeric value. Negative for debits/expenses, positive for credits/income." }
-                                },
-                                "required": ["date", "reason", "amount"]
-                            }
-                        }
-                    },
-                    "required": ["transactions"]
-                }
-            });
-
-            if (result.status === 'error') throw new Error(result.details);
-
-            const extractedData = result.output?.transactions || [];
-
-            const processed = extractedData.map(item => {
-                // 1. Parse while preserving the sign for a moment
-                const rawVal = parseAmountWithSign(item.amount);
-
-                // 2. Determine type and then force absolute magnitude
-                const type = rawVal < 0 ? 'expense' : 'income';
-                const magnitude = Math.abs(rawVal);
-
-                // 3. Date Logic Correction: Ensure Transaction Date <= Paid Date
-                // Banks sometimes flip these or the AI extracts them swapped.
-                // Logic: The earlier date is ALWAYS the transaction date.
-                let txDate = item.date;
-                let pdDate = item.valueDate;
-
-                if (txDate && pdDate) {
-                    const d1 = new Date(txDate);
-                    const d2 = new Date(pdDate);
-
-                    // If transaction date is later than paid date, swap them
-                    if (!isNaN(d1) && !isNaN(d2) && d1 > d2) {
-                        txDate = item.valueDate;
-                        pdDate = item.date;
-                    }
-                }
-
-                // 4. CLEANUP: Apply "Memory" rules to fix the name *before* categorization
-                const cleanedTitle = applyCleanupRules(item.reason, cleanupRules);
-
-                // Enhanced categorization using rules and patterns
-                const catResult = categorizeTransaction(
-                    { title: cleanedTitle },
-                    rules,
-                    categories
-                );
-
-                return {
-                    date: txDate,
-                    title: cleanedTitle || 'Untitled Transaction',
-                    amount: magnitude,
-                    originalAmount: magnitude,
-                    originalCurrency: settings?.baseCurrency || 'USD',
-                    type,
-                    category: catResult.categoryName || 'Uncategorized',
-                    categoryId: catResult.categoryId || null,
-                    financial_priority: catResult.priority || 'wants',
-                    isPaid: !!pdDate,
-                    paidDate: pdDate || null,
-                    budgetId: null,
-                    originalData: item
-                };
-            }).filter(item => item.amount !== 0 && item.date);
-
-            setProcessedData(processed);
-            setStep(2);
-            showToast({ title: "Success", description: `Extracted ${processed.length} transactions from PDF.` });
-        } catch (error) {
-            console.error('PDF Processing Error:', error);
-            setError(`PDF Processing Failed: ${error.message || "Unknown error"}`);
-            setFile(null);
-        } finally {
-            setIsLoadingPdf(false);
+          await base44.entities.CategoryRule.bulkCreate(newRules);
+        } catch (e) {
+          console.warn("Failed to save learning rules", e);
         }
-    };
+      }
 
-    const handleMappingChange = (field, column) => {
-        setMappings(prev => ({ ...prev, [field]: column }));
-    };
+      // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
+      const expenseItems = processedData.filter(item => item.type === 'expense');
+      const uniqueSyncKeys = new Set();
 
-    const processData = () => {
-        const processed = csvData.data.map(row => {
-            const rawVal = parseAmountWithSign(row[mappings.amount]);
-            const magnitude = Math.abs(rawVal);
+      expenseItems.forEach(item => {
+        const date = formatDateString(item.paidDate || item.date);
+        const priority = item.financial_priority || 'wants';
+        uniqueSyncKeys.add(`${date}|${priority}`);
+      });
 
-            let type = 'expense';
-            if (mappings.type && row[mappings.type]) {
-                type = row[mappings.type].toLowerCase().includes('income') ? 'income' : 'expense';
-            } else {
-                type = rawVal < 0 ? 'expense' : 'income';
-            }
+      // 2. BATCH ENSURE: Create/Get all necessary budgets in parallel
+      const budgetMap = {};
+      const syncPromises = Array.from(uniqueSyncKeys).map(async (key) => {
+        const [date, priority] = key.split('|');
+        // Initializing with $0 is fine; the engine handles existing budgets
+        const id = await getOrCreateSystemBudgetForTransaction(user.email, date, priority, goals, settings);
+        budgetMap[key] = id;
+      });
+      await Promise.all(syncPromises);
 
-            // Enhanced categorization
-            // First check if CSV has an explicit category column
-            let catResult = { categoryId: null, categoryName: 'Uncategorized', priority: 'wants' };
+      // 3. MAP TRANSACTIONS: Build final objects with verified IDs
+      const transactionsToCreate = processedData.map(item => {
+        const isExpense = item.type === 'expense';
+        const date = formatDateString(item.date);
+        const paidDate = item.paidDate ? formatDateString(item.paidDate) : null;
+        const syncKey = `${paidDate || date}|${item.financial_priority || 'wants'}`;
 
-            if (mappings.category && row[mappings.category]) {
-                const csvCat = row[mappings.category];
-                const matchedCat = categories.find(c => c.name.toLowerCase() === csvCat.toLowerCase());
-                if (matchedCat) {
-                    catResult = { categoryId: matchedCat.id, categoryName: matchedCat.name, priority: matchedCat.priority || 'wants' };
-                }
-            }
+        return {
+          title: item.title,
+          amount: Math.abs(item.amount),
+          type: item.type,
+          date,
+          category_id: isExpense ? (item.categoryId || categories.find(c => c.name?.toLowerCase().includes('uncategorized'))?.id) : null,
+          financial_priority: isExpense ? (item.financial_priority || 'wants') : null,
+          budgetId: isExpense ? (item.budgetId || budgetMap[syncKey]) : null,
+          originalAmount: Math.abs(item.amount),
+          originalCurrency: item.originalCurrency,
+          isPaid: isExpense ? true : null,
+          paidDate
+        };
+      });
 
-            // If no explicit mapping or not found, run auto-categorization
-            if (!catResult.categoryId) {
-                catResult = categorizeTransaction(
-                    { title: row[mappings.title] },
-                    rules,
-                    categories
-                );
-            }
+      await base44.entities.Transaction.bulkCreate(transactionsToCreate);
 
-            return {
-                date: row[mappings.date],
-                title: row[mappings.title] || 'Untitled Transaction',
-                amount: magnitude,
-                originalAmount: magnitude,
-                originalCurrency: settings?.baseCurrency || 'USD',
-                type,
-                category: catResult.categoryName || 'Uncategorized',
-                categoryId: catResult.categoryId || null,
-                financial_priority: catResult.priority || 'wants',
-                isPaid: true, // Assume bank import data is already paid/settled
-                paidDate: row[mappings.date],
-                budgetId: null,
-                originalData: row
-            };
-        }).filter(item => item.amount !== 0 && item.date);
+      // Force a hard refresh of the cache to ensure $0 budgets recalculate
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
 
-        setProcessedData(processed);
-        setStep(2);
-    };
+      const uniqueMonths = new Set(processedData.map(d => {
+        const date = new Date(d.date);
+        return date.toLocaleString('default', { month: 'long' });
+      }));
 
-    const handleImport = async () => {
-        setIsProcessing(true);
-        try {
-            // Pre-flight data check
-            if (categoriesLoading || goalsLoading || !categories.length || !goals.length) {
-                showToast({ title: "System warming up", description: "Still loading your categories and goals. Please try again in a second." });
-                setIsProcessing(false);
-                return;
-            }
+      showToast({
+        title: "Import Complete",
+        description: `Added ${transactionsToCreate.length} transactions. Learned ${newRules.length} new renaming rules.`
+      });
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate(createPageUrl("Dashboard"));
+      }
+    } catch (error) {
+      console.error("IMPORT ERROR:", error);
+      showToast({
+        title: "Import Failed",
+        description: error.message || "An unexpected error occurred during import.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-            // 0. LEARN: Identify renaming patterns from user edits
-            const newRules = detectRenamingPatterns(processedData);
+  const handleDeleteRows = (indicesToDelete) => {
+    // Convert array to Set for O(1) lookup
+    const indicesSet = new Set(indicesToDelete);
+    setProcessedData(prev => prev.filter((_, i) => !indicesSet.has(i)));
+  };
 
-            if (newRules.length > 0) {
-                // We trigger this asynchronously and don't block the import 
-                // Assuming base44 has a bulkCreate or we loop create
-                try {
-                    await base44.entities.CleanupRule.bulkCreate(newRules);
-                } catch (e) {
-                    console.warn("Failed to save learning rules", e);
-                }
-            }
+  const handleUpdateRow = (index, updates) => {
+    setProcessedData(prev => {
+      const newData = [...prev];
+      newData[index] = { ...newData[index], ...updates };
+      return newData;
+    });
+  };
 
-            // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
-            const expenseItems = processedData.filter(item => item.type === 'expense');
-            const uniqueSyncKeys = new Set();
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Stepper Indicator */}
+      <Steps steps={STEPS} currentStep={step} />
 
-            expenseItems.forEach(item => {
-                const date = formatDateString(item.paidDate || item.date);
-                const priority = item.financial_priority || 'wants';
-                uniqueSyncKeys.add(`${date}|${priority}`);
-            });
-
-            // 2. BATCH ENSURE: Create/Get all necessary budgets in parallel
-            const budgetMap = {};
-            const syncPromises = Array.from(uniqueSyncKeys).map(async (key) => {
-                const [date, priority] = key.split('|');
-                // Initializing with $0 is fine; the engine handles existing budgets
-                const id = await getOrCreateSystemBudgetForTransaction(user.email, date, priority, goals, settings);
-                budgetMap[key] = id;
-            });
-            await Promise.all(syncPromises);
-
-            // 3. MAP TRANSACTIONS: Build final objects with verified IDs
-            const transactionsToCreate = processedData.map(item => {
-                const isExpense = item.type === 'expense';
-                const date = formatDateString(item.date);
-                const paidDate = item.paidDate ? formatDateString(item.paidDate) : null;
-                const syncKey = `${paidDate || date}|${item.financial_priority || 'wants'}`;
-
-                return {
-                    title: item.title,
-                    amount: Math.abs(item.amount),
-                    type: item.type,
-                    date,
-                    category_id: isExpense ? (item.categoryId || categories.find(c => c.name?.toLowerCase().includes('uncategorized'))?.id) : null,
-                    financial_priority: isExpense ? (item.financial_priority || 'wants') : null,
-                    budgetId: isExpense ? (item.budgetId || budgetMap[syncKey]) : null,
-                    originalAmount: Math.abs(item.amount),
-                    originalCurrency: item.originalCurrency,
-                    isPaid: isExpense ? true : null,
-                    paidDate
-                };
-            });
-
-            await base44.entities.Transaction.bulkCreate(transactionsToCreate);
-
-            // Force a hard refresh of the cache to ensure $0 budgets recalculate
-            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
-
-            const uniqueMonths = new Set(processedData.map(d => {
-                const date = new Date(d.date);
-                return date.toLocaleString('default', { month: 'long' });
-            }));
-
-            showToast({
-                title: "Import Complete",
-                description: `Added ${transactionsToCreate.length} transactions. Learned ${newRules.length} new renaming rules.`
-            });
-            if (onSuccess) {
-                onSuccess();
-            } else {
-                navigate(createPageUrl("Dashboard"));
-            }
-        } catch (error) {
-            console.error("IMPORT ERROR:", error);
-            showToast({
-                title: "Import Failed",
-                description: error.message || "An unexpected error occurred during import.",
-                variant: "destructive"
-            });
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    const handleDeleteRows = (indicesToDelete) => {
-        // Convert array to Set for O(1) lookup
-        const indicesSet = new Set(indicesToDelete);
-        setProcessedData(prev => prev.filter((_, i) => !indicesSet.has(i)));
-    };
-
-    const handleUpdateRow = (index, updates) => {
-        setProcessedData(prev => {
-            const newData = [...prev];
-            newData[index] = { ...newData[index], ...updates };
-            return newData;
-        });
-    };
-
-    return (
-        <div className="max-w-4xl mx-auto space-y-8">
-            {/* Stepper Indicator */}
-            <Steps steps={STEPS} currentStep={step} />
-
-            {/* Content */}
-            <div className="min-h-[400px]">
-                {/* Permanent error display */}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start justify-between gap-3">
-                        <div className="flex gap-3">
-                            <div className="mt-0.5 text-red-600 font-bold">!</div>
-                            <div className="text-sm text-red-800 font-medium whitespace-pre-wrap break-words w-full">
-                                {error}
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setError(null)}
-                            className="text-red-500 hover:text-red-700 p-1"
-                            aria-label="Dismiss error"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                )}
-
-                {step === 1 && (
-                    isLoadingPdf ? (
-                        <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                            <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                            <div className="text-center">
-                                <h3 className="text-lg font-semibold text-gray-900">Processing PDF</h3>
-                                <p className="text-sm text-gray-500">Extracting transaction data...</p>
-                            </div>
-                        </div>
-                    ) : showColumnMapper ? (
-                        // If CSV uploaded, show Mapper (still Step 1 visually)
-                        <div className="space-y-6">
-
-                            <ColumnMapper
-                                headers={csvData.headers}
-                                mappings={mappings}
-                                onMappingChange={handleMappingChange}
-                            />
-                            <div className="flex justify-end gap-4">
-                                <CustomButton variant="outline" onClick={() => {
-                                    setShowColumnMapper(false);
-                                    setFile(null);
-                                }}>Back</CustomButton>
-                                <CustomButton
-                                    onClick={processData}
-                                    disabled={!mappings.date || !mappings.amount || !mappings.title}
-                                >
-                                    Review Data <ArrowRight className="w-4 h-4 ml-2" />
-                                </CustomButton>
-                            </div>
-                        </div>
-                    ) : (
-                        // Default Step 1 state: Upload
-                        <FileUploader onFileSelect={handleFileSelect} />
-                    )
-                )}
-
-                {step === 2 && (
-                    <div className="space-y-6">
-                        <CategorizeReview
-                            data={processedData}
-                            categories={categories}
-                            allBudgets={allBudgets}
-                            onUpdateRow={handleUpdateRow}
-                            onDeleteRows={handleDeleteRows}
-                        />
-                        <div className="flex justify-end gap-4">
-                            <CustomButton variant="outline" onClick={() => {
-                                setStep(1);
-                                // If we have CSV data, go back to mapper, otherwise file uploader
-                                if (csvData.data.length > 0) setShowColumnMapper(true);
-                            }}>Back</CustomButton>
-                            <CustomButton
-                                variant="primary"
-                                onClick={handleImport}
-                                disabled={isProcessing || categoriesLoading || goalsLoading}
-                            >
-                                {isProcessing || categoriesLoading || goalsLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                                Import {processedData.length} Transactions
-                            </CustomButton>
-                        </div>
-                    </div>
-                )}
+      {/* Content */}
+      <div className="min-h-[400px]">
+        {/* Permanent error display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start justify-between gap-3">
+            <div className="flex gap-3">
+              <div className="mt-0.5 text-red-600 font-bold">!</div>
+              <div className="text-sm text-red-800 font-medium whitespace-pre-wrap break-words w-full">
+                {error}
+              </div>
             </div>
-        </div>
-    );
+            <button
+              onClick={() => setError(null)}
+              className="text-red-500 hover:text-red-700 p-1"
+              aria-label="Dismiss error"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {step === 1 && (
+          isLoadingPdf ? (
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+              <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-900">Processing PDF</h3>
+                <p className="text-sm text-gray-500">Extracting transaction data...</p>
+              </div>
+            </div>
+          ) : showColumnMapper ? (
+            // If CSV uploaded, show Mapper (still Step 1 visually)
+            <div className="space-y-6">
+
+              <ColumnMapper
+                headers={csvData.headers}
+                mappings={mappings}
+                onMappingChange={handleMappingChange}
+              />
+              <div className="flex justify-end gap-4">
+                <CustomButton variant="outline" onClick={() => {
+                  setShowColumnMapper(false);
+                  setFile(null);
+                }}>Back</CustomButton>
+                <CustomButton
+                  onClick={processData}
+                  disabled={!mappings.date || !mappings.amount || !mappings.title}
+                >
+                  Review Data <ArrowRight className="w-4 h-4 ml-2" />
+                </CustomButton>
+              </div>
+            </div>
+          ) : (
+            // Default Step 1 state: Upload
+            <FileUploader onFileSelect={handleFileSelect} />
+          )
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            <CategorizeReview
+              data={processedData}
+              categories={categories}
+              allBudgets={allBudgets}
+              onUpdateRow={handleUpdateRow}
+              onDeleteRows={handleDeleteRows}
+            />
+            <div className="flex justify-end gap-4">
+              <CustomButton variant="outline" onClick={() => {
+                setStep(1);
+                // If we have CSV data, go back to mapper, otherwise file uploader
+                if (csvData.data.length > 0) setShowColumnMapper(true);
+              }}>Back</CustomButton>
+              <CustomButton
+                variant="primary"
+                onClick={handleImport}
+                disabled={isProcessing || categoriesLoading || goalsLoading}
+              >
+                {isProcessing || categoriesLoading || goalsLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                Import {processedData.length} Transactions
+              </CustomButton>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function ImportWizardDialog({
-    triggerVariant = "default",
-    triggerSize = "default",
-    triggerClassName = "",
-    renderTrigger = true,
-    open,
-    onOpenChange
+  triggerVariant = "default",
+  triggerSize = "default",
+  triggerClassName = "",
+  renderTrigger = true,
+  open,
+  onOpenChange
 }) {
 
-    // Support controlled or uncontrolled state
-    const [internalOpen, setInternalOpen] = useState(false);
+  // Support controlled or uncontrolled state
+  const [internalOpen, setInternalOpen] = useState(false);
 
-    const isControlled = open !== undefined;
-    const finalOpen = isControlled ? open : internalOpen;
-    const finalOnOpenChange = isControlled ? onOpenChange : setInternalOpen;
+  const isControlled = open !== undefined;
+  const finalOpen = isControlled ? open : internalOpen;
+  const finalOnOpenChange = isControlled ? onOpenChange : setInternalOpen;
 
-    return (
-        <Dialog open={finalOpen} onOpenChange={finalOnOpenChange}>
-            {renderTrigger && (
-                <DialogTrigger asChild>
-                    <CustomButton
-                        variant={triggerVariant}
-                        size={triggerSize}
-                        className={triggerClassName}
-                    >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Import Data
-                    </CustomButton>
-                </DialogTrigger>
-            )}
+  return (
+    <Dialog open={finalOpen} onOpenChange={finalOnOpenChange}>
+      {renderTrigger && (
+        <DialogTrigger asChild>
+          <CustomButton
+            variant={triggerVariant}
+            size={triggerSize}
+            className={triggerClassName}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Import Data
+          </CustomButton>
+        </DialogTrigger>
+      )}
 
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Import Data</DialogTitle>
-                    <DialogDescription>Upload and import transactions from CSV files</DialogDescription>
-                </DialogHeader>
-                <ImportWizard onSuccess={() => finalOnOpenChange(false)} />
-            </DialogContent>
-        </Dialog>
-    );
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Import Data</DialogTitle>
+          <DialogDescription>Upload and import transactions from CSV files</DialogDescription>
+        </DialogHeader>
+        <ImportWizard onSuccess={() => finalOnOpenChange(false)} />
+      </DialogContent>
+    </Dialog>
+  );
 }
