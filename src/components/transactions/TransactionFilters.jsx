@@ -189,10 +189,10 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                         variant="ghost"
                                         size="sm"
                                         onClick={handleClearFilters}
-                                        className="text-gray-500 hover:text-red-600 mr-2 whitespace-nowrap"
+                                        className="text-gray-500 hover:text-red-600 mr-2 whitespace-nowrap px-2 md:px-3"
                                     >
-                                        <X className="w-4 h-4 mr-1" />
-                                        Clear
+                                        <X className="w-4 h-4 md:mr-1" />
+                                        <span className="hidden md:inline">Clear</span>
                                     </CustomButton>
                                 </motion.div>
                             )}
