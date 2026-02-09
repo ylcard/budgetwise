@@ -69,18 +69,18 @@ export default function CustomBudgetsDisplay({
         <div className="space-y-6">
             {budgets.length > 0 && (
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <div className="flex items-center gap-3">
                             <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
                                 Custom Budgets
                             </span>
                             <CustomButton
                                 variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 md:flex hidden"
+                                size="icon-sm"
+                                className="rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 hidden md:flex"
                                 onClick={onCreateBudget}
                             >
-                                <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4" />
                             </CustomButton>
                         </div>
                         <SegmentedControl
