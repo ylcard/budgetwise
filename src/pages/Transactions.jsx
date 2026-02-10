@@ -83,12 +83,6 @@ export default function Transactions() {
                 if (sortConfig.key === 'amount') {
                     aValue = Number(aValue);
                     bValue = Number(bValue);
-                } else if (sortConfig.key === 'date') {
-                    // SETTLEMENT VIEW FIX: Sort by effective date
-                    // If expense & paid, use paidDate. Else use date.
-                    const getEffectiveDate = (item) => (item.type === 'expense' && item.paidDate) ? item.paidDate : item.date;
-                    aValue = getEffectiveDate(a);
-                    bValue = getEffectiveDate(b);
                 } else if (sortConfig.key === 'category') {
                     // Resolve ID to Name for sorting
                     aValue = categoryMap[a.category_id] || '';
