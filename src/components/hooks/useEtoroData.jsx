@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const useEtoroSocket = () => {
+export const useEtoroData = () => {
   const [price, setPrice] = useState(null);
   const [status, setStatus] = useState("Disconnected");
 
