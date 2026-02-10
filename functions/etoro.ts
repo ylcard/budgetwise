@@ -62,13 +62,15 @@ Deno.serve(async (req) => {
     if (url.pathname.endsWith("/portfolio")) {
         try {
             const tokenData = await getAuthToken();
-            const accessToken = tokenData.access_token;
+            const username = Deno.env.get("ETORO_USERNAME");
 
             // CRITICAL: Check the docs for the exact path. 
             // It usually requires a 'demo' or 'real' switch, or a specific version.
             // Example: https://api-portal.etoro.com/api/v1/users/me/portfolio
-            // You might need to pass a username if 'me' isn't supported by client_credentials
-            const portfolioUrl = "https://api-portal.etoro.com/api/v1/users/me/portfolio";
+            if (!username) throw new Error("Missing ETORO_USERNAME secret");
+
+            // Use the actual username instead of 'me'
+            const portfolioUrl = `https://api-portal.etoro.com/api/v1/users/${username}/portfolio`;
 
             const response = await fetch(portfolioUrl, {
                 headers: {
