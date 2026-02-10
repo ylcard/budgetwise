@@ -785,9 +785,13 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
 
             // 8. Date Range
             if (startFilterDate && endFilterDate) {
-                const transactionDate = new Date(t.date);
-                transactionDate.setHours(0, 0, 0, 0);
-                if (transactionDate < startFilterDate || transactionDate > endFilterDate) {
+                // SETTLEMENT VIEW FIX: Use paidDate if available (for expenses), otherwise date
+                const effectiveDate = (t.type === 'expense' && t.paidDate)
+                    ? new Date(t.paidDate)
+                    : new Date(t.date);
+
+                effectiveDate.setHours(0, 0, 0, 0);
+                if (effectiveDate < startFilterDate || effectiveDate > endFilterDate) {
                     return false;
                 }
             }
