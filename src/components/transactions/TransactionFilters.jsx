@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Search, X, Check, Tag, ChevronRight } from "lucide-react";
+import { Search, X, Check, Tag, ChevronRight, TrendingUp, TrendingDown, Shield, Sparkles, CheckCircle, Clock, Banknote, CreditCard } from "lucide-react";
 import DateRangePicker from "../ui/DateRangePicker";
 import { cn } from "@/lib/utils";
 import CategorySelect from "../ui/CategorySelect";
@@ -105,6 +105,25 @@ const MobileCategoryTrigger = ({ filters, categories, onCategoryChange }) => {
         </Drawer>
     );
 };
+
+// Helper Component for Toggle Buttons
+const FilterToggle = ({ value, onChange, options }) => (
+    <div className="flex bg-gray-100 p-1 rounded-lg w-full">
+        {options.map((opt) => (
+            <button
+                key={opt.value}
+                onClick={() => onChange(opt.value === value ? 'all' : opt.value)} // Click active to deselect (optional UX choice, or just set)
+                className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all",
+                    value === opt.value ? "bg-white shadow text-blue-600" : "text-gray-500 hover:text-gray-700"
+                )}
+            >
+                {opt.icon && <opt.icon className="w-3.5 h-3.5" />}
+                <span>{opt.label}</span>
+            </button>
+        ))}
+    </div>
+);
 
 export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [] }) {
     const { monthStart, monthEnd } = usePeriod();
@@ -212,26 +231,13 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {/* Type */}
                     <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Type</Label>
-                        <div className="hidden md:block">
-                            <Select value={filters.type} onValueChange={(value) => setFilters({ ...filters, type: value })}>
-                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="income">Income</SelectItem>
-                                    <SelectItem value="expense">Expense</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <MobileSelectTrigger
-                            label="Transaction Type"
+                        <FilterToggle
                             value={filters.type}
+                            onChange={(val) => setFilters({ ...filters, type: val })}
                             options={[
-                                { value: 'all', label: 'All Types' },
-                                { value: 'income', label: 'Income' },
-                                { value: 'expense', label: 'Expense' }
+                                { value: 'income', label: 'Income', icon: TrendingUp },
+                                { value: 'expense', label: 'Expense', icon: TrendingDown }
                             ]}
-                            onSelect={(val) => setFilters({ ...filters, type: val })}
                         />
                     </div>
 
@@ -257,27 +263,13 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     {/* Financial Priority */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Priority</Label>
-                        <div className="hidden md:block">
-                            <Select value={filters.financialPriority} onValueChange={(value) => setFilters({ ...filters, financialPriority: value })}>
-                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Priorities</SelectItem>
-                                    <SelectItem value="needs">Needs</SelectItem>
-                                    <SelectItem value="wants">Wants</SelectItem>
-                                    <SelectItem value="savings">Savings</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <MobileSelectTrigger
-                            label="Financial Priority"
+                        <FilterToggle
                             value={filters.financialPriority}
+                            onChange={(val) => setFilters({ ...filters, financialPriority: val })}
                             options={[
-                                { value: 'all', label: 'All Priorities' },
-                                { value: 'needs', label: 'Needs' },
-                                { value: 'wants', label: 'Wants' },
-                                { value: 'savings', label: 'Savings' }
+                                { value: 'needs', label: 'Essentials', icon: Shield },
+                                { value: 'wants', label: 'Lifestyle', icon: Sparkles }
                             ]}
-                            onSelect={(val) => setFilters({ ...filters, financialPriority: val })}
                         />
                     </div>
 
@@ -314,56 +306,22 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     {/* Payment Status */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Payment</Label>
-                        <div className="hidden md:block">
-                            <Select
-                                value={filters.paymentStatus}
-                                onValueChange={(value) => setFilters({ ...filters, paymentStatus: value })}
-                            >
-                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="paid">Paid</SelectItem>
-                                    <SelectItem value="unpaid">Unpaid</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <MobileSelectTrigger
-                            label="Payment Status"
+                        <FilterToggle
                             value={filters.paymentStatus}
+                            onChange={(val) => setFilters({ ...filters, paymentStatus: val })}
                             options={[
-                                { value: 'all', label: 'All Status' },
-                                { value: 'paid', label: 'Paid' },
-                                { value: 'unpaid', label: 'Unpaid' }
                             ]}
-                            onSelect={(val) => setFilters({ ...filters, paymentStatus: val })}
                         />
                     </div>
 
                     {/* Cash Status */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Cash</Label>
-                        <div className="hidden md:block">
-                            <Select
-                                value={filters.cashStatus}
-                                onValueChange={(value) => setFilters({ ...filters, cashStatus: value })}
-                            >
-                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="cash_only">Cash</SelectItem>
-                                    <SelectItem value="exclude_cash">Card</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <MobileSelectTrigger
-                            label="Cash/Card"
+                        <FilterToggle
                             value={filters.cashStatus}
+                            onChange={(val) => setFilters({ ...filters, cashStatus: val })}
                             options={[
-                                { value: 'all', label: 'All' },
-                                { value: 'cash_only', label: 'Cash Only' },
-                                { value: 'exclude_cash', label: 'Card Only' }
                             ]}
-                            onSelect={(val) => setFilters({ ...filters, cashStatus: val })}
                         />
                     </div>
 
