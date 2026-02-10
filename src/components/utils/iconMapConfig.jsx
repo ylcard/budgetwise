@@ -71,7 +71,7 @@ export const ICON_OPTIONS = [
     { value: 'Hamburger', label: 'Takeaway', tags: ['takeaway', 'just', 'eat', 'justeat', 'glovo'] },
     { value: 'Sandwich', label: 'Work Lunch', tags: ['work', 'work lunch', 'lunch'] },
     { value: 'BicepsFlexed', label: 'Personal Care', tags: ['perfume', 'personal care', 'groom'] },
-    { value: 'Scissors', label: 'Haircut', tags: ['hair', 'haircut'] }
+    { value: 'Scissors', label: 'Haircut', tags: ['hair', 'haircut'] },
 ];
 
 /**
