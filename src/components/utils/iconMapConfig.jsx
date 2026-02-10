@@ -67,7 +67,7 @@ export const ICON_OPTIONS = [
     { value: 'Wallet', label: 'General', tags: ['cash', 'spending', 'misc'] },
     { value: 'Hotel', label: 'Hotel', tags: ['stay', 'airbnb', 'travel'] },
     { value: 'CircleQuestionMark', label: 'Uncategorized', tags: ['idk', 'uncategorized', '?'] },
-    { value: 'Landmark', label: 'Cultural', tags: ['museum', 'culture', 'theater'] },
+    { value: 'Landmark', label: 'Cultural', tags: ['museum', 'culture', 'theater', 'art'] },
     { value: 'Hamburger', label: 'Takeaway', tags: ['takeaway', 'just', 'eat', 'justeat', 'glovo'] },
     { value: 'Sandwich', label: 'Work Lunch', tags: ['work', 'work lunch', 'lunch'] }
 ];
