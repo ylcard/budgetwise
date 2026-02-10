@@ -115,9 +115,12 @@ export default function CategorySelect({ value, onValueChange, categories, place
     );
 
     const ListContent = (
-        <Command className={isMobile ? "h-[50vh]" : "h-auto w-full overflow-visible"}>
+        <Command className={isMobile ? "flex flex-col h-full max-h-[80vh]" : "h-auto w-full overflow-visible"}>
             <CommandInput placeholder="Search category..." />
-            <CommandList className={isMobile ? "max-h-[60vh] overflow-y-auto" : "max-h-64 overflow-y-auto overflow-x-hidden"}>
+            <CommandList className={cn(
+                "overflow-y-auto",
+                isMobile ? "max-h-none flex-1 pb-[env(safe-area-inset-bottom)]" : "max-h-64"
+            )}>
                 <CommandEmpty>No category found.</CommandEmpty>
                 {/* Group by Priority for better scannability */}
                 {['needs', 'wants', 'other'].map((priority) => {
@@ -174,9 +177,10 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     {TriggerContent}
                 </DrawerTrigger>
 
-                {/* z-[300] ensures it sits above the Filter Drawer's z-[200] */}
-                <DrawerContent className="z-[300] max-h-[85vh] outline-none">
-                    <div className="mt-4 border-t">
+                {/* z-[300] ensures it sits above the Filter Drawer. 
+                    Added 'px-0' to make the list flush with edges for a cleaner mobile look. */}
+                <DrawerContent className="z-[300] max-h-[90vh] outline-none px-0">
+                    <div className="mt-4 border-t overflow-hidden flex flex-col h-full">
                         {ListContent}
                     </div>
                 </DrawerContent>
