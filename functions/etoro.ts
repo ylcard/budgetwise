@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     };
 
     // 2. The Auth Route
-    if (url.pathname === "/api/etoro-auth") {
+    if (url.pathname.endsWith("/auth")) {
         try {
             const data = await getAuthToken();
 
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     // 3. The Portfolio Route (New)
-    if (url.pathname === "/api/etoro-portfolio") {
+    if (url.pathname.endsWith("/portfolio")) {
         try {
             const tokenData = await getAuthToken();
             const accessToken = tokenData.access_token;
