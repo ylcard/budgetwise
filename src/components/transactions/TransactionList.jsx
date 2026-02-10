@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,6 +51,12 @@ export default function TransactionList({
             direction = 'desc';
         }
         onSort({ key, direction });
+    };
+
+    const handleRowClick = (e, id) => {
+        // Prevent toggling if clicking directly on actions or checkbox
+        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('[role="checkbox"]')) return;
+        onToggleSelection(id, !selectedIds.has(id));
     };
 
     const SortIcon = ({ columnKey }) => {
@@ -181,21 +187,23 @@ export default function TransactionList({
                             <th className="px-4 py-3 w-10">
                                 <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
                             </th>
-                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('title')}>
-                                <div className="flex items-center">Title <SortIcon columnKey="title" /></div>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('title')}>
+                                <div className="flex items-center justify-center">Title <SortIcon columnKey="title" /></div>
                             </th>
-                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('date')}>
-                                <div className="flex items-center">Date <SortIcon columnKey="date" /></div>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('date')}>
+                                <div className="flex items-center justify-center">Date <SortIcon columnKey="date" /></div>
                             </th>
-                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('paidDate')}>
-                                <div className="flex items-center">Paid Date <SortIcon columnKey="paidDate" /></div>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('paidDate')}>
+                                <div className="flex items-center justify-center">Paid Date <SortIcon columnKey="paidDate" /></div>
                             </th>
-                            <th className="px-4 py-3">Category</th>
+                            <th className="px-4 py-3 text-center">
+                                <div className="flex items-center justify-center">Category</div>
+                            </th>
                             <th className="px-4 py-3 text-right cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('amount')}>
                                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
                             </th>
-                            <th className="px-4 py-3 w-1/4">Note</th>
-                            <th className="px-4 py-3 w-10">Actions</th>
+                            <th className="px-4 py-3 w-1/4 text-center">Note</th>
+                            <th className="px-4 py-3 w-20 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -207,7 +215,8 @@ export default function TransactionList({
                             return (
                                 <tr
                                     key={transaction.id}
-                                    className={`group hover:bg-blue-50/30 transition-colors ${selectedIds.has(transaction.id) ? 'bg-blue-50' : ''}`}
+                                    onClick={(e) => handleRowClick(e, transaction.id)}
+                                    className={`group hover:bg-blue-50/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-blue-50' : ''}`}
                                 >
                                     <td className="px-4 py-2">
                                         <Checkbox
@@ -219,8 +228,10 @@ export default function TransactionList({
                                     <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
                                         {format(new Date(transaction.date), "MMM d, yyyy")}
                                     </td>
-                                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
-                                        {transaction.paidDate ? (
+                                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap text-center">
+                                        {isIncome ? (
+                                            <span className="text-gray-300">-</span>
+                                        ) : transaction.paidDate ? (
                                             <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-100">
                                                 {format(new Date(transaction.paidDate), "MMM d, yyyy")}
                                             </span>
@@ -229,8 +240,10 @@ export default function TransactionList({
                                         )}
                                     </td>
                                     <td className="px-4 py-2">
-                                        {category ? (
-                                            <div className="flex items-center gap-2">
+                                        {isIncome ? (
+                                            <div className="text-center text-xs font-medium text-emerald-600 bg-emerald-50 py-1 px-2 rounded-full w-fit mx-auto">Income</div>
+                                        ) : category ? (
+                                            <div className="flex items-center justify-center gap-2">
                                                 <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${category.color}20` }}>
                                                     <Icon className="w-3 h-3" style={{ color: category.color }} />
                                                 </div>
@@ -241,7 +254,7 @@ export default function TransactionList({
                                         )}
                                     </td>
                                     <td className="px-4 py-2 text-right">
-                                        <span className={`font-mono font-medium ${isIncome ? 'text-green-600' : 'text-gray-900'}`}>
+                                        <span className={`font-mono font-medium ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </span>
                                     </td>
@@ -249,9 +262,12 @@ export default function TransactionList({
                                         {transaction.notes || '-'}
                                     </td>
                                     <td className="px-4 py-2">
-                                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <CustomButton variant="ghost" size="sm" onClick={() => onEdit(transaction)} className="h-8 w-8 p-0">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <CustomButton variant="ghost" size="sm" onClick={() => onEdit(transaction)} className="h-8 w-8 p-0 hover:bg-gray-100">
                                                 <Edit2 className="w-3 h-3 text-gray-500" />
+                                            </CustomButton>
+                                            <CustomButton variant="ghost" size="sm" onClick={() => onDelete(transaction)} className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600">
+                                                <Trash2 className="w-3 h-3" />
                                             </CustomButton>
                                         </div>
                                     </td>
