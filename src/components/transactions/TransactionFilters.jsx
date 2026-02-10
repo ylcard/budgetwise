@@ -3,12 +3,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Search, X, Check, Tag, ChevronRight, TrendingUp, TrendingDown, Shield, Sparkles, CheckCircle, Clock, Banknote, CreditCard } from "lucide-react";
+import { Search, X, Check, Tag, ChevronRight, TrendingUp, TrendingDown, Shield, Sparkles, CheckCircle, Clock, Banknote, CreditCard, SlidersHorizontal, CalendarDays } from "lucide-react";
 import DateRangePicker from "../ui/DateRangePicker";
 import { cn } from "@/lib/utils";
 import CategorySelect from "../ui/CategorySelect";
-import { useMemo } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
+import { useMemo, useState } from "react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose, DrawerFooter } from "@/components/ui/drawer";
 import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { getCategoryIcon } from "../utils/iconMapConfig";
@@ -127,6 +127,7 @@ const FilterToggle = ({ value, onChange, options }) => (
 
 export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [] }) {
     const { monthStart, monthEnd } = usePeriod();
+    const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
     const handleCategoryChange = (newCategories) => {
         setFilters({ ...filters, category: newCategories });
@@ -171,34 +172,189 @@ export default function TransactionFilters({ filters, setFilters, categories, al
     const isDateChanged = filters.startDate !== monthStart || filters.endDate !== monthEnd;
 
     const activeFilterCount = [
-        filters.search,
         filters.type !== 'all',
         filters.category.length > 0,
         filters.paymentStatus !== 'all',
         filters.cashStatus !== 'all',
         filters.financialPriority !== 'all',
         filters.budgetId !== 'all',
-        isDateChanged
+        filters.minAmount !== '',
+        filters.maxAmount !== ''
     ].filter(Boolean).length;
 
+    // Reusable filter fields content
+    const FilterFields = () => (
+        <>
+            {/* Category (Multi-select) */}
+            <div className="space-y-1 lg:col-span-1">
+                <Label className="text-xs text-gray-500">Category</Label>
+                <CategorySelect
+                    value={filters.category}
+                    onValueChange={handleCategoryChange}
+                    categories={categories}
+                    placeholder="All Categories"
+                    multiple={true}
+                />
+            </div>
+
+            {/* Custom Budget */}
+            <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Budget</Label>
+                <Select
+                    value={filters.budgetId}
+                    onValueChange={(value) => setFilters({ ...filters, budgetId: value })}
+                >
+                    <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All Budgets" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Budgets</SelectItem>
+                        {filteredCustomBudgets.map(b => (
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {/* Type */}
+            <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Type</Label>
+                <FilterToggle
+                    value={filters.type}
+                    onChange={(val) => setFilters({ ...filters, type: val })}
+                    options={[
+                        { value: 'income', label: 'Income', icon: TrendingUp },
+                        { value: 'expense', label: 'Expense', icon: TrendingDown }
+                    ]}
+                />
+            </div>
+            {/* Financial Priority */}
+            <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Priority</Label>
+                <FilterToggle
+                    value={filters.financialPriority}
+                    onChange={(val) => setFilters({ ...filters, financialPriority: val })}
+                    options={[
+                        { value: 'needs', label: 'Essentials', icon: Shield },
+                        { value: 'wants', label: 'Lifestyle', icon: Sparkles }
+                    ]}
+                />
+            </div>
+
+            {/* Payment Status */}
+            <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Payment</Label>
+                <FilterToggle
+                    value={filters.paymentStatus}
+                    onChange={(val) => setFilters({ ...filters, paymentStatus: val })}
+                    options={[
+                        { value: 'paid', label: 'Paid', icon: CheckCircle },
+                        { value: 'unpaid', label: 'Unpaid', icon: Clock }
+                    ]}
+                />
+            </div>
+
+            {/* Cash Status */}
+            <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Cash</Label>
+                <FilterToggle
+                    value={filters.cashStatus}
+                    onChange={(val) => setFilters({ ...filters, cashStatus: val })}
+                    options={[
+                        { value: 'cash_only', label: 'Cash', icon: Banknote },
+                        { value: 'exclude_cash', label: 'Card', icon: CreditCard }
+                    ]}
+                />
+            </div>
+
+            {/* Amount Range */}
+            <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
+                <Label className="text-xs text-gray-500">Amount Range</Label>
+                <div className="flex items-center gap-2">
+                    <Input
+                        type="number"
+                        placeholder="Min"
+                        className="h-9 text-xs"
+                        value={filters.minAmount}
+                        onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                    />
+                    <span className="text-gray-400">-</span>
+                    <Input
+                        type="number"
+                        placeholder="Max"
+                        className="h-9 text-xs"
+                        value={filters.maxAmount}
+                        onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                    />
+                </div>
+            </div>
+        </>
+    );
+
     return (
-        <Card className="border-none shadow-lg">
-            <CardContent className="p-4 space-y-4">
+        <Card className="border-none shadow-md md:shadow-lg">
+            <CardContent className="p-3 md:p-4 space-y-4">
                 {/* Top Row: Search and Date Range */}
-                <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    <div className="relative flex-1 max-w-md">
+                <div className="flex gap-2">
+                    <div className="relative flex-1">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                         <Input
-                            placeholder="Search transactions..."
-                            className="pl-9"
+                            placeholder="Search..."
+                            className="pl-9 bg-gray-50 md:bg-white"
                             value={filters.search}
                             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                         />
                     </div>
 
-                    <div className="flex items-center">
+                    {/* MOBILE: Filter & Date Buttons */}
+                    <div className="flex md:hidden gap-2">
+                        <Drawer open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
+                            <DrawerTrigger asChild>
+                                <CustomButton variant="outline" size="icon" className="relative shrink-0">
+                                    <SlidersHorizontal className="w-4 h-4 text-gray-600" />
+                                    {activeFilterCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
+                                            {activeFilterCount}
+                                        </span>
+                                    )}
+                                </CustomButton>
+                            </DrawerTrigger>
+                            <DrawerContent className="max-h-[85vh]">
+                                <DrawerHeader>
+                                    <DrawerTitle>Filters</DrawerTitle>
+                                </DrawerHeader>
+                                <div className="p-4 overflow-y-auto space-y-4">
+                                    <FilterFields />
+                                </div>
+                                <DrawerFooter>
+                                    <div className="flex gap-2 w-full">
+                                        <CustomButton variant="outline" className="flex-1" onClick={handleClearFilters}>
+                                            Clear All
+                                        </CustomButton>
+                                        <DrawerClose asChild>
+                                            <CustomButton variant="primary" className="flex-1">
+                                                Show Results
+                                            </CustomButton>
+                                        </DrawerClose>
+                                    </div>
+                                </DrawerFooter>
+                            </DrawerContent>
+                        </Drawer>
+
+                        <div className="shrink-0">
+                            <DateRangePicker
+                                startDate={filters.startDate}
+                                endDate={filters.endDate}
+                                onRangeChange={handleDateRangeChange}
+                                compact={true}
+                            />
+                        </div>
+                    </div>
+
+                    {/* DESKTOP: Date Picker & Clear Button */}
+                    <div className="hidden md:flex items-center">
                         <AnimatePresence>
-                            {activeFilterCount > 0 && (
+                            {(activeFilterCount > 0 || filters.search) && (
                                 <motion.div
                                     initial={{ width: 0, opacity: 0, x: 20 }}
                                     animate={{ width: "auto", opacity: 1, x: 0 }}
@@ -212,8 +368,8 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                         onClick={handleClearFilters}
                                         className="text-gray-500 hover:text-red-600 mr-2 whitespace-nowrap px-2 md:px-3"
                                     >
-                                        <X className="w-4 h-4 md:mr-1" />
-                                        <span className="hidden md:inline">Clear</span>
+                                        <X className="w-4 h-4 mr-1" />
+                                        Clear
                                     </CustomButton>
                                 </motion.div>
                             )}
@@ -227,131 +383,24 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     </div>
                 </div>
 
-                {/* Filters Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {/* DESKTOP: Grid Layout (Hidden on Mobile) */}
+                <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <FilterFields />
+                </div>
 
-                    {/* Category (Multi-select) */}
-                    <div className="space-y-1 lg:col-span-1">
-                        <Label className="text-xs text-gray-500">Category</Label>
-                        <div className="hidden md:block">
-                            <CategorySelect
-                                value={filters.category}
-                                onValueChange={handleCategoryChange}
-                                categories={categories}
-                                placeholder="All Categories"
-                                multiple={true}
-                            />
+                {/* Mobile Active Filters Summary (Visual Cue) */}
+                <div className="md:hidden flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    {activeFilterCount > 0 && (
+                        <div className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full whitespace-nowrap">
+                            {activeFilterCount} Active Filters
                         </div>
-                        <MobileCategoryTrigger
-                            filters={filters}
-                            categories={categories}
-                            onCategoryChange={handleCategoryChange}
-                        />
-                    </div>
-
-                    {/* Custom Budget */}
-                    <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Budget</Label>
-                        <div className="hidden md:block">
-                            <Select
-                                value={filters.budgetId}
-                                onValueChange={(value) => setFilters({ ...filters, budgetId: value })}
-                            >
-                                <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="All Budgets" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Budgets</SelectItem>
-                                    {filteredCustomBudgets.map(b => (
-                                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    )}
+                    {isDateChanged && (
+                        <div className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full whitespace-nowrap flex items-center">
+                            <CalendarDays className="w-3 h-3 mr-1" />
+                            Custom Dates
                         </div>
-                        <MobileSelectTrigger
-                            label="Linked Budget"
-                            value={filters.budgetId}
-                            options={[
-                                { value: 'all', label: 'All Budgets' },
-                                ...filteredCustomBudgets.map(b => ({ value: b.id, label: b.name }))
-                            ]}
-                            onSelect={(val) => setFilters({ ...filters, budgetId: val })}
-                        />
-                    </div>
-
-                    {/* Type */}
-                    <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Type</Label>
-                        <FilterToggle
-                            value={filters.type}
-                            onChange={(val) => setFilters({ ...filters, type: val })}
-                            options={[
-                                { value: 'income', label: 'Income', icon: TrendingUp },
-                                { value: 'expense', label: 'Expense', icon: TrendingDown }
-                            ]}
-                        />
-                    </div>
-
-                    {/* Financial Priority */}
-                    <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Priority</Label>
-                        <FilterToggle
-                            value={filters.financialPriority}
-                            onChange={(val) => setFilters({ ...filters, financialPriority: val })}
-                            options={[
-                                { value: 'needs', label: 'Essentials', icon: Shield },
-                                { value: 'wants', label: 'Lifestyle', icon: Sparkles }
-                            ]}
-                        />
-                    </div>
-
-                    {/* Payment Status */}
-                    <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Payment</Label>
-                        <FilterToggle
-                            value={filters.paymentStatus}
-                            onChange={(val) => setFilters({ ...filters, paymentStatus: val })}
-                            options={[
-                                { value: 'paid', label: 'Paid', icon: CheckCircle },
-                                { value: 'unpaid', label: 'Unpaid', icon: Clock }
-                            ]}
-                        />
-                    </div>
-
-                    {/* Cash Status */}
-                    <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Cash</Label>
-                        <FilterToggle
-                            value={filters.cashStatus}
-                            onChange={(val) => setFilters({ ...filters, cashStatus: val })}
-                            options={[
-                                { value: 'cash_only', label: 'Cash', icon: Banknote },
-                                { value: 'exclude_cash', label: 'Card', icon: CreditCard }
-                            ]}
-                        />
-                    </div>
-
-                    {/* Amount Range */}
-                    <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
-                        <Label className="text-xs text-gray-500">Amount Range</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="number"
-                                placeholder="Min"
-                                className="h-9 text-xs"
-                                value={filters.minAmount}
-                                onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
-                            />
-                            <span className="text-gray-400">-</span>
-                            <Input
-                                type="number"
-                                placeholder="Max"
-                                className="h-9 text-xs"
-                                value={filters.maxAmount}
-                                onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
-                            />
-                        </div>
-                    </div>
+                    )}
                 </div>
             </CardContent>
         </Card>
