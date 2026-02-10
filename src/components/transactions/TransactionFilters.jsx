@@ -18,7 +18,7 @@ import { AnimatePresence, motion } from "framer-motion";
 const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) => {
     const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder || value;
     return (
-        <Drawer>
+        <Drawer modal={false}>
             <DrawerTrigger asChild>
                 <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden text-gray-900">
                     <span className="truncate">{selectedLabel}</span>
