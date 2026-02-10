@@ -28,6 +28,7 @@ export default function Transactions() {
     const [showAddIncome, setShowAddIncome] = useState(false);
     const [showAddExpense, setShowAddExpense] = useState(false);
     const [showImportWizard, setShowImportWizard] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState(null); // ADDED
     const [selectedIds, setSelectedIds] = useState(new Set());
     const { setFabButtons, clearFabButtons } = useFAB();
 
@@ -112,12 +113,30 @@ export default function Transactions() {
         setSelectedIds(new Set()); // Clear selection on filter change
     }, [filters]);
 
-    const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useTransactionActions({
+    // const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useTransactionActions({
+    const { handleSubmit, handleDelete, isSubmitting } = useTransactionActions({
         onSuccess: () => {
             setShowAddIncome(false);
             setShowAddExpense(false);
+            setEditingTransaction(null);
         }
     });
+
+    // ADDED: Custom wrapper to handle edits for specific modals
+    const handleTransactionEdit = (transaction) => {
+        setEditingTransaction(transaction);
+        if (transaction.type === 'income') {
+            setShowAddIncome(true);
+        } else {
+            setShowAddExpense(true);
+        }
+    };
+
+    // ADDED: Custom submit wrapper to pass the editing context
+    const handleFormSubmit = (data) => {
+        // The hook expects (data, existingEntity) for updates
+        handleSubmit(data, editingTransaction);
+    };
 
     // Selection Handlers
     const handleToggleSelection = (id, isSelected) => {
@@ -244,20 +263,28 @@ export default function Transactions() {
                             {/* Modals (Logic only, no triggers) */}
                             <QuickAddIncome
                                 open={showAddIncome}
-                                onOpenChange={setShowAddIncome}
-                                onSubmit={handleSubmit}
+                                onOpenChange={(open) => {
+                                    setShowAddIncome(open);
+                                    if (!open) setEditingTransaction(null);
+                                }}
+                                onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 renderTrigger={false}
+                                transaction={editingTransaction}
                             />
                             <QuickAddTransaction
                                 open={showAddExpense}
-                                onOpenChange={setShowAddExpense}
+                                onOpenChange={(open) => {
+                                    setShowAddExpense(open);
+                                    if (!open) setEditingTransaction(null);
+                                }}
                                 categories={categories}
                                 customBudgets={allCustomBudgets}
-                                onSubmit={handleSubmit}
+                                onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 transactions={transactions}
                                 renderTrigger={false}
+                                transaction={editingTransaction}
                             />
                             <ImportWizardDialog
                                 open={showImportWizard}
@@ -277,10 +304,10 @@ export default function Transactions() {
                     <TransactionList
                         transactions={paginatedTransactions}
                         categories={categories}
-                        onEdit={handleEdit}
+                        onEdit={handleTransactionEdit}
                         onDelete={handleDelete}
                         isLoading={isLoading}
-                        onSubmit={handleSubmit}
+                        onSubmit={handleFormSubmit}
                         isSubmitting={isSubmitting}
                         customBudgets={allCustomBudgets}
                         monthStart={monthStart}
