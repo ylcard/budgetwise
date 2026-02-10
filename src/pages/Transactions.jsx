@@ -234,13 +234,15 @@ export default function Transactions() {
 
     return (
         <PullToRefresh onRefresh={handleRefresh}>
-            <div className="min-h-screen p-4 md:p-8" style={{ scrollbarGutter: 'stable' }}>
-                <div className="max-w-6xl mx-auto space-y-6">
+            <div className="min-h-screen p-2 md:p-8" style={{ scrollbarGutter: 'stable' }}>
+                <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Transactions</h1>
-                            <p className="text-gray-500 mt-1">Track your income and expenses</p>
+                        <div className="px-2">
+                            <h1 className="text-2xl md:text-4xl font-bold text-gray-900">Transactions</h1>
+                            <p className="text-xs md:text-base text-gray-500 mt-1">Track your income and expenses</p>
                         </div>
+
+                        {/* Actions hidden on mobile (handled by FAB), visible on Desktop */}
                         <div className="hidden md:flex flex-wrap items-center gap-4">
                             {/* Add Income - Success Variant (Green) */}
                             <CustomButton
@@ -261,6 +263,40 @@ export default function Transactions() {
                             </CustomButton>
 
                             {/* Modals (Logic only, no triggers) */}
+                            <QuickAddIncome
+                                open={showAddIncome}
+                                onOpenChange={(open) => {
+                                    setShowAddIncome(open);
+                                    if (!open) setEditingTransaction(null);
+                                }}
+                                onSubmit={handleFormSubmit}
+                                isSubmitting={isSubmitting}
+                                renderTrigger={false}
+                                transaction={editingTransaction}
+                            />
+                            <QuickAddTransaction
+                                open={showAddExpense}
+                                onOpenChange={(open) => {
+                                    setShowAddExpense(open);
+                                    if (!open) setEditingTransaction(null);
+                                }}
+                                categories={categories}
+                                customBudgets={allCustomBudgets}
+                                onSubmit={handleFormSubmit}
+                                isSubmitting={isSubmitting}
+                                transactions={transactions}
+                                renderTrigger={false}
+                                transaction={editingTransaction}
+                            />
+                            <ImportWizardDialog
+                                open={showImportWizard}
+                                onOpenChange={setShowImportWizard}
+                                renderTrigger={false}
+                            />
+                        </div>
+
+                        {/* Mobile Modals (Rendered to ensure state works if triggered via FAB, but hidden from layout) */}
+                        <div className="md:hidden">
                             <QuickAddIncome
                                 open={showAddIncome}
                                 onOpenChange={(open) => {
