@@ -36,6 +36,7 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
+import EtoroTicker from "../components/stocks/EtoroTicker";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -194,6 +195,9 @@ export default function Dashboard() {
 
     return (
         <div className="min-h-screen p-4 md:p-8">
+            {/* eToro Ticker Section - Full Width, Mobile Responsive */}
+            <div className="mb-6 -mx-4 md:-mx-8"><EtoroTicker /></div>
+
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
