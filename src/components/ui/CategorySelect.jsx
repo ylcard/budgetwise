@@ -169,7 +169,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
 
     if (isMobile) {
         return (
-            <Drawer open={open} onOpenChange={setOpen} modal={true}>
+            <Drawer open={open} onOpenChange={setOpen} modal={false}>
                 <DrawerTrigger asChild>
                     {TriggerContent}
                 </DrawerTrigger>
