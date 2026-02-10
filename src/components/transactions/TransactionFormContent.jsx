@@ -311,10 +311,15 @@ export default function TransactionFormContent({
 
     // 1. Calculate boundaries for the CURRENTLY SELECTED date in the form
     const selectedDateBounds = useMemo(() => {
-        if (!formData.date) return null;
-        const date = new Date(formData.date);
+        // SETTLEMENT VIEW FIX: If expense is paid, fetch budgets for the PAID date
+        const effectiveDateStr = (formData.type === 'expense' && formData.isPaid && formData.paidDate)
+            ? formData.paidDate
+            : formData.date;
+
+        if (!effectiveDateStr) return null;
+        const date = new Date(effectiveDateStr);
         return getMonthBoundaries(date.getMonth(), date.getFullYear());
-    }, [formData.date]);
+    }, [formData.date, formData.paidDate, formData.isPaid, formData.type]);
 
     // 2. Fetch budgets specifically for the date chosen in the form
     // This ensures that even if the Dashboard is on February, the Form can "see" January.
