@@ -710,7 +710,9 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
         financialPriority: 'all', // 'all', 'needs', 'wants', 'savings'
         budgetId: 'all',
         startDate: currentMonthStart,
-        endDate: currentMonthEnd
+        endDate: currentMonthEnd,
+        minAmount: '',
+        maxAmount: ''
     });
 
     const filters = externalFilters || internalFilters;
@@ -770,6 +772,15 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
             // 7. Custom Budget
             if (filters.budgetId !== 'all') {
                 if (t.budgetId !== filters.budgetId) return false;
+            }
+
+            // Amount Range Filtering
+            if (filters.minAmount !== '' && filters.minAmount !== null) {
+                if (t.amount < Number(filters.minAmount)) return false;
+            }
+
+            if (filters.maxAmount !== '' && filters.maxAmount !== null) {
+                if (t.amount > Number(filters.maxAmount)) return false;
             }
 
             // 8. Date Range
