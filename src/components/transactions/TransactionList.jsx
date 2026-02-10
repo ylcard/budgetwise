@@ -196,8 +196,8 @@ export default function TransactionList({
                             <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('paidDate')}>
                                 <div className="flex items-center justify-center">Paid Date <SortIcon columnKey="paidDate" /></div>
                             </th>
-                            <th className="px-4 py-3 text-center">
-                                <div className="flex items-center justify-center">Category</div>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('category')}>
+                                <div className="flex items-center justify-center">Category <SortIcon columnKey="category" /></div>
                             </th>
                             <th className="px-4 py-3 text-right cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('amount')}>
                                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
