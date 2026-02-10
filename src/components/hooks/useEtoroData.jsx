@@ -1,32 +1,45 @@
 import { useState, useEffect } from 'react';
 
 export const useEtoroData = () => {
-  const [price, setPrice] = useState(null);
-  const [status, setStatus] = useState("Disconnected");
+    const [positions, setPositions] = useState([]);
+    const [status, setStatus] = useState("Disconnected");
+    const [totalValue, setTotalValue] = useState(0);
 
-  useEffect(() => {
-    const connect = async () => {
-      setStatus("Connecting...");
-      try {
-        // Call your Base44 backend function to get the token
-        const res = await fetch('/api/etoro-auth');
-        const { access_token } = await res.json();
+    useEffect(() => {
+        const fetchData = async () => {
+            setStatus("Syncing...");
+            try {
+                // 1. Fetch Portfolio Snapshot
+                const res = await fetch('/api/etoro-portfolio');
+                const data = await res.json();
 
-        // Connect to eToro
-        const ws = new WebSocket(`wss://api-portal.etoro.com/feed?access_token=${access_token}`);
-        
-        ws.onopen = () => setStatus("Live");
-        ws.onmessage = (e) => {
-          const data = JSON.parse(e.data);
-          // eToro data structure varies, adjust 'price' access as needed
-          if (data.price) setPrice(data.price); 
+                // 2. Parse Data (Adjust based on actual JSON response from eToro)
+                // Assuming data structure: { positions: [{ InstrumentDisplayName: 'Tesla', Amount: 100, Profit: 5 }] }
+                if (data && data.positions) {
+                    setPositions(data.positions);
+
+                    // Calculate total if not provided
+                    const total = data.positions.reduce((acc, pos) => acc + (pos.Amount || 0), 0);
+                    setTotalValue(total);
+                    setStatus("Live");
+                } else {
+                    // Fallback for demo/empty
+                    console.warn("eToro data format unexpected:", data);
+                    setStatus("Empty");
+                }
+
+            } catch (e) {
+                console.error("eToro Fetch Error:", e);
+                setStatus("Error");
+            }
         };
-      } catch (e) {
-        setStatus("Error");
-      }
-    };
-    connect();
-  }, []);
 
-  return { price, status };
+        fetchData();
+        // Poll every 30 seconds for updates (WebSockets are complex for full portfolio)
+        const interval = setInterval(fetchData, 30000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return { positions, status, totalValue };
 };
