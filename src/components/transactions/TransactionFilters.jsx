@@ -229,17 +229,6 @@ export default function TransactionFilters({ filters, setFilters, categories, al
 
                 {/* Filters Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {/* Type */}
-                    <div className="space-y-1">
-                        <FilterToggle
-                            value={filters.type}
-                            onChange={(val) => setFilters({ ...filters, type: val })}
-                            options={[
-                                { value: 'income', label: 'Income', icon: TrendingUp },
-                                { value: 'expense', label: 'Expense', icon: TrendingDown }
-                            ]}
-                        />
-                    </div>
 
                     {/* Category (Multi-select) */}
                     <div className="space-y-1 lg:col-span-1">
@@ -257,19 +246,6 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                             filters={filters}
                             categories={categories}
                             onCategoryChange={handleCategoryChange}
-                        />
-                    </div>
-
-                    {/* Financial Priority */}
-                    <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Priority</Label>
-                        <FilterToggle
-                            value={filters.financialPriority}
-                            onChange={(val) => setFilters({ ...filters, financialPriority: val })}
-                            options={[
-                                { value: 'needs', label: 'Essentials', icon: Shield },
-                                { value: 'wants', label: 'Lifestyle', icon: Sparkles }
-                            ]}
                         />
                     </div>
 
@@ -303,6 +279,32 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         />
                     </div>
 
+                    {/* Type */}
+                    <div className="space-y-1">
+                        <Label className="text-xs text-gray-500">Type</Label>
+                        <FilterToggle
+                            value={filters.type}
+                            onChange={(val) => setFilters({ ...filters, type: val })}
+                            options={[
+                                { value: 'income', label: 'Income', icon: TrendingUp },
+                                { value: 'expense', label: 'Expense', icon: TrendingDown }
+                            ]}
+                        />
+                    </div>
+
+                    {/* Financial Priority */}
+                    <div className="space-y-1">
+                        <Label className="text-xs text-gray-500">Priority</Label>
+                        <FilterToggle
+                            value={filters.financialPriority}
+                            onChange={(val) => setFilters({ ...filters, financialPriority: val })}
+                            options={[
+                                { value: 'needs', label: 'Essentials', icon: Shield },
+                                { value: 'wants', label: 'Lifestyle', icon: Sparkles }
+                            ]}
+                        />
+                    </div>
+
                     {/* Payment Status */}
                     <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Payment</Label>
@@ -310,6 +312,8 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                             value={filters.paymentStatus}
                             onChange={(val) => setFilters({ ...filters, paymentStatus: val })}
                             options={[
+                                { value: 'paid', label: 'Paid', icon: CheckCircle },
+                                { value: 'unpaid', label: 'Unpaid', icon: Clock }
                             ]}
                         />
                     </div>
@@ -321,6 +325,8 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                             value={filters.cashStatus}
                             onChange={(val) => setFilters({ ...filters, cashStatus: val })}
                             options={[
+                                { value: 'cash_only', label: 'Cash', icon: Banknote },
+                                { value: 'exclude_cash', label: 'Card', icon: CreditCard }
                             ]}
                         />
                     </div>
