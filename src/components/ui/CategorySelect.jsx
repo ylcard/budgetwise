@@ -173,18 +173,19 @@ export default function CategorySelect({ value, onValueChange, categories, place
 
     if (isMobile) {
         return (
-            <Drawer open={open} onOpenChange={setOpen} modal={false}>
+            <Drawer open={open} onOpenChange={setOpen} modal={false} dismissible={true}>
                 <DrawerTrigger asChild>
                     {TriggerContent}
                 </DrawerTrigger>
 
-                {/* z-[300] ensures it sits above the Filter Drawer. 
-                    Added 'px-0' to make the list flush with edges for a cleaner mobile look. */}
-                <DrawerContent className="z-[300] max-h-[90vh] outline-none px-0">
-                    <div className="mt-4 border-t overflow-hidden flex flex-col h-full">
-                        {ListContent}
-                    </div>
-                </DrawerContent>
+                <DrawerPortal>
+                    {/* Force the overlay to be invisible or absent so it doesn't block touches */}
+                    <DrawerContent className="z-[250] fixed bottom-0 left-0 right-0 max-h-[85vh] outline-none px-0 shadow-2xl border-t-2">
+                        <div className="mt-4 border-t overflow-hidden flex flex-col h-full">
+                            {ListContent}
+                        </div>
+                    </DrawerContent>
+                </DrawerPortal>
             </Drawer>
         );
     }
