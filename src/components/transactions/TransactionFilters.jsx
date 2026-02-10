@@ -132,7 +132,9 @@ export default function TransactionFilters({ filters, setFilters, categories, al
             financialPriority: 'all',
             budgetId: 'all',
             startDate: monthStart,
-            endDate: monthEnd
+            endDate: monthEnd,
+            minAmount: '',
+            maxAmount: ''
         });
     };
 
@@ -363,6 +365,28 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                             ]}
                             onSelect={(val) => setFilters({ ...filters, cashStatus: val })}
                         />
+                    </div>
+
+                    {/* Amount Range */}
+                    <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
+                        <Label className="text-xs text-gray-500">Amount Range</Label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                type="number"
+                                placeholder="Min"
+                                className="h-9 text-xs"
+                                value={filters.minAmount}
+                                onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                            />
+                            <span className="text-gray-400">-</span>
+                            <Input
+                                type="number"
+                                placeholder="Max"
+                                className="h-9 text-xs"
+                                value={filters.maxAmount}
+                                onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                            />
+                        </div>
                     </div>
                 </div>
             </CardContent>
