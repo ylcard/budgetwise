@@ -20,12 +20,14 @@ export const useEtoroData = () => {
                 const data = await res.json();
 
                 // 2. Parse Data (Adjust based on actual JSON response from eToro)
-                // Assuming data structure: { positions: [{ InstrumentDisplayName: 'Tesla', Amount: 100, Profit: 5 }] }
-                if (data && data.positions) {
-                    setPositions(data.positions);
+                // eToro API usually uses 'Positions' (Capital P)
+                const posArray = data.Positions || data.positions || [];
+                
+                if (posArray.length > 0) {
+                    setPositions(posArray);
 
                     // Calculate total if not provided
-                    const total = data.positions.reduce((acc, pos) => acc + (pos.Amount || 0), 0);
+                    const total = posArray.reduce((acc, pos) => acc + (pos.Amount || pos.Value || 0), 0);
                     setTotalValue(total);
                     setStatus("Live");
                 } else {
