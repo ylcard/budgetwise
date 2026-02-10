@@ -10,7 +10,13 @@ export const useEtoroData = () => {
             setStatus("Syncing...");
             try {
                 // 1. Fetch Portfolio Snapshot
-                const res = await fetch('/api/etoro-portfolio');
+                const res = await fetch('/functions/etoro/portfolio');
+                
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Server responded with ${res.status}: ${text.substring(0, 50)}`);
+                }
+
                 const data = await res.json();
 
                 // 2. Parse Data (Adjust based on actual JSON response from eToro)
