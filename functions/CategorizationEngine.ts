@@ -120,7 +120,7 @@ export class CategorizationEngine {
         // 2. Inclusion match (does user category name contain any taxonomy keyword?)
         const matched = categories.find(c => {
             const name = c.name.toUpperCase();
-            return keywords.some(kw => name.includes(kw) || kw.includes(name));
+            return keywords.some(kw => name.includes(kw.toUpperCase()) || kw.toUpperCase().includes(name));
         });
 
         return matched || null;
