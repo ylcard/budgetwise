@@ -54,7 +54,6 @@ export const ICON_OPTIONS = [
     { value: 'Gift', label: 'Gifts', tags: ['present', 'donation', 'charity'] },
     { value: 'Music', label: 'Music', tags: ['spotify', 'concert', 'audio'] },
     { value: 'Guitar', label: 'Hobbies', tags: ['instrument', 'class', 'art'] },
-    { value: 'Drama', label: 'Arts & Culture', tags: ['theater', 'cinema', 'movie', 'show'] },
     { value: 'Podcast', label: 'Podcast', tags: ['audio', 'subscription'] },
     { value: 'Tv', label: 'TV/Streaming', tags: ['netflix', 'movies', 'subscription'] },
     { value: 'Gamepad2', label: 'Gaming', tags: ['games', 'steam', 'xbox', 'playstation'] },
