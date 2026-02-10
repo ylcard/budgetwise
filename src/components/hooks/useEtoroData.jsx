@@ -27,7 +27,7 @@ export const useEtoroData = () => {
                     setPositions(posArray);
 
                     // Calculate total if not provided
-                    const total = posArray.reduce((acc, pos) => acc + (pos.Amount || pos.Value || 0), 0);
+                    const total = posArray.reduce((acc, pos) => acc + (pos.Amount || pos.Value || pos.NetCashValue || 0), 0);
                     setTotalValue(total);
                     setStatus("Live");
                 } else {
