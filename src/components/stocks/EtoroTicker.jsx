@@ -7,9 +7,9 @@ export default function EtoroTicker() {
   if (status === "Error") return null; // Hide on error
 
   return (
-    <div className="w-full bg-slate-900 text-white py-2 flex items-center shadow-md border-b border-slate-800">
+    <div className="w-full bg-slate-900 text-white py-2.5 flex items-center shadow-md border-b border-slate-800">
       {/* Status Indicator */}
-      <div className="px-4 flex items-center gap-2 border-r border-slate-700 bg-slate-900 z-10">
+      <div className="px-4 flex items-center gap-2 border-r border-slate-700 bg-slate-900 sticky left-0 z-10 shadow-[4px_0_10px_rgba(15,23,42,0.9)]">
         <div className={`h-2 w-2 rounded-full ${status === 'Live' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
         <span className="text-xs font-bold tracking-wider">eToro</span>
       </div>
@@ -23,9 +23,11 @@ export default function EtoroTicker() {
         )}
 
         {positions.map((pos, idx) => (
-          <div key={`${pos.InstrumentID}-${idx}`} className="flex items-center gap-2 text-sm">
-            <span className="font-bold text-slate-200">{pos.InstrumentDisplayName || pos.Symbol}</span>
-            <span className="font-mono text-slate-300">${pos.Amount?.toFixed(2)}</span>
+          <div key={`${pos.InstrumentID || idx}`} className="flex items-center gap-2 text-sm">
+            <span className="font-bold text-slate-200">{pos.InstrumentDisplayName || pos.Symbol || 'Asset'}</span>
+            <span className="font-mono text-slate-300">
+                ${(pos.Amount || pos.Value || pos.NetCashValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
             {pos.Profit && (
                 <span className={`text-xs ${pos.Profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {pos.Profit >= 0 ? '+' : ''}{pos.Profit.toFixed(2)}
