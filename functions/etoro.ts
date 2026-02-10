@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   }
 
   // 2. The Auth Route
-  if (url.pathname === "/api/auth/etoro") {
+  if (url.pathname === "/api/etoro-auth") {
     try {
       // A. Retrieve Secrets from Environment Variables
       const clientId = Deno.env.get("ETORO_CLIENT_ID");
