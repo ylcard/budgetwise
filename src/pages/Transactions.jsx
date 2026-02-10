@@ -68,6 +68,12 @@ export default function Transactions() {
     const sortedTransactions = useMemo(() => {
         const sortableItems = [...filteredTransactions];
         if (sortConfig.key) {
+            // Create a map for fast lookup if sorting by category
+            const categoryMap = {};
+            if (sortConfig.key === 'category') {
+                categories.forEach(c => categoryMap[c.id] = c.name.toLowerCase());
+            }
+
             sortableItems.sort((a, b) => {
                 let aValue = a[sortConfig.key];
                 let bValue = b[sortConfig.key];
@@ -76,6 +82,10 @@ export default function Transactions() {
                 if (sortConfig.key === 'amount') {
                     aValue = Number(aValue);
                     bValue = Number(bValue);
+                } else if (sortConfig.key === 'category') {
+                    // Resolve ID to Name for sorting
+                    aValue = categoryMap[a.category_id] || '';
+                    bValue = categoryMap[b.category_id] || '';
                 }
 
                 if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -84,7 +94,7 @@ export default function Transactions() {
             });
         }
         return sortableItems;
-    }, [filteredTransactions, sortConfig]);
+    }, [filteredTransactions, sortConfig, categories]);
 
     // Pagination Logic
     // Use sortedTransactions instead of filteredTransactions
