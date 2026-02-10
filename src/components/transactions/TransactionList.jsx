@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,6 +59,12 @@ export default function TransactionList({
         onToggleSelection(id, !selectedIds.has(id));
     };
 
+    const handleMobileRowClick = (transaction) => {
+        // On mobile, tapping the row opens Edit. 
+        // Long press would be ideal for selection, but standard click is usually Edit.
+        onEdit(transaction);
+    };
+
     const SortIcon = ({ columnKey }) => {
         if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-gray-400" />;
         return sortConfig.direction === 'asc'
@@ -75,7 +81,7 @@ export default function TransactionList({
                 <CardContent>
                     <div className="space-y-3">
                         {Array(8).fill(0).map((_, i) => (
-                            <Skeleton key={i} className="h-20 w-full" />
+                            <Skeleton key={i} className="h-16 md:h-20 w-full" />
                         ))}
                     </div>
                 </CardContent>
@@ -108,14 +114,15 @@ export default function TransactionList({
 
     const PaginationControls = () => (
         <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-500 mr-2">
-                Page {currentPage} of {totalPages}
+            <div className="text-xs md:text-sm text-gray-500 mr-2">
+                Page {currentPage}/{totalPages}
             </div>
             <CustomButton
                 variant="outline"
                 size="sm"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
             >
                 <ChevronLeft className="w-4 h-4" />
             </CustomButton>
@@ -124,6 +131,7 @@ export default function TransactionList({
                 size="sm"
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0"
             >
                 <ChevronRight className="w-4 h-4" />
             </CustomButton>
@@ -132,10 +140,12 @@ export default function TransactionList({
 
 
     return (
-        <Card className="border-none shadow-lg overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between py-4 px-6 bg-white border-b">
-                <div className="flex items-center gap-4">
-                    <CardTitle className="text-lg">Transactions ({totalItems})</CardTitle>
+        <Card className="border-none shadow-md md:shadow-lg overflow-hidden">
+            {/* Header: Adaptive Padding */}
+            <CardHeader className="flex flex-row items-center justify-between py-3 px-3 md:py-4 md:px-6 bg-white border-b">
+                <div className="flex items-center gap-2 md:gap-4">
+                    <CardTitle className="text-base md:text-lg">Transactions ({totalItems})</CardTitle>
+
                     {/* Bulk Actions Header */}
                     <AnimatePresence>
                         {selectedIds.size > 0 && (
@@ -145,12 +155,12 @@ export default function TransactionList({
                                 exit={{ opacity: 0, x: -10 }}
                                 className="flex items-center gap-2"
                             >
-                                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                    {selectedIds.size} Selected
+                                <span className="text-[10px] md:text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    {selectedIds.size}
                                 </span>
-                                <CustomButton variant="destructive" size="sm" onClick={onDeleteSelected} disabled={isBulkDeleting} className="h-7 text-xs px-3">
-                                    {isBulkDeleting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Trash className="w-3 h-3 mr-1" />}
-                                    Delete
+                                <CustomButton variant="destructive" size="sm" onClick={onDeleteSelected} disabled={isBulkDeleting} className="h-7 text-xs px-2 md:px-3">
+                                    <Trash className="w-3 h-3" />
+                                    <span className="hidden md:inline ml-1">Delete</span>
                                 </CustomButton>
                                 <CustomButton variant="ghost" size="sm" onClick={onClearSelection} className="h-7 w-7 p-0 rounded-full"><X className="w-3 h-3" /></CustomButton>
                             </motion.div>
@@ -158,9 +168,10 @@ export default function TransactionList({
                     </AnimatePresence>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                     {totalPages > 1 && <PaginationControls />}
-                    <div className="flex items-center gap-2">
+                    {/* Items per page hidden on mobile to save space */}
+                    <div className="hidden md:flex items-center gap-2">
                         <span className="text-sm text-gray-500 hidden sm:inline">Show:</span>
                         <Select
                             value={String(itemsPerPage)}
@@ -180,7 +191,8 @@ export default function TransactionList({
                 </div>
             </CardHeader>
 
-            <div className="overflow-x-auto">
+            {/* DESKTOP VIEW: Table */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
                         <tr>
@@ -277,9 +289,97 @@ export default function TransactionList({
                     </tbody>
                 </table>
             </div>
+
+            {/* MOBILE VIEW: List */}
+            <div className="block md:hidden">
+                <ul className="divide-y divide-gray-100">
+                    {transactions.map((transaction) => {
+                        const category = categoryMap[transaction.category_id];
+                        const isIncome = transaction.type === 'income';
+                        const Icon = getCategoryIcon(category?.icon);
+                        const isSelected = selectedIds.has(transaction.id);
+
+                        return (
+                            <li 
+                                key={transaction.id}
+                                className={`flex items-start p-3 gap-3 transition-colors ${isSelected ? 'bg-blue-50' : 'bg-white active:bg-gray-50'}`}
+                                onClick={() => handleMobileRowClick(transaction)}
+                            >
+                                {/* Selection Checkbox */}
+                                <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                                     <Checkbox 
+                                        checked={isSelected} 
+                                        onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)} 
+                                        className="h-5 w-5 rounded-md border-gray-300"
+                                     />
+                                </div>
+
+                                {/* Icon */}
+                                <div className="shrink-0 pt-0.5">
+                                    {isIncome ? (
+                                        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-100">
+                                            <Banknote className="w-4 h-4 text-emerald-600" />
+                                        </div>
+                                    ) : (
+                                        <div 
+                                            className="w-9 h-9 rounded-full flex items-center justify-center" 
+                                            style={{ backgroundColor: category ? `${category.color}20` : '#f3f4f6' }}
+                                        >
+                                            {category ? (
+                                                <Icon className="w-4 h-4" style={{ color: category.color }} />
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">?</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Main Content */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start gap-2">
+                                        <p className="text-sm font-semibold text-gray-900 truncate">
+                                            {transaction.title}
+                                        </p>
+                                        <span className={`text-sm font-mono font-bold whitespace-nowrap ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                                            {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
+                                        <span>{format(new Date(transaction.date), "MMM d")}</span>
+                                        
+                                        {!isIncome && (
+                                            <>
+                                                <span className="text-gray-300">•</span>
+                                                <span className="truncate max-w-[100px]">{category?.name || 'Uncategorized'}</span>
+                                                
+                                                {transaction.paidDate && (
+                                                    <span className={`ml-1 px-1.5 py-0.5 rounded-sm text-[10px] border ${
+                                                        transaction.paidDate 
+                                                            ? "bg-green-50 text-green-700 border-green-100" 
+                                                            : "bg-gray-100 text-gray-500 border-gray-200"
+                                                    }`}>
+                                                        Paid
+                                                    </span>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                    {transaction.notes && (
+                                        <p className="text-xs text-gray-400 mt-1 truncate">
+                                            {transaction.notes}
+                                        </p>
+                                    )}
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
+
             {/* Bottom Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-end p-4 border-t bg-gray-50/50">
+                <div className="flex items-center justify-end p-3 border-t bg-gray-50/50">
                     <PaginationControls />
                 </div>
             )}
