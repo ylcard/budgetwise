@@ -3,7 +3,8 @@ import {
     Gift, Music, Dumbbell, Book, Briefcase, DollarSign, CreditCard, Wallet,
     PiggyBank, Laptop, Smartphone, Tv, Pizza, Fuel, Bus, HandCoins, Beer,
     Popcorn, Gamepad2, Wifi, Droplets, Podcast, Hotel, Banknote, Cross, Pill, Guitar,
-    Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark, Landmark
+    Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark, Landmark,
+    Sandwich, Hamburger
 } from "lucide-react";
 
 // Central icon map - single source of truth for all category icons
@@ -11,7 +12,8 @@ export const iconMap = {
     Circle, Home, ShoppingCart, Coffee, Car, Plane, Utensils, Shirt, Heart, Zap, Gift, Music,
     Dumbbell, Book, Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, Laptop, Smartphone,
     Tv, Pizza, Fuel, Bus, HandCoins, Beer, Popcorn, Gamepad2, Wifi, Droplets, Podcast, Hotel, Banknote,
-    Cross, Pill, Guitar, Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark, Landmark
+    Cross, Pill, Guitar, Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark, Landmark,
+    Sandwich, Hamburger
 };
 
 // Legacy support if needed, but we prefer ICON_OPTIONS now
@@ -66,7 +68,9 @@ export const ICON_OPTIONS = [
     { value: 'Wallet', label: 'General', tags: ['cash', 'spending', 'misc'] },
     { value: 'Hotel', label: 'Hotel', tags: ['stay', 'airbnb', 'travel'] },
     { value: 'CircleQuestionMark', label: 'Uncategorized', tags: ['idk', 'uncategorized', '?'] },
-    { value: 'Landmark', label: 'Cultural', tags: ['museum', 'culture', 'theater'] }
+    { value: 'Landmark', label: 'Cultural', tags: ['museum', 'culture', 'theater'] },
+    { value: 'Hamburger', label: 'Takeaway', tags: ['takeaway', 'just', 'eat', 'justeat', 'glovo'] },
+    { value: 'Sandwich', label: 'Work Lunch', tags: ['work', 'work lunch', 'lunch'] }
 ];
 
 /**
