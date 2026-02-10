@@ -37,6 +37,12 @@ export default function QuickAddTransaction({
 
     // If editing, use the transaction's month/year. Otherwise, use the viewed month/year.
     const dateContext = useMemo(() => {
+        // SETTLEMENT FIX: Prioritize paidDate for effective budget context.
+        // If an expense settled in March, we need March budgets, even if the transaction was in Feb.
+        if (transaction?.paidDate) {
+            const d = new Date(transaction.paidDate);
+            if (!isNaN(d)) return { month: d.getMonth(), year: d.getFullYear() };
+        }
         if (transaction?.date) {
             const d = new Date(transaction.date);
             if (!isNaN(d)) return { month: d.getMonth(), year: d.getFullYear() };
