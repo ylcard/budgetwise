@@ -15,7 +15,7 @@ export default function EtoroTicker() {
       </div>
 
       {/* Scrolling Content */}
-      <div className="flex animate-marquee hover:pause items-center gap-8 px-4">
+      <div className="flex items-center gap-8 px-4 overflow-x-auto no-scrollbar scroll-smooth">
         {status === "Syncing..." && (
             <span className="flex items-center gap-2 text-sm text-slate-400">
                 <Loader2 className="h-3 w-3 animate-spin" /> Syncing Portfolio...
