@@ -1,11 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import TransactionItem from "./TransactionItem";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, X, Trash, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
+import { formatCurrency } from "../utils/currencyUtils";
+import { useSettings } from "../utils/SettingsContext";
+import { getCategoryIcon } from "../utils/iconMapConfig";
+import QuickAddTransaction from "./QuickAddTransaction";
 
 export default function TransactionList({
     transactions,
@@ -29,12 +33,32 @@ export default function TransactionList({
     onSelectAll,
     onClearSelection,
     onDeleteSelected,
-    isBulkDeleting
+    isBulkDeleting,
+    sortConfig = { key: 'date', direction: 'desc' },
+    onSort
 }) {
+
+    const { settings } = useSettings();
+
     const categoryMap = categories.reduce((acc, cat) => {
         acc[cat.id] = cat;
         return acc;
     }, {});
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        onSort({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }) => {
+        if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-gray-400" />;
+        return sortConfig.direction === 'asc'
+            ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
+    };
 
     if (isLoading) {
         return (
@@ -102,16 +126,36 @@ export default function TransactionList({
 
 
     return (
-        <Card className="border-none shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>All Transactions ({totalItems})</CardTitle>
+        <Card className="border-none shadow-lg overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between py-4 px-6 bg-white border-b">
                 <div className="flex items-center gap-4">
-                    {/* Top Pagination */}
-                    {totalPages > 1 && <PaginationControls />}
+                    <CardTitle className="text-lg">Transactions ({totalItems})</CardTitle>
+                    {/* Bulk Actions Header */}
+                    <AnimatePresence>
+                        {selectedIds.size > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="flex items-center gap-2"
+                            >
+                                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    {selectedIds.size} Selected
+                                </span>
+                                <CustomButton variant="destructive" size="sm" onClick={onDeleteSelected} disabled={isBulkDeleting} className="h-7 text-xs px-3">
+                                    {isBulkDeleting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Trash className="w-3 h-3 mr-1" />}
+                                    Delete
+                                </CustomButton>
+                                <CustomButton variant="ghost" size="sm" onClick={onClearSelection} className="h-7 w-7 p-0 rounded-full"><X className="w-3 h-3" /></CustomButton>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
-                    {/* Items Per Page Selector */}
+                <div className="flex items-center gap-4">
+                    {totalPages > 1 && <PaginationControls />}
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Show:</span>
+                        <span className="text-sm text-gray-500 hidden sm:inline">Show:</span>
                         <Select
                             value={String(itemsPerPage)}
                             onValueChange={(value) => onItemsPerPageChange(Number(value))}
@@ -129,88 +173,100 @@ export default function TransactionList({
                     </div>
                 </div>
             </CardHeader>
-            <CardContent>
-                {transactions.length > 0 && (
-                    <div className="flex items-center justify-between gap-2 mb-4 px-4 h-11 border-b border-gray-100">
-                        <div className="flex items-center gap-2">
-                            <Checkbox
-                                checked={isAllSelected}
-                                onCheckedChange={handleSelectAll}
-                                id="select-all"
-                            />
-                            <label htmlFor="select-all" className="text-sm font-medium text-gray-600 cursor-pointer select-none">Select All on Page</label>
-                        </div>
-                        <AnimatePresence>
-                            {selectedIds.size > 0 && (
-                                <motion.div
-                                    key="selection-actions"
-                                    initial={{ opacity: 0, y: -20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.2, ease: "easeOut" }}
-                                    className="flex items-center gap-2"
-                                >
-                                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                        {selectedIds.size} Selected Total
-                                    </span>
-                                    <CustomButton
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={onClearSelection}
-                                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full"
-                                        title="Clear Selection"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </CustomButton>
-                                    <div className="h-4 w-px bg-gray-300 mx-1" /> {/* Divider */}
-                                    <CustomButton
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={onDeleteSelected}
-                                        disabled={isBulkDeleting}
-                                        className="h-7 text-xs px-3"
-                                    >
-                                        {isBulkDeleting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Trash className="w-3 h-3 mr-1" />}
-                                        Delete
-                                    </CustomButton>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                )}
-                <div className="space-y-2 mb-6">
-                    {transactions.length > 0 ? (
-                        transactions.map((transaction) => (
-                            <TransactionItem
-                                key={transaction.id}
-                                transaction={transaction}
-                                category={categoryMap[transaction.category_id]}
-                                onEdit={onEdit}
-                                onDelete={onDelete}
-                                onSubmit={onSubmit}
-                                isSubmitting={isSubmitting}
-                                categories={categories}
-                                customBudgets={customBudgets}
-                                monthStart={monthStart}
-                                monthEnd={monthEnd}
-                                isSelected={selectedIds.has(transaction.id)}
-                                onSelect={onToggleSelection}
-                            />
-                        ))
-                    ) : (
-                        <div className="h-20 flex items-center justify-center text-gray-400">
-                            <p>No transactions match your filters.</p>
-                        </div>
-                    )}
-                </div>
 
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-end border-t pt-4">
-                        <PaginationControls />
-                    </div>
-                )}
-            </CardContent>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th className="px-4 py-3 w-10">
+                                <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                            </th>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('title')}>
+                                <div className="flex items-center">Title <SortIcon columnKey="title" /></div>
+                            </th>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('date')}>
+                                <div className="flex items-center">Date <SortIcon columnKey="date" /></div>
+                            </th>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('paidDate')}>
+                                <div className="flex items-center">Paid Date <SortIcon columnKey="paidDate" /></div>
+                            </th>
+                            <th className="px-4 py-3">Category</th>
+                            <th className="px-4 py-3 text-right cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('amount')}>
+                                <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
+                            </th>
+                            <th className="px-4 py-3 w-1/4">Note</th>
+                            <th className="px-4 py-3 w-10">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {transactions.map((transaction) => {
+                            const category = categoryMap[transaction.category_id];
+                            const isIncome = transaction.type === 'income';
+                            const Icon = getCategoryIcon(category?.icon);
+
+                            return (
+                                <tr
+                                    key={transaction.id}
+                                    className={`group hover:bg-blue-50/30 transition-colors ${selectedIds.has(transaction.id) ? 'bg-blue-50' : ''}`}
+                                >
+                                    <td className="px-4 py-2">
+                                        <Checkbox
+                                            checked={selectedIds.has(transaction.id)}
+                                            onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
+                                        />
+                                    </td>
+                                    <td className="px-4 py-2 font-medium text-gray-900">{transaction.title}</td>
+                                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                                        {format(new Date(transaction.date), "MMM d, yyyy")}
+                                    </td>
+                                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                                        {transaction.paidDate ? (
+                                            <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-100">
+                                                {format(new Date(transaction.paidDate), "MMM d, yyyy")}
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 italic">Pending</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-2">
+                                        {category ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${category.color}20` }}>
+                                                    <Icon className="w-3 h-3" style={{ color: category.color }} />
+                                                </div>
+                                                <span className="truncate max-w-[120px]">{category.name}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 text-xs">Uncategorized</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-2 text-right">
+                                        <span className={`font-mono font-medium ${isIncome ? 'text-green-600' : 'text-gray-900'}`}>
+                                            {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-2 text-gray-500 text-xs truncate max-w-[200px]" title={transaction.notes}>
+                                        {transaction.notes || '-'}
+                                    </td>
+                                    <td className="px-4 py-2">
+                                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <CustomButton variant="ghost" size="sm" onClick={() => onEdit(transaction)} className="h-8 w-8 p-0">
+                                                <Edit2 className="w-3 h-3 text-gray-500" />
+                                            </CustomButton>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+            {/* Bottom Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-end p-4 border-t bg-gray-50/50">
+                    <PaginationControls />
+                </div>
+            )}
         </Card>
     );
 }
