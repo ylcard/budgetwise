@@ -697,11 +697,11 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
  * filteredTransactions: Array<Object>
  * }}
  */
-export const useAdvancedTransactionFiltering = (transactions) => {
+export const useAdvancedTransactionFiltering = (transactions, externalFilters = null, setExternalFilters = null) => {
     const now = new Date();
     const { monthStart: currentMonthStart, monthEnd: currentMonthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
 
-    const [filters, setFilters] = useState({
+    const [internalFilters, setInternalFilters] = useState({
         search: '',
         type: 'all',
         category: [], // Array for multi-select
@@ -712,6 +712,9 @@ export const useAdvancedTransactionFiltering = (transactions) => {
         startDate: currentMonthStart,
         endDate: currentMonthEnd
     });
+
+    const filters = externalFilters || internalFilters;
+    const setFilters = setExternalFilters || setInternalFilters;
 
     const filteredTransactions = useMemo(() => {
         let startFilterDate = null;
