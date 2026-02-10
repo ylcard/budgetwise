@@ -7,15 +7,15 @@ export default function EtoroTicker() {
   if (status === "Error") return null; // Hide on error
 
   return (
-    <div className="w-full bg-slate-900 text-white overflow-hidden whitespace-nowrap py-2 flex items-center shadow-md">
+    <div className="w-full bg-slate-900 text-white py-2 flex items-center shadow-md border-b border-slate-800">
       {/* Status Indicator */}
       <div className="px-4 flex items-center gap-2 border-r border-slate-700 bg-slate-900 z-10">
-        <div className={`h-2 w-2 rounded-full ${status === 'Live' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
+        <div className={`h-2 w-2 rounded-full ${status === 'Live' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
         <span className="text-xs font-bold tracking-wider">eToro</span>
       </div>
 
       {/* Scrolling Content */}
-      <div className="flex items-center gap-8 px-4 overflow-x-auto no-scrollbar scroll-smooth">
+      <div className="flex items-center gap-8 px-4 overflow-x-auto no-scrollbar whitespace-nowrap scroll-smooth">
         {status === "Syncing..." && (
             <span className="flex items-center gap-2 text-sm text-slate-400">
                 <Loader2 className="h-3 w-3 animate-spin" /> Syncing Portfolio...
