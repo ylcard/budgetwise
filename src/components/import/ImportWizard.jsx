@@ -102,6 +102,17 @@ export default function ImportWizard({ onSuccess }) {
 
             const extractedData = result.output?.transactions || [];
 
+            // Batch categorize using the backend engine
+            showToast({ title: "Categorizing...", description: "Running smart categorization engine." });
+
+            // We invoke the backend function that wraps our CategorizationEngine
+            const categorizationResponse = await base44.functions.invoke('categorizeBatch', {
+                transactions: extractedData.map(item => ({ title: item.reason })),
+                // The backend function will fetch its own rules/categories to avoid RLS issues
+            });
+
+            const catMappings = categorizationResponse.data?.results || [];
+
             const processed = extractedData.map(item => {
                 // 1. Parse while preserving the sign for a moment
                 const rawVal = parseAmountWithSign(item.amount);
@@ -109,6 +120,9 @@ export default function ImportWizard({ onSuccess }) {
                 // 2. Determine type and then force absolute magnitude
                 const type = rawVal < 0 ? 'expense' : 'income';
                 const magnitude = Math.abs(rawVal);
+
+                // Find the result from our batch categorization
+                const catResult = catMappings.find(c => c.title === item.reason) || {};
 
                 // 3. Date Logic Correction: Ensure Transaction Date <= Paid Date
                 // Banks sometimes flip these or the AI extracts them swapped.
@@ -128,11 +142,11 @@ export default function ImportWizard({ onSuccess }) {
                 }
 
                 // Enhanced categorization using rules and patterns
-                const catResult = categorizeTransaction(
-                    { title: item.reason },
-                    rules,
-                    categories
-                );
+                // const catResult = categorizeTransaction(
+                //    { title: item.reason },
+                //    rules,
+                //    categories
+                // );
 
                 return {
                     date: txDate,
@@ -141,9 +155,13 @@ export default function ImportWizard({ onSuccess }) {
                     originalAmount: magnitude,
                     originalCurrency: settings?.baseCurrency || 'USD',
                     type,
+                    // category: catResult.categoryName || 'Uncategorized',
+                    // categoryId: catResult.categoryId || null,
+                    // financial_priority: catResult.priority || 'wants',
                     category: catResult.categoryName || 'Uncategorized',
-                    categoryId: catResult.categoryId || null,
+                    categoryId: catResult.category_id || null,
                     financial_priority: catResult.priority || 'wants',
+                    source: catResult.source || 'none',
                     isPaid: !!pdDate,
                     paidDate: pdDate || null,
                     budgetId: null,
