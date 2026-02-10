@@ -38,13 +38,26 @@ export default function Transactions() {
     // Fetch period for cross-period detection (still useful for defaults)
     const { monthStart, monthEnd } = usePeriod();
 
+    // STATE LIFTING: Initialize filters here so we can drive the API query
+    const [filters, setFilters] = useState({
+        search: '',
+        type: 'all',
+        category: [],
+        paymentStatus: 'all',
+        cashStatus: 'all',
+        financialPriority: 'all',
+        budgetId: 'all',
+        startDate: monthStart,
+        endDate: monthEnd
+    });
+
     // Data fetching
-    const { transactions, isLoading } = useTransactions();
+    const { transactions, isLoading } = useTransactions(filters.startDate, filters.endDate);
     const { categories } = useCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
     // Advanced Filtering logic
-    const { filters, setFilters, filteredTransactions } = useAdvancedTransactionFiltering(transactions);
+    const { filteredTransactions } = useAdvancedTransactionFiltering(transactions, filters, setFilters);
 
     // Pagination Logic
     const paginatedTransactions = useMemo(() => {
