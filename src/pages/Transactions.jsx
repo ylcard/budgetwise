@@ -35,6 +35,9 @@ export default function Transactions() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    // Sorting State
+    const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+
     // Fetch period for cross-period detection (still useful for defaults)
     const { monthStart, monthEnd } = usePeriod();
 
@@ -48,7 +51,9 @@ export default function Transactions() {
         financialPriority: 'all',
         budgetId: 'all',
         startDate: monthStart,
-        endDate: monthEnd
+        endDate: monthEnd,
+        minAmount: '',
+        maxAmount: ''
     });
 
     // Data fetching
@@ -59,12 +64,35 @@ export default function Transactions() {
     // Advanced Filtering logic
     const { filteredTransactions } = useAdvancedTransactionFiltering(transactions, filters, setFilters);
 
+    // Sorting Logic (Applied BEFORE pagination)
+    const sortedTransactions = useMemo(() => {
+        const sortableItems = [...filteredTransactions];
+        if (sortConfig.key) {
+            sortableItems.sort((a, b) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+
+                // Handle specific keys if necessary (dates are strings, amounts are numbers)
+                if (sortConfig.key === 'amount') {
+                    aValue = Number(aValue);
+                    bValue = Number(bValue);
+                }
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [filteredTransactions, sortConfig]);
+
     // Pagination Logic
+    // Use sortedTransactions instead of filteredTransactions
     const paginatedTransactions = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        return filteredTransactions.slice(startIndex, endIndex);
-    }, [filteredTransactions, currentPage, itemsPerPage]);
+        return sortedTransactions.slice(startIndex, endIndex);
+    }, [sortedTransactions, currentPage, itemsPerPage]);
 
     const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
 
@@ -259,6 +287,8 @@ export default function Transactions() {
                         onClearSelection={handleClearSelection}
                         onDeleteSelected={handleDeleteSelected}
                         isBulkDeleting={isBulkDeleting}
+                        sortConfig={sortConfig}
+                        onSort={setSortConfig}
                     />
                 </div>
             </div>
