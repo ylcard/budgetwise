@@ -174,8 +174,8 @@ export default function CategorySelect({ value, onValueChange, categories, place
                     {TriggerContent}
                 </DrawerTrigger>
 
-                {/* z-[110] places it above the modal and nav bar */}
-                <DrawerContent className="z-[110] max-h-[85vh] outline-none">
+                {/* z-[300] ensures it sits above the Filter Drawer's z-[200] */}
+                <DrawerContent className="z-[300] max-h-[85vh] outline-none">
                     <div className="mt-4 border-t">
                         {ListContent}
                     </div>
