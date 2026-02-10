@@ -19,6 +19,7 @@ import { iconMap } from "../utils/iconMapConfig";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
