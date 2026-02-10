@@ -200,20 +200,36 @@ export default function TransactionFilters({ filters, setFilters, categories, al
             {/* Custom Budget */}
             <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Budget</Label>
-                <Select
-                    value={filters.budgetId}
-                    onValueChange={(value) => setFilters({ ...filters, budgetId: value })}
-                >
-                    <SelectTrigger className="h-9">
-                        <SelectValue placeholder="All Budgets" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Budgets</SelectItem>
-                        {filteredCustomBudgets.map(b => (
-                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                {/* Mobile version uses the Drawer helper */}
+                <div className="md:hidden">
+                    <MobileSelectTrigger
+                        label="Select Budget"
+                        value={filters.budgetId}
+                        placeholder="All Budgets"
+                        onSelect={(val) => setFilters({ ...filters, budgetId: val })}
+                        options={[
+                            { value: 'all', label: 'All Budgets' },
+                            ...filteredCustomBudgets.map(b => ({ value: b.id, label: b.name }))
+                        ]}
+                    />
+                </div>
+                {/* Desktop version uses standard Select */}
+                <div className="hidden md:block">
+                    <Select
+                        value={filters.budgetId}
+                        onValueChange={(value) => setFilters({ ...filters, budgetId: value })}
+                    >
+                        <SelectTrigger className="h-9">
+                            <SelectValue placeholder="All Budgets" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Budgets</SelectItem>
+                            {filteredCustomBudgets.map(b => (
+                                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* Type */}
