@@ -42,7 +42,7 @@ export default function BankSync() {
     const [showReviewInbox, setShowReviewInbox] = useState(false);
     const { data: needsReviewTransactions = [] } = useQuery({
         queryKey: ['transactions', 'needsReview'],
-        queryFn: () => base44.entities.Transaction.list({ needsReview: true }),
+        queryFn: () => base44.entities.Transaction.filter({ needsReview: true }),
     });
 
     const [syncing, setSyncing] = useState(null);
