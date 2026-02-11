@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, BrainCircuit, Receipt, Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCategories } from "@/components/hooks/useBase44Entities";
+import { Input } from "@/components/ui/input"
 
 /**
  * Bulk Review Inbox
