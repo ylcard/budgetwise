@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
         const accountsResponse = await fetch(`${BASE_API_URL}/data/v1/accounts`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
+                'TrueLayer-Adapter-Version': '2023-06-15',
                 'Accept': 'application/json',
             }
         });
@@ -174,6 +175,7 @@ Deno.serve(async (req) => {
             const txResponse = await fetch(txUrl, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
+                    'TrueLayer-Adapter-Version': '2023-06-15',
                     'Accept': 'application/json',
                 }
             });
@@ -236,8 +238,7 @@ Deno.serve(async (req) => {
                 sort_code: acc.account_number?.sort_code ? String(acc.account_number.sort_code) : undefined,
                 iban: acc.account_number?.iban ? String(acc.account_number.iban) : undefined,
                 currency: String(acc.currency || 'EUR'),
-                account_type: String(acc.account_type || ''),
-                balance: typeof acc.balance?.current === 'number' ? Number(acc.balance.current) : 0
+                account_type: String(acc.account_type || '')
             }))
         };
         console.log('📝 [SYNC] Update payload:', JSON.stringify(updatePayload, null, 2));
