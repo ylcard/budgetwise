@@ -5,7 +5,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useToast } from "@/components/ui/use-toast";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, Save } from "lucide-react";
+import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, Pencil, ArrowRightCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,8 +18,9 @@ export default function AutomationRulesSettings() {
     const { categories } = useCategories();
     const { toast } = useToast();
     const queryClient = useQueryClient();
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [newRule, setNewRule] = useState({
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingRule, setEditingRule] = useState(null); // null = Create Mode
+    const [formData, setFormData] = useState({
         keyword: "",
         categoryId: "",
         renamedTitle: "",
@@ -53,21 +54,33 @@ export default function AutomationRulesSettings() {
         }
     });
 
+    // Update Mutation
+    const { mutate: updateRule, isPending: isUpdating } = useMutation({
+        mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
+            toast({ title: "Rule updated", description: "Your changes have been saved." });
+            handleCloseDialog();
+        },
+        onError: (error) => {
+            toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+        }
+    });
+
     // Create Mutation
     const { mutate: createRule, isPending: isCreating } = useMutation({
         mutationFn: () => base44.entities.CategoryRule.create({
             user_email: user.email,
-            categoryId: newRule.categoryId,
-            keyword: newRule.keyword,
-            renamedTitle: newRule.renamedTitle || null,
+            categoryId: formData.categoryId,
+            keyword: formData.keyword,
+            renamedTitle: formData.renamedTitle || null,
             priority: 10,
-            financial_priority: newRule.financial_priority
+            financial_priority: formData.financial_priority
         }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
             toast({ title: "Rule created", description: "Future transactions matching these keywords will be categorized automatically." });
-            setIsCreateOpen(false);
-            setNewRule({ keyword: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
+            handleCloseDialog();
         },
         onError: (error) => {
             toast({
@@ -78,12 +91,34 @@ export default function AutomationRulesSettings() {
         }
     });
 
-    const handleCreate = () => {
-        if (!newRule.keyword || !newRule.categoryId) {
+    const handleSave = () => {
+        if (!formData.keyword || !formData.categoryId) {
             toast({ title: "Missing fields", description: "Please enter a keyword and select a category.", variant: "destructive" });
             return;
         }
-        createRule();
+
+        if (editingRule) {
+            updateRule({ id: editingRule.id, data: formData });
+        } else {
+            createRule();
+        }
+    };
+
+    const handleEditClick = (rule) => {
+        setEditingRule(rule);
+        setFormData({
+            keyword: rule.keyword,
+            categoryId: rule.categoryId,
+            renamedTitle: rule.renamedTitle || "",
+            financial_priority: rule.financial_priority || "wants"
+        });
+        setIsDialogOpen(true);
+    };
+
+    const handleCloseDialog = () => {
+        setIsDialogOpen(false);
+        setEditingRule(null);
+        setFormData({ keyword: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
     };
 
     if (isLoading || (isFetching && rules.length === 0)) {
@@ -99,16 +134,16 @@ export default function AutomationRulesSettings() {
                         Automation Rules
                     </CardTitle>
 
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <CustomButton size="sm" className="gap-2">
+                    <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+                        <DialogTrigger asChild onClick={() => setIsDialogOpen(true)}>
+                            <CustomButton size="sm" className="gap-2" onClick={() => setIsDialogOpen(true)}>
                                 <Plus className="w-4 h-4" />
                                 <span className="hidden sm:inline">Add Rule</span>
                             </CustomButton>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
-                                <DialogTitle>Create Automation Rule</DialogTitle>
+                                <DialogTitle>{editingRule ? "Edit Rule" : "Create Automation Rule"}</DialogTitle>
                                 <DialogDescription>
                                     When a transaction contains the keywords below, it will be automatically categorized.
                                 </DialogDescription>
@@ -119,23 +154,23 @@ export default function AutomationRulesSettings() {
                                     <Input
                                         id="keywords"
                                         placeholder="e.g. Uber, Lyft (comma separated)"
-                                        value={newRule.keyword}
-                                        onChange={(e) => setNewRule({ ...newRule, keyword: e.target.value })}
+                                        value={formData.keyword}
+                                        onChange={(e) => setFormData({ ...formData, keyword: e.target.value })}
                                     />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label>Then assign category...</Label>
                                     <CategorySelect
                                         categories={categories}
-                                        value={newRule.categoryId}
-                                        onValueChange={(id) => setNewRule({ ...newRule, categoryId: id })}
+                                        value={formData.categoryId}
+                                        onValueChange={(id) => setFormData({ ...formData, categoryId: id })}
                                     />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label>Financial Priority</Label>
                                     <Select
-                                        value={newRule.financial_priority}
-                                        onValueChange={(val) => setNewRule({ ...newRule, financial_priority: val })}
+                                        value={formData.financial_priority}
+                                        onValueChange={(val) => setFormData({ ...formData, financial_priority: val })}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select priority" />
@@ -152,14 +187,14 @@ export default function AutomationRulesSettings() {
                                     <Input
                                         id="rename"
                                         placeholder="e.g. Taxi Ride"
-                                        value={newRule.renamedTitle}
-                                        onChange={(e) => setNewRule({ ...newRule, renamedTitle: e.target.value })}
+                                        value={formData.renamedTitle}
+                                        onChange={(e) => setFormData({ ...formData, renamedTitle: e.target.value })}
                                     />
                                 </div>
                             </div>
                             <DialogFooter>
-                                <CustomButton onClick={handleCreate} disabled={isCreating} className="w-full sm:w-auto">
-                                    {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <CustomButton onClick={handleSave} disabled={isCreating || isUpdating} className="w-full sm:w-auto">
+                                    {(isCreating || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Save Rule
                                 </CustomButton>
                             </DialogFooter>
@@ -186,33 +221,55 @@ export default function AutomationRulesSettings() {
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="text-xs font-bold uppercase tracking-wider text-gray-400">If text contains:</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5 mb-3">
+                                        <div className="flex flex-wrap gap-1.5 mb-4">
                                             {rule.keyword.split(',').map((kw, i) => (
-                                                <span key={i} className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-mono font-medium truncate max-w-full">
+                                                <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-mono font-medium border border-gray-200">
                                                     {kw.trim()}
                                                 </span>
                                             ))}
                                         </div>
 
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <span className="text-gray-500">Rename to</span>
-                                            <strong className="text-gray-900">{rule.renamedTitle || 'Original Name'}</strong>
-                                            <ArrowRight className="w-4 h-4 text-gray-300" />
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">
-                                                {category ? category.name : <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Missing Category</span>}
-                                            </span>
+                                        {/* BEFORE & AFTER VISUALIZATION */}
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                            {/* BEFORE STATE */}
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Incoming</span>
+                                                <div className="text-gray-500 italic font-mono bg-white px-2 py-1 rounded border border-dashed border-gray-300">
+                                                    "{rule.keyword.split(',')[0].trim()}..."
+                                                </div>
+                                            </div>
+
+                                            <ArrowRight className="hidden sm:block w-4 h-4 text-slate-300 mx-1" />
+
+                                            {/* AFTER STATE */}
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-600/70 mb-1">Result</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-900 bg-white px-2 py-1 rounded border shadow-sm">
+                                                        {rule.renamedTitle || rule.keyword.split(',')[0].trim()}
+                                                    </span>
+                                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${category ? '' : 'bg-red-50 text-red-600 border-red-200'}`} style={category ? { backgroundColor: `${category.color}15`, color: category.color, borderColor: `${category.color}30` } : {}}>
+                                                        {category ? category.name : "Missing Category"}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <CustomButton
-                                        variant="destructive"
-                                        size="icon"
-                                        className="shrink-0 h-10 w-10 self-end sm:self-auto"
-                                        onClick={() => deleteRule(rule.id)}
-                                        disabled={isDeleting}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </CustomButton>
+                                    <div className="flex items-center gap-2 self-end sm:self-center">
+                                        <CustomButton variant="outline" size="icon" className="h-9 w-9" onClick={() => handleEditClick(rule)}>
+                                            <Pencil className="w-4 h-4 text-gray-500" />
+                                        </CustomButton>
+                                        <CustomButton
+                                            variant="destructive"
+                                            size="icon"
+                                            className="h-9 w-9"
+                                            onClick={() => deleteRule(rule.id)}
+                                            disabled={isDeleting}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </CustomButton>
+                                    </div>
                                 </div>
                             );
                         })}
