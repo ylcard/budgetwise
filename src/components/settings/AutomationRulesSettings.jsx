@@ -182,7 +182,7 @@ export default function AutomationRulesSettings() {
         if (rule.regexPattern) {
             // Switch to Keywords: Clear regex, set empty keyword
             if (window.confirm("Switch to Keyword mode? This will delete your current regex pattern.")) {
-                updateRule({ id: rule.id, data: { regexPattern: null, keyword: "" } });
+                updateRule({ id: rule.id, data: { regexPattern: null, keyword: null } });
             }
         } else {
             // Switch to Regex: Convert keywords to Regex group
@@ -489,7 +489,7 @@ export default function AutomationRulesSettings() {
                                                                 )
                                                             ) : (
                                                                 <>
-                                                                    {rule.keyword?.split(',').map((kw, i) => (
+                                                                    {(rule.keyword || "").split(',').filter(k => k.trim()).map((kw, i) => (
                                                                         editingKeyword?.ruleId === rule.id && editingKeyword?.index === i ? (
                                                                             <Input
                                                                                 key={i}
