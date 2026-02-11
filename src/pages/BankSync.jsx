@@ -9,6 +9,10 @@ import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { useToast } from "../components/ui/use-toast";
 import BankConnectionCard from "../components/banksync/BankConnectionCard";
 import TransactionPreviewDialog from "../components/banksync/TransactionPreviewDialog";
+import { categorizeTransaction } from "@/components/utils/transactionCategorization";
+import { useCategories, useCategoryRules, useGoals, useAllBudgets } from "@/components/hooks/useBase44Entities";
+import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
+import { formatDateString } from "../utils/dateUtils";
 import {
     Building2,
     Plus,
@@ -36,9 +40,18 @@ export default function BankSync() {
     const { toast } = useToast();
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
+    const { user } = useSettings();
+
+    // Categorization Context
+    const { categories, isLoading: categoriesLoading } = useCategories();
+    const { rules } = useCategoryRules(user);
+    const { goals } = useGoals(user);
+    const { allBudgets } = useAllBudgets(user);
+
     const [showTransactionPreview, setShowTransactionPreview] = useState(false);
     const [previewTransactions, setPreviewTransactions] = useState(null);
     const [syncing, setSyncing] = useState(null);
+    const [syncDays, setSyncDays] = useState("30");
 
     // Fetch bank connections
     const { data: connections = [], isLoading } = useQuery({
@@ -177,12 +190,17 @@ export default function BankSync() {
         setSyncing(connection.id);
         try {
             const now = new Date();
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(now.getDate() - 30);
+            const fromDate = new Date();
+
+            if (syncDays === "all") {
+                fromDate.setFullYear(now.getFullYear() - 2); // 2 years back (typical bank limit)
+            } else {
+                fromDate.setDate(now.getDate() - parseInt(syncDays));
+            }
 
             // Format as YYYY-MM-DD strictly
             const dateTo = now.toISOString().split('T')[0];
-            const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+            const dateFrom = fromDate.toISOString().split('T')[0];
 
             const response = await base44.functions.invoke('trueLayerSync', {
                 connectionId: connection.id,
@@ -197,16 +215,26 @@ export default function BankSync() {
             if (response.data.transactions && response.data.transactions.length > 0) {
                 console.log('✅ [SYNC] Showing preview with', response.data.transactions.length, 'transactions');
 
-                // Sanitize transactions to ensure strings and numbers are strictly typed
-                const sanitized = response.data.transactions.map(tx => ({
-                    ...tx,
-                    description: String(tx.description || 'Bank Transaction'),
-                    date: typeof tx.date === 'string' ? tx.date : new Date().toISOString().split('T')[0],
-                    amount: Number(tx.amount) || 0,
-                    bankTransactionId: String(tx.bankTransactionId)
-                }));
+                // Map bank data to Wizard format + Auto-Categorize
+                const enriched = response.data.transactions.map(tx => {
+                    const catResult = categorizeTransaction({ title: tx.description }, rules, categories);
 
-                setPreviewTransactions(sanitized);
+                    return {
+                        title: String(tx.description || 'Bank Transaction'),
+                        date: typeof tx.date === 'string' ? tx.date : new Date().toISOString().split('T')[0],
+                        amount: Number(tx.amount) || 0,
+                        bankTransactionId: String(tx.bankTransactionId),
+                        type: tx.type,
+                        categoryId: catResult.categoryId || null,
+                        category: catResult.categoryName || 'Uncategorized',
+                        financial_priority: catResult.priority || 'wants',
+                        budgetId: null,
+                        isPaid: tx.type === 'expense',
+                        paidDate: tx.type === 'expense' ? tx.date : null
+                    };
+                });
+
+                setPreviewTransactions(enriched);
 
                 setShowTransactionPreview(true);
             } else {
@@ -242,23 +270,39 @@ export default function BankSync() {
                 existing.filter(t => t.bankTransactionId).map(t => t.bankTransactionId)
             );
 
+            // 1. Pre-flight: Ensure budgets exist for the transaction months
+            const budgetMap = {};
+            const uniqueSyncKeys = new Set();
+            transactions.filter(tx => tx.type === 'expense').forEach(tx => {
+                uniqueSyncKeys.add(`${formatDateString(tx.date)}|${tx.financial_priority || 'wants'}`);
+            });
+
+            await Promise.all(Array.from(uniqueSyncKeys).map(async (key) => {
+                const [date, priority] = key.split('|');
+                const id = await getOrCreateSystemBudgetForTransaction(user.email, date, priority, goals, settings);
+                budgetMap[key] = id;
+            }));
+
             const newTransactions = transactions
                 .filter(tx => !existingBankIds.has(tx.bankTransactionId))
 
-                .map(tx => ({
-                    title: String(tx.description || 'Bank Transaction'),
-                    amount: Number(tx.amount),
-                    originalAmount: Number(tx.amount),
-                    originalCurrency: tx.currency || 'EUR',
-                    type: tx.type,
-                    date: tx.date,
-                    isPaid: tx.type === 'expense' ? true : undefined,
-                    paidDate: tx.type === 'expense' ? tx.date : undefined,
-                    notes: `Imported from ${tx.accountName}${tx.merchantName ? ` - ${tx.merchantName}` : ''}`,
-                    bankTransactionId: tx.bankTransactionId,
-                    // Safely initialize category_id as an empty string if your UI logic uses .match()
-                    category_id: ""
-                }));
+                .map(tx => {
+                    const syncKey = `${formatDateString(tx.date)}|${tx.financial_priority || 'wants'}`;
+                    return {
+                        title: tx.title,
+                        amount: tx.amount,
+                        originalAmount: tx.amount,
+                        originalCurrency: settings?.baseCurrency || 'EUR',
+                        type: tx.type,
+                        date: tx.date,
+                        isPaid: tx.isPaid,
+                        paidDate: tx.paidDate,
+                        bankTransactionId: tx.bankTransactionId,
+                        category_id: tx.categoryId,
+                        financial_priority: tx.financial_priority,
+                        budgetId: tx.budgetId || budgetMap[syncKey]
+                    };
+                });
 
             if (newTransactions.length === 0) {
                 toast({
@@ -331,6 +375,20 @@ export default function BankSync() {
                         <Plus className="w-4 h-4" />
                         Connect Bank
                     </CustomButton>
+                </div>
+
+                {/* Date Range Selector */}
+                <div className="flex items-center gap-3 mb-6 bg-white p-3 rounded-xl border border-gray-100 shadow-sm w-fit">
+                    <span className="text-sm font-medium text-gray-500">Sync range:</span>
+                    <select
+                        value={syncDays}
+                        onChange={(e) => setSyncDays(e.target.value)}
+                        className="text-sm font-bold text-blue-600 bg-transparent focus:outline-none cursor-pointer"
+                    >
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="all">All Time (2 Years)</option>
+                    </select>
                 </div>
 
                 <Alert className="bg-blue-50 border-blue-200">
