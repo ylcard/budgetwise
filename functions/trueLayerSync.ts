@@ -25,12 +25,14 @@ const DEFAULT_SYSTEM_CATEGORIES = [
 ];
 
 const ensureSystemCategories = async (base44, userEmail, categoriesList) => {
-    const hasSystemCategories = categoriesList.some(c => c.is_system);
+    // Find exactly which default categories are missing
+    const missingDefaults = DEFAULT_SYSTEM_CATEGORIES.filter(
+        defCat => !categoriesList.some(c => c.name.toUpperCase() === defCat.name.toUpperCase())
+    );
 
-    if (!hasSystemCategories) {
-        console.log('🌱 [SYNC] Seeding default system categories for user...');
-        // Map through defaults and assign ownership to the user so RLS allows them to see it
-        const promises = DEFAULT_SYSTEM_CATEGORIES.map(cat => base44.entities.Category.create({ ...cat, user_email: userEmail }));
+    if (missingDefaults.length > 0) {
+        console.log(`🌱 [SYNC] Seeding ${missingDefaults.length} missing default categories...`);
+        const promises = missingDefaults.map(cat => base44.entities.Category.create({ ...cat, user_email: userEmail }));
         const newCats = await Promise.all(promises);
         categoriesList.push(...newCats);
     }
@@ -74,21 +76,7 @@ const FALLBACK_REGEX = [
     { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS)/i, category: 'Health', priority: 'needs' }
 ];
 
-const getOrCreateCategory = async (base44, userEmail, categoryName, priority, categoriesList) => {
-    let cat = categoriesList.find(c => c.name.toUpperCase() === categoryName.toUpperCase());
-    if (!cat) {
-        console.log(`[SYNC] Creating missing category: ${categoryName}`);
-        cat = await base44.entities.Category.create({
-            name: categoryName,
-            priority: priority || 'wants',
-            user_email: userEmail
-        });
-        categoriesList.push(cat); // Add to memory so we don't recreate it in the next loop
-    }
-    return cat;
-};
-
-const categorizeTransaction = async (base44, userEmail, searchString, userRules, categoriesList) => {
+const categorizeTransaction = (searchString, userRules, categoriesList) => {
     // 1. User Rules (Highest Priority)
     for (const rule of userRules) {
         let matched = false;
@@ -106,17 +94,16 @@ const categorizeTransaction = async (base44, userEmail, searchString, userRules,
     // 2. Hardcoded Keywords
     for (const [keyword, data] of Object.entries(HARDCODED_KEYWORDS)) {
         if (searchString.includes(keyword)) {
-            const cat = await getOrCreateCategory(base44, userEmail, data.name, data.priority, categoriesList);
-            // Set needsReview: true because this is a guess, let the user confirm it in the Inbox
-            return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
+            const cat = categoriesList.find(c => c.name.toUpperCase() === data.name.toUpperCase());
+            if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
         }
     }
 
     // 3. Fallback Regex
     for (const { pattern, category, priority } of FALLBACK_REGEX) {
         if (pattern.test(searchString)) {
-            const cat = await getOrCreateCategory(base44, userEmail, category, priority, categoriesList);
-            return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
+            const cat = categoriesList.find(c => c.name.toUpperCase() === category.toUpperCase());
+            if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
         }
     }
 
@@ -379,7 +366,7 @@ Deno.serve(async (req) => {
 
                 // Default to null/false for Income
                 let catResult = { categoryId: null, priority: 'wants', needsReview: false };
-                
+
                 // Only run categorization engine for expenses
                 if (isExpense) {
                     catResult = categorizeTransaction(searchString, rules, categories);
