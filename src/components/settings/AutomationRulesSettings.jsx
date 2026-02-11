@@ -438,15 +438,36 @@ export default function AutomationRulesSettings() {
                                                         ) : (
                                                             <>
                                                                 {rule.keyword?.split(',').map((kw, i) => (
-                                                                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border group">
-                                                                        {kw.trim()}
-                                                                        <button
-                                                                            onClick={() => handleRemoveKeyword(rule, kw.trim())}
-                                                                            className="ml-1 text-gray-400 hover:text-red-500 hidden group-hover:inline-block"
+                                                                    editingKeyword?.ruleId === rule.id && editingKeyword?.index === i ? (
+                                                                        <Input
+                                                                            key={i}
+                                                                            autoFocus
+                                                                            defaultValue={kw.trim()}
+                                                                            className="h-6 w-24 text-xs px-1 py-0 bg-white shadow-sm border-blue-400"
+                                                                            onBlur={(e) => handleEditKeyword(rule, i, e.target.value)}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') handleEditKeyword(rule, i, e.currentTarget.value);
+                                                                                if (e.key === 'Escape') setEditingKeyword(null);
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <span key={i}
+                                                                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-transparent hover:border-gray-300 cursor-pointer group transition-all"
+                                                                            onClick={() => setEditingKeyword({ ruleId: rule.id, index: i, value: kw.trim() })}
+                                                                            title="Click to edit keyword"
                                                                         >
-                                                                            <X className="w-3 h-3" />
-                                                                        </button>
-                                                                    </span>
+                                                                            {kw.trim()}
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleRemoveKeyword(rule, kw.trim());
+                                                                                }}
+                                                                                className="ml-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full hover:bg-gray-200"
+                                                                            >
+                                                                                <X className="w-3 h-3" />
+                                                                            </button>
+                                                                        </span>
+                                                                    )
                                                                 ))}
                                                                 <Input
                                                                     className="h-6 w-20 text-[10px] px-1 bg-transparent border-dashed border-gray-300 focus:w-24 focus:bg-white focus:border-solid focus:border-blue-400 transition-all placeholder:text-gray-400"
