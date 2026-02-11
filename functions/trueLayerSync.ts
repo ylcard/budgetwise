@@ -365,7 +365,7 @@ Deno.serve(async (req) => {
                 const isExpense = tx.transaction_type !== 'CREDIT';
 
                 // Default to null/false for Income
-                let catResult = { categoryId: null, priority: 'wants', needsReview: false };
+                let catResult = { categoryId: null, priority: null, needsReview: false };
 
                 // Only run categorization engine for expenses
                 if (isExpense) {
