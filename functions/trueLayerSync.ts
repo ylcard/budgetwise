@@ -16,11 +16,12 @@ const DEFAULT_SYSTEM_CATEGORIES = [
     { name: 'Groceries', icon: 'ShoppingCart', color: '#10B981', priority: 'needs', is_system: true },
     { name: 'Transport', icon: 'Car', color: '#F59E0B', priority: 'needs', is_system: true },
     { name: 'Bills & Utilities', icon: 'Zap', color: '#06B6D4', priority: 'needs', is_system: true },
-    { name: 'Health & Personal Care', icon: 'HeartPulse', color: '#EF4444', priority: 'needs', is_system: true },
+    { name: 'Health', icon: 'HeartPulse', color: '#EF4444', priority: 'needs', is_system: true },
     { name: 'Dining Out', icon: 'Utensils', color: '#F97316', priority: 'wants', is_system: true },
     { name: 'Shopping', icon: 'ShoppingBag', color: '#8B5CF6', priority: 'wants', is_system: true },
     { name: 'Entertainment', icon: 'Film', color: '#EC4899', priority: 'wants', is_system: true },
-    { name: 'Travel', icon: 'Plane', color: '#0EA5E9', priority: 'wants', is_system: true }
+    { name: 'Travel', icon: 'Plane', color: '#0EA5E9', priority: 'wants', is_system: true },
+    { name: 'Subscriptions', icon: 'Repeat', color: '#8B5CF6', priority: 'wants', is_system: true }
 ];
 
 const ensureSystemCategories = async (base44, userEmail, categoriesList) => {
@@ -53,25 +54,23 @@ const HARDCODED_KEYWORDS = {
     'BP': { name: 'Transport', priority: 'needs' },
     'EXXON': { name: 'Transport', priority: 'needs' },
     'CHEVRON': { name: 'Transport', priority: 'needs' },
-    'AIRBNB': { name: 'Hotels', priority: 'wants' },
-    'HOTEL': { name: 'Hotels', priority: 'wants' },
-    'AIRLINES': { name: 'Flights', priority: 'wants' },
+    'AIRBNB': { name: 'Travel', priority: 'wants' },
+    'HOTEL': { name: 'Travel', priority: 'wants' },
+    'AIRLINES': { name: 'Travel', priority: 'wants' },
 };
 
 const FALLBACK_REGEX = [
-    { pattern: /(POWER|GAS|ELECTRIC|ENERGIA|NUFRI)/i, category: 'Electricity', priority: 'needs' },
-    { pattern: /(VUELING|RYANAIR|EASYJET|WIZZAIR|ELAL|FINNAIR)/i, category: 'Flights', priority: 'wants' },
-    { pattern: /(BARKCELONA)/i, category: 'Pets', priority: 'needs' },
-    { pattern: /(INTERMON)/i, category: 'Charity', priority: 'wants' },
+    { pattern: /(POWER|GAS|ELECTRIC|ENERGIA|NUFRI)/i, category: 'Bills & Utilities', priority: 'needs' },
+    { pattern: /(VUELING|RYANAIR|EASYJET|WIZZAIR|ELAL|FINNAIR)/i, category: 'Travel', priority: 'wants' },
     { pattern: /(MOBILITAT|BEENETWORK|BEE NETWORK|BEE|TRANSPORTE)/i, category: 'Transport', priority: 'needs' },
     { pattern: /(LA SIRENA|Mcdonalds)/i, category: 'Dining Out', priority: 'wants' },
-    { pattern: /(STEAM|STEAMGAMES)/i, category: 'Games', priority: 'wants' },
+    { pattern: /(STEAM|STEAMGAMES)/i, category: 'Entertainment', priority: 'wants' },
     { pattern: /(CAPRABO)/i, category: 'Groceries', priority: 'needs' },
     { pattern: /(MERCADONA|Tesco)/i, category: 'Groceries', priority: 'needs' },
-    { pattern: /(IMPULS|ADMINISTRACION)/i, category: 'Rent', priority: 'needs' },
-    { pattern: /(AIGUES|WATER)/i, category: 'Water', priority: 'needs' },
-    { pattern: /(INTERNET|WIFI|CABLE|COMCAST|AT&T|VERIZON|T-MOBILE|ORANGE|FINETWORK)/i, category: 'Connectivity', priority: 'needs' },
-    { pattern: /(HOSTEL|HOSTELS|HOTEL|HOTELS|HOSTELWORLD|TOC|UNITE)/i, category: 'Hotels', priority: 'wants' },
+    { pattern: /(IMPULS|ADMINISTRACION)/i, category: 'Housing', priority: 'needs' },
+    { pattern: /(AIGUES|WATER)/i, category: 'Bills & Utilities', priority: 'needs' },
+    { pattern: /(INTERNET|WIFI|CABLE|COMCAST|AT&T|VERIZON|T-MOBILE|ORANGE|FINETWORK)/i, category: 'Bills & Utilities', priority: 'needs' },
+    { pattern: /(HOSTEL|HOSTELS|HOTEL|HOTELS|HOSTELWORLD|TOC|UNITE)/i, category: 'Travel', priority: 'wants' },
     { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS)/i, category: 'Health', priority: 'needs' }
 ];
 
