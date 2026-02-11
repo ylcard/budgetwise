@@ -185,16 +185,21 @@ export default function AutomationRulesSettings() {
                 updateRule({ id: rule.id, data: { regexPattern: null, keyword: "" } });
             }
         } else {
-            // Switch to Regex: Clear keywords, set placeholder regex
-            if (window.confirm("Switch to Regex mode? This will delete your current keywords.")) {
-                updateRule({ id: rule.id, data: { keyword: null, regexPattern: ".*" } });
+            // Switch to Regex: Convert keywords to Regex group
+            const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim()).filter(Boolean);
+            // Escape special regex characters in keywords just in case
+            const escapedKeywords = currentKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            const suggestedRegex = escapedKeywords.length > 0 ? `(${escapedKeywords.join('|')})` : ".*";
+
+            if (window.confirm(`Switch to Regex mode? This will convert your keywords to the pattern: ${suggestedRegex}`)) {
+                updateRule({ id: rule.id, data: { keyword: null, regexPattern: suggestedRegex } });
             }
         }
     };
 
     const handleAddKeyword = (rule, newKeyword) => {
         if (!newKeyword.trim()) return;
-        const currentKeywords = rule.keyword.split(',').map(k => k.trim());
+        const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim()).filter(Boolean);
         if (currentKeywords.includes(newKeyword.trim())) return;
 
         const updatedKeywords = [...currentKeywords, newKeyword.trim()].join(',');
@@ -204,13 +209,12 @@ export default function AutomationRulesSettings() {
     const handleEditKeyword = (rule, index, newValue) => {
         setEditingKeyword(null);
         if (!newValue.trim()) {
-            // If empty, ask to remove? Or just revert? Let's revert for safety, or remove if user intended.
-            // Better UX: If they clear it, assume they want to delete it.
-            handleRemoveKeyword(rule, rule.keyword.split(',')[index].trim());
+            const keywordToDelete = (rule.keyword || "").split(',')[index]?.trim();
+            if (keywordToDelete) handleRemoveKeyword(rule, keywordToDelete);
             return;
         }
 
-        const currentKeywords = rule.keyword.split(',').map(k => k.trim());
+        const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim());
         if (currentKeywords[index] === newValue.trim()) return; // No change
 
         currentKeywords[index] = newValue.trim();
@@ -243,7 +247,7 @@ export default function AutomationRulesSettings() {
     };
 
     const handleRemoveKeyword = (rule, keywordToRemove) => {
-        const currentKeywords = rule.keyword.split(',').map(k => k.trim());
+        const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim()).filter(Boolean);
         const updatedKeywords = currentKeywords.filter(k => k !== keywordToRemove).join(',');
 
         if (!updatedKeywords) {
