@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import CategorizeReview from "./CategorizeReview";
+import CategorizeReview from "@/components/import/CategorizeReview";
 import { useCategories, useAllBudgets } from "@/components/hooks/useBase44Entities";
 import { useSettings } from "@/components/utils/SettingsContext";
 
