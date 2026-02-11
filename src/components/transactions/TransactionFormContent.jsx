@@ -273,6 +273,7 @@ export default function TransactionFormContent({
     onSubmit,
     onCancel,
     isSubmitting = false,
+    transactions = [] // Need access to existing transactions for duplicate check
 }) {
     const queryClient = useQueryClient();
     const { settings, user } = useSettings();
@@ -308,6 +309,30 @@ export default function TransactionFormContent({
     const [isBudgetOpen, setIsBudgetOpen] = useState(false);
     const [budgetSearchTerm, setBudgetSearchTerm] = useState("");
     const [validationError, setValidationError] = useState(null);
+    const [potentialDuplicate, setPotentialDuplicate] = useState(null);
+
+    // --- DUPLICATE DETECTION EFFECT ---
+    useEffect(() => {
+        if (!formData.amount || !formData.date || initialTransaction) return;
+
+        const amount = parseFloat(formData.amount);
+        if (isNaN(amount)) return;
+
+        // Look for existing transactions with same amount (+/- 0.01) and close date
+        const match = transactions.find(t => {
+            // Don't match self
+            if (initialTransaction && t.id === initialTransaction.id) return false;
+
+            const amtMatch = Math.abs(t.amount - amount) < 0.01;
+
+            // Simple date check (exact for manual, usually sufficient)
+            const dateMatch = t.date === formData.date;
+
+            return amtMatch && dateMatch;
+        });
+
+        setPotentialDuplicate(match || null);
+    }, [formData.amount, formData.date, transactions, initialTransaction]);
 
     // 1. Calculate boundaries for the CURRENTLY SELECTED date in the form
     const selectedDateBounds = useMemo(() => {
@@ -525,6 +550,10 @@ export default function TransactionFormContent({
         e.preventDefault();
         setValidationError(null);
 
+        // Note: You could add a "stop" here if potentialDuplicate is true, 
+        // forcing the user to click a specific "Ignore" button, 
+        // but simply showing the warning is usually enough friction.
+
         const normalizedAmount = normalizeAmount(formData.amount);
         const originalAmount = parseFloat(normalizedAmount);
 
@@ -670,6 +699,22 @@ export default function TransactionFormContent({
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{validationError}</AlertDescription>
+                </Alert>
+            )}
+
+            {/* DUPLICATE WARNING */}
+            {potentialDuplicate && (
+                <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <div className="ml-2">
+                        <AlertDescription className="text-amber-700 text-xs">
+                            <strong>Possible Duplicate:</strong> A transaction for {formatCurrency(potentialDuplicate.amount, settings)} on {potentialDuplicate.date} already exists ("{potentialDuplicate.title}").
+                        </AlertDescription>
+                        <div className="mt-2 flex gap-2">
+                            <button type="button" onClick={() => onCancel()} className="text-xs underline text-amber-800 font-bold">Cancel</button>
+                            <button type="button" onClick={() => setPotentialDuplicate(null)} className="text-xs underline text-amber-600">Ignore & Create Anyway</button>
+                        </div>
+                    </div>
                 </Alert>
             )}
 
