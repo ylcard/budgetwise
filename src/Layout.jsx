@@ -1,323 +1,274 @@
-import { useState, useEffect, /* useRef, */ useMemo } from "react"; // UPDATED 17-Jan-2026: Commented out useRef
-import { Input } from "@/components/ui/input";
-import { CustomButton } from "@/components/ui/CustomButton";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, /* CardFooter */ } from "@/components/ui/card"; // UPDATED 17-Jan-2026: Commented out CardFooter
-import { Switch } from "@/components/ui/switch";
-import { useSettings } from "../components/utils/SettingsContext";
-import { useSettingsForm, /* useGoalActions */ } from "../components/hooks/useActions"; // UPDATED 17-Jan-2026: Commented out useGoalActions
-// import { useGoals } from "../components/hooks/useBase44Entities"; // REMOVED 17-Jan-2026: Goals moved to Reports
-import { formatCurrency } from "../components/utils/currencyUtils";
-import { Settings as SettingsIcon, Save, Trash2 } from "lucide-react"; // UPDATED 03-Feb-2026: Added Trash2 icon for account deletion
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // ADDED 03-Feb-2026: For account deletion confirmation
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Wallet, LogOut, ChevronLeft, MoreHorizontal } from "lucide-react";
+import { useMemo, useRef, useEffect, useState } from "react";
+import { SettingsProvider } from "./components/utils/SettingsContext";
+import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
+import { navigationItems } from "./components/utils/navigationConfig";
+import { useRecurringProcessor } from "./components/hooks/useRecurringProcessor";
+import { base44 } from "@/api/base44Client";
 import {
-    CURRENCY_OPTIONS,
-    // FINANCIAL_PRIORITIES, // REMOVED 17-Jan-2026: Goals moved to Reports
-    SETTINGS_KEYS,
-    DEFAULT_SETTINGS
-} from "../components/utils/constants";
-// import AmountInput from "../components/ui/AmountInput"; // REMOVED 17-Jan-2026: Goals moved to Reports
-// import { Skeleton } from "@/components/ui/skeleton"; // REMOVED 17-Jan-2026: Goals moved to Reports
-import { showToast } from "@/components/ui/use-toast";
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarHeader,
+    SidebarFooter,
+    SidebarProvider,
+} from "@/components/ui/sidebar";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PeriodProvider } from "./components/hooks/usePeriod";
+import { CustomButton } from "@/components/ui/CustomButton";
+import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-Feb-2026: For iOS-style page transitions
+import { FABProvider, useFAB } from "./components/hooks/FABContext"; // ADDED 04-Feb-2026: For GlobalFAB management
+import GlobalFAB from "@/components/ui/GlobalFAB"; // ADDED 04-Feb-2026: Floating Action Button
 
-export default function Settings() {
-    const { settings, updateSettings, user } = useSettings();
+const LayoutContent = ({ children }) => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
-    // --- 1. GENERAL SETTINGS LOGIC ---
-    const { formData, handleFormChange, resetForm } = useSettingsForm(
-        settings,
-        updateSettings
-    );
+    // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
+    const navigationHistory = useRef({});
+    const currentTab = useRef(null);
 
-    const handleCurrencyChange = (code) => {
-        const selectedCurrency = CURRENCY_OPTIONS.find(c => c.code === code);
-        if (selectedCurrency) {
-            handleFormChange('baseCurrency', code);
-            handleFormChange('currencySymbol', selectedCurrency.symbol);
-        }
-    };
+    // ADDED 17-Jan-2026: Trigger recurring transaction processing on app load
+    useRecurringProcessor();
 
-    // REMOVED 17-Jan-2026: Goal Settings logic moved to Reports page
+    // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
+    const primaryNav = navigationItems.slice(0, 4);
+    const secondaryNav = navigationItems.slice(4);
 
-    // --- 3. SMART SAVE LOGIC ---
-    // Dirty Check: Compare current state vs DB state
-    const hasChanges = useMemo(() => {
-        if (!settings) return false;
+    const { currentPageTitle, isRootPage, activeTab } = useMemo(() => {
+        const route = navigationItems.find(item => location.pathname === item.url.split('?')[0]);
+        const tabUrl = route?.url || navigationItems.find(item =>
+            location.pathname.startsWith(item.url.split('?')[0])
+        )?.url;
 
-        // General Settings only (goals removed)
-        return SETTINGS_KEYS.some(k => formData[k] !== settings[k]);
-    }, [formData, settings]);
-
-    // --- NAVIGATION GUARD (Browser Level) ---
-    useEffect(() => {
-        const handleBeforeUnload = (e) => {
-            if (hasChanges) {
-                e.preventDefault();
-                e.returnValue = ''; // Chrome requires this
-            }
+        return {
+            currentPageTitle: route?.title || 'BudgetWise',
+            isRootPage: !!route,
+            activeTab: tabUrl
         };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasChanges]);
+    }, [location.pathname]);
 
-    const [isGlobalSaving, setIsGlobalSaving] = useState(false);
+    // ADDED 03-Feb-2026: Track navigation history per tab
+    useEffect(() => {
+        if (activeTab) {
+            // Initialize history for this tab if it doesn't exist
+            if (!navigationHistory.current[activeTab]) {
+                navigationHistory.current[activeTab] = [];
+            }
 
-    // --- ACTIONS ---
-    const handleDiscard = () => {
-        resetForm(settings);
-        showToast({ title: "Changes Discarded", description: "Settings reverted to last saved state." });
-    };
+            // If switching tabs, save the new tab as current
+            if (currentTab.current !== activeTab) {
+                currentTab.current = activeTab;
+            }
 
-    const handleResetToDefaults = () => {
-        if (!window.confirm("Are you sure you want to reset all settings to factory defaults?")) return;
-        resetForm(DEFAULT_SETTINGS);
-        showToast({ title: "Reset Applied", description: "Settings reset to defaults. Click Save to apply." });
-    };
+            // Add current path to this tab's history if it's not already the last entry
+            const tabHistory = navigationHistory.current[activeTab];
+            if (tabHistory[tabHistory.length - 1] !== location.pathname) {
+                navigationHistory.current[activeTab] = [...tabHistory, location.pathname];
+            }
+        }
+    }, [location.pathname, activeTab]);
 
-    const handleGlobalSave = async () => {
-        setIsGlobalSaving(true);
-        try {
-            await updateSettings(formData);
-            showToast({ title: "Success", description: "Settings saved successfully" });
-        } catch (error) {
-            console.error('Save error:', error);
-            showToast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
-        } finally {
-            setIsGlobalSaving(false);
+    // ADDED 03-Feb-2026: Enhanced back button handler that respects tab history
+    const handleBackNavigation = () => {
+        if (activeTab && navigationHistory.current[activeTab]) {
+            const tabHistory = navigationHistory.current[activeTab];
+
+            // If there's history in this tab (more than current page), go back within tab
+            if (tabHistory.length > 1) {
+                // Remove current page from history
+                navigationHistory.current[activeTab] = tabHistory.slice(0, -1);
+                const previousPage = tabHistory[tabHistory.length - 2];
+                navigate(previousPage);
+            } else {
+                // No history in this tab, use browser back
+                navigate(-1);
+            }
+        } else {
+            // Fallback to browser back
+            navigate(-1);
         }
     };
-
-    // ADDED 03-Feb-2026: Account deletion handler
-    const handleAccountDeletion = async () => {
-        try {
-            // TODO: Implement actual account deletion backend logic
-            showToast({
-                title: "Account Deletion Requested",
-                description: "Your account deletion request has been received. You will be logged out shortly.",
-                variant: "destructive"
-            });
-            // Simulate account deletion process
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 2000);
-        } catch (error) {
-            console.error('Account deletion error:', error);
-            showToast({
-                title: "Error",
-                description: "Failed to process account deletion request.",
-                variant: "destructive"
-            });
-        }
-    };
-
-
-    const previewAmount = 1234567.89;
 
     return (
-        <div className="min-h-screen p-4 md:p-8 pb-24">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Settings</h1>
-                    <p className="text-gray-500 mt-1">Manage your preferences and financial goals</p>
-                </div>
-
-                <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <SettingsIcon className="w-5 h-5" />
-                            Application Preferences
-                        </CardTitle>
-                        <CardDescription>
-                            Manage currency formatting and budget allocation goals
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* SECTION 1: CURRENCY & FORMATTING */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                                <h3 className="font-semibold text-gray-900">Currency & Formatting</h3>
-                            </div>
-
-                            {/* ... Currency Inputs ... */}
-                            <div className="space-y-2">
-                                <Label htmlFor="currency">Currency</Label>
-                                <Select value={formData.baseCurrency || 'USD'} onValueChange={handleCurrencyChange}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {CURRENCY_OPTIONS.map((c) => (
-                                            <SelectItem key={c.code} value={c.code}>{c.symbol} - {c.name} ({c.code})</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label>Position</Label>
-                                    <Select value={formData.currencyPosition} onValueChange={(v) => handleFormChange('currencyPosition', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="before">Before ({formData.currencySymbol}100)</SelectItem>
-                                            <SelectItem value="after">After (100{formData.currencySymbol})</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>View Mode</Label>
-                                    <Select value={formData.budgetViewMode || 'bars'} onValueChange={(v) => handleFormChange('budgetViewMode', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="bars">Bars</SelectItem>
-                                            <SelectItem value="cards">Cards</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            {/* ... Formatting Inputs ... */}
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label>Thousand Separator</Label>
-                                    <Select value={formData.thousandSeparator} onValueChange={(v) => handleFormChange('thousandSeparator', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value=",">Comma (,)</SelectItem>
-                                            <SelectItem value=".">Period (.)</SelectItem>
-                                            <SelectItem value=" ">Space</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Decimal Separator</Label>
-                                    <Select value={formData.decimalSeparator} onValueChange={(v) => handleFormChange('decimalSeparator', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value=".">Period (.)</SelectItem>
-                                            <SelectItem value=",">Comma (,)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label>Decimal Places</Label>
-                                    <Input type="number" min="0" max="4" value={formData.decimalPlaces} onChange={(e) => handleFormChange('decimalPlaces', parseInt(e.target.value) || 0)} />
-                                </div>
-                                <div className="flex items-center justify-between pt-8">
-                                    <Label className="cursor-pointer font-medium">Hide Trailing Zeros</Label>
-                                    <Switch
-                                        checked={formData.hideTrailingZeros}
-                                        onCheckedChange={(checked) => handleFormChange('hideTrailingZeros', checked)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                <p className="text-xs text-gray-500 mb-1">Preview</p>
-                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(previewAmount, formData)}</p>
-                            </div>
-                        </div>
-
-                        {/* REMOVED 17-Jan-2026: Goal Allocation moved to Reports page */}
-                    </CardContent>
-                </Card>
-
-                {/* ADDED 03-Feb-2026: Account Management Section */}
-                <Card className="border-none shadow-lg border-red-100">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-red-600">
-                            <Trash2 className="w-5 h-5" />
-                            Account Management
-                        </CardTitle>
-                        <CardDescription>
-                            Permanently delete your account and all associated data
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="p-4 bg-red-50 rounded-lg border border-red-100">
-                                <p className="text-sm text-red-800 font-medium mb-2">Warning: This action cannot be undone</p>
-                                <p className="text-xs text-red-600">
-                                    Deleting your account will permanently remove all your data including transactions, budgets,
-                                    categories, and settings. This action is irreversible.
-                                </p>
-                            </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <CustomButton
-                                        variant="destructive"
-                                        className="w-full sm:w-auto"
-                                    >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Delete My Account
-                                    </CustomButton>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete your account
-                                            and remove all your data from our servers including:
-                                            <ul className="list-disc list-inside mt-2 space-y-1">
-                                                <li>All transactions and financial records</li>
-                                                <li>Budget goals and allocations</li>
-                                                <li>Custom categories and rules</li>
-                                                <li>Account settings and preferences</li>
-                                            </ul>
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={handleAccountDeletion}
-                                            className="bg-red-600 hover:bg-red-700"
-                                        >
-                                            Yes, Delete My Account
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* --- STATIC ACTION BUTTONS --- */}
-                <div className="sticky bottom-[4.5rem] md:bottom-0 z-40 p-4 -mx-4 md:mx-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:rounded-xl mt-8 transition-all duration-200">
-                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-                        <CustomButton
-                            onClick={handleResetToDefaults}
-                            variant="outline"
-                            className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+        <SidebarProvider>
+            {/* UPDATED 03-Feb-2026: Mobile-only fixed top header with dynamic back button (iOS native standard) */}
+            <header className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+                <div className="flex items-center justify-center h-14 px-4 relative">
+                    {!isRootPage && (
+                        <button
+                            onClick={handleBackNavigation}
+                            className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent rounded-lg transition-colors"
+                            aria-label="Go back"
                         >
-                            Reset to Defaults
-                        </CustomButton>
-
-                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                            {hasChanges && (
-                                <div className="w-full sm:w-auto animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-300">
-                                    <CustomButton
-                                        onClick={handleDiscard}
-                                        variant="ghost"
-                                        className="w-full sm:w-auto"
-                                    >
-                                        Discard Changes
-                                    </CustomButton>
-                                </div>
-                            )}
-
-                            <CustomButton
-                                onClick={handleGlobalSave}
-                                disabled={isGlobalSaving || !hasChanges}
-                                variant="primary"
-                                className="w-full sm:w-auto min-w-[140px]"
-                            >
-                                {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Settings</>}
-                            </CustomButton>
-                        </div>
-                    </div>
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                    )}
+                    <h1 className="text-lg font-semibold text-foreground truncate max-w-[60%]">{currentPageTitle}</h1>
                 </div>
+            </header>
+
+            <style>{`
+              :root {
+                --primary-50: #F0F9FF;
+          --primary-100: #E0F2FE;
+          --primary-500: #0EA5E9;
+          --primary-600: #0284C7;
+          --primary-700: #0369A1;
+          --success: #10B981;
+          --warning: #F59E0B;
+          --error: #EF4444;
+          --bg-subtle: #FAFAF9;
+        }
+      `}</style>
+            <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--bg-subtle)' }}>
+                <Sidebar className="hidden md:flex border-r border-gray-200">
+                    <SidebarHeader className="border-b border-gray-200 p-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                <Wallet className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-gray-900 text-lg">BudgetWise</h2>
+                                <p className="text-xs text-gray-500">Personal Finance</p>
+                            </div>
+                        </div>
+                    </SidebarHeader>
+
+                    <SidebarContent className="p-3">
+                        <SidebarGroup>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {navigationItems.map((item) => (
+                                        <SidebarMenuItem key={item.title}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-xl mb-1 ${location.pathname === item.url ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 shadow-sm' : ''
+                                                    }`}
+                                            >
+                                                <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
+                                                    <item.icon className="w-5 h-5" />
+                                                    <span className="font-medium">{item.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    </SidebarContent>
+
+                    <SidebarFooter className="p-3 border-t border-gray-200">
+                        <CustomButton
+                            variant="ghost"
+                            className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => base44.auth.logout()}
+                        >
+                            <LogOut className="w-5 h-5 mr-3" />
+                            <span className="font-medium">Logout</span>
+                        </CustomButton>
+                    </SidebarFooter>
+                </Sidebar>
+
+                <main className="flex-1 flex flex-col relative">
+                    <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
+                        <RouteTransition>
+                            {children}
+                        </RouteTransition>
+                    </div>
+
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'var(--safe-bottom-inset)', height: 'var(--nav-total-height)' }}>
+                        <div className="flex w-full items-center px-2 py-2 select-none h-[var(--mobile-bottom-nav-height)]">
+                            {primaryNav.map((item) => {
+                                const isTabActive = activeTab === item.url;
+                                return (
+                                    <Link
+                                        key={item.title}
+                                        to={item.url}
+                                        onClick={(e) => {
+                                            if (isTabActive) {
+                                                // If already active, reset this tab's history and go to root
+                                                e.preventDefault(); // Stop default Link behavior to handle manually
+                                                navigationHistory.current[item.url] = [item.url];
+                                                navigate(item.url, { replace: true });
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }
+                                        }}
+                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 ${isTabActive
+                                            ? 'text-blue-600 bg-blue-50/50'
+                                            : 'text-gray-400'
+                                            }`}
+                                    >
+                                        <item.icon className={`w-6 h-6 ${isTabActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                                        <span className="text-[10px] font-medium truncate w-full text-center px-1">
+                                            {item.title}
+                                        </span>
+                                    </Link>
+                                );
+                            })}
+
+                            {/* More Menu Trigger */}
+                            {secondaryNav.length > 0 && (
+                                <Sheet open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
+                                    <SheetTrigger asChild>
+                                        <button className="flex flex-1 flex-col items-center justify-center gap-1 py-1.5 text-gray-400 min-w-0">
+                                            <MoreHorizontal className="w-6 h-6" />
+                                            <span className="text-[10px] font-medium">More</span>
+                                        </button>
+                                    </SheetTrigger>
+                                    <SheetContent side="bottom" className="rounded-t-[20px] px-0 pb-10">
+                                        <SheetHeader className="px-6 pb-4 border-b">
+                                            <SheetTitle>More Options</SheetTitle>
+                                        </SheetHeader>
+                                        <div className="grid grid-cols-1 divide-y divide-gray-100">
+                                            {secondaryNav.map((item) => (
+                                                <Link
+                                                    key={item.title}
+                                                    to={item.url}
+                                                    onClick={() => setIsMoreMenuOpen(false)}
+                                                    className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                                                >
+                                                    <item.icon className="w-5 h-5 text-gray-500" />
+                                                    <span className="font-medium text-gray-900">{item.title}</span>
+                                                </Link>
+                                            ))}
+                                            <button
+                                                onClick={() => base44.auth.logout()}
+                                                className="flex items-center gap-4 px-6 py-4 text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <LogOut className="w-5 h-5" />
+                                                <span className="font-medium">Logout</span>
+                                            </button>
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
+                            )}
+                        </div>
+                    </nav>
+                    {/* GlobalFAB now consumes context internally */}
+                    <GlobalFAB />
+                </main>
             </div>
-        </div>
+        </SidebarProvider>
+    );
+};
+
+export default function Layout({ children }) {
+    return (
+        <SettingsProvider>
+            <PeriodProvider>
+                <ConfirmDialogProvider>
+                    <FABProvider>
+                        <LayoutContent>{children}</LayoutContent>
+                    </FABProvider>
+                </ConfirmDialogProvider>
+            </PeriodProvider>
+        </SettingsProvider>
     );
 }
