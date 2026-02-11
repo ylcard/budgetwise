@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
                 return transformed;
             });
 
-            console.log(`✅ [SYNC] Transformed ${transactions.length} transactions for account ${account.account_id}`);
+            console.log(`✅ [SYNC] Transformed ${transformedTransactions.length} transactions for account ${account.account_id}`);
             allTransactions.push(...transformedTransactions);
         }
 
