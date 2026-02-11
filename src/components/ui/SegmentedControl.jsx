@@ -13,6 +13,9 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
     const isMobile = useIsMobile();
     const containerRef = useRef(null);
 
+    // Syncing parent and child transitions prevents the 2-step stutter
+    const sharedTransition = { type: "spring", bounce: 0, duration: 0.35 };
+
     // Collapse when clicking outside or scrolling
     useEffect(() => {
         if (!isExpanded) return;
@@ -58,8 +61,9 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                         : "bg-gray-100 p-1 shadow-sm relative md:w-auto"
                 )}
                 initial={false}
+                transition={sharedTransition}
             >
-                <AnimatePresence mode="popLayout" initial={false}>
+                <AnimatePresence initial={false}>
                     {options.map((option) => {
                         const isActive = value === option.value;
                         const isSingleMobileIcon = isMobile && !isExpanded && isActive;
@@ -78,7 +82,7 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                                 initial={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
                                 animate={animationProps}
                                 exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
-                                transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                                transition={sharedTransition}
                                 onClick={() => handleSelect(option.value)}
                                 className={cn(
                                     "flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-colors shrink-0 overflow-hidden whitespace-nowrap",
