@@ -65,7 +65,7 @@ export default function CustomBudgetsDisplay({
         <div className="space-y-6">
             {budgets.length > 0 && (
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2 pr-6 min-h-[70px]">
+                    <CardHeader className="relative flex flex-row items-center justify-between space-y-0 py-4 pr-6 min-h-[70px]">
                         <div className="flex items-center gap-3">
                             {/* Mobile: Just the label */}
                             <span className="md:hidden px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600 font-medium">
