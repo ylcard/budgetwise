@@ -11,7 +11,7 @@ import BankConnectionCard from "../components/banksync/BankConnectionCard";
 import TransactionPreviewDialog from "../components/banksync/TransactionPreviewDialog";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { useCategories, useCategoryRules, useGoals, useAllBudgets } from "@/components/hooks/useBase44Entities";
-import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
+import { getOrCreateSystemBudgetForTransaction } from "./components/utils/budgetInitialization";
 import { formatDateString } from "../utils/dateUtils";
 import {
     Building2,
