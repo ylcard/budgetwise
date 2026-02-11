@@ -8,6 +8,7 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { useToast } from "../components/ui/use-toast";
 import BankConnectionCard from "../components/banksync/BankConnectionCard";
+import BulkReviewInbox from "../components/banksync/BulkReviewInbox";
 import {
     Building2,
     Plus,
@@ -391,7 +392,12 @@ export default function BankSync() {
                 </div>
             )}
 
-            {/* FUTURE IMPL: Bulk Review Dialog will go here based on showReviewInbox */}
+            {/* Bulk Review Dialog */}
+            <BulkReviewInbox
+                open={showReviewInbox}
+                onOpenChange={setShowReviewInbox}
+                transactions={needsReviewTransactions}
+            />
         </div>
     );
 }
