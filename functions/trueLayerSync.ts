@@ -11,33 +11,93 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.18';
 const BASE_API_URL = "https://api.truelayer.com";
 
 // --- SERVER-SIDE CATEGORIZATION & BUDGET LOGIC ---
-const categorizeTransaction = (description, userRules = [], categories = []) => {
-    let categoryId = null;
-    let categoryName = 'Uncategorized';
-    let priority = 'wants';
-    let needsReview = true; // Default to true unless we get a confident match
+const HARDCODED_KEYWORDS = {
+    'AMAZON': { name: 'Shopping', priority: 'wants' },
+    'UBER': { name: 'Transport', priority: 'needs' },
+    'LYFT': { name: 'Transport', priority: 'needs' },
+    'NETFLIX': { name: 'Subscriptions', priority: 'wants' },
+    'SPOTIFY': { name: 'Subscriptions', priority: 'wants' },
+    'APPLE': { name: 'Subscriptions', priority: 'wants' },
+    'STARBUCKS': { name: 'Dining Out', priority: 'wants' },
+    'MCDONALD': { name: 'Dining Out', priority: 'wants' },
+    'BURGER KING': { name: 'Dining Out', priority: 'wants' },
+    'WALMART': { name: 'Groceries', priority: 'needs' },
+    'KROGER': { name: 'Groceries', priority: 'needs' },
+    'WHOLE FOODS': { name: 'Groceries', priority: 'needs' },
+    'SHELL': { name: 'Transport', priority: 'needs' },
+    'BP': { name: 'Transport', priority: 'needs' },
+    'EXXON': { name: 'Transport', priority: 'needs' },
+    'CHEVRON': { name: 'Transport', priority: 'needs' },
+    'AIRBNB': { name: 'Hotels', priority: 'wants' },
+    'HOTEL': { name: 'Hotels', priority: 'wants' },
+    'AIRLINES': { name: 'Flights', priority: 'wants' },
+};
 
-    const resolveCategory = (idOrName, isId = false) => {
-        const cat = categories.find(c => isId ? c.id === idOrName : c.name.toUpperCase() === idOrName.toUpperCase());
-        // If we found a match via our rules or DB, we are confident. No review needed.
-        return cat ? { categoryId: cat.id, categoryName: cat.name, priority: cat.priority || 'wants', needsReview: false } : null;
-    };
+const FALLBACK_REGEX = [
+    { pattern: /(POWER|GAS|ELECTRIC|ENERGIA|NUFRI)/i, category: 'Electricity', priority: 'needs' },
+    { pattern: /(VUELING|RYANAIR|EASYJET|WIZZAIR|ELAL|FINNAIR)/i, category: 'Flights', priority: 'wants' },
+    { pattern: /(BARKCELONA)/i, category: 'Pets', priority: 'needs' },
+    { pattern: /(INTERMON)/i, category: 'Charity', priority: 'wants' },
+    { pattern: /(MOBILITAT|BEENETWORK|BEE NETWORK|BEE|TRANSPORTE)/i, category: 'Transport', priority: 'needs' },
+    { pattern: /(LA SIRENA|Mcdonalds)/i, category: 'Dining Out', priority: 'wants' },
+    { pattern: /(STEAM|STEAMGAMES)/i, category: 'Games', priority: 'wants' },
+    { pattern: /(CAPRABO)/i, category: 'Groceries', priority: 'needs' },
+    { pattern: /(MERCADONA|Tesco)/i, category: 'Groceries', priority: 'needs' },
+    { pattern: /(IMPULS|ADMINISTRACION)/i, category: 'Rent', priority: 'needs' },
+    { pattern: /(AIGUES|WATER)/i, category: 'Water', priority: 'needs' },
+    { pattern: /(INTERNET|WIFI|CABLE|COMCAST|AT&T|VERIZON|T-MOBILE|ORANGE|FINETWORK)/i, category: 'Connectivity', priority: 'needs' },
+    { pattern: /(HOSTEL|HOSTELS|HOTEL|HOTELS|HOSTELWORLD|TOC|UNITE)/i, category: 'Hotels', priority: 'wants' },
+    { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS)/i, category: 'Health', priority: 'needs' }
+];
 
+const getOrCreateCategory = async (base44, userEmail, categoryName, priority, categoriesList) => {
+    let cat = categoriesList.find(c => c.name.toUpperCase() === categoryName.toUpperCase());
+    if (!cat) {
+        console.log(`[SYNC] Creating missing category: ${categoryName}`);
+        cat = await base44.entities.Category.create({
+            name: categoryName,
+            priority: priority || 'wants',
+            user_email: userEmail
+        });
+        categoriesList.push(cat); // Add to memory so we don't recreate it in the next loop
+    }
+    return cat;
+};
+
+const categorizeTransaction = async (base44, userEmail, searchString, userRules, categoriesList) => {
     // 1. User Rules (Highest Priority)
     for (const rule of userRules) {
         let matched = false;
         if (rule.regexPattern) {
-            try { if (new RegExp(rule.regexPattern, 'i').test(description)) matched = true; } catch (e) { }
-        } else if (rule.keyword && description.includes(rule.keyword.toUpperCase())) {
+            try { if (new RegExp(rule.regexPattern, 'i').test(searchString)) matched = true; } catch (e) { }
+        } else if (rule.keyword && searchString.includes(rule.keyword.toUpperCase())) {
             matched = true;
         }
         if (matched && rule.categoryId) {
-            const resolved = resolveCategory(rule.categoryId, true);
-            if (resolved) return resolved;
+            const cat = categoriesList.find(c => c.id === rule.categoryId);
+            if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority || 'wants', needsReview: false };
         }
     }
 
-    return { categoryId, categoryName, priority, needsReview };
+    // 2. Hardcoded Keywords
+    for (const [keyword, data] of Object.entries(HARDCODED_KEYWORDS)) {
+        if (searchString.includes(keyword)) {
+            const cat = await getOrCreateCategory(base44, userEmail, data.name, data.priority, categoriesList);
+            // Set needsReview: true because this is a guess, let the user confirm it in the Inbox
+            return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
+        }
+    }
+
+    // 3. Fallback Regex
+    for (const { pattern, category, priority } of FALLBACK_REGEX) {
+        if (pattern.test(searchString)) {
+            const cat = await getOrCreateCategory(base44, userEmail, category, priority, categoriesList);
+            return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
+        }
+    }
+
+    // 4. Uncategorized (Total Failure to Match)
+    return { categoryId: null, categoryName: 'Uncategorized', priority: 'wants', needsReview: true };
 };
 
 const getOrCreateBudget = async (base44, userEmail, txDate, priority) => {
@@ -275,14 +335,18 @@ Deno.serve(async (req) => {
             console.log(`✅ [SYNC] Collected ${accountTransactions.length} raw transactions across ${pageCount} pages`);
 
             // Deduplicate and Transform to app format
-            accountTransactions.forEach((tx) => {
+            for (const tx of accountTransactions) {
                 // Strict DB deduplication to prevent double imports
                 if (existingBankIds.has(tx.transaction_id) || (tx.normalised_provider_transaction_id && existingNormalisedIds.has(tx.normalised_provider_transaction_id))) {
-                    return;
+                    continue;
                 }
 
                 const rawDescription = String(tx.description || tx.transaction_category || 'Bank Transaction');
-                const catResult = categorizeTransaction(rawDescription.toUpperCase(), rules, categories);
+
+                // Combine all available string data to maximize regex matching surface area
+                const searchString = `${rawDescription} ${tx.merchant_name || ''} ${tx.meta?.counter_party_preferred_name || ''}`.toUpperCase();
+
+                const catResult = await categorizeTransaction(base44, user.email, searchString, rules, categories);
                 const txDate = tx.timestamp.split('T')[0];
                 const isExpense = tx.transaction_type !== 'CREDIT';
 
@@ -307,7 +371,7 @@ Deno.serve(async (req) => {
 
                 // Map.set automatically handles deduplication by overwriting same IDs
                 transactionMap.set(tx.transaction_id, transformed);
-            });
+            }
 
             console.log(`✅ [SYNC] Account ${account.account_id} processing complete.`);
         }
