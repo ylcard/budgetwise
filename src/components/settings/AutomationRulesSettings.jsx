@@ -176,9 +176,8 @@ export default function AutomationRulesSettings() {
                                             <SelectValue placeholder="Select priority" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="needs">Needs (Essential)</SelectItem>
-                                            <SelectItem value="wants">Wants (Discretionary)</SelectItem>
-                                            <SelectItem value="savings">Savings / Investments</SelectItem>
+                                            <SelectItem value="needs">Essentials</SelectItem>
+                                            <SelectItem value="wants">Lifestyle</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
