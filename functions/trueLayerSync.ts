@@ -121,6 +121,30 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
     return { categoryId: null, categoryName: 'Uncategorized', priority: 'wants', needsReview: true };
 };
 
+// --- HELPER: FUZZY MATCHING STRATEGY ---
+const findMatchingManualTransaction = (incomingTx, existingTransactions) => {
+    // 1. Filter: Only check transactions that DO NOT have a bank ID yet (Manual/CSV)
+    const candidates = existingTransactions.filter(t => !t.bankTransactionId && !t.providerTransactionId);
+
+    return candidates.find(existing => {
+        // A. Exact Amount Match (Banks are precise)
+        const amtMatch = Math.abs(existing.amount) === Math.abs(incomingTx.amount);
+
+        // B. Date Window (+/- 4 Days)
+        // Manual entry might be "today", but bank settles "3 days later".
+        const d1 = new Date(existing.date);
+        const d2 = new Date(incomingTx.timestamp);
+        const diffTime = Math.abs(d2 - d1);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const dateMatch = diffDays <= 4;
+
+        // C. Currency Match (Strict)
+        const currMatch = existing.originalCurrency === incomingTx.currency;
+
+        return amtMatch && dateMatch && currMatch;
+    });
+};
+
 const getOrCreateBudget = async (base44, userEmail, txDate, priority) => {
     const date = new Date(txDate);
     const y = date.getFullYear();
@@ -377,12 +401,27 @@ Deno.serve(async (req) => {
                 // Default to null/false for Income
                 let catResult = { categoryId: null, priority: null, needsReview: false };
 
+                // --- CRITICAL: DUPLICATE PREVENTION ---
+                // Check if this bank transaction matches a manual one we already have.
+                const softMatch = findMatchingManualTransaction(tx, existingTx);
+                const existingDbId = softMatch ? softMatch.id : null;
+
+                if (softMatch) {
+                    console.log(`🔗 [SYNC] MATCH FOUND: Linking Bank Tx ${tx.transaction_id} to Manual Tx ${softMatch.id}`);
+                    // We will UPDATE the manual transaction instead of creating a new one.
+                    // We preserve the User's category/title if they set one.
+                    if (softMatch.category_id) {
+                        catResult = { categoryId: softMatch.category_id, priority: softMatch.financial_priority, renamedTitle: softMatch.title, needsReview: false };
+                    }
+                }
+
                 // Only run categorization engine for expenses
-                if (isExpense) {
+                if (isExpense && !catResult.categoryId) {
                     catResult = categorizeTransaction(searchString, rules, categories);
                 }
 
                 const transformed = {
+                    id: existingDbId, // <--- If this is set, we UPDATE. If null, we CREATE.
                     title: catResult.renamedTitle || rawDescription, // Use clean name if rule found it
                     amount: Math.abs(tx.amount),
                     originalAmount: Math.abs(tx.amount),
@@ -412,25 +451,56 @@ Deno.serve(async (req) => {
         const allTransactions = Array.from(transactionMap.values());
         console.log(`\n📊 [SYNC] Total UNIQUE transactions collected: ${allTransactions.length}`);
 
+        const toCreate = [];
+        const toUpdate = [];
+
         // --- ASSIGN BUDGETS & BULK CREATE ---
         console.log('💾 [SYNC] Resolving budgets and saving to database...');
         const budgetCache = {};
         for (const tx of allTransactions) {
+            // If updating, preserve existing budget if present in the manual record
+            if (tx.id) {
+                const existingRecord = existingTx.find(t => t.id === tx.id);
+                if (existingRecord?.budgetId) tx.budgetId = existingRecord.budgetId;
+            }
+
             if (tx.type === 'expense') {
                 const cacheKey = `${tx.date}|${tx.financial_priority}`;
-                if (!budgetCache[cacheKey]) {
+                if (!tx.budgetId && !budgetCache[cacheKey]) {
                     budgetCache[cacheKey] = await getOrCreateBudget(base44, user.email, tx.date, tx.financial_priority);
                 }
-                tx.budgetId = budgetCache[cacheKey];
+                if (!tx.budgetId) tx.budgetId = budgetCache[cacheKey];
             }
+
+            if (tx.id) toUpdate.push(tx);
+            else toCreate.push(tx);
         }
 
         let importedCount = 0;
-        if (allTransactions.length > 0) {
-            await base44.entities.Transaction.bulkCreate(allTransactions);
-            importedCount = allTransactions.length;
-            console.log(`✅ [SYNC] Successfully imported ${importedCount} transactions to DB`);
+
+        // 1. CREATE NEW
+        if (toCreate.length > 0) {
+            await base44.entities.Transaction.bulkCreate(toCreate);
+            importedCount += toCreate.length;
         }
+
+        // 2. UPDATE EXISTING (The Merge Logic)
+        if (toUpdate.length > 0) {
+            console.log(`🔄 [SYNC] Upgrading ${toUpdate.length} manual transactions to synced status...`);
+            const updatePromises = toUpdate.map(tx => base44.entities.Transaction.update(tx.id, {
+                // We ONLY update the "Hard Data" + ID fields to verify the transaction
+                bankTransactionId: tx.bankTransactionId,
+                providerTransactionId: tx.providerTransactionId,
+                normalisedProviderTransactionId: tx.normalisedProviderTransactionId,
+                isPaid: true,
+                paidDate: tx.date,
+                // Optional: We do NOT overwrite 'title' or 'category_id' here, preserving manual edits
+            }));
+            await Promise.all(updatePromises);
+            importedCount += toUpdate.length;
+        }
+
+        console.log(`✅ [SYNC] Processed ${importedCount} transactions (Created: ${toCreate.length}, Merged: ${toUpdate.length})`);
 
         // Update connection metadata
         console.log('💾 [SYNC] Updating connection metadata...');
