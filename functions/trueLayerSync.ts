@@ -10,6 +10,31 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.18';
 // CONFIGURATION: Production Mode
 const BASE_API_URL = "https://api.truelayer.com";
 
+// --- DEFAULT CATEGORY TEMPLATE ---
+const DEFAULT_SYSTEM_CATEGORIES = [
+    { name: 'Housing', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+    { name: 'Groceries', icon: 'ShoppingCart', color: '#10B981', priority: 'needs', is_system: true },
+    { name: 'Transport', icon: 'Car', color: '#F59E0B', priority: 'needs', is_system: true },
+    { name: 'Bills & Utilities', icon: 'Zap', color: '#06B6D4', priority: 'needs', is_system: true },
+    { name: 'Health & Personal Care', icon: 'HeartPulse', color: '#EF4444', priority: 'needs', is_system: true },
+    { name: 'Dining Out', icon: 'Utensils', color: '#F97316', priority: 'wants', is_system: true },
+    { name: 'Shopping', icon: 'ShoppingBag', color: '#8B5CF6', priority: 'wants', is_system: true },
+    { name: 'Entertainment', icon: 'Film', color: '#EC4899', priority: 'wants', is_system: true },
+    { name: 'Travel', icon: 'Plane', color: '#0EA5E9', priority: 'wants', is_system: true }
+];
+
+const ensureSystemCategories = async (base44, userEmail, categoriesList) => {
+    const hasSystemCategories = categoriesList.some(c => c.is_system);
+
+    if (!hasSystemCategories) {
+        console.log('🌱 [SYNC] Seeding default system categories for user...');
+        // Map through defaults and assign ownership to the user so RLS allows them to see it
+        const promises = DEFAULT_SYSTEM_CATEGORIES.map(cat => base44.entities.Category.create({ ...cat, user_email: userEmail }));
+        const newCats = await Promise.all(promises);
+        categoriesList.push(...newCats);
+    }
+};
+
 // --- SERVER-SIDE CATEGORIZATION & BUDGET LOGIC ---
 const HARDCODED_KEYWORDS = {
     'AMAZON': { name: 'Shopping', priority: 'wants' },
@@ -272,6 +297,9 @@ Deno.serve(async (req) => {
         ]);
         const existingBankIds = new Set(existingTx.filter(t => t.bankTransactionId).map(t => t.bankTransactionId));
         const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
+
+        // --- SEED DEFAULTS BEFORE CATEGORIZING ---
+        await ensureSystemCategories(base44, user.email, categories);
 
         /**
          * Fetch transactions for each account
