@@ -12,7 +12,6 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const isMobile = useIsMobile();
     const containerRef = useRef(null);
-    const instanceId = useId();
 
     // Collapse when clicking outside or scrolling
     useEffect(() => {
@@ -34,65 +33,73 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
     }, [isExpanded]);
 
     const handleSelect = (val) => {
-        if (!isExpanded && isMobile) {
+        // If collapsed on mobile, clicking the icon just expands it
+        if (isMobile && !isExpanded) {
             setIsExpanded(true);
             return;
         }
+
+        // Otherwise, update the view and collapse
         onChange(val);
-        setIsExpanded(false);
+        if (isMobile) {
+            setIsExpanded(false);
+        }
     };
 
+    // The Wrapper: Holds physical space in the UI so the header never jumps
     return (
-        <motion.div
-            ref={containerRef}
-            layout
-            layoutId={`container-${instanceId}`}
-            className={cn(
-                "inline-flex items-center gap-1 rounded-lg h-[40px] transition-colors",
-                "md:relative md:bg-gray-100 md:p-1 md:shadow-sm",
-                isExpanded ? "absolute right-6 top-1/2 -translate-y-1/2 z-50 shadow-xl bg-white border border-gray-200 p-1 origin-right flex-row" : "relative md:w-auto",
-                className
-            )}
-        >
-            <AnimatePresence mode="popLayout" initial={false}>
-                {options.map((option) => {
-                    const isActive = value === option.value;
-                    const shouldShow = !isMobile || isExpanded || isActive;
+        <div ref={containerRef} className={cn("relative flex items-center justify-end h-[40px] z-50 md:w-auto", isMobile ? "w-[40px]" : "", className)}>
+            <motion.div
+                layout
+                className={cn(
+                    "flex items-center gap-1 rounded-lg transition-colors overflow-hidden",
+                    isMobile
+                        ? (isExpanded ? "bg-white border border-gray-200 shadow-xl p-1 absolute right-0 flex-row" : "bg-transparent")
+                        : "bg-gray-100 p-1 shadow-sm relative md:w-auto"
+                )}
+                initial={false}
+            >
+                <AnimatePresence mode="popLayout" initial={false}>
+                    {options.map((option) => {
+                        const isActive = value === option.value;
+                        const shouldShow = !isMobile || isExpanded || isActive;
 
-                    if (!shouldShow) return null;
+                        if (!shouldShow) return null;
 
-                    return (
-                        <motion.button
-                            key={option.value}
-                            layout="position"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            onClick={() => handleSelect(option.value)}
-                            className={cn(
-                                "flex-1 flex items-center justify-center gap-2 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
-                                isActive
-                                    ? "bg-white text-gray-900 shadow-sm"
-                                    : "text-gray-600 hover:text-gray-900"
-                            )}
-                        >
-                            <span className="flex items-center justify-center shrink-0">
-                                {option.label}
-                            </span>
-                            {option.desktopLabel && (
-                                <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="hidden md:inline whitespace-nowrap text-xs md:text-sm"
-                                >
-                                    {option.desktopLabel}
-                                </motion.span>
-                            )}
-                        </motion.button>
-                    );
-                })}
-            </AnimatePresence>
-        </motion.div>
+                        return (
+                            <motion.button
+                                key={option.value}
+                                layout="position"
+                                initial={{ opacity: 0, scale: 0.5, width: 0 }}
+                                animate={{ opacity: 1, scale: 1, width: 'auto' }}
+                                exit={{ opacity: 0, scale: 0.5, width: 0 }}
+                                transition={{ duration: 0.2 }}
+                                onClick={() => handleSelect(option.value)}
+                                className={cn(
+                                    "flex items-center justify-center gap-2 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 shrink-0",
+                                    isActive && (!isMobile || isExpanded) ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900",
+                                    // Single icon state formatting
+                                    !isExpanded && isMobile && isActive && "bg-gray-100 shadow-sm px-0 w-10 h-10 rounded-lg"
+                                )}
+                            >
+                                <span className="flex items-center justify-center shrink-0">
+                                    {option.label}
+                                </span>
+                                {option.desktopLabel && (
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="hidden md:inline whitespace-nowrap text-xs md:text-sm"
+                                    >
+                                        {option.desktopLabel}
+                                    </motion.span>
+                                )}
+                            </motion.button>
+                        );
+                    })}
+                </AnimatePresence>
+            </motion.div>
+        </div>
     );
 };
 
