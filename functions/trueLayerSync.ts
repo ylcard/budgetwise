@@ -169,37 +169,47 @@ Deno.serve(async (req) => {
             if (dateFrom) params.append('from', dateFrom);
             if (dateTo) params.append('to', dateTo);
 
-            const txUrl = `${BASE_API_URL}/data/v1/accounts/${account.account_id}/transactions?${params}`;
-            console.log('🌐 [SYNC] Fetching transactions from:', txUrl);
+            let nextLink = `${BASE_API_URL}/data/v1/accounts/${account.account_id}/transactions?${params}`;
+            let accountTransactions = [];
+            let pageCount = 0;
 
-            const txResponse = await fetch(txUrl, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'TrueLayer-Adapter-Version': '2023-06-15',
-                    'Accept': 'application/json',
-                }
-            });
+            while (nextLink) {
+                pageCount++;
+                console.log(`🌐 [SYNC] Fetching page ${pageCount} for account ${account.account_id}...`);
 
-            console.log('📡 [SYNC] Transactions response status:', txResponse.status, txResponse.statusText);
-
-            if (!txResponse.ok) {
-                const errorText = await txResponse.text();
-                console.error(`❌ [SYNC] Failed to fetch transactions for account ${account.account_id}:`, {
-                    status: txResponse.status,
-                    statusText: txResponse.statusText,
-                    errorBody: errorText
+                const txResponse = await fetch(nextLink, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'TrueLayer-Adapter-Version': '2023-06-15',
+                        'Accept': 'application/json',
+                        // IMPORTANT: Ensures pagination object is returned in response
+                        'tl-enable-pagination': 'true'
+                    }
                 });
-                continue;
+
+                if (!txResponse.ok) {
+                    const errorText = await txResponse.text();
+                    console.error(`❌ [SYNC] Failed to fetch transactions:`, errorText);
+                    break;
+                }
+
+                const txData = await txResponse.json();
+                const results = txData.results || [];
+                accountTransactions = [...accountTransactions, ...results];
+
+                // Follow the breadcrumbs to the next page
+                nextLink = txData.pagination?.next_link || null;
+
+                if (nextLink) {
+                    console.log(`🔗 [SYNC] Moving to next page: ${nextLink}`);
+                }
             }
 
-            const txData = await txResponse.json();
-            console.log('✅ [SYNC] Transaction data received:', {
-                resultsCount: txData.results?.length || 0,
-                hasResults: !!txData.results
-            });
+            console.log(`✅ [SYNC] Collected ${accountTransactions.length} raw transactions across ${pageCount} pages`);
 
-            // Transform transactions to app format
-            const transactions = (txData.results || []).map((tx, txIndex) => {
+            // Transform collected transactions to app format
+            const transformedTransactions = accountTransactions.map((tx, txIndex) => {
+
                 const transformed = {
                     bankTransactionId: tx.transaction_id,
                     accountId: account.account_id,
@@ -222,7 +232,7 @@ Deno.serve(async (req) => {
             });
 
             console.log(`✅ [SYNC] Transformed ${transactions.length} transactions for account ${account.account_id}`);
-            allTransactions.push(...transactions);
+            allTransactions.push(...transformedTransactions);
         }
 
         console.log(`\n📊 [SYNC] Total transactions collected: ${allTransactions.length}`);
