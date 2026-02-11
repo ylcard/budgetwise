@@ -59,13 +59,15 @@ export default function TransactionList({
         onToggleSelection(id, !selectedIds.has(id));
     };
 
-    // If we are in "Selection Mode", tapping the row toggles the checkbox
-    // otherwise, it opens the edit modal.
-    if (selectedIds.size > 0) {
-        onToggleSelection(transaction.id, !selectedIds.has(transaction.id));
-    } else {
-        onEdit(transaction);
-    }
+    const handleMobileRowClick = (transaction) => {
+        // If we are in "Selection Mode", tapping the row toggles the checkbox
+        // otherwise, it opens the edit modal.
+        if (selectedIds.size > 0) {
+            onToggleSelection(transaction.id, !selectedIds.has(transaction.id));
+        } else {
+            onEdit(transaction);
+        }
+    };
 
     const SortIcon = ({ columnKey }) => {
         if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-gray-400" />;
@@ -357,8 +359,8 @@ export default function TransactionList({
 
                                                 {transaction.paidDate && (
                                                     <span className={`ml-1 px-1.5 py-0.5 rounded-sm text-[10px] border ${transaction.paidDate
-                                                            ? "bg-green-50 text-green-700 border-green-100"
-                                                            : "bg-gray-100 text-gray-500 border-gray-200"
+                                                        ? "bg-green-50 text-green-700 border-green-100"
+                                                        : "bg-gray-100 text-gray-500 border-gray-200"
                                                         }`}>
                                                         Paid
                                                     </span>
