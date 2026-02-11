@@ -53,15 +53,19 @@ export default function TransactionList({
         onSort({ key, direction });
     };
 
-    const handleRowClick = (e, id) => {
+    const handleRowClick = (e, transaction) => {
         // Prevent toggling if clicking directly on actions or checkbox
         if (e.target.closest('button') || e.target.closest('a') || e.target.closest('[role="checkbox"]')) return;
-        onToggleSelection(id, !selectedIds.has(id));
+        if (selectedIds.size > 0) {
+            onToggleSelection(transaction.id, !selectedIds.has(transaction.id));
+        } else {
+            // On desktop, we can decide if clicking the row does anything 
+            // usually it's just selection, but let's keep it consistent.
+            onToggleSelection(transaction.id, !selectedIds.has(transaction.id));
+        }
     };
 
     const handleMobileRowClick = (transaction) => {
-        // If we are in "Selection Mode", tapping the row toggles the checkbox
-        // otherwise, it opens the edit modal.
         if (selectedIds.size > 0) {
             onToggleSelection(transaction.id, !selectedIds.has(transaction.id));
         } else {
@@ -231,7 +235,7 @@ export default function TransactionList({
                             return (
                                 <tr
                                     key={transaction.id}
-                                    onClick={(e) => handleRowClick(e, transaction.id)}
+                                    onClick={(e) => handleRowClick(e, transaction)}
                                     className={`group hover:bg-blue-50/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-blue-50' : ''}`}
                                 >
                                     <td className="px-4 py-2">
