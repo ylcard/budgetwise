@@ -5,7 +5,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useToast } from "@/components/ui/use-toast";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, X, Sparkles, ShieldCheck, Save, Edit2, Check } from "lucide-react";
+import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, X, Sparkles, ShieldCheck, Save, Edit2, Check, Code2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,9 +31,11 @@ export default function AutomationRulesSettings() {
     const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isRegexMode, setIsRegexMode] = useState(false); // Toggle for creation
     const [editingRule, setEditingRule] = useState(null); // null = Create Mode
     const [formData, setFormData] = useState({
         keyword: "",
+        regexPattern: "", // Add regex field
         categoryId: "",
         renamedTitle: "",
         financial_priority: "wants"
@@ -100,7 +102,9 @@ export default function AutomationRulesSettings() {
         mutationFn: () => base44.entities.CategoryRule.create({
             user_email: user.email,
             categoryId: formData.categoryId,
-            keyword: formData.keyword,
+            // Save based on mode
+            keyword: isRegexMode ? null : formData.keyword,
+            regexPattern: isRegexMode ? formData.regexPattern : null,
             renamedTitle: formData.renamedTitle || null,
             priority: 10,
             financial_priority: formData.financial_priority
@@ -161,6 +165,15 @@ export default function AutomationRulesSettings() {
     const [editingId, setEditingId] = useState(null); // Tracks which row is having its title edited
     const [editingKeyword, setEditingKeyword] = useState(null); // { ruleId, index, value }
     const handleInlineUpdate = (ruleId, field, value) => {
+        // VALIDATION: If updating regex, check validity first
+        if (field === 'regexPattern' && value) {
+            try {
+                new RegExp(value);
+            } catch (e) {
+                toast({ title: "Invalid Regex", description: e.message, variant: "destructive" });
+                return; // Stop update
+            }
+        }
         updateRule({ id: ruleId, data: { [field]: value } });
     };
 
@@ -190,8 +203,25 @@ export default function AutomationRulesSettings() {
     };
 
     const handleCreateSave = () => {
-        if (!formData.keyword || !formData.categoryId) {
-            toast({ title: "Missing fields", description: "Please enter a keyword and select a category.", variant: "destructive" });
+        if (!formData.categoryId) {
+            toast({ title: "Missing Category", description: "Please select a category.", variant: "destructive" });
+            return;
+        }
+        if (isRegexMode && !formData.regexPattern) {
+            toast({ title: "Missing Pattern", description: "Please enter a regex pattern.", variant: "destructive" });
+            return;
+        }
+        // VALIDATION: Check Regex Syntax before creating
+        if (isRegexMode) {
+            try {
+                new RegExp(formData.regexPattern);
+            } catch (e) {
+                toast({ title: "Invalid Regex", description: "Your pattern has a syntax error: " + e.message, variant: "destructive" });
+                return;
+            }
+        }
+        if (!isRegexMode && !formData.keyword) {
+            toast({ title: "Missing Keywords", description: "Please enter at least one keyword.", variant: "destructive" });
             return;
         }
         createRule();
@@ -211,7 +241,8 @@ export default function AutomationRulesSettings() {
     const handleCloseDialog = () => {
         setIsDialogOpen(false);
         setEditingRule(null);
-        setFormData({ keyword: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
+        setIsRegexMode(false);
+        setFormData({ keyword: "", regexPattern: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
     };
 
     if (isLoading || (isFetching && rules.length === 0)) {
@@ -273,15 +304,47 @@ export default function AutomationRulesSettings() {
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="keywords">If text contains...</Label>
-                                        <Input
-                                            id="keywords"
-                                            placeholder="e.g. Uber, Lyft (comma separated)"
-                                            value={formData.keyword}
-                                            onChange={(e) => setFormData({ ...formData, keyword: e.target.value })}
-                                        />
+
+                                    {/* MODE TOGGLE */}
+                                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-lg border">
+                                        <button
+                                            className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${!isRegexMode ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                            onClick={() => setIsRegexMode(false)}
+                                        >
+                                            Simple Keywords
+                                        </button>
+                                        <button
+                                            className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${isRegexMode ? 'bg-white shadow text-purple-700' : 'text-gray-500 hover:text-gray-900'}`}
+                                            onClick={() => setIsRegexMode(true)}
+                                        >
+                                            Regex (Advanced)
+                                        </button>
                                     </div>
+
+                                    {isRegexMode ? (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="regex" className="text-purple-700 flex items-center gap-2"><Code2 className="w-3 h-3" /> Regular Expression</Label>
+                                            <Input
+                                                id="regex"
+                                                placeholder="^Uber.*Eats?$"
+                                                className="font-mono text-xs"
+                                                value={formData.regexPattern}
+                                                onChange={(e) => setFormData({ ...formData, regexPattern: e.target.value })}
+                                            />
+                                            <p className="text-[10px] text-gray-500">Be careful with complex patterns (ReDoS risk).</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="keywords">If text contains...</Label>
+                                            <Input
+                                                id="keywords"
+                                                placeholder="e.g. Uber, Lyft (comma separated)"
+                                                value={formData.keyword}
+                                                onChange={(e) => setFormData({ ...formData, keyword: e.target.value })}
+                                            />
+                                        </div>
+                                    )}
+
                                     <div className="grid gap-2">
                                         <Label>Then assign category...</Label>
                                         <CategorySelect
@@ -367,49 +430,36 @@ export default function AutomationRulesSettings() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex flex-wrap gap-1.5">
-                                                        {rule.keyword.split(',').map((kw, i) => (
-                                                            editingKeyword?.ruleId === rule.id && editingKeyword?.index === i ? (
+                                                        {rule.regexPattern ? (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-purple-50 text-purple-700 border border-purple-100 w-full truncate max-w-[200px]" title={rule.regexPattern}>
+                                                                <Code2 className="w-3 h-3 mr-1 opacity-50" />
+                                                                {rule.regexPattern}
+                                                            </span>
+                                                        ) : (
+                                                            <>
+                                                                {rule.keyword?.split(',').map((kw, i) => (
+                                                                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border group">
+                                                                        {kw.trim()}
+                                                                        <button
+                                                                            onClick={() => handleRemoveKeyword(rule, kw.trim())}
+                                                                            className="ml-1 text-gray-400 hover:text-red-500 hidden group-hover:inline-block"
+                                                                        >
+                                                                            <X className="w-3 h-3" />
+                                                                        </button>
+                                                                    </span>
+                                                                ))}
                                                                 <Input
-                                                                    key={i}
-                                                                    autoFocus
-                                                                    defaultValue={kw.trim()}
-                                                                    className="h-6 w-24 text-xs px-1 py-0 bg-white shadow-sm border-blue-400"
-                                                                    onBlur={(e) => handleEditKeyword(rule, i, e.target.value)}
+                                                                    className="h-6 w-20 text-[10px] px-1 bg-transparent border-dashed border-gray-300 focus:w-24 focus:bg-white focus:border-solid focus:border-blue-400 transition-all placeholder:text-gray-400"
+                                                                    placeholder="+ Add"
                                                                     onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') handleEditKeyword(rule, i, e.currentTarget.value);
-                                                                        if (e.key === 'Escape') setEditingKeyword(null);
+                                                                        if (e.key === 'Enter') {
+                                                                            handleAddKeyword(rule, e.currentTarget.value);
+                                                                            e.currentTarget.value = '';
+                                                                        }
                                                                     }}
                                                                 />
-                                                            ) : (
-                                                                <span
-                                                                    key={i}
-                                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-transparent hover:border-gray-300 cursor-pointer group transition-all"
-                                                                    onClick={() => setEditingKeyword({ ruleId: rule.id, index: i, value: kw.trim() })}
-                                                                    title="Click to edit keyword"
-                                                                >
-                                                                    {kw.trim()}
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation(); // Prevent entering edit mode
-                                                                            handleRemoveKeyword(rule, kw.trim());
-                                                                        }}
-                                                                        className="ml-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full hover:bg-gray-200"
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </button>
-                                                                </span>
-                                                            )
-                                                        ))}
-                                                        <Input
-                                                            className="h-6 w-20 text-[10px] px-1 bg-transparent border-dashed border-gray-300 focus:w-24 focus:bg-white focus:border-solid focus:border-blue-400 transition-all placeholder:text-gray-400"
-                                                            placeholder="+ Add"
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    handleAddKeyword(rule, e.currentTarget.value);
-                                                                    e.currentTarget.value = '';
-                                                                }
-                                                            }}
-                                                        />
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
