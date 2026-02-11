@@ -203,9 +203,8 @@ export default function BankSync() {
             const fromDate = new Date();
 
             if (syncDays === "all") {
-                // 2 years back (typical bank limit)
-                // fromDate.setFullYear(now.getFullYear() - 2);
-                fromDate.setFullYear(2010, 0, 1);
+                // 6 years limit
+                fromDate.setDate(now.getDate() - 2192);
             } else {
                 fromDate.setDate(now.getDate() - parseInt(syncDays));
             }
