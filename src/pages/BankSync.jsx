@@ -8,25 +8,19 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { useToast } from "../components/ui/use-toast";
 import BankConnectionCard from "../components/banksync/BankConnectionCard";
-import TransactionPreviewDialog from "../components/banksync/TransactionPreviewDialog";
-import { categorizeTransaction } from "@/components/utils/transactionCategorization";
-import { useCategories, useCategoryRules, useGoals, useAllBudgets } from "@/components/hooks/useBase44Entities";
-import { getOrCreateSystemBudgetForTransaction } from "@/components/utils/budgetInitialization";
-import { formatDateString } from "@/components/utils/dateUtils";
 import {
     Building2,
     Plus,
     Loader2,
     Sparkles,
-    Info
+    Info,
+    BellDot
 } from "lucide-react";
 
-
-// test
 /**
  * Bank Sync Page
  * CREATED: 26-Jan-2026
- * MODIFIED: 26-Jan-2026 - Added TrueLayer support alongside Enable Banking
+ * MODIFIED: 11-Feb-2026 - Migrated to Silent Sync Architecture
  * 
  * Manages bank connections via TrueLayer and Enable Banking APIs
  * Features:
@@ -43,14 +37,13 @@ export default function BankSync() {
     const queryClient = useQueryClient();
     const { user } = useSettings();
 
-    // Categorization Context
-    const { categories, isLoading: categoriesLoading } = useCategories();
-    const { rules } = useCategoryRules(user);
-    const { goals } = useGoals(user);
-    const { allBudgets } = useAllBudgets(user);
+    // --- NEW: Review Inbox State ---
+    const [showReviewInbox, setShowReviewInbox] = useState(false);
+    const { data: needsReviewTransactions = [] } = useQuery({
+        queryKey: ['transactions', 'needsReview'],
+        queryFn: () => base44.entities.Transaction.list({ needsReview: true }),
+    });
 
-    const [showTransactionPreview, setShowTransactionPreview] = useState(false);
-    const [previewTransactions, setPreviewTransactions] = useState(null);
     const [syncing, setSyncing] = useState(null);
     const [syncStatus, setSyncStatus] = useState("");
     const [syncDays, setSyncDays] = useState("30");
@@ -221,37 +214,17 @@ export default function BankSync() {
                 dateTo
             });
 
-            console.log('✅ [SYNC] Response received:', response);
-            console.log('✅ [SYNC] Response data:', response.data);
-            console.log('✅ [SYNC] Transactions:', response.data?.transactions);
-
-            if (response.data.transactions && response.data.transactions.length > 0) {
-                console.log('✅ [SYNC] Showing preview with', response.data.transactions.length, 'transactions');
-
-                // Map bank data to Wizard format + Auto-Categorize
-                const enriched = response.data.transactions.map(tx => {
-                    const catResult = categorizeTransaction({ title: tx.description }, rules, categories);
-
-                    return {
-                        title: String(tx.description || 'Bank Transaction'),
-                        date: typeof tx.date === 'string' ? tx.date : new Date().toISOString().split('T')[0],
-                        amount: Number(tx.amount) || 0,
-                        bankTransactionId: String(tx.bankTransactionId),
-                        type: tx.type,
-                        categoryId: catResult.categoryId || null,
-                        category: catResult.categoryName || 'Uncategorized',
-                        financial_priority: catResult.priority || 'wants',
-                        budgetId: null,
-                        isPaid: tx.type === 'expense',
-                        paidDate: tx.type === 'expense' ? tx.date : null
-                    };
+            // BACKEND NOW HANDLES SAVING DIRECTLY
+            if (response.data?.importedCount > 0) {
+                toast({
+                    title: "Sync complete!",
+                    description: `Successfully imported ${response.data.importedCount} new transactions.`,
+                    variant: "success"
                 });
+                // Trigger refresh to update the "Needs Review" inbox counter
+                queryClient.invalidateQueries(['transactions']);
 
-                setPreviewTransactions(enriched);
-
-                setShowTransactionPreview(true);
             } else {
-                console.log('ℹ️ [SYNC] No transactions found');
                 toast({
                     title: "No new transactions",
                     description: "All transactions are up to date"
@@ -274,78 +247,6 @@ export default function BankSync() {
             setSyncStatus("");
         }
     }, [toast]);
-
-    // Import transactions
-    const { mutate: importTransactions, isPending: isImporting } = useMutation({
-        mutationFn: async (transactions) => {
-            // Get existing to avoid duplicates
-            const existing = await base44.entities.Transaction.list();
-            const existingBankIds = new Set(
-                existing.filter(t => t.bankTransactionId).map(t => t.bankTransactionId)
-            );
-
-            // 1. Pre-flight: Ensure budgets exist for the transaction months
-            const budgetMap = {};
-            const uniqueSyncKeys = new Set();
-            transactions.filter(tx => tx.type === 'expense').forEach(tx => {
-                uniqueSyncKeys.add(`${formatDateString(tx.date)}|${tx.financial_priority || 'wants'}`);
-            });
-
-            await Promise.all(Array.from(uniqueSyncKeys).map(async (key) => {
-                const [date, priority] = key.split('|');
-                const id = await getOrCreateSystemBudgetForTransaction(user.email, date, priority, goals, settings);
-                budgetMap[key] = id;
-            }));
-
-            const newTransactions = transactions
-                .filter(tx => !existingBankIds.has(tx.bankTransactionId))
-
-                .map(tx => {
-                    const syncKey = `${formatDateString(tx.date)}|${tx.financial_priority || 'wants'}`;
-                    return {
-                        title: tx.title,
-                        amount: tx.amount,
-                        originalAmount: tx.amount,
-                        originalCurrency: settings?.baseCurrency || 'EUR',
-                        type: tx.type,
-                        date: tx.date,
-                        isPaid: tx.isPaid,
-                        paidDate: tx.paidDate,
-                        bankTransactionId: tx.bankTransactionId,
-                        category_id: tx.categoryId,
-                        financial_priority: tx.financial_priority,
-                        budgetId: tx.budgetId || budgetMap[syncKey]
-                    };
-                });
-
-            if (newTransactions.length === 0) {
-                toast({
-                    title: "Up to date",
-                    description: "No new transactions to import.",
-                    variant: "default"
-                });
-                return [];
-            }
-
-            return base44.entities.Transaction.bulkCreate(newTransactions);
-        },
-        onSuccess: (data) => {
-            queryClient.invalidateQueries(['transactions']);
-            setShowTransactionPreview(false);
-            setPreviewTransactions(null);
-            toast({
-                title: "Transactions imported!",
-                description: `Successfully imported ${data.length} transactions`
-            });
-        },
-        onError: (error) => {
-            toast({
-                title: "Import failed",
-                description: error.message,
-                variant: "destructive"
-            });
-        }
-    });
 
     // Delete connection
     const { mutate: deleteConnection } = useMutation({
@@ -420,6 +321,30 @@ export default function BankSync() {
                         Your credentials are never stored, and connections are read-only.
                     </AlertDescription>
                 </Alert>
+
+                {/* --- NEW: NEEDS REVIEW INBOX --- */}
+                {needsReviewTransactions.length > 0 && (
+                    <Card className="mt-6 border-amber-200 bg-amber-50">
+                        <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-100 p-2 rounded-full">
+                                    <BellDot className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-amber-900">Review Inbox</h3>
+                                    <p className="text-sm text-amber-700">You have {needsReviewTransactions.length} transactions that need categorization.</p>
+                                </div>
+                            </div>
+                            <CustomButton
+                                variant="create"
+                                className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto"
+                                onClick={() => setShowReviewInbox(true)}
+                            >
+                                Review Now
+                            </CustomButton>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* Connections */}
@@ -466,14 +391,7 @@ export default function BankSync() {
                 </div>
             )}
 
-            <TransactionPreviewDialog
-                open={showTransactionPreview}
-                onOpenChange={setShowTransactionPreview}
-                transactions={previewTransactions}
-                settings={settings}
-                onImport={importTransactions}
-                isImporting={isImporting}
-            />
+            {/* FUTURE IMPL: Bulk Review Dialog will go here based on showReviewInbox */}
         </div>
     );
 }
