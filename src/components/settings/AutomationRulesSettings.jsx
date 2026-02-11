@@ -1,19 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useToast } from "@/components/ui/use-toast";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, X, Sparkles, ShieldCheck, Save, Edit2, Check, Code2, Type } from "lucide-react";
+import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CategorySelect from "@/components/ui/CategorySelect";
-import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
-import { FINANCIAL_PRIORITIES } from "@/components/utils/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,7 +30,6 @@ export default function AutomationRulesSettings() {
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isRegexMode, setIsRegexMode] = useState(false); // Toggle for creation
-    const [editingRule, setEditingRule] = useState(null); // null = Create Mode
     const [formData, setFormData] = useState({
         keyword: "",
         regexPattern: "", // Add regex field
@@ -189,7 +186,7 @@ export default function AutomationRulesSettings() {
             const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim()).filter(Boolean);
             // Escape special regex characters in keywords just in case
             const escapedKeywords = currentKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-            const suggestedRegex = escapedKeywords.length > 0 ? `(${escapedKeywords.join('|')})` : ".*";
+            const suggestedRegex = escapedKeywords.length > 0 ? `(${escapedKeywords.join('|')})` : "";
 
             if (window.confirm(`Switch to Regex mode? This will convert your keywords to the pattern: ${suggestedRegex}`)) {
                 updateRule({ id: rule.id, data: { keyword: null, regexPattern: suggestedRegex } });
@@ -259,7 +256,6 @@ export default function AutomationRulesSettings() {
 
     const handleCloseDialog = () => {
         setIsDialogOpen(false);
-        setEditingRule(null);
         setIsRegexMode(false);
         setFormData({ keyword: "", regexPattern: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
     };
@@ -626,7 +622,9 @@ export default function AutomationRulesSettings() {
                                                 <Code2 className="w-3 h-3 opacity-50" /> {rule.regexPattern}
                                             </div>
                                         ) : (
-                                            <div className="text-sm font-mono text-gray-800 break-words">{rule.keyword}</div>
+                                            <div className="text-sm font-mono text-gray-800 break-words">
+                                                {rule.keyword ? rule.keyword.split(',').join(', ') : <span className="text-gray-400 italic">No keywords</span>}
+                                            </div>
                                         )}
                                     </div>
                                     <div>
