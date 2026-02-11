@@ -67,15 +67,18 @@ export default function CustomBudgetsDisplay({
                 <Card className="border-none shadow-lg">
                     <CardHeader className="relative flex flex-row items-center justify-between pb-2 pr-6 min-h-[70px]">
                         <div className="flex items-center gap-3">
-                            <span className="px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600">
+                            {/* Mobile: Just the label */}
+                            <span className="md:hidden px-3 py-1 rounded-lg text-sm bg-purple-50 text-purple-600 font-medium">
                                 Custom Budgets
                             </span>
+
+                            {/* Desktop: The combined action button */}
                             <CustomButton
                                 variant="ghost"
-                                size="icon-sm"
-                                className="rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 hidden md:flex"
+                                className="hidden md:flex rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 items-center gap-2 px-3 py-1 text-sm font-medium"
                                 onClick={onCreateBudget}
                             >
+                                Custom Budgets
                                 <Plus className="w-4 h-4" />
                             </CustomButton>
                         </div>
