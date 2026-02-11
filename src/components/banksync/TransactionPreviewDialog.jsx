@@ -169,8 +169,6 @@ export default function TransactionPreviewDialog({
                                         
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
                                             <span>{formatDate(tx.date, settings)}</span>
-                                            <span>•</span>
-                                            <span>{tx.accountName}</span>
                                             {tx.currency !== settings.baseCurrency && (
                                                 <>
                                                     <span>•</span>
