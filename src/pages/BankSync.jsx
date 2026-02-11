@@ -224,15 +224,13 @@ export default function BankSync() {
         mutationFn: async (transactions) => {
             // Get existing to avoid duplicates
             const existing = await base44.entities.Transaction.list();
-            const existingKeys = new Set(
-                existing.map(t => `${t.title}_${t.date}_${t.amount}`)
+            const existingBankIds = new Set(
+                existing.filter(t => t.bankTransactionId).map(t => t.bankTransactionId)
             );
 
             const newTransactions = transactions
-                .filter(tx => {
-                    const key = `${tx.description}_${tx.date}_${tx.amount}`;
-                    return !existingKeys.has(key);
-                })
+                .filter(tx => !existingBankIds.has(tx.bankTransactionId))
+
                 .map(tx => ({
                     title: tx.description || 'Bank Transaction',
                     amount: Number(tx.amount),
@@ -242,7 +240,8 @@ export default function BankSync() {
                     date: tx.date,
                     isPaid: tx.type === 'expense' ? true : undefined,
                     paidDate: tx.type === 'expense' ? tx.date : undefined,
-                    notes: `Imported from ${tx.accountName}${tx.merchantName ? ` - ${tx.merchantName}` : ''}`
+                    notes: `Imported from ${tx.accountName}${tx.merchantName ? ` - ${tx.merchantName}` : ''}`,
+                    bankTransactionId: tx.bankTransactionId
                 }));
 
             if (newTransactions.length === 0) {
