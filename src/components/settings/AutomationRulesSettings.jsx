@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useToast } from "@/components/ui/use-toast";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, Pencil, ArrowRightCircle } from "lucide-react";
+import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, X, Sparkles, ShieldCheck, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CategorySelect from "@/components/ui/CategorySelect";
+import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
+import { FINANCIAL_PRIORITIES } from "@/components/utils/constants";
 
 export default function AutomationRulesSettings() {
     const { user } = useSettings();
@@ -56,7 +58,7 @@ export default function AutomationRulesSettings() {
 
     // Update Mutation
     const { mutate: updateRule, isPending: isUpdating } = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, data),
+        mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, { ...data }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
             toast({ title: "Rule updated", description: "Your changes have been saved." });
@@ -91,28 +93,37 @@ export default function AutomationRulesSettings() {
         }
     });
 
-    const handleSave = () => {
+    // --- INLINE EDITING LOGIC ---
+    const handleInlineUpdate = (ruleId, field, value) => {
+        updateRule({ id: ruleId, data: { [field]: value } });
+    };
+
+    const handleAddKeyword = (rule, newKeyword) => {
+        if (!newKeyword.trim()) return;
+        const currentKeywords = rule.keyword.split(',').map(k => k.trim());
+        if (currentKeywords.includes(newKeyword.trim())) return;
+
+        const updatedKeywords = [...currentKeywords, newKeyword.trim()].join(',');
+        updateRule({ id: rule.id, data: { keyword: updatedKeywords } });
+    };
+
+    const handleCreateSave = () => {
         if (!formData.keyword || !formData.categoryId) {
             toast({ title: "Missing fields", description: "Please enter a keyword and select a category.", variant: "destructive" });
             return;
         }
-
-        if (editingRule) {
-            updateRule({ id: editingRule.id, data: formData });
-        } else {
-            createRule();
-        }
+        createRule();
     };
 
-    const handleEditClick = (rule) => {
-        setEditingRule(rule);
-        setFormData({
-            keyword: rule.keyword,
-            categoryId: rule.categoryId,
-            renamedTitle: rule.renamedTitle || "",
-            financial_priority: rule.financial_priority || "wants"
-        });
-        setIsDialogOpen(true);
+    const handleRemoveKeyword = (rule, keywordToRemove) => {
+        const currentKeywords = rule.keyword.split(',').map(k => k.trim());
+        const updatedKeywords = currentKeywords.filter(k => k !== keywordToRemove).join(',');
+
+        if (!updatedKeywords) {
+            toast({ title: "Cannot remove last keyword", description: "A rule must have at least one keyword.", variant: "destructive" });
+            return;
+        }
+        updateRule({ id: rule.id, data: { keyword: updatedKeywords } });
     };
 
     const handleCloseDialog = () => {
@@ -143,7 +154,7 @@ export default function AutomationRulesSettings() {
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
-                                <DialogTitle>{editingRule ? "Edit Rule" : "Create Automation Rule"}</DialogTitle>
+                                <DialogTitle>Create Automation Rule</DialogTitle>
                                 <DialogDescription>
                                     When a transaction contains the keywords below, it will be automatically categorized.
                                 </DialogDescription>
@@ -192,8 +203,8 @@ export default function AutomationRulesSettings() {
                                 </div>
                             </div>
                             <DialogFooter>
-                                <CustomButton onClick={handleSave} disabled={isCreating || isUpdating} className="w-full sm:w-auto">
-                                    {(isCreating || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <CustomButton onClick={handleCreateSave} disabled={isCreating} className="w-full sm:w-auto">
+                                    {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Save Rule
                                 </CustomButton>
                             </DialogFooter>
@@ -217,56 +228,110 @@ export default function AutomationRulesSettings() {
                             return (
                                 <div key={rule.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl bg-white hover:border-amber-200 transition-colors gap-4">
                                     <div className="flex-1 overflow-hidden">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">If text contains:</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5 mb-4">
-                                            {rule.keyword.split(',').map((kw, i) => (
-                                                <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-mono font-medium border border-gray-200">
-                                                    {kw.trim()}
-                                                </span>
-                                            ))}
-                                        </div>
 
-                                        {/* BEFORE & AFTER VISUALIZATION */}
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                            {/* BEFORE STATE */}
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Incoming</span>
-                                                <div className="text-gray-500 italic font-mono bg-white px-2 py-1 rounded border border-dashed border-gray-300">
-                                                    "{rule.keyword.split(',')[0].trim()}..."
+                                        {/* GRID LAYOUT FOR ALIGNMENT */}
+                                        <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+
+                                            {/* LEFT SIDE: MATCHING CRITERIA */}
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400 flex items-center gap-1">
+                                                    If bank text contains
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {rule.keyword.split(',').map((kw, i) => (
+                                                        <div key={i} className="group relative inline-flex items-center">
+                                                            <span className="inline-flex items-center px-2.5 py-1.5 rounded-md bg-gray-100 text-gray-700 text-sm font-mono font-medium border border-gray-200 hover:border-gray-300 transition-colors">
+                                                                {kw.trim()}
+                                                                <button
+                                                                    onClick={() => handleRemoveKeyword(rule, kw.trim())}
+                                                                    className="ml-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </span>
+                                                        </div>
+                                                    ))}
+
+                                                    {/* Inline Add Keyword Input */}
+                                                    <div className="inline-flex items-center">
+                                                        <Input
+                                                            className="h-8 w-24 text-xs px-2 py-1 bg-transparent border-dashed border-gray-300 focus:border-amber-400 focus:ring-0 placeholder:text-gray-400"
+                                                            placeholder="+ Add"
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    handleAddKeyword(rule, e.currentTarget.value);
+                                                                    e.currentTarget.value = '';
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <ArrowRight className="hidden sm:block w-4 h-4 text-slate-300 mx-1" />
+                                            {/* CENTER: ARROW */}
+                                            <div className="flex flex-col items-center justify-center pt-4">
+                                                <ArrowRight className="w-5 h-5 text-gray-300" />
+                                            </div>
 
-                                            {/* AFTER STATE */}
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-600/70 mb-1">Result</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-900 bg-white px-2 py-1 rounded border shadow-sm">
-                                                        {rule.renamedTitle || rule.keyword.split(',')[0].trim()}
-                                                    </span>
-                                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${category ? '' : 'bg-red-50 text-red-600 border-red-200'}`} style={category ? { backgroundColor: `${category.color}15`, color: category.color, borderColor: `${category.color}30` } : {}}>
-                                                        {category ? category.name : "Missing Category"}
-                                                    </span>
+                                            {/* RIGHT SIDE: RESULT */}
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] uppercase tracking-wider font-bold text-emerald-600/70">
+                                                    Apply this category & name
+                                                </div>
+
+                                                <div className="flex flex-col gap-2">
+                                                    {/* Editable Title */}
+                                                    <Input
+                                                        defaultValue={rule.renamedTitle || rule.keyword.split(',')[0].trim()}
+                                                        className="h-8 font-semibold text-gray-900 border-transparent hover:border-gray-200 focus:border-blue-500 px-2 -ml-2 transition-all bg-transparent"
+                                                        onBlur={(e) => {
+                                                            if (e.target.value !== (rule.renamedTitle || "")) {
+                                                                handleInlineUpdate(rule.id, 'renamedTitle', e.target.value);
+                                                            }
+                                                        }}
+                                                        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                                                    />
+
+                                                    <div className="flex items-center gap-2">
+                                                        {/* Category Select */}
+                                                        <div className="w-40">
+                                                            <CategorySelect
+                                                                categories={categories}
+                                                                value={rule.categoryId}
+                                                                onValueChange={(id) => handleInlineUpdate(rule.id, 'categoryId', id)}
+                                                                className="h-8 text-xs border-gray-200 bg-white"
+                                                            />
+                                                        </div>
+
+                                                        {/* Priority Select */}
+                                                        <div className="w-28">
+                                                            <MobileDrawerSelect
+                                                                value={rule.financial_priority || 'wants'}
+                                                                onValueChange={(val) => handleInlineUpdate(rule.id, 'financial_priority', val)}
+                                                                options={Object.entries(FINANCIAL_PRIORITIES).filter(([k]) => k !== 'savings').map(([k, v]) => ({ value: k, label: v.label }))}
+                                                                customTrigger={
+                                                                    <button className={`w-full flex items-center gap-1.5 px-2 h-8 rounded-md border text-xs font-medium transition-colors ${rule.financial_priority === 'needs' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                                                                        {rule.financial_priority === 'needs' ? <ShieldCheck className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                                                                        <span className="truncate">{FINANCIAL_PRIORITIES[rule.financial_priority || 'wants']?.label}</span>
+                                                                    </button>
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 self-end sm:self-center">
-                                        <CustomButton variant="outline" size="icon" className="h-9 w-9" onClick={() => handleEditClick(rule)}>
-                                            <Pencil className="w-4 h-4 text-gray-500" />
-                                        </CustomButton>
+                                    <div className="flex items-center self-center pl-4 border-l border-gray-100">
                                         <CustomButton
                                             variant="destructive"
                                             size="icon"
-                                            className="h-9 w-9"
+                                            className="h-8 w-8 opacity-40 hover:opacity-100 transition-opacity"
                                             onClick={() => deleteRule(rule.id)}
                                             disabled={isDeleting}
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </CustomButton>
                                     </div>
                                 </div>
