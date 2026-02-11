@@ -232,7 +232,7 @@ export default function BankSync() {
                 .filter(tx => !existingBankIds.has(tx.bankTransactionId))
 
                 .map(tx => ({
-                    title: tx.description || 'Bank Transaction',
+                    title: String(tx.description || 'Bank Transaction'),
                     amount: Number(tx.amount),
                     originalAmount: Number(tx.amount),
                     originalCurrency: tx.currency || 'EUR',
@@ -241,7 +241,9 @@ export default function BankSync() {
                     isPaid: tx.type === 'expense' ? true : undefined,
                     paidDate: tx.type === 'expense' ? tx.date : undefined,
                     notes: `Imported from ${tx.accountName}${tx.merchantName ? ` - ${tx.merchantName}` : ''}`,
-                    bankTransactionId: tx.bankTransactionId
+                    bankTransactionId: tx.bankTransactionId,
+                    // Safely initialize category_id as an empty string if your UI logic uses .match()
+                    category_id: ""
                 }));
 
             if (newTransactions.length === 0) {
