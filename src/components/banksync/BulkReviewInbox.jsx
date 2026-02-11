@@ -76,13 +76,12 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             await Promise.all(updatePromises);
 
             // B. Create a Category Rule so the system learns
-            // Use the normalized key as the keyword
+            // Updated to use standard snake_case to prevent 422 errors
             await base44.entities.CategoryRule.create({
                 user_email: user.email,
                 keyword: group.key,
-                categoryId: categoryId,
-                priority: priority,
-                isActive: true
+                category_id: categoryId, // Changed to snake_case
+                priority: priority
             });
 
             return { count: group.transactions.length, keyword: group.key };
@@ -169,7 +168,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</label>
                                             <CategorySelect
-                                                value={currentSelection.categoryId}
+                                                value={currentSelection.categoryId || ""}
                                                 categories={categories}
                                                 className="w-full bg-gray-50"
                                                 onValueChange={(val) => {
@@ -185,7 +184,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</label>
                                             <MobileDrawerSelect
-                                                value={currentSelection.priority}
+                                                value={currentSelection.priority || ""}
                                                 onValueChange={(val) => handleSelectionChange(group.key, 'priority', val)}
                                                 options={Object.entries(FINANCIAL_PRIORITIES).filter(([k]) => k !== 'savings').map(([k, v]) => ({ value: k, label: v.label }))}
                                                 placeholder="Select Priority"
