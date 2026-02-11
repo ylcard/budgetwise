@@ -5,7 +5,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useToast } from "@/components/ui/use-toast";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, X, Sparkles, ShieldCheck, Save, Edit2, Check, Code2 } from "lucide-react";
+import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, X, Sparkles, ShieldCheck, Save, Edit2, Check, Code2, Type } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -175,6 +175,21 @@ export default function AutomationRulesSettings() {
             }
         }
         updateRule({ id: ruleId, data: { [field]: value } });
+    };
+
+    // Toggle between Regex and Keyword mode for an existing rule
+    const handleToggleRuleMode = (rule) => {
+        if (rule.regexPattern) {
+            // Switch to Keywords: Clear regex, set empty keyword
+            if (window.confirm("Switch to Keyword mode? This will delete your current regex pattern.")) {
+                updateRule({ id: rule.id, data: { regexPattern: null, keyword: "" } });
+            }
+        } else {
+            // Switch to Regex: Clear keywords, set placeholder regex
+            if (window.confirm("Switch to Regex mode? This will delete your current keywords.")) {
+                updateRule({ id: rule.id, data: { keyword: null, regexPattern: ".*" } });
+            }
+        }
     };
 
     const handleAddKeyword = (rule, newKeyword) => {
@@ -429,58 +444,92 @@ export default function AutomationRulesSettings() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {rule.regexPattern ? (
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-purple-50 text-purple-700 border border-purple-100 w-full truncate max-w-[200px]" title={rule.regexPattern}>
-                                                                <Code2 className="w-3 h-3 mr-1 opacity-50" />
-                                                                {rule.regexPattern}
-                                                            </span>
-                                                        ) : (
-                                                            <>
-                                                                {rule.keyword?.split(',').map((kw, i) => (
-                                                                    editingKeyword?.ruleId === rule.id && editingKeyword?.index === i ? (
-                                                                        <Input
-                                                                            key={i}
-                                                                            autoFocus
-                                                                            defaultValue={kw.trim()}
-                                                                            className="h-6 w-24 text-xs px-1 py-0 bg-white shadow-sm border-blue-400"
-                                                                            onBlur={(e) => handleEditKeyword(rule, i, e.target.value)}
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === 'Enter') handleEditKeyword(rule, i, e.currentTarget.value);
-                                                                                if (e.key === 'Escape') setEditingKeyword(null);
-                                                                            }}
-                                                                        />
-                                                                    ) : (
-                                                                        <span key={i}
-                                                                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-transparent hover:border-gray-300 cursor-pointer group transition-all"
-                                                                            onClick={() => setEditingKeyword({ ruleId: rule.id, index: i, value: kw.trim() })}
-                                                                            title="Click to edit keyword"
-                                                                        >
-                                                                            {kw.trim()}
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleRemoveKeyword(rule, kw.trim());
+                                                    <div className="flex items-start gap-2">
+                                                        {/* MODE TOGGLE BUTTON */}
+                                                        <button
+                                                            onClick={() => handleToggleRuleMode(rule)}
+                                                            className={`mt-0.5 p-1 rounded transition-colors ${rule.regexPattern ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                                            title={rule.regexPattern ? "Switch to Simple Keywords" : "Switch to Regex Mode"}
+                                                        >
+                                                            {rule.regexPattern ? <Type className="w-3 h-3" /> : <Code2 className="w-3 h-3" />}
+                                                        </button>
+
+                                                        <div className="flex flex-wrap gap-1.5 flex-1">
+                                                            {rule.regexPattern ? (
+                                                                editingKeyword?.ruleId === rule.id ? (
+                                                                    <Input
+                                                                        autoFocus
+                                                                        defaultValue={rule.regexPattern}
+                                                                        className="h-6 w-full max-w-[200px] text-xs font-mono px-1 py-0 bg-white shadow-sm border-purple-400"
+                                                                        onBlur={(e) => {
+                                                                            handleInlineUpdate(rule.id, 'regexPattern', e.target.value);
+                                                                            setEditingKeyword(null);
+                                                                        }}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') {
+                                                                                handleInlineUpdate(rule.id, 'regexPattern', e.currentTarget.value);
+                                                                                setEditingKeyword(null);
+                                                                            }
+                                                                            if (e.key === 'Escape') setEditingKeyword(null);
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <span
+                                                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-purple-50 text-purple-700 border border-purple-100 w-full truncate max-w-[200px] cursor-pointer hover:border-purple-300 transition-all"
+                                                                        title="Click to edit regex"
+                                                                        onClick={() => setEditingKeyword({ ruleId: rule.id })}
+                                                                    >
+                                                                        <Code2 className="w-3 h-3 mr-1 opacity-50" />
+                                                                        {rule.regexPattern}
+                                                                    </span>
+                                                                )
+                                                            ) : (
+                                                                <>
+                                                                    {rule.keyword?.split(',').map((kw, i) => (
+                                                                        editingKeyword?.ruleId === rule.id && editingKeyword?.index === i ? (
+                                                                            <Input
+                                                                                key={i}
+                                                                                autoFocus
+                                                                                defaultValue={kw.trim()}
+                                                                                className="h-6 w-24 text-xs px-1 py-0 bg-white shadow-sm border-blue-400"
+                                                                                onBlur={(e) => handleEditKeyword(rule, i, e.target.value)}
+                                                                                onKeyDown={(e) => {
+                                                                                    if (e.key === 'Enter') handleEditKeyword(rule, i, e.currentTarget.value);
+                                                                                    if (e.key === 'Escape') setEditingKeyword(null);
                                                                                 }}
-                                                                                className="ml-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full hover:bg-gray-200"
+                                                                            />
+                                                                        ) : (
+                                                                            <span key={i}
+                                                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-transparent hover:border-gray-300 cursor-pointer group transition-all"
+                                                                                onClick={() => setEditingKeyword({ ruleId: rule.id, index: i, value: kw.trim() })}
+                                                                                title="Click to edit keyword"
                                                                             >
-                                                                                <X className="w-3 h-3" />
-                                                                            </button>
-                                                                        </span>
-                                                                    )
-                                                                ))}
-                                                                <Input
-                                                                    className="h-6 w-20 text-[10px] px-1 bg-transparent border-dashed border-gray-300 focus:w-24 focus:bg-white focus:border-solid focus:border-blue-400 transition-all placeholder:text-gray-400"
-                                                                    placeholder="+ Add"
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') {
-                                                                            handleAddKeyword(rule, e.currentTarget.value);
-                                                                            e.currentTarget.value = '';
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </>
-                                                        )}
+                                                                                {kw.trim()}
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleRemoveKeyword(rule, kw.trim());
+                                                                                    }}
+                                                                                    className="ml-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full hover:bg-gray-200"
+                                                                                >
+                                                                                    <X className="w-3 h-3" />
+                                                                                </button>
+                                                                            </span>
+                                                                        )
+                                                                    ))}
+                                                                    <Input
+                                                                        className="h-6 w-20 text-[10px] px-1 bg-transparent border-dashed border-gray-300 focus:w-24 focus:bg-white focus:border-solid focus:border-blue-400 transition-all placeholder:text-gray-400"
+                                                                        placeholder="+ Add"
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') {
+                                                                                handleAddKeyword(rule, e.currentTarget.value);
+                                                                                e.currentTarget.value = '';
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -568,7 +617,13 @@ export default function AutomationRulesSettings() {
                                     </div>
                                     <div className="mb-2">
                                         <div className="text-xs font-bold text-gray-500 uppercase">Match</div>
-                                        <div className="text-sm font-mono text-gray-800 break-words">{rule.keyword}</div>
+                                        {rule.regexPattern ? (
+                                            <div className="text-sm font-mono text-purple-700 break-all flex items-center gap-1">
+                                                <Code2 className="w-3 h-3 opacity-50" /> {rule.regexPattern}
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm font-mono text-gray-800 break-words">{rule.keyword}</div>
+                                        )}
                                     </div>
                                     <div>
                                         <div className="text-xs font-bold text-emerald-600 uppercase">Apply</div>
