@@ -283,7 +283,7 @@ export default function Settings() {
                 </Card>
 
                 {/* --- STATIC ACTION BUTTONS --- */}
-                <div className="sticky bottom-[4.5rem] md:bottom-0 z-40 p-4 -mx-4 md:mx-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:rounded-xl mt-8 transition-all duration-200">
+                <div className="sticky bottom-[80px] md:bottom-0 z-[101] p-4 -mx-4 md:mx-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:rounded-xl mt-8 transition-all duration-200">
                     <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
                         <CustomButton
                             onClick={handleResetToDefaults}
