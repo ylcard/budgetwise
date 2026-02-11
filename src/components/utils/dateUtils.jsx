@@ -1,4 +1,3 @@
-
 /**
  * Date utility functions
  * Centralized date parsing, formatting, and period calculation helpers
@@ -31,16 +30,15 @@ export const formatDate = (date, dateFormat = "MMM dd, yyyy") => {
     if (!date) return "";
 
     let dateObj;
-    if (typeof date === 'string') {
-        // Try to use parseDate for YYYY-MM-DD strings to ensure local time
-        if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            dateObj = parseDate(date);
-        } else {
-            dateObj = new Date(date);
-        }
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+        dateObj = parseDate(date);
+    } else if (date) {
+        dateObj = new Date(date);
     } else {
-        dateObj = date;
+        return "";
     }
+
+    if (!dateObj || isNaN(dateObj.getTime())) return "";
 
     const fnsFormat = dateFormat || "MMM dd, yyyy";
 
@@ -63,7 +61,7 @@ export const formatDateString = (date) => {
     let inputDate;
     if (date instanceof Date) {
         inputDate = date;
-    } else if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    } else if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
         inputDate = parseDate(date);
     } else {
         // Handle other string formats or timestamp input
