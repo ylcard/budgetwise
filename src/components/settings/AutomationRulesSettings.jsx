@@ -27,9 +27,10 @@ export default function AutomationRulesSettings() {
     });
 
     // Fetch the user's saved rules
-    const { data: rules = [], isLoading } = useQuery({
+    const { data: rules = [], isLoading, isFetching } = useQuery({
         queryKey: ['categoryRules', user?.email],
-        queryFn: () => base44.entities.CategoryRule.list({ user_email: user?.email }),
+        // CHANGE: Use .filter to explicitly request this user's matching rows
+        queryFn: () => base44.entities.CategoryRule.filter({ user_email: user?.email }),
         enabled: !!user?.email
     });
 
@@ -37,7 +38,7 @@ export default function AutomationRulesSettings() {
     const { mutate: deleteRule, isPending: isDeleting } = useMutation({
         mutationFn: (id) => base44.entities.CategoryRule.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['categoryRules'] });
+            queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
             toast({
                 title: "Rule deleted",
                 description: "The automation engine has forgotten this rule.",
@@ -63,7 +64,7 @@ export default function AutomationRulesSettings() {
             financial_priority: newRule.financial_priority
         }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['categoryRules'] });
+            queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
             toast({ title: "Rule created", description: "Future transactions matching these keywords will be categorized automatically." });
             setIsCreateOpen(false);
             setNewRule({ keyword: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
@@ -85,7 +86,7 @@ export default function AutomationRulesSettings() {
         createRule();
     };
 
-    if (isLoading) {
+    if (isLoading || (isFetching && rules.length === 0)) {
         return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
     }
 
