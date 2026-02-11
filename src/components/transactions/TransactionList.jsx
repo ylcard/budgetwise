@@ -59,11 +59,13 @@ export default function TransactionList({
         onToggleSelection(id, !selectedIds.has(id));
     };
 
-    const handleMobileRowClick = (transaction) => {
-        // On mobile, tapping the row opens Edit. 
-        // Long press would be ideal for selection, but standard click is usually Edit.
+    // If we are in "Selection Mode", tapping the row toggles the checkbox
+    // otherwise, it opens the edit modal.
+    if (selectedIds.size > 0) {
+        onToggleSelection(transaction.id, !selectedIds.has(transaction.id));
+    } else {
         onEdit(transaction);
-    };
+    }
 
     const SortIcon = ({ columnKey }) => {
         if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-gray-400" />;
@@ -300,18 +302,18 @@ export default function TransactionList({
                         const isSelected = selectedIds.has(transaction.id);
 
                         return (
-                            <li 
+                            <li
                                 key={transaction.id}
                                 className={`flex items-start p-3 gap-3 transition-colors ${isSelected ? 'bg-blue-50' : 'bg-white active:bg-gray-50'}`}
                                 onClick={() => handleMobileRowClick(transaction)}
                             >
                                 {/* Selection Checkbox */}
                                 <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-                                     <Checkbox 
-                                        checked={isSelected} 
-                                        onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)} 
+                                    <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
                                         className="h-5 w-5 rounded-md border-gray-300"
-                                     />
+                                    />
                                 </div>
 
                                 {/* Icon */}
@@ -321,8 +323,8 @@ export default function TransactionList({
                                             <Banknote className="w-4 h-4 text-emerald-600" />
                                         </div>
                                     ) : (
-                                        <div 
-                                            className="w-9 h-9 rounded-full flex items-center justify-center" 
+                                        <div
+                                            className="w-9 h-9 rounded-full flex items-center justify-center"
                                             style={{ backgroundColor: category ? `${category.color}20` : '#f3f4f6' }}
                                         >
                                             {category ? (
@@ -344,21 +346,20 @@ export default function TransactionList({
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </span>
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
                                         <span>{format(new Date(transaction.date), "MMM d")}</span>
-                                        
+
                                         {!isIncome && (
                                             <>
                                                 <span className="text-gray-300">•</span>
                                                 <span className="truncate max-w-[100px]">{category?.name || 'Uncategorized'}</span>
-                                                
+
                                                 {transaction.paidDate && (
-                                                    <span className={`ml-1 px-1.5 py-0.5 rounded-sm text-[10px] border ${
-                                                        transaction.paidDate 
-                                                            ? "bg-green-50 text-green-700 border-green-100" 
+                                                    <span className={`ml-1 px-1.5 py-0.5 rounded-sm text-[10px] border ${transaction.paidDate
+                                                            ? "bg-green-50 text-green-700 border-green-100"
                                                             : "bg-gray-100 text-gray-500 border-gray-200"
-                                                    }`}>
+                                                        }`}>
                                                         Paid
                                                     </span>
                                                 )}
