@@ -122,7 +122,11 @@ export default function BankSync() {
                         const tokens = tokenResponse.data.tokens;
 
                         // Calculate expiry: Current time + expires_in seconds
-                        const expiryDate = new Date(Date.now() + (tokens.expires_in * 1000));
+                        const expiresIn = Number(tokens.expires_in) || 3600;
+                        const expiryDate = new Date(Date.now() + (expiresIn * 1000));
+                        const expiryString = isNaN(expiryDate.getTime()) 
+                            ? new Date(Date.now() + 3600000).toISOString() 
+                            : expiryDate.toISOString();
 
                         // MODIFIED: 26-Jan-2026 - User selects bank in TrueLayer dialog, no stored bank info
                         // Save connection with generic info, will be updated after first sync
@@ -133,7 +137,7 @@ export default function BankSync() {
                             country: 'ES',
                             access_token: tokens.access_token,
                             refresh_token: tokens.refresh_token,
-                            token_expiry: expiryDate.toISOString(),
+                            token_expiry: expiryString,
                             accounts: [],
                             status: 'active',
                             auto_sync_enabled: true,
