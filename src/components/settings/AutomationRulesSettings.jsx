@@ -8,6 +8,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CategorySelect from "@/components/ui/CategorySelect";
@@ -21,12 +22,13 @@ export default function AutomationRulesSettings() {
     const [newRule, setNewRule] = useState({
         keyword: "",
         categoryId: "",
-        renamedTitle: ""
+        renamedTitle: "",
+        financial_priority: "wants"
     });
 
     // Fetch the user's saved rules
     const { data: rules = [], isLoading } = useQuery({
-        queryKey: ['categoryRules'],
+        queryKey: ['categoryRules', user?.email],
         queryFn: () => base44.entities.CategoryRule.list({ user_email: user?.email }),
         enabled: !!user?.email
     });
@@ -35,7 +37,7 @@ export default function AutomationRulesSettings() {
     const { mutate: deleteRule, isPending: isDeleting } = useMutation({
         mutationFn: (id) => base44.entities.CategoryRule.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries(['categoryRules']);
+            queryClient.invalidateQueries({ queryKey: ['categoryRules'] });
             toast({
                 title: "Rule deleted",
                 description: "The automation engine has forgotten this rule.",
@@ -57,13 +59,14 @@ export default function AutomationRulesSettings() {
             categoryId: newRule.categoryId,
             keyword: newRule.keyword,
             renamedTitle: newRule.renamedTitle || null,
-            priority: 10 // Default priority
+            priority: 10,
+            financial_priority: newRule.financial_priority
         }),
         onSuccess: () => {
-            queryClient.invalidateQueries(['categoryRules']);
+            queryClient.invalidateQueries({ queryKey: ['categoryRules'] });
             toast({ title: "Rule created", description: "Future transactions matching these keywords will be categorized automatically." });
             setIsCreateOpen(false);
-            setNewRule({ keyword: "", categoryId: "", renamedTitle: "" });
+            setNewRule({ keyword: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
         },
         onError: (error) => {
             toast({
@@ -126,6 +129,22 @@ export default function AutomationRulesSettings() {
                                         value={newRule.categoryId}
                                         onValueChange={(id) => setNewRule({ ...newRule, categoryId: id })}
                                     />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Financial Priority</Label>
+                                    <Select
+                                        value={newRule.financial_priority}
+                                        onValueChange={(val) => setNewRule({ ...newRule, financial_priority: val })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select priority" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="needs">Needs (Essential)</SelectItem>
+                                            <SelectItem value="wants">Wants (Discretionary)</SelectItem>
+                                            <SelectItem value="savings">Savings / Investments</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="rename">And rename to (optional)...</Label>
