@@ -70,30 +70,45 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     const { mutate: saveBulkRules, isPending: isSaving } = useMutation({
         mutationFn: async (saveableGroups) => {
             let totalTransactionsUpdated = 0;
+            const rulesToCreate = [];
+            const allTransactionUpdates = [];
 
             for (const { group, categoryId, priority, matchKeywords, cleanName } of saveableGroups) {
                 const finalKeywords = matchKeywords ? matchKeywords.trim() : group.key;
                 const finalTitle = cleanName ? cleanName.trim() : group.displayTitle;
 
-                // A. Update all transactions in this group
-                const updatePromises = group.transactions.map(tx =>
-                    base44.entities.Transaction.update(tx.id, {
+                // 1. Queue up the Category Rule for bulk creation
+                rulesToCreate.push({
+                    user_email: user.email,
+                    keyword: finalKeywords.toUpperCase(), // e.g., "AMZN, AMAZON.ES"
+                    categoryId: categoryId,
+                    renamedTitle: finalTitle // e.g., "Amazon"
+                });
+
+                // 2. Queue up all the transaction update promises
+                group.transactions.forEach(tx => {
+                    allTransactionUpdates.push(() => base44.entities.Transaction.update(tx.id, {
                         category_id: categoryId,
                         financial_priority: priority,
                         needsReview: false,
                         title: finalTitle // Overwrite messy string with clean name
-                    })
-                );
-                await Promise.all(updatePromises);
-                totalTransactionsUpdated += group.transactions.length;
-
-                // B. Create a Category Rule so the system learns (FIXED 422 ERROR)
-                await base44.entities.CategoryRule.create({
-                    user_email: user.email,
-                    keyword: finalKeywords.toUpperCase(), // e.g., "AMZN, AMAZON.ES"
-                    categoryId: categoryId, // Exact match to your schema
-                    renamedTitle: finalTitle // e.g., "Amazon"
+                    }));
                 });
+                totalTransactionsUpdated += group.transactions.length;
+            }
+
+            // A. Create ALL rules in a single, blazing-fast network request
+            if (rulesToCreate.length > 0) {
+                await base44.entities.CategoryRule.bulkCreate(rulesToCreate);
+            }
+
+            // B. Process transaction updates in batches of 10 to avoid 429 errors
+            const BATCH_SIZE = 10;
+            for (let i = 0; i < allTransactionUpdates.length; i += BATCH_SIZE) {
+                const batch = allTransactionUpdates.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(updateFn => updateFn()));
+                // Wait 100ms before firing the next 10 to appease rate limiters
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
 
             return { groupsCount: saveableGroups.length, txCount: totalTransactionsUpdated };
