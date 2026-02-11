@@ -178,8 +178,7 @@ export default function Transactions() {
 
 
                     for (const chunk of chunks) {
-                        const deletePromises = chunk.map(id => base44.entities.Transaction.delete(id));
-                        await Promise.all(deletePromises);
+                        await base44.entities.Transaction.deleteMany({ id: { $in: chunk } });
                     }
 
                     queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
