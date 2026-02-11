@@ -10,6 +10,58 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.18';
 // CONFIGURATION: Production Mode
 const BASE_API_URL = "https://api.truelayer.com";
 
+// --- SERVER-SIDE CATEGORIZATION & BUDGET LOGIC ---
+const categorizeTransaction = (description, userRules = [], categories = []) => {
+    let categoryId = null;
+    let categoryName = 'Uncategorized';
+    let priority = 'wants';
+    let needsReview = true; // Default to true unless we get a confident match
+
+    const resolveCategory = (idOrName, isId = false) => {
+        const cat = categories.find(c => isId ? c.id === idOrName : c.name.toUpperCase() === idOrName.toUpperCase());
+        // If we found a match via our rules or DB, we are confident. No review needed.
+        return cat ? { categoryId: cat.id, categoryName: cat.name, priority: cat.priority || 'wants', needsReview: false } : null;
+    };
+
+    // 1. User Rules (Highest Priority)
+    for (const rule of userRules) {
+        let matched = false;
+        if (rule.regexPattern) {
+            try { if (new RegExp(rule.regexPattern, 'i').test(description)) matched = true; } catch (e) { }
+        } else if (rule.keyword && description.includes(rule.keyword.toUpperCase())) {
+            matched = true;
+        }
+        if (matched && rule.categoryId) {
+            const resolved = resolveCategory(rule.categoryId, true);
+            if (resolved) return resolved;
+        }
+    }
+
+    return { categoryId, categoryName, priority, needsReview };
+};
+
+const getOrCreateBudget = async (base44, userEmail, txDate, priority) => {
+    const date = new Date(txDate);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const monthStart = `${y}-${m}-01`;
+
+    const existing = await base44.entities.SystemBudget.filter({ user_email: userEmail, startDate: monthStart, systemBudgetType: priority });
+    if (existing && existing.length > 0) return existing[0].id;
+
+    // Create basic placeholder budget if none exists (Amount can be updated later by the UI)
+    const newBudget = await base44.entities.SystemBudget.create({
+        name: priority === 'needs' ? 'Needs' : 'Wants',
+        budgetAmount: 0,
+        startDate: monthStart,
+        endDate: new Date(y, date.getMonth() + 1, 0).toISOString().split('T')[0],
+        color: priority === 'needs' ? 'emerald' : 'amber',
+        user_email: userEmail,
+        systemBudgetType: priority
+    });
+    return newBudget.id;
+};
+
 Deno.serve(async (req) => {
     try {
         console.log('🚀 [SYNC] TrueLayer Sync Handler started');
@@ -151,6 +203,16 @@ Deno.serve(async (req) => {
         const accounts = accountsData.results || [];
         console.log('📊 [SYNC] Number of accounts found:', accounts.length);
 
+        // --- FETCH APP CONTEXT FOR CATEGORIZATION ---
+        console.log('🧠 [SYNC] Fetching rules, categories, and existing transactions...');
+        const [categories, rules, existingTx] = await Promise.all([
+            base44.entities.Category.list(),
+            base44.entities.CategoryRule.list({ user_email: user.email }),
+            base44.entities.Transaction.list()
+        ]);
+        const existingBankIds = new Set(existingTx.filter(t => t.bankTransactionId).map(t => t.bankTransactionId));
+        const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
+
         /**
          * Fetch transactions for each account
          * Use a Map for deduplication based on bankTransactionId
@@ -214,19 +276,33 @@ Deno.serve(async (req) => {
 
             // Deduplicate and Transform to app format
             accountTransactions.forEach((tx) => {
+                // Strict DB deduplication to prevent double imports
+                if (existingBankIds.has(tx.transaction_id) || (tx.normalised_provider_transaction_id && existingNormalisedIds.has(tx.normalised_provider_transaction_id))) {
+                    return;
+                }
+
+                const rawDescription = String(tx.description || tx.transaction_category || 'Bank Transaction');
+                const catResult = categorizeTransaction(rawDescription.toUpperCase(), rules, categories);
+                const txDate = tx.timestamp.split('T')[0];
+                const isExpense = tx.transaction_type !== 'CREDIT';
 
                 const transformed = {
-                    bankTransactionId: tx.transaction_id,
-                    accountId: account.account_id,
-                    accountName: String(account.display_name || `${account.account_type} Account`),
-                    date: tx.timestamp.split('T')[0],
+                    title: rawDescription,
                     amount: Math.abs(tx.amount),
-                    type: tx.transaction_type === 'CREDIT' ? 'income' : 'expense',
-                    description: tx.description || tx.transaction_category || 'Bank Transaction',
-                    currency: tx.currency,
-                    merchantName: tx.merchant_name,
-                    category: tx.transaction_category,
-                    originalData: tx,
+                    originalAmount: Math.abs(tx.amount),
+                    originalCurrency: tx.currency,
+                    type: isExpense ? 'expense' : 'income',
+                    date: txDate,
+                    isPaid: isExpense,
+                    paidDate: isExpense ? txDate : null,
+                    bankTransactionId: tx.transaction_id,
+                    normalisedProviderTransactionId: tx.normalised_provider_transaction_id || null,
+                    providerTransactionId: tx.provider_transaction_id || null,
+                    merchantName: tx.merchant_name || null,
+                    counterPartyName: tx.meta?.counter_party_preferred_name || null,
+                    category_id: catResult.categoryId,
+                    financial_priority: catResult.priority,
+                    needsReview: catResult.needsReview
                 };
 
                 // Map.set automatically handles deduplication by overwriting same IDs
@@ -239,6 +315,26 @@ Deno.serve(async (req) => {
         // Convert Map back to an array for the final response
         const allTransactions = Array.from(transactionMap.values());
         console.log(`\n📊 [SYNC] Total UNIQUE transactions collected: ${allTransactions.length}`);
+
+        // --- ASSIGN BUDGETS & BULK CREATE ---
+        console.log('💾 [SYNC] Resolving budgets and saving to database...');
+        const budgetCache = {};
+        for (const tx of allTransactions) {
+            if (tx.type === 'expense') {
+                const cacheKey = `${tx.date}|${tx.financial_priority}`;
+                if (!budgetCache[cacheKey]) {
+                    budgetCache[cacheKey] = await getOrCreateBudget(base44, user.email, tx.date, tx.financial_priority);
+                }
+                tx.budgetId = budgetCache[cacheKey];
+            }
+        }
+
+        let importedCount = 0;
+        if (allTransactions.length > 0) {
+            await base44.entities.Transaction.bulkCreate(allTransactions);
+            importedCount = allTransactions.length;
+            console.log(`✅ [SYNC] Successfully imported ${importedCount} transactions to DB`);
+        }
 
         // Update connection metadata
         console.log('💾 [SYNC] Updating connection metadata...');
@@ -260,9 +356,9 @@ Deno.serve(async (req) => {
         console.log('✅ [SYNC] Connection metadata updated successfully');
 
         const response = {
-            transactions: allTransactions,
+            importedCount: importedCount,
             accounts: accounts,
-            count: allTransactions.length
+            count: importedCount
         };
         console.log('🎉 [SYNC] Sync completed successfully:', {
             transactionCount: response.count,
