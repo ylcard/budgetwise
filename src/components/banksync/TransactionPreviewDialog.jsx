@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -39,7 +39,7 @@ export default function TransactionPreviewDialog({
     const [selectAll, setSelectAll] = useState(true);
 
     // Initialize selection when transactions change
-    useMemo(() => {
+    useEffect(() => {
         if (transactions && transactions.length > 0) {
             setSelectedIds(new Set(transactions.map((_, idx) => idx)));
             setSelectAll(true);
