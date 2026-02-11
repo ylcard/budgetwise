@@ -10,7 +10,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Loader2, Upload } from "lucide-react";
-import { useCategories, useCategoryRules, useAllBudgets, useGoals } from "@/components/hooks/useBase44Entities";
+import { useCategories, useCategoryRules, useAllBudgets, useGoals, useTransactions } from "@/components/hooks/useBase44Entities";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { categorizeTransaction } from "@/components/utils/transactionCategorization";
 import { createPageUrl } from "@/utils";
@@ -40,6 +40,7 @@ export default function ImportWizard({ onSuccess }) {
     const { rules } = useCategoryRules(user);
     const { goals, isLoading: goalsLoading } = useGoals(user);
     const { allBudgets } = useAllBudgets(user);
+    const { transactions: existingTransactions } = useTransactions(user);
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
@@ -102,6 +103,15 @@ export default function ImportWizard({ onSuccess }) {
 
             const extractedData = result.output?.transactions || [];
 
+            // Helper for Duplicate Detection
+            const findSurvivor = (newItem) => {
+                if (!existingTransactions) return null;
+                return existingTransactions.find(ex =>
+                    Math.abs(ex.amount) === Math.abs(newItem.amount) &&
+                    ex.date === newItem.date
+                );
+            };
+
             const processed = extractedData.map(item => {
                 // 1. Parse while preserving the sign for a moment
                 const rawVal = parseAmountWithSign(item.amount);
@@ -134,6 +144,9 @@ export default function ImportWizard({ onSuccess }) {
                     categories
                 );
 
+                // Check duplicate
+                const survivor = findSurvivor({ amount: magnitude, date: txDate });
+
                 return {
                     date: txDate,
                     title: item.reason || 'Untitled Transaction',
@@ -147,7 +160,9 @@ export default function ImportWizard({ onSuccess }) {
                     isPaid: !!pdDate,
                     paidDate: pdDate || null,
                     budgetId: null,
-                    originalData: item
+                    originalData: item,
+                    isDuplicate: !!survivor,
+                    duplicateMatch: survivor
                 };
             }).filter(item => item.amount !== 0 && item.date);
 
@@ -168,6 +183,15 @@ export default function ImportWizard({ onSuccess }) {
     };
 
     const processData = () => {
+        // Helper for Duplicate Detection
+        const findSurvivor = (newItem) => {
+            if (!existingTransactions) return null;
+            return existingTransactions.find(ex =>
+                Math.abs(ex.amount) === Math.abs(newItem.amount) &&
+                ex.date === newItem.date
+            );
+        };
+
         const processed = csvData.data.map(row => {
             const rawVal = parseAmountWithSign(row[mappings.amount]);
             const magnitude = Math.abs(rawVal);
@@ -200,6 +224,8 @@ export default function ImportWizard({ onSuccess }) {
                 );
             }
 
+            const survivor = findSurvivor({ amount: magnitude, date: row[mappings.date] });
+
             return {
                 date: row[mappings.date],
                 title: row[mappings.title] || 'Untitled Transaction',
@@ -213,7 +239,9 @@ export default function ImportWizard({ onSuccess }) {
                 isPaid: true, // Assume bank import data is already paid/settled
                 paidDate: row[mappings.date],
                 budgetId: null,
-                originalData: row
+                originalData: row,
+                isDuplicate: !!survivor,
+                duplicateMatch: survivor
             };
         }).filter(item => item.amount !== 0 && item.date);
 
