@@ -41,9 +41,12 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
         transactions.forEach(tx => {
             // Prefer merchantName. Fallback to title. Uppercase to normalize.
             let rawKey = tx.merchantName || tx.title || 'Unknown';
-            // Clean the key: remove numbers and common symbols to force better grouping 
-            // e.g. "UBER EATS 1234" and "UBER EATS 5678" become "UBER EATS"
-            const key = rawKey.replace(/[0-9#*+\-]/g, '').trim().toUpperCase();
+
+            // AGGRESSIVE CLEANER: 
+            // 1. Removes prefixes like MNI* or PAYPAL*
+            // 2. Removes all numbers and special characters
+            // 3. Collapses multiple spaces into one
+            const key = rawKey.replace(/^[A-Z]{3,6}\*/i, '').replace(/[^a-zA-Z\s]/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
 
             if (!groups[key]) {
                 groups[key] = {
