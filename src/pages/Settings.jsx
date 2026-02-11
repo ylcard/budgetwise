@@ -283,38 +283,36 @@ export default function Settings() {
                 </Card>
 
                 {/* --- STATIC ACTION BUTTONS --- */}
-                <div className="sticky bottom-[4.5rem] md:bottom-0 z-40 p-4 -mx-4 md:mx-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:rounded-xl mt-8 transition-all duration-200">
-                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                    <CustomButton
+                        onClick={handleResetToDefaults}
+                        variant="outline"
+                        className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    >
+                        Reset to Defaults
+                    </CustomButton>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        {hasChanges && (
+                            <div className="flex items-center gap-3 w-full sm:w-auto animate-in fade-in slide-in-from-right-4 duration-300">
+                                <CustomButton
+                                    onClick={handleDiscard}
+                                    variant="ghost"
+                                    className="w-full sm:w-auto"
+                                >
+                                    Discard Changes
+                                </CustomButton>
+                            </div>
+                        )}
+
                         <CustomButton
-                            onClick={handleResetToDefaults}
-                            variant="outline"
-                            className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            onClick={handleGlobalSave}
+                            disabled={isGlobalSaving || !hasChanges}
+                            variant="primary"
+                            className="w-full sm:w-auto min-w-[140px]"
                         >
-                            Reset to Defaults
+                            {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Settings</>}
                         </CustomButton>
-
-                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                            {hasChanges && (
-                                <div className="w-full sm:w-auto animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-300">
-                                    <CustomButton
-                                        onClick={handleDiscard}
-                                        variant="ghost"
-                                        className="w-full sm:w-auto"
-                                    >
-                                        Discard Changes
-                                    </CustomButton>
-                                </div>
-                            )}
-
-                            <CustomButton
-                                onClick={handleGlobalSave}
-                                disabled={isGlobalSaving || !hasChanges}
-                                variant="primary"
-                                className="w-full sm:w-auto min-w-[140px]"
-                            >
-                                {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Settings</>}
-                            </CustomButton>
-                        </div>
                     </div>
                 </div>
             </div>
