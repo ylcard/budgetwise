@@ -1,17 +1,28 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useToast } from "@/components/ui/use-toast";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { BrainCircuit, Trash2, ArrowRight, Loader2, AlertCircle, Plus, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import CategorySelect from "@/components/ui/CategorySelect";
 
 export default function AutomationRulesSettings() {
     const { user } = useSettings();
     const { categories } = useCategories();
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [newRule, setNewRule] = useState({
+        keyword: "",
+        categoryId: "",
+        renamedTitle: ""
+    });
 
     // Fetch the user's saved rules
     const { data: rules = [], isLoading } = useQuery({
@@ -39,6 +50,38 @@ export default function AutomationRulesSettings() {
         }
     });
 
+    // Create Mutation
+    const { mutate: createRule, isPending: isCreating } = useMutation({
+        mutationFn: () => base44.entities.CategoryRule.create({
+            user_email: user.email,
+            categoryId: newRule.categoryId,
+            keyword: newRule.keyword,
+            renamedTitle: newRule.renamedTitle || null,
+            priority: 10 // Default priority
+        }),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['categoryRules']);
+            toast({ title: "Rule created", description: "Future transactions matching these keywords will be categorized automatically." });
+            setIsCreateOpen(false);
+            setNewRule({ keyword: "", categoryId: "", renamedTitle: "" });
+        },
+        onError: (error) => {
+            toast({
+                title: "Failed to create rule",
+                description: error.message,
+                variant: "destructive"
+            });
+        }
+    });
+
+    const handleCreate = () => {
+        if (!newRule.keyword || !newRule.categoryId) {
+            toast({ title: "Missing fields", description: "Please enter a keyword and select a category.", variant: "destructive" });
+            return;
+        }
+        createRule();
+    };
+
     if (isLoading) {
         return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
     }
@@ -46,12 +89,65 @@ export default function AutomationRulesSettings() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <BrainCircuit className="w-5 h-5 text-amber-500" />
-                    Automation Rules
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                        <BrainCircuit className="w-5 h-5 text-amber-500" />
+                        Automation Rules
+                    </CardTitle>
+
+                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                        <DialogTrigger asChild>
+                            <CustomButton size="sm" className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">Add Rule</span>
+                            </CustomButton>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                                <DialogTitle>Create Automation Rule</DialogTitle>
+                                <DialogDescription>
+                                    When a transaction contains the keywords below, it will be automatically categorized.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="keywords">If text contains...</Label>
+                                    <Input
+                                        id="keywords"
+                                        placeholder="e.g. Uber, Lyft (comma separated)"
+                                        value={newRule.keyword}
+                                        onChange={(e) => setNewRule({ ...newRule, keyword: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Then assign category...</Label>
+                                    <CategorySelect
+                                        categories={categories}
+                                        value={newRule.categoryId}
+                                        onValueChange={(id) => setNewRule({ ...newRule, categoryId: id })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="rename">And rename to (optional)...</Label>
+                                    <Input
+                                        id="rename"
+                                        placeholder="e.g. Taxi Ride"
+                                        value={newRule.renamedTitle}
+                                        onChange={(e) => setNewRule({ ...newRule, renamedTitle: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <CustomButton onClick={handleCreate} disabled={isCreating} className="w-full sm:w-auto">
+                                    {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Rule
+                                </CustomButton>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
                 <CardDescription>
-                    These are the rules the AI learned from your inbox. If a rule is categorizing things incorrectly, delete it here.
+                    Manage the rules that automatically categorize your transactions.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -63,7 +159,7 @@ export default function AutomationRulesSettings() {
                     <div className="space-y-3">
                         {rules.map((rule) => {
                             const category = categories.find(c => c.id === rule.categoryId);
-                            
+
                             return (
                                 <div key={rule.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl bg-white hover:border-amber-200 transition-colors gap-4">
                                     <div className="flex-1 overflow-hidden">
@@ -77,17 +173,17 @@ export default function AutomationRulesSettings() {
                                                 </span>
                                             ))}
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-2 text-sm">
                                             <span className="text-gray-500">Rename to</span>
                                             <strong className="text-gray-900">{rule.renamedTitle || 'Original Name'}</strong>
                                             <ArrowRight className="w-4 h-4 text-gray-300" />
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">
-                                                {category ? category.name : <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Missing Category</span>}
+                                                {category ? category.name : <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Missing Category</span>}
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     <CustomButton
                                         variant="destructive"
                                         size="icon"
