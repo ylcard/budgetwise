@@ -26,11 +26,17 @@ export const parseDate = (dateString) => {
  * @param {string} dateFormat - The desired format string
  * @returns {string} The formatted date string
  */
-export const formatDate = (date, dateFormat = "MMM dd, yyyy") => {
+export const formatDate = (date, formatOrSettings = "MMM dd, yyyy") => {
     if (!date) return "";
 
+    // If an object (settings) was passed instead of a string, fallback to default format
+    const fnsFormat = typeof formatOrSettings === 'string'
+        ? formatOrSettings
+        : "MMM dd, yyyy";
+
     let dateObj;
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+    // Use .test() instead of .match() for better safety
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
         dateObj = parseDate(date);
     } else if (date) {
         dateObj = new Date(date);
@@ -38,9 +44,8 @@ export const formatDate = (date, dateFormat = "MMM dd, yyyy") => {
         return "";
     }
 
+    // const fnsFormat = dateFormat || "MMM dd, yyyy";
     if (!dateObj || isNaN(dateObj.getTime())) return "";
-
-    const fnsFormat = dateFormat || "MMM dd, yyyy";
 
     return format(dateObj, fnsFormat);
 };
