@@ -122,8 +122,16 @@ export default function AutomationRulesSettings() {
     // Bulk Delete Mutation
     const { mutate: deleteBulkRules, isPending: isBulkDeleting } = useMutation({
         mutationFn: async (ids) => {
-            // Execute deletes in parallel
-            await Promise.all(ids.map(id => base44.entities.CategoryRule.delete(id)));
+            // Batch deletions to avoid API limits (process 50 at a time)
+            const chunkSize = 50;
+            const chunks = [];
+            for (let i = 0; i < ids.length; i += chunkSize) {
+                chunks.push(ids.slice(i, i + chunkSize));
+            }
+
+            for (const chunk of chunks) {
+                await base44.entities.CategoryRule.deleteMany({ id: { $in: chunk } });
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
