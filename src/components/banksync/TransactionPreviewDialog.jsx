@@ -157,13 +157,13 @@ export default function TransactionPreviewDialog({
                                                     <TrendingDown className="w-4 h-4 text-red-600 shrink-0" />
                                                 )}
                                                 <p className="font-medium text-gray-900 truncate">
-                                                    {tx.description}
+                                                    {String(tx.description || 'Transaction')}
                                                 </p>
                                             </div>
                                             <p className={`font-bold shrink-0 ${
                                                 isIncome ? 'text-green-600' : 'text-red-600'
                                             }`}>
-                                                {isIncome ? '+' : '-'}{formatCurrency(tx.amount, settings)}
+                                                {isIncome ? '+' : '-'}{settings ? formatCurrency(Number(tx.amount || 0), settings) : (tx.amount || 0)}
                                             </p>
                                         </div>
                                         
