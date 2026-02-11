@@ -123,8 +123,8 @@ export default function BankSync() {
                         // Calculate expiry: Current time + expires_in seconds
                         const expiresIn = Number(tokens?.expires_in) || 3600;
                         const expiryDate = new Date(Date.now() + (expiresIn * 1000));
-                        const expiryString = isNaN(expiryDate.getTime()) 
-                            ? new Date(Date.now() + 3600000).toISOString() 
+                        const expiryString = isNaN(expiryDate.getTime())
+                            ? new Date(Date.now() + 3600000).toISOString()
                             : expiryDate.toISOString();
 
                         // MODIFIED: 26-Jan-2026 - User selects bank in TrueLayer dialog, no stored bank info
@@ -196,17 +196,17 @@ export default function BankSync() {
 
             if (response.data.transactions && response.data.transactions.length > 0) {
                 console.log('✅ [SYNC] Showing preview with', response.data.transactions.length, 'transactions');
-                
-                // SANITIZE: Ensure every field is a safe string/number before the UI renders it
-                const safeTransactions = response.data.transactions.map(tx => ({
+
+                // Sanitize transactions to ensure strings and numbers are strictly typed
+                const sanitized = response.data.transactions.map(tx => ({
                     ...tx,
                     description: String(tx.description || 'Bank Transaction'),
                     date: typeof tx.date === 'string' ? tx.date : new Date().toISOString().split('T')[0],
                     amount: Number(tx.amount) || 0,
-                    bankTransactionId: String(tx.bankTransactionId || Math.random())
+                    bankTransactionId: String(tx.bankTransactionId)
                 }));
 
-                setPreviewTransactions(safeTransactions);
+                setPreviewTransactions(sanitized);
 
                 setShowTransactionPreview(true);
             } else {
