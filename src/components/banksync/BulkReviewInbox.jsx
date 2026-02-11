@@ -71,21 +71,40 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
         mutationFn: async (saveableGroups) => {
             let totalTransactionsUpdated = 0;
             const rulesToCreate = [];
+            const rulesToUpdate = [];
             const allTransactionUpdates = [];
 
+            // 1. Fetch current rules to check for keyword collisions
+            const existingRules = await base44.entities.CategoryRule.list({ user_email: user.email }) || [];
+
+            // Track keywords processed in this batch to prevent internal duplicates
+            const keywordsProcessedInBatch = new Set();
+
             for (const { group, categoryId, priority, matchKeywords, cleanName } of saveableGroups) {
-                const finalKeywords = matchKeywords ? matchKeywords.trim() : group.key;
+                const finalKeywords = (matchKeywords ? matchKeywords.trim() : group.key).toUpperCase();
                 const finalTitle = cleanName ? cleanName.trim() : group.displayTitle;
 
-                // 1. Queue up the Category Rule for bulk creation
-                rulesToCreate.push({
-                    user_email: user.email,
-                    keyword: finalKeywords.toUpperCase(), // e.g., "AMZN, AMAZON.ES"
-                    categoryId: categoryId,
-                    renamedTitle: finalTitle // e.g., "Amazon"
-                });
+                // 2. The Duplicate Check: Does this keyword string already exist?
+                const duplicateRule = existingRules.find(r => r.keyword.toUpperCase() === finalKeywords);
 
-                // 2. Queue up all the transaction update promises
+                if (duplicateRule) {
+                    // UPDATE: Overwrite the existing record using its hidden 'id'
+                    rulesToUpdate.push(() => base44.entities.CategoryRule.update(duplicateRule.id, {
+                        categoryId: categoryId,
+                        renamedTitle: finalTitle
+                    }));
+                } else if (!keywordsProcessedInBatch.has(finalKeywords)) {
+                    // CREATE: Queue for bulk creation
+                    rulesToCreate.push({
+                        user_email: user.email,
+                        keyword: finalKeywords,
+                        categoryId: categoryId,
+                        renamedTitle: finalTitle
+                    });
+                    keywordsProcessedInBatch.add(finalKeywords);
+                }
+
+                // 3. Queue up all the transaction update promises
                 group.transactions.forEach(tx => {
                     allTransactionUpdates.push(() => base44.entities.Transaction.update(tx.id, {
                         category_id: categoryId,
@@ -97,9 +116,14 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                 totalTransactionsUpdated += group.transactions.length;
             }
 
-            // A. Create ALL rules in a single, blazing-fast network request
+            // A. Execute Rule Operations
             if (rulesToCreate.length > 0) {
                 await base44.entities.CategoryRule.bulkCreate(rulesToCreate);
+            }
+
+            if (rulesToUpdate.length > 0) {
+                // These are fired in parallel; usually a small enough amount to not hit 429
+                await Promise.all(rulesToUpdate.map(updateFn => updateFn()));
             }
 
             // B. Process transaction updates in batches of 10 to avoid 429 errors
