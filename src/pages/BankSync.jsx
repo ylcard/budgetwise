@@ -204,7 +204,9 @@ export default function BankSync() {
 
             if (syncDays === "all") {
                 // 6 years limit
-                fromDate.setDate(now.getDate() - 2192);
+                // 2192 days times out
+                // trying 730 days
+                fromDate.setDate(now.getDate() - 730);
             } else {
                 fromDate.setDate(now.getDate() - parseInt(syncDays));
             }
