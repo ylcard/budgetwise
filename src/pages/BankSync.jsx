@@ -196,7 +196,18 @@ export default function BankSync() {
 
             if (response.data.transactions && response.data.transactions.length > 0) {
                 console.log('✅ [SYNC] Showing preview with', response.data.transactions.length, 'transactions');
-                setPreviewTransactions(response.data.transactions);
+                
+                // SANITIZE: Ensure every field is a safe string/number before the UI renders it
+                const safeTransactions = response.data.transactions.map(tx => ({
+                    ...tx,
+                    description: String(tx.description || 'Bank Transaction'),
+                    date: typeof tx.date === 'string' ? tx.date : new Date().toISOString().split('T')[0],
+                    amount: Number(tx.amount) || 0,
+                    bankTransactionId: String(tx.bankTransactionId || Math.random())
+                }));
+
+                setPreviewTransactions(safeTransactions);
+
                 setShowTransactionPreview(true);
             } else {
                 console.log('ℹ️ [SYNC] No transactions found');
