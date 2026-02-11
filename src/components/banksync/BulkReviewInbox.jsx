@@ -70,13 +70,17 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
         mutationFn: async (saveableGroups) => {
             let totalTransactionsUpdated = 0;
 
-            for (const { group, categoryId, priority } of saveableGroups) {
+            for (const { group, categoryId, priority, matchKeywords, cleanName } of saveableGroups) {
+                const finalKeywords = matchKeywords ? matchKeywords.trim() : group.key;
+                const finalTitle = cleanName ? cleanName.trim() : group.displayTitle;
+
                 // A. Update all transactions in this group
                 const updatePromises = group.transactions.map(tx =>
                     base44.entities.Transaction.update(tx.id, {
                         category_id: categoryId,
                         financial_priority: priority,
-                        needsReview: false
+                        needsReview: false,
+                        title: finalTitle // Overwrite messy string with clean name
                     })
                 );
                 await Promise.all(updatePromises);
@@ -85,9 +89,9 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                 // B. Create a Category Rule so the system learns (FIXED 422 ERROR)
                 await base44.entities.CategoryRule.create({
                     user_email: user.email,
-                    keyword: group.key,
+                    keyword: finalKeywords.toUpperCase(), // e.g., "AMZN, AMAZON.ES"
                     categoryId: categoryId, // Exact match to your schema
-                    // Omitted 'priority' entirely because your DB expects a number, not "needs"/"wants"
+                    renamedTitle: finalTitle // e.g., "Amazon"
                 });
             }
 
@@ -132,7 +136,9 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
         .map(([key, sel]) => ({
             group: groupedTransactions.find(g => g.key === key),
             categoryId: sel.categoryId,
-            priority: sel.priority
+            priority: sel.priority,
+            matchKeywords: sel.matchKeywords !== undefined ? sel.matchKeywords : key,
+            cleanName: sel.cleanName !== undefined ? sel.cleanName : groupedTransactions.find(g => g.key === key).displayTitle
         }));
 
     return (
@@ -181,6 +187,27 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                                                     Total: {formatCurrency(group.totalAmount, settings)}
                                                 </span>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
+                                                Bank Text Contains (Comma separated)
+                                            </label>
+                                            <Input
+                                                value={currentSelection.matchKeywords !== undefined ? currentSelection.matchKeywords : group.key}
+                                                onChange={(e) => handleSelectionChange(group.key, 'matchKeywords', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
+                                                Rename Transaction To
+                                            </label>
+                                            <Input
+                                                value={currentSelection.cleanName !== undefined ? currentSelection.cleanName : group.displayTitle}
+                                                onChange={(e) => handleSelectionChange(group.key, 'cleanName', e.target.value)}
+                                            />
                                         </div>
                                     </div>
 
