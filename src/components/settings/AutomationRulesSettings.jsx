@@ -417,13 +417,13 @@ export default function AutomationRulesSettings() {
                                                             onClick={() => handleInlineUpdate(rule.id, 'financial_priority', 'needs')}
                                                             className={`px-2 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all ${rule.financial_priority === 'needs' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                                         >
-                                                            <ShieldCheck className="w-3 h-3" /> Needs
+                                                            <ShieldCheck className="w-3 h-3" /> Essentials
                                                         </button>
                                                         <button
                                                             onClick={() => handleInlineUpdate(rule.id, 'financial_priority', 'wants')}
                                                             className={`px-2 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all ${rule.financial_priority === 'wants' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                                         >
-                                                            <Sparkles className="w-3 h-3" /> Wants
+                                                            <Sparkles className="w-3 h-3" /> Lifestyle
                                                         </button>
                                                     </div>
                                                 </TableCell>
