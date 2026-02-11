@@ -533,7 +533,11 @@ export default function TransactionFormContent({
 
         // ATOMIC CREATION: If priority is set but no specific custom budget is picked, 
         // ensure the system budget exists for the relevant month right now.
-        if (formData.type === 'expense' && formData.financial_priority) {
+        // if (formData.type === 'expense' && formData.financial_priority) {
+        const currentSelectedBudget = mergedBudgets.find(b => b.id === formData.budgetId);
+        const isCustomBudgetSelected = currentSelectedBudget && !currentSelectedBudget.isSystemBudget;
+
+        if (formData.type === 'expense' && formData.financial_priority && !isCustomBudgetSelected) {
             const relevantDate = formData.isPaid && formData.paidDate ? formData.paidDate : formData.date;
 
             // This call is synchronized via our Map lock in budgetInitialization
