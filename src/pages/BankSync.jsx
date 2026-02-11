@@ -245,7 +245,12 @@ export default function BankSync() {
                 }));
 
             if (newTransactions.length === 0) {
-                throw new Error('All transactions already exist');
+                toast({
+                    title: "Up to date",
+                    description: "No new transactions to import.",
+                    variant: "default"
+                });
+                return [];
             }
 
             return base44.entities.Transaction.bulkCreate(newTransactions);
