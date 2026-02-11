@@ -97,7 +97,6 @@ export default function BankSync() {
             if (code && state) {
                 const storedState = sessionStorage.getItem('bank_sync_state');
                 const storedProvider = sessionStorage.getItem('bank_sync_provider');
-                const storedBank = sessionStorage.getItem('bank_sync_bank');
 
                 if (state !== storedState) {
                     toast({
@@ -122,7 +121,7 @@ export default function BankSync() {
                         const tokens = tokenResponse.data.tokens;
 
                         // Calculate expiry: Current time + expires_in seconds
-                        const expiresIn = Number(tokens.expires_in) || 3600;
+                        const expiresIn = Number(tokens?.expires_in) || 3600;
                         const expiryDate = new Date(Date.now() + (expiresIn * 1000));
                         const expiryString = isNaN(expiryDate.getTime()) 
                             ? new Date(Date.now() + 3600000).toISOString() 
