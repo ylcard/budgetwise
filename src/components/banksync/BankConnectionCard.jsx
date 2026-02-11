@@ -62,10 +62,10 @@ const BankConnectionCard = memo(function BankConnectionCard({
                         {/* MODIFIED: 26-Jan-2026 - Support unified schema */}
                         <div>
                             <h3 className="font-semibold text-gray-900">
-                                {connection.provider_name || connection.aspsp_name}
+                                {String(connection.provider_name || connection.aspsp_name || 'Bank Account')}
                             </h3>
                             <p className="text-xs text-gray-500">
-                                {connection.country || connection.aspsp_country} • {connection.provider === 'truelayer' ? 'TrueLayer' : 'Enable Banking'}
+                                {String(connection.country || connection.aspsp_country || 'UK')} • {connection.provider === 'truelayer' ? 'TrueLayer' : 'Enable Banking'}
                             </p>
                         </div>
                     </div>
@@ -91,9 +91,9 @@ const BankConnectionCard = memo(function BankConnectionCard({
                                         {account.iban || account.account_id}
                                     </p>
                                 </div>
-                                {account.balance !== undefined && (
+                                {account.balance !== undefined && account.balance !== null && (
                                     <p className="text-sm font-semibold text-gray-900 ml-2">
-                                        {formatCurrency(Number(account.balance), settings)}
+                                        {settings ? formatCurrency(Number(account.balance || 0), settings) : '—'}
                                     </p>
                                 )}
                             </div>
@@ -102,7 +102,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
                 )}
 
                 {/* Last Sync */}
-                {connection.last_sync && (
+                {connection.last_sync && settings && (
                     <div className="text-xs text-gray-500 mb-3">
                         Last synced: {formatDate(connection.last_sync, settings)}
                     </div>
