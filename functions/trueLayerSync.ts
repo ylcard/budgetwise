@@ -151,8 +151,12 @@ Deno.serve(async (req) => {
         const accounts = accountsData.results || [];
         console.log('📊 [SYNC] Number of accounts found:', accounts.length);
 
-        // Fetch transactions for each account
-        const allTransactions = [];
+        /**
+         * Fetch transactions for each account
+         * Use a Map for deduplication based on bankTransactionId
+         */
+        const transactionMap = new Map();
+
         console.log('💸 [SYNC] Starting to fetch transactions for', accounts.length, 'accounts');
 
         for (let i = 0; i < accounts.length; i++) {
@@ -172,8 +176,9 @@ Deno.serve(async (req) => {
             let nextLink = `${BASE_API_URL}/data/v1/accounts/${account.account_id}/transactions?${params}`;
             let accountTransactions = [];
             let pageCount = 0;
+            const MAX_PAGES = 100; // Safety cap to prevent infinite loops
 
-            while (nextLink) {
+            while (nextLink && pageCount < MAX_PAGES) {
                 pageCount++;
                 console.log(`🌐 [SYNC] Fetching page ${pageCount} for account ${account.account_id}...`);
 
@@ -207,13 +212,13 @@ Deno.serve(async (req) => {
 
             console.log(`✅ [SYNC] Collected ${accountTransactions.length} raw transactions across ${pageCount} pages`);
 
-            // Transform collected transactions to app format
-            const transformedTransactions = accountTransactions.map((tx, txIndex) => {
+            // Deduplicate and Transform to app format
+            accountTransactions.forEach((tx) => {
 
                 const transformed = {
                     bankTransactionId: tx.transaction_id,
                     accountId: account.account_id,
-                    accountName: account.display_name || `${account.account_type} Account`,
+                    accountName: String(account.display_name || `${account.account_type} Account`),
                     date: tx.timestamp.split('T')[0],
                     amount: Math.abs(tx.amount),
                     type: tx.transaction_type === 'CREDIT' ? 'income' : 'expense',
@@ -224,18 +229,16 @@ Deno.serve(async (req) => {
                     originalData: tx,
                 };
 
-                if (txIndex === 0) {
-                    console.log('📝 [SYNC] Sample transformed transaction:', JSON.stringify(transformed, null, 2));
-                }
-
-                return transformed;
+                // Map.set automatically handles deduplication by overwriting same IDs
+                transactionMap.set(tx.transaction_id, transformed);
             });
 
-            console.log(`✅ [SYNC] Transformed ${transformedTransactions.length} transactions for account ${account.account_id}`);
-            allTransactions.push(...transformedTransactions);
+            console.log(`✅ [SYNC] Account ${account.account_id} processing complete.`);
         }
 
-        console.log(`\n📊 [SYNC] Total transactions collected: ${allTransactions.length}`);
+        // Convert Map back to an array for the final response
+        const allTransactions = Array.from(transactionMap.values());
+        console.log(`\n📊 [SYNC] Total UNIQUE transactions collected: ${allTransactions.length}`);
 
         // Update connection metadata
         console.log('💾 [SYNC] Updating connection metadata...');
