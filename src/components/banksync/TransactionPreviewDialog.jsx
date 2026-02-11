@@ -169,7 +169,7 @@ export default function TransactionPreviewDialog({
                                         
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
                                             <span>{formatDate(tx.date, settings)}</span>
-                                            {tx.currency !== settings.baseCurrency && (
+                                            {tx.currency && settings?.baseCurrency && tx.currency !== settings.baseCurrency && (
                                                 <>
                                                     <span>•</span>
                                                     <Badge variant="outline" className="text-xs">
