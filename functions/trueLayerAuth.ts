@@ -48,8 +48,8 @@ Deno.serve(async (req) => {
             const { redirectUrl, state, providerId } = params;
 
             // Use core scopes for better compatibility during testing
-            const scopes = 'info accounts balance cards transactions direct_debits standing_orders offline_access';
-            
+            const scopes = 'info accounts transactions offline_access';
+
             const authParams = new URLSearchParams({
                 response_type: 'code',
                 client_id: clientId,
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
             }
 
             const authUrl = `${AUTH_URL}/?${authParams.toString()}`;
-            
+
             return Response.json({ authUrl });
         }
 
