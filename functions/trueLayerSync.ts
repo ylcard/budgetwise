@@ -373,9 +373,17 @@ Deno.serve(async (req) => {
                 // Combine all available string data to maximize regex matching surface area
                 const searchString = `${rawDescription} ${tx.merchant_name || ''} ${tx.meta?.counter_party_preferred_name || ''}`.toUpperCase();
 
-                const catResult = await categorizeTransaction(base44, user.email, searchString, rules, categories);
+                // const catResult = await categorizeTransaction(base44, user.email, searchString, rules, categories);
                 const txDate = tx.timestamp.split('T')[0];
                 const isExpense = tx.transaction_type !== 'CREDIT';
+
+                // Default to null/false for Income
+                let catResult = { categoryId: null, priority: 'wants', needsReview: false };
+                
+                // Only run categorization engine for expenses
+                if (isExpense) {
+                    catResult = categorizeTransaction(searchString, rules, categories);
+                }
 
                 const transformed = {
                     title: rawDescription,
