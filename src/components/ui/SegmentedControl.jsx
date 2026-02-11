@@ -62,24 +62,29 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                 <AnimatePresence mode="popLayout" initial={false}>
                     {options.map((option) => {
                         const isActive = value === option.value;
+                        const isSingleMobileIcon = isMobile && !isExpanded && isActive;
                         const shouldShow = !isMobile || isExpanded || isActive;
 
                         if (!shouldShow) return null;
 
+                        const animationProps = isSingleMobileIcon
+                            ? { opacity: 1, width: 40, paddingLeft: 0, paddingRight: 0 }
+                            : { opacity: 1, width: "auto", paddingLeft: 8, paddingRight: 8 };
+
                         return (
                             <motion.button
                                 key={option.value}
-                                layout="position"
-                                initial={{ opacity: 0, scale: 0.5, width: 0 }}
-                                animate={{ opacity: 1, scale: 1, width: 'auto' }}
-                                exit={{ opacity: 0, scale: 0.5, width: 0 }}
-                                transition={{ duration: 0.2 }}
+                                layout
+                                initial={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
+                                animate={animationProps}
+                                exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
+                                transition={{ type: "spring", bounce: 0, duration: 0.3 }}
                                 onClick={() => handleSelect(option.value)}
                                 className={cn(
-                                    "flex items-center justify-center gap-2 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 shrink-0",
+                                    "flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-colors shrink-0 overflow-hidden whitespace-nowrap",
                                     isActive && (!isMobile || isExpanded) ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900",
                                     // Single icon state formatting
-                                    !isExpanded && isMobile && isActive && "bg-gray-100 shadow-sm px-0 w-10 h-10 rounded-lg"
+                                    isSingleMobileIcon && "bg-gray-100 shadow-sm h-10 rounded-lg"
                                 )}
                             >
                                 <span className="flex items-center justify-center shrink-0">
