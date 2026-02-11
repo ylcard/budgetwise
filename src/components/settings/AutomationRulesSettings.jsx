@@ -159,6 +159,7 @@ export default function AutomationRulesSettings() {
 
     // --- INLINE EDITING LOGIC ---
     const [editingId, setEditingId] = useState(null); // Tracks which row is having its title edited
+    const [editingKeyword, setEditingKeyword] = useState(null); // { ruleId, index, value }
     const handleInlineUpdate = (ruleId, field, value) => {
         updateRule({ id: ruleId, data: { [field]: value } });
     };
@@ -170,6 +171,22 @@ export default function AutomationRulesSettings() {
 
         const updatedKeywords = [...currentKeywords, newKeyword.trim()].join(',');
         updateRule({ id: rule.id, data: { keyword: updatedKeywords } });
+    };
+
+    const handleEditKeyword = (rule, index, newValue) => {
+        setEditingKeyword(null);
+        if (!newValue.trim()) {
+            // If empty, ask to remove? Or just revert? Let's revert for safety, or remove if user intended.
+            // Better UX: If they clear it, assume they want to delete it.
+            handleRemoveKeyword(rule, rule.keyword.split(',')[index].trim());
+            return;
+        }
+
+        const currentKeywords = rule.keyword.split(',').map(k => k.trim());
+        if (currentKeywords[index] === newValue.trim()) return; // No change
+
+        currentKeywords[index] = newValue.trim();
+        updateRule({ id: rule.id, data: { keyword: currentKeywords.join(',') } });
     };
 
     const handleCreateSave = () => {
@@ -351,18 +368,40 @@ export default function AutomationRulesSettings() {
                                                 <TableCell>
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {rule.keyword.split(',').map((kw, i) => (
-                                                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border group">
-                                                                {kw.trim()}
-                                                                <button
-                                                                    onClick={() => handleRemoveKeyword(rule, kw.trim())}
-                                                                    className="ml-1 text-gray-400 hover:text-red-500 hidden group-hover:inline-block"
+                                                            editingKeyword?.ruleId === rule.id && editingKeyword?.index === i ? (
+                                                                <Input
+                                                                    key={i}
+                                                                    autoFocus
+                                                                    defaultValue={kw.trim()}
+                                                                    className="h-6 w-24 text-xs px-1 py-0 bg-white shadow-sm border-blue-400"
+                                                                    onBlur={(e) => handleEditKeyword(rule, i, e.target.value)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') handleEditKeyword(rule, i, e.currentTarget.value);
+                                                                        if (e.key === 'Escape') setEditingKeyword(null);
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <span
+                                                                    key={i}
+                                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-transparent hover:border-gray-300 cursor-pointer group transition-all"
+                                                                    onClick={() => setEditingKeyword({ ruleId: rule.id, index: i, value: kw.trim() })}
+                                                                    title="Click to edit keyword"
                                                                 >
-                                                                    <X className="w-3 h-3" />
-                                                                </button>
-                                                            </span>
+                                                                    {kw.trim()}
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation(); // Prevent entering edit mode
+                                                                            handleRemoveKeyword(rule, kw.trim());
+                                                                        }}
+                                                                        className="ml-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-full hover:bg-gray-200"
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                </span>
+                                                            )
                                                         ))}
                                                         <Input
-                                                            className="h-6 w-20 text-[10px] px-1 bg-transparent border-dashed border-gray-300 focus:w-32 transition-all"
+                                                            className="h-6 w-20 text-[10px] px-1 bg-transparent border-dashed border-gray-300 focus:w-24 focus:bg-white focus:border-solid focus:border-blue-400 transition-all placeholder:text-gray-400"
                                                             placeholder="+ Add"
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter') {
