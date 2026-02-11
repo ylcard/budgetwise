@@ -9,6 +9,7 @@ import { useCategoryActions } from "../components/hooks/useActions";
 import CategoryForm from "../components/categories/CategoryForm";
 import CategoryGrid from "../components/categories/CategoryGrid";
 import { useFAB } from "../components/hooks/FABContext";
+import AutomationRulesSettings from "../components/settings/AutomationRulesSettings";
 
 export default function Categories() {
     // UI state
@@ -90,6 +91,15 @@ export default function Categories() {
                         onDelete={handleDelete}
                         isLoading={isLoading}
                     />
+
+                    {/* --- Automation Section --- */}
+                    <div className="pt-10 border-t border-gray-100">
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Automation</h2>
+                            <p className="text-gray-500">Manage how the engine recognizes your merchants</p>
+                        </div>
+                        <AutomationRulesSettings />
+                    </div>
                 </div>
             </div>
         </PullToRefresh>
