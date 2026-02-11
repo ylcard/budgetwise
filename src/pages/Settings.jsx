@@ -92,10 +92,10 @@ export default function Settings() {
     const handleAccountDeletion = async () => {
         try {
             // TODO: Implement actual account deletion backend logic
-            showToast({ 
-                title: "Account Deletion Requested", 
-                description: "Your account deletion request has been received. You will be logged out shortly.", 
-                variant: "destructive" 
+            showToast({
+                title: "Account Deletion Requested",
+                description: "Your account deletion request has been received. You will be logged out shortly.",
+                variant: "destructive"
             });
             // Simulate account deletion process
             setTimeout(() => {
@@ -103,10 +103,10 @@ export default function Settings() {
             }, 2000);
         } catch (error) {
             console.error('Account deletion error:', error);
-            showToast({ 
-                title: "Error", 
-                description: "Failed to process account deletion request.", 
-                variant: "destructive" 
+            showToast({
+                title: "Error",
+                description: "Failed to process account deletion request.",
+                variant: "destructive"
             });
         }
     };
@@ -207,9 +207,9 @@ export default function Settings() {
                                 </div>
                                 <div className="flex items-center justify-between pt-8">
                                     <Label className="cursor-pointer font-medium">Hide Trailing Zeros</Label>
-                                    <Switch 
-                                        checked={formData.hideTrailingZeros} 
-                                        onCheckedChange={(checked) => handleFormChange('hideTrailingZeros', checked)} 
+                                    <Switch
+                                        checked={formData.hideTrailingZeros}
+                                        onCheckedChange={(checked) => handleFormChange('hideTrailingZeros', checked)}
                                     />
                                 </div>
                             </div>
@@ -239,7 +239,7 @@ export default function Settings() {
                             <div className="p-4 bg-red-50 rounded-lg border border-red-100">
                                 <p className="text-sm text-red-800 font-medium mb-2">Warning: This action cannot be undone</p>
                                 <p className="text-xs text-red-600">
-                                    Deleting your account will permanently remove all your data including transactions, budgets, 
+                                    Deleting your account will permanently remove all your data including transactions, budgets,
                                     categories, and settings. This action is irreversible.
                                 </p>
                             </div>
@@ -283,36 +283,38 @@ export default function Settings() {
                 </Card>
 
                 {/* --- STATIC ACTION BUTTONS --- */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
-                    <CustomButton
-                        onClick={handleResetToDefaults}
-                        variant="outline"
-                        className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                    >
-                        Reset to Defaults
-                    </CustomButton>
-
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        {hasChanges && (
-                            <div className="flex items-center gap-3 w-full sm:w-auto animate-in fade-in slide-in-from-right-4 duration-300">
-                                <CustomButton
-                                    onClick={handleDiscard}
-                                    variant="ghost"
-                                    className="w-full sm:w-auto"
-                                >
-                                    Discard Changes
-                                </CustomButton>
-                            </div>
-                        )}
-
+                <div className="sticky bottom-0 z-50 p-4 -mx-4 md:mx-0 bg-white/80 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] rounded-t-xl md:rounded-xl mt-8">
+                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
                         <CustomButton
-                            onClick={handleGlobalSave}
-                            disabled={isGlobalSaving || !hasChanges}
-                            variant="primary"
-                            className="w-full sm:w-auto min-w-[140px]"
+                            onClick={handleResetToDefaults}
+                            variant="outline"
+                            className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                         >
-                            {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Settings</>}
+                            Reset to Defaults
                         </CustomButton>
+
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                            {hasChanges && (
+                                <div className="w-full sm:w-auto animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-300">
+                                    <CustomButton
+                                        onClick={handleDiscard}
+                                        variant="ghost"
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Discard Changes
+                                    </CustomButton>
+                                </div>
+                            )}
+
+                            <CustomButton
+                                onClick={handleGlobalSave}
+                                disabled={isGlobalSaving || !hasChanges}
+                                variant="primary"
+                                className="w-full sm:w-auto min-w-[140px]"
+                            >
+                                {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Settings</>}
+                            </CustomButton>
+                        </div>
                     </div>
                 </div>
             </div>
