@@ -2,19 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { useToast } from "../components/ui/use-toast";
 import BankConnectionCard from "../components/banksync/BankConnectionCard";
-// COMMENTED OUT: 26-Jan-2026 - No bank selection dialog for TrueLayer
-// import BankSelectionDialog from "../components/banksync/BankSelectionDialog";
 import TransactionPreviewDialog from "../components/banksync/TransactionPreviewDialog";
 import {
     Building2,
     Plus,
-    AlertCircle,
     Sparkles,
     Info
 } from "lucide-react";
@@ -39,17 +36,9 @@ export default function BankSync() {
     const { toast } = useToast();
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
-
-    // COMMENTED OUT: 26-Jan-2026 - No bank selection dialog needed for TrueLayer
-    // const [showBankSelection, setShowBankSelection] = useState(false);
     const [showTransactionPreview, setShowTransactionPreview] = useState(false);
     const [previewTransactions, setPreviewTransactions] = useState(null);
-    // COMMENTED OUT: 26-Jan-2026 - No bank loading needed
-    // const [loadingBanks, setLoadingBanks] = useState(false);
     const [syncing, setSyncing] = useState(null);
-    // COMMENTED OUT: 26-Jan-2026 - No bank list needed
-    // const [banks, setBanks] = useState(null);
-    // const [selectedProvider, setSelectedProvider] = useState('truelayer');
 
     // Fetch bank connections
     const { data: connections = [], isLoading } = useQuery({
@@ -60,7 +49,6 @@ export default function BankSync() {
     // MODIFIED: 26-Jan-2026 - TrueLayer shows banks in auth dialog, no API to fetch list
     const initiateConnection = useCallback(async () => {
         try {
-            // const redirectUrl = `${window.location.origin}/BankSync`;
             // Force the production URL if we are not on localhost
             const redirectUrl = window.location.hostname === 'localhost'
                 ? `${window.location.origin}/BankSync`
@@ -88,7 +76,6 @@ export default function BankSync() {
         }
     }, [toast]);
 
-    // MODIFIED: 26-Jan-2026 - Handle both TrueLayer and Enable Banking callbacks
     useEffect(() => {
         const handleCallback = async () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -161,38 +148,12 @@ export default function BankSync() {
                             description: "Successfully connected via TrueLayer"
                         });
                     }
-                    // COMMENTED OUT: 26-Jan-2026 - Enable Banking flow removed
-                    // else {
-                    //     const bank = JSON.parse(storedBank);
-                    //     const response = await base44.functions.invoke('enableBankingAuth', {
-                    //         action: 'createSession',
-                    //         code
-                    //     });
-                    //     const session = response.data.session;
-                    //     await base44.entities.BankConnection.create({
-                    //         provider: 'enable_banking',
-                    //         provider_name: bank.name,
-                    //         provider_id: bank.name,
-                    //         country: bank.country,
-                    //         access_token: session.session_id,
-                    //         accounts: session.accounts || [],
-                    //         status: 'active',
-                    //         auto_sync_enabled: true,
-                    //         user_email: (await base44.auth.me()).email
-                    //     });
-                    //     toast({
-                    //         title: "Bank connected!",
-                    //         description: `Successfully connected to ${bank.name} via Enable Banking`
-                    //     });
-                    // }
 
                     queryClient.invalidateQueries(['bankConnections']);
 
                     // Clear storage and URL
                     sessionStorage.removeItem('bank_sync_state');
                     sessionStorage.removeItem('bank_sync_provider');
-                    // COMMENTED OUT: 26-Jan-2026 - No longer storing bank info
-                    // sessionStorage.removeItem('bank_sync_bank');
                     window.history.replaceState({}, '', '/BankSync');
 
                 } catch (error) {
@@ -208,34 +169,22 @@ export default function BankSync() {
         handleCallback();
     }, [queryClient, toast]);
 
-    // MODIFIED: 27-Jan-2026 - TrueLayer only (Enable Banking deprecated)
     const handleSync = useCallback(async (connection) => {
         console.log('🔄 [SYNC] Starting sync for connection:', connection.id);
         setSyncing(connection.id);
         try {
-            const dateFrom = new Date();
-            dateFrom.setDate(dateFrom.getDate() - 30);
+            const now = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(now.getDate() - 30);
 
-            console.log('🔄 [SYNC] Date range:', {
-                from: dateFrom.toISOString().split('T')[0],
-                to: new Date().toISOString().split('T')[0]
-            });
+            // Format as YYYY-MM-DD strictly
+            const dateTo = now.toISOString().split('T')[0];
+            const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
 
-            // COMMENTED OUT: 27-Jan-2026 - Enable Banking deprecated, only TrueLayer supported
-            // const functionName = connection.provider === 'truelayer'
-            //     ? 'trueLayerSync'
-            //     : 'syncBankTransactions';
-
-            console.log('🔄 [SYNC] Invoking trueLayerSync function...');
-            console.log('🔍 [DEBUG] Connection Details:', {
-                connectionId: connection.id,
-                accountId: connection.accounts?.[0]?.account_id,
-                fullConnection: connection
-            });
             const response = await base44.functions.invoke('trueLayerSync', {
                 connectionId: connection.id,
-                dateFrom: dateFrom.toISOString().split('T')[0],
-                dateTo: new Date().toISOString().split('T')[0]
+                dateFrom,
+                dateTo
             });
 
             console.log('✅ [SYNC] Response received:', response);
@@ -354,7 +303,7 @@ export default function BankSync() {
                             Connect your bank accounts to automatically import transactions
                         </p>
                     </div>
-                    {/* MODIFIED: 26-Jan-2026 - Direct to TrueLayer auth dialog */}
+
                     <CustomButton
                         variant="create"
                         onClick={initiateConnection}
@@ -364,7 +313,6 @@ export default function BankSync() {
                     </CustomButton>
                 </div>
 
-                {/* MODIFIED: 26-Jan-2026 - TrueLayer only */}
                 <Alert className="bg-blue-50 border-blue-200">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-900">
@@ -417,16 +365,6 @@ export default function BankSync() {
                     ))}
                 </div>
             )}
-
-            {/* Dialogs */}
-            {/* COMMENTED OUT: 26-Jan-2026 - No bank selection dialog for TrueLayer */}
-            {/* <BankSelectionDialog
-                open={showBankSelection}
-                onOpenChange={setShowBankSelection}
-                banks={banks}
-                onSelectBank={handleSelectBank}
-                isLoading={loadingBanks}
-            /> */}
 
             <TransactionPreviewDialog
                 open={showTransactionPreview}
