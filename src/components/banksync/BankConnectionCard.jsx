@@ -48,35 +48,35 @@ const BankConnectionCard = memo(function BankConnectionCard({
         }
     };
 
-    const config = statusConfig[connection.status] || statusConfig.active;
+    const config = statusConfig[connection?.status] || statusConfig.active;
     const StatusIcon = config.icon;
 
     return (
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-md transition-shadow border-gray-200">
             <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg ${config.bg} flex items-center justify-center`}>
-                            <Building2 className={`w-5 h-5 ${config.color}`} />
+                        <div className={`w-10 h-10 rounded-lg ${config?.bg || 'bg-blue-50'} flex items-center justify-center`}>
+                            <Building2 className={`w-5 h-5 ${config?.color || 'text-blue-600'}`} />
                         </div>
-                        {/* MODIFIED: 26-Jan-2026 - Support unified schema */}
+
                         <div>
                             <h3 className="font-semibold text-gray-900">
-                                {String(connection.provider_name || connection.aspsp_name || 'Bank Account')}
+                                {String(connection?.provider_name || 'Bank Account')}
                             </h3>
                             <p className="text-xs text-gray-500">
-                                {String(connection.country || connection.aspsp_country || 'UK')} • {connection.provider === 'truelayer' ? 'TrueLayer' : 'Enable Banking'}
+                                {String(connection?.country || 'UK')} • TrueLayer
                             </p>
                         </div>
                     </div>
-                    <Badge className={config.badge}>
+                    <Badge className={config?.badge || ''}>
                         <StatusIcon className="w-3 h-3 mr-1" />
-                        {connection.status}
+                        {connection?.status || 'active'}
                     </Badge>
                 </div>
 
                 {/* Accounts */}
-                {connection.accounts && connection.accounts.length > 0 && (
+                {connection?.accounts && connection.accounts.length > 0 && (
                     <div className="space-y-2 mb-4">
                         {connection.accounts.map((account, idx) => (
                             <div 
@@ -91,9 +91,9 @@ const BankConnectionCard = memo(function BankConnectionCard({
                                         {account.iban || account.account_id}
                                     </p>
                                 </div>
-                                {account.balance !== undefined && account.balance !== null && (
+                                {account.balance !== undefined && account.balance !== null && settings && (
                                     <p className="text-sm font-semibold text-gray-900 ml-2">
-                                        {settings ? formatCurrency(Number(account.balance || 0), settings) : '—'}
+                                        {formatCurrency(Number(account.balance || 0), settings)}
                                     </p>
                                 )}
                             </div>
@@ -102,7 +102,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
                 )}
 
                 {/* Last Sync */}
-                {connection.last_sync && settings && (
+                {connection?.last_sync && settings && (
                     <div className="text-xs text-gray-500 mb-3">
                         Last synced: {formatDate(connection.last_sync, settings)}
                     </div>
