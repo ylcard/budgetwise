@@ -16,6 +16,7 @@ import { formatDateString } from "@/components/utils/dateUtils";
 import {
     Building2,
     Plus,
+    Loader2,
     Sparkles,
     Info
 } from "lucide-react";
@@ -51,6 +52,7 @@ export default function BankSync() {
     const [showTransactionPreview, setShowTransactionPreview] = useState(false);
     const [previewTransactions, setPreviewTransactions] = useState(null);
     const [syncing, setSyncing] = useState(null);
+    const [syncStatus, setSyncStatus] = useState("");
     const [syncDays, setSyncDays] = useState("30");
 
     // Fetch bank connections
@@ -188,6 +190,14 @@ export default function BankSync() {
     const handleSync = useCallback(async (connection) => {
         console.log('🔄 [SYNC] Starting sync for connection:', connection.id);
         setSyncing(connection.id);
+
+        // Set descriptive status for long-running historical syncs
+        if (syncDays === "all") {
+            setSyncStatus("Fetching full history. This may take a moment...");
+        } else {
+            setSyncStatus("Syncing transactions...");
+        }
+
         try {
             const now = new Date();
             const fromDate = new Date();
@@ -260,6 +270,7 @@ export default function BankSync() {
         } finally {
             console.log('🔄 [SYNC] Sync completed, resetting syncing state');
             setSyncing(null);
+            setSyncStatus("");
         }
     }, [toast]);
 
@@ -389,9 +400,17 @@ export default function BankSync() {
                     >
                         <option value="30">Last 30 Days</option>
                         <option value="90">Last 90 Days</option>
-                        <option value="all">All Time (2 Years)</option>
+                        <option value="all">Full History (All Time)</option>
                     </select>
                 </div>
+
+                {/* Progress Indicator */}
+                {syncing && (
+                    <div className="flex items-center gap-2 mb-6 text-sm text-blue-600 animate-pulse bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm w-fit">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="font-medium">{syncStatus}</span>
+                    </div>
+                )}
 
                 <Alert className="bg-blue-50 border-blue-200">
                     <Info className="h-4 w-4 text-blue-600" />
