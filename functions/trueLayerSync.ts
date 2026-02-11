@@ -82,12 +82,22 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
         let matched = false;
         if (rule.regexPattern) {
             try { if (new RegExp(rule.regexPattern, 'i').test(searchString)) matched = true; } catch (e) { }
-        } else if (rule.keyword && searchString.includes(rule.keyword.toUpperCase())) {
-            matched = true;
+        } else if (rule.keyword) {
+            // Split comma-separated variations into an array and check if any match
+            const variations = rule.keyword.split(',').map(k => k.trim().toUpperCase());
+            if (variations.some(k => searchString.includes(k))) {
+                matched = true;
+            }
         }
         if (matched && rule.categoryId) {
             const cat = categoriesList.find(c => c.id === rule.categoryId);
-            if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority || 'wants', needsReview: false };
+            if (cat) return {
+                categoryId: cat.id,
+                categoryName: cat.name,
+                priority: cat.priority || 'wants',
+                needsReview: false,
+                renamedTitle: rule.renamedTitle || null // Pass the clean name back!
+            };
         }
     }
 
@@ -373,7 +383,7 @@ Deno.serve(async (req) => {
                 }
 
                 const transformed = {
-                    title: rawDescription,
+                    title: catResult.renamedTitle || rawDescription, // Use clean name if rule found it
                     amount: Math.abs(tx.amount),
                     originalAmount: Math.abs(tx.amount),
                     originalCurrency: tx.currency,
