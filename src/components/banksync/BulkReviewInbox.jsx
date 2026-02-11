@@ -36,13 +36,15 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     // 1. Smart Grouping Logic
     const groupedTransactions = useMemo(() => {
         if (!transactions || transactions.length === 0) return [];
-        
+
         const groups = {};
         transactions.forEach(tx => {
             // Prefer merchantName. Fallback to title. Uppercase to normalize.
-            const rawKey = tx.merchantName || tx.title || 'Unknown';
-            const key = rawKey.toUpperCase().trim();
-            
+            let rawKey = tx.merchantName || tx.title || 'Unknown';
+            // Clean the key: remove numbers and common symbols to force better grouping 
+            // e.g. "UBER EATS 1234" and "UBER EATS 5678" become "UBER EATS"
+            const key = rawKey.replace(/[0-9#*+\-]/g, '').trim().toUpperCase();
+
             if (!groups[key]) {
                 groups[key] = {
                     key: key,
@@ -61,40 +63,46 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     }, [transactions]);
 
     // 2. The Save Mutation
-    const { mutate: saveGroup, isPending: isSaving } = useMutation({
-        mutationFn: async ({ group, categoryId, priority }) => {
-            const categoryName = categories.find(c => c.id === categoryId)?.name || 'Uncategorized';
+    const { mutate: saveBulkRules, isPending: isSaving } = useMutation({
+        mutationFn: async (saveableGroups) => {
+            let totalTransactionsUpdated = 0;
 
-            // A. Update all transactions in this group
-            const updatePromises = group.transactions.map(tx => 
-                base44.entities.Transaction.update(tx.id, {
-                    category_id: categoryId,
-                    financial_priority: priority,
-                    needsReview: false // Mark as reviewed!
-                })
-            );
-            await Promise.all(updatePromises);
+            for (const { group, categoryId, priority } of saveableGroups) {
+                // A. Update all transactions in this group
+                const updatePromises = group.transactions.map(tx =>
+                    base44.entities.Transaction.update(tx.id, {
+                        category_id: categoryId,
+                        financial_priority: priority,
+                        needsReview: false
+                    })
+                );
+                await Promise.all(updatePromises);
+                totalTransactionsUpdated += group.transactions.length;
 
-            // B. Create a Category Rule so the system learns
-            // Updated to use standard snake_case to prevent 422 errors
-            await base44.entities.CategoryRule.create({
-                user_email: user.email,
-                keyword: group.key,
-                category_id: categoryId, // Changed to snake_case
-                priority: priority
-            });
+                // B. Create a Category Rule so the system learns (FIXED 422 ERROR)
+                await base44.entities.CategoryRule.create({
+                    user_email: user.email,
+                    keyword: group.key,
+                    categoryId: categoryId, // Exact match to your schema
+                    // Omitted 'priority' entirely because your DB expects a number, not "needs"/"wants"
+                });
+            }
 
-            return { count: group.transactions.length, keyword: group.key };
+            return { groupsCount: saveableGroups.length, txCount: totalTransactionsUpdated };
         },
         onSuccess: (data) => {
             toast({
-                title: "Saved & Learned!",
-                description: `Updated ${data.count} transactions and created a rule for "${data.keyword}".`,
+                title: "Inbox Cleared!",
+                description: `Updated ${data.txCount} transactions and created ${data.groupsCount} automation rules.`,
                 variant: "success"
             });
-            // Refresh queries to remove these from the "needsReview" list
-            queryClient.invalidateQueries(['transactions']);
-            queryClient.invalidateQueries(['categoryRules']);
+
+            // Force deep cache refresh so the dashboard counter updates instantly
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+            // Clear selections and close modal
+            setSelections({});
+            onOpenChange(false);
         },
         onError: (error) => {
             toast({
@@ -114,6 +122,15 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             }
         }));
     };
+
+    // Calculate how many groups are fully filled out and ready to save
+    const readyToSaveGroups = Object.entries(selections)
+        .filter(([_, sel]) => sel.categoryId && sel.priority)
+        .map(([key, sel]) => ({
+            group: groupedTransactions.find(g => g.key === key),
+            categoryId: sel.categoryId,
+            priority: sel.priority
+        }));
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -201,25 +218,25 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                                             />
                                         </div>
                                     </div>
-
-                                    <CustomButton 
-                                        variant="success" 
-                                        className="w-full"
-                                        disabled={!canSave || isSaving}
-                                        onClick={() => saveGroup({ 
-                                            group, 
-                                            categoryId: currentSelection.categoryId, 
-                                            priority: currentSelection.priority 
-                                        })}
-                                    >
-                                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BrainCircuit className="w-4 h-4 mr-2" />}
-                                        Save & Apply Rule
-                                    </CustomButton>
                                 </div>
                             );
                         })
                     )}
                 </div>
+
+                {/* Sticky Bottom Bar for Single Save Action */}
+                {groupedTransactions.length > 0 && (
+                    <div className="p-4 bg-white border-t flex justify-end shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                        <CustomButton
+                            variant="success"
+                            disabled={readyToSaveGroups.length === 0 || isSaving}
+                            onClick={() => saveBulkRules(readyToSaveGroups)}
+                        >
+                            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BrainCircuit className="w-4 h-4 mr-2" />}
+                            Save & Apply {readyToSaveGroups.length} Rules
+                        </CustomButton>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );
