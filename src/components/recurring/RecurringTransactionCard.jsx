@@ -114,6 +114,14 @@ const RecurringTransactionCard = memo(function RecurringTransactionCard({
                     {isIncome ? '+' : '-'}{formatCurrency(recurring.amount, settings)}
                 </span>
             </div>
+
+            {/* Action Handle / Pill Indicator */}
+            {/* Only show in normal mode (not selection mode) to reduce clutter */}
+            {!isSelectionMode && (
+                <div className="shrink-0 pl-2 text-muted-foreground/30">
+                    <ChevronRight className="w-5 h-5" />
+                </div>
+            )}
         </motion.div>
     );
 });
