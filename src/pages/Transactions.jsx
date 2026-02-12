@@ -411,7 +411,7 @@ export default function Transactions() {
             />
             {isMobile ? (
                 <Drawer open={showRecurringForm} onOpenChange={setShowRecurringForm}>
-                    <DrawerContent className="max-h-[92vh] z-[120] bg-background">
+                   <DrawerContent className="max-h-[92vh] z-[500] bg-background">
                         <DrawerHeader className="text-left">
                             <DrawerTitle className="text-xl font-bold px-4">
                                 {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
