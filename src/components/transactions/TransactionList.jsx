@@ -245,14 +245,16 @@ export default function TransactionList({
                                         />
                                     </td>
                                     <td className="px-4 py-2 font-medium text-foreground max-w-[150px] md:max-w-[220px] truncate" title={transaction.title}>{transaction.title}</td>
-                                    <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
-                                        {format(new Date(transaction.date), "MMM d, yyyy")}
+                                    <td className="px-4 py-2 text-muted-foreground whitespace-nowrap text-center">
+                                        <span className="text-sm text-muted-foreground tabular-nums">
+                                            {format(new Date(transaction.date), "MMM d, yyyy")}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-2 text-muted-foreground whitespace-nowrap text-center">
                                         {isIncome ? (
                                             <span className="text-muted-foreground/30">-</span>
                                         ) : transaction.paidDate ? (
-                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
                                                 {format(new Date(transaction.paidDate), "MMM d, yyyy")}
                                             </span>
                                         ) : (
