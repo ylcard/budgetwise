@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw, Link2 } from "lucide-react";
+import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw, Link2, RefreshCw } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 export const navigationItems = [
@@ -24,6 +24,11 @@ export const navigationItems = [
         url: createPageUrl("Budgets"),
         icon: Calendar,
     },
+    {
+        title: "Settings",
+        url: createPageUrl("Settings"),
+        icon: Settings,
+    },
     // Secondary Nav (Moved to "More" menu)
     {
         title: "Categories",
@@ -36,13 +41,13 @@ export const navigationItems = [
         icon: BarChart3,
     },
     {
+        title: "Automation",
+        url: createPageUrl("Automation"),
+        icon: RefreshCw,
+    },
+    {
         title: "Bank Sync",
         url: createPageUrl("BankSync"),
         icon: Link2,
-    },
-    {
-        title: "Settings",
-        url: createPageUrl("Settings"),
-        icon: Settings,
     },
 ];
