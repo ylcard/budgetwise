@@ -323,6 +323,11 @@ function AccountSection() {
     const { settings, updateSettings } = useSettings();
     const [localName, setLocalName] = useState(settings.displayName || "");
     const [isSaving, setIsSaving] = useState(false);
+    
+    const handleAccountDeletion = () => {
+        showToast({ title: "Requested", description: "Account deletion initiated...", variant: "destructive" });
+        setTimeout(() => window.location.href = '/', 2000);
+    };
 
     // Sync local state if settings change (e.g., after initial load)
     useEffect(() => {
