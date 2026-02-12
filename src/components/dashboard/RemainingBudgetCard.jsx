@@ -203,18 +203,19 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
             {mode ? (
                 // --- SLIDER VIEW ---
                 <div className="pt-2 pb-1 space-y-4">
-                    <div ref={containerRef} className="relative h-4 w-full bg-muted rounded-full select-none touch-none">
+                    <div ref={containerRef} className="relative h-4 w-full bg-muted/50 rounded-full select-none touch-none">
                         {/* Zones */}
                         <div className="absolute top-0 left-0 h-full rounded-l-full" style={{ width: `${splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.needs.color }} />
                         <div className="absolute top-0 h-full" style={{ left: `${splits.split1}%`, width: `${splits.split2 - splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.wants.color }} />
                         <div className="absolute top-0 h-full rounded-r-full" style={{ left: `${splits.split2}%`, width: `${100 - splits.split2}%`, backgroundColor: FINANCIAL_PRIORITIES.savings.color }} />
 
                         {/* Thumb 1 */}
-                        <div onPointerDown={(e) => handlePointerDown(e, 1)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split1}%` }}>
+                        <div onPointerDown={(e) => handlePointerDown(e, 1)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-background shadow-sm rounded-full border border-border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split1}%` }}>
                             <GripVertical className="w-2 h-2 text-gray-400" />
                         </div>
+
                         {/* Thumb 2 */}
-                        <div onPointerDown={(e) => handlePointerDown(e, 2)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split2}%` }}>
+                        <div onPointerDown={(e) => handlePointerDown(e, 2)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} className={`absolute top-0 bottom-0 w-3 -ml-1.5 bg-background shadow-sm rounded-full border border-border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ left: `${splits.split2}%` }}>
                             <GripVertical className="w-2 h-2 text-gray-400" />
                         </div>
                     </div>
@@ -920,7 +921,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 <div className="flex flex-col gap-6">
                     {isEmptyMonth ? (
                         <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm">
+                            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center shadow-sm">
                                 <Calendar className="w-8 h-8 text-emerald-600" />
                             </div>
                             <div className="space-y-2 max-w-sm">
