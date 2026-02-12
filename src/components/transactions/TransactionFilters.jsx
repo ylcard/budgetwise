@@ -20,7 +20,7 @@ const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) =
     return (
         <Drawer modal={false}>
             <DrawerTrigger asChild>
-                <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden text-gray-900">
+                <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden text-foreground">
                     <span className="truncate">{selectedLabel}</span>
                     <ChevronRight className="h-4 w-4 opacity-50" />
                 </button>
@@ -36,7 +36,7 @@ const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) =
                                 onClick={() => onSelect(opt.value)}
                                 className={cn(
                                     "w-full text-left px-4 py-4 rounded-xl text-base font-medium transition-colors",
-                                    value === opt.value ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                    value === opt.value ? "bg-primary/10 text-primary" : "active:bg-accent"
                                 )}
                             >
                                 {opt.label}
@@ -56,7 +56,7 @@ const MobileCategoryTrigger = ({ filters, categories, onCategoryChange }) => {
     return (
         <Drawer>
             <DrawerTrigger asChild>
-                <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden text-gray-900">
+                <button className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm md:hidden text-foreground">
                     <span className="truncate">{label}</span>
                     <Tag className="h-4 w-4 opacity-50" />
                 </button>
@@ -80,7 +80,7 @@ const MobileCategoryTrigger = ({ filters, categories, onCategoryChange }) => {
                                 }}
                                 className={cn(
                                     "w-full flex items-center justify-between px-4 py-4 rounded-xl text-base font-medium transition-colors",
-                                    isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                    isSelected ? "bg-primary/10 text-primary" : "active:bg-accent"
                                 )}
                             >
                                 <div className="flex items-center gap-3">
@@ -94,7 +94,7 @@ const MobileCategoryTrigger = ({ filters, categories, onCategoryChange }) => {
                         );
                     })}
                 </div>
-                <div className="p-4 border-t bg-gray-50/50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <div className="p-4 border-t bg-muted/50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                     <DrawerClose asChild>
                         <CustomButton variant="primary" className="w-full h-12 text-base font-bold">
                             Apply
@@ -108,14 +108,14 @@ const MobileCategoryTrigger = ({ filters, categories, onCategoryChange }) => {
 
 // Helper Component for Toggle Buttons
 const FilterToggle = ({ value, onChange, options }) => (
-    <div className="flex bg-gray-100 p-1 rounded-lg w-full">
+    <div className="flex bg-muted p-1 rounded-lg w-full">
         {options.map((opt) => (
             <button
                 key={opt.value}
                 onClick={() => onChange(opt.value === value ? 'all' : opt.value)} // Click active to deselect (optional UX choice, or just set)
                 className={cn(
                     "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all",
-                    value === opt.value ? "bg-white shadow text-blue-600" : "text-gray-500 hover:text-gray-700"
+                    value === opt.value ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
             >
                 {opt.icon && <opt.icon className="w-3.5 h-3.5" />}
@@ -187,7 +187,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
         <>
             {/* Category (Multi-select) */}
             <div className="space-y-1 lg:col-span-1">
-                <Label className="text-xs text-gray-500">Category</Label>
+                <Label className="text-xs text-muted-foreground">Category</Label>
                 <CategorySelect
                     value={filters.category}
                     onValueChange={handleCategoryChange}
@@ -199,7 +199,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
 
             {/* Custom Budget */}
             <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Budget</Label>
+                <Label className="text-xs text-muted-foreground">Budget</Label>
                 {/* Mobile version uses the Drawer helper */}
                 <div className="md:hidden">
                     <MobileSelectTrigger
@@ -234,7 +234,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
 
             {/* Type */}
             <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Type</Label>
+                <Label className="text-xs text-muted-foreground">Type</Label>
                 <FilterToggle
                     value={filters.type}
                     onChange={(val) => setFilters({ ...filters, type: val })}
@@ -246,7 +246,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
             </div>
             {/* Financial Priority */}
             <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Priority</Label>
+                <Label className="text-xs text-muted-foreground">Priority</Label>
                 <FilterToggle
                     value={filters.financialPriority}
                     onChange={(val) => setFilters({ ...filters, financialPriority: val })}
@@ -259,7 +259,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
 
             {/* Payment Status */}
             <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Payment</Label>
+                <Label className="text-xs text-muted-foreground">Payment</Label>
                 <FilterToggle
                     value={filters.paymentStatus}
                     onChange={(val) => setFilters({ ...filters, paymentStatus: val })}
@@ -272,7 +272,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
 
             {/* Cash Status */}
             <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Cash</Label>
+                <Label className="text-xs text-muted-foreground">Cash</Label>
                 <FilterToggle
                     value={filters.cashStatus}
                     onChange={(val) => setFilters({ ...filters, cashStatus: val })}
@@ -285,7 +285,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
 
             {/* Amount Range */}
             <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
-                <Label className="text-xs text-gray-500">Amount Range</Label>
+                <Label className="text-xs text-muted-foreground">Amount Range</Label>
                 <div className="flex items-center gap-2">
                     <Input
                         type="number"
@@ -294,7 +294,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         value={filters.minAmount}
                         onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
                     />
-                    <span className="text-gray-400">-</span>
+                    <span className="text-muted-foreground">-</span>
                     <Input
                         type="number"
                         placeholder="Max"
@@ -308,15 +308,15 @@ export default function TransactionFilters({ filters, setFilters, categories, al
     );
 
     return (
-        <Card className="border-none shadow-md md:shadow-lg">
+        <Card className="border-none shadow-md md:shadow-lg bg-card">
             <CardContent className="p-3 md:p-4 space-y-4">
                 {/* Top Row: Search and Date Range */}
                 <div className="flex gap-2">
                     <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search..."
-                            className="pl-9 bg-gray-50 md:bg-white"
+                            className="pl-9 bg-muted/50 md:bg-background"
                             value={filters.search}
                             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                         />
@@ -327,9 +327,9 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                         <Drawer open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
                             <DrawerTrigger asChild>
                                 <CustomButton variant="outline" size="icon" className="relative shrink-0">
-                                    <SlidersHorizontal className="w-4 h-4 text-gray-600" />
+                                    <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
                                     {activeFilterCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
+                                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
                                             {activeFilterCount}
                                         </span>
                                     )}
@@ -382,7 +382,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                         variant="ghost"
                                         size="sm"
                                         onClick={handleClearFilters}
-                                        className="text-gray-500 hover:text-red-600 mr-2 whitespace-nowrap px-2 md:px-3"
+                                        className="text-muted-foreground hover:text-destructive mr-2 whitespace-nowrap px-2 md:px-3"
                                     >
                                         <X className="w-4 h-4 mr-1" />
                                         Clear
@@ -407,12 +407,12 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                 {/* Mobile Active Filters Summary (Visual Cue) */}
                 <div className="md:hidden flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                     {activeFilterCount > 0 && (
-                        <div className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full whitespace-nowrap">
+                        <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">
                             {activeFilterCount} Active Filters
                         </div>
                     )}
                     {isDateChanged && (
-                        <div className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full whitespace-nowrap flex items-center">
+                        <div className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded-full whitespace-nowrap flex items-center">
                             <CalendarDays className="w-3 h-3 mr-1" />
                             Custom Dates
                         </div>
