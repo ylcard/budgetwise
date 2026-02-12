@@ -5,7 +5,56 @@ import { QUERY_KEYS } from "./queryKeys";
 import { getMonthlyIncome, getHistoricalAverageIncome, snapshotFutureBudgets } from "../utils/financialCalculations";
 import { ensureSystemBudgetsExist } from "../utils/budgetInitialization";
 import { useSettings } from "../utils/SettingsContext";
+import { DEFAULT_SYSTEM_CATEGORIES, DEFAULT_SYSTEM_GOALS } from "../utils/constants";
 import { subDays, format } from "date-fns";
+
+// Hook for initial system setup
+export const useSystemActions = (user) => {
+    const queryClient = useQueryClient();
+    const { settings } = useSettings();
+
+    const initializeSystem = async () => {
+        if (!user?.email) return;
+
+        try {
+            showToast({ title: "Initializing...", description: "Setting up your 50/30/20 budget..." });
+
+            // 1. Create Categories
+            const categoryPromises = DEFAULT_SYSTEM_CATEGORIES.map(cat =>
+                base44.entities.Category.create({ ...cat, user_email: user.email })
+            );
+
+            // 2. Create Goals and trigger snapshots
+            const goalPromises = DEFAULT_SYSTEM_GOALS.map(async (goal) => {
+                const newGoal = await base44.entities.BudgetGoal.create({
+                    ...goal,
+                    user_email: user.email
+                });
+                // This ensures SystemBudgets are generated for the current/future months
+                return snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
+            });
+
+            await Promise.all([...categoryPromises, ...goalPromises]);
+
+            // 3. Refresh everything
+            await queryClient.invalidateQueries();
+
+            showToast({
+                title: "Setup Complete",
+                description: "Your categories and 50/30/20 goals are ready.",
+            });
+        } catch (error) {
+            console.error("Initialization Failed:", error);
+            showToast({
+                title: "Setup Failed",
+                description: "We couldn't initialize your defaults. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
+
+    return { initializeSystem };
+};
 
 // Hook to fetch transactions
 export const useTransactions = (startDate = null, endDate = null) => {
