@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useCategories, useGoals } from '@/components/hooks/useBase44Entities';
-import { useSystemActions } from './useBase44Actions';
+import { useCategories, useGoals, useSystemActions } from '@/components/hooks/useBase44Entities';
 
 export const useSystemSetup = (user) => {
     const { categories, isLoading: catsLoading } = useCategories();
