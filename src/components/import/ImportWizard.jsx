@@ -176,8 +176,12 @@ export default function ImportWizard({ onSuccess }) {
                 categories: categories
             });
 
+            // SAFETY CHECK: Ensure we actually got an array back.
+            // If the engine returned an error object or null, fallback to preProcessed.
+            const validResults = Array.isArray(engineResults) ? engineResults : preProcessed;
+
             // 5. Final Merge (Memory overrides Engine)
-            const processed = (engineResults || preProcessed).map(item => {
+            const processed = validResults.map(item => {
                 // Check Memory First
                 const learned = findLearnedData(item.title); // check using the raw/semi-raw title
 
