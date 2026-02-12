@@ -417,7 +417,7 @@ export default function Transactions() {
                                 {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
                             </DrawerTitle>
                         </DrawerHeader>
-                        <div className="p-6 pt-0 overflow-y-auto pb-24">
+                        <div className="p-6 pt-0 z-[600] overflow-y-auto pb-24">
                             <RecurringTransactionForm
                                 initialData={editingRecurring}
                                 categories={categories}
