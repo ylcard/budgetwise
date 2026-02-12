@@ -196,14 +196,14 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
             <div className="flex items-center justify-between">
                 <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider">Target Goals</h4>
                 <div className="flex bg-muted p-0.5 rounded-md">
-                    <button onClick={() => setMode(true)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>%</button>
-                    <button onClick={() => setMode(false)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${!mode ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>$</button>
+                    <button onClick={() => setMode(true)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${mode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>%</button>
+                    <button onClick={() => setMode(false)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${!mode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>$</button>
                 </div>
             </div>
             {mode ? (
                 // --- SLIDER VIEW ---
                 <div className="pt-2 pb-1 space-y-4">
-                    <div ref={containerRef} className="relative h-4 w-full bg-gray-100 rounded-full select-none touch-none">
+                    <div ref={containerRef} className="relative h-4 w-full bg-muted rounded-full select-none touch-none">
                         {/* Zones */}
                         <div className="absolute top-0 left-0 h-full rounded-l-full" style={{ width: `${splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.needs.color }} />
                         <div className="absolute top-0 h-full" style={{ left: `${splits.split1}%`, width: `${splits.split2 - splits.split1}%`, backgroundColor: FINANCIAL_PRIORITIES.wants.color }} />
@@ -224,7 +224,7 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
                         {['needs', 'wants', 'savings'].map(key => (
                             <div key={key} className="flex flex-col items-center">
                                 <div className="w-1.5 h-1.5 rounded-full mb-0.5" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
-                                <span className="text-[10px] font-bold text-gray-700">{Math.round(pctValues[key])}%</span>
+                                <span className="text-[10px] font-bold text-muted-foreground">{Math.round(pctValues[key])}%</span>
                             </div>
                         ))}
                     </div>
@@ -343,9 +343,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         return (
             <div className="flex items-center gap-1 text-sm font-medium hidden sm:flex">
                 <span style={{ color: needsColor }}>{getValue('needs')}</span>
-                <span className="text-gray-300">/</span>
+                <span className="text-muted-foreground/30">/</span>
                 <span style={{ color: wantsColor }}>{getValue('wants')}</span>
-                <span className="text-gray-300">/</span>
+                <span className="text-muted-foreground/30">/</span>
                 <span style={{ color: savingsColor }}>{getValue('savings')}</span>
             </div>
         );
@@ -837,17 +837,17 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const isTotalOver = totalSpent > currentMonthIncome;
 
     const ViewToggle = () => (
-        <div className="flex bg-gray-100/80 p-1 rounded-lg border border-gray-200/50 relative isolate">
+        <div className="flex bg-muted/50 p-1 rounded-lg border border-border/50 relative isolate">
             <button
                 onClick={() => handleViewToggle(true)}
-                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${isSimpleView ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
                 {isSimpleView && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }} // Start slightly "back" (Z-depth)
                         animate={{ opacity: 1, scale: 1 }}    // Snap to front
                         transition={{ type: "spring", stiffness: 500, damping: 30 }} // Snappy pop effect
-                        className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
+                        className="absolute inset-0 bg-background rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
                     />
                 )}
                 <LayoutList className="w-3.5 h-3.5" />
@@ -855,14 +855,14 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             </button>
             <button
                 onClick={() => handleViewToggle(false)}
-                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${!isSimpleView ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+                className={`relative flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors w-24 z-10 ${!isSimpleView ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
                 {!isSimpleView && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        className="absolute inset-0 bg-white rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
+                        className="absolute inset-0 bg-background rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.1)] -z-10"
                     />
                 )}
                 <BarChart3 className="w-3.5 h-3.5" />
@@ -872,7 +872,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     );
 
     return (
-        <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col">
+        <Card className="border-none shadow-md bg-card overflow-hidden h-full flex flex-col">
             <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
                     <div className="flex-1 w-full sm:w-auto">
@@ -924,8 +924,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                 <Calendar className="w-8 h-8 text-emerald-600" />
                             </div>
                             <div className="space-y-2 max-w-sm">
-                                <h3 className="text-xl font-bold text-gray-900">Ready to plan for {monthName}?</h3>
-                                <p className="text-gray-500 text-sm leading-relaxed">
+                                <h3 className="text-xl font-bold text-foreground">Ready to plan for {monthName}?</h3>
+                                <p className="text-muted-foreground text-sm leading-relaxed">
                                     Start by adding your expected income to see your savings potential and unlock your budget goals.
                                 </p>
                             </div>
@@ -941,10 +941,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                         </h2>
                                     ) : (
                                         <div className="space-y-1">
-                                            <h2 className="text-4xl font-extrabold text-gray-900 flex items-center gap-2 tracking-tight">
+                                            <h2 className="text-4xl font-extrabold text-foreground flex items-center gap-2 tracking-tight">
                                                 {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">Saved</span>
                                             </h2>
-                                            <p className="text-sm font-medium text-gray-500 flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-500">
+                                            <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-500">
                                                 {extraSavingsAmount > 0 ? (
                                                     <><TrendingUp className="w-4 h-4 text-emerald-500" /> You've crushed your goal by <span className="text-emerald-700 font-bold">{formatCurrency(extraSavingsAmount, settings)}</span>!</>
                                                 ) : savingsAmount > 0 ? (
@@ -955,9 +955,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             </p>
                                         </div>
                                     )}
-                                    <div className="text-sm text-gray-500 mt-1">
+                                    <div className="text-sm text-muted-foreground mt-1">
                                         {currentMonthIncome > 0 ? (
-                                            <>Spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong></>
+                                            <>Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong></>
                                         ) : "No income recorded."}
                                     </div>
                                 </div>
@@ -966,10 +966,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     <div className="hidden sm:flex flex-col items-end relative">
                                         <motion.div
                                             layout
-                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100 z-20 relative"
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border z-20 relative"
                                         >
-                                            <Wallet className="w-3 h-3 text-gray-500" />
-                                            <span className="text-xs font-medium text-gray-600">Left: {formatCurrency(savingsAmount, settings)}</span>
+                                            <Wallet className="w-3 h-3 text-muted-foreground" />
+                                            <span className="text-xs font-medium text-muted-foreground">Left: {formatCurrency(savingsAmount, settings)}</span>
                                         </motion.div>
                                         <AnimatePresence>
                                             {!isSimpleView && bonusSavingsPotential > 0 && (
@@ -993,9 +993,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                             </div>
 
                             <div className="space-y-2">
-                                {renderUnifiedBar()}
+                                <div className="relative h-10 w-full bg-muted/50 rounded-xl overflow-hidden flex shadow-inner border border-border">
+                                    {renderUnifiedBar()}
+                                </div>
 
-                                <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-400 pt-1 gap-2">
+                                <div className="flex flex-col sm:flex-row justify-between text-xs text-muted-foreground pt-1 gap-2">
                                     <div className="flex gap-4 items-center">
                                         <span className="flex items-center gap-1.5">
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: needsColor }}></div>
