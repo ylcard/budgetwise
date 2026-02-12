@@ -74,7 +74,7 @@ export const PAGES = {
     "MiniBudgets": MiniBudgets,
     "RecurringTransactions": RecurringTransactions,
     "Reports": Reports,
-    "Settings": Settings,
+    "Manage": Manage,
     "Transactions": Transactions,
     "Automation": Automation,
 }
