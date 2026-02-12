@@ -28,18 +28,17 @@ export default function TransactionItem({
     const isIncome = transaction.type === 'income';
     const isPaid = transaction.isPaid;
 
-    // Adding Google Document AI implementation
-    // Enrichment State
+    // --- VISUAL ENRICHMENT (Google Places API) ---
     const [enrichedData, setEnrichedData] = useState(null);
 
     // Lazy load Places data for merchants
     useEffect(() => {
+        // Only fetch for expenses that have a title
         if (isIncome || !transaction.title) return;
 
         const fetchMerchantDetails = async () => {
             try {
-                // Replace with your actual proxy endpoint or secure call
-                // Direct call example (Use restricted API Key for production!)
+                // Securely access the API key from environment variables
                 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY;
                 if (!apiKey) return;
 
@@ -48,18 +47,19 @@ export default function TransactionItem({
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Goog-Api-Key': apiKey,
-                        'X-Goog-FieldMask': 'places.displayName,places.primaryType,places.iconMaskBaseUri,places.iconBackgroundColor'
+                        // Only asking for the fields we need to keep payload small (DisplayName + Icon)
+                        'X-Goog-FieldMask': 'places.displayName,places.iconMaskBaseUri,places.iconBackgroundColor'
                     },
                     body: JSON.stringify({ textQuery: transaction.title })
                 });
                 const data = await response.json();
-                if (data.places && data.places[0]) {
+                if (data.places && data.places.length > 0) {
                     setEnrichedData(data.places[0]);
                 }
             } catch (e) { console.warn('Enrichment failed', e); }
         };
 
-        // Simple debounce/check to avoid spamming API on fast scrolls
+        // Debounce slightly to prevent spamming API on fast scrolls
         const timer = setTimeout(fetchMerchantDetails, 500);
         return () => clearTimeout(timer);
     }, [transaction.title, isIncome]);
@@ -95,31 +95,30 @@ export default function TransactionItem({
                     >
                         <Banknote className="w-6 h-6" style={{ color: '#10B981' }} />
                     </div>
-                ) : category ? (
-                    enrichedData?.iconMaskBaseUri ? (
-                        <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform overflow-hidden"
-                            style={{ backgroundColor: enrichedData.iconBackgroundColor || '#eee' }}
-                        >
+                ) : (
+                    // Logic: Show Google Logo if found, otherwise show Category Icon, otherwise show default Circle
+                    <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform overflow-hidden ${!isPaid ? 'grayscale' : ''}`}
+                        style={{ backgroundColor: enrichedData?.iconBackgroundColor || (category ? `${category.color}20` : '#f3f4f6') }}
+                    >
+                        {enrichedData?.iconMaskBaseUri ? (
                             <img src={enrichedData.iconMaskBaseUri} className="w-6 h-6" alt="Merchant" />
-                        </div>
-                    ) : (
-                        <div
-                            className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${!isPaid ? 'grayscale' : ''
-                                }`}
-                            style={{ backgroundColor: `${category.color}20` }}
-                        >
+                        ) : category ? (
                             <IconComponent className="w-6 h-6" style={{ color: category.color }} />
-                        </div>
-                    )
-                ) : null}
+                        ) : (
+                            <Circle className="w-6 h-6 text-gray-300" />
+                        )}
+                    </div>
+                )}
 
                 <div className="flex-1">
                     <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900">
+                            {/* Prefer the "Official" Google Name, fallback to our raw title */}
                             {enrichedData?.displayName?.text || transaction.title}
                         </p>
-                        {enrichedData && <MapPin className="w-3 h-3 text-blue-400" />}
+                        {enrichedData && <MapPin className="w-3 h-3 text-blue-400 opacity-50" />}
+                        
                         {!isIncome && (isPaid ? (
                             <Check className="w-4 h-4 text-green-600" />
                         ) : (
