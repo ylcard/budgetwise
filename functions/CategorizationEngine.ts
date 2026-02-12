@@ -63,7 +63,7 @@ function matchLocally(tx, rules, categories) {
             return { slug, source: 'standard_taxonomy' };
         }
     }
-    
+
     // 3. Fallback Regex
     for (const entry of FALLBACK_REGEX) {
         if (entry.pattern.test(text)) {
@@ -76,7 +76,7 @@ function matchLocally(tx, rules, categories) {
 
 function resolveSlugToId(slug, categories) {
     const keywords = STANDARD_TAXONOMY[slug] || [slug];
-    
+
     // 1. Exact match
     const exact = categories.find(c => c.name.toUpperCase() === slug);
     if (exact) return exact;
@@ -90,7 +90,7 @@ function resolveSlugToId(slug, categories) {
     return matched || null;
 }
 
-async function matchWithAI(descriptions, categories, groqKey) {
+async function matchWithAI(descriptions, categories, groqKey, model = 'llama-3.1-8b-instant') {
     if (!groqKey || descriptions.length === 0) return {};
 
     const catNames = categories.map(c => c.name);
@@ -99,8 +99,9 @@ async function matchWithAI(descriptions, categories, groqKey) {
     For each transaction description below, provide:
     1. A 'cleanName' (e.g., "SQ *MY COFFEE" -> "My Coffee").
     2. A 'category' from this list: [${catNames.join(', ')}].
+    3. A 'confidence' score between 0.0 and 1.0.
 
-    Return ONLY a JSON object where the key is the ORIGINAL string and the value is object { "cleanName": "...", "category": "..." }.
+    Return ONLY a JSON object where the key is the ORIGINAL string and the value is object { "cleanName": "...", "category": "...", "confidence": 0.5 }.
     If you are truly unsure, use "Uncategorized".
     
     Merchants to categorize: ${descriptions.join(', ')}`;
@@ -113,7 +114,7 @@ async function matchWithAI(descriptions, categories, groqKey) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
+                model: model,
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: "json_object" },
                 temperature: 0.1
@@ -133,11 +134,11 @@ async function matchWithAI(descriptions, categories, groqKey) {
 Deno.serve(async (req) => {
     // Basic CORS handling
     if (req.method === "OPTIONS") {
-        return new Response("ok", { 
-            headers: { 
+        return new Response("ok", {
+            headers: {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-            } 
+            }
         });
     }
 
@@ -155,19 +156,19 @@ Deno.serve(async (req) => {
         // 1. Process Local Matches First
         for (const tx of transactions) {
             const local = matchLocally(tx, rules || [], categories || []);
-            
+
             if (local && local.category_id) {
                 // Local rule matched
                 results.push({ ...tx, ...local, cleanTitle: tx.title });
             } else if (local && local.slug) {
                 // Taxonomy/Regex matched
                 const resolved = resolveSlugToId(local.slug, categories || []);
-                results.push({ 
-                    ...tx, 
-                    category_id: resolved?.id || null, 
-                    categoryName: resolved?.name || 'Uncategorized', 
+                results.push({
+                    ...tx,
+                    category_id: resolved?.id || null,
+                    categoryName: resolved?.name || 'Uncategorized',
                     cleanTitle: local.slug, // Use slug as clean title (e.g., "NETFLIX")
-                    source: local.source 
+                    source: local.source
                 });
             } else {
                 // No local match, send to AI
@@ -177,30 +178,48 @@ Deno.serve(async (req) => {
 
         // 2. Process AI Matches Batch
         if (toAI.length > 0) {
+            // TIER 1: Fast Pass (8b model)
             const descriptions = toAI.map(t => t.title);
-            const aiMappings = await matchWithAI(descriptions, categories || [], groqKey);
+            let aiMappings = await matchWithAI(descriptions, categories || [], groqKey, 'llama-3.1-8b-instant');
+
+            // TIER 2: Peer Review (70b model for low confidence)
+            const lowConfidenceItems = [];
+            for (const key in aiMappings) {
+                if (aiMappings[key].confidence < 0.8) {
+                    lowConfidenceItems.push(key);
+                }
+            }
+
+            if (lowConfidenceItems.length > 0) {
+                // Re-run only the tricky ones with the "Smart" model
+                const refinedMappings = await matchWithAI(lowConfidenceItems, categories || [], groqKey, 'llama-3.3-70b-versatile');
+                // Merge results (overwrite weak ones with smart ones)
+                aiMappings = { ...aiMappings, ...refinedMappings };
+            }
 
             for (const tx of toAI) {
-                const aiResult = aiMappings[tx.title] || { category: 'Uncategorized', cleanName: tx.title };
-                
+                const aiResult = aiMappings[tx.title] || { category: 'Uncategorized', cleanName: tx.title, confidence: 0 };
+
                 // Handle legacy/hallucinated string responses
                 const aiCatName = typeof aiResult === 'string' ? aiResult : aiResult.category;
                 const cleanName = typeof aiResult === 'string' ? tx.title : aiResult.cleanName;
+                const confidence = typeof aiResult === 'string' ? 0 : aiResult.confidence;
 
                 const cat = categories.find(c => c.name.toLowerCase() === aiCatName.toLowerCase());
-                
+
                 results.push({
                     ...tx,
                     category_id: cat?.id || null,
                     categoryName: cat?.name || 'Uncategorized',
                     cleanTitle: cleanName,
+                    confidence: confidence,
                     source: 'ai'
                 });
             }
         }
 
-        return Response.json(results, { 
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
+        return Response.json(results, {
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
         });
 
     } catch (error) {
