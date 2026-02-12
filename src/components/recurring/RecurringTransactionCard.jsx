@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"; // Removing Badge
 import { Card, CardContent } from "@/components/ui/card"; // Removing Card
 import { motion } from "framer-motion"; // Adding Animation
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowDown, ArrowUp, Repeat } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
 
 const FREQUENCY_LABELS = {
