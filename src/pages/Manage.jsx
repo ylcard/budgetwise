@@ -341,9 +341,6 @@ function AccountSection() {
         }
     };
 
-    const { user, logout } = useAuth();
-    const { settings, updateSettings } = useSettings();
-
     const handleLogout = () => {
         showToast({ title: "Logging out", description: "Securely ending your session..." });
         logout();
