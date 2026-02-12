@@ -93,7 +93,12 @@ function resolveSlugToId(slug, categories) {
 async function matchWithAI(descriptions, categories, groqKey, model = 'llama-3.1-8b-instant') {
     if (!groqKey || descriptions.length === 0) return {};
 
-    const catNames = categories.map(c => c.name);
+    // Provide default options if user has no categories (for AI prompt only)
+    let catNames = categories.map(c => c.name);
+    if (catNames.length === 0) {
+        catNames = ['Groceries', 'Dining', 'Transport', 'Utilities', 'Shopping', 'Housing', 'Travel', 'Health', 'Services', 'Entertainment'];
+    }
+
     // Updated Prompt: Asks for Clean Name + Category
     const prompt = `Act as a financial data cleaner.
     For each transaction description below, provide:
@@ -210,7 +215,7 @@ Deno.serve(async (req) => {
                 results.push({
                     ...tx,
                     category_id: cat?.id || null,
-                    categoryName: cat?.name || 'Uncategorized',
+                    categoryName: cat?.name || aiCatName || 'Uncategorized',
                     cleanTitle: cleanName,
                     confidence: confidence,
                     source: 'ai'
