@@ -73,7 +73,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     )}
                 </CustomButton>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
+            <PopoverContent className="w-auto p-0 z-[9999]" align="start" sideOffset={4}>
                 <DayPicker
                     mode="range"
                     selected={internalRange}
