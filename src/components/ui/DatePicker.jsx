@@ -87,7 +87,7 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
             <PopoverTrigger asChild>
                 <CustomButton
                     variant="outline"
-                    className={`w-full justify-start text-left font-normal ${!value && "text-muted-foreground"} ${className}`}
+                    className={`w-full z-[600] justify-start text-left font-normal ${!value && "text-muted-foreground"} ${className}`}
                 >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {value ? formatDate(value, settings.dateFormat) : <span>{placeholder}</span>}
