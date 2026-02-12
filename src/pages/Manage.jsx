@@ -32,6 +32,7 @@ import { CURRENCY_OPTIONS, SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components
 import Categories from "./Categories";
 import Automation from "./Automation";
 import BankSync from "./BankSync";
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ManagePage() {
     // Default to 'preferences' tab
