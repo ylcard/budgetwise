@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,6 +13,14 @@ export function useRuleActions() {
     // UI States
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
+
+    // Fetch Rules
+    const { data: rules = [], isLoading, isFetching } = useQuery({
+        queryKey: [QUERY_KEYS.CATEGORY_RULES, user?.email],
+        queryFn: () => base44.entities.CategoryRule.filter({ user_email: user?.email }),
+        enabled: !!user?.email
+    });
+
     const [isRegexMode, setIsRegexMode] = useState(false);
     const [formData, setFormData] = useState({
         keyword: "",
@@ -50,6 +58,21 @@ export function useRuleActions() {
     const updateRule = useMutation({
         mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, data),
         onSuccess: invalidate
+    });
+
+    // Bulk Delete Mutation
+    const deleteBulkRules = useMutation({
+        mutationFn: async (ids) => {
+            const idArray = Array.from(ids);
+            // Batch deletions if needed, simplistic approach for now
+            await base44.entities.CategoryRule.deleteMany({ id: { $in: idArray } });
+        },
+        onSuccess: () => {
+            invalidate();
+            setSelectedIds(new Set());
+            toast({ title: "Rules deleted", description: "Selected automation rules have been removed." });
+        },
+        onError: (e) => toast({ title: "Failed", description: e.message, variant: "destructive" })
     });
 
     // --- Helper Handlers ---
@@ -116,11 +139,21 @@ export function useRuleActions() {
     };
 
     return {
+        // Data
+        rules,
+        isLoading: isLoading || isFetching,
+
+        // UI State
         isDialogOpen, setIsDialogOpen,
         selectedIds, setSelectedIds,
         isRegexMode, setIsRegexMode,
         formData, setFormData,
+
+        // Mutations
         createRule, deleteRule, updateRule,
+        deleteBulkRules,
+
+        // Handlers
         handleToggleRuleMode,
         handleAddKeyword,
         handleRemoveKeyword,
