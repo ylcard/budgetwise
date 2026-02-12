@@ -8,7 +8,7 @@ import {
     RefreshCw,
     Link2
 } from "lucide-react";
-import { useMediaQuery } from "@/hooks/use-media-query"; // Assuming you have this or use simple CSS classes
+import { useIsMobile } from "@/hooks/use-mobile"; // UPDATED IMPORT
 
 // UI Components
 import { Input } from "@/components/ui/input";
@@ -108,13 +108,16 @@ export default function ManagePage() {
 // --- SUB-COMPONENTS ---
 
 function NavTab({ value, icon: Icon, label }) {
+    const isMobile = useIsMobile(); // USE THE HOOK
+
     return (
         <TabsTrigger
             value={value}
             className="w-auto md:w-full justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-gray-200 border border-transparent transition-all"
         >
             <Icon className="w-4 h-4" />
-            <span className="truncate hidden md:inline">{label}</span>
+            {/* You can either use CSS class or the hook logic here */}
+            {!isMobile && <span className="truncate">{label}</span>}
         </TabsTrigger>
     );
 }
