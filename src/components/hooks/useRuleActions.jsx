@@ -13,6 +13,7 @@ export function useRuleActions() {
     // UI States
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
+    const [editingRuleId, setEditingRuleId] = useState(null); // Moved from component
 
     // Fetch Rules
     const { data: rules = [], isLoading, isFetching } = useQuery({
@@ -43,10 +44,8 @@ export function useRuleActions() {
             financial_priority: formData.financial_priority
         }),
         onSuccess: () => {
-            invalidate();
-            setIsDialogOpen(false);
-            setFormData({ keyword: "", regexPattern: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
-            toast({ title: "Rule created" });
+            handleCloseDialog();
+            toast({ title: "Rule created", description: "Transactions will be categorized automatically." });
         }
     });
 
@@ -57,7 +56,10 @@ export function useRuleActions() {
 
     const updateRule = useMutation({
         mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, data),
-        onSuccess: invalidate
+        onSuccess: () => {
+            invalidate();
+            if (isDialogOpen) handleCloseDialog();
+        }
     });
 
     // Bulk Delete Mutation
@@ -120,7 +122,21 @@ export function useRuleActions() {
         updateRule.mutate({ id: rule.id, data: { keyword: currentKeywords.join(',') } });
     };
 
-    const handleCreateSave = () => {
+    // Moved from component: Inline validation and update
+    const handleInlineUpdate = (ruleId, field, value) => {
+        // Validation logic reused
+        if (field === 'regexPattern' && value) {
+            try {
+                new RegExp(value);
+            } catch (e) {
+                return; // Silently fail or use toast if preferred
+            }
+        }
+        updateRule.mutate({ id: ruleId, data: { [field]: value } });
+    };
+
+    // Unified Save Handler (Create vs Update)
+    const handleSaveRule = () => {
         if (!formData.categoryId) return toast({ title: "Missing Category", variant: "destructive" });
         if (isRegexMode && !formData.regexPattern) return toast({ title: "Missing Pattern", variant: "destructive" });
         if (!isRegexMode && !formData.keyword) return toast({ title: "Missing Keywords", variant: "destructive" });
@@ -129,12 +145,31 @@ export function useRuleActions() {
             try { new RegExp(formData.regexPattern); }
             catch (e) { return toast({ title: "Invalid Regex", description: e.message, variant: "destructive" }); }
         }
-        createRule.mutate();
+
+        if (editingRuleId) {
+            updateRule.mutate({ id: editingRuleId, data: formData });
+        } else {
+            createRule.mutate();
+        }
+    };
+
+    const openRuleForEdit = (rule) => {
+        setFormData({
+            keyword: rule.keyword || "",
+            regexPattern: rule.regexPattern || "",
+            categoryId: rule.categoryId || "",
+            renamedTitle: rule.renamedTitle || "",
+            financial_priority: rule.financial_priority || "needs"
+        });
+        setEditingRuleId(rule.id);
+        setIsRegexMode(!!rule.regexPattern);
+        setIsDialogOpen(true);
     };
 
     const handleCloseDialog = () => {
         setIsDialogOpen(false);
         setIsRegexMode(false);
+        setEditingRuleId(null);
         setFormData({ keyword: "", regexPattern: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
     };
 
@@ -147,6 +182,7 @@ export function useRuleActions() {
         isDialogOpen, setIsDialogOpen,
         selectedIds, setSelectedIds,
         isRegexMode, setIsRegexMode,
+        editingRuleId,
         formData, setFormData,
 
         // Mutations
@@ -158,7 +194,9 @@ export function useRuleActions() {
         handleAddKeyword,
         handleRemoveKeyword,
         handleEditKeyword,
-        handleCreateSave,
+        handleSaveRule,
+        handleInlineUpdate,
+        openRuleForEdit,
         handleCloseDialog
     };
 }
