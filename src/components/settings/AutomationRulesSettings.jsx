@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useFAB } from "@/components/hooks/FABContext"; // Import Global FAB
 
 export default function AutomationRulesSettings() {
     const { user } = useSettings();
@@ -34,12 +35,42 @@ export default function AutomationRulesSettings() {
     const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
     const [editingRuleId, setEditingRuleId] = useState(null); // Track if we are editing
 
-    // Listen for FAB events from the Page
+    // FAB Integration
+    const { setFabButtons, clearFabButtons } = useFAB();
+
+    const fabButtons = useMemo(() => {
+        const buttons = [];
+
+        // 1. Delete Action (Only if items selected)
+        if (selectedIds.size > 0) {
+            buttons.push({
+                key: 'delete-rules',
+                label: `Delete (${selectedIds.size})`,
+                icon: 'Trash2',
+                variant: 'destructive', // Assuming your FAB supports red variant
+                onClick: () => confirmDelete('bulk')
+            });
+        }
+
+        // 2. Add Action (Always present)
+        buttons.push({
+            key: 'add-rule',
+            label: 'Add Rule',
+            icon: 'PlusCircle',
+            variant: 'create',
+            onClick: () => {
+                setEditingRuleId(null);
+                setIsDialogOpen(true);
+            }
+        });
+
+        return buttons;
+    }, [selectedIds.size, setIsDialogOpen]); // Re-calculate when selection changes
+
     useEffect(() => {
-        const openDialog = () => setIsDialogOpen(true);
-        window.addEventListener('open-rule-dialog', openDialog);
-        return () => window.removeEventListener('open-rule-dialog', openDialog);
-    }, [setIsDialogOpen]);
+        setFabButtons(fabButtons);
+        return () => clearFabButtons();
+    }, [fabButtons, setFabButtons, clearFabButtons]);
 
     // Helper to open edit dialog for a specific rule (Mobile interaction)
     const openEditDialog = (rule) => {
@@ -137,29 +168,22 @@ export default function AutomationRulesSettings() {
                     </div>
 
                     <div className="flex items-center gap-2 justify-end">
-                        <AnimatePresence>
-                            {selectedIds.size > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 10 }}
-                                    className="flex items-center gap-2 mr-2 fixed bottom-6 right-20 z-[60] md:static md:mr-0"
+                        {/* Local Desktop Buttons only - Mobile handled by GlobalFAB */}
+                        {selectedIds.size > 0 && (
+                            <div className="hidden md:flex items-center gap-2 mr-2 animate-in fade-in slide-in-from-right-4">
+                                <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded shadow-sm border border-blue-100">
+                                    {selectedIds.size} selected
+                                </span>
+                                <CustomButton
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => confirmDelete('bulk')}
+                                    disabled={deleteBulkRules.isPending}
                                 >
-                                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded shadow-sm border border-blue-100 hidden md:inline">
-                                        {selectedIds.size} selected
-                                    </span>
-                                    <CustomButton
-                                        variant="destructive"
-                                        size="icon"
-                                        className="shadow-lg md:shadow-none rounded-full md:rounded-md h-12 w-12"
-                                        onClick={() => confirmDelete('bulk')}
-                                        disabled={deleteBulkRules.isPending}
-                                    >
-                                        <Trash2 className="w-5 h-5 md:mr-1" /> <span className="hidden md:inline">Delete Selected ({selectedIds.size})</span>
-                                    </CustomButton>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    <Trash2 className="w-4 h-4 mr-1" /> Delete Selected
+                                </CustomButton>
+                            </div>
+                        )}
 
                         <Dialog open={isDialogOpen} onOpenChange={(open) => {
                             if (!open) {
