@@ -309,78 +309,80 @@ export default function Transactions() {
     }, [activeTab, historyFab, recurringFab, setFabButtons, clearFabButtons]);
 
     return (
-        <PullToRefresh onRefresh={handleRefresh}>
-            <div className="min-h-screen p-2 md:p-8">
-                <div className="max-w-6xl mx-auto space-y-4">
-                    <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 px-2">
-                        <div>
-                            <h1 className="text-2xl md:text-4xl font-bold">Transactions</h1>
-                            <p className="text-xs text-muted-foreground">Monitor and automate your finances</p>
+        <>
+            <PullToRefresh onRefresh={handleRefresh}>
+                <div className="min-h-screen p-2 md:p-8">
+                    <div className="max-w-6xl mx-auto space-y-4">
+                        <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 px-2">
+                            <div>
+                                <h1 className="text-2xl md:text-4xl font-bold">Transactions</h1>
+                                <p className="text-xs text-muted-foreground">Monitor and automate your finances</p>
+                            </div>
+
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
+                                <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50 p-1">
+                                    <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-background shadow-sm">
+                                        <History className="w-4 h-4" /> History
+                                    </TabsTrigger>
+                                    <TabsTrigger value="recurring" className="gap-2 data-[state=active]:bg-background shadow-sm">
+                                        <Repeat className="w-4 h-4" /> Recurring
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
 
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-                            <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50 p-1">
-                                <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-background shadow-sm">
-                                    <History className="w-4 h-4" /> History
-                                </TabsTrigger>
-                                <TabsTrigger value="recurring" className="gap-2 data-[state=active]:bg-background shadow-sm">
-                                    <Repeat className="w-4 h-4" /> Recurring
-                                </TabsTrigger>
-                            </TabsList>
+                        <Tabs value={activeTab} className="w-full">
+                            <TabsContent value="history" className="space-y-4 mt-0 border-none p-0 outline-none focus-visible:ring-0">
+                                <TransactionFilters
+                                    filters={filters}
+                                    setFilters={setFilters}
+                                    categories={categories}
+                                    allCustomBudgets={allCustomBudgets}
+                                />
+                                <TransactionList
+                                    transactions={paginatedTransactions}
+                                    categories={categories}
+                                    onEdit={handleTransactionEdit}
+                                    onDelete={handleDelete}
+                                    isLoading={isLoading}
+                                    onSubmit={handleFormSubmit}
+                                    isSubmitting={isSubmitting}
+                                    customBudgets={allCustomBudgets}
+                                    monthStart={monthStart}
+                                    monthEnd={monthEnd}
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                    itemsPerPage={itemsPerPage}
+                                    onItemsPerPageChange={setItemsPerPage}
+                                    totalItems={filteredTransactions.length}
+                                    selectedIds={selectedIds}
+                                    onToggleSelection={handleToggleSelection}
+                                    onSelectAll={handleSelectAllPage}
+                                    onClearSelection={handleClearSelection}
+                                    onDeleteSelected={handleDeleteSelected}
+                                    isBulkDeleting={isBulkDeleting}
+                                    sortConfig={sortConfig}
+                                    onSort={setSortConfig}
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="recurring" className="space-y-4 mt-0 border-none p-0 outline-none focus-visible:ring-0">
+                                <div className="grid grid-cols-1 gap-4">
+                                    <RecurringTransactionList
+                                        recurringTransactions={recurringTransactions}
+                                        categories={categories}
+                                        onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
+                                        onDelete={deleteRecurring}
+                                        onToggleActive={toggleRecurringActive}
+                                        isLoading={isLoadingRecurring}
+                                    />
+                                </div>
+                            </TabsContent>
                         </Tabs>
                     </div>
-
-                    <Tabs value={activeTab} className="w-full">
-                        <TabsContent value="history" className="space-y-4 mt-0 border-none p-0 outline-none focus-visible:ring-0">
-                            <TransactionFilters
-                                filters={filters}
-                                setFilters={setFilters}
-                                categories={categories}
-                                allCustomBudgets={allCustomBudgets}
-                            />
-                            <TransactionList
-                                transactions={paginatedTransactions}
-                                categories={categories}
-                                onEdit={handleTransactionEdit}
-                                onDelete={handleDelete}
-                                isLoading={isLoading}
-                                onSubmit={handleFormSubmit}
-                                isSubmitting={isSubmitting}
-                                customBudgets={allCustomBudgets}
-                                monthStart={monthStart}
-                                monthEnd={monthEnd}
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                onPageChange={setCurrentPage}
-                                itemsPerPage={itemsPerPage}
-                                onItemsPerPageChange={setItemsPerPage}
-                                totalItems={filteredTransactions.length}
-                                selectedIds={selectedIds}
-                                onToggleSelection={handleToggleSelection}
-                                onSelectAll={handleSelectAllPage}
-                                onClearSelection={handleClearSelection}
-                                onDeleteSelected={handleDeleteSelected}
-                                isBulkDeleting={isBulkDeleting}
-                                sortConfig={sortConfig}
-                                onSort={setSortConfig}
-                            />
-                        </TabsContent>
-
-                        <TabsContent value="recurring" className="space-y-4 mt-0 border-none p-0 outline-none focus-visible:ring-0">
-                            <div className="grid grid-cols-1 gap-4">
-                                <RecurringTransactionList
-                                    recurringTransactions={recurringTransactions}
-                                    categories={categories}
-                                    onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
-                                    onDelete={deleteRecurring}
-                                    onToggleActive={toggleRecurringActive}
-                                    isLoading={isLoadingRecurring}
-                                />
-                            </div>
-                        </TabsContent>
-                    </Tabs>
                 </div>
-            </div>
+            </PullToRefresh>
 
             {/* Global Modals Container */}
             <QuickAddIncome
@@ -446,6 +448,6 @@ export default function Transactions() {
                     </DialogContent>
                 </Dialog>
             )}
-        </PullToRefresh>
+        </>
     );
 }
