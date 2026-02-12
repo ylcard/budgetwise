@@ -14,7 +14,7 @@ export const useSystemActions = (user) => {
     const { settings } = useSettings();
 
     const initializeSystem = async () => {
-        if (!user?.email) return;
+        if (!user?.email || !settings) return;
 
         try {
             showToast({ title: "Initializing...", description: "Setting up your 50/30/20 budget..." });
