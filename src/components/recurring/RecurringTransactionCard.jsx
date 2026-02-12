@@ -33,6 +33,7 @@ const RecurringTransactionCard = memo(function RecurringTransactionCard({
 
     // Handle tap based on mode
     const handleTap = (e) => {
+        e.stopPropagation();
         // If clicking checkbox directly, let it bubble
         if (e.target.role === 'checkbox') return;
 
