@@ -73,8 +73,22 @@ export default function ImportWizard({ onSuccess }) {
         setError(null);
         try {
             showToast({ title: "Uploading...", description: "Uploading file for analysis." });
-            const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
 
+            // Deprecating Base44 LLM in favor of Google Document AI
+            // const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
+
+            // START Google Document AI implementation
+            // Convert file to Base64 for the Edge Function
+            const toBase64 = (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+            // END Google Document AI implementation
+
+            // Deprecating Base44 LLM in favor of Google Document AI
+            /*
             showToast({ title: "Analyzing...", description: "Extracting data from PDF. This may take a moment." });
             const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
                 file_url: file_url,
@@ -98,10 +112,35 @@ export default function ImportWizard({ onSuccess }) {
                     "required": ["transactions"]
                 }
             });
+            */
 
-            if (result.status === 'error') throw new Error(result.details);
+            // START Google Document AI implementation
+            const base64File = await toBase64(file);
 
-            const extractedData = result.output?.transactions || [];
+            showToast({ title: "Processing...", description: "Analyzing with Google Document AI." });
+
+            // Call your new dedicated backend function
+            // Assuming base44.functions.invoke or simple fetch pattern
+            // Replace 'processDocumentAI' with your actual registered function name
+            const result = await base44.functions.execute('processDocumentAI', {
+                fileBase64: base64File,
+                mimeType: file.type
+            });
+            // END Google Document AI implementation
+
+            // Deprecating Base44 LLM in favor of Google Document AI
+            // if (result.status === 'error') throw new Error(result.details);
+
+            // START Google Document AI implementation
+            if (result.error) throw new Error(result.error);
+            // END Google Document AI implementation
+
+            // Deprecating Base44 LLM in favor of Google Document AI
+            // const extractedData = result.output?.transactions || [];
+
+            // START Google Document AI implementation
+            const extractedData = result.transactions || [];
+            // END Google Document AI implementation
 
             // Helper for Duplicate Detection
             const findSurvivor = (newItem) => {
