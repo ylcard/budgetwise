@@ -286,6 +286,6 @@
 
 @media (max-width: 768px) {
   .mobile-high-z-index {
-    z-index: 120 !important;
+    z-index: 9999 !important;
   }
 }
