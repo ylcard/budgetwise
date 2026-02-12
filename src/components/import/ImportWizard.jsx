@@ -115,20 +115,14 @@ export default function ImportWizard({ onSuccess }) {
                 );
             };
 
-            // Helper: Local "Memory" for Consistency
-            // Checks if we've seen a similar merchant description before
+            // Helper: Local "Memory"
             const findLearnedData = (rawReason) => {
                 if (!existingTransactions || !rawReason) return null;
-
-                // Simple "includes" match - can be upgraded to fuzzy match later
-                // We look for a past transaction where the current reason contains the past title 
-                // OR the past title (if it was raw) is contained in the new reason.
                 const match = existingTransactions.find(t =>
                     t.title && rawReason.toUpperCase().includes(t.title.toUpperCase()) && t.category_id
                 );
-
                 if (match) return {
-                    title: match.title, // Use the clean name we used last time
+                    title: match.title,
                     categoryName: categories.find(c => c.id === match.category_id)?.name || 'Uncategorized',
                     categoryId: match.category_id,
                     priority: match.financial_priority
@@ -136,20 +130,16 @@ export default function ImportWizard({ onSuccess }) {
             };
 
             // 3. Prepare Data for Categorization Engine
-            // We first map to a cleaner object, then we'll send it to the engine in batch
             const preProcessed = extractedData.map(item => {
                 const rawVal = parseAmountWithSign(item.amount);
-
                 const type = rawVal < 0 ? 'expense' : 'income';
                 const magnitude = Math.abs(rawVal);
 
                 let txDate = item.date;
                 let pdDate = item.valueDate;
-
                 if (txDate && pdDate) {
                     const d1 = new Date(txDate);
                     const d2 = new Date(pdDate);
-
                     if (!isNaN(d1) && !isNaN(d2) && d1 > d2) {
                         txDate = item.valueDate;
                         pdDate = item.date;
@@ -157,7 +147,7 @@ export default function ImportWizard({ onSuccess }) {
                 }
 
                 return {
-                    id: Math.random().toString(36).substr(2, 9), // Temp ID
+                    id: Math.random().toString(36).substr(2, 9),
                     date: txDate,
                     title: item.reason || 'Untitled Transaction',
                     amount: magnitude,
@@ -169,28 +159,34 @@ export default function ImportWizard({ onSuccess }) {
 
             showToast({ title: "Categorizing...", description: "AI is cleaning and organizing your transactions." });
 
-            // 4. Batch Call to Backend Engine (Groq + Rules)
+            // 4. Batch Call to Backend Engine
             const engineResults = await base44.functions.invoke('CategorizationEngine', {
                 transactions: preProcessed,
                 rules: rules,
                 categories: categories
             });
 
-            // SAFETY CHECK: Ensure we actually got an array back.
-            // If the engine returned an error object or null, fallback to preProcessed.
-            const validResults = Array.isArray(engineResults) ? engineResults : preProcessed;
+            // SAFETY CHECK: Handle different response shapes from SDK
+            const aiData = Array.isArray(engineResults) ? engineResults
+                : Array.isArray(engineResults?.data) ? engineResults.data
+                    : Array.isArray(engineResults?.result) ? engineResults.result
+                        : [];
+
+            // Fallback to preProcessed if AI returned nothing valid
+            const resultsToMerge = aiData.length > 0 ? aiData : preProcessed;
 
             // 5. Final Merge (Memory overrides Engine)
-            const processed = validResults.map(item => {
+            const processed = resultsToMerge.map(item => {
                 // Check Memory First
-                const learned = findLearnedData(item.title); // check using the raw/semi-raw title
+                const learned = findLearnedData(item.title);
 
                 // Decide final values
                 const finalCategoryName = learned ? learned.categoryName : (item.categoryName || 'Uncategorized');
                 const finalCategoryId = learned ? learned.categoryId : (item.category_id || null);
-                const finalTitle = learned ? learned.title : (item.cleanTitle || item.title); // Use Engine's clean title
+                const finalTitle = learned ? learned.title : (item.cleanTitle || item.title);
 
-                const survivor = findSurvivor({ amount: magnitude, date: txDate });
+                // FIX: Use 'item.amount' and 'item.date' (not 'magnitude'/'txDate')
+                const survivor = findSurvivor({ amount: item.amount, date: item.date });
 
                 return {
                     date: item.date,
@@ -201,7 +197,7 @@ export default function ImportWizard({ onSuccess }) {
                     type: item.type,
                     category: finalCategoryName,
                     categoryId: finalCategoryId,
-                    financial_priority: 'wants', // You might want to map this from category priority
+                    financial_priority: 'wants',
                     isPaid: !!item.paidDate,
                     paidDate: item.paidDate || null,
                     budgetId: null,
@@ -213,7 +209,7 @@ export default function ImportWizard({ onSuccess }) {
 
             setProcessedData(processed);
             setStep(2);
-            showToast({ title: "Success", description: `Extracted ${processed.length} transactions from PDF.` });
+            showToast({ title: "Success", description: `Extracted ${processed.length} transactions.` });
         } catch (error) {
             console.error('PDF Processing Error:', error);
             setError(`PDF Processing Failed: ${error.message || "Unknown error"}`);
