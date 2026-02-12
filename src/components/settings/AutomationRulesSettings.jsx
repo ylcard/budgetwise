@@ -41,18 +41,6 @@ export default function AutomationRulesSettings() {
     const fabButtons = useMemo(() => {
         const buttons = [];
 
-        // 1. Delete Action (Only if items selected)
-        if (selectedIds.size > 0) {
-            buttons.push({
-                key: 'delete-rules',
-                label: `Delete (${selectedIds.size})`,
-                icon: 'Trash2',
-                variant: 'destructive', // Assuming your FAB supports red variant
-                onClick: () => confirmDelete('bulk')
-            });
-        }
-
-        // 2. Add Action (Always present)
         buttons.push({
             key: 'add-rule',
             label: 'Add Rule',
@@ -168,22 +156,28 @@ export default function AutomationRulesSettings() {
                     </div>
 
                     <div className="flex items-center gap-2 justify-end">
-                        {/* Local Desktop Buttons only - Mobile handled by GlobalFAB */}
-                        {selectedIds.size > 0 && (
-                            <div className="hidden md:flex items-center gap-2 mr-2 animate-in fade-in slide-in-from-right-4">
-                                <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded shadow-sm border border-blue-100">
-                                    {selectedIds.size} selected
-                                </span>
-                                <CustomButton
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => confirmDelete('bulk')}
-                                    disabled={deleteBulkRules.isPending}
+                        <AnimatePresence>
+                            {selectedIds.size > 0 && (
+                                <motion.div
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    // Fixed position on mobile (left of Global FAB), Static on Desktop
+                                    className="fixed bottom-6 right-20 z-[60] md:static md:mr-2 md:z-0 flex items-center gap-2"
                                 >
-                                    <Trash2 className="w-4 h-4 mr-1" /> Delete Selected
-                                </CustomButton>
-                            </div>
-                        )}
+                                    <CustomButton
+                                        variant="destructive"
+                                        size="icon" // Round on mobile
+                                        className="h-12 w-12 rounded-full shadow-lg md:h-9 md:w-auto md:px-4 md:rounded-md"
+                                        onClick={() => confirmDelete('bulk')}
+                                        disabled={deleteBulkRules.isPending}
+                                    >
+                                        <Trash2 className="w-5 h-5 md:mr-2 md:w-4 md:h-4" />
+                                        <span className="hidden md:inline">Delete Selected ({selectedIds.size})</span>
+                                    </CustomButton>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         <Dialog open={isDialogOpen} onOpenChange={(open) => {
                             if (!open) {
