@@ -129,12 +129,10 @@ export default function ImportWizard({ onSuccess }) {
                 };
             };
 
-            // 3. Prepare Data for Categorization Engine
+            // 1. Pre-process for AI Engine (Clean Structure)
             const preProcessed = extractedData.map(item => {
                 const rawVal = parseAmountWithSign(item.amount);
-                const type = rawVal < 0 ? 'expense' : 'income';
                 const magnitude = Math.abs(rawVal);
-
                 let txDate = item.date;
                 let pdDate = item.valueDate;
                 if (txDate && pdDate) {
@@ -145,63 +143,59 @@ export default function ImportWizard({ onSuccess }) {
                         pdDate = item.date;
                     }
                 }
-
                 return {
                     id: Math.random().toString(36).substr(2, 9),
                     date: txDate,
-                    title: item.reason || 'Untitled Transaction',
-                    amount: magnitude,
-                    type,
+                    title: item.reason || 'Untitled',
+                    amount: magnitude, // STORED AS 'amount' now to avoid scope errors
+                    type: rawVal < 0 ? 'expense' : 'income',
                     paidDate: pdDate,
                     originalData: item
                 };
             }).filter(item => item.amount !== 0 && item.date);
 
-            showToast({ title: "Categorizing...", description: "AI is cleaning and organizing your transactions." });
+            // 2. Call Backend Engine (Waterfall Mode)
+            showToast({ title: "Categorizing...", description: "AI is cleaning and organizing..." });
 
-            // 4. Batch Call to Backend Engine
-            const engineResults = await base44.functions.invoke('CategorizationEngine', {
+            const engineResponse = await base44.functions.invoke('CategorizationEngine', {
                 transactions: preProcessed,
                 rules: rules,
                 categories: categories
             });
 
-            // SAFETY CHECK: Handle different response shapes from SDK
-            const aiData = Array.isArray(engineResults) ? engineResults
-                : Array.isArray(engineResults?.data) ? engineResults.data
-                    : Array.isArray(engineResults?.result) ? engineResults.result
-                        : [];
+            // Safety Unwrap (Fixes "map is not a function")
+            const aiResults = Array.isArray(engineResponse) ? engineResponse
+                : Array.isArray(engineResponse?.data) ? engineResponse.data
+                    : preProcessed;
 
-            // Fallback to preProcessed if AI returned nothing valid
-            const resultsToMerge = aiData.length > 0 ? aiData : preProcessed;
-
-            // 5. Final Merge (Memory overrides Engine)
-            const processed = resultsToMerge.map(item => {
+            // 3. Final Merge
+            const processed = aiResults.map(item => {
                 // Check Memory First
                 const learned = findLearnedData(item.title);
 
-                // Decide final values
-                const finalCategoryName = learned ? learned.categoryName : (item.categoryName || 'Uncategorized');
-                const finalCategoryId = learned ? learned.categoryId : (item.category_id || null);
-                const finalTitle = learned ? learned.title : (item.cleanTitle || item.title);
-
-                // FIX: Use 'item.amount' and 'item.date' (not 'magnitude'/'txDate')
+                // Resolve Priority: Memory > DB Category Default > 'wants'
+                let finalPriority = 'wants';
+                if (learned) {
+                    finalPriority = learned.priority;
+                } else if (item.categoryName) {
+                    const dbCat = categories.find(c => c.name.toLowerCase() === item.categoryName.toLowerCase());
+                    if (dbCat && dbCat.priority) finalPriority = dbCat.priority;
+                }
                 const survivor = findSurvivor({ amount: item.amount, date: item.date });
 
                 return {
-                    date: item.date,
-                    title: finalTitle,
+                    ...item,
+                    // Memory overrides AI, AI overrides Raw
+                    category: learned ? learned.categoryName : (item.categoryName || 'Uncategorized'),
+                    categoryId: learned ? learned.categoryId : (item.category_id || null),
+                    title: learned ? learned.title : (item.cleanTitle || item.title),
+                    financial_priority: finalPriority,
+                    confidence: item.confidence, // Pass through for UI badges
                     amount: item.amount,
                     originalAmount: item.amount,
                     originalCurrency: settings?.baseCurrency || 'USD',
-                    type: item.type,
-                    category: finalCategoryName,
-                    categoryId: finalCategoryId,
-                    financial_priority: 'wants',
                     isPaid: !!item.paidDate,
-                    paidDate: item.paidDate || null,
                     budgetId: null,
-                    originalData: item.originalData,
                     isDuplicate: !!survivor,
                     duplicateMatch: survivor
                 };
@@ -294,11 +288,30 @@ export default function ImportWizard({ onSuccess }) {
         setIsProcessing(true);
         try {
             // Pre-flight data check
-            if (categoriesLoading || goalsLoading || !categories.length || !goals.length) {
-                showToast({ title: "System warming up", description: "Still loading your categories and goals. Please try again in a second." });
+            if (goalsLoading || !goals.length) {
+                showToast({ title: "System warming up", description: "Still loading your goals. Please try again in a second." });
                 setIsProcessing(false);
                 return;
             }
+
+            // --- AUTO-CREATE MISSING CATEGORIES ---
+            const newCategories = new Set();
+            processedData.forEach(item => {
+                if (item.type === 'expense' && !item.categoryId && item.category && item.category !== 'Uncategorized') {
+                    if (!categories.some(c => c.name.toLowerCase() === item.category.toLowerCase())) {
+                        newCategories.add(item.category);
+                    }
+                }
+            });
+
+            if (newCategories.size > 0) {
+                showToast({ title: "Initializing", description: `Creating ${newCategories.size} new categories...` });
+                await Promise.all(Array.from(newCategories).map(name =>
+                    base44.entities.Category.create({ name, type: 'expense', icon: 'Circle', color: '#94a3b8' })
+                ));
+                await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+            }
+            const freshCategories = await base44.entities.Category.list();
 
             // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
             const expenseItems = processedData.filter(item => item.type === 'expense');
@@ -327,12 +340,19 @@ export default function ImportWizard({ onSuccess }) {
                 const paidDate = item.paidDate ? formatDateString(item.paidDate) : null;
                 const syncKey = `${paidDate || date}|${item.financial_priority || 'wants'}`;
 
+                // Resolve Category ID (checking fresh list)
+                let finalCatId = item.categoryId;
+                if (item.type === 'expense' && !finalCatId) {
+                    const match = freshCategories.find(c => c.name.toLowerCase() === (item.category || '').toLowerCase());
+                    finalCatId = match ? match.id : freshCategories.find(c => c.name.includes('Uncategorized'))?.id;
+                }
+
                 return {
                     title: item.title,
                     amount: Math.abs(item.amount),
                     type: item.type,
                     date,
-                    category_id: isExpense ? (item.categoryId || categories.find(c => c.name?.toLowerCase().includes('uncategorized'))?.id) : null,
+                    category_id: finalCatId,
                     financial_priority: isExpense ? (item.financial_priority || 'wants') : null,
                     budgetId: isExpense ? (item.budgetId || budgetMap[syncKey]) : null,
                     originalAmount: Math.abs(item.amount),
