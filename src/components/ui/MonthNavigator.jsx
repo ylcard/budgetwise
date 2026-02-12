@@ -1,3 +1,4 @@
+
 import { CustomButton } from "@/components/ui/CustomButton";
 import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,12 +49,12 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
     return (
         // 'relative' is needed so the absolute child positions itself relative to this container
         <div className="relative flex items-center justify-center w-fit z-20">
-            <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+            <div className="flex items-center gap-1 sm:gap-2 bg-card rounded-lg shadow-sm border border-border p-1">
                 <CustomButton
                     variant="ghost"
                     size="icon"
                     onClick={goToPreviousMonth}
-                    className="h-8 w-8 shrink-0 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
+                    className="h-8 w-8 shrink-0 hover:bg-accent text-muted-foreground hover:text-foreground"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </CustomButton>
@@ -64,7 +65,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
                     onMonthChange={onMonthChange}
                 >
                     <button
-                        className="px-2 sm:px-4 py-1 min-w-[130px] sm:min-w-[160px] text-sm sm:text-base text-center font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer rounded hover:bg-blue-50 truncate"
+                        className="px-2 sm:px-4 py-1 min-w-[130px] sm:min-w-[160px] text-sm sm:text-base text-center font-bold text-foreground hover:text-primary transition-colors cursor-pointer rounded hover:bg-accent truncate"
                     >
                         {getMonthName(currentMonth)} {currentYear}
                     </button>
@@ -74,7 +75,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
                     variant="ghost"
                     size="icon"
                     onClick={goToNextMonth}
-                    className="h-8 w-8 shrink-0 hover:bg-blue-50 text-gray-700 hover:text-blue-600"
+                    className="h-8 w-8 shrink-0 hover:bg-accent text-muted-foreground hover:text-foreground"
                 >
                     <ChevronRight className="w-5 h-5" />
                 </CustomButton>
@@ -93,7 +94,7 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
                             variant="ghost"
                             size="icon"
                             onClick={goToCurrentMonth}
-                            className="h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 bg-white/50 backdrop-blur-sm border border-transparent hover:border-blue-100 shadow-sm"
+                            className="h-6 w-6 rounded-full text-muted-foreground hover:text-primary hover:bg-accent bg-background/50 backdrop-blur-sm border border-transparent hover:border-border shadow-sm"
                             title="Reset to Current Month"
                         >
                             <RotateCcw className="w-3 h-3" />
@@ -104,6 +105,3 @@ export default function MonthNavigator({ currentMonth, currentYear, onMonthChang
         </div>
     );
 }
-
-
-
