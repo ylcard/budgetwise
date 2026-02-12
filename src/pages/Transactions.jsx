@@ -37,8 +37,6 @@ export default function Transactions() {
     const [showAddExpense, setShowAddExpense] = useState(false);
     const [showImportWizard, setShowImportWizard] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null); // ADDED
-    const [editingRecurring, setEditingRecurring] = useState(null);
-    const [isProcessingRecurring, setIsProcessingRecurring] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const { setFabButtons, clearFabButtons } = useFAB();
 
