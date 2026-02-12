@@ -79,14 +79,13 @@ export function MobileDrawerSelect({
                                         key={option.value}
                                         onClick={() => {
                                             onValueChange(option.value);
-                                            // Close drawer automatically on selection
                                             finalOnOpenChange(false);
                                         }}
                                         className={cn(
                                             'w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left text-sm',
                                             value === option.value
-                                                ? 'bg-blue-50 text-blue-600 font-semibold'
-                                                : 'hover:bg-gray-100 text-gray-900'
+                                                ? 'bg-primary/10 text-primary font-semibold'
+                                                : 'hover:bg-accent text-foreground'
                                         )}
                                     >
                                         <span>{option.label}</span>
