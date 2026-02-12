@@ -276,7 +276,7 @@
 
 /* Force Popovers (Calendar) to be top-most */
 .popover-content-z-index {
-    z-index: 110 !important;
+    z-index: 120 !important;
 }
 
 /* Ensure Drawer Overlay and Content are on top of everything */
