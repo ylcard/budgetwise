@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
-import { useToast } from "@/components/ui/use-toast";
+import { useRuleActions } from "@/components/hooks/useRuleActions";
+import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,13 +21,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 export default function AutomationRulesSettings() {
     const { user } = useSettings();
     const { categories } = useCategories();
-    const { toast } = useToast();
-    const queryClient = useQueryClient();
 
-    // Selection & Dialog States
-    const [selectedIds, setSelectedIds] = useState(new Set());
+    const {
+        isDialogOpen, setIsDialogOpen,
+        selectedIds, setSelectedIds,
+        isRegexMode, setIsRegexMode,
+        formData, setFormData,
+        createRule, deleteRule, updateRule
+    } = useRuleActions();
+
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
+    const [editingId, setEditingId] = useState(null);
+    const [editingKeyword, setEditingKeyword] = useState(null);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isRegexMode, setIsRegexMode] = useState(false); // Toggle for creation
@@ -40,11 +47,17 @@ export default function AutomationRulesSettings() {
 
     // Fetch the user's saved rules
     const { data: rules = [], isLoading, isFetching } = useQuery({
-        queryKey: ['categoryRules', user?.email],
-        // CHANGE: Use .filter to explicitly request this user's matching rows
+        queryKey: [QUERY_KEYS.CATEGORY_RULES, user?.email],
         queryFn: () => base44.entities.CategoryRule.filter({ user_email: user?.email }),
         enabled: !!user?.email
     });
+
+    // Listen for FAB events from the Page
+    useEffect(() => {
+        const openDialog = () => setIsDialogOpen(true);
+        window.addEventListener('open-rule-dialog', openDialog);
+        return () => window.removeEventListener('open-rule-dialog', openDialog);
+    }, [setIsDialogOpen]);
 
     // Toggle Selection
     const toggleSelection = (id) => {
