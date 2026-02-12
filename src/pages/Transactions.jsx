@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, ArrowDown, History, Repeat, Play } from "lucide-react";
+import { Plus, ArrowDown, History, Repeat, Play, FileUp, PlusCircle, MinusCircle } from "lucide-react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +25,7 @@ import RecurringTransactionList from "../components/recurring/RecurringTransacti
 import RecurringTransactionForm from "../components/recurring/RecurringTransactionForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Transactions() {
     const { user } = useSettings();
@@ -36,6 +37,9 @@ export default function Transactions() {
     const [showAddExpense, setShowAddExpense] = useState(false);
     const [showImportWizard, setShowImportWizard] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null); // ADDED
+    const [showRecurringForm, setShowRecurringForm] = useState(false);
+    const [editingRecurring, setEditingRecurring] = useState(null);
+    const [isProcessingRecurring, setIsProcessingRecurring] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const { setFabButtons, clearFabButtons } = useFAB();
 
@@ -76,7 +80,7 @@ export default function Transactions() {
 
     // Recurring Data & Actions
     const { recurringTransactions, isLoading: isLoadingRecurring } = useRecurringTransactions(user);
-    const { handleCreate: createRecurring, handleUpdate: updateRecurring, handleDelete: deleteRecurring, handleToggleActive: toggleRecurringActive } = useRecurringTransactionActions(user);
+    const { handleCreate: createRecurring, handleUpdate: updateRecurring, handleDelete: deleteRecurring, handleToggleActive: toggleRecurringActive, isSubmitting: isSubmittingRecurring } = useRecurringTransactionActions(user);
 
     // Advanced Filtering logic
     const { filteredTransactions } = useAdvancedTransactionFiltering(transactions, filters, setFilters);
@@ -212,29 +216,35 @@ export default function Transactions() {
     };
 
     // Recurring Handlers
-    const handleProcessRecurring = async () => {
+    const handleProcessRecurring = useCallback(async () => {
         setIsProcessingRecurring(true);
         const toastId = toast.loading('Processing recurring transactions...');
         try {
             const userLocalDate = format(new Date(), 'yyyy-MM-dd');
             const response = await base44.functions.invoke('processRecurringTransactions', { userLocalDate });
             if (response.data.success) {
-                toast.success(`Processed ${response.data.processed} transactions`, { id: toastId });
+                toast.success(`Successfully processed ${response.data.processed} transactions`, { id: toastId });
                 queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            } else {
+                toast.error('Failed to process transactions', { id: toastId });
             }
         } catch (error) {
-            toast.error('Processing failed', { id: toastId });
+            toast.error('Error processing recurring transactions', { id: toastId });
         } finally {
             setIsProcessingRecurring(false);
         }
-    };
+    }, [queryClient]);
 
     const handleRecurringSubmit = (data) => {
-        if (editingRecurring) updateRecurring(editingRecurring.id, data);
-        else createRecurring(data);
+        if (editingRecurring) {
+            updateRecurring(editingRecurring.id, data);
+        } else {
+            createRecurring(data);
+        }
         setShowRecurringForm(false);
         setEditingRecurring(null);
     };
+
 
     // ADDED 03-Feb-2026: Pull-to-refresh handler
     const handleRefresh = async () => {
@@ -243,10 +253,10 @@ export default function Transactions() {
         } else {
             await queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
         }
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
     };
 
-    // FAB Configuration
+    // Scope-specific FAB Buttons
     const historyFab = useMemo(() => [
         {
             key: 'import',
@@ -269,7 +279,7 @@ export default function Transactions() {
             variant: 'success',
             onClick: () => setShowAddIncome(true)
         }
-    ], [allCustomBudgets, categories, transactions]);
+    ], []);
 
     const recurringFab = useMemo(() => {
         const buttons = [{
@@ -290,10 +300,10 @@ export default function Transactions() {
             });
         }
         return buttons;
-    }, [user, isProcessingRecurring]);
+    }, [user, handleProcessRecurring, isProcessingRecurring]);
 
     useEffect(() => {
-        const buttons = activeTab === 'history' ? historyFab : recurringFab;
+        const buttons = activeTab === "history" ? historyFab : recurringFab;
         setFabButtons(buttons);
         return () => clearFabButtons();
     }, [activeTab, historyFab, recurringFab, setFabButtons, clearFabButtons]);
@@ -305,15 +315,15 @@ export default function Transactions() {
                     <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 px-2">
                         <div>
                             <h1 className="text-2xl md:text-4xl font-bold">Transactions</h1>
-                            <p className="text-xs text-muted-foreground">Manage your money flow</p>
+                            <p className="text-xs text-muted-foreground">Monitor and automate your finances</p>
                         </div>
 
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-                            <TabsList className="grid w-full grid-cols-2 h-10">
-                                <TabsTrigger value="history" className="gap-2">
+                            <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50 p-1">
+                                <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-background shadow-sm">
                                     <History className="w-4 h-4" /> History
                                 </TabsTrigger>
-                                <TabsTrigger value="recurring" className="gap-2">
+                                <TabsTrigger value="recurring" className="gap-2 data-[state=active]:bg-background shadow-sm">
                                     <Repeat className="w-4 h-4" /> Recurring
                                 </TabsTrigger>
                             </TabsList>
@@ -321,7 +331,7 @@ export default function Transactions() {
                     </div>
 
                     <Tabs value={activeTab} className="w-full">
-                        <TabsContent value="history" className="space-y-4 mt-0 border-none p-0 outline-none">
+                        <TabsContent value="history" className="space-y-4 mt-0 border-none p-0 outline-none focus-visible:ring-0">
                             <TransactionFilters
                                 filters={filters}
                                 setFilters={setFilters}
@@ -334,34 +344,85 @@ export default function Transactions() {
                                 onEdit={handleTransactionEdit}
                                 onDelete={handleDelete}
                                 isLoading={isLoading}
-                            // ... rest of existing TransactionList props
+                                onSubmit={handleFormSubmit}
+                                isSubmitting={isSubmitting}
+                                customBudgets={allCustomBudgets}
+                                monthStart={monthStart}
+                                monthEnd={monthEnd}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                itemsPerPage={itemsPerPage}
+                                onItemsPerPageChange={setItemsPerPage}
+                                totalItems={filteredTransactions.length}
+                                selectedIds={selectedIds}
+                                onToggleSelection={handleToggleSelection}
+                                onSelectAll={handleSelectAllPage}
+                                onClearSelection={handleClearSelection}
+                                onDeleteSelected={handleDeleteSelected}
+                                isBulkDeleting={isBulkDeleting}
+                                sortConfig={sortConfig}
+                                onSort={setSortConfig}
                             />
                         </TabsContent>
 
-                        <TabsContent value="recurring" className="space-y-4 mt-0 border-none p-0 outline-none">
-                            <RecurringTransactionList
-                                recurringTransactions={recurringTransactions}
-                                categories={categories}
-                                onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
-                                onDelete={deleteRecurring}
-                                onToggleActive={toggleRecurringActive}
-                                isLoading={isLoadingRecurring}
-                            />
+                        <TabsContent value="recurring" className="space-y-4 mt-0 border-none p-0 outline-none focus-visible:ring-0">
+                            <div className="grid grid-cols-1 gap-4">
+                                <RecurringTransactionList
+                                    recurringTransactions={recurringTransactions}
+                                    categories={categories}
+                                    onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
+                                    onDelete={deleteRecurring}
+                                    onToggleActive={toggleRecurringActive}
+                                    isLoading={isLoadingRecurring}
+                                />
+                            </div>
                         </TabsContent>
                     </Tabs>
                 </div>
             </div>
 
-            {/* Keep all your existing Modals/Dialogs here, but add the Recurring Form */}
+            {/* Global Modals Container */}
+            <QuickAddIncome
+                open={showAddIncome}
+                onOpenChange={(open) => { setShowAddIncome(open); if (!open) setEditingTransaction(null); }}
+                onSubmit={handleFormSubmit}
+                isSubmitting={isSubmitting}
+                renderTrigger={false}
+                transaction={editingTransaction}
+            />
+            <QuickAddTransaction
+                open={showAddExpense}
+                onOpenChange={(open) => { setShowAddExpense(open); if (!open) setEditingTransaction(null); }}
+                categories={categories}
+                customBudgets={allCustomBudgets}
+                onSubmit={handleFormSubmit}
+                isSubmitting={isSubmitting}
+                transactions={transactions}
+                renderTrigger={false}
+                transaction={editingTransaction}
+            />
+            <ImportWizardDialog
+                open={showImportWizard}
+                onOpenChange={setShowImportWizard}
+                renderTrigger={false}
+            />
             <Dialog open={showRecurringForm} onOpenChange={setShowRecurringForm}>
-                <DialogContent>
-                    <RecurringTransactionForm
-                        initialData={editingRecurring}
-                        categories={categories}
-                        onSubmit={handleRecurringSubmit}
-                        onCancel={() => setShowRecurringForm(false)}
-                        isSubmitting={isSubmitting}
-                    />
+                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+                    <DialogHeader className="p-6 pb-0">
+                        <DialogTitle className="text-xl font-bold">
+                            {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="p-6 max-h-[85vh] overflow-y-auto">
+                        <RecurringTransactionForm
+                            initialData={editingRecurring}
+                            categories={categories}
+                            onSubmit={handleRecurringSubmit}
+                            onCancel={() => setShowRecurringForm(false)}
+                            isSubmitting={isSubmittingRecurring}
+                        />
+                    </div>
                 </DialogContent>
             </Dialog>
         </PullToRefresh>
