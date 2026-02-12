@@ -11,6 +11,7 @@ import CategoryGrid from "../components/categories/CategoryGrid";
 import { useFAB } from "../components/hooks/FABContext";
 import { showToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { getCategoryIcon } from "../components/utils/iconMapConfig";
 
 export default function Categories() {
     // UI state
@@ -129,6 +130,9 @@ export default function Categories() {
 }
 
 function MobileCategoryItem({ category, onEdit, onDelete }) {
+    // Use your existing helper to resolve the icon component
+    const Icon = getCategoryIcon(category.icon);
+
     return (
         <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm active:scale-[0.98] transition-transform">
             <div className="flex items-center gap-3">
@@ -136,7 +140,7 @@ function MobileCategoryItem({ category, onEdit, onDelete }) {
                     className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-sm"
                     style={{ backgroundColor: category.color + '20', color: category.color }}
                 >
-                    {category.icon || '📁'}
+                    <Icon className="w-5 h-5" />
                 </div>
                 <div>
                     <h3 className="font-semibold text-gray-900">{category.name}</h3>
