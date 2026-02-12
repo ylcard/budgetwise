@@ -10,7 +10,6 @@ import CategoryForm from "../components/categories/CategoryForm";
 import CategoryGrid from "../components/categories/CategoryGrid";
 import { useFAB } from "../components/hooks/FABContext";
 import { showToast } from "@/components/ui/use-toast";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getCategoryIcon } from "../components/utils/iconMapConfig";
 
 export default function Categories() {
@@ -134,7 +133,7 @@ function MobileCategoryItem({ category, onEdit, onDelete }) {
     const Icon = getCategoryIcon(category.icon);
 
     return (
-        <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm active:scale-[0.98] transition-transform">
+        <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm">
             <div className="flex items-center gap-3">
                 <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-sm"
@@ -148,30 +147,23 @@ function MobileCategoryItem({ category, onEdit, onDelete }) {
                 </div>
             </div>
 
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <button className="p-2 text-gray-400 hover:text-gray-600">
-                        <MoreVertical className="w-5 h-5" />
+            <div className="flex items-center gap-1">
+                <button
+                    onClick={() => onEdit(category)}
+                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                >
+                    <Pencil className="w-5 h-5" />
+                </button>
+
+                {!category.is_system && (
+                    <button
+                        onClick={() => onDelete(category)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                        <Trash2 className="w-5 h-5" />
                     </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(category)}>
-                        <Pencil className="w-4 h-4 mr-2" /> Edit
-                    </DropdownMenuItem>
-                    {category.is_system ? (
-                        <DropdownMenuItem disabled className="text-gray-400 flex items-center">
-                            <Lock className="w-3 h-3 mr-2" /> System (Protected)
-                        </DropdownMenuItem>
-                    ) : (
-                        <DropdownMenuItem
-                            onClick={() => onDelete(category)}
-                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                        >
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                    )}
-                </DropdownMenuContent>
-            </DropdownMenu>
+                )}
+            </div>
         </div>
     );
 }
