@@ -6,8 +6,7 @@ import {
     SlidersHorizontal,
     FolderOpen,
     RefreshCw,
-    Link2,
-    CreditCard
+    Link2
 } from "lucide-react";
 
 // UI Components
@@ -27,6 +26,11 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm } from "../components/hooks/useActions";
 import { formatCurrency } from "../components/utils/currencyUtils";
 import { CURRENCY_OPTIONS, SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components/utils/constants";
+
+// Page Imports
+import Categories from "./Categories";
+import Automation from "./Automation";
+import BankSync from "./BankSync";
 
 export default function ManagePage() {
     // Default to 'preferences' tab
@@ -71,30 +75,22 @@ export default function ManagePage() {
                             </TabsContent>
 
                             <TabsContent value="categories" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                <PlaceholderSection
-                                    icon={FolderOpen}
-                                    title="Category Management"
-                                    description="Create, edit, and merge your transaction categories."
-                                />
-                                {/* TODO: Inject Categories Component Here */}
+                                {/* Wrapper to neutralize parent padding so the page component fits naturally */}
+                                <div className="-m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)]">
+                                    <Categories />
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="automation" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                <PlaceholderSection
-                                    icon={RefreshCw}
-                                    title="Automation Rules"
-                                    description="Set up rules to automatically categorize or tag transactions."
-                                />
-                                {/* TODO: Inject Automation Component Here */}
+                                <div className="-m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)]">
+                                    <Automation />
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="banksync" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                <PlaceholderSection
-                                    icon={Link2}
-                                    title="Bank Synchronization"
-                                    description="Manage your linked bank accounts and connection status."
-                                />
-                                {/* TODO: Inject BankSync Component Here */}
+                                <div className="-m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)]">
+                                    <BankSync />
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="account" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
@@ -337,24 +333,6 @@ function AccountSection() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-            </CardContent>
-        </Card>
-    );
-}
-
-// Temporary Placeholder for future sections
-function PlaceholderSection({ icon: Icon, title, description }) {
-    return (
-        <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
-                    <Icon className="w-8 h-8 text-gray-400" />
-                </div>
-                <div className="max-w-md space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-                    <p className="text-gray-500">{description}</p>
-                </div>
-                <CustomButton variant="outline" disabled>Feature Coming Soon</CustomButton>
             </CardContent>
         </Card>
     );
