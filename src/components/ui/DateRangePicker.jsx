@@ -57,7 +57,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild>
                 <CustomButton
                     variant="outline"
