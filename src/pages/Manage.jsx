@@ -1,323 +1,361 @@
-import { useState, useEffect, /* useRef, */ useMemo } from "react"; // UPDATED 17-Jan-2026: Commented out useRef
+import { useState, useMemo, useEffect } from "react";
+import {
+    Settings as SettingsIcon,
+    Save,
+    Trash2,
+    SlidersHorizontal,
+    FolderOpen,
+    RefreshCw,
+    Link2,
+    CreditCard
+} from "lucide-react";
+
+// UI Components
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, /* CardFooter */ } from "@/components/ui/card"; // UPDATED 17-Jan-2026: Commented out CardFooter
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { useSettings } from "../components/utils/SettingsContext";
-import { useSettingsForm, /* useGoalActions */ } from "../components/hooks/useActions"; // UPDATED 17-Jan-2026: Commented out useGoalActions
-// import { useGoals } from "../components/hooks/useBase44Entities"; // REMOVED 17-Jan-2026: Goals moved to Reports
-import { formatCurrency } from "../components/utils/currencyUtils";
-import { Settings as SettingsIcon, Save, Trash2 } from "lucide-react"; // UPDATED 03-Feb-2026: Added Trash2 icon for account deletion
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // ADDED 03-Feb-2026: For account deletion confirmation
-import {
-    CURRENCY_OPTIONS,
-    // FINANCIAL_PRIORITIES, // REMOVED 17-Jan-2026: Goals moved to Reports
-    SETTINGS_KEYS,
-    DEFAULT_SETTINGS
-} from "../components/utils/constants";
-// import AmountInput from "../components/ui/AmountInput"; // REMOVED 17-Jan-2026: Goals moved to Reports
-// import { Skeleton } from "@/components/ui/skeleton"; // REMOVED 17-Jan-2026: Goals moved to Reports
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/use-toast";
 
-export default function Settings() {
-    const { settings, updateSettings, user } = useSettings();
+// Utils & Hooks
+import { useSettings } from "../components/utils/SettingsContext";
+import { useSettingsForm } from "../components/hooks/useActions";
+import { formatCurrency } from "../components/utils/currencyUtils";
+import { CURRENCY_OPTIONS, SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components/utils/constants";
 
-    // --- 1. GENERAL SETTINGS LOGIC ---
-    const { formData, handleFormChange, resetForm } = useSettingsForm(
-        settings,
-        updateSettings
+export default function ManagePage() {
+    // Default to 'preferences' tab
+    const [activeTab, setActiveTab] = useState("preferences");
+
+    return (
+        <div className="min-h-screen p-4 md:p-8 pb-24 bg-gray-50/50">
+            <div className="max-w-6xl mx-auto space-y-8">
+
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Manage</h1>
+                        <p className="text-gray-500 mt-1">Configure your workspace, data, and preferences.</p>
+                    </div>
+                </div>
+
+                {/* Layout: Vertical Tabs on Desktop, Stacked on Mobile */}
+                <Tabs
+                    defaultValue="preferences"
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="flex flex-col md:flex-row gap-8"
+                >
+                    {/* SIDEBAR NAVIGATION */}
+                    <aside className="w-full md:w-64 flex-shrink-0">
+                        <TabsList className="flex md:flex-col h-auto p-1 bg-white/50 backdrop-blur border border-gray-200 rounded-xl gap-1 w-full overflow-x-auto md:overflow-visible justify-start">
+                            <NavTab value="preferences" icon={SlidersHorizontal} label="Preferences" />
+                            <NavTab value="categories" icon={FolderOpen} label="Categories" />
+                            <NavTab value="automation" icon={RefreshCw} label="Automation" />
+                            <NavTab value="banksync" icon={Link2} label="Bank Sync" />
+                            <Separator className="my-2 hidden md:block bg-gray-200" />
+                            <NavTab value="account" icon={SettingsIcon} label="Account" />
+                        </TabsList>
+                    </aside>
+
+                    {/* MAIN CONTENT AREA */}
+                    <main className="flex-1 min-w-0">
+                        <div className="space-y-6">
+                            <TabsContent value="preferences" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
+                                <PreferencesSection />
+                            </TabsContent>
+
+                            <TabsContent value="categories" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
+                                <PlaceholderSection
+                                    icon={FolderOpen}
+                                    title="Category Management"
+                                    description="Create, edit, and merge your transaction categories."
+                                />
+                                {/* TODO: Inject Categories Component Here */}
+                            </TabsContent>
+
+                            <TabsContent value="automation" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
+                                <PlaceholderSection
+                                    icon={RefreshCw}
+                                    title="Automation Rules"
+                                    description="Set up rules to automatically categorize or tag transactions."
+                                />
+                                {/* TODO: Inject Automation Component Here */}
+                            </TabsContent>
+
+                            <TabsContent value="banksync" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
+                                <PlaceholderSection
+                                    icon={Link2}
+                                    title="Bank Synchronization"
+                                    description="Manage your linked bank accounts and connection status."
+                                />
+                                {/* TODO: Inject BankSync Component Here */}
+                            </TabsContent>
+
+                            <TabsContent value="account" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
+                                <AccountSection />
+                            </TabsContent>
+                        </div>
+                    </main>
+                </Tabs>
+            </div>
+        </div>
     );
+}
 
-    const handleCurrencyChange = (code) => {
-        const selectedCurrency = CURRENCY_OPTIONS.find(c => c.code === code);
-        if (selectedCurrency) {
-            handleFormChange('baseCurrency', code);
-            handleFormChange('currencySymbol', selectedCurrency.symbol);
-        }
-    };
+// --- SUB-COMPONENTS ---
 
-    // REMOVED 17-Jan-2026: Goal Settings logic moved to Reports page
+function NavTab({ value, icon: Icon, label }) {
+    return (
+        <TabsTrigger
+            value={value}
+            className="w-full justify-start gap-3 px-4 py-3 rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-gray-200 border border-transparent transition-all"
+        >
+            <Icon className="w-4 h-4" />
+            <span className="truncate">{label}</span>
+        </TabsTrigger>
+    );
+}
 
-    // --- 3. SMART SAVE LOGIC ---
-    // Dirty Check: Compare current state vs DB state
+function PreferencesSection() {
+    const { settings, updateSettings } = useSettings();
+    const { formData, handleFormChange, resetForm } = useSettingsForm(settings, updateSettings);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Dirty Check
     const hasChanges = useMemo(() => {
         if (!settings) return false;
-
-        // General Settings only (goals removed)
         return SETTINGS_KEYS.some(k => formData[k] !== settings[k]);
     }, [formData, settings]);
 
-    // --- NAVIGATION GUARD (Browser Level) ---
+    // Prevent navigation if unsaved
     useEffect(() => {
         const handleBeforeUnload = (e) => {
             if (hasChanges) {
                 e.preventDefault();
-                e.returnValue = ''; // Chrome requires this
+                e.returnValue = '';
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [hasChanges]);
 
-    const [isGlobalSaving, setIsGlobalSaving] = useState(false);
-
-    // --- ACTIONS ---
-    const handleDiscard = () => {
-        resetForm(settings);
-        showToast({ title: "Changes Discarded", description: "Settings reverted to last saved state." });
-    };
-
-    const handleResetToDefaults = () => {
-        if (!window.confirm("Are you sure you want to reset all settings to factory defaults?")) return;
-        resetForm(DEFAULT_SETTINGS);
-        showToast({ title: "Reset Applied", description: "Settings reset to defaults. Click Save to apply." });
-    };
-
-    const handleGlobalSave = async () => {
-        setIsGlobalSaving(true);
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
             await updateSettings(formData);
-            showToast({ title: "Success", description: "Settings saved successfully" });
+            showToast({ title: "Preferences Saved", description: "Your display settings have been updated." });
         } catch (error) {
-            console.error('Save error:', error);
+            console.error(error);
             showToast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
         } finally {
-            setIsGlobalSaving(false);
+            setIsSaving(false);
         }
     };
 
-    // ADDED 03-Feb-2026: Account deletion handler
-    const handleAccountDeletion = async () => {
-        try {
-            // TODO: Implement actual account deletion backend logic
-            showToast({
-                title: "Account Deletion Requested",
-                description: "Your account deletion request has been received. You will be logged out shortly.",
-                variant: "destructive"
-            });
-            // Simulate account deletion process
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 2000);
-        } catch (error) {
-            console.error('Account deletion error:', error);
-            showToast({
-                title: "Error",
-                description: "Failed to process account deletion request.",
-                variant: "destructive"
-            });
+    const handleCurrencyChange = (code) => {
+        const selected = CURRENCY_OPTIONS.find(c => c.code === code);
+        if (selected) {
+            handleFormChange('baseCurrency', code);
+            handleFormChange('currencySymbol', selected.symbol);
         }
     };
-
-
-    const previewAmount = 1234567.89;
 
     return (
-        <div className="min-h-screen p-4 md:p-8 pb-24">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Settings</h1>
-                    <p className="text-gray-500 mt-1">Manage your preferences and financial goals</p>
-                </div>
-
-                <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <SettingsIcon className="w-5 h-5" />
-                            Application Preferences
-                        </CardTitle>
-                        <CardDescription>
-                            Manage currency formatting and budget allocation goals
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* SECTION 1: CURRENCY & FORMATTING */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                                <h3 className="font-semibold text-gray-900">Currency & Formatting</h3>
-                            </div>
-
-                            {/* ... Currency Inputs ... */}
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Display Preferences</CardTitle>
+                    <CardDescription>Customize how financial data is displayed across the application.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                    {/* Currency Group */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Currency</h3>
+                        <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="currency">Currency</Label>
+                                <Label>Base Currency</Label>
                                 <Select value={formData.baseCurrency || 'USD'} onValueChange={handleCurrencyChange}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {CURRENCY_OPTIONS.map((c) => (
-                                            <SelectItem key={c.code} value={c.code}>{c.symbol} - {c.name} ({c.code})</SelectItem>
+                                        {CURRENCY_OPTIONS.map(c => (
+                                            <SelectItem key={c.code} value={c.code}>{c.symbol} - {c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label>Position</Label>
-                                    <Select value={formData.currencyPosition} onValueChange={(v) => handleFormChange('currencyPosition', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="before">Before ({formData.currencySymbol}100)</SelectItem>
-                                            <SelectItem value="after">After (100{formData.currencySymbol})</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>View Mode</Label>
-                                    <Select value={formData.budgetViewMode || 'bars'} onValueChange={(v) => handleFormChange('budgetViewMode', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="bars">Bars</SelectItem>
-                                            <SelectItem value="cards">Cards</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="space-y-2">
+                                <Label>Symbol Position</Label>
+                                <Select value={formData.currencyPosition} onValueChange={(v) => handleFormChange('currencyPosition', v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="before">Before ({formData.currencySymbol}100)</SelectItem>
+                                        <SelectItem value="after">After (100{formData.currencySymbol})</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-
-                            {/* ... Formatting Inputs ... */}
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label>Thousand Separator</Label>
-                                    <Select value={formData.thousandSeparator} onValueChange={(v) => handleFormChange('thousandSeparator', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value=",">Comma (,)</SelectItem>
-                                            <SelectItem value=".">Period (.)</SelectItem>
-                                            <SelectItem value=" ">Space</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Decimal Separator</Label>
-                                    <Select value={formData.decimalSeparator} onValueChange={(v) => handleFormChange('decimalSeparator', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value=".">Period (.)</SelectItem>
-                                            <SelectItem value=",">Comma (,)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label>Decimal Places</Label>
-                                    <Input type="number" min="0" max="4" value={formData.decimalPlaces} onChange={(e) => handleFormChange('decimalPlaces', parseInt(e.target.value) || 0)} />
-                                </div>
-                                <div className="flex items-center justify-between pt-8">
-                                    <Label className="cursor-pointer font-medium">Hide Trailing Zeros</Label>
-                                    <Switch
-                                        checked={formData.hideTrailingZeros}
-                                        onCheckedChange={(checked) => handleFormChange('hideTrailingZeros', checked)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                <p className="text-xs text-gray-500 mb-1">Preview</p>
-                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(previewAmount, formData)}</p>
-                            </div>
-                        </div>
-
-                        {/* REMOVED 17-Jan-2026: Goal Allocation moved to Reports page */}
-                    </CardContent>
-                </Card>
-
-                {/* ADDED 03-Feb-2026: Account Management Section */}
-                <Card className="border-none shadow-lg border-red-100">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-red-600">
-                            <Trash2 className="w-5 h-5" />
-                            Account Management
-                        </CardTitle>
-                        <CardDescription>
-                            Permanently delete your account and all associated data
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="p-4 bg-red-50 rounded-lg border border-red-100">
-                                <p className="text-sm text-red-800 font-medium mb-2">Warning: This action cannot be undone</p>
-                                <p className="text-xs text-red-600">
-                                    Deleting your account will permanently remove all your data including transactions, budgets,
-                                    categories, and settings. This action is irreversible.
-                                </p>
-                            </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <CustomButton
-                                        variant="destructive"
-                                        className="w-full sm:w-auto"
-                                    >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Delete My Account
-                                    </CustomButton>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete your account
-                                            and remove all your data from our servers including:
-                                            <ul className="list-disc list-inside mt-2 space-y-1">
-                                                <li>All transactions and financial records</li>
-                                                <li>Budget goals and allocations</li>
-                                                <li>Custom categories and rules</li>
-                                                <li>Account settings and preferences</li>
-                                            </ul>
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={handleAccountDeletion}
-                                            className="bg-red-600 hover:bg-red-700"
-                                        >
-                                            Yes, Delete My Account
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* --- STATIC ACTION BUTTONS --- */}
-                <div className="sticky bottom-[80px] md:bottom-0 z-[101] p-4 -mx-4 md:mx-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:rounded-xl mt-8 transition-all duration-200">
-                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-                        <CustomButton
-                            onClick={handleResetToDefaults}
-                            variant="outline"
-                            className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                        >
-                            Reset to Defaults
-                        </CustomButton>
-
-                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                            {hasChanges && (
-                                <div className="w-full sm:w-auto animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-300">
-                                    <CustomButton
-                                        onClick={handleDiscard}
-                                        variant="ghost"
-                                        className="w-full sm:w-auto"
-                                    >
-                                        Discard Changes
-                                    </CustomButton>
-                                </div>
-                            )}
-
-                            <CustomButton
-                                onClick={handleGlobalSave}
-                                disabled={isGlobalSaving || !hasChanges}
-                                variant="primary"
-                                className="w-full sm:w-auto min-w-[140px]"
-                            >
-                                {isGlobalSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Settings</>}
-                            </CustomButton>
                         </div>
                     </div>
+
+                    <Separator />
+
+                    {/* Formatting Group */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Number Formatting</h3>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label>Thousand Separator</Label>
+                                <Select value={formData.thousandSeparator} onValueChange={(v) => handleFormChange('thousandSeparator', v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value=",">Comma (,)</SelectItem>
+                                        <SelectItem value=".">Period (.)</SelectItem>
+                                        <SelectItem value=" ">Space</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Decimal Separator</Label>
+                                <Select value={formData.decimalSeparator} onValueChange={(v) => handleFormChange('decimalSeparator', v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value=".">Period (.)</SelectItem>
+                                        <SelectItem value=",">Comma (,)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Decimal Places</Label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    max="4"
+                                    value={formData.decimalPlaces}
+                                    onChange={(e) => handleFormChange('decimalPlaces', parseInt(e.target.value) || 0)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between h-full pt-6">
+                                <Label className="cursor-pointer">Hide Trailing Zeros</Label>
+                                <Switch
+                                    checked={formData.hideTrailingZeros}
+                                    onCheckedChange={(c) => handleFormChange('hideTrailingZeros', c)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Preview Box */}
+                    <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 flex items-center justify-between">
+                        <span className="text-sm text-slate-500">Preview:</span>
+                        <span className="text-2xl font-bold text-slate-900">
+                            {formatCurrency(1234567.89, formData)}
+                        </span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Sticky Action Bar - Only visible when changes exist */}
+            <div className={`
+                sticky bottom-6 z-10 p-4 bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg
+                flex items-center justify-between transition-all duration-300 transform
+                ${hasChanges ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}
+            `}>
+                <span className="text-sm font-medium text-gray-600 hidden sm:block">
+                    You have unsaved changes
+                </span>
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <CustomButton
+                        onClick={() => {
+                            resetForm(settings);
+                            showToast({ title: "Discarded", description: "Changes reverted." });
+                        }}
+                        variant="ghost"
+                        size="sm"
+                    >
+                        Discard
+                    </CustomButton>
+                    <CustomButton
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        variant="primary"
+                        size="sm"
+                    >
+                        {isSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
+                    </CustomButton>
                 </div>
             </div>
         </div>
+    );
+}
+
+function AccountSection() {
+    const handleAccountDeletion = () => {
+        showToast({ title: "Requested", description: "Account deletion initiated...", variant: "destructive" });
+        setTimeout(() => window.location.href = '/', 2000);
+    };
+
+    return (
+        <Card className="border-red-100 shadow-sm">
+            <CardHeader>
+                <CardTitle className="text-red-600 flex items-center gap-2">
+                    <Trash2 className="w-5 h-5" /> Danger Zone
+                </CardTitle>
+                <CardDescription>
+                    Irreversible actions related to your account and data.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-6">
+                    <h4 className="text-red-800 font-semibold mb-1">Delete Account</h4>
+                    <p className="text-red-600 text-sm">
+                        Permanently remove your account and all associated data. This action cannot be undone.
+                    </p>
+                </div>
+
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <CustomButton variant="destructive">Delete My Account</CustomButton>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete your account
+                                and remove all your data from our servers.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleAccountDeletion} className="bg-red-600 hover:bg-red-700">
+                                Yes, Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Temporary Placeholder for future sections
+function PlaceholderSection({ icon: Icon, title, description }) {
+    return (
+        <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                    <Icon className="w-8 h-8 text-gray-400" />
+                </div>
+                <div className="max-w-md space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                    <p className="text-gray-500">{description}</p>
+                </div>
+                <CustomButton variant="outline" disabled>Feature Coming Soon</CustomButton>
+            </CardContent>
+        </Card>
     );
 }
