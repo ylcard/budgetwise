@@ -19,7 +19,8 @@ const defaultSettings = {
     barViewMode: true,
     // goalAllocationMode: 'percentage', // 'percentage' or 'absolute'
     // absoluteGoals: { needs: 0, wants: 0, savings: 0 }, // Store absolute amounts
-    goalMode: true // true = percentage, false = absolute
+    goalMode: true, // true = percentage, false = absolute
+    displayName: ''
 };
 
 export const useSettings = () => {
@@ -77,7 +78,8 @@ export const SettingsProvider = ({ children }) => {
                     barViewMode: userSettings.barViewMode ?? true,
                     // goalAllocationMode: userSettings.goalAllocationMode || 'percentage',
                     // absoluteGoals: userSettings.absoluteGoals || { needs: 0, wants: 0, savings: 0 }
-                    goalMode: userSettings.goalMode ?? true
+                    goalMode: userSettings.goalMode ?? true,
+                    displayName: userSettings.displayName || ''
                 };
 
                 // Update state and localStorage
