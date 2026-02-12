@@ -107,12 +107,12 @@ const LayoutContent = ({ children }) => {
     return (
         <SidebarProvider>
             {/* UPDATED 03-Feb-2026: Mobile-only fixed top header with dynamic back button (iOS native standard) */}
-            <header className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+            <header className="md:hidden fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                 <div className="flex items-center justify-center h-14 px-4 relative">
                     {!isRootPage && (
                         <button
                             onClick={handleBackNavigation}
-                            className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent rounded-lg transition-colors"
+                            className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
                             aria-label="Go back"
                         >
                             <ChevronLeft className="w-6 h-6" />
@@ -123,15 +123,15 @@ const LayoutContent = ({ children }) => {
             </header>
 
             <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--bg-subtle)' }}>
-                <Sidebar className="hidden md:flex border-r border-gray-200">
-                    <SidebarHeader className="border-b border-gray-200 p-6">
+                <Sidebar className="hidden md:flex border-r border-border">
+                    <SidebarHeader className="border-b border-border p-6">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                                 <Wallet className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h2 className="font-bold text-gray-900 text-lg">BudgetWise</h2>
-                                <p className="text-xs text-gray-500">Personal Finance</p>
+                                <h2 className="font-bold text-foreground text-lg">BudgetWise</h2>
+                                <p className="text-xs text-muted-foreground">Personal Finance</p>
                             </div>
                         </div>
                     </SidebarHeader>
@@ -144,7 +144,7 @@ const LayoutContent = ({ children }) => {
                                         <SidebarMenuItem key={item.title}>
                                             <SidebarMenuButton
                                                 asChild
-                                                className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-xl mb-1 ${location.pathname === item.url ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 shadow-sm' : ''
+                                                className={`hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-xl mb-1 ${location.pathname === item.url ? 'bg-accent/50 text-foreground font-semibold shadow-sm' : 'text-muted-foreground'
                                                     }`}
                                             >
                                                 <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
@@ -159,11 +159,11 @@ const LayoutContent = ({ children }) => {
                         </SidebarGroup>
                     </SidebarContent>
 
-                    <SidebarFooter className="p-3 border-t border-gray-200">
+                    <SidebarFooter className="p-3 border-t border-border">
                         {/* Desktop Theme Toggle */}
                         <CustomButton
                             variant="ghost"
-                            className="w-full justify-start text-gray-700 dark:text-gray-300 mb-1"
+                            className="w-full justify-start text-muted-foreground hover:text-foreground mb-1"
                             onClick={toggleTheme}
                         >
                             {theme === 'dark' ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
@@ -172,7 +172,7 @@ const LayoutContent = ({ children }) => {
 
                         <CustomButton
                             variant="ghost"
-                            className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
+                            className="w-full justify-start text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                             onClick={() => base44.auth.logout()}
                         >
                             <LogOut className="w-5 h-5 mr-3" />
@@ -188,7 +188,7 @@ const LayoutContent = ({ children }) => {
                         </RouteTransition>
                     </div>
 
-                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-[100]" style={{ paddingBottom: 'var(--safe-bottom-inset)', height: 'var(--nav-total-height)' }}>
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t border-border z-[100]" style={{ paddingBottom: 'var(--safe-bottom-inset)', height: 'var(--nav-total-height)' }}>
                         <div className="flex w-full items-center px-2 py-2 select-none h-[var(--mobile-bottom-nav-height)]">
                             {primaryNav.map((item) => {
                                 const isTabActive = activeTab === item.url;
@@ -205,9 +205,9 @@ const LayoutContent = ({ children }) => {
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }
                                         }}
-                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 ${isTabActive
-                                            ? 'text-blue-600 bg-blue-50/50'
-                                            : 'text-gray-400'
+                                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-all min-w-0 rounded-lg ${isTabActive
+                                            ? 'text-primary bg-primary/10'
+                                            : 'text-muted-foreground hover:text-foreground'
                                             }`}
                                     >
                                         <item.icon className={`w-6 h-6 ${isTabActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
