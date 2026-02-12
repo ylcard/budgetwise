@@ -8,7 +8,8 @@ import { useState, useEffect } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
-import classNames from "react-day-picker/style.module.css";
+// import classNames from "react-day-picker/style.module.css";
+import "react-day-picker/style.css"; // Use global styles instead of modules
 import { cn } from "@/lib/utils";
 import {
     Popover,
@@ -85,7 +86,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     captionLayout="dropdown"
                     startMonth={new Date(1986, 0)}
                     endMonth={new Date(2100, 11)}
-                    classNames={classNames}
+                    // classNames={classNames}
                     components={{
                         IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
                         IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
