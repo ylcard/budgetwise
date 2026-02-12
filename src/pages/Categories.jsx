@@ -22,6 +22,11 @@ export default function Categories() {
     // Data fetching
     const { categories, isLoading } = useCategories();
 
+    // Sort alphabetically A-Z
+    const sortedCategories = useMemo(() => {
+        return [...(categories || [])].sort((a, b) => a.name.localeCompare(b.name));
+    }, [categories]);
+
     // Actions (mutations and handlers)
     const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useCategoryActions(
         setShowForm,
@@ -102,7 +107,7 @@ export default function Categories() {
                     {/* DESKTOP GRID */}
                     <div className="hidden md:block">
                         <CategoryGrid
-                            categories={categories}
+                            categories={sortedCategories}
                             onEdit={handleEdit}
                             onDelete={onSafeDelete}
                             isLoading={isLoading}
@@ -113,7 +118,7 @@ export default function Categories() {
                     <div className="md:hidden space-y-2 pb-24">
                         {isLoading ? (
                             <p className="text-center text-gray-500 py-8">Loading categories...</p>
-                        ) : categories.map((cat) => (
+                        ) : sortedCategories.map((cat) => (
                             <MobileCategoryItem
                                 key={cat.id}
                                 category={cat}
