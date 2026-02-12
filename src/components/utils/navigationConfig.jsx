@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw, Link2, RefreshCw } from "lucide-react";
+import { LayoutDashboard, Receipt, FolderOpen, BarChart3, Calendar, Settings, RefreshCw, Link2 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 export const navigationItems = [
