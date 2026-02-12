@@ -25,15 +25,16 @@ export default function AutomationRulesSettings() {
         isDialogOpen, setIsDialogOpen,
         selectedIds, setSelectedIds,
         isRegexMode, setIsRegexMode,
+        editingRuleId,
         formData, setFormData,
         createRule, deleteRule, updateRule, deleteBulkRules,
         handleToggleRuleMode, handleAddKeyword, handleRemoveKeyword,
-        handleEditKeyword, handleCreateSave, handleCloseDialog
+        handleEditKeyword, handleSaveRule, handleCloseDialog,
+        handleInlineUpdate, openRuleForEdit
     } = useRuleActions();
 
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
-    const [editingRuleId, setEditingRuleId] = useState(null); // Track if we are editing
 
     // FAB Integration
     const { setFabButtons, clearFabButtons } = useFAB();
@@ -47,7 +48,6 @@ export default function AutomationRulesSettings() {
             icon: 'PlusCircle',
             variant: 'create',
             onClick: () => {
-                setEditingRuleId(null);
                 setIsDialogOpen(true);
             }
         });
@@ -59,36 +59,6 @@ export default function AutomationRulesSettings() {
         setFabButtons(fabButtons);
         return () => clearFabButtons();
     }, [fabButtons, setFabButtons, clearFabButtons]);
-
-    // Helper to open edit dialog for a specific rule (Mobile interaction)
-    const openEditDialog = (rule) => {
-        // Populate form data with rule values
-        setFormData({
-            keyword: rule.keyword || "",
-            regexPattern: rule.regexPattern || "",
-            categoryId: rule.categoryId || "",
-            renamedTitle: rule.renamedTitle || "",
-            financial_priority: rule.financial_priority || "needs"
-        });
-
-        setEditingRuleId(rule.id); // Set mode to Edit
-        setIsRegexMode(!!rule.regexPattern);
-        setIsDialogOpen(true);
-    };
-
-    // Wrapper to handle Create vs Update
-    const handleSaveWrapper = () => {
-        if (editingRuleId) {
-            updateRule.mutate({
-                id: editingRuleId,
-                data: formData
-            });
-            handleCloseDialog();
-        } else {
-            handleCreateSave();
-        }
-        setEditingRuleId(null);
-    };
 
     // Toggle Selection
     const toggleSelection = (id) => {
@@ -120,22 +90,6 @@ export default function AutomationRulesSettings() {
     // --- INLINE EDITING LOGIC ---
     const [editingId, setEditingId] = useState(null); // Tracks which row is having its title edited
     const [editingKeyword, setEditingKeyword] = useState(null); // { ruleId, index, value }
-
-    const handleInlineUpdate = (ruleId, field, value) => {
-        // VALIDATION: If updating regex, check validity first
-        if (field === 'regexPattern' && value) {
-            try {
-                new RegExp(value);
-            } catch (e) {
-                // We can use a local toast or just return. 
-                // Ideally, this validation should also be in the hook, but for inline UI edits, it's okay here.
-                // However, since we deleted the local toast import, we should probably let the hook handle the update attempt
-                // OR re-import useToast if we want UI feedback before mutation.
-                return; // Stop update
-            }
-        }
-        updateRule.mutate({ id: ruleId, data: { [field]: value } });
-    };
 
     if (isLoading) {
         return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
@@ -182,7 +136,6 @@ export default function AutomationRulesSettings() {
                         <Dialog open={isDialogOpen} onOpenChange={(open) => {
                             if (!open) {
                                 handleCloseDialog();
-                                setEditingRuleId(null); // Reset edit state on close
                             }
                         }}>
                             <DialogTrigger asChild onClick={() => setIsDialogOpen(true)}>
@@ -276,7 +229,7 @@ export default function AutomationRulesSettings() {
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <CustomButton onClick={handleSaveWrapper} disabled={createRule.isPending || updateRule.isPending} className="w-full sm:w-auto">
+                                    <CustomButton onClick={handleSaveRule} disabled={createRule.isPending || updateRule.isPending} className="w-full sm:w-auto">
                                         {(createRule.isPending || updateRule.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Save Rule
                                     </CustomButton>
@@ -493,7 +446,7 @@ export default function AutomationRulesSettings() {
                                     <div
                                         key={rule.id}
                                         className={`relative p-3 rounded-xl border bg-white shadow-sm transition-all ${selectedIds.has(rule.id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100'}`}
-                                        onClick={() => openEditDialog(rule)} // Open details on tap
+                                        onClick={() => openRuleForEdit(rule)} // Open details on tap
                                     >
                                         <div className="flex items-center gap-3">
                                             {/* Selection Checkbox (Stop propagation to prevent opening dialog) */}
