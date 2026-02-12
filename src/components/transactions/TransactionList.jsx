@@ -254,7 +254,7 @@ export default function TransactionList({
                                         {isIncome ? (
                                             <span className="text-muted-foreground/30">-</span>
                                         ) : transaction.paidDate ? (
-                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
                                                 {format(new Date(transaction.paidDate), "MMM d, yyyy")}
                                             </span>
                                         ) : (
