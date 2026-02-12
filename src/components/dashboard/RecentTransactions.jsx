@@ -55,7 +55,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                     <CardTitle>Recent Transactions</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-40 flex items-center justify-center text-gray-400">
+                    <div className="h-40 flex items-center justify-center text-muted-foreground">
                         <p>No paid transactions yet. Add your first one!</p>
                     </div>
                 </CardContent>
@@ -94,7 +94,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                             return (
                                 <div
                                     key={transaction.id}
-                                    className="relative flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors group overflow-hidden"
+                                    className="relative flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-accent/50 transition-colors group overflow-hidden"
                                 >
                                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                         {isIncome ? (
@@ -113,14 +113,15 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-gray-900 truncate text-sm sm:text-base">{transaction.title}</p>
+                                            <p className="font-medium text-foreground truncate text-sm sm:text-base">{transaction.title}</p>
                                             <div className="flex items-center gap-x-1 gap-y-0.5 mt-0.5 flex-wrap">
-                                                <p className="text-[11px] sm:text-sm text-gray-500 whitespace-nowrap">
+                                                <p className="text-[11px] sm:text-sm text-muted-foreground whitespace-nowrap">
                                                     {format(new Date(transaction.date), "MMM d, yyyy")}
                                                 </p>
                                                 {!isIncome && transaction.paidDate && (
                                                     <>
                                                         <span className="text-gray-300 hidden sm:inline">•</span>
+                                                        <span className="text-muted-foreground/30 hidden sm:inline">•</span>
                                                         <p className="text-[10px] sm:text-xs text-green-600 whitespace-nowrap">
                                                             Paid {format(new Date(transaction.paidDate), showYear ? "MMM d, yyyy" : "MMM d")}
                                                         </p>
@@ -129,12 +130,12 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                                                 {/* UPDATED 13-Jan-2026: Always show CB badge if assigned */}
                                                 {customBudget && (
                                                     <>
-                                                        <span className="text-gray-300 hidden sm:inline">•</span>
+                                                        <span className="text-muted-foreground/30 hidden sm:inline">•</span>
                                                         <Badge
                                                             variant="outline"
                                                             className={`text-[10px] px-1.5 py-0 font-medium max-w-[120px] truncate ${crossPeriodInfo.isCrossPeriod
                                                                 ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-200 hover:border-orange-300 hover:text-orange-900'
-                                                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-200 hover:border-gray-300 hover:text-gray-900'
+                                                                : 'bg-muted text-muted-foreground border-border hover:bg-accent hover:text-foreground'
                                                                 } transition-all cursor-pointer inline-flex items-center gap-1`}
                                                         >
                                                             <Link to={`/BudgetDetail?id=${customBudget.id}`} className="truncate">
