@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote, StickyNote, CheckCircle2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
@@ -244,7 +244,7 @@ export default function TransactionList({
                                             onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
                                         />
                                     </td>
-                                    <td className="px-4 py-2 font-medium text-foreground max-w-[150px] md:max-w-[220px] truncate" title={transaction.title}>{transaction.title}</td>
+                                    <td className="px-4 py-2 font-medium text-foreground max-w-[20ch] md:max-w-[40ch] truncate" title={transaction.title}>{transaction.title}</td>
                                     <td className="px-4 py-2 text-muted-foreground whitespace-nowrap text-center">
                                         <span className="text-sm text-muted-foreground tabular-nums">
                                             {format(new Date(transaction.date), "MMM d, yyyy")}
@@ -312,11 +312,11 @@ export default function TransactionList({
                         return (
                             <li
                                 key={transaction.id}
-                                className={`flex items-start p-3 gap-3 transition-colors ${isSelected ? 'bg-primary/10' : 'bg-card active:bg-accent'}`}
+                                className={`flex items-center p-3 gap-3 transition-colors ${isSelected ? 'bg-primary/10' : 'bg-card active:bg-accent'}`}
                                 onClick={() => handleMobileRowClick(transaction)}
                             >
                                 {/* Selection Checkbox */}
-                                <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                                <div onClick={(e) => e.stopPropagation()}>
                                     <Checkbox
                                         checked={isSelected}
                                         onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
@@ -325,7 +325,7 @@ export default function TransactionList({
                                 </div>
 
                                 {/* Icon */}
-                                <div className="shrink-0 pt-0.5">
+                                <div className="shrink-0">
                                     {isIncome ? (
                                         <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-100">
                                             <Banknote className="w-4 h-4 text-emerald-600" />
@@ -344,41 +344,28 @@ export default function TransactionList({
                                     )}
                                 </div>
 
-                                {/* Main Content */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start gap-2">
-                                        <p className="text-sm font-semibold text-foreground truncate">
-                                            {transaction.title}
-                                        </p>
-                                        <span className={`text-sm font-mono font-bold whitespace-nowrap ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                                {/* Main Content - 2 Column Layout */}
+                                <div className="flex flex-1 items-center justify-between min-w-0 gap-3">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="text-sm font-semibold text-foreground truncate max-w-[18ch]">
+                                                {transaction.title}
+                                            </p>
+                                            {transaction.notes && <StickyNote className="w-3 h-3 text-muted-foreground/40 shrink-0" />}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+                                            <span>{format(new Date(transaction.date), "MMM d")}</span>
+                                            {!isIncome && transaction.paidDate && (
+                                                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="shrink-0 text-right">
+                                        <span className={`text-sm font-mono font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </span>
                                     </div>
-
-                                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                                        <span>{format(new Date(transaction.date), "MMM d")}</span>
-
-                                        {!isIncome && (
-                                            <>
-                                                <span className="text-muted-foreground/30">•</span>
-                                                <span className="truncate max-w-[100px]">{category?.name || 'Uncategorized'}</span>
-
-                                                {transaction.paidDate && (
-                                                    <span className={`ml-1 px-1.5 py-0.5 rounded-sm text-[10px] border ${transaction.paidDate
-                                                        ? "bg-green-50 text-green-700 border-green-100"
-                                                        : "bg-muted text-muted-foreground border-border"
-                                                        }`}>
-                                                        Paid
-                                                    </span>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                    {transaction.notes && (
-                                        <p className="text-xs text-muted-foreground/60 mt-1 truncate">
-                                            {transaction.notes}
-                                        </p>
-                                    )}
                                 </div>
                             </li>
                         );
