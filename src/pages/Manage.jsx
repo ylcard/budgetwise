@@ -318,50 +318,125 @@ function PreferencesSection() {
 }
 
 function AccountSection() {
+    const { user, logout } = useAuth();
+    const { settings, updateSettings } = useSettings();
+    const [localName, setLocalName] = useState(settings.displayName || "");
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Sync local state if settings change (e.g., after initial load)
+    useEffect(() => {
+        setLocalName(settings.displayName || "");
+    }, [settings.displayName]);
+
+    const handleSaveName = async () => {
+        setIsSaving(true);
+        try {
+            await updateSettings({ displayName: localName });
+            showToast({ title: "Profile Updated", description: "Your display name has been saved." });
+        } catch (err) {
+            showToast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleAccountDeletion = () => {
         showToast({ title: "Requested", description: "Account deletion initiated...", variant: "destructive" });
         setTimeout(() => window.location.href = '/', 2000);
     };
 
     return (
-        <Card className="border-red-100 shadow-sm">
-            <CardHeader>
-                <CardTitle className="text-red-600 flex items-center gap-2">
-                    <Trash2 className="w-5 h-5" /> Danger Zone
-                </CardTitle>
-                <CardDescription>
-                    Irreversible actions related to your account and data.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-6">
-                    <h4 className="text-red-800 font-semibold mb-1">Delete Account</h4>
-                    <p className="text-red-600 text-sm">
-                        Permanently remove your account and all associated data. This action cannot be undone.
-                    </p>
-                </div>
+        <div className="space-y-6">
+            {/* Identity Card */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Profile Details</CardTitle>
+                    <CardDescription>Manage how you appear in the app.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Google Info (Read Only) */}
+                    <div className="flex flex-col md:flex-row items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        {user?.picture && (
+                            <img src={user.picture} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-white shadow-sm" />
+                        )}
+                        <div className="text-center md:text-left">
+                            <p className="text-sm font-medium text-gray-500">Connected Google Account</p>
+                            <p className="font-semibold text-gray-900">{user?.email}</p>
+                        </div>
+                    </div>
 
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <CustomButton variant="destructive">Delete My Account</CustomButton>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete your account
-                                and remove all your data from our servers.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleAccountDeletion} className="bg-red-600 hover:bg-red-700">
-                                Yes, Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </CardContent>
-        </Card>
+                    {/* Editable Display Name */}
+                    <div className="space-y-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="displayName">Display Name</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="displayName"
+                                    placeholder={user?.name || "Enter name..."}
+                                    value={localName}
+                                    onChange={(e) => setLocalName(e.target.value)}
+                                    className="max-w-md"
+                                />
+                                <CustomButton
+                                    disabled={isSaving || localName === settings.displayName}
+                                    onClick={handleSaveName}
+                                    variant="primary"
+                                >
+                                    {isSaving ? "..." : "Update"}
+                                </CustomButton>
+                            </div>
+                            <p className="text-xs text-gray-400">This name will be used across the dashboard and reports.</p>
+                        </div>
+
+                        <Separator />
+
+                        <div className="flex flex-wrap gap-3">
+                            <CustomButton variant="outline" size="sm" onClick={() => window.open('https://myaccount.google.com/security', '_blank')}>
+                                Google Security Settings
+                            </CustomButton>
+                            <CustomButton variant="ghost" size="sm" onClick={() => logout()}>
+                                Sign Out
+                            </CustomButton>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Danger Zone */}
+            <Card className="border-red-100 shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-red-600 flex items-center gap-2">
+                        <Trash2 className="w-5 h-5" /> Danger Zone
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-6">
+                        <h4 className="text-red-800 font-semibold mb-1 text-sm">Delete Account</h4>
+                        <p className="text-red-600 text-xs">
+                            Permanently remove your account and all associated data. This action cannot be undone.
+                        </p>
+                    </div>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <CustomButton variant="destructive">Delete My Account</CustomButton>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete your account and remove all data.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleAccountDeletion} className="bg-red-600 hover:bg-red-700">
+                                    Yes, Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
