@@ -8,6 +8,7 @@ import {
     RefreshCw,
     Link2
 } from "lucide-react";
+import { useMediaQuery } from "@/hooks/use-media-query"; // Assuming you have this or use simple CSS classes
 
 // UI Components
 import { Input } from "@/components/ui/input";
@@ -110,10 +111,10 @@ function NavTab({ value, icon: Icon, label }) {
     return (
         <TabsTrigger
             value={value}
-            className="w-full justify-start gap-3 px-4 py-3 rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-gray-200 border border-transparent transition-all"
+            className="w-auto md:w-full justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-gray-200 border border-transparent transition-all"
         >
             <Icon className="w-4 h-4" />
-            <span className="truncate">{label}</span>
+            <span className="truncate hidden md:inline">{label}</span>
         </TabsTrigger>
     );
 }
@@ -257,8 +258,8 @@ function PreferencesSection() {
 
             {/* Sticky Action Bar - Only visible when changes exist */}
             <div className={`
-                sticky bottom-6 z-10 p-4 bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg
-                flex items-center justify-between transition-all duration-300 transform
+                hidden md:flex sticky bottom-6 z-10 p-4 bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg
+                items-center justify-between transition-all duration-300 transform
                 ${hasChanges ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}
             `}>
                 <span className="text-sm font-medium text-gray-600 hidden sm:block">
@@ -284,6 +285,30 @@ function PreferencesSection() {
                         {isSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
                     </CustomButton>
                 </div>
+            </div>
+
+            {/* MOBILE: Floating Pill above Bottom Nav */}
+            <div className={`
+                md:hidden fixed bottom-[90px] left-4 right-4 z-50 
+                flex items-center justify-between gap-3
+                transition-all duration-300 transform
+                ${hasChanges ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}
+            `}>
+                <CustomButton
+                    onClick={() => resetForm(settings)}
+                    variant="secondary"
+                    className="flex-1 shadow-lg border-gray-200 bg-white text-gray-700"
+                >
+                    Discard
+                </CustomButton>
+                <CustomButton
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    variant="primary"
+                    className="flex-1 shadow-lg"
+                >
+                    Save
+                </CustomButton>
             </div>
         </div>
     );
