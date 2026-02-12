@@ -17,6 +17,7 @@ import {
     Info,
     BellDot
 } from "lucide-react";
+import { useFAB } from "../components/hooks/FABContext";
 
 /**
  * Bank Sync Page
@@ -37,6 +38,7 @@ export default function BankSync() {
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
     const { user } = useSettings();
+    const { setFabButtons, clearFabButtons } = useFAB();
 
     // --- NEW: Review Inbox State ---
     const [showReviewInbox, setShowReviewInbox] = useState(false);
@@ -181,6 +183,22 @@ export default function BankSync() {
         handleCallback();
     }, [queryClient, toast]);
 
+    // FAB Configuration
+    const fabButtons = useMemo(() => [
+        {
+            key: 'connect-bank',
+            label: 'Connect Bank',
+            icon: 'Building2',
+            variant: 'create',
+            onClick: initiateConnection
+        }
+    ], [initiateConnection]);
+
+    useEffect(() => {
+        setFabButtons(fabButtons);
+        return () => clearFabButtons();
+    }, [fabButtons, setFabButtons, clearFabButtons]);
+
     const handleSync = useCallback(async (connection) => {
         console.log('🔄 [SYNC] Starting sync for connection:', connection.id);
         setSyncing(connection.id);
@@ -287,6 +305,7 @@ export default function BankSync() {
                     <CustomButton
                         variant="create"
                         onClick={initiateConnection}
+                        className="hidden md:flex"
                     >
                         <Plus className="w-4 h-4" />
                         Connect Bank
