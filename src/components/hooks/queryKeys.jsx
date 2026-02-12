@@ -10,4 +10,5 @@ export const QUERY_KEYS = {
     ALL_BUDGETS: 'allBudgets',
     ALLOCATIONS: 'allocations',
     EXCHANGE_RATES: 'exchangeRates',
+    CATEGORY_RULES: 'categoryRules',
 };
