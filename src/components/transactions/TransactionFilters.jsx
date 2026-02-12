@@ -340,6 +340,16 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                     <DrawerTitle>Filters</DrawerTitle>
                                 </DrawerHeader>
                                 <div className="p-4 overflow-y-auto space-y-4">
+                                    {/* Date Range Picker (Moved from top bar) */}
+                                    <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">Date Range</Label>
+                                        <DateRangePicker
+                                            startDate={filters.startDate}
+                                            endDate={filters.endDate}
+                                            onRangeChange={handleDateRangeChange}
+                                            className="w-full"
+                                        />
+                                    </div>
                                     <FilterFields />
                                 </div>
                                 <DrawerFooter>
@@ -356,15 +366,6 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                 </DrawerFooter>
                             </DrawerContent>
                         </Drawer>
-
-                        <div className="shrink-0">
-                            <DateRangePicker
-                                startDate={filters.startDate}
-                                endDate={filters.endDate}
-                                onRangeChange={handleDateRangeChange}
-                                compact={true}
-                            />
-                        </div>
                     </div>
 
                     {/* DESKTOP: Date Picker & Clear Button */}
