@@ -140,7 +140,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
 
     return (
-        <Card className="border-none shadow-md bg-white overflow-hidden h-full flex flex-col relative">
+        <Card className="border-none shadow-md bg-card overflow-hidden h-full flex flex-col relative">
             <CardContent className="p-4 flex-1 flex flex-col">
                 {/* Top Navigation Bar - Centered Month Navigator */}
                 <div className="flex justify-center mb-6">
@@ -162,13 +162,13 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.5, delay: 0.2 }} // Delay slightly to let chart morph out
-                                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-white/80 backdrop-blur-[2px]"
+                                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/80 backdrop-blur-[2px]"
                             >
                                 <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm mb-4">
                                     <Calendar className="w-8 h-8 text-emerald-600" />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to plan for {getMonthName(selectedMonth)}?</h3>
-                                <p className="text-gray-500 text-sm max-w-[260px]">
+                                <h3 className="text-xl font-bold text-foreground mb-2">Ready to plan for {getMonthName(selectedMonth)}?</h3>
+                                <p className="text-muted-foreground text-sm max-w-[260px]">
                                     Start by adding your expected income.
                                 </p>
                             </motion.div>
@@ -190,7 +190,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                         cy={size / 2}
                                         r={radius}
                                         fill="none"
-                                        stroke="#F3F4F6"
+                                        className="stroke-muted"
                                         strokeWidth={strokeWidth}
                                     />
 
@@ -260,7 +260,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                             animate={{ opacity: 1, scale: 1 }}
                                             className="text-center"
                                         >
-                                            <div className="text-3xl font-extrabold text-gray-900">
+                                            <div className="text-3xl font-extrabold text-foreground">
                                                 {Math.round(savingsPctDisplay)}%
                                             </div>
                                             <div className="text-xs font-semibold text-emerald-600">Saved</div>
@@ -277,16 +277,16 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 {/* Income/Spent Summary */}
                                 <div className="text-center space-y-1">
                                     {/* Always show the math, but highlight text in red if over */}
-                                    <p className="text-sm font-medium text-gray-500">
-                                        Spent <strong className={isTotalOver ? "text-red-600" : "text-gray-900"}>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>
                                             {formatCurrency(totalSpent, settings)}
                                         </strong> of <strong>{formatCurrency(income, settings)}</strong>
                                     </p>
 
                                     {/* Dynamic Pill: Changes color and icon based on status, but layout stays stable */}
                                     <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors duration-300 ${isTotalOver
-                                            ? "bg-red-50 border-red-100 text-red-700"
-                                            : "bg-gray-50 border-gray-100 text-gray-600"
+                                        ? "bg-red-50 border-red-100 text-red-700"
+                                        : "bg-muted border-border text-muted-foreground"
                                         }`}>
                                         {isTotalOver ? <AlertCircle className="w-3.5 h-3.5" /> : <Wallet className="w-3.5 h-3.5" />}
                                         <span className="text-sm font-medium">
@@ -302,15 +302,15 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs px-1">
                                     <div className="flex items-center gap-1.5">
                                         <span className="font-semibold" style={{ color: needsColor }}>{FINANCIAL_PRIORITIES.needs.label}</span>
-                                        <span className="font-bold text-gray-900">{Math.round(needsPct)}%</span>
+                                        <span className="font-bold text-foreground">{Math.round(needsPct)}%</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <span className="font-semibold" style={{ color: wantsColor }}>{FINANCIAL_PRIORITIES.wants.label}</span>
-                                        <span className="font-bold text-gray-900">{Math.round(wantsPct)}%</span>
+                                        <span className="font-bold text-foreground">{Math.round(wantsPct)}%</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <span className="font-semibold" style={{ color: savingsColor }}>Savings</span>
-                                        <span className="font-bold text-gray-900">{Math.round(savingsPct)}%</span>
+                                        <span className="font-bold text-foreground">{Math.round(savingsPct)}%</span>
                                     </div>
                                 </div>
                             </motion.div>
