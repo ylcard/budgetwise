@@ -250,6 +250,20 @@
     /* blue-500 */
     --rdp-accent-background-color: rgb(239 246 255);
     /* blue-50 */
+    margin: 0;
+}
+
+/* Dark Mode Overrides for Calendar */
+.dark .rdp {
+    --rdp-accent-color: rgb(96 165 250); /* blue-400 */
+    --rdp-accent-background-color: rgb(30 41 59); /* slate-800 for range bg */
+}
+
+/* Ensure calendar text/nav buttons use the correct foreground color in dark mode */
+.dark .rdp-caption_label,
+.dark .rdp-nav_button,
+.dark .rdp-head_cell {
+    color: var(--foreground);
 }
 
 .rdp-day_selected {
@@ -275,17 +289,13 @@
 }
 
 /* Force Popovers (Calendar) to be top-most */
-.popover-content-z-index {
-    z-index: 9999 !important;
+@media (max-width: 768px) {
+    .mobile-high-z-index {
+        z-index: 9999 !important;
+    }
 }
 
 /* Ensure Drawer Overlay and Content are on top of everything */
 [data-vaul-drawer-wrapper] {
     z-index: 110 !important;
-}
-
-@media (max-width: 768px) {
-  .mobile-high-z-index {
-    z-index: 9999 !important;
-  }
 }
