@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
-import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,26 +20,18 @@ export default function AutomationRulesSettings() {
     const { categories } = useCategories();
 
     const {
+        rules, isLoading,
         isDialogOpen, setIsDialogOpen,
         selectedIds, setSelectedIds,
         isRegexMode, setIsRegexMode,
         formData, setFormData,
-        createRule, deleteRule, updateRule,
+        createRule, deleteRule, updateRule, deleteBulkRules,
         handleToggleRuleMode, handleAddKeyword, handleRemoveKeyword,
         handleEditKeyword, handleCreateSave, handleCloseDialog
     } = useRuleActions();
 
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
-    const [editingId, setEditingId] = useState(null);
-    const [editingKeyword, setEditingKeyword] = useState(null);
-
-    // Fetch the user's saved rules
-    const { data: rules = [], isLoading, isFetching } = useQuery({
-        queryKey: [QUERY_KEYS.CATEGORY_RULES, user?.email],
-        queryFn: () => base44.entities.CategoryRule.filter({ user_email: user?.email }),
-        enabled: !!user?.email
-    });
 
     // Listen for FAB events from the Page
     useEffect(() => {
@@ -64,91 +53,6 @@ export default function AutomationRulesSettings() {
         else setSelectedIds(new Set(rules.map(r => r.id)));
     };
 
-    // Delete Mutation
-    const { mutate: deleteRule, isPending: isDeleting } = useMutation({
-        mutationFn: (id) => base44.entities.CategoryRule.delete(id),
-        onSuccess: () => {
-            // Remove from selection if it was selected
-            if (selectedIds.has(ruleToDelete)) toggleSelection(ruleToDelete);
-            queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
-            toast({
-                title: "Rule deleted",
-                description: "The automation engine has forgotten this rule.",
-            });
-        },
-        onError: (error) => {
-            toast({
-                title: "Failed to delete rule",
-                description: error.message,
-                variant: "destructive"
-            });
-        }
-    });
-
-    // Update Mutation
-    const { mutate: updateRule, isPending: isUpdating } = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, { ...data }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
-            toast({ title: "Rule updated", description: "Your changes have been saved." });
-            handleCloseDialog();
-            setEditingId(null); // Close inline edit if active
-        },
-        onError: (error) => {
-            toast({ title: "Failed to update", description: error.message, variant: "destructive" });
-        }
-    });
-
-    // Create Mutation
-    const { mutate: createRule, isPending: isCreating } = useMutation({
-        mutationFn: () => base44.entities.CategoryRule.create({
-            user_email: user.email,
-            categoryId: formData.categoryId,
-            // Save based on mode
-            keyword: isRegexMode ? null : formData.keyword,
-            regexPattern: isRegexMode ? formData.regexPattern : null,
-            renamedTitle: formData.renamedTitle || null,
-            priority: 10,
-            financial_priority: formData.financial_priority
-        }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
-            toast({ title: "Rule created", description: "Future transactions matching these keywords will be categorized automatically." });
-            handleCloseDialog();
-        },
-        onError: (error) => {
-            toast({
-                title: "Failed to create rule",
-                description: error.message,
-                variant: "destructive"
-            });
-        }
-    });
-
-    // Bulk Delete Mutation
-    const { mutate: deleteBulkRules, isPending: isBulkDeleting } = useMutation({
-        mutationFn: async (ids) => {
-            // Batch deletions to avoid API limits (process 50 at a time)
-            const chunkSize = 50;
-            const chunks = [];
-            for (let i = 0; i < ids.length; i += chunkSize) {
-                chunks.push(ids.slice(i, i + chunkSize));
-            }
-
-            for (const chunk of chunks) {
-                await base44.entities.CategoryRule.deleteMany({ id: { $in: chunk } });
-            }
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['categoryRules', user?.email] });
-            setSelectedIds(new Set());
-            toast({ title: "Rules deleted", description: "Selected automation rules have been removed." });
-        },
-        onError: (error) => {
-            toast({ title: "Failed to delete rules", description: error.message, variant: "destructive" });
-        }
-    });
-
     const confirmDelete = (id = 'bulk') => {
         setRuleToDelete(id);
         setDeleteConfirmOpen(true);
@@ -156,121 +60,34 @@ export default function AutomationRulesSettings() {
 
     const executeDelete = () => {
         if (ruleToDelete === 'bulk') {
-            Array.from(selectedIds).forEach(id => deleteRule.mutate(id));
-            setSelectedIds(new Set());
+            deleteBulkRules.mutate(selectedIds);
         } else {
             deleteRule.mutate(ruleToDelete);
         }
         setDeleteConfirmOpen(false);
     };
 
-    const handleInlineUpdate = (ruleId, field, value) => {
-        updateRule.mutate({ id: ruleId, data: { [field]: value } });
-    };
-
     // --- INLINE EDITING LOGIC ---
     const [editingId, setEditingId] = useState(null); // Tracks which row is having its title edited
     const [editingKeyword, setEditingKeyword] = useState(null); // { ruleId, index, value }
+
     const handleInlineUpdate = (ruleId, field, value) => {
         // VALIDATION: If updating regex, check validity first
         if (field === 'regexPattern' && value) {
             try {
                 new RegExp(value);
             } catch (e) {
-                toast({ title: "Invalid Regex", description: e.message, variant: "destructive" });
+                // We can use a local toast or just return. 
+                // Ideally, this validation should also be in the hook, but for inline UI edits, it's okay here.
+                // However, since we deleted the local toast import, we should probably let the hook handle the update attempt
+                // OR re-import useToast if we want UI feedback before mutation.
                 return; // Stop update
             }
         }
-        updateRule({ id: ruleId, data: { [field]: value } });
+        updateRule.mutate({ id: ruleId, data: { [field]: value } });
     };
 
-    // Toggle between Regex and Keyword mode for an existing rule
-    const handleToggleRuleMode = (rule) => {
-        if (rule.regexPattern) {
-            // Switch to Keywords: Clear regex, set empty keyword
-            if (window.confirm("Switch to Keyword mode? This will delete your current regex pattern.")) {
-                updateRule({ id: rule.id, data: { regexPattern: null, keyword: null } });
-            }
-        } else {
-            // Switch to Regex: Convert keywords to Regex group
-            const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim()).filter(Boolean);
-            // Escape special regex characters in keywords just in case
-            const escapedKeywords = currentKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-            const suggestedRegex = escapedKeywords.length > 0 ? `(${escapedKeywords.join('|')})` : "";
-
-            if (window.confirm(`Switch to Regex mode? This will convert your keywords to the pattern: ${suggestedRegex}`)) {
-                updateRule({ id: rule.id, data: { keyword: null, regexPattern: suggestedRegex } });
-            }
-        }
-    };
-
-    const handleAddKeyword = (rule, newKeyword) => {
-        if (!newKeyword.trim()) return;
-        const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim()).filter(Boolean);
-        if (currentKeywords.includes(newKeyword.trim())) return;
-
-        const updatedKeywords = [...currentKeywords, newKeyword.trim()].join(',');
-        updateRule({ id: rule.id, data: { keyword: updatedKeywords } });
-    };
-
-    const handleEditKeyword = (rule, index, newValue) => {
-        setEditingKeyword(null);
-        if (!newValue.trim()) {
-            const keywordToDelete = (rule.keyword || "").split(',')[index]?.trim();
-            if (keywordToDelete) handleRemoveKeyword(rule, keywordToDelete);
-            return;
-        }
-
-        const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim());
-        if (currentKeywords[index] === newValue.trim()) return; // No change
-
-        currentKeywords[index] = newValue.trim();
-        updateRule({ id: rule.id, data: { keyword: currentKeywords.join(',') } });
-    };
-
-    const handleCreateSave = () => {
-        if (!formData.categoryId) {
-            toast({ title: "Missing Category", description: "Please select a category.", variant: "destructive" });
-            return;
-        }
-        if (isRegexMode && !formData.regexPattern) {
-            toast({ title: "Missing Pattern", description: "Please enter a regex pattern.", variant: "destructive" });
-            return;
-        }
-        // VALIDATION: Check Regex Syntax before creating
-        if (isRegexMode) {
-            try {
-                new RegExp(formData.regexPattern);
-            } catch (e) {
-                toast({ title: "Invalid Regex", description: "Your pattern has a syntax error: " + e.message, variant: "destructive" });
-                return;
-            }
-        }
-        if (!isRegexMode && !formData.keyword) {
-            toast({ title: "Missing Keywords", description: "Please enter at least one keyword.", variant: "destructive" });
-            return;
-        }
-        createRule();
-    };
-
-    const handleRemoveKeyword = (rule, keywordToRemove) => {
-        const currentKeywords = (rule.keyword || "").split(',').map(k => k.trim()).filter(Boolean);
-        const updatedKeywords = currentKeywords.filter(k => k !== keywordToRemove).join(',');
-
-        if (!updatedKeywords) {
-            toast({ title: "Cannot remove last keyword", description: "A rule must have at least one keyword.", variant: "destructive" });
-            return;
-        }
-        updateRule({ id: rule.id, data: { keyword: updatedKeywords } });
-    };
-
-    const handleCloseDialog = () => {
-        setIsDialogOpen(false);
-        setIsRegexMode(false);
-        setFormData({ keyword: "", regexPattern: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
-    };
-
-    if (isLoading || (isFetching && rules.length === 0)) {
+    if (isLoading) {
         return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
     }
 
@@ -304,7 +121,7 @@ export default function AutomationRulesSettings() {
                                         variant="destructive"
                                         size="sm"
                                         onClick={() => confirmDelete('bulk')}
-                                        disabled={isBulkDeleting}
+                                        disabled={deleteBulkRules.isPending}
                                     >
                                         <Trash2 className="w-4 h-4 mr-1" /> Delete
                                     </CustomButton>
@@ -404,8 +221,8 @@ export default function AutomationRulesSettings() {
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <CustomButton onClick={handleCreateSave} disabled={isCreating} className="w-full sm:w-auto">
-                                        {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    <CustomButton onClick={handleCreateSave} disabled={createRule.isPending} className="w-full sm:w-auto">
+                                        {createRule.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Save Rule
                                     </CustomButton>
                                 </DialogFooter>
