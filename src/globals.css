@@ -256,7 +256,7 @@
 /* Dark Mode Overrides for Calendar */
 .dark .rdp {
     --rdp-accent-color: rgb(96 165 250); /* blue-400 */
-    --rdp-accent-background-color: rgb(30 41 59); /* slate-800 for range bg */
+    --rdp-accent-background-color: rgba(96, 165, 250, 0.15); /* Subtle transparent blue */
 }
 
 /* Ensure calendar text/nav buttons use the correct foreground color in dark mode */
@@ -267,9 +267,10 @@
 }
 
 .rdp-day_selected {
-    background-color: var(--rdp-accent-color);
+    background-color: var(--rdp-accent-color) !important;
     color: white;
     font-weight: 500;
+    border-radius: 8px; /* Matches shadcn radius */
 }
 
 .rdp-day_selected:hover {
@@ -280,6 +281,7 @@
 .rdp-day_range_middle {
     background-color: var(--rdp-accent-background-color);
     color: var(--rdp-accent-color);
+    border-radius: 0; /* Keeps the "bar" look for the middle */
 }
 
 .rdp-day_today:not(.rdp-day_selected) {
