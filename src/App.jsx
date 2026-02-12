@@ -8,6 +8,7 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { SettingsProvider } from '@/components/utils/SettingsContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import "react-day-picker/style.css";
 import { ThemeProvider } from "next-themes";
@@ -70,14 +71,16 @@ function App() {
     return (
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <AuthProvider>
-                <QueryClientProvider client={queryClientInstance}>
-                    <Router>
-                        <NavigationTracker />
-                        <AuthenticatedApp />
-                    </Router>
-                    <Toaster />
-                    <VisualEditAgent />
-                </QueryClientProvider>
+                <SettingsProvider>
+                    <QueryClientProvider client={queryClientInstance}>
+                        <Router>
+                            <NavigationTracker />
+                            <AuthenticatedApp />
+                        </Router>
+                        <Toaster />
+                        <VisualEditAgent />
+                    </QueryClientProvider>
+                </SettingsProvider>
             </AuthProvider>
         </ThemeProvider>
     )
