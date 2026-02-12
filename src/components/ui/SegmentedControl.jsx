@@ -57,8 +57,8 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                 className={cn(
                     "flex items-center gap-1 rounded-lg transition-colors overflow-hidden",
                     isMobile
-                        ? (isExpanded ? "bg-white border border-gray-200 shadow-xl p-1 absolute right-0 flex-row" : "bg-transparent")
-                        : "bg-gray-100 p-1 shadow-sm relative md:w-auto"
+                        ? (isExpanded ? "bg-popover border border-border shadow-xl p-1 absolute right-0 flex-row" : "bg-transparent")
+                        : "bg-muted p-1 shadow-sm relative md:w-auto"
                 )}
                 initial={false}
                 transition={sharedTransition}
@@ -86,9 +86,9 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                                 onClick={() => handleSelect(option.value)}
                                 className={cn(
                                     "flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-colors shrink-0 overflow-hidden whitespace-nowrap",
-                                    isActive && (!isMobile || isExpanded) ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900",
+                                    isActive && (!isMobile || isExpanded) ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                                     // Single icon state formatting
-                                    isSingleMobileIcon && "bg-gray-100 shadow-sm h-10 rounded-lg"
+                                    isSingleMobileIcon && "bg-muted shadow-sm h-10 rounded-lg"
                                 )}
                             >
                                 <span className="flex items-center justify-center shrink-0">
