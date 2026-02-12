@@ -244,7 +244,7 @@ export default function TransactionList({
                                             onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
                                         />
                                     </td>
-                                    <td className="px-4 py-2 font-medium text-foreground">{transaction.title}</td>
+                                    <td className="px-4 py-2 font-medium text-foreground max-w-[150px] md:max-w-[220px] truncate" title={transaction.title}>{transaction.title}</td>
                                     <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
                                         {format(new Date(transaction.date), "MMM d, yyyy")}
                                     </td>
@@ -252,7 +252,7 @@ export default function TransactionList({
                                         {isIncome ? (
                                             <span className="text-muted-foreground/30">-</span>
                                         ) : transaction.paidDate ? (
-                                            <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-100">
+                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                                                 {format(new Date(transaction.paidDate), "MMM d, yyyy")}
                                             </span>
                                         ) : (
@@ -279,7 +279,7 @@ export default function TransactionList({
                                         </span>
                                     </td>
                                     <td className="px-4 py-2 text-muted-foreground text-xs truncate max-w-[200px]" title={transaction.notes}>
-                                        {transaction.notes || '-'}
+                                        {transaction.notes}
                                     </td>
                                     <td className="px-4 py-2">
                                         <div className="flex items-center justify-center gap-1">
