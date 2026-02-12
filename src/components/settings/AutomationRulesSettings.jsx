@@ -3,7 +3,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, Pencil, ArrowRight } from "lucide-react";
+import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,6 +32,7 @@ export default function AutomationRulesSettings() {
 
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
+    const [editingRuleId, setEditingRuleId] = useState(null); // Track if we are editing
 
     // Listen for FAB events from the Page
     useEffect(() => {
@@ -50,12 +51,24 @@ export default function AutomationRulesSettings() {
             renamedTitle: rule.renamedTitle || "",
             financial_priority: rule.financial_priority || "needs"
         });
+
+        setEditingRuleId(rule.id); // Set mode to Edit
         setIsRegexMode(!!rule.regexPattern);
-        // We need a way to tell the hook we are *updating* not creating, 
-        // but the current hook seems built for "Create New" flow in the dialog.
-        // For now, we'll just open the dialog. Ideally, useRuleActions needs a 'setEditingRule' function.
-        // Assuming for this UI refactor we just trigger the dialog.
         setIsDialogOpen(true);
+    };
+
+    // Wrapper to handle Create vs Update
+    const handleSaveWrapper = () => {
+        if (editingRuleId) {
+            updateRule.mutate({
+                id: editingRuleId,
+                data: formData
+            });
+            handleCloseDialog();
+        } else {
+            handleCreateSave();
+        }
+        setEditingRuleId(null);
     };
 
     // Toggle Selection
@@ -130,25 +143,30 @@ export default function AutomationRulesSettings() {
                                     initial={{ opacity: 0, x: 10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 10 }}
-                                    className="flex items-center gap-2 mr-2 fixed bottom-24 right-4 z-50 md:static md:mr-0"
+                                    className="flex items-center gap-2 mr-2 fixed bottom-6 right-20 z-[60] md:static md:mr-0"
                                 >
                                     <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded shadow-sm border border-blue-100 hidden md:inline">
                                         {selectedIds.size} selected
                                     </span>
                                     <CustomButton
                                         variant="destructive"
-                                        size="default"
-                                        className="shadow-lg md:shadow-none rounded-full md:rounded-md"
+                                        size="icon"
+                                        className="shadow-lg md:shadow-none rounded-full md:rounded-md h-12 w-12"
                                         onClick={() => confirmDelete('bulk')}
                                         disabled={deleteBulkRules.isPending}
                                     >
-                                        <Trash2 className="w-4 h-4 md:mr-1" /> <span className="hidden md:inline">Delete Selected ({selectedIds.size})</span>
+                                        <Trash2 className="w-5 h-5 md:mr-1" /> <span className="hidden md:inline">Delete Selected ({selectedIds.size})</span>
                                     </CustomButton>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+                        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                            if (!open) {
+                                handleCloseDialog();
+                                setEditingRuleId(null); // Reset edit state on close
+                            }
+                        }}>
                             <DialogTrigger asChild onClick={() => setIsDialogOpen(true)}>
                                 <CustomButton size="sm" className="gap-2 hidden md:flex" onClick={() => setIsDialogOpen(true)}>
                                     <Plus className="w-4 h-4" />
@@ -159,7 +177,7 @@ export default function AutomationRulesSettings() {
                             {/* CREATE DIALOG CONTENT (Unchanged) */}
                             <DialogContent className="sm:max-w-[425px]">
                                 <DialogHeader>
-                                    <DialogTitle>Create Automation Rule</DialogTitle>
+                                    <DialogTitle>{editingRuleId ? "Edit Rule" : "Create Automation Rule"}</DialogTitle>
                                     <DialogDescription>
                                         When a transaction contains the keywords below, it will be automatically categorized.
                                     </DialogDescription>
@@ -240,8 +258,8 @@ export default function AutomationRulesSettings() {
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <CustomButton onClick={handleCreateSave} disabled={createRule.isPending} className="w-full sm:w-auto">
-                                        {createRule.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    <CustomButton onClick={handleSaveWrapper} disabled={createRule.isPending || updateRule.isPending} className="w-full sm:w-auto">
+                                        {(createRule.isPending || updateRule.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Save Rule
                                     </CustomButton>
                                 </DialogFooter>
@@ -456,12 +474,12 @@ export default function AutomationRulesSettings() {
                                 return (
                                     <div
                                         key={rule.id}
-                                        className={`relative p-4 rounded-xl border bg-white shadow-sm transition-all ${selectedIds.has(rule.id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100'}`}
+                                        className={`relative p-3 rounded-xl border bg-white shadow-sm transition-all ${selectedIds.has(rule.id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100'}`}
                                         onClick={() => openEditDialog(rule)} // Open details on tap
                                     >
-                                        <div className="flex items-start justify-between gap-3 mb-3">
+                                        <div className="flex items-center gap-3">
                                             {/* Selection Checkbox (Stop propagation to prevent opening dialog) */}
-                                            <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                                            <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                                                 <Checkbox
                                                     checked={selectedIds.has(rule.id)}
                                                     onCheckedChange={() => toggleSelection(rule.id)}
@@ -469,58 +487,28 @@ export default function AutomationRulesSettings() {
                                                 />
                                             </div>
 
+                                            {/* Rule Info (Simplified) */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-semibold text-gray-900 text-sm truncate">
+                                                    {rule.renamedTitle || "Untitled Rule"}
+                                                </div>
+
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    {/* Category Dot */}
+                                                    {category && (
+                                                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: category.color || '#ccc' }} />
+                                                    )}
+                                                    <span className="text-xs text-gray-500 truncate">{category ? category.name : "Uncategorized"}</span>
+                                                </div>
+                                            </div>
+
                                             {/* Delete Action */}
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); confirmDelete(rule.id); }}
-                                                className="p-2 -mr-2 -mt-2 text-gray-400 hover:text-red-600 active:bg-gray-100 rounded-full transition-colors"
+                                                className="p-2 -mr-2 text-gray-300 hover:text-red-500 active:text-red-600 transition-colors"
                                             >
                                                 <Trash2 className="w-5 h-5" />
                                             </button>
-                                        </div>
-
-                                        {/* Rule Summary */}
-                                        <div className="space-y-3 pl-8">
-                                            {/* Condition */}
-                                            <div>
-                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">If Transaction Contains</div>
-                                                {rule.regexPattern ? (
-                                                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 border border-purple-100 text-purple-700 font-mono text-xs break-all">
-                                                        <Code2 className="w-3 h-3" /> {rule.regexPattern}
-                                                    </div>
-                                                ) : (
-                                                    <div className="font-medium text-gray-900 text-sm">
-                                                        {rule.keyword ? rule.keyword.split(',').join(', ') : <span className="text-gray-400 italic">Any text</span>}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Arrow Indicator */}
-                                            <div className="flex items-center text-gray-300 gap-2">
-                                                <div className="h-px bg-gray-100 flex-1"></div>
-                                                <ArrowRight className="w-4 h-4" />
-                                            </div>
-
-                                            {/* Action/Result */}
-                                            <div>
-                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Then Set As</div>
-                                                <div className="flex items-center gap-3">
-                                                    {category && (
-                                                        <div
-                                                            className="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm shrink-0"
-                                                            style={{ backgroundColor: category.color + '20', color: category.color }}
-                                                        >
-                                                            {/* Assuming simple text icon if component not available, or import getCategoryIcon here too */}
-                                                            {category.icon ? category.icon.charAt(0) : 'C'}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <div className="font-semibold text-gray-900 text-sm">
-                                                            {rule.renamedTitle || <span className="font-normal text-gray-500 italic">Original Name</span>}
-                                                        </div>
-                                                        {category && <div className="text-xs text-gray-500">{category.name}</div>}
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 );
