@@ -59,6 +59,7 @@ import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Transactions from './pages/Transactions';
+import Automation from "./pages/Automation";
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +76,7 @@ export const PAGES = {
     "Reports": Reports,
     "Settings": Settings,
     "Transactions": Transactions,
+    "Automation": Automation,
 }
 
 export const pagesConfig = {
