@@ -180,7 +180,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
 
                 <DrawerPortal>
                     {/* Force the overlay to be invisible or absent so it doesn't block touches */}
-                    <DrawerContent className="z-[250] fixed bottom-0 left-0 right-0 max-h-[85vh] outline-none px-0 shadow-2xl border-t-2">
+                   <DrawerContent className="z-[600] fixed bottom-0 left-0 right-0 max-h-[85vh] outline-none px-0 shadow-2xl border-t-2">
                         <div className="mt-4 border-t overflow-hidden flex flex-col h-full">
                             {ListContent}
                         </div>
@@ -193,7 +193,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
     return (
         <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild>{TriggerContent}</PopoverTrigger>
-            <PopoverContent className="w-[280px] p-0" align="start">
+           <PopoverContent className="w-[280px] p-0 z-[600]" align="start">
                 {ListContent}
             </PopoverContent>
         </Popover>
