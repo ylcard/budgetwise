@@ -261,7 +261,7 @@ export default function TransactionList({
                                     </td>
                                     <td className="px-4 py-2">
                                         {isIncome ? (
-                                            <div className="text-center text-xs font-medium text-emerald-600 bg-emerald-50 py-1 px-2 rounded-full w-fit mx-auto">Income</div>
+                                            <div className="flex justify-center"><span className="text-muted-foreground/30">-</span></div>
                                         ) : category ? (
                                             <div className="flex items-center justify-center gap-2">
                                                 <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${category.color}20` }}>
