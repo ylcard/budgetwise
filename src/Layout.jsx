@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Wallet, LogOut, ChevronLeft, MoreHorizontal } from "lucide-react";
+import { Wallet, LogOut, ChevronLeft, MoreHorizontal, Moon, Sun } from "lucide-react";
 import { useMemo, useRef, useEffect, useState } from "react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
@@ -24,11 +24,19 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { RouteTransition } from "@/components/ui/RouteTransition"; // ADDED 03-Feb-2026: For iOS-style page transitions
 import { FABProvider, useFAB } from "./components/hooks/FABContext"; // ADDED 04-Feb-2026: For GlobalFAB management
 import GlobalFAB from "@/components/ui/GlobalFAB"; // ADDED 04-Feb-2026: Floating Action Button
+import { Switch } from "@/components/ui/switch"; // Assuming you have this shadcn component
+import { useTheme } from "next-themes";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+    const { theme, setTheme } = useTheme();
+
+    // Helper to toggle theme
+    const toggleTheme = () => {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+    };
 
     // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
     const navigationHistory = useRef({});
@@ -114,19 +122,6 @@ const LayoutContent = ({ children }) => {
                 </div>
             </header>
 
-            <style>{`
-              :root {
-                --primary-50: #F0F9FF;
-          --primary-100: #E0F2FE;
-          --primary-500: #0EA5E9;
-          --primary-600: #0284C7;
-          --primary-700: #0369A1;
-          --success: #10B981;
-          --warning: #F59E0B;
-          --error: #EF4444;
-          --bg-subtle: #FAFAF9;
-        }
-      `}</style>
             <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--bg-subtle)' }}>
                 <Sidebar className="hidden md:flex border-r border-gray-200">
                     <SidebarHeader className="border-b border-gray-200 p-6">
@@ -165,6 +160,16 @@ const LayoutContent = ({ children }) => {
                     </SidebarContent>
 
                     <SidebarFooter className="p-3 border-t border-gray-200">
+                        {/* Desktop Theme Toggle */}
+                        <CustomButton
+                            variant="ghost"
+                            className="w-full justify-start text-gray-700 dark:text-gray-300 mb-1"
+                            onClick={toggleTheme}
+                        >
+                            {theme === 'dark' ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
+                            <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                        </CustomButton>
+
                         <CustomButton
                             variant="ghost"
                             className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
@@ -238,6 +243,15 @@ const LayoutContent = ({ children }) => {
                                                     <span className="font-medium text-gray-900">{item.title}</span>
                                                 </Link>
                                             ))}
+
+                                            {/* Mobile Theme Toggle */}
+                                            <div className="flex items-center justify-between px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <Moon className="w-5 h-5 text-gray-500" />
+                                                    <span className="font-medium text-gray-900 dark:text-gray-100">Dark Mode</span>
+                                                </div>
+                                                <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                                            </div>
                                             <button
                                                 onClick={() => base44.auth.logout()}
                                                 className="flex items-center gap-4 px-6 py-4 text-red-600 hover:bg-red-50 transition-colors"
