@@ -50,18 +50,18 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
                             variant="ghost"
                             size="icon"
                             onClick={() => handleYearChange(-1)}
-                            className="h-10 w-10 hover:bg-gray-100"
+                            className="h-10 w-10 hover:bg-accent hover:text-accent-foreground"
                         >
                             <ChevronLeft className="h-5 w-5 text-cyan-500" />
                         </CustomButton>
-                        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700">
+                        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
                             {tempYear}
                         </h2>
                         <CustomButton
                             variant="ghost"
                             size="icon"
                             onClick={() => handleYearChange(1)}
-                            className="h-10 w-10 hover:bg-gray-100"
+                            className="h-10 w-10 hover:bg-accent hover:text-accent-foreground"
                         >
                             <ChevronRight className="h-5 w-5 text-cyan-500" />
                         </CustomButton>
@@ -82,7 +82,7 @@ export default function MonthYearPickerPopover({ currentMonth, currentYear, onMo
                                         py-3 px-2 sm:px-4 rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium transition-all
                                         ${isSelected
                                             ? 'bg-cyan-400 text-white shadow-md'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                         }
                                     `}
                                 >
