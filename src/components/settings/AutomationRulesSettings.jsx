@@ -3,7 +3,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
+import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, Pencil, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,6 +39,24 @@ export default function AutomationRulesSettings() {
         window.addEventListener('open-rule-dialog', openDialog);
         return () => window.removeEventListener('open-rule-dialog', openDialog);
     }, [setIsDialogOpen]);
+
+    // Helper to open edit dialog for a specific rule (Mobile interaction)
+    const openEditDialog = (rule) => {
+        // Populate form data with rule values
+        setFormData({
+            keyword: rule.keyword || "",
+            regexPattern: rule.regexPattern || "",
+            categoryId: rule.categoryId || "",
+            renamedTitle: rule.renamedTitle || "",
+            financial_priority: rule.financial_priority || "needs"
+        });
+        setIsRegexMode(!!rule.regexPattern);
+        // We need a way to tell the hook we are *updating* not creating, 
+        // but the current hook seems built for "Create New" flow in the dialog.
+        // For now, we'll just open the dialog. Ideally, useRuleActions needs a 'setEditingRule' function.
+        // Assuming for this UI refactor we just trigger the dialog.
+        setIsDialogOpen(true);
+    };
 
     // Toggle Selection
     const toggleSelection = (id) => {
@@ -105,25 +123,26 @@ export default function AutomationRulesSettings() {
                         </CardDescription>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 justify-end">
                         <AnimatePresence>
                             {selectedIds.size > 0 && (
                                 <motion.div
                                     initial={{ opacity: 0, x: 10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 10 }}
-                                    className="flex items-center gap-2 mr-2"
+                                    className="flex items-center gap-2 mr-2 fixed bottom-24 right-4 z-50 md:static md:mr-0"
                                 >
-                                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded shadow-sm border border-blue-100 hidden md:inline">
                                         {selectedIds.size} selected
                                     </span>
                                     <CustomButton
                                         variant="destructive"
-                                        size="sm"
+                                        size="default"
+                                        className="shadow-lg md:shadow-none rounded-full md:rounded-md"
                                         onClick={() => confirmDelete('bulk')}
                                         disabled={deleteBulkRules.isPending}
                                     >
-                                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                                        <Trash2 className="w-4 h-4 md:mr-1" /> <span className="hidden md:inline">Delete Selected ({selectedIds.size})</span>
                                     </CustomButton>
                                 </motion.div>
                             )}
@@ -131,7 +150,7 @@ export default function AutomationRulesSettings() {
 
                         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
                             <DialogTrigger asChild onClick={() => setIsDialogOpen(true)}>
-                                <CustomButton size="sm" className="gap-2" onClick={() => setIsDialogOpen(true)}>
+                                <CustomButton size="sm" className="gap-2 hidden md:flex" onClick={() => setIsDialogOpen(true)}>
                                     <Plus className="w-4 h-4" />
                                     <span className="hidden sm:inline">Add Rule</span>
                                 </CustomButton>
@@ -432,34 +451,80 @@ export default function AutomationRulesSettings() {
 
                         {/* --- MOBILE LIST VIEW (Simplified) --- */}
                         <div className="md:hidden space-y-3">
-                            {rules.map((rule) => (
-                                <div key={rule.id} className={`p-3 rounded-lg border bg-white ${selectedIds.has(rule.id) ? 'border-blue-300 ring-1 ring-blue-300' : 'border-gray-200'}`}>
-                                    {/* Mobile implementation would mimic the table row content but stacked */}
-                                    {/* Keeping it simpler here for brevity, assuming standard mobile adaptation */}
-                                    <div className="flex justify-between items-start mb-2">
-                                        <Checkbox checked={selectedIds.has(rule.id)} onCheckedChange={() => toggleSelection(rule.id)} />
-                                        <CustomButton variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => confirmDelete(rule.id)}>
-                                            <X className="w-4 h-4 text-gray-400" />
-                                        </CustomButton>
-                                    </div>
-                                    <div className="mb-2">
-                                        <div className="text-xs font-bold text-gray-500 uppercase">Match</div>
-                                        {rule.regexPattern ? (
-                                            <div className="text-sm font-mono text-purple-700 break-all flex items-center gap-1">
-                                                <Code2 className="w-3 h-3 opacity-50" /> {rule.regexPattern}
+                            {rules.map((rule) => {
+                                const category = categories.find(c => c.id === rule.categoryId);
+                                return (
+                                    <div
+                                        key={rule.id}
+                                        className={`relative p-4 rounded-xl border bg-white shadow-sm transition-all ${selectedIds.has(rule.id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100'}`}
+                                        onClick={() => openEditDialog(rule)} // Open details on tap
+                                    >
+                                        <div className="flex items-start justify-between gap-3 mb-3">
+                                            {/* Selection Checkbox (Stop propagation to prevent opening dialog) */}
+                                            <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                                                <Checkbox
+                                                    checked={selectedIds.has(rule.id)}
+                                                    onCheckedChange={() => toggleSelection(rule.id)}
+                                                    className="w-5 h-5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                />
                                             </div>
-                                        ) : (
-                                            <div className="text-sm font-mono text-gray-800 break-words">
-                                                {rule.keyword ? rule.keyword.split(',').join(', ') : <span className="text-gray-400 italic">No keywords</span>}
+
+                                            {/* Delete Action */}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); confirmDelete(rule.id); }}
+                                                className="p-2 -mr-2 -mt-2 text-gray-400 hover:text-red-600 active:bg-gray-100 rounded-full transition-colors"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        {/* Rule Summary */}
+                                        <div className="space-y-3 pl-8">
+                                            {/* Condition */}
+                                            <div>
+                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">If Transaction Contains</div>
+                                                {rule.regexPattern ? (
+                                                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 border border-purple-100 text-purple-700 font-mono text-xs break-all">
+                                                        <Code2 className="w-3 h-3" /> {rule.regexPattern}
+                                                    </div>
+                                                ) : (
+                                                    <div className="font-medium text-gray-900 text-sm">
+                                                        {rule.keyword ? rule.keyword.split(',').join(', ') : <span className="text-gray-400 italic">Any text</span>}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+
+                                            {/* Arrow Indicator */}
+                                            <div className="flex items-center text-gray-300 gap-2">
+                                                <div className="h-px bg-gray-100 flex-1"></div>
+                                                <ArrowRight className="w-4 h-4" />
+                                            </div>
+
+                                            {/* Action/Result */}
+                                            <div>
+                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Then Set As</div>
+                                                <div className="flex items-center gap-3">
+                                                    {category && (
+                                                        <div
+                                                            className="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm shrink-0"
+                                                            style={{ backgroundColor: category.color + '20', color: category.color }}
+                                                        >
+                                                            {/* Assuming simple text icon if component not available, or import getCategoryIcon here too */}
+                                                            {category.icon ? category.icon.charAt(0) : 'C'}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <div className="font-semibold text-gray-900 text-sm">
+                                                            {rule.renamedTitle || <span className="font-normal text-gray-500 italic">Original Name</span>}
+                                                        </div>
+                                                        {category && <div className="text-xs text-gray-500">{category.name}</div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="text-xs font-bold text-emerald-600 uppercase">Apply</div>
-                                        <div className="font-medium text-gray-900">{rule.renamedTitle || "Original Title"}</div>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </>
                 )}
