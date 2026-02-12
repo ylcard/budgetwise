@@ -341,9 +341,12 @@ function AccountSection() {
         }
     };
 
-    const handleAccountDeletion = () => {
-        showToast({ title: "Requested", description: "Account deletion initiated...", variant: "destructive" });
-        setTimeout(() => window.location.href = '/', 2000);
+    const { user, logout } = useAuth();
+    const { settings, updateSettings } = useSettings();
+
+    const handleLogout = () => {
+        showToast({ title: "Logging out", description: "Securely ending your session..." });
+        logout();
     };
 
     return (
@@ -395,7 +398,12 @@ function AccountSection() {
                             <CustomButton variant="outline" size="sm" onClick={() => window.open('https://myaccount.google.com/security', '_blank')}>
                                 Google Security Settings
                             </CustomButton>
-                            <CustomButton variant="ghost" size="sm" onClick={() => logout()}>
+                            <CustomButton
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-600 hover:text-red-600"
+                                onClick={handleLogout}
+                            >
                                 Sign Out
                             </CustomButton>
                         </div>
