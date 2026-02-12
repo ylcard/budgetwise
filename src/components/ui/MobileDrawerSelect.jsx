@@ -68,7 +68,7 @@ export function MobileDrawerSelect({
                             </button>
                         )}
                     </DrawerTrigger>
-                    <DrawerContent className="max-h-[85vh] z-[110] outline-none">
+                   <DrawerContent className="max-h-[85vh] z-[600] outline-none bg-background border-t border-border">
                         <DrawerHeader>
                             <DrawerTitle>{title || placeholder}</DrawerTitle>
                         </DrawerHeader>
