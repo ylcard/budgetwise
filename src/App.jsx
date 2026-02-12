@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import "react-day-picker/style.css";
 import { ThemeProvider } from "next-themes";
+import { useSystemSetup } from '@/components/hooks/useSystemSetup';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -21,7 +22,13 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
     : <>{children}</>;
 
 const AuthenticatedApp = () => {
-    const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+    // const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+
+    // Destructure 'user' so we can pass it to the setup hook
+    const { user, isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+ 
+    // Run System Setup (Create default categories if missing)
+    useSystemSetup(user);
 
     // Show loading spinner while checking app public settings or auth
     if (isLoadingPublicSettings || isLoadingAuth) {
