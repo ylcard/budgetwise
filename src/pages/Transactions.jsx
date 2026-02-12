@@ -26,9 +26,12 @@ import RecurringTransactionForm from "../components/recurring/RecurringTransacti
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/components/hooks/use-mobile";
 
 export default function Transactions() {
     const { user } = useSettings();
+    const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = useState("history");
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
@@ -404,24 +407,45 @@ export default function Transactions() {
                 onOpenChange={setShowImportWizard}
                 renderTrigger={false}
             />
-            <Dialog open={showRecurringForm} onOpenChange={setShowRecurringForm}>
-                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
-                    <DialogHeader className="p-6 pb-0">
-                        <DialogTitle className="text-xl font-bold">
-                            {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="p-6 max-h-[85vh] overflow-y-auto pb-24 md:pb-6">
-                        <RecurringTransactionForm
-                            initialData={editingRecurring}
-                            categories={categories}
-                            onSubmit={handleRecurringSubmit}
-                            onCancel={() => setShowRecurringForm(false)}
-                            isSubmitting={isSubmittingRecurring}
-                        />
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {isMobile ? (
+                <Drawer open={showRecurringForm} onOpenChange={setShowRecurringForm}>
+                    <DrawerContent className="max-h-[92vh] z-[120] bg-background">
+                        <DrawerHeader className="text-left">
+                            <DrawerTitle className="text-xl font-bold px-4">
+                                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
+                            </DrawerTitle>
+                        </DrawerHeader>
+                        <div className="p-6 pt-0 overflow-y-auto pb-24">
+                            <RecurringTransactionForm
+                                initialData={editingRecurring}
+                                categories={categories}
+                                onSubmit={handleRecurringSubmit}
+                                onCancel={() => setShowRecurringForm(false)}
+                                isSubmitting={isSubmittingRecurring}
+                            />
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showRecurringForm} onOpenChange={setShowRecurringForm}>
+                    <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+                        <DialogHeader className="p-6 pb-0">
+                            <DialogTitle className="text-xl font-bold">
+                                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="p-6 max-h-[85vh] overflow-y-auto pb-6">
+                            <RecurringTransactionForm
+                                initialData={editingRecurring}
+                                categories={categories}
+                                onSubmit={handleRecurringSubmit}
+                                onCancel={() => setShowRecurringForm(false)}
+                                isSubmitting={isSubmittingRecurring}
+                            />
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </PullToRefresh>
     );
 }
