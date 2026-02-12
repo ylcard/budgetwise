@@ -121,3 +121,31 @@ export const DEFAULT_SETTINGS = {
     fixedLifestyleMode: false,
     goalMode: true // true = Percentage, false = Absolute
 };
+
+export const DEFAULT_SYSTEM_CATEGORIES = [
+    { name: 'Rent', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+    { name: 'Connectivity', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+    { name: 'Gas', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+    { name: 'Electricity', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+    { name: 'Water', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+	{ name: 'Taxes', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+	{ name: 'Administrative', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+	{ name: 'Clothes', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+	{ name: 'Pets', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+	{ name: 'Uncategorized', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
+    { name: 'Groceries', icon: 'ShoppingCart', color: '#10B981', priority: 'needs', is_system: true },
+    { name: 'Transport', icon: 'Car', color: '#F59E0B', priority: 'needs', is_system: true },
+    { name: 'Utilities', icon: 'Zap', color: '#06B6D4', priority: 'needs', is_system: true },
+    { name: 'Health', icon: 'HeartPulse', color: '#EF4444', priority: 'needs', is_system: true },
+    { name: 'Dining Out', icon: 'Utensils', color: '#F97316', priority: 'wants', is_system: true },
+    { name: 'Shopping', icon: 'ShoppingBag', color: '#8B5CF6', priority: 'wants', is_system: true },
+    { name: 'Entertainment', icon: 'Film', color: '#EC4899', priority: 'wants', is_system: true },
+    { name: 'Travel', icon: 'Plane', color: '#0EA5E9', priority: 'wants', is_system: true },
+    { name: 'Subscriptions', icon: 'Repeat', color: '#8B5CF6', priority: 'wants', is_system: true }
+];
+
+export const DEFAULT_SYSTEM_GOALS = [
+    { priority: 'needs', target_percentage: 50 },
+    { priority: 'wants', target_percentage: 30 },
+    { priority: 'savings', target_percentage: 20 }
+];
