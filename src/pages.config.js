@@ -57,7 +57,7 @@ import ImportData from './pages/ImportData';
 import MiniBudgets from './pages/MiniBudgets';
 import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
-import Settings from './pages/Settings';
+import Manage from './pages/Manage';
 import Transactions from './pages/Transactions';
 import Automation from "./pages/Automation";
 import __Layout from './Layout.jsx';
