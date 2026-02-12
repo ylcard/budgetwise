@@ -74,7 +74,7 @@ export default function TransactionList({
     };
 
     const SortIcon = ({ columnKey }) => {
-        if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-gray-400" />;
+        if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-muted-foreground" />;
         return sortConfig.direction === 'asc'
             ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
             : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
@@ -104,7 +104,7 @@ export default function TransactionList({
                     <CardTitle>All Transactions</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-40 flex items-center justify-center text-gray-400">
+                    <div className="h-40 flex items-center justify-center text-muted-foreground">
                         <p>No transactions found. Add your first one!</p>
                     </div>
                 </CardContent>
@@ -122,7 +122,7 @@ export default function TransactionList({
 
     const PaginationControls = () => (
         <div className="flex items-center gap-2">
-            <div className="text-xs md:text-sm text-gray-500 mr-2">
+            <div className="text-xs md:text-sm text-muted-foreground mr-2">
                 Page {currentPage}/{totalPages}
             </div>
             <CustomButton
@@ -148,9 +148,9 @@ export default function TransactionList({
 
 
     return (
-        <Card className="border-none shadow-md md:shadow-lg overflow-hidden">
+        <Card className="border-none shadow-md md:shadow-lg overflow-hidden bg-card">
             {/* Header: Adaptive Padding */}
-            <CardHeader className="flex flex-row items-center justify-between py-3 px-3 md:py-4 md:px-6 bg-white border-b">
+            <CardHeader className="flex flex-row items-center justify-between py-3 px-3 md:py-4 md:px-6 bg-card border-b border-border">
                 <div className="flex items-center gap-2 md:gap-4">
                     <CardTitle className="text-base md:text-lg">Transactions ({totalItems})</CardTitle>
 
@@ -163,7 +163,7 @@ export default function TransactionList({
                                 exit={{ opacity: 0, x: -10 }}
                                 className="flex items-center gap-2"
                             >
-                                <span className="text-[10px] md:text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                <span className="text-[10px] md:text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded">
                                     {selectedIds.size}
                                 </span>
                                 <CustomButton variant="destructive" size="sm" onClick={onDeleteSelected} disabled={isBulkDeleting} className="h-7 text-xs px-2 md:px-3">
@@ -180,7 +180,7 @@ export default function TransactionList({
                     {totalPages > 1 && <PaginationControls />}
                     {/* Items per page hidden on mobile to save space */}
                     <div className="hidden md:flex items-center gap-2">
-                        <span className="text-sm text-gray-500 hidden sm:inline">Show:</span>
+                        <span className="text-sm text-muted-foreground hidden sm:inline">Show:</span>
                         <Select
                             value={String(itemsPerPage)}
                             onValueChange={(value) => onItemsPerPageChange(Number(value))}
@@ -202,31 +202,31 @@ export default function TransactionList({
             {/* DESKTOP VIEW: Table */}
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                    <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                         <tr>
                             <th className="px-4 py-3 w-10">
                                 <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
                             </th>
-                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('title')}>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('title')}>
                                 <div className="flex items-center justify-center">Title <SortIcon columnKey="title" /></div>
                             </th>
-                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('date')}>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('date')}>
                                 <div className="flex items-center justify-center">Date <SortIcon columnKey="date" /></div>
                             </th>
-                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('paidDate')}>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('paidDate')}>
                                 <div className="flex items-center justify-center">Paid Date <SortIcon columnKey="paidDate" /></div>
                             </th>
-                            <th className="px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('category')}>
+                            <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('category')}>
                                 <div className="flex items-center justify-center">Category <SortIcon columnKey="category" /></div>
                             </th>
-                            <th className="px-4 py-3 text-right cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('amount')}>
+                            <th className="px-4 py-3 text-right cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('amount')}>
                                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
                             </th>
                             <th className="px-4 py-3 w-1/4 text-center">Note</th>
                             <th className="px-4 py-3 w-20 text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-border">
                         {transactions.map((transaction) => {
                             const category = categoryMap[transaction.category_id];
                             const isIncome = transaction.type === 'income';
@@ -236,7 +236,7 @@ export default function TransactionList({
                                 <tr
                                     key={transaction.id}
                                     onClick={(e) => handleRowClick(e, transaction)}
-                                    className={`group hover:bg-blue-50/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-blue-50' : ''}`}
+                                    className={`group hover:bg-accent/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-primary/5' : ''}`}
                                 >
                                     <td className="px-4 py-2">
                                         <Checkbox
@@ -244,19 +244,19 @@ export default function TransactionList({
                                             onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
                                         />
                                     </td>
-                                    <td className="px-4 py-2 font-medium text-gray-900">{transaction.title}</td>
-                                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                                    <td className="px-4 py-2 font-medium text-foreground">{transaction.title}</td>
+                                    <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
                                         {format(new Date(transaction.date), "MMM d, yyyy")}
                                     </td>
-                                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap text-center">
+                                    <td className="px-4 py-2 text-muted-foreground whitespace-nowrap text-center">
                                         {isIncome ? (
-                                            <span className="text-gray-300">-</span>
+                                            <span className="text-muted-foreground/30">-</span>
                                         ) : transaction.paidDate ? (
                                             <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-100">
                                                 {format(new Date(transaction.paidDate), "MMM d, yyyy")}
                                             </span>
                                         ) : (
-                                            <span className="text-xs text-gray-400 italic">Pending</span>
+                                            <span className="text-xs text-muted-foreground/60 italic">Pending</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-2">
@@ -270,7 +270,7 @@ export default function TransactionList({
                                                 <span className="truncate max-w-[120px]">{category.name}</span>
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400 text-xs">Uncategorized</span>
+                                            <span className="text-muted-foreground/60 text-xs">Uncategorized</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-2 text-right">
@@ -278,13 +278,13 @@ export default function TransactionList({
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-2 text-gray-500 text-xs truncate max-w-[200px]" title={transaction.notes}>
+                                    <td className="px-4 py-2 text-muted-foreground text-xs truncate max-w-[200px]" title={transaction.notes}>
                                         {transaction.notes || '-'}
                                     </td>
                                     <td className="px-4 py-2">
                                         <div className="flex items-center justify-center gap-1">
-                                            <CustomButton variant="ghost" size="sm" onClick={() => onEdit(transaction)} className="h-8 w-8 p-0 hover:bg-gray-100">
-                                                <Edit2 className="w-3 h-3 text-gray-500" />
+                                            <CustomButton variant="ghost" size="sm" onClick={() => onEdit(transaction)} className="h-8 w-8 p-0 hover:bg-accent">
+                                                <Edit2 className="w-3 h-3 text-muted-foreground" />
                                             </CustomButton>
                                             <CustomButton variant="ghost" size="sm" onClick={() => onDelete(transaction)} className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600">
                                                 <Trash2 className="w-3 h-3" />
@@ -300,7 +300,7 @@ export default function TransactionList({
 
             {/* MOBILE VIEW: List */}
             <div className="block md:hidden">
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-border">
                     {transactions.map((transaction) => {
                         const category = categoryMap[transaction.category_id];
                         const isIncome = transaction.type === 'income';
@@ -310,7 +310,7 @@ export default function TransactionList({
                         return (
                             <li
                                 key={transaction.id}
-                                className={`flex items-start p-3 gap-3 transition-colors ${isSelected ? 'bg-blue-50' : 'bg-white active:bg-gray-50'}`}
+                                className={`flex items-start p-3 gap-3 transition-colors ${isSelected ? 'bg-primary/10' : 'bg-card active:bg-accent'}`}
                                 onClick={() => handleMobileRowClick(transaction)}
                             >
                                 {/* Selection Checkbox */}
@@ -336,7 +336,7 @@ export default function TransactionList({
                                             {category ? (
                                                 <Icon className="w-4 h-4" style={{ color: category.color }} />
                                             ) : (
-                                                <span className="text-gray-400 text-xs">?</span>
+                                                <span className="text-muted-foreground/60 text-xs">?</span>
                                             )}
                                         </div>
                                     )}
@@ -345,7 +345,7 @@ export default function TransactionList({
                                 {/* Main Content */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-start gap-2">
-                                        <p className="text-sm font-semibold text-gray-900 truncate">
+                                        <p className="text-sm font-semibold text-foreground truncate">
                                             {transaction.title}
                                         </p>
                                         <span className={`text-sm font-mono font-bold whitespace-nowrap ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
@@ -353,18 +353,18 @@ export default function TransactionList({
                                         </span>
                                     </div>
 
-                                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
+                                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                                         <span>{format(new Date(transaction.date), "MMM d")}</span>
 
                                         {!isIncome && (
                                             <>
-                                                <span className="text-gray-300">•</span>
+                                                <span className="text-muted-foreground/30">•</span>
                                                 <span className="truncate max-w-[100px]">{category?.name || 'Uncategorized'}</span>
 
                                                 {transaction.paidDate && (
                                                     <span className={`ml-1 px-1.5 py-0.5 rounded-sm text-[10px] border ${transaction.paidDate
                                                         ? "bg-green-50 text-green-700 border-green-100"
-                                                        : "bg-gray-100 text-gray-500 border-gray-200"
+                                                        : "bg-muted text-muted-foreground border-border"
                                                         }`}>
                                                         Paid
                                                     </span>
@@ -373,7 +373,7 @@ export default function TransactionList({
                                         )}
                                     </div>
                                     {transaction.notes && (
-                                        <p className="text-xs text-gray-400 mt-1 truncate">
+                                        <p className="text-xs text-muted-foreground/60 mt-1 truncate">
                                             {transaction.notes}
                                         </p>
                                     )}
@@ -386,7 +386,7 @@ export default function TransactionList({
 
             {/* Bottom Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-end p-3 border-t bg-gray-50/50">
+                <div className="flex items-center justify-end p-3 border-t border-border bg-muted/30">
                     <PaginationControls />
                 </div>
             )}
