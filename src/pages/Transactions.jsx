@@ -237,8 +237,8 @@ export default function Transactions() {
                 <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="px-2">
-                            <h1 className="text-2xl md:text-4xl font-bold text-gray-900">Transactions</h1>
-                            <p className="text-xs md:text-base text-gray-500 mt-1">Track your income and expenses</p>
+                            <h1 className="text-2xl md:text-4xl font-bold text-foreground">Transactions</h1>
+                            <p className="text-xs md:text-base text-muted-foreground mt-1">Track your income and expenses</p>
                         </div>
 
                         {/* Actions hidden on mobile (handled by FAB), visible on Desktop */}
