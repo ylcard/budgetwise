@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCategories } from "@/components/hooks/useBase44Entities";
@@ -27,23 +27,15 @@ export default function AutomationRulesSettings() {
         selectedIds, setSelectedIds,
         isRegexMode, setIsRegexMode,
         formData, setFormData,
-        createRule, deleteRule, updateRule
+        createRule, deleteRule, updateRule,
+        handleToggleRuleMode, handleAddKeyword, handleRemoveKeyword,
+        handleEditKeyword, handleCreateSave, handleCloseDialog
     } = useRuleActions();
 
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
     const [editingId, setEditingId] = useState(null);
     const [editingKeyword, setEditingKeyword] = useState(null);
-
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isRegexMode, setIsRegexMode] = useState(false); // Toggle for creation
-    const [formData, setFormData] = useState({
-        keyword: "",
-        regexPattern: "", // Add regex field
-        categoryId: "",
-        renamedTitle: "",
-        financial_priority: "wants"
-    });
 
     // Fetch the user's saved rules
     const { data: rules = [], isLoading, isFetching } = useQuery({
@@ -164,11 +156,16 @@ export default function AutomationRulesSettings() {
 
     const executeDelete = () => {
         if (ruleToDelete === 'bulk') {
-            deleteBulkRules(Array.from(selectedIds));
+            Array.from(selectedIds).forEach(id => deleteRule.mutate(id));
+            setSelectedIds(new Set());
         } else {
-            deleteRule(ruleToDelete);
+            deleteRule.mutate(ruleToDelete);
         }
         setDeleteConfirmOpen(false);
+    };
+
+    const handleInlineUpdate = (ruleId, field, value) => {
+        updateRule.mutate({ id: ruleId, data: { [field]: value } });
     };
 
     // --- INLINE EDITING LOGIC ---
