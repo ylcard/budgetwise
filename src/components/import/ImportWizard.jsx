@@ -100,10 +100,10 @@ export default function ImportWizard({ onSuccess }) {
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "date": { "type": "string", "description": "Transaction date (YYYY-MM-DD)" },
-                                    "valueDate": { "type": "string", "description": "Payment/Value date (YYYY-MM-DD)" },
-                                    "reason": { "type": "string", "description": "Merchant name exactly as it appears. Do not summarize." },
-                                    "amount": { "type": "number", "description": "Raw numeric value. Negative for debits/expenses, positive for credits/income." }
+                                    "date": { "type": "string", "description": "The 'Transaction Date'. Format strictly YYYY-MM-DD." },
+                                    "valueDate": { "type": "string", "description": "The 'Value Date' or 'Posting Date'. Format strictly YYYY-MM-DD." },
+                                    "reason": { "type": "string", "description": "The raw merchant text or description. If split across multiple lines, combine them." },
+                                    "amount": { "type": "number", "description": "Numeric value. CRITICAL: If 'Debit'/'Credit' columns exist, 'Debit' is negative (-), 'Credit' is positive (+). If 'CR'/'DR' markers exist, use them." }
                                 },
                                 "required": ["date", "reason", "amount"]
                             }
@@ -151,6 +151,26 @@ export default function ImportWizard({ onSuccess }) {
                 );
             };
 
+            // Helper: Local "Memory" for Consistency
+            // Checks if we've seen a similar merchant description before
+            const findLearnedData = (rawReason) => {
+                if (!existingTransactions || !rawReason) return null;
+
+                // Simple "includes" match - can be upgraded to fuzzy match later
+                // We look for a past transaction where the current reason contains the past title 
+                // OR the past title (if it was raw) is contained in the new reason.
+                const match = existingTransactions.find(t =>
+                    t.title && rawReason.toUpperCase().includes(t.title.toUpperCase()) && t.category_id
+                );
+
+                if (match) return {
+                    title: match.title, // Use the clean name we used last time
+                    categoryName: match.category_name, // You might need to adjust this depending on your hook's return shape
+                    categoryId: match.category_id,
+                    priority: match.financial_priority
+                };
+            };
+
             const processed = extractedData.map(item => {
                 // 1. Parse while preserving the sign for a moment
                 const rawVal = parseAmountWithSign(item.amount);
@@ -176,8 +196,16 @@ export default function ImportWizard({ onSuccess }) {
                     }
                 }
 
-                // Enhanced categorization using rules and patterns
-                const catResult = categorizeTransaction(
+                // 4. "Memory" Check: Did we rename/categorize this before?
+                const learned = findLearnedData(item.reason);
+
+                // 5. Fallback to Rules/Regex if no memory found
+                const catResult = learned ? {
+                    categoryName: learned.categoryName,
+                    categoryId: learned.categoryId,
+                    priority: learned.priority,
+                    renamedTitle: learned.title
+                } : categorizeTransaction(
                     { title: item.reason },
                     rules,
                     categories
@@ -188,7 +216,7 @@ export default function ImportWizard({ onSuccess }) {
 
                 return {
                     date: txDate,
-                    title: item.reason || 'Untitled Transaction',
+                    title: catResult.renamedTitle || item.reason || 'Untitled Transaction',
                     amount: magnitude,
                     originalAmount: magnitude,
                     originalCurrency: settings?.baseCurrency || 'USD',
