@@ -163,7 +163,7 @@ export default function AutomationRulesSettings() {
                                     animate={{ scale: 1, opacity: 1 }}
                                     exit={{ scale: 0, opacity: 0 }}
                                     // Fixed position on mobile (left of Global FAB), Static on Desktop
-                                    className="fixed bottom-6 right-20 z-[60] md:static md:mr-2 md:z-0 flex items-center gap-2"
+                                    className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-20 z-[110] md:static md:mr-2 md:z-0 flex items-center gap-2"
                                 >
                                     <CustomButton
                                         variant="destructive"
