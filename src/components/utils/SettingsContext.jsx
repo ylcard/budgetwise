@@ -107,7 +107,8 @@ export const SettingsProvider = ({ children }) => {
             // Prepare payload for DB (Map frontend keys to DB keys)
             const dbPayload = {
                 ...updatedSettings,
-                fixedMode: updatedSettings.fixedLifestyleMode // Map UI 'fixedLifestyleMode' to DB 'fixedMode'
+                fixedMode: updatedSettings.fixedLifestyleMode, // Map UI 'fixedLifestyleMode' to DB 'fixedMode'
+                displayName: updatedSettings.displayName
             };
             // Remove the UI-only key to be clean (optional, but good practice if DB is strict)
             delete dbPayload.fixedLifestyleMode;
