@@ -283,3 +283,9 @@
 [data-vaul-drawer-wrapper] {
     z-index: 110 !important;
 }
+
+@media (max-width: 768px) {
+  .mobile-high-z-index {
+    z-index: 120 !important;
+  }
+}
