@@ -74,22 +74,12 @@ export default function ImportWizard({ onSuccess }) {
         try {
             showToast({ title: "Uploading...", description: "Uploading file for analysis." });
 
-            // Deprecating Base44 LLM in favor of Google Document AI
-            // const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
+            // 1. Upload File
+            const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
 
-            // START Google Document AI implementation
-            // Convert file to Base64 for the Edge Function
-            const toBase64 = (file) => new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = error => reject(error);
-            });
-            // END Google Document AI implementation
-
-            // Deprecating Base44 LLM in favor of Google Document AI
-            /*
             showToast({ title: "Analyzing...", description: "Extracting data from PDF. This may take a moment." });
+
+            // 2. Extract Data (Strict Schema)
             const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
                 file_url: file_url,
                 json_schema: {
@@ -112,35 +102,9 @@ export default function ImportWizard({ onSuccess }) {
                     "required": ["transactions"]
                 }
             });
-            */
 
-            // START Google Document AI implementation
-            const base64File = await toBase64(file);
-
-            showToast({ title: "Processing...", description: "Analyzing with Google Document AI." });
-
-            // Call your new dedicated backend function
-            // Assuming base44.functions.invoke or simple fetch pattern
-            // Replace 'processDocumentAI' with your actual registered function name
-            const result = await base44.functions.execute('processDocumentAI', {
-                fileBase64: base64File,
-                mimeType: file.type
-            });
-            // END Google Document AI implementation
-
-            // Deprecating Base44 LLM in favor of Google Document AI
-            // if (result.status === 'error') throw new Error(result.details);
-
-            // START Google Document AI implementation
-            if (result.error) throw new Error(result.error);
-            // END Google Document AI implementation
-
-            // Deprecating Base44 LLM in favor of Google Document AI
-            // const extractedData = result.output?.transactions || [];
-
-            // START Google Document AI implementation
-            const extractedData = result.transactions || [];
-            // END Google Document AI implementation
+            if (result.status === 'error') throw new Error(result.details);
+            const extractedData = result.output?.transactions || [];
 
             // Helper for Duplicate Detection
             const findSurvivor = (newItem) => {
@@ -165,23 +129,20 @@ export default function ImportWizard({ onSuccess }) {
 
                 if (match) return {
                     title: match.title, // Use the clean name we used last time
-                    categoryName: match.category_name, // You might need to adjust this depending on your hook's return shape
+                    categoryName: categories.find(c => c.id === match.category_id)?.name || 'Uncategorized',
                     categoryId: match.category_id,
                     priority: match.financial_priority
                 };
             };
 
-            const processed = extractedData.map(item => {
-                // 1. Parse while preserving the sign for a moment
+            // 3. Prepare Data for Categorization Engine
+            // We first map to a cleaner object, then we'll send it to the engine in batch
+            const preProcessed = extractedData.map(item => {
                 const rawVal = parseAmountWithSign(item.amount);
 
-                // 2. Determine type and then force absolute magnitude
                 const type = rawVal < 0 ? 'expense' : 'income';
                 const magnitude = Math.abs(rawVal);
 
-                // 3. Date Logic Correction: Ensure Transaction Date <= Paid Date
-                // Banks sometimes flip these or the AI extracts them swapped.
-                // Logic: The earlier date is ALWAYS the transaction date.
                 let txDate = item.date;
                 let pdDate = item.valueDate;
 
@@ -189,49 +150,62 @@ export default function ImportWizard({ onSuccess }) {
                     const d1 = new Date(txDate);
                     const d2 = new Date(pdDate);
 
-                    // If transaction date is later than paid date, swap them
                     if (!isNaN(d1) && !isNaN(d2) && d1 > d2) {
                         txDate = item.valueDate;
                         pdDate = item.date;
                     }
                 }
 
-                // 4. "Memory" Check: Did we rename/categorize this before?
-                const learned = findLearnedData(item.reason);
+                return {
+                    id: Math.random().toString(36).substr(2, 9), // Temp ID
+                    date: txDate,
+                    title: item.reason || 'Untitled Transaction',
+                    amount: magnitude,
+                    type,
+                    paidDate: pdDate,
+                    originalData: item
+                };
+            }).filter(item => item.amount !== 0 && item.date);
 
-                // 5. Fallback to Rules/Regex if no memory found
-                const catResult = learned ? {
-                    categoryName: learned.categoryName,
-                    categoryId: learned.categoryId,
-                    priority: learned.priority,
-                    renamedTitle: learned.title
-                } : categorizeTransaction(
-                    { title: item.reason },
-                    rules,
-                    categories
-                );
+            showToast({ title: "Categorizing...", description: "AI is cleaning and organizing your transactions." });
 
-                // Check duplicate
+            // 4. Batch Call to Backend Engine (Groq + Rules)
+            const engineResults = await base44.functions.invoke('CategorizationEngine', {
+                transactions: preProcessed,
+                rules: rules,
+                categories: categories
+            });
+
+            // 5. Final Merge (Memory overrides Engine)
+            const processed = (engineResults || preProcessed).map(item => {
+                // Check Memory First
+                const learned = findLearnedData(item.title); // check using the raw/semi-raw title
+
+                // Decide final values
+                const finalCategoryName = learned ? learned.categoryName : (item.categoryName || 'Uncategorized');
+                const finalCategoryId = learned ? learned.categoryId : (item.category_id || null);
+                const finalTitle = learned ? learned.title : (item.cleanTitle || item.title); // Use Engine's clean title
+
                 const survivor = findSurvivor({ amount: magnitude, date: txDate });
 
                 return {
-                    date: txDate,
-                    title: catResult.renamedTitle || item.reason || 'Untitled Transaction',
-                    amount: magnitude,
-                    originalAmount: magnitude,
+                    date: item.date,
+                    title: finalTitle,
+                    amount: item.amount,
+                    originalAmount: item.amount,
                     originalCurrency: settings?.baseCurrency || 'USD',
-                    type,
-                    category: catResult.categoryName || 'Uncategorized',
-                    categoryId: catResult.categoryId || null,
-                    financial_priority: catResult.priority || 'wants',
-                    isPaid: !!pdDate,
-                    paidDate: pdDate || null,
+                    type: item.type,
+                    category: finalCategoryName,
+                    categoryId: finalCategoryId,
+                    financial_priority: 'wants', // You might want to map this from category priority
+                    isPaid: !!item.paidDate,
+                    paidDate: item.paidDate || null,
                     budgetId: null,
-                    originalData: item,
+                    originalData: item.originalData,
                     isDuplicate: !!survivor,
                     duplicateMatch: survivor
                 };
-            }).filter(item => item.amount !== 0 && item.date);
+            });
 
             setProcessedData(processed);
             setStep(2);
