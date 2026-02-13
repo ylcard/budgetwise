@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Steps } from "@/components/ui/steps";
 import FileUploader from "./FileUploader";
@@ -40,7 +40,25 @@ export default function ImportWizard({ onSuccess }) {
     const { rules } = useCategoryRules(user);
     const { goals, isLoading: goalsLoading } = useGoals(user);
     const { allBudgets } = useAllBudgets(user);
-    const { transactions: existingTransactions } = useTransactions(user);
+
+    // Local state to hold raw extracted data before full processing
+    const [rawData, setRawData] = useState([]);
+
+    // Calculate date range from processed data for efficient duplicate detection
+    const dateRange = useMemo(() => {
+        // Use rawData as the source of truth for the range to avoid circular dependencies
+        const source = rawData.length > 0 ? rawData : processedData;
+        if (!source.length) return { start: null, end: null };
+
+        const dates = source.map(d => new Date(d.date).getTime()).filter(t => !isNaN(t));
+        return {
+            start: formatDateString(new Date(Math.min(...dates))),
+            end: formatDateString(new Date(Math.max(...dates)))
+        };
+    }, [processedData, rawData]);
+
+    const { transactions: existingTransactions } = useTransactions(dateRange.start, dateRange.end);
+
     const navigate = useNavigate();
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
@@ -320,7 +338,13 @@ export default function ImportWizard({ onSuccess }) {
                 ));
                 await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
             }
-            const freshCategories = await base44.entities.Category.list();
+            // Inefficient
+            // const freshCategories = await base44.entities.Category.list();
+            // More efficient: Only fetch what we might actually need, 
+            // or keep list() if the total category count is known to be small.
+            const freshCategories = await base44.entities.Category.filter({
+                status: { $ne: 'archived' } // Example of using MongoDB-style filters
+            });
 
             // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
             const expenseItems = processedData.filter(item => item.type === 'expense');
