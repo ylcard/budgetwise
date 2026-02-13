@@ -194,8 +194,14 @@ Deno.serve(async (req) => {
         }
 
         // 1. FETCH MEMORY (The Learning Step)
-        // Fetch lightweight history to build the memory map
-        const existingTx = await base44.entities.Transaction.list({
+        // Use .filter() with a 6-month sliding window.
+        // fetching entire history (.list) is inefficient and causes OOM on Edge functions.
+        const cutoffDate = new Date();
+        cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+        const cutoffIso = cutoffDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        const existingTx = await base44.entities.Transaction.filter({
+            filter: { date: { $gte: cutoffIso } },
             select: ['rawDescription', 'title', 'category_id', 'financial_priority', 'date']
         });
         const memory = buildMemoryMap(existingTx || []);
