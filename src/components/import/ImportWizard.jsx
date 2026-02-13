@@ -354,7 +354,11 @@ export default function ImportWizard({ onSuccess }) {
         // isDuplicate: !!survivor,
         // duplicateMatch: survivor
       };
+      // }).filter(item => item.amount !== 0 && item.date);
     }).filter(item => item.amount !== 0 && item.date);
+
+    // Trigger background duplicate fetch now that we have mapped dates
+    setRawData(processed);
 
     setProcessedData(processed);
     setStep(2);
