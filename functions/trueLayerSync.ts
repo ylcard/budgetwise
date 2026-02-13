@@ -310,10 +310,20 @@ Deno.serve(async (req) => {
 
         // --- FETCH APP CONTEXT FOR CATEGORIZATION ---
         console.log('🧠 [SYNC] Fetching rules, categories, and existing transactions...');
+
+        // Only fetch relevant history from DB (Sync Range - 7 days buffer for fuzzy matching)
+        // We need a buffer because 'findMatchingManualTransaction' looks for dates +/- 4 days
+        const lookbackDate = new Date(dateFrom || new Date());
+        lookbackDate.setDate(lookbackDate.getDate() - 7);
+        const dbQueryDate = lookbackDate.toISOString().split('T')[0];
+
         const [categories, rules, existingTx] = await Promise.all([
             base44.entities.Category.filter({ user_email: user.email }),
             base44.entities.CategoryRule.filter({ user_email: user.email }),
-            base44.entities.Transaction.filter({ user_email: user.email })
+            base44.entities.Transaction.filter({
+                user_email: user.email,
+                date: { $gte: dbQueryDate }
+            })
         ]);
         const existingBankIds = new Set(existingTx.filter(t => t.bankTransactionId).map(t => t.bankTransactionId));
         const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
