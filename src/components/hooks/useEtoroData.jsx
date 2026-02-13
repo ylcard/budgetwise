@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import _, { useEffect } from 'lodash';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { useExchangeRates } from './useExchangeRates';
 import { getRateForDate, calculateConvertedAmount, areRatesFresh } from '../utils/currencyCalculations';
 import { format } from 'date-fns';
