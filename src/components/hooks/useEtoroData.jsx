@@ -1,5 +1,3 @@
-useEtoroData.jsx
-
 import { useQuery } from '@tanstack/react-query';
 
 export const useEtoroData = () => {
