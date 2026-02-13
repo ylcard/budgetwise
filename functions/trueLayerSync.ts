@@ -420,9 +420,14 @@ Deno.serve(async (req) => {
                     catResult = categorizeTransaction(searchString, rules, categories);
                 }
 
+                // Determine the clean name (AI/Rule result OR raw fallback)
+                const finalCleanName = catResult.renamedTitle || rawDescription;
+
                 const transformed = {
                     id: existingDbId, // <--- If this is set, we UPDATE. If null, we CREATE.
-                    title: catResult.renamedTitle || rawDescription, // Use clean name if rule found it
+                    title: finalCleanName, // Dynamic Display Name
+                    rawDescription: rawDescription, // Immutable Source
+                    cleanDescription: finalCleanName, // Immutable Clean
                     amount: Math.abs(tx.amount),
                     originalAmount: Math.abs(tx.amount),
                     originalCurrency: tx.currency,
