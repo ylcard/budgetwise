@@ -108,6 +108,7 @@ export const useEtoroData = () => {
 
     return {
       instrumentId: instrumentIdNum,
+      name: assetName,
       value: valueEUR,
       previousValue: previousValueEUR,
       count: group.length,
