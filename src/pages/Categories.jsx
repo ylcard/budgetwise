@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, MoreVertical, Lock, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, CheckSquare, X, Check } from "lucide-react";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
 import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
@@ -16,6 +16,8 @@ export default function Categories() {
     // UI state
     const [showForm, setShowForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
     const queryClient = useQueryClient();
     const { setFabButtons, clearFabButtons } = useFAB();
 
@@ -46,6 +48,34 @@ export default function Categories() {
         handleDelete(category);
     };
 
+    // SELECTION LOGIC
+    const toggleSelection = (id) => {
+        setSelectedIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) newSet.delete(id);
+            else newSet.add(id);
+            return newSet;
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+
+        if (window.confirm(`Delete ${selectedIds.size} categories? This cannot be undone.`)) {
+            // Iterate and delete (assuming backend handles individual deletions safely)
+            // Note: In a real backend, we should use a bulk-delete endpoint.
+            const idsToDelete = Array.from(selectedIds);
+            for (const id of idsToDelete) {
+                const category = categories.find(c => c.id === id);
+                if (category && !category.is_system) {
+                    await handleDelete(category);
+                }
+            }
+            setSelectedIds(new Set());
+            setIsSelectionMode(false);
+        }
+    };
+
     // ADDED 03-Feb-2026: Pull-to-refresh handler
     const handleRefresh = async () => {
         await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
@@ -63,7 +93,7 @@ export default function Categories() {
                 setShowForm(true); // Always open, don't toggle from FAB
             }
         }
-    ], []);
+    ], [setEditingCategory, setShowForm]);
 
     useEffect(() => {
         setFabButtons(fabButtons);
@@ -79,17 +109,50 @@ export default function Categories() {
                             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Categories</h1>
                             <p className="text-gray-500 mt-1">Organize your transactions with custom categories</p>
                         </div>
-                        <CustomButton
-                            onClick={() => {
-                                setEditingCategory(null);
-                                setShowForm(!showForm);
-                            }}
-                            variant="create"
-                            className="hidden md:flex"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Category
-                        </CustomButton>
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            {/* Selection Mode Controls */}
+                            {isSelectionMode ? (
+                                <>
+                                    <CustomButton
+                                        variant="outline"
+                                        onClick={() => {
+                                            setIsSelectionMode(false);
+                                            setSelectedIds(new Set());
+                                        }}
+                                    >
+                                        <X className="w-4 h-4 mr-2" /> Cancel
+                                    </CustomButton>
+                                    <CustomButton
+                                        variant="destructive"
+                                        onClick={handleBulkDelete}
+                                        disabled={selectedIds.size === 0}
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-2" /> Delete ({selectedIds.size})
+                                    </CustomButton>
+                                </>
+                            ) : (
+                                <>
+                                    <CustomButton
+                                        onClick={() => setIsSelectionMode(true)}
+                                        variant="ghost"
+                                        className="text-gray-600"
+                                    >
+                                        <CheckSquare className="w-4 h-4 mr-2" /> Select
+                                    </CustomButton>
+                                    <CustomButton
+                                        onClick={() => {
+                                            setEditingCategory(null);
+                                            setShowForm(!showForm);
+                                        }}
+                                        variant="create"
+                                        className="hidden md:flex"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add Category
+                                    </CustomButton>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     {showForm && (
@@ -111,6 +174,9 @@ export default function Categories() {
                             onEdit={handleEdit}
                             onDelete={onSafeDelete}
                             isLoading={isLoading}
+                            isSelectionMode={isSelectionMode}
+                            selectedIds={selectedIds}
+                            onToggleSelection={toggleSelection}
                         />
                     </div>
 
@@ -124,6 +190,9 @@ export default function Categories() {
                                 category={cat}
                                 onEdit={handleEdit}
                                 onDelete={onSafeDelete}
+                                isSelectionMode={isSelectionMode}
+                                isSelected={selectedIds.has(cat.id)}
+                                onToggle={() => toggleSelection(cat.id)}
                             />
                         ))}
                     </div>
@@ -133,13 +202,27 @@ export default function Categories() {
     );
 }
 
-function MobileCategoryItem({ category, onEdit, onDelete }) {
+function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle }) {
     // Use your existing helper to resolve the icon component
     const Icon = getCategoryIcon(category.icon);
+    const isDisabled = category.is_system;
 
     return (
-        <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm">
+        <div
+            onClick={() => isSelectionMode && !isDisabled && onToggle()}
+            className={`flex items-center justify-between p-4 bg-white border rounded-xl shadow-sm transition-all ${isSelectionMode && !isDisabled ? 'active:scale-98 cursor-pointer' : ''
+                } ${isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-100'
+                } ${isDisabled && isSelectionMode ? 'opacity-50 grayscale' : ''
+                }`}
+        >
             <div className="flex items-center gap-3">
+                {isSelectionMode && (
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'
+                        }`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                )}
+
                 <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-sm"
                     style={{ backgroundColor: category.color + '20', color: category.color }}
@@ -152,23 +235,25 @@ function MobileCategoryItem({ category, onEdit, onDelete }) {
                 </div>
             </div>
 
-            <div className="flex items-center gap-1">
-                <button
-                    onClick={() => onEdit(category)}
-                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                >
-                    <Pencil className="w-5 h-5" />
-                </button>
-
-                {!category.is_system && (
+            {!isSelectionMode && (
+                <div className="flex items-center gap-1">
                     <button
-                        onClick={() => onDelete(category)}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); onEdit(category); }}
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
                     >
-                        <Trash2 className="w-5 h-5" />
+                        <Pencil className="w-5 h-5" />
                     </button>
-                )}
-            </div>
+
+                    {!category.is_system && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(category); }}
+                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
