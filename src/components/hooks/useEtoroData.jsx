@@ -56,6 +56,9 @@ export const useEtoroData = () => {
 
   const grouped = _.groupBy(data?.positions || [], 'instrumentID');
 
+  let calculatedTotalValueEUR = 0;
+  let calculatedTotalPreviousValueEUR = 0;
+
   const positions = Object.entries(grouped).map(([id, group]) => {
 
     const instrumentIdNum = parseInt(id);
@@ -66,6 +69,10 @@ export const useEtoroData = () => {
 
     const priceInLocalCurrency = marketRate?.bid || 0;
     const conversionToUSD = marketRate?.conversionRateBid || 1;
+
+    // Get Previous Close (Try standard eToro fields: closingPrices.daily or officialClose)
+    // Fallback to current price (0% change) if missing to prevent calculation errors
+    const previousCloseLocal = marketRate?.closingPrices?.daily || marketRate?.officialClose || priceInLocalCurrency;
 
     // DEBUG LOG: Let's see why London tickers might still be off
     if (assetName.endsWith('.L')) {
@@ -78,25 +85,45 @@ export const useEtoroData = () => {
 
     // 2. Convert Local Asset Value -> USD using eToro's conversionRateBid
     const totalValueUSD = totalUnits * priceInLocalCurrency * conversionToUSD;
+    const totalPreviousValueUSD = totalUnits * previousCloseLocal * conversionToUSD;
 
     // 3. Convert USD -> EUR using your system's current exchange rates
-    const { convertedAmount } = calculateConvertedAmount(
+    const { convertedAmount: valueEUR } = calculateConvertedAmount(
       totalValueUSD,
       'USD',
       'EUR',
       { sourceToEUR: usdToEurRate, targetToEUR: 1.0 }
     );
 
+    const { convertedAmount: previousValueEUR } = calculateConvertedAmount(
+      totalPreviousValueUSD,
+      'USD',
+      'EUR',
+      { sourceToEUR: usdToEurRate, targetToEUR: 1.0 }
+    );
+
+    // Accumulate totals
+    calculatedTotalValueEUR += valueEUR;
+    calculatedTotalPreviousValueEUR += previousValueEUR;
+
     return {
       instrumentId: instrumentIdNum,
-      name: assetName,
-      value: convertedAmount,
+      value: valueEUR,
+      previousValue: previousValueEUR,
       count: group.length,
-      units: totalUnits
+      units: totalUnits,
+      // Individual Position Daily Change %
+      dailyChangePct: previousCloseLocal > 0
+        ? ((priceInLocalCurrency - previousCloseLocal) / previousCloseLocal) * 100
+        : 0
     };
-  }).sort((a, b) => b.value - a.value); // Sort by highest value
+  }).sort((a, b) => b.value - a.value);
 
-  const totalValue = positions.reduce((acc, pos) => acc + pos.value, 0);
+  // Calculate Weighted Portfolio Daily Change %
+  const totalValue = calculatedTotalValueEUR;
+  const totalDailyChangePct = calculatedTotalPreviousValueEUR > 0
+    ? ((calculatedTotalValueEUR - calculatedTotalPreviousValueEUR) / calculatedTotalPreviousValueEUR) * 100
+    : 0;
 
   let status = "Live";
   if (isLoading) status = "Syncing...";
@@ -107,6 +134,7 @@ export const useEtoroData = () => {
     positions,
     status,
     totalValue,
+    dailyChange: totalDailyChangePct,
     isLoading
   };
 };
