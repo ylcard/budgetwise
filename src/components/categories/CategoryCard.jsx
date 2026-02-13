@@ -1,5 +1,5 @@
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Pencil, Trash2, Circle, Check } from "lucide-react";
+import { Pencil, Trash2, Circle, Check, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { iconMap } from "../utils/iconMapConfig";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
@@ -7,28 +7,36 @@ import { FINANCIAL_PRIORITIES } from "../utils/constants";
 export default function CategoryCard({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle }) {
     const IconComponent = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
     const priorityConfig = FINANCIAL_PRIORITIES[category.priority] || { label: category.priority, color: '#6b7280' };
-    const isDisabled = category.is_system;
 
     return (
         <motion.div
             initial={false}
             animate={{
-                opacity: (isSelectionMode && isDisabled) ? 0.5 : 1,
+                opacity: 1,
                 scale: isSelected ? 0.98 : 1,
                 borderColor: isSelected ? '#3B82F6' : '#f3f4f6'
             }}
             whileHover={!isSelectionMode ? { scale: 1.02 } : {}}
-            onClick={() => isSelectionMode && !isDisabled && onToggle()}
-            className={`relative h-24 px-4 rounded-xl border transition-all group flex items-center gap-4 ${isSelectionMode && !isDisabled ? 'cursor-pointer hover:bg-gray-50' : 'hover:shadow-md'
+            onClick={() => isSelectionMode && onToggle()}
+            className={`relative h-24 px-4 rounded-xl border transition-all group flex items-center gap-4 ${isSelectionMode ? 'cursor-pointer hover:bg-gray-50' : 'hover:shadow-md'
                 } ${isSelected ? 'bg-blue-50 ring-1 ring-blue-500' : ''}`}
             style={!isSelected ? { backgroundColor: `${category.color}05` } : {}}
         >
             {/* Compact Icon - Left Side */}
-            <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
-                style={{ backgroundColor: `${category.color}20` }}
-            >
-                <IconComponent className="w-5 h-5" style={{ color: category.color }} />
+            <div className="relative">
+                <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
+                    style={{ backgroundColor: `${category.color}20` }}
+                >
+                    <IconComponent className="w-5 h-5" style={{ color: category.color }} />
+                </div>
+
+                {/* System Lock Icon */}
+                {category.is_system && (
+                    <div className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-sm border border-gray-100">
+                        <Lock className="w-3 h-3 text-gray-400" />
+                    </div>
+                )}
             </div>
 
             {/* Content - Middle */}
