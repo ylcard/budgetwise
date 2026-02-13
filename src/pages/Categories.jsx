@@ -62,6 +62,10 @@ export default function Categories() {
             newSelected.delete(id);
         }
         setSelectedIds(newSelected);
+
+        if (newSelected.size > 0 && !isSelectionMode) {
+            setIsSelectionMode(true);
+        }
     };
 
     const handleSelectAll = () => {
@@ -251,20 +255,30 @@ export default function Categories() {
     );
 }
 
-function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle }) {
+function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, selectedIds, onToggle }) {
     // Use your existing helper to resolve the icon component
     const Icon = getCategoryIcon(category.icon);
+    const isSelected = selectedIds.has(category.id);
+    const hasSelection = selectedIds.size > 0;
+
+    const handleRowClick = () => {
+        if (hasSelection) {
+            onToggle();
+        } else {
+            onEdit(category);
+        }
+    };
 
     return (
         <div
-            onClick={() => isSelectionMode && onToggle()}
-            className={`flex items-center justify-between p-4 bg-white border rounded-xl shadow-sm transition-all ${isSelectionMode ? 'active:scale-98 cursor-pointer' : ''
+            onClick={handleRowClick}
+            className={`flex items-center justify-between p-4 bg-white border rounded-xl shadow-sm transition-all ${hasSelection ? 'active:scale-98 cursor-pointer' : ''
                 } ${isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-100'
                 } ${''
                 }`}
         >
             <div className="flex items-center gap-3">
-                {isSelectionMode && (
+                {hasSelection && (
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'
                         }`}>
                         {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -289,7 +303,7 @@ function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, isSel
                 </div>
             </div>
 
-            {!isSelectionMode && (
+            {!hasSelection && (
                 <div className="flex items-center gap-1">
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(category); }}
