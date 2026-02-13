@@ -8,6 +8,11 @@ export default function EtoroTicker() {
   const { positions, status, totalValue } = useEtoroData();
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // MOCK: Calculate daily change direction (Replace with real data from hook)
+  // Assuming if Total Value is > 0 it's "positive" for now, or check your specific 'dailyChange' field
+  const dailyChange = 12.5; // Mock positive change
+  const isPositiveDay = dailyChange >= 0;
+
   // Formatting: 10300 -> 10.3k
   const formatCompact = (val) => {
     return new Intl.NumberFormat('en-US', {
@@ -40,22 +45,27 @@ export default function EtoroTicker() {
   if (status === "Error") return null;
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 pointer-events-none">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex justify-center">
       <motion.div
         layout
         initial={false}
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          "pointer-events-auto flex items-center bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden cursor-pointer",
-          isExpanded ? "rounded-full py-2 px-4 max-w-[85vw] md:max-w-md" : "rounded-2xl p-3"
+          "pointer-events-auto flex items-center h-12 bg-slate-900 border shadow-2xl overflow-hidden cursor-pointer transition-colors duration-500",
+          // Shape & Size
+          isExpanded ? "rounded-full px-5 max-w-[90vw] md:max-w-2xl" : "rounded-full px-3 w-auto",
+          // Dynamic Border & Glow based on performance
+          isPositiveDay
+            ? "border-emerald-500/30 shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] hover:border-emerald-500/50"
+            : "border-rose-500/30 shadow-[0_0_20px_-5px_rgba(244,63,94,0.3)] hover:border-rose-500/50"
         )}
       >
         {/* Left Icon/Status */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="relative">
-            <TrendingUp className={cn("h-5 w-5", status === 'Live' ? 'text-emerald-500' : 'text-amber-500')} />
+            <TrendingUp className={cn("h-5 w-5", status === 'Live' ? (isPositiveDay ? 'text-emerald-500' : 'text-rose-500') : 'text-amber-500')} />
             {status === 'Live' && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+              <span className={cn("absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full animate-pulse", isPositiveDay ? "bg-emerald-500" : "bg-rose-500")} />
             )}
           </div>
           {!isExpanded && (
@@ -89,7 +99,7 @@ export default function EtoroTicker() {
                     }}
                     className="flex shrink-0"
                   >
-                    {tickerContent}
+                    <div className="flex">{tickerContent}</div>
                     {tickerContent}
                   </motion.div>
                 </div>
