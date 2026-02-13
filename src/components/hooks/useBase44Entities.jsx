@@ -7,6 +7,7 @@ import { ensureSystemBudgetsExist } from "../utils/budgetInitialization";
 import { useSettings } from "../utils/SettingsContext";
 import { DEFAULT_SYSTEM_CATEGORIES, DEFAULT_SYSTEM_GOALS } from "../utils/constants";
 import { subDays, format } from "date-fns";
+import { showToast } from "@/components/ui/use-toast";
 
 // Hook for initial system setup
 export const useSystemActions = (user) => {
