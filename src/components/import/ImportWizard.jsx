@@ -146,7 +146,8 @@ export default function ImportWizard({ onSuccess }) {
                 return {
                     id: Math.random().toString(36).substr(2, 9),
                     date: txDate,
-                    title: item.reason || 'Untitled',
+                    title: item.reason || 'Untitled', // Temp title
+                    rawDescription: item.reason || '', // Permanent Raw
                     amount: magnitude, // STORED AS 'amount' now to avoid scope errors
                     type: rawVal < 0 ? 'expense' : 'income',
                     paidDate: pdDate,
@@ -183,12 +184,16 @@ export default function ImportWizard({ onSuccess }) {
                 }
                 const survivor = findSurvivor({ amount: item.amount, date: item.date });
 
+                // AI returns 'cleanTitle' or 'cleanName' usually
+                const aiCleaned = item.cleanTitle || item.cleanName || item.title;
+
                 return {
                     ...item,
                     // Memory overrides AI, AI overrides Raw
                     category: learned ? learned.categoryName : (item.categoryName || 'Uncategorized'),
                     categoryId: learned ? learned.categoryId : (item.category_id || null),
-                    title: learned ? learned.title : (item.cleanTitle || item.title),
+                    title: learned ? learned.title : aiCleaned, // Dynamic Display Name
+                    cleanDescription: aiCleaned, // Permanent AI Record
                     financial_priority: finalPriority,
                     confidence: item.confidence, // Pass through for UI badges
                     amount: item.amount,
@@ -264,6 +269,8 @@ export default function ImportWizard({ onSuccess }) {
             return {
                 date: row[mappings.date],
                 title: row[mappings.title] || 'Untitled Transaction',
+                rawDescription: row[mappings.title] || '', // CSV usually only has one desc field
+                cleanDescription: row[mappings.title] || '', // Default to raw if no AI run yet
                 amount: magnitude,
                 originalAmount: magnitude,
                 originalCurrency: settings?.baseCurrency || 'USD',
@@ -350,6 +357,8 @@ export default function ImportWizard({ onSuccess }) {
                 return {
                     title: item.title,
                     amount: Math.abs(item.amount),
+                    rawDescription: item.rawDescription,
+                    cleanDescription: item.cleanDescription,
                     type: item.type,
                     date,
                     category_id: finalCatId,
