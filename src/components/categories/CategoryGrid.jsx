@@ -25,7 +25,7 @@ export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, 
     // Mouse Event Handlers for Drag Selection
     const handleMouseDown = (e) => {
         // Only enable drag selection in selection mode and if left clicking
-        if (!isSelectionMode || e.button !== 0) return;
+        if (!isSelectionMode || selectedIds.size === 0 || e.button !== 0) return;
 
         // Don't start drag if clicking a button inside the card
         if (e.target.closest('button')) return;
