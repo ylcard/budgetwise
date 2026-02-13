@@ -24,7 +24,7 @@ export default function EtoroTicker() {
       {positions.map((pos) => (
         <div key={pos.instrumentId} className="flex items-center gap-1.5 shrink-0">
           <span className="text-[10px] font-bold text-slate-400 uppercase">
-            {pos.symbol || pos.name.substring(0, 4)}
+            {pos.symbol || (pos.name ? pos.name.substring(0, 4) : 'UNK')}
           </span>
           <span className="text-xs font-mono font-medium text-white">
             €{formatCompact(pos.value)}
