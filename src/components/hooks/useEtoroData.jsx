@@ -1,53 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 export const useEtoroData = () => {
-    const [positions, setPositions] = useState([]);
-    const [status, setStatus] = useState("Disconnected");
-    const [totalValue, setTotalValue] = useState(0);
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ['etoro-portfolio'],
+        queryFn: async () => {
+            const res = await fetch('/functions/etoro/portfolio');
+            if (!res.ok) throw new Error('Network response was not ok');
+            return res.json();
+        },
+        refetchInterval: 60000, // Poll every minute
+    });
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setStatus("Syncing...");
-            try {
-                // 1. Fetch Portfolio Snapshot
-                const res = await fetch('/functions/etoro/portfolio');
-                
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(`Server responded with ${res.status}: ${text.substring(0, 50)}`);
-                }
+    const positions = data?.Positions || data?.positions || [];
+    const totalValue = positions.reduce((acc, pos) =>
+        acc + (pos.Amount || pos.Value || pos.NetCashValue || 0), 0
+    );
 
-                const data = await res.json();
+    let status = "Live";
+    if (isLoading) status = "Syncing...";
+    if (isError) status = "Error";
+    if (!isLoading && positions.length === 0) status = "Empty";
 
-                // 2. Parse Data (Adjust based on actual JSON response from eToro)
-                // eToro API usually uses 'Positions' (Capital P)
-                const posArray = data.Positions || data.positions || [];
-                
-                if (posArray.length > 0) {
-                    setPositions(posArray);
-
-                    // Calculate total if not provided
-                    const total = posArray.reduce((acc, pos) => acc + (pos.Amount || pos.Value || pos.NetCashValue || 0), 0);
-                    setTotalValue(total);
-                    setStatus("Live");
-                } else {
-                    // Fallback for demo/empty
-                    console.warn("eToro data format unexpected:", data);
-                    setStatus("Empty");
-                }
-
-            } catch (e) {
-                console.error("eToro Fetch Error:", e);
-                setStatus("Error");
-            }
-        };
-
-        fetchData();
-        // Poll every 30 seconds for updates (WebSockets are complex for full portfolio)
-        const interval = setInterval(fetchData, 30000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    return { positions, status, totalValue };
+    return {
+        positions,
+        status,
+        totalValue,
+        isLoading
+    };
 };
