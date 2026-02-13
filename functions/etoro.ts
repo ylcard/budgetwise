@@ -5,7 +5,13 @@ Deno.serve(async (req) => {
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type, Authorization, Ocp-Apim-Subscription-Key",
+        // "Content-Type": "application/json",
         "Content-Type": "application/json",
+        // CRITICAL: Spoof a real browser to bypass Cloudflare/WAF 403 errors
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://www.etoro.com/",
+        "Origin": "https://www.etoro.com",
+        "Accept": "application/json"
     };
 
     // 2. ROUTE: Preflight
