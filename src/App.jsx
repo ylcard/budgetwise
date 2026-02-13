@@ -5,13 +5,20 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { SettingsProvider } from '@/components/utils/SettingsContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import "react-day-picker/style.css";
 import { ThemeProvider } from "next-themes";
+
+// Page Imports for Nested Routing
+import ManagePage, { PreferencesSection, AccountSection } from './pages/Manage';
+import Categories from './pages/Categories';
+import Automation from './pages/Automation';
+import BankSync from './pages/BankSync';
+import TransactionsPage, { TransactionHistory, RecurringTransactions } from './pages/Transactions';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -52,8 +59,29 @@ const AuthenticatedApp = () => {
         <LayoutWrapper currentPageName={mainPageKey}>
             <Routes>
                 <Route path="/" element={<MainPage />} />
+
+                {/* Transactions Nested Routes */}
+                <Route path="/transactions" element={<TransactionsPage />}>
+                    <Route index element={<Navigate to="history" replace />} />
+                    <Route path="history" element={<TransactionHistory />} />
+                    <Route path="recurring" element={<RecurringTransactions />} />
+                </Route>
+
+                {/* Manage Nested Routes */}
+                <Route path="/manage" element={<ManagePage />}>
+                    <Route index element={<Navigate to="preferences" replace />} />
+                    <Route path="preferences" element={<PreferencesSection />} />
+                    <Route path="categories" element={<Categories />} />
+                    <Route path="automation" element={<Automation />} />
+                    <Route path="banksync" element={<BankSync />} />
+                    <Route path="account" element={<AccountSection />} />
+                </Route>
+
+                {/* Standard Page Fallback */}
                 {Object.entries(Pages).map(([path, Page]) => (
-                    <Route key={path} path={`/${path}`} element={<Page />} />
+                    // Skip routes we handled manually
+                    (path !== 'manage' && path !== 'transactions') ?
+                        <Route key={path} path={`/${path}`} element={<Page />} /> : null
                 ))}
                 <Route path="*" element={<PageNotFound />} />
             </Routes>
