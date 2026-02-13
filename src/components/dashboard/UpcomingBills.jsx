@@ -28,10 +28,15 @@ export default function UpcomingBills({ recurringWithStatus, onMarkPaid, isLoadi
         });
     }, [currentBills]);
 
-    const getCategoryStyles = (categoryId) => {
-        const cat = categories.find(c => c.id === categoryId);
-        // Use centralized icon map, fallback to CreditCard if no icon found
-        const IconComponent = cat?.icon ? getCategoryIcon(cat.icon) : CreditCard;
+    const getCategoryStyles = (bill) => {
+        const cat = categories.find(c => c.id === bill.category_id);
+
+        let IconComponent;
+        if (bill.type === 'income') {
+            IconComponent = getCategoryIcon('DollarSign');
+        } else {
+            IconComponent = cat?.icon ? getCategoryIcon(cat.icon) : CreditCard;
+        }
         // Use category color or default gray
         const color = cat?.color || '#64748b';
 
@@ -80,7 +85,7 @@ export default function UpcomingBills({ recurringWithStatus, onMarkPaid, isLoadi
                             const isPaid = bill.status === 'paid';
                             const dueDate = parseISO(bill.nextOccurrence);
                             const isOverdue = !isPaid && isPast(dueDate) && !isToday(dueDate);
-                            const { IconComponent, color } = getCategoryStyles(bill.category_id);
+                            const { IconComponent, color } = getCategoryStyles(bill);
 
                             return (
                                 <div
