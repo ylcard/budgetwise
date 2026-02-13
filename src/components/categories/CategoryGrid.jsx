@@ -62,7 +62,7 @@ export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, 
                             onDelete={onDelete}
                             isSelectionMode={isSelectionMode}
                             isSelected={selectedIds?.has(category.id)}
-                            onToggle={() => onToggleSelection(category.id)}
+                            onToggle={() => onToggleSelection(category.id, !selectedIds?.has(category.id))}
                         />
                     ))}
                 </div>
