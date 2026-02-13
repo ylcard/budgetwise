@@ -7,21 +7,22 @@ export const useEtoroData = () => {
     queryKey: ['etoro-portfolio'],
     queryFn: async () => {
       const res = await fetch('/functions/etoro/portfolio');
-      if (!res.ok) throw new Error('Network response was not ok');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Portfolio fetch failed');
+      }
       return res.json();
     },
     refetchInterval: 60000, // Poll every minute
   });
 
-  // const positions = data?.Positions || data?.positions || [];
-  // eToro often returns an object with a 'Positions' array or 'AggregatePositions'
   const positions = data?.Positions || data?.positions || data?.AggregatePositions || [];
 
-  const totalValue = positions.reduce((acc, pos) =>
-    // acc + (pos.Amount || pos.Value || pos.NetCashValue || 0), 0
-    // Try common eToro fields: NetCashValue, Value, or Invested
-    acc + parseFloat(pos.NetCashValue || pos.Value || pos.Amount || 0), 0
-  );
+  const totalValue = positions.reduce((acc, pos) => {
+    // Note: Public/Social endpoints might return 'Amount' or 'InitialAmount'
+    const val = parseFloat(pos.NetCashValue || pos.Value || pos.Amount || pos.InitialAmount || 0);
+    return acc + (isNaN(val) ? 0 : val);
+  }, 0);
 
   let status = "Live";
   if (isLoading) status = "Syncing...";
