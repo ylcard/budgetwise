@@ -166,6 +166,28 @@ export function useRuleActions() {
         setIsDialogOpen(true);
     };
 
+    // NEW: Open dialog pre-filled with data from a specific transaction
+    const openCreateRuleFromTransaction = (transaction) => {
+        // 1. Heuristic: Remove specific IDs (3+ digits) and special chars to suggest a clean keyword
+        const sourceText = transaction.rawDescription || transaction.title || "";
+        const suggestedKeyword = sourceText
+            .replace(/[0-9]{3,}/g, '') // Remove IDs/Dates
+            .replace(/[*#]/g, ' ')     // Remove bank noise separators
+            .replace(/\s+/g, ' ')      // Collapse multiple spaces
+            .trim();
+
+        setFormData({
+            keyword: suggestedKeyword,
+            regexPattern: "",
+            categoryId: transaction.category_id || "",
+            renamedTitle: transaction.title || "", // Pre-fill with the title the user (or AI) already set
+            financial_priority: transaction.financial_priority || "wants"
+        });
+        setEditingRuleId(null); // Ensure we are creating a new rule, not editing an old one
+        setIsRegexMode(false);
+        setIsDialogOpen(true);
+    };
+
     const handleCloseDialog = () => {
         setIsDialogOpen(false);
         setIsRegexMode(false);
@@ -197,6 +219,7 @@ export function useRuleActions() {
         handleSaveRule,
         handleInlineUpdate,
         openRuleForEdit,
-        handleCloseDialog
+        handleCloseDialog,
+        openCreateRuleFromTransaction
     };
 }
