@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
         try {
             const tokenData = await getAuthToken();
             const username = Deno.env.get("ETORO_USERNAME");
+            const userKey = Deno.env.get("ETORO_USER_KEY");
 
             // CRITICAL: Check the docs for the exact path. 
             // It usually requires a 'demo' or 'real' switch, or a specific version.
@@ -74,9 +75,9 @@ Deno.serve(async (req) => {
 
             const response = await fetch(portfolioUrl, {
                 headers: {
-                    "Authorization": `Bearer ${accessToken}`,
+                    "Authorization": `Bearer ${tokenData.access_token}`,
                     "Content-Type": "application/json",
-                    // "Ocp-Apim-Subscription-Key": Deno.env.get("ETORO_USER_KEY") // Sometimes needed here too
+                    "Ocp-Apim-Subscription-Key": userKey || ""
                 }
             });
 
