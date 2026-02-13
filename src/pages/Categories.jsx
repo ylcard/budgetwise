@@ -225,6 +225,7 @@ export default function Categories() {
                             isSelectionMode={isSelectionMode}
                             selectedIds={selectedIds}
                             onToggleSelection={handleToggleSelection}
+                            onSelectionChange={setSelectedIds}
                         />
                     </div>
 
