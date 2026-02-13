@@ -68,15 +68,29 @@ function matchLocally(tx, rules, categories) {
 
     // 1. User Rules
     for (const rule of rules) {
+        let matched = false;
+
+        // Mutual Exclusion: If Regex exists, use it. Otherwise, use Keywords.
         if (rule.regexPattern) {
             try {
                 if (new RegExp(rule.regexPattern, 'i').test(text)) {
-                    return { category_id: rule.categoryId, source: 'user_rule' };
+                    matched = true;
                 }
             } catch (e) { /* ignore */ }
+        } else if (rule.keyword) {
+            // Split comma-separated keywords and check for any match
+            const keywords = rule.keyword.split(',').map(k => k.trim().toUpperCase()).filter(k => k);
+            if (keywords.some(k => text.includes(k))) {
+                matched = true;
+            }
         }
-        if (rule.keyword && text.includes(rule.keyword.toUpperCase())) {
-            return { category_id: rule.categoryId, source: 'user_rule' };
+        if (matched) {
+            return {
+                category_id: rule.categoryId,
+                source: 'user_rule',
+                financial_priority: rule.financial_priority,
+                renamedTitle: rule.renamedTitle
+            };
         }
     }
 
@@ -234,7 +248,22 @@ Deno.serve(async (req) => {
 
             if (local && local.category_id) {
                 // Local rule matched
-                results.push({ ...tx, ...local, cleanDescription: tx.title, source: 'user_rule', confidence: 1.0 });
+                const catObj = categories.find(c => c.id === local.category_id);
+
+                // Priority Logic: Rule Override > Category Default > 'wants'
+                const finalPriority = local.financial_priority || catObj?.priority || 'wants';
+                const finalTitle = local.renamedTitle || tx.title;
+
+                results.push({
+                    ...tx,
+                    ...local,
+                    title: finalTitle,
+                    cleanDescription: finalTitle,
+                    categoryName: catObj ? catObj.name : 'Uncategorized',
+                    financial_priority: finalPriority,
+                    source: 'user_rule',
+                    confidence: 1.0
+                });
             } else if (local && local.slug) {
                 // Taxonomy/Regex matched
                 const resolved = resolveSlugToId(local.slug, categories || []);
