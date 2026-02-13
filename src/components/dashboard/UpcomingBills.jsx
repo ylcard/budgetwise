@@ -66,7 +66,7 @@ export default function UpcomingBills({ recurringWithStatus, onMarkPaid, isLoadi
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
                         <Clock className="w-4 h-4 text-blue-600" />
-                        Upcoming Bills
+                        Upcoming
                     </CardTitle>
                     <span className="text-[10px] font-bold px-2 py-0.5 bg-white border rounded-full text-slate-500 uppercase tracking-wide">
                         {format(new Date(), 'MMMM')}
