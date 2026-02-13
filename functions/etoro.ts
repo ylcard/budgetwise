@@ -1,7 +1,7 @@
 Deno.serve(async (req) => {
   const url = new URL(req.url);
 
-  // 1. CONFIG: CORS Headers (For the browser)
+  // 1. CONFIG: CORS Headers
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Ocp-Apim-Subscription-Key, x-api-key, x-user-key, x-request-id",
@@ -13,43 +13,35 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // 3. ROUTE: Portfolio (Public API)
-  // Changed from URL path check to Query Param check to avoid "Function not found" errors
+  // 3. ROUTE: Portfolio (Standard API)
   const route = url.searchParams.get("route");
 
   if (route === "portfolio") {
     try {
       const username = Deno.env.get("ETORO_USERNAME");
-      // Assuming ETORO_CLIENT_ID is your x-api-key
       const apiKey = Deno.env.get("ETORO_CLIENT_ID");
       const userKey = Deno.env.get("ETORO_USER_KEY");
 
-      if (!username || !apiKey || !userKey) throw new Error("Missing Secrets (Username, ClientID/APIKey, or UserKey)");
+      if (!username || !apiKey || !userKey) {
+        throw new Error("Missing Secrets: ETORO_USERNAME, ETORO_CLIENT_ID, or ETORO_USER_KEY");
+      }
 
-      // Documentation URL: https://public-api.etoro.com/api/v1/user-info/people/{username}/portfolio/live
-      const portfolioUrl = `https://public-api.etoro.com/api/v1/user-info/people/${username}/portfolio/live`;
-
-      // Generate a random Request ID (UUID v4 style)
+      // Documentation URL: https://public-api.etoro.com/api/v1/trading/info/portfolio
+      const portfolioUrl = `https://public-api.etoro.com/api/v1/trading/info/portfolio`;
       const requestId = crypto.randomUUID();
 
       const response = await fetch(portfolioUrl, {
-        method: 'GET',
         headers: {
           "x-api-key": apiKey,
           "x-user-key": userKey,
           "x-request-id": requestId,
-          "Content-Type": "application/json",
-          // CRITICAL: Spoof browser here in the FETCH call, not just in corsHeaders
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": "https://www.etoro.com/",
-          "Origin": "https://www.etoro.com",
-          "Accept": "application/json"
+          "Content-Type": "application/json"
         }
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`eToro Public API Error: ${response.status} - ${errText}`);
+        throw new Error(`eToro API Error: ${response.status} - ${errText}`);
       }
 
       const portfolioData = await response.json();
