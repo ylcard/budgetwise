@@ -53,11 +53,20 @@ export const useEtoroData = () => {
     const assetName = INSTRUMENT_MAP[instrumentIdNum] || `Asset ${id}`;
     const totalUnits = _.sumBy(group, 'units');
 
-    // 1. Get the current price and conversion to USD
     const priceInLocalCurrency = marketRate?.bid || 0;
+    const conversionToUSD = marketRate?.conversionRateBid || 1;
+
+    // DEBUG LOG: Let's see why London tickers might still be off
+    if (assetName.endsWith('.L')) {
+      console.log(`[Etoro Debug] ${assetName}:`, {
+        units: totalUnits,
+        bid: priceInLocalCurrency,
+        convToUSD: conversionToUSD
+      });
+    }
 
     // 2. Convert Local Asset Value -> USD using eToro's conversionRateBid
-    const totalValueUSD = totalUnits * priceInLocalCurrency * (marketRate?.conversionRateBid || 1);
+    const totalValueUSD = totalUnits * priceInLocalCurrency * conversionToUSD;
 
     // 3. Convert USD -> EUR using your system's current exchange rates
     const { convertedAmount } = calculateConvertedAmount(
