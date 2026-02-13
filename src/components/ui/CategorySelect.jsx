@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Check, Circle, ChevronDown } from "lucide-react";
+import { Check, Circle, ChevronDown, PlusCircle, Loader2 } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import {
     Command,
@@ -15,15 +15,25 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { iconMap } from "../utils/iconMapConfig";
-import { FINANCIAL_PRIORITIES } from "../utils/constants";
+import { iconMap, suggestIconForCategory } from "../utils/iconMapConfig";
+import { FINANCIAL_PRIORITIES, PRESET_COLORS } from "../utils/constants";
 import { Drawer, DrawerContent, DrawerTrigger, DrawerPortal } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { QUERY_KEYS } from "../hooks/queryKeys";
+import { useSettings } from "@/components/utils/SettingsContext";
 
 export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
     const isMobile = useIsMobile();
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
+    const { user } = useSettings();
 
     // SORTING LOGIC: Needs -> Wants -> Others (then Alphabetical)
     const sortedCategories = useMemo(() => {
@@ -49,6 +59,12 @@ export default function CategorySelect({ value, onValueChange, categories, place
         return sortedCategories.filter(c => value.includes(c.id));
     }, [sortedCategories, value, multiple]);
 
+    // Check if the current search term perfectly matches an existing category
+    const exactMatchExists = useMemo(() => {
+        if (!searchTerm) return true; // Don't show create if empty
+        return categories.some(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase());
+    }, [categories, searchTerm]);
+
     const handleSelect = (categoryId) => {
         if (multiple) {
             const currentValues = Array.isArray(value) ? value : [];
@@ -59,6 +75,55 @@ export default function CategorySelect({ value, onValueChange, categories, place
         } else {
             onValueChange(categoryId);
             setOpen(false);
+        }
+        setSearchTerm("");
+    };
+
+    const handleCreateCategory = async () => {
+        if (!searchTerm.trim() || isCreating) return;
+
+        setIsCreating(true);
+        const name = searchTerm.trim();
+
+        try {
+            // 1. Deterministic Color (Hash string to index)
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colorIndex = Math.abs(hash) % PRESET_COLORS.length;
+            const color = PRESET_COLORS[colorIndex];
+
+            // 2. Inference Icon
+            const icon = suggestIconForCategory(name);
+
+            // 3. Create
+            const newCat = await base44.entities.Category.create({
+                name: name,
+                icon: icon,
+                color: color,
+                type: 'expense',
+                priority: 'wants', // Default safety
+                user_email: user.email
+            });
+
+            // 4. Refresh & Select
+            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+
+            onValueChange(multiple ? [...(value || []), newCat.id] : newCat.id);
+            setOpen(false);
+            setSearchTerm("");
+
+            toast({
+                title: `Category '${newCat.name}' created`,
+                description: "Icon and color auto-assigned.",
+            });
+
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Failed to create category", variant: "destructive" });
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -116,13 +181,30 @@ export default function CategorySelect({ value, onValueChange, categories, place
     );
 
     const ListContent = (
-        <Command className={isMobile ? "flex flex-col h-full max-h-[80vh]" : "h-auto w-full overflow-visible"}>
-            <CommandInput placeholder="Search category..." />
+        <Command shouldFilter={true} className={isMobile ? "flex flex-col h-full max-h-[80vh]" : "h-auto w-full overflow-visible"}>
+            <CommandInput
+                placeholder="Search or create..."
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+            />
             <CommandList className={cn(
                 "overflow-y-auto",
                 isMobile ? "max-h-none flex-1 pb-[env(safe-area-inset-bottom)]" : "max-h-64"
             )}>
-                <CommandEmpty>No category found.</CommandEmpty>
+                <CommandEmpty className="py-2 px-4 text-sm">
+                    {!exactMatchExists && searchTerm.trim().length > 0 ? (
+                        <button
+                            onClick={handleCreateCategory}
+                            disabled={isCreating}
+                            className="flex items-center gap-2 w-full text-left p-2 rounded-md hover:bg-gray-100 text-blue-600 transition-colors"
+                        >
+                            {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
+                            <span className="font-semibold">Create "{searchTerm}"</span>
+                        </button>
+                    ) : (
+                        <span className="text-gray-500">No matching category.</span>
+                    )}
+                </CommandEmpty>
                 {/* Group by Priority for better scannability */}
                 {['needs', 'wants', 'other'].map((priority) => {
                     const groupCategories = sortedCategories.filter(c =>
@@ -180,7 +262,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
 
                 <DrawerPortal>
                     {/* Force the overlay to be invisible or absent so it doesn't block touches */}
-                   <DrawerContent className="z-[600] fixed bottom-0 left-0 right-0 max-h-[85vh] outline-none px-0 shadow-2xl border-t-2">
+                    <DrawerContent className="z-[600] fixed bottom-0 left-0 right-0 max-h-[85vh] outline-none px-0 shadow-2xl border-t-2">
                         <div className="mt-4 border-t overflow-hidden flex flex-col h-full">
                             {ListContent}
                         </div>
@@ -193,7 +275,7 @@ export default function CategorySelect({ value, onValueChange, categories, place
     return (
         <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild>{TriggerContent}</PopoverTrigger>
-           <PopoverContent className="w-[280px] p-0 z-[600]" align="start">
+            <PopoverContent className="w-[280px] p-0 z-[600]" align="start">
                 {ListContent}
             </PopoverContent>
         </Popover>
