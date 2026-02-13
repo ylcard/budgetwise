@@ -1,15 +1,17 @@
+import { forwardRef } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Pencil, Trash2, Circle, Check, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { iconMap } from "../utils/iconMapConfig";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
-export default function CategoryCard({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle }) {
+const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle }, ref) => {
     const IconComponent = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
     const priorityConfig = FINANCIAL_PRIORITIES[category.priority] || { label: category.priority, color: '#6b7280' };
 
     return (
         <motion.div
+            ref={ref}
             initial={false}
             animate={{
                 opacity: 1,
@@ -77,4 +79,7 @@ export default function CategoryCard({ category, onEdit, onDelete, isSelectionMo
             )}
         </motion.div >
     );
-}
+});
+
+CategoryCard.displayName = "CategoryCard";
+export default CategoryCard;
