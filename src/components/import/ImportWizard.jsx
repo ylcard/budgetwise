@@ -173,6 +173,7 @@ export default function ImportWizard({ onSuccess }) {
             const processed = aiResults.map(item => {
                 // Check Memory First
                 const learned = findLearnedData(item.title);
+                const isIncome = item.type === 'income';
 
                 // Resolve Priority: Memory > DB Category Default > 'wants'
                 let finalPriority = 'wants';
@@ -190,16 +191,17 @@ export default function ImportWizard({ onSuccess }) {
                 return {
                     ...item,
                     // Memory overrides AI, AI overrides Raw
-                    category: learned ? learned.categoryName : (item.categoryName || 'Uncategorized'),
-                    categoryId: learned ? learned.categoryId : (item.category_id || null),
+                    category: isIncome ? 'Income' : (learned ? learned.categoryName : (item.categoryName || 'Uncategorized')),
+                    categoryId: isIncome ? null : (learned ? learned.categoryId : (item.category_id || null)),
                     title: learned ? learned.title : aiCleaned, // Dynamic Display Name
                     cleanDescription: aiCleaned, // Permanent AI Record
-                    financial_priority: finalPriority,
-                    confidence: item.confidence, // Pass through for UI badges
+                    financial_priority: isIncome ? null : finalPriority,
+                    confidence: item.confidence,
                     amount: item.amount,
                     originalAmount: item.amount,
                     originalCurrency: settings?.baseCurrency || 'USD',
-                    isPaid: !!item.paidDate,
+                    isPaid: isIncome ? null : !!item.paidDate,
+                    paidDate: isIncome ? null : item.paidDate,
                     budgetId: null,
                     isDuplicate: !!survivor,
                     duplicateMatch: survivor
