@@ -36,7 +36,6 @@ export const useEtoroData = () => {
     const rawPositions = data?.clientPortfolio?.positions || [];
 
     const grouped = _.groupBy(rawPositions, 'instrumentId');
-    const grouped = _.groupBy(rawPositions, 'instrumentID');
 
     const positions = Object.entries(grouped).map(([id, group]) => {
         const totalUSD = group.reduce((sum, p) => {
