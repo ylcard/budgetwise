@@ -1,3 +1,5 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.18';
+
 /**
  * CategorizationEngine.ts
  * REFACTORED: Standalone Deno Edge Function
@@ -39,6 +41,27 @@ const FALLBACK_REGEX = [
 ];
 
 // --- HELPER FUNCTIONS ---
+
+function buildMemoryMap(historicalTransactions) {
+    const memory = new Map();
+
+    // Sort by date ascending, so the LATEST transaction overwrites the key
+    // This ensures we learn the user's most recent correction
+    const sorted = historicalTransactions.sort((a, b) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    for (const tx of sorted) {
+        if (!tx.rawDescription) continue;
+        const key = tx.rawDescription.trim().toUpperCase();
+
+        // Only learn if there is a valid category assigned
+        if (tx.category_id) {
+            memory.set(key, { ...tx });
+        }
+    }
+    return memory;
+}
 
 function matchLocally(tx, rules, categories) {
     const text = (tx.title || tx.description || '').toUpperCase();
@@ -148,6 +171,7 @@ Deno.serve(async (req) => {
     }
 
     try {
+        const base44 = createClientFromRequest(req);
         const { transactions, rules, categories } = await req.json();
         const groqKey = Deno.env.get('GROQ_API_KEY');
 
@@ -155,36 +179,69 @@ Deno.serve(async (req) => {
             return Response.json({ error: "Invalid input: 'transactions' array required" }, { status: 400 });
         }
 
+        // 1. FETCH MEMORY (The Learning Step)
+        // Fetch lightweight history to build the memory map
+        const existingTx = await base44.entities.Transaction.list({
+            select: ['rawDescription', 'title', 'category_id', 'financial_priority', 'date']
+        });
+        const memory = buildMemoryMap(existingTx || []);
+
         const results = [];
         const toAI = [];
 
-        // 1. Process Local Matches First
+        // 2. PIPELINE: MEMORY -> RULES -> AI
         for (const tx of transactions) {
+            const rawKey = (tx.rawDescription || tx.title || '').trim().toUpperCase();
+
+            // A. MEMORY CHECK (Instant Learning)
+            if (memory.has(rawKey)) {
+                const learned = memory.get(rawKey);
+                const catObj = categories.find(c => c.id === learned.category_id);
+
+                results.push({
+                    ...tx,
+                    title: learned.title, // User's preferred title
+                    cleanDescription: learned.title,
+                    category_id: learned.category_id,
+                    categoryName: catObj ? catObj.name : 'Uncategorized',
+                    financial_priority: learned.financial_priority || (catObj?.priority || 'wants'),
+                    source: 'memory',
+                    confidence: 1.0,
+                    needsReview: false
+                });
+                continue;
+            }
+
+            // B. LOCAL RULES
             const local = matchLocally(tx, rules || [], categories || []);
 
             if (local && local.category_id) {
                 // Local rule matched
-                results.push({ ...tx, ...local, cleanTitle: tx.title });
+                results.push({ ...tx, ...local, cleanDescription: tx.title, source: 'user_rule', confidence: 1.0 });
             } else if (local && local.slug) {
                 // Taxonomy/Regex matched
                 const resolved = resolveSlugToId(local.slug, categories || []);
+                const cleanName = resolved?.name || local.slug;
                 results.push({
                     ...tx,
                     category_id: resolved?.id || null,
                     categoryName: resolved?.name || 'Uncategorized',
-                    cleanTitle: local.slug, // Use slug as clean title (e.g., "NETFLIX")
-                    source: local.source
+                    title: cleanName,
+                    cleanDescription: cleanName,
+                    source: local.source,
+                    confidence: 0.8
                 });
             } else {
-                // No local match, send to AI
+                // C. AI BUCKET
                 toAI.push(tx);
             }
         }
 
-        // 2. Process AI Matches Batch
+        // 3. Process AI Matches Batch
         if (toAI.length > 0) {
             // TIER 1: Fast Pass (8b model)
-            const descriptions = toAI.map(t => t.title);
+            // Use rawDescription for the prompt if available, as it contains more context
+            const descriptions = toAI.map(t => t.rawDescription || t.title);
             let aiMappings = await matchWithAI(descriptions, categories || [], groqKey, 'llama-3.1-8b-instant');
 
             // TIER 2: Peer Review (70b model for low confidence)
@@ -203,7 +260,8 @@ Deno.serve(async (req) => {
             }
 
             for (const tx of toAI) {
-                const aiResult = aiMappings[tx.title] || { category: 'Uncategorized', cleanName: tx.title, confidence: 0 };
+                const lookupKey = tx.rawDescription || tx.title;
+                const aiResult = aiMappings[lookupKey] || { category: 'Uncategorized', cleanName: tx.title, confidence: 0 };
 
                 // Handle legacy/hallucinated string responses
                 const aiCatName = typeof aiResult === 'string' ? aiResult : aiResult.category;
@@ -216,7 +274,8 @@ Deno.serve(async (req) => {
                     ...tx,
                     category_id: cat?.id || null,
                     categoryName: cat?.name || aiCatName || 'Uncategorized',
-                    cleanTitle: cleanName,
+                    title: cleanName, // AI suggested name
+                    cleanDescription: cleanName, // Permanent clean record
                     confidence: confidence,
                     source: 'ai'
                 });
