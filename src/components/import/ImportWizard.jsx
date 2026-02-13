@@ -155,6 +155,8 @@ export default function ImportWizard({ onSuccess }) {
       // Trigger the background transaction fetch for duplicate detection
       setRawData(extractedData);
 
+      // The manual duplicate detection inside handlePdfProcessing and processData is now redundant
+      /*
       // Helper for Duplicate Detection
       const findSurvivor = (newItem) => {
         if (!existingTransactions) return null;
@@ -177,6 +179,9 @@ export default function ImportWizard({ onSuccess }) {
           priority: match.financial_priority
         };
       };
+      */
+      // We no longer need local findSurvivor/findLearnedData helpers here 
+      // as enrichedData handles this reactively.
 
       // 1. Pre-process for AI Engine (Clean Structure)
       const preProcessed = extractedData.map(item => {
@@ -221,18 +226,24 @@ export default function ImportWizard({ onSuccess }) {
       // 3. Final Merge
       const processed = aiResults.map(item => {
         // Check Memory First
-        const learned = findLearnedData(item.title);
+        // const learned = findLearnedData(item.title);
+        // Note: AI Engine already provides category suggestions. 
+        // Manual "Memory" lookups are now handled reactively if needed.
+
         const isIncome = item.type === 'income';
 
         // Resolve Priority: Memory > DB Category Default > 'wants'
         let finalPriority = 'wants';
+        /*
         if (learned) {
           finalPriority = learned.priority;
         } else if (item.categoryName) {
+        */
+        if (item.categoryName) {
           const dbCat = categories.find(c => c.name.toLowerCase() === item.categoryName.toLowerCase());
           if (dbCat && dbCat.priority) finalPriority = dbCat.priority;
         }
-        const survivor = findSurvivor({ amount: item.amount, date: item.date });
+        // const survivor = findSurvivor({ amount: item.amount, date: item.date });
 
         // AI Engine returns 'cleanDescription'
         const aiCleaned = item.cleanDescription || item.title;
@@ -240,9 +251,12 @@ export default function ImportWizard({ onSuccess }) {
         return {
           ...item,
           // Memory overrides AI, AI overrides Raw
-          category: isIncome ? 'Income' : (learned ? learned.categoryName : (item.categoryName || 'Uncategorized')),
-          categoryId: isIncome ? null : (learned ? learned.categoryId : (item.category_id || null)),
-          title: learned ? learned.title : aiCleaned, // Dynamic Display Name
+          // category: isIncome ? 'Income' : (learned ? learned.categoryName : (item.categoryName || 'Uncategorized')),
+          // categoryId: isIncome ? null : (learned ? learned.categoryId : (item.category_id || null)),
+          // title: learned ? learned.title : aiCleaned, // Dynamic Display Name
+          category: isIncome ? 'Income' : (item.categoryName || 'Uncategorized'),
+          categoryId: isIncome ? null : (item.category_id || null),
+          title: aiCleaned,
           cleanDescription: aiCleaned, // Permanent AI Record
           financial_priority: isIncome ? null : finalPriority,
           confidence: item.confidence,
@@ -251,9 +265,9 @@ export default function ImportWizard({ onSuccess }) {
           originalCurrency: settings?.baseCurrency || 'USD',
           isPaid: isIncome ? null : !!item.paidDate,
           paidDate: isIncome ? null : item.paidDate,
-          budgetId: null,
-          isDuplicate: !!survivor,
-          duplicateMatch: survivor
+          budgetId: null
+          // isDuplicate: !!survivor,
+          // duplicateMatch: survivor
         };
       });
 
