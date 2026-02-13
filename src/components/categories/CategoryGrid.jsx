@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import CategoryCard from "./CategoryCard";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
-export default function CategoryGrid({ categories, onEdit, onDelete, isLoading }) {
+export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, isSelectionMode, selectedIds, onToggleSelection }) {
     if (isLoading) {
         return (
             <Card className="border-none shadow-lg">
@@ -60,6 +60,9 @@ export default function CategoryGrid({ categories, onEdit, onDelete, isLoading }
                             category={category}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            isSelectionMode={isSelectionMode}
+                            isSelected={selectedIds?.has(category.id)}
+                            onToggle={() => onToggleSelection(category.id)}
                         />
                     ))}
                 </div>
