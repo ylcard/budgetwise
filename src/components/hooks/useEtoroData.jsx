@@ -7,8 +7,8 @@ import { format } from 'date-fns';
 
 // Mapping IDs from eToro to real names
 const INSTRUMENT_MAP = {
-  1001: "AAPL",
-  100043: "SP5C.L",
+  1001: "Apple",
+  100043: "Amundi S&P 500 II UCITS ETF",
   14453: "VUSA.L",
 };
 
