@@ -19,6 +19,7 @@ export default function QuickAddIncome({
     isSubmitting,
     renderTrigger = true,
     transaction = null,
+    transactionTemplate = null, // Allow pre-filling without edit mode
     triggerVariant = "default",
     triggerSize = "default",
     triggerClassName = "",
@@ -31,7 +32,7 @@ export default function QuickAddIncome({
 
     const isControlled = typeof open === "boolean";
     const showDialog = isControlled ? open : internalOpen;
-    const isEditMode = !!transaction;
+    const isEditMode = !!transaction && !!transaction.id; // Strict check for ID
 
     const handleOpenChange = (newOpen) => {
         setInternalOpen(newOpen);
@@ -55,7 +56,7 @@ export default function QuickAddIncome({
 
     const formContent = (
         <IncomeFormContent
-            initialTransaction={transaction}
+            initialTransaction={isEditMode ? transaction : transactionTemplate} // ADDED: Use template if not editing
             onSubmit={handleFormSubmit}
             onCancel={() => handleOpenChange(false)}
             isSubmitting={isSubmitting}
