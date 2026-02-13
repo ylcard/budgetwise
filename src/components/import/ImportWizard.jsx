@@ -288,6 +288,7 @@ export default function ImportWizard({ onSuccess }) {
   };
 
   const processData = () => {
+    /*
     // Helper for Duplicate Detection
     const findSurvivor = (newItem) => {
       if (!existingTransactions) return null;
@@ -296,6 +297,7 @@ export default function ImportWizard({ onSuccess }) {
         ex.date === newItem.date
       );
     };
+    */
 
     const processed = csvData.data.map(row => {
       const rawVal = parseAmountWithSign(row[mappings.amount]);
@@ -329,13 +331,15 @@ export default function ImportWizard({ onSuccess }) {
         );
       }
 
-      const survivor = findSurvivor({ amount: magnitude, date: row[mappings.date] });
+      // const survivor = findSurvivor({ amount: magnitude, date: row[mappings.date] });
 
       return {
         date: row[mappings.date],
         title: row[mappings.title] || 'Untitled Transaction',
-        rawDescription: row[mappings.title] || '', // CSV usually only has one desc field
-        cleanDescription: row[mappings.title] || '', // Default to raw if no AI run yet
+        // rawDescription: row[mappings.title] || '', // CSV usually only has one desc field
+        // cleanDescription: row[mappings.title] || '', // Default to raw if no AI run yet
+        rawDescription: row[mappings.title] || '',
+        cleanDescription: row[mappings.title] || '',
         amount: magnitude,
         originalAmount: magnitude,
         originalCurrency: settings?.baseCurrency || 'USD',
@@ -346,9 +350,9 @@ export default function ImportWizard({ onSuccess }) {
         isPaid: true, // Assume bank import data is already paid/settled
         paidDate: row[mappings.date],
         budgetId: null,
-        originalData: row,
-        isDuplicate: !!survivor,
-        duplicateMatch: survivor
+        originalData: row
+        // isDuplicate: !!survivor,
+        // duplicateMatch: survivor
       };
     }).filter(item => item.amount !== 0 && item.date);
 
@@ -366,9 +370,13 @@ export default function ImportWizard({ onSuccess }) {
         return;
       }
 
+      // Use enrichedData to skip duplicates and use optimized metadata
+      const dataToImport = enrichedData.filter(item => !item.isDuplicate);
+
       // --- AUTO-CREATE MISSING CATEGORIES ---
       const newCategories = new Set();
-      processedData.forEach(item => {
+      // processedData.forEach(item => {
+      dataToImport.forEach(item => {
         if (item.type === 'expense' && !item.categoryId && item.category && item.category !== 'Uncategorized') {
           if (!categories.some(c => c.name.toLowerCase() === item.category.toLowerCase())) {
             newCategories.add(item.category);
@@ -392,7 +400,8 @@ export default function ImportWizard({ onSuccess }) {
       });
 
       // 1. PRE-FLIGHT: Identify all unique Month+Priority combinations
-      const expenseItems = processedData.filter(item => item.type === 'expense');
+      // const expenseItems = processedData.filter(item => item.type === 'expense');
+      const expenseItems = dataToImport.filter(item => item.type === 'expense');
       const uniqueSyncKeys = new Set();
 
       expenseItems.forEach(item => {
@@ -412,7 +421,8 @@ export default function ImportWizard({ onSuccess }) {
       await Promise.all(syncPromises);
 
       // 3. MAP TRANSACTIONS: Build final objects with verified IDs
-      const transactionsToCreate = processedData.map(item => {
+      // const transactionsToCreate = processedData.map(item => {
+      const transactionsToCreate = dataToImport.map(item => {
         const isExpense = item.type === 'expense';
         const date = formatDateString(item.date);
         const paidDate = item.paidDate ? formatDateString(item.paidDate) : null;
@@ -449,14 +459,16 @@ export default function ImportWizard({ onSuccess }) {
       await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
       await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
 
-      const uniqueMonths = new Set(processedData.map(d => {
+      // const uniqueMonths = new Set(processedData.map(d => {
+      const uniqueMonths = new Set(dataToImport.map(d => {
         const date = new Date(d.date);
         return date.toLocaleString('default', { month: 'long' });
       }));
 
       showToast({
         title: "Import Complete",
-        description: `Successfully added ${transactionsToCreate.length} transactions across ${uniqueMonths.size} month(s).`
+        // description: `Successfully added ${transactionsToCreate.length} transactions across ${uniqueMonths.size} month(s).`
+        description: `Added ${transactionsToCreate.length} transactions. ${enrichedData.length - dataToImport.length} duplicates skipped.`
       });
       if (onSuccess) {
         onSuccess();
