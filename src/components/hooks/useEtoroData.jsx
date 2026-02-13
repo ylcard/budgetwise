@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import _ from 'lodash';
 import { useExchangeRates } from './useExchangeRates';
-import { getRateForDate } from '../utils/currencyCalculations';
+import { getRateForDate, calculateConvertedAmount } from '../utils/currencyCalculations';
 import { format } from 'date-fns';
 
 // Mapping IDs from eToro to real names
@@ -21,40 +21,55 @@ export const useEtoroData = () => {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['etoro-portfolio'],
         queryFn: async () => {
-            // Use query param 'route' so we hit the existing 'etoro.ts' file
-            const res = await fetch('/functions/etoro?route=portfolio');
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || 'Portfolio fetch failed');
-            }
-            return res.json();
+            // 1. Fetch Portfolio
+            const pRes = await fetch('/functions/etoro?route=portfolio');
+            if (!pRes.ok) throw new Error('Portfolio fetch failed');
+            const pData = await pRes.json();
+
+            const rawPositions = pData?.clientPortfolio?.positions || [];
+            if (rawPositions.length === 0) return { positions: [], rates: [] };
+
+            // 2. Fetch Market Rates for these instruments
+            const ids = _.uniq(rawPositions.map(p => p.instrumentID)).join(',');
+            const rRes = await fetch(`/functions/etoro?route=rates&instrumentIds=${ids}`);
+            if (!rRes.ok) throw new Error('Rates fetch failed');
+            const rData = await rRes.json();
+
+            return {
+                positions: rawPositions,
+                rates: rData.rates || []
+            };
         },
-        refetchInterval: 60000, // Poll every minute
+        refetchInterval: 30000, // Faster poll for live ticker
     });
 
-    // 1. Extract raw positions from the correct nested path found in your JSON
-    const rawPositions = data?.clientPortfolio?.positions || [];
-
-    const grouped = _.groupBy(rawPositions, 'instrumentId');
+    const grouped = _.groupBy(data?.positions || [], 'instrumentID');
 
     const positions = Object.entries(grouped).map(([id, group]) => {
-        const totalUSD = group.reduce((sum, p) => {
-            // Using amount from your JSON structure
-            const invested = parseFloat(p.amount || 0);
-            // Note: eToro's /portfolio endpoint doesn't always include live PnL per position
-            // If p.pnL is available in other routes, we add it here.
-            const pnl = parseFloat(p.pnL || p.PnL || 0);
-            return sum + invested + pnl;
-        }, 0);
 
         const instrumentIdNum = parseInt(id);
+
+        const marketRate = data?.rates?.find(r => r.instrumentID === instrumentIdNum);
+        const totalUnits = _.sumBy(group, 'units');
+
+        // Current Value = Units × Current Bid Price (USD)
+        const currentPriceUSD = marketRate?.bid || 0;
+        const totalValueUSD = totalUnits * currentPriceUSD;
+
+        // Use your system triangulation logic: USD -> EUR
+        const { convertedAmount } = calculateConvertedAmount(
+            totalValueUSD,
+            'USD',
+            'EUR',
+            { sourceToEUR: usdToEurRate, targetToEUR: 1.0 }
+        );
 
         return {
             instrumentId: instrumentIdNum,
             name: INSTRUMENT_MAP[instrumentIdNum] || `Asset ${id}`,
-            value: totalUSD * usdToEurRate, // Converted using your system rates
+            value: convertedAmount,
             count: group.length,
-            units: _.sumBy(group, 'units')
+            units: totalUnits
         };
     }).sort((a, b) => b.value - a.value); // Sort by highest value
 
