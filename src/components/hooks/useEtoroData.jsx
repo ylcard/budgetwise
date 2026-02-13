@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import _ from 'lodash';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import _, { useEffect } from 'lodash';
 import { useExchangeRates } from './useExchangeRates';
-import { getRateForDate, calculateConvertedAmount } from '../utils/currencyCalculations';
+import { getRateForDate, calculateConvertedAmount, areRatesFresh } from '../utils/currencyCalculations';
 import { format } from 'date-fns';
 
 // Mapping IDs from eToro to real names
@@ -12,11 +12,21 @@ const INSTRUMENT_MAP = {
 };
 
 export const useEtoroData = () => {
-  const { exchangeRates } = useExchangeRates();
+  const { exchangeRates, refreshRates, isRefreshing } = useExchangeRates();
   const today = format(new Date(), 'yyyy-MM-dd');
 
+  // EFFECT: Automatically fetch USD -> EUR rate if missing or stale for today
+  useEffect(() => {
+    const needsUSD = !areRatesFresh(exchangeRates, 'USD', 'EUR', today);
+
+    if (needsUSD && !isRefreshing) {
+      console.log("[Etoro] USD rate stale or missing. Triggering refresh...");
+      refreshRates('USD', 'EUR', today);
+    }
+  }, [exchangeRates, today, isRefreshing, refreshRates]);
+
   // Get the latest USD -> EUR rate from your system
-  const usdToEurRate = getRateForDate(exchangeRates, 'USD', today) || 0.92;
+  const usdToEurRate = getRateForDate(exchangeRates, 'USD', today) || 0.92; // 0.92 is fallback until fetch completes
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['etoro-portfolio'],
