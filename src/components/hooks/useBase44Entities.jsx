@@ -14,17 +14,21 @@ export const useSystemActions = (user) => {
     const queryClient = useQueryClient();
     const { settings } = useSettings();
 
-    const initializeSystem = async () => {
+    const seedDefaults = async () => {
         if (!user?.email || !settings) return;
 
         try {
             showToast({ title: "Initializing...", description: "Setting up your 50/30/20 budget..." });
 
-            // 0. Fetch existing to prevent duplicates
-            const existingCats = await base44.entities.Category.list();
-            const existingGoals = await base44.entities.BudgetGoal.list();
+            // 0. SERVER-SIDE SAFETY CHECK
+            // We fetch specific data for THIS user to prevent duplicates regardless of UI state
+            const [existingCats, existingGoals] = await Promise.all([
+                base44.entities.Category.filter({ user_email: user.email }),
+                base44.entities.BudgetGoal.filter({ user_email: user.email })
+            ]);
 
             // 1. Create Categories
+            // Only create if specific name doesn't exist (Case insensitive check)
             const categoryPromises = DEFAULT_SYSTEM_CATEGORIES
                 .filter(def => !existingCats.some(ex => ex.name.toLowerCase() === def.name.toLowerCase()))
                 .map(cat =>
@@ -32,6 +36,7 @@ export const useSystemActions = (user) => {
                 );
 
             // 2. Create Goals and trigger snapshots
+            // Only create if specific priority doesn't exist
             const goalPromises = DEFAULT_SYSTEM_GOALS
                 .filter(def => !existingGoals.some(ex => ex.priority === def.priority))
                 .map(async (goal) => {
@@ -49,8 +54,8 @@ export const useSystemActions = (user) => {
             await queryClient.invalidateQueries();
 
             showToast({
-                title: "Setup Complete",
-                description: "Your categories and 50/30/20 goals are ready.",
+                title: "Defaults Created",
+                description: `Created ${categoryPromises.length} categories and ${goalPromises.length} goals.`,
             });
         } catch (error) {
             console.error("Initialization Failed:", error);
@@ -62,7 +67,7 @@ export const useSystemActions = (user) => {
         }
     };
 
-    return { initializeSystem };
+    return { seedDefaults };
 };
 
 // Hook to fetch transactions
