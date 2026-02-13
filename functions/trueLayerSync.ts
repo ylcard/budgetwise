@@ -311,9 +311,9 @@ Deno.serve(async (req) => {
         // --- FETCH APP CONTEXT FOR CATEGORIZATION ---
         console.log('🧠 [SYNC] Fetching rules, categories, and existing transactions...');
         const [categories, rules, existingTx] = await Promise.all([
-            base44.entities.Category.list(),
-            base44.entities.CategoryRule.list({ user_email: user.email }),
-            base44.entities.Transaction.list()
+            base44.entities.Category.filter({ user_email: user.email }),
+            base44.entities.CategoryRule.filter({ user_email: user.email }),
+            base44.entities.Transaction.filter({ user_email: user.email })
         ]);
         const existingBankIds = new Set(existingTx.filter(t => t.bankTransactionId).map(t => t.bankTransactionId));
         const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
