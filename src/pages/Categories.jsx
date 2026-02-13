@@ -244,7 +244,7 @@ export default function Categories() {
                                 onEdit={handleEdit}
                                 onDelete={onSafeDelete}
                                 isSelectionMode={isSelectionMode}
-                                isSelected={selectedIds.has(cat.id)}
+                                selectedIds={selectedIds}
                                 onToggle={() => handleToggleSelection(cat.id, !selectedIds.has(cat.id))}
                             />
                         ))}
