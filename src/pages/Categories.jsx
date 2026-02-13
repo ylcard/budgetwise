@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, Trash2, Pencil, CheckSquare, X, Check } from "lucide-react";
+import { Plus, Trash2, Pencil, CheckSquare, X, Check, Lock, CheckCheck } from "lucide-react";
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
 import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
@@ -11,6 +11,7 @@ import CategoryGrid from "../components/categories/CategoryGrid";
 import { useFAB } from "../components/hooks/FABContext";
 import { showToast } from "@/components/ui/use-toast";
 import { getCategoryIcon } from "../components/utils/iconMapConfig";
+import { base44 } from "@/api/base44Client";
 
 export default function Categories() {
     // UI state
@@ -18,6 +19,7 @@ export default function Categories() {
     const [editingCategory, setEditingCategory] = useState(null);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const queryClient = useQueryClient();
     const { setFabButtons, clearFabButtons } = useFAB();
 
@@ -37,6 +39,8 @@ export default function Categories() {
 
     // SYSTEM CATEGORY SAFEGUARD
     const onSafeDelete = (category) => {
+        // Allow deleting system categories
+        /*
         if (category.is_system) {
             showToast({
                 title: "Action Denied",
@@ -45,34 +49,69 @@ export default function Categories() {
             });
             return;
         }
+        */
         handleDelete(category);
     };
 
     // SELECTION LOGIC
-    const toggleSelection = (id) => {
-        setSelectedIds(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(id)) newSet.delete(id);
-            else newSet.add(id);
-            return newSet;
-        });
+    const handleToggleSelection = (id, isSelected) => {
+        const newSelected = new Set(selectedIds);
+        if (isSelected) {
+            newSelected.add(id);
+        } else {
+            newSelected.delete(id);
+        }
+        setSelectedIds(newSelected);
     };
+
+    const handleSelectAll = () => {
+        if (selectedIds.size === categories.length) {
+            setSelectedIds(new Set()); // Deselect all
+        } else {
+            const allIds = new Set(categories.map(c => c.id));
+            setSelectedIds(allIds);
+        }
+    };
+
+    // Helper for chunking arrays
+    const chunkArray = (array, size) => {
+        const chunked = [];
+        for (let i = 0; i < array.length; i += size) {
+            chunked.push(array.slice(i, i + size));
+        }
+        return chunked;
+    };
+
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
         if (window.confirm(`Delete ${selectedIds.size} categories? This cannot be undone.`)) {
-            // Iterate and delete (assuming backend handles individual deletions safely)
-            // Note: In a real backend, we should use a bulk-delete endpoint.
-            const idsToDelete = Array.from(selectedIds);
-            for (const id of idsToDelete) {
-                const category = categories.find(c => c.id === id);
-                if (category && !category.is_system) {
-                    await handleDelete(category);
+            setIsBulkDeleting(true);
+            try {
+                const idsToDelete = Array.from(selectedIds);
+                const chunks = chunkArray(idsToDelete, 50);
+
+                for (const chunk of chunks) {
+                    // Using deleteMany for bulk operations
+                    await base44.entities.Category.deleteMany({ id: { $in: chunk } });
                 }
+
+                await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+                showToast({ title: "Success", description: `Deleted ${selectedIds.size} categories.` });
+
+                setSelectedIds(new Set());
+                setIsSelectionMode(false);
+            } catch (error) {
+                console.error("Bulk delete error:", error);
+                showToast({
+                    title: "Error",
+                    description: "Failed to delete some categories.",
+                    variant: "destructive"
+                });
+            } finally {
+                setIsBulkDeleting(false);
             }
-            setSelectedIds(new Set());
-            setIsSelectionMode(false);
         }
     };
 
@@ -115,6 +154,14 @@ export default function Categories() {
                                 <>
                                     <CustomButton
                                         variant="outline"
+                                        onClick={handleSelectAll}
+                                        className="hidden md:flex"
+                                    >
+                                        <CheckCheck className="w-4 h-4 mr-2" />
+                                        {selectedIds.size === categories?.length ? "Deselect All" : "Select All"}
+                                    </CustomButton>
+                                    <CustomButton
+                                        variant="outline"
                                         onClick={() => {
                                             setIsSelectionMode(false);
                                             setSelectedIds(new Set());
@@ -125,9 +172,10 @@ export default function Categories() {
                                     <CustomButton
                                         variant="destructive"
                                         onClick={handleBulkDelete}
-                                        disabled={selectedIds.size === 0}
+                                        disabled={selectedIds.size === 0 || isBulkDeleting}
                                     >
-                                        <Trash2 className="w-4 h-4 mr-2" /> Delete ({selectedIds.size})
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        {isBulkDeleting ? 'Deleting...' : `Delete (${selectedIds.size})`}
                                     </CustomButton>
                                 </>
                             ) : (
@@ -176,7 +224,7 @@ export default function Categories() {
                             isLoading={isLoading}
                             isSelectionMode={isSelectionMode}
                             selectedIds={selectedIds}
-                            onToggleSelection={toggleSelection}
+                            onToggleSelection={handleToggleSelection}
                         />
                     </div>
 
@@ -192,7 +240,7 @@ export default function Categories() {
                                 onDelete={onSafeDelete}
                                 isSelectionMode={isSelectionMode}
                                 isSelected={selectedIds.has(cat.id)}
-                                onToggle={() => toggleSelection(cat.id)}
+                                onToggle={() => handleToggleSelection(cat.id, !selectedIds.has(cat.id))}
                             />
                         ))}
                     </div>
@@ -205,14 +253,13 @@ export default function Categories() {
 function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle }) {
     // Use your existing helper to resolve the icon component
     const Icon = getCategoryIcon(category.icon);
-    const isDisabled = category.is_system;
 
     return (
         <div
-            onClick={() => isSelectionMode && !isDisabled && onToggle()}
-            className={`flex items-center justify-between p-4 bg-white border rounded-xl shadow-sm transition-all ${isSelectionMode && !isDisabled ? 'active:scale-98 cursor-pointer' : ''
+            onClick={() => isSelectionMode && onToggle()}
+            className={`flex items-center justify-between p-4 bg-white border rounded-xl shadow-sm transition-all ${isSelectionMode ? 'active:scale-98 cursor-pointer' : ''
                 } ${isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-100'
-                } ${isDisabled && isSelectionMode ? 'opacity-50 grayscale' : ''
+                } ${''
                 }`}
         >
             <div className="flex items-center gap-3">
@@ -224,10 +271,16 @@ function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, isSel
                 )}
 
                 <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-sm"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-sm relative"
                     style={{ backgroundColor: category.color + '20', color: category.color }}
                 >
                     <Icon className="w-5 h-5" />
+                    {/* System Icon Indicator */}
+                    {category.is_system && (
+                        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-gray-100">
+                            <Lock className="w-3 h-3 text-gray-400" />
+                        </div>
+                    )}
                 </div>
                 <div>
                     <h3 className="font-semibold text-gray-900">{category.name}</h3>
@@ -244,14 +297,12 @@ function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, isSel
                         <Pencil className="w-5 h-5" />
                     </button>
 
-                    {!category.is_system && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onDelete(category); }}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                        >
-                            <Trash2 className="w-5 h-5" />
-                        </button>
-                    )}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(category); }}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                        <Trash2 className="w-5 h-5" />
+                    </button>
                 </div>
             )}
         </div>
