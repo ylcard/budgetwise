@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Check, X, Tag, Calendar, Wallet, ShieldCheck, Sparkles } from "lucide-react";
+import { Trash2, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Check, X, Tag, Calendar, Wallet, ShieldCheck, Sparkles, Info } from "lucide-react";
 import { formatCurrency } from "@/components/utils/currencyUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
     const { settings } = useSettings();
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [selectedIndices, setSelectedIndices] = useState(new Set());
+    const [activeInfoId, setActiveInfoId] = useState(null); // Track which row has the Info Popover open
 
     const [editingTitle, setEditingTitle] = useState({ index: null, value: "" });
 
@@ -114,6 +115,12 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
             : <ArrowDown className="w-3 h-3 ml-1 text-blue-500" />;
     };
 
+    // Helper to toggle info popover
+    const toggleInfo = (id, e) => {
+        e.stopPropagation();
+        setActiveInfoId(activeInfoId === id ? null : id);
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -181,9 +188,24 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                     }}
                                                 />
                                             ) : (
-                                                <span onClick={() => startEditing(row.originalIndex, row.title)} className="font-bold text-gray-900 leading-none truncate max-w-[140px] sm:max-w-[200px]">
-                                                    {row.title}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span onClick={() => startEditing(row.originalIndex, row.title)} className="font-bold text-gray-900 leading-none truncate max-w-[140px] sm:max-w-[180px]">
+                                                        {row.title}
+                                                    </span>
+                                                    {/* INFO ICON TRIGGER */}
+                                                    <div className="relative">
+                                                        <button onClick={(e) => toggleInfo(row.originalIndex, e)} className="text-gray-400 hover:text-blue-500 p-0.5">
+                                                            <Info className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        {activeInfoId === row.originalIndex && (
+                                                            <div className="absolute left-0 top-6 z-50 w-64 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-xl border border-slate-700 animate-in fade-in zoom-in-95">
+                                                                <div className="font-bold mb-1 text-slate-400 uppercase tracking-wider text-[10px]">Raw Source Data</div>
+                                                                <div className="font-mono break-words leading-relaxed opacity-90">{row.rawDescription || "No raw data available"}</div>
+                                                                <div className="mt-2 text-[10px] text-slate-500 border-t border-slate-700 pt-1">ID: {row.originalIndex}</div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             )}
                                             <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">{row.date}</span>
                                         </div>
@@ -330,12 +352,26 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
                                                         <button onClick={() => saveTitle(row.originalIndex)} className="text-green-600 hover:bg-green-50 p-1 rounded"><Check className="w-4 h-4" /></button>
                                                     </div>
                                                 ) : (
-                                                    <span
-                                                        onClick={() => startEditing(row.originalIndex, row.title)}
-                                                        className="font-medium text-gray-900 cursor-pointer hover:underline decoration-dotted truncate"
-                                                    >
-                                                        {row.title}
-                                                    </span>
+                                                    <div className="flex items-center gap-2 relative">
+                                                        <span
+                                                            onClick={() => startEditing(row.originalIndex, row.title)}
+                                                            className="font-medium text-gray-900 cursor-pointer hover:underline decoration-dotted truncate max-w-[180px]"
+                                                        >
+                                                            {row.title}
+                                                        </span>
+                                                        {/* DESKTOP INFO POP OVER */}
+                                                        <button onClick={(e) => toggleInfo(row.originalIndex, e)} className="text-gray-300 hover:text-blue-500 transition-colors">
+                                                            <Info className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        {activeInfoId === row.originalIndex && (
+                                                            <div className="absolute left-0 top-8 z-[100] w-72 p-3 bg-slate-900 text-white text-xs rounded-md shadow-2xl border border-slate-700 ring-1 ring-black/5 animate-in fade-in zoom-in-95">
+                                                                <div className="font-bold mb-1 text-slate-400 uppercase tracking-wider text-[10px]">Raw Description</div>
+                                                                <code className="block bg-slate-950 p-1.5 rounded border border-slate-800 font-mono break-all text-emerald-400 mb-1">
+                                                                    {row.rawDescription || "N/A"}
+                                                                </code>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{row.date}</span>
                                             </div>
