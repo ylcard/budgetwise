@@ -87,3 +87,27 @@ export const getCategoryIcon = (iconName) => {
     }
     return Circle;
 };
+
+// Heuristic to guess icon based on name
+export const suggestIconForCategory = (name) => {
+    if (!name) return 'Circle';
+
+    const normalize = (str) => str.toLowerCase().trim();
+    const search = normalize(name);
+
+    // 1. Exact Name Match (in options)
+    const exact = ICON_OPTIONS.find(opt => normalize(opt.label) === search);
+    if (exact) return exact.value;
+
+    // 2. Tag Match (exact word in tag)
+    const tagMatch = ICON_OPTIONS.find(opt =>
+        opt.tags.some(tag => search.includes(normalize(tag)))
+    );
+    if (tagMatch) return tagMatch.value;
+
+    // 3. Partial Name Match
+    const partial = ICON_OPTIONS.find(opt => normalize(opt.label).includes(search));
+    if (partial) return partial.value;
+
+    return 'Circle'; // Default
+};
