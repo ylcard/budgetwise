@@ -196,8 +196,7 @@ export default function BankSync() {
 
     useEffect(() => {
         setFabButtons(fabButtons);
-        return () => clearFabButtons();
-    }, [fabButtons, setFabButtons, clearFabButtons]);
+    }, [fabButtons]);
 
     const handleSync = useCallback(async (connection) => {
         console.log('🔄 [SYNC] Starting sync for connection:', connection.id);
