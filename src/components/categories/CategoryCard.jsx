@@ -19,8 +19,8 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
                 borderColor: isSelected ? '#3B82F6' : '#f3f4f6'
             }}
             whileHover={!isSelectionMode ? { scale: 1.02 } : {}}
-            onClick={() => isSelectionMode && onToggle()}
-            className={`relative h-24 px-4 rounded-xl border transition-all group flex items-center gap-4 ${isSelectionMode ? 'cursor-pointer hover:bg-gray-50' : 'hover:shadow-md'
+            onClick={onToggle}
+            className={`relative h-24 px-4 rounded-xl border transition-all group flex items-center gap-4 ${'cursor-pointer hover:bg-gray-50 hover:shadow-md'
                 } ${isSelected ? 'bg-blue-50 ring-1 ring-blue-500' : ''}`}
             style={!isSelected ? { backgroundColor: `${category.color}05` } : {}}
         >
@@ -62,7 +62,7 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
                     <CustomButton
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => onEdit(category)}
+                        onClick={(e) => { e.stopPropagation(); onEdit(category); }}
                         className="h-6 w-6 hover:bg-blue-50 hover:text-blue-600"
                     >
                         <Pencil className="w-4 h-4" />
@@ -70,7 +70,7 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
                     <CustomButton
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => onDelete(category.id)}
+                        onClick={(e) => { e.stopPropagation(); onDelete(category.id); }}
                         className="h-6 w-6 hover:bg-red-50 hover:text-red-600"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
