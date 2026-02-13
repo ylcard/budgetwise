@@ -70,7 +70,7 @@ export default function TransactionsLayout() {
                     </div>
 
                     {/* Nested Content: History or Recurring */}
-                    <Outlet context={{ setEditingTransaction, setShowAddIncome, setShowAddExpense }} />
+                    <Outlet context={{ setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard }} />
                 </div>
             </div>
 
@@ -110,7 +110,7 @@ export function TransactionHistory() {
 
     // FAB Logic moved to leaf component
     const { setFabButtons } = useFAB();
-    const { setEditingTransaction, setShowAddIncome, setShowAddExpense } = useOutletContext() || {};
+    const { setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard } = useOutletContext() || {};
 
     // History State
     const [filters, setFilters] = useState({
