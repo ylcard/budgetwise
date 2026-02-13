@@ -25,19 +25,19 @@ const STANDARD_TAXONOMY = {
 };
 
 const FALLBACK_REGEX = [
-    { pattern: /(POWER|GAS|ELECTRIC|ENERGIA|NUFRI)/i, slug: 'UTILITIES' },
-    { pattern: /(VUELING|RYANAIR|EASYJET|WIZZAIR|ELAL|FINNAIR)/i, slug: 'TRAVEL' },
-    { pattern: /(BARKCELONA|ANIMALESA)/i, slug: 'PETS' },
-    { pattern: /(INTERMON|OXFAM)/i, slug: 'CHARITY' },
-    { pattern: /(MOBILITAT|BEENETWORK|BEE NETWORK|BEE|TRANSPORTE|RENFE|FGC)/i, slug: 'TRANSPORT' },
-    { pattern: /(LA SIRENA|MCDONALDS|BURGER KING)/i, slug: 'DINING' },
-    { pattern: /(STEAM|STEAMGAMES|BLIZZARD|PLAYSTATION|PLAYSTATIONNETWORK|EPIC GAMES|EPICGAMES|RAIDBOTS)/i, slug: 'GAMES' },
-    { pattern: /(CAPRABO|ALDI|CARREFOUR|LLOBET|LLOVI|SUKHA|EROSKI|MERCADONA|Tesco|LIDL|EDEKA)/i, slug: 'GROCERIES' },
-    { pattern: /(IMPULS|ADMINISTRACION|LLOGUER)/i, slug: 'RENT' },
-    { pattern: /(AIGUES|WATER)/i, slug: 'UTILITIES' },
-    { pattern: /(INTERNET|WIFI|CABLE|COMCAST|AT&T|VERIZON|T-MOBILE|ORANGE|FINETWORK)/i, slug: 'CONNECTIVITY' },
-    { pattern: /(HOSTEL|HOSTELS|HOTEL|HOTELS|HOSTELWORLD|TOC|UNITE|BOOKING|BOOKING.COM)/i, slug: 'TRAVEL' },
-    { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS|NADEU|FARMACIA)/i, slug: 'HEALTH' },
+    { pattern: /(POWER|GAS|ELECTRIC|ENERGIA|NUFRI)/i, slug: 'UTILITIES', cleanName: 'Utilities' },
+    { pattern: /(VUELING|RYANAIR|EASYJET|WIZZAIR|ELAL|FINNAIR)/i, slug: 'TRAVEL', cleanName: 'Airline Travel' },
+    { pattern: /(BARKCELONA|ANIMALESA)/i, slug: 'PETS', cleanName: 'Pet Care' },
+    { pattern: /(INTERMON|OXFAM)/i, slug: 'CHARITY', cleanName: 'Intermon Oxfam' },
+    { pattern: /(MOBILITAT|BEENETWORK|BEE NETWORK|BEE|TRANSPORTE|RENFE|FGC)/i, slug: 'TRANSPORT', cleanName: 'Public Transport' },
+    { pattern: /(LA SIRENA|MCDONALDS|BURGER KING)/i, slug: 'DINING', cleanName: 'Fast Food' },
+    { pattern: /(STEAM|STEAMGAMES|BLIZZARD|PLAYSTATION|EPIC)/i, slug: 'GAMES', cleanName: 'Gaming' },
+    { pattern: /(CAPRABO|ALDI|CARREFOUR|LLOBET|LLOVI|SUKHA|EROSKI|MERCADONA|Tesco|LIDL|EDEKA)/i, slug: 'GROCERIES', cleanName: 'Supermarket' },
+    { pattern: /(IMPULS|ADMINISTRACION|LLOGUER)/i, slug: 'RENT', cleanName: 'Rent/Housing' },
+    { pattern: /(AIGUES|WATER)/i, slug: 'UTILITIES', cleanName: 'Water Bill' },
+    { pattern: /(INTERNET|WIFI|CABLE|COMCAST|AT&T|VERIZON|ORANGE|FINETWORK)/i, slug: 'CONNECTIVITY', cleanName: 'Internet/Phone' },
+    { pattern: /(HOSTEL|HOTEL|HOSTELWORLD|TOC|UNITE|BOOKING)/i, slug: 'TRAVEL', cleanName: 'Hotel/Booking' },
+    { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|FARMACIA)/i, slug: 'HEALTH', cleanName: 'Healthcare' },
 ];
 
 // --- HELPER FUNCTIONS ---
@@ -192,6 +192,23 @@ Deno.serve(async (req) => {
         // 2. PIPELINE: MEMORY -> RULES -> AI
         for (const tx of transactions) {
             const rawKey = (tx.rawDescription || tx.title || '').trim().toUpperCase();
+            const isIncome = tx.type === 'income' || (tx.amount && tx.amount < 0 && !tx.type); // Fail-safe
+
+            // 0. INCOME BYPASS
+            // Income usually shouldn't have expense categories or needs/wants priority
+            if (isIncome) {
+                results.push({
+                    ...tx,
+                    category_id: null,
+                    categoryName: 'Income',
+                    financial_priority: null,
+                    // We still let it pass through to be cleaned by AI if we wanted, 
+                    // but for now, let's keep it simple and just return it.
+                    cleanDescription: tx.title,
+                    needsReview: false
+                });
+                continue;
+            }
 
             // A. MEMORY CHECK (Instant Learning)
             if (memory.has(rawKey)) {
@@ -225,8 +242,8 @@ Deno.serve(async (req) => {
                     ...tx,
                     category_id: resolved?.id || null,
                     categoryName: resolved?.name || 'Uncategorized',
-                    title: tx.title,
-                    cleanDescription: tx.title,
+                    title: local.cleanName || tx.title,
+                    cleanDescription: local.cleanName || tx.title,
                     source: local.source,
                     confidence: 0.8
                 });
