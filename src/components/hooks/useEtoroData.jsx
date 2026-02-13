@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 const INSTRUMENT_MAP = {
   1001: "Apple",
   100043: "Amundi S&P 500 II UCITS ETF",
-  14453: "VUSA.L",
+  14453: "Amundi S&P 500",
 };
 
 export const useEtoroData = () => {
