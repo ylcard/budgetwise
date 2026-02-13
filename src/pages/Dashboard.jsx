@@ -45,7 +45,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns"; // Added startOfMon
 export default function Dashboard() {
     const { user, settings } = useSettings();
     const [quickAddState, setQuickAddState] = useState(null); // null | 'new' | templateObject
-    const [showQuickAddIncome, setShowQuickAddIncome] = useState(false);
+	const [quickAddIncomeState, setQuickAddIncomeState] = useState(null); // UPDATED: null | 'new' | templateObject
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const [showImportWizard, setShowImportWizard] = useState(false);
     const { setFabButtons, clearFabButtons } = useFAB();
@@ -136,14 +136,21 @@ export default function Dashboard() {
 
 
     const handleMarkPaid = (bill) => {
-        setQuickAddState({
+        const template = {
             title: bill.title,
             amount: bill.amount,
             category_id: bill.category_id,
             date: format(new Date(), 'yyyy-MM-dd'),
             recurringTransactionId: bill.id, // The Link ID
-            type: 'expense'
-        });
+      type: bill.type
+    };
+
+    // Route to appropriate form based on type
+    if (bill.type === 'income') {
+      setQuickAddIncomeState(template);
+    } else {
+      setQuickAddState(template);
+    }
     };
 
     const savingsTarget = useMemo(() => {
@@ -163,7 +170,7 @@ export default function Dashboard() {
     const transactionActions = useTransactionActions({
         onSuccess: () => {
             setQuickAddState(null);
-            setShowQuickAddIncome(false);
+            setQuickAddIncomeState(null);
         }
     });
 
@@ -200,7 +207,7 @@ export default function Dashboard() {
                 icon: 'PlusCircle',
                 variant: 'success',
                 highlighted: isEmptyMonth,
-                onClick: () => setShowQuickAddIncome(true)
+                onClick: () => setQuickAddIncomeState('new')
             }
         ];
     }, [currentMonthIncome, currentMonthExpenses]);
@@ -271,7 +278,7 @@ export default function Dashboard() {
                                     </Button>
                                 }
                                 addIncomeButton={
-                                    <Button size="sm" onClick={() => setShowQuickAddIncome(true)} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">
+										<Button size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">
                                         <PlusCircle className="h-3.5 w-3.5" />
                                         <span className="hidden xl:inline">Income</span>
                                     </Button>
@@ -355,10 +362,11 @@ export default function Dashboard() {
                 />
 
                 <QuickAddIncome
-                    open={showQuickAddIncome}
+                    open={!!quickAddIncomeState}
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
-                    onOpenChange={setShowQuickAddIncome}
+					onOpenChange={(isOpen) => !isOpen && setQuickAddIncomeState(null)}
+					transactionTemplate={typeof quickAddIncomeState === 'object' ? quickAddIncomeState : null}
                     onSubmit={transactionActions.handleSubmit}
                     isSubmitting={transactionActions.isSubmitting}
                     renderTrigger={false}
