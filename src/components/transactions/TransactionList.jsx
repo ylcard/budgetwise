@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote, StickyNote, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote, StickyNote, CheckCircle2, BrainCircuit } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +10,8 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { useSettings } from "../utils/SettingsContext";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import QuickAddTransaction from "./QuickAddTransaction";
+import { useRuleActions } from "@/components/hooks/useRuleActions";
+import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
 
 export default function TransactionList({
     transactions,
@@ -39,6 +41,21 @@ export default function TransactionList({
 }) {
 
     const { settings } = useSettings();
+
+    // Automation Rule Hooks
+    const {
+        isDialogOpen: isRuleDialogOpen,
+        setIsDialogOpen: setIsRuleDialogOpen,
+        formData: ruleFormData,
+        setFormData: setRuleFormData,
+        isRegexMode,
+        setIsRegexMode,
+        createRule,
+        updateRule,
+        handleSaveRule,
+        openCreateRuleFromTransaction,
+        editingRuleId
+    } = useRuleActions();
 
     const categoryMap = categories.reduce((acc, cat) => {
         acc[cat.id] = cat;
@@ -149,6 +166,19 @@ export default function TransactionList({
 
     return (
         <Card className="border-none shadow-md md:shadow-lg overflow-hidden bg-card">
+            {/* Automation Rule Dialog */}
+            <CreateRuleDialog
+                open={isRuleDialogOpen}
+                onOpenChange={setIsRuleDialogOpen}
+                formData={ruleFormData}
+                setFormData={setRuleFormData}
+                isRegexMode={isRegexMode}
+                setIsRegexMode={setIsRegexMode}
+                onSubmit={handleSaveRule}
+                isSubmitting={createRule.isPending || updateRule.isPending}
+                isEditing={!!editingRuleId}
+            />
+
             {/* Header: Adaptive Padding */}
             <CardHeader className="flex flex-row items-center justify-between py-3 px-3 md:py-4 md:px-6 bg-card border-b border-border">
                 <div className="flex items-center gap-2 md:gap-4">
@@ -285,6 +315,15 @@ export default function TransactionList({
                                     </td>
                                     <td className="px-4 py-2">
                                         <div className="flex items-center justify-center gap-1">
+                                            <CustomButton
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => { e.stopPropagation(); openCreateRuleFromTransaction(transaction); }}
+                                                className="h-8 w-8 p-0 hover:bg-amber-50 hover:text-amber-600"
+                                                title="Create Automation Rule"
+                                            >
+                                                <BrainCircuit className="w-3 h-3" />
+                                            </CustomButton>
                                             <CustomButton variant="ghost" size="sm" onClick={() => onEdit(transaction)} className="h-8 w-8 p-0 hover:bg-accent">
                                                 <Edit2 className="w-3 h-3 text-muted-foreground" />
                                             </CustomButton>
@@ -362,6 +401,15 @@ export default function TransactionList({
                                     </div>
 
                                     <div className="shrink-0 text-right">
+
+                                        {/* Mobile Rule Button */}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openCreateRuleFromTransaction(transaction); }}
+                                            className="p-1.5 -mr-1 text-gray-300 hover:text-amber-500"
+                                        >
+                                            <BrainCircuit className="w-4 h-4" />
+                                        </button>
+
                                         <span className={`text-sm font-mono font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </span>
