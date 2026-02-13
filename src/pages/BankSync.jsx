@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomButton } from "@/components/ui/CustomButton";
@@ -183,19 +183,25 @@ export default function BankSync() {
         handleCallback();
     }, [queryClient, toast]);
 
-    // FAB Configuration
+    // Use ref to stabilize the callback and prevent FAB context loops
+    const connectionRef = useRef(initiateConnection);
+    useEffect(() => {
+        connectionRef.current = initiateConnection;
+    }, [initiateConnection]);
+
     const fabButtons = useMemo(() => [
         {
             key: 'connect-bank',
             label: 'Connect Bank',
             icon: 'Building2',
             variant: 'create',
-            onClick: initiateConnection
+            onClick: () => connectionRef.current()
         }
-    ], [initiateConnection]);
+    ], []);
 
     useEffect(() => {
         setFabButtons(fabButtons);
+        return () => clearFabButtons();
     }, [fabButtons]);
 
     const handleSync = useCallback(async (connection) => {
