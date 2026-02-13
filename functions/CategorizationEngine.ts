@@ -221,13 +221,12 @@ Deno.serve(async (req) => {
             } else if (local && local.slug) {
                 // Taxonomy/Regex matched
                 const resolved = resolveSlugToId(local.slug, categories || []);
-                const cleanName = resolved?.name || local.slug;
                 results.push({
                     ...tx,
                     category_id: resolved?.id || null,
                     categoryName: resolved?.name || 'Uncategorized',
-                    title: cleanName,
-                    cleanDescription: cleanName,
+                    title: tx.title,
+                    cleanDescription: tx.title,
                     source: local.source,
                     confidence: 0.8
                 });
