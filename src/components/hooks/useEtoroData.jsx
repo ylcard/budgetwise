@@ -5,7 +5,12 @@ export const useEtoroData = () => {
     queryKey: ['etoro-portfolio'],
     queryFn: async () => {
       const res = await fetch('/functions/etoro/portfolio');
-      if (!res.ok) throw new Error('Network response was not ok');
+      // if (!res.ok) throw new Error('Network response was not ok');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error("Etoro Fetch Failed:", errData.error || res.statusText);
+        throw new Error(errData.error || 'Portfolio Fetch Failed');
+      }
       return res.json();
     },
     refetchInterval: 60000, // Poll every minute
