@@ -5,14 +5,11 @@ import { Loader2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function EtoroTicker() {
-  const { positions, status, totalValue } = useEtoroData();
+  const { positions, status, totalValue, dailyChange } = useEtoroData();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // MOCK DATA: 
-  // Currently hardcoded to '12.5' so you can see the Green glow effect.
-  // TODO: Connect this to real data. Example: const { dailyChange } = useEtoroData();
-  const dailyChange = 12.5;
-  const isPositiveDay = dailyChange >= 0;
+  // Default to 0 if undefined to prevent errors
+  const isPositiveDay = (dailyChange || 0) >= 0;
 
   // Formatting: 10300 -> 10.3k
   const formatCompact = (val) => {
