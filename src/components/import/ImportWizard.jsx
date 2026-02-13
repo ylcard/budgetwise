@@ -184,8 +184,8 @@ export default function ImportWizard({ onSuccess }) {
                 }
                 const survivor = findSurvivor({ amount: item.amount, date: item.date });
 
-                // AI returns 'cleanTitle' or 'cleanName' usually
-                const aiCleaned = item.cleanTitle || item.cleanName || item.title;
+                // AI Engine returns 'cleanDescription'
+                const aiCleaned = item.cleanDescription || item.title;
 
                 return {
                     ...item,
