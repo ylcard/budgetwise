@@ -5,9 +5,6 @@ import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CategorySelect from "@/components/ui/CategorySelect";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFAB } from "@/components/hooks/FABContext"; // Import Global FAB
+import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
 
 export default function AutomationRulesSettings() {
     const { user } = useSettings();
@@ -132,110 +130,25 @@ export default function AutomationRulesSettings() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                        <CreateRuleDialog
+                            open={isDialogOpen}
+                            onOpenChange={(open) => {
+                                if (!open) handleCloseDialog();
+                                else setIsDialogOpen(true);
+                            }}
+                            formData={formData}
+                            setFormData={setFormData}
+                            isRegexMode={isRegexMode}
+                            setIsRegexMode={setIsRegexMode}
+                            onSubmit={handleSaveRule}
+                            isSubmitting={createRule.isPending || updateRule.isPending}
+                            isEditing={!!editingRuleId}
+                        />
 
-                        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                            if (!open) {
-                                handleCloseDialog();
-                            }
-                        }}>
-                            <DialogTrigger asChild onClick={() => setIsDialogOpen(true)}>
-                                <CustomButton size="sm" className="gap-2 hidden md:flex" onClick={() => setIsDialogOpen(true)}>
-                                    <Plus className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Add Rule</span>
-                                </CustomButton>
-                            </DialogTrigger>
-
-                            {/* CREATE DIALOG CONTENT (Unchanged) */}
-                            <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                    <DialogTitle>{editingRuleId ? "Edit Rule" : "Create Automation Rule"}</DialogTitle>
-                                    <DialogDescription>
-                                        When a transaction contains the keywords below, it will be automatically categorized.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-
-                                    {/* MODE TOGGLE */}
-                                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-lg border">
-                                        <button
-                                            className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${!isRegexMode ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-                                            onClick={() => setIsRegexMode(false)}
-                                        >
-                                            Simple Keywords
-                                        </button>
-                                        <button
-                                            className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${isRegexMode ? 'bg-white shadow text-purple-700' : 'text-gray-500 hover:text-gray-900'}`}
-                                            onClick={() => setIsRegexMode(true)}
-                                        >
-                                            Regex (Advanced)
-                                        </button>
-                                    </div>
-
-                                    {isRegexMode ? (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="regex" className="text-purple-700 flex items-center gap-2"><Code2 className="w-3 h-3" /> Regular Expression</Label>
-                                            <Input
-                                                id="regex"
-                                                placeholder="^Uber.*Eats?$"
-                                                className="font-mono text-xs"
-                                                value={formData.regexPattern}
-                                                onChange={(e) => setFormData({ ...formData, regexPattern: e.target.value })}
-                                            />
-                                            <p className="text-[10px] text-gray-500">Be careful with complex patterns (ReDoS risk).</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="keywords">If text contains...</Label>
-                                            <Input
-                                                id="keywords"
-                                                placeholder="e.g. Uber, Lyft (comma separated)"
-                                                value={formData.keyword}
-                                                onChange={(e) => setFormData({ ...formData, keyword: e.target.value })}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="grid gap-2">
-                                        <Label>Then assign category...</Label>
-                                        <CategorySelect
-                                            categories={categories}
-                                            value={formData.categoryId}
-                                            onValueChange={(id) => setFormData({ ...formData, categoryId: id })}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label>Financial Priority</Label>
-                                        <Select
-                                            value={formData.financial_priority}
-                                            onValueChange={(val) => setFormData({ ...formData, financial_priority: val })}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select priority" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="needs">Essentials</SelectItem>
-                                                <SelectItem value="wants">Lifestyle</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="rename">And rename to (optional)...</Label>
-                                        <Input
-                                            id="rename"
-                                            placeholder="e.g. Taxi Ride"
-                                            value={formData.renamedTitle}
-                                            onChange={(e) => setFormData({ ...formData, renamedTitle: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <CustomButton onClick={handleSaveRule} disabled={createRule.isPending || updateRule.isPending} className="w-full sm:w-auto">
-                                        {(createRule.isPending || updateRule.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Save Rule
-                                    </CustomButton>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <CustomButton size="sm" className="gap-2 hidden md:flex" onClick={() => setIsDialogOpen(true)}>
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Add Rule</span>
+                        </CustomButton>
                     </div>
                 </div>
             </CardHeader>
