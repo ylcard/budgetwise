@@ -32,7 +32,6 @@ import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 export default function TransactionsLayout() {
     const { user } = useSettings();
     const location = useLocation();
-    const { setFabButtons, clearFabButtons } = useFAB();
 
     // Shared Modals State
     const [showAddIncome, setShowAddIncome] = useState(false);
@@ -58,38 +57,6 @@ export default function TransactionsLayout() {
         // The hook expects (data, existingEntity) for updates
         handleSubmit(data, editingTransaction);
     };
-
-    // Scope-specific FAB Buttons
-    const historyFab = useMemo(() => [
-        {
-            key: 'import',
-            label: 'Import Data',
-            icon: 'FileUp',
-            variant: 'primary',
-            onClick: () => setShowImportWizard(true)
-        },
-        {
-            key: 'expense',
-            label: 'Add Expense',
-            icon: 'MinusCircle',
-            variant: 'warning',
-            onClick: () => setShowAddExpense(true)
-        },
-        {
-            key: 'income',
-            label: 'Add Income',
-            icon: 'PlusCircle',
-            variant: 'success',
-            onClick: () => setShowAddIncome(true)
-        }
-    ], []);
-
-    useEffect(() => {
-        if (!location.pathname.includes('recurring')) {
-            setFabButtons(historyFab);
-        }
-        // Note: Recurring page handles its own FAB logic
-    }, [location.pathname, historyFab, setFabButtons]);
 
     return (
         <>
@@ -140,6 +107,9 @@ export function TransactionHistory() {
     const { user } = useSettings();
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
+
+    // FAB Logic moved to leaf component
+    const { setFabButtons } = useFAB();
     const { setEditingTransaction, setShowAddIncome, setShowAddExpense } = useOutletContext() || {};
 
     // History State
@@ -209,6 +179,36 @@ export function TransactionHistory() {
             finally { setIsBulkDeleting(false); }
         }, { destructive: true });
     };
+
+    // ADDED: Define FAB buttons here
+    const historyFab = useMemo(() => [
+        {
+            key: 'import',
+            label: 'Import Data',
+            icon: 'FileUp',
+            variant: 'primary',
+            onClick: () => setShowImportWizard(true) // Assumes these setters are available or passed via context
+        },
+        {
+            key: 'expense',
+            label: 'Add Expense',
+            icon: 'MinusCircle',
+            variant: 'warning',
+            onClick: () => setShowAddExpense(true)
+        },
+        {
+            key: 'income',
+            label: 'Add Income',
+            icon: 'PlusCircle',
+            variant: 'success',
+            onClick: () => setShowAddIncome(true)
+        }
+    ], [setShowImportWizard, setShowAddExpense, setShowAddIncome]);
+
+    useEffect(() => {
+        setFabButtons(historyFab);
+        // Removing setFabButtons from dependency array to prevent loops
+    }, [historyFab]);
 
     return (
         <PullToRefresh onRefresh={handleRefresh}>
