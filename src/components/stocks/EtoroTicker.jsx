@@ -8,9 +8,10 @@ export default function EtoroTicker() {
   const { positions, status, totalValue } = useEtoroData();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // MOCK: Calculate daily change direction (Replace with real data from hook)
-  // Assuming if Total Value is > 0 it's "positive" for now, or check your specific 'dailyChange' field
-  const dailyChange = 12.5; // Mock positive change
+  // MOCK DATA: 
+  // Currently hardcoded to '12.5' so you can see the Green glow effect.
+  // TODO: Connect this to real data. Example: const { dailyChange } = useEtoroData();
+  const dailyChange = 12.5;
   const isPositiveDay = dailyChange >= 0;
 
   // Formatting: 10300 -> 10.3k
@@ -91,11 +92,12 @@ export default function EtoroTicker() {
               ) : (
                 <div className="flex overflow-hidden">
                   <motion.div
-                    animate={{ x: ["0%", "-50%"] }}
+                    animate={{ x: ["0%", "0%", "-50%", "-50%"] }}
                     transition={{
-                      duration: positions.length * 3,
+                      duration: Math.max(30, positions.length * 5), // Ensure it's slow enough
                       ease: "linear",
-                      repeat: Infinity
+                      repeat: Infinity,
+                      times: [0, 0.15, 0.85, 1]
                     }}
                     className="flex shrink-0"
                   >
