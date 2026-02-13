@@ -14,8 +14,8 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
         const unlinkedTransactions = [];
 
         currentMonthTransactions.forEach(tx => {
-            if (tx.recurring_transaction_id) {
-                linkedMap.set(tx.recurring_transaction_id, tx);
+            if (tx.recurringTransactionId) {
+                linkedMap.set(tx.recurringTransactionId, tx);
             } else {
                 unlinkedTransactions.push(tx);
             }
