@@ -18,6 +18,7 @@ Deno.serve(async (req) => {
     const clientId = Deno.env.get("ETORO_CLIENT_ID");
     const userKey = Deno.env.get("ETORO_USER_KEY");
 
+    console.log(`[Etoro Auth] Attempting login with client: ${clientId?.substring(0, 4)}...`);
     if (!clientId || !userKey) throw new Error("Missing Secrets");
 
     const authString = btoa(`${clientId}:${userKey}`);
@@ -36,6 +37,7 @@ Deno.serve(async (req) => {
       }),
     });
 
+    console.log(`[Etoro Auth] Status: ${response.status}`);
     if (!response.ok) throw new Error("Failed to get token");
     return await response.json();
   };
@@ -75,6 +77,7 @@ Deno.serve(async (req) => {
       // Use /v1/ for stable user info; check if you're using 'real' or 'demo'
       // Real path: https://api.etoro.com/trading/real/v1/portfolio
       const portfolioUrl = `https://api.etoro.com/trading/real/v1/portfolio`;
+      console.log(`[Etoro Portfolio] Fetching: ${portfolioUrl}`);
 
       const response = await fetch(portfolioUrl, {
         headers: {
@@ -84,9 +87,11 @@ Deno.serve(async (req) => {
         }
       });
 
-      const data = await response.json();
+      const data = await response.json(); 1
+      console.log(`[Etoro Portfolio] Found ${data?.Positions?.length || 0} positions.`);
       return new Response(JSON.stringify(data), { headers: corsHeaders });
     } catch (error) {
+      console.error(`[Etoro Portfolio Error]`, error.message);
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
     }
   }
