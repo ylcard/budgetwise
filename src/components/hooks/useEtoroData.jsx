@@ -53,18 +53,13 @@ export const useEtoroData = () => {
     const assetName = INSTRUMENT_MAP[instrumentIdNum] || `Asset ${id}`;
     const totalUnits = _.sumBy(group, 'units');
 
-    // 1. Get the current price in the asset's local currency
-    let priceInLocalCurrency = marketRate?.bid || 0;
-    // 2. Handle London Stock Exchange "Pence" quirk (.L tickers)
-    if (assetName.endsWith('.L')) {
-      priceInLocalCurrency = priceInLocalCurrency / 100;
-    }
+    // 1. Get the current price and conversion to USD
+    const priceInLocalCurrency = marketRate?.bid || 0;
 
-    // 3. Convert Local Asset Value -> USD using eToro's provided rate
-    // conversionRateBid is the rate to get from Asset Currency to USD
+    // 2. Convert Local Asset Value -> USD using eToro's conversionRateBid
     const totalValueUSD = totalUnits * priceInLocalCurrency * (marketRate?.conversionRateBid || 1);
 
-    // 4. Convert USD -> EUR using your system's current exchange rates
+    // 3. Convert USD -> EUR using your system's current exchange rates
     const { convertedAmount } = calculateConvertedAmount(
       totalValueUSD,
       'USD',
