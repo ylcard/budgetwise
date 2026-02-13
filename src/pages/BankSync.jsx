@@ -247,12 +247,15 @@ export default function BankSync() {
                 });
                 // Trigger refresh to update the "Needs Review" inbox counter
                 queryClient.invalidateQueries(['transactions']);
-
+                // Update connection cards (last synced time)
+                queryClient.invalidateQueries(['bankConnections']);
             } else {
                 toast({
                     title: "No new transactions",
                     description: "All transactions are up to date"
                 });
+                // Still update connection to reflect the sync attempt time
+                queryClient.invalidateQueries(['bankConnections']);
             }
         } catch (error) {
             console.error('❌ [SYNC] Full Error Object:', error.response?.data);
@@ -270,7 +273,7 @@ export default function BankSync() {
             setSyncing(null);
             setSyncStatus("");
         }
-    }, [toast]);
+    }, [toast, queryClient, syncDays]);
 
     // Delete connection
     const { mutate: deleteConnection } = useMutation({
