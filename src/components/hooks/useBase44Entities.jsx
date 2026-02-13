@@ -20,20 +20,28 @@ export const useSystemActions = (user) => {
         try {
             showToast({ title: "Initializing...", description: "Setting up your 50/30/20 budget..." });
 
+            // 0. Fetch existing to prevent duplicates
+            const existingCats = await base44.entities.Category.list();
+            const existingGoals = await base44.entities.BudgetGoal.list();
+
             // 1. Create Categories
-            const categoryPromises = DEFAULT_SYSTEM_CATEGORIES.map(cat =>
-                base44.entities.Category.create({ ...cat, user_email: user.email })
-            );
+            const categoryPromises = DEFAULT_SYSTEM_CATEGORIES
+                .filter(def => !existingCats.some(ex => ex.name.toLowerCase() === def.name.toLowerCase()))
+                .map(cat =>
+                    base44.entities.Category.create({ ...cat, user_email: user.email })
+                );
 
             // 2. Create Goals and trigger snapshots
-            const goalPromises = DEFAULT_SYSTEM_GOALS.map(async (goal) => {
-                const newGoal = await base44.entities.BudgetGoal.create({
-                    ...goal,
-                    user_email: user.email
+            const goalPromises = DEFAULT_SYSTEM_GOALS
+                .filter(def => !existingGoals.some(ex => ex.priority === def.priority))
+                .map(async (goal) => {
+                    const newGoal = await base44.entities.BudgetGoal.create({
+                        ...goal,
+                        user_email: user.email
+                    });
+                    // This ensures SystemBudgets are generated for the current/future months
+                    return snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
                 });
-                // This ensures SystemBudgets are generated for the current/future months
-                return snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
-            });
 
             await Promise.all([...categoryPromises, ...goalPromises]);
 
