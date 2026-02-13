@@ -4,7 +4,6 @@ import { useMemo, useRef, useEffect, useState } from "react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
-import { useRecurringProcessor } from "./components/hooks/useRecurringProcessor";
 import { base44 } from "@/api/base44Client";
 import {
   Sidebar,
@@ -43,10 +42,7 @@ const LayoutContent = ({ children }) => {
 
   // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
   const navigationHistory = useRef({});
-  const currentTab = useRef(null);
-
-  // ADDED 17-Jan-2026: Trigger recurring transaction processing on app load
-  useRecurringProcessor();
+  const currentTab = useRef(null);  
 
   // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
   const primaryNav = navigationItems.slice(0, 4);
