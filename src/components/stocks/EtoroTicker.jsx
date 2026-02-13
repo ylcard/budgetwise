@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEtoroData } from '../../components/hooks/useEtoroData';
 import { Loader2, TrendingUp } from 'lucide-react';
-import { cn } from '../../components/utils/cn'; // Assuming utility exists based on tech stack
+import { cn } from '@/lib/utils';
 
 export default function EtoroTicker() {
   const { positions, status, totalValue } = useEtoroData();
