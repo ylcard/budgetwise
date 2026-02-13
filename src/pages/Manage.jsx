@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { Outlet } from "react-router-dom";
 import {
     Settings as SettingsIcon,
     Save,
@@ -17,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/use-toast";
@@ -27,17 +27,9 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm } from "../components/hooks/useActions";
 import { formatCurrency } from "../components/utils/currencyUtils";
 import { CURRENCY_OPTIONS, SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components/utils/constants";
-
-// Page Imports
-import Categories from "./Categories";
-import Automation from "./Automation";
-import BankSync from "./BankSync";
 import { useAuth } from '@/lib/AuthContext';
 
-export default function ManagePage() {
-    // Default to 'preferences' tab
-    const [activeTab, setActiveTab] = useState("preferences");
-
+export default function ManageLayout() {
     return (
         <div className="min-h-screen p-4 md:p-8 pb-24 bg-gray-50/50">
             <div className="max-w-6xl mx-auto space-y-8">
@@ -49,81 +41,16 @@ export default function ManagePage() {
                         <p className="text-gray-500 mt-1">Configure your workspace, data, and preferences.</p>
                     </div>
                 </div>
-
-                {/* Layout: Vertical Tabs on Desktop, Stacked on Mobile */}
-                <Tabs
-                    defaultValue="preferences"
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="flex flex-col md:flex-row gap-8"
-                >
-                    {/* SIDEBAR NAVIGATION */}
-                    <aside className="w-full md:w-64 flex-shrink-0">
-                        <TabsList className="flex md:flex-col h-auto p-1 bg-white/50 backdrop-blur border border-gray-200 rounded-xl gap-1 w-full overflow-x-auto md:overflow-visible justify-start">
-                            <NavTab value="preferences" icon={SlidersHorizontal} label="Preferences" />
-                            <NavTab value="categories" icon={FolderOpen} label="Categories" />
-                            <NavTab value="automation" icon={RefreshCw} label="Automation" />
-                            <NavTab value="banksync" icon={Link2} label="Bank Sync" />
-                            <Separator className="my-2 hidden md:block bg-gray-200" />
-                            <NavTab value="account" icon={SettingsIcon} label="Account" />
-                        </TabsList>
-                    </aside>
-
-                    {/* MAIN CONTENT AREA */}
-                    <main className="flex-1 min-w-0">
-                        <div className="space-y-6">
-                            <TabsContent value="preferences" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                <PreferencesSection />
-                            </TabsContent>
-
-                            <TabsContent value="categories" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                {/* Wrapper to neutralize parent padding so the page component fits naturally */}
-                                <div className="-m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)]">
-                                    <Categories />
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="automation" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                <div className="-m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)]">
-                                    <Automation />
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="banksync" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                <div className="-m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)]">
-                                    <BankSync />
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="account" className="m-0 focus-visible:outline-none animate-in fade-in-50 duration-300">
-                                <AccountSection />
-                            </TabsContent>
-                        </div>
-                    </main>
-                </Tabs>
+                {/* Main Content (Child Route) */}
+                <main className="flex-1 min-w-0 animate-in fade-in-50 duration-300">
+                    <Outlet />
+                </main>
             </div>
         </div>
     );
 }
 
-// --- SUB-COMPONENTS ---
-
-function NavTab({ value, icon: Icon, label }) {
-    const isMobile = useIsMobile(); // USE THE HOOK
-
-    return (
-        <TabsTrigger
-            value={value}
-            className="w-auto md:w-full justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-gray-200 border border-transparent transition-all"
-        >
-            <Icon className="w-4 h-4" />
-            {/* You can either use CSS class or the hook logic here */}
-            {!isMobile && <span className="truncate">{label}</span>}
-        </TabsTrigger>
-    );
-}
-
-function PreferencesSection() {
+export function PreferencesSection() {
     const { settings, updateSettings } = useSettings();
     const { formData, handleFormChange, resetForm } = useSettingsForm(settings, updateSettings);
     const [isSaving, setIsSaving] = useState(false);
@@ -318,12 +245,12 @@ function PreferencesSection() {
     );
 }
 
-function AccountSection() {
+export function AccountSection() {
     const { user, logout } = useAuth();
     const { settings, updateSettings } = useSettings();
     const [localName, setLocalName] = useState(settings.displayName || "");
     const [isSaving, setIsSaving] = useState(false);
-    
+
     const handleAccountDeletion = () => {
         showToast({ title: "Requested", description: "Account deletion initiated...", variant: "destructive" });
         setTimeout(() => window.location.href = '/', 2000);
