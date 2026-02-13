@@ -25,8 +25,14 @@ Deno.serve(async (req) => {
         const todayStr = format(today, 'yyyy-MM-dd');
 
         // Fetch all active recurring transactions
-        const allRecurring = await base44.asServiceRole.entities.RecurringTransaction.list();
-        const activeRecurring = allRecurring.filter(r => r.isActive && r.nextOccurrence);
+        // Filter at DB level to only fetch active items due today or in the past
+        const activeRecurring = await base44.asServiceRole.entities.RecurringTransaction.filter({
+            isActive: true,
+            nextOccurrence: {
+                $ne: null,
+                $lte: todayStr
+            }
+        });
 
         // Fetch all system budgets for budget assignment
         const allSystemBudgets = await base44.asServiceRole.entities.SystemBudget.list();
