@@ -260,6 +260,7 @@ Deno.serve(async (req) => {
             }
 
             for (const tx of toAI) {
+                // Ensure we use the exact same logic as the .map() above to find the key
                 const lookupKey = tx.rawDescription || tx.title;
                 const aiResult = aiMappings[lookupKey] || { category: 'Uncategorized', cleanName: tx.title, confidence: 0 };
 
