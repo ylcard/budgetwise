@@ -5,7 +5,7 @@ import { QUERY_KEYS } from "./queryKeys";
 import { getMonthlyIncome, getHistoricalAverageIncome, snapshotFutureBudgets } from "../utils/financialCalculations";
 import { ensureSystemBudgetsExist } from "../utils/budgetInitialization";
 import { useSettings } from "../utils/SettingsContext";
-import { DEFAULT_SYSTEM_CATEGORIES, DEFAULT_SYSTEM_GOALS } from "../utils/constants";
+import { DEFAULT_SYSTEM_GOALS } from "../utils/constants";
 import { subDays, format } from "date-fns";
 import { showToast } from "@/components/ui/use-toast";
 
@@ -22,24 +22,15 @@ export const useSystemActions = (user) => {
 
             // 0. SERVER-SIDE SAFETY CHECK
             // We fetch specific data for THIS user to prevent duplicates regardless of UI state
-            const [existingCats, existingGoals] = await Promise.all([
-                base44.entities.Category.filter({ user_email: user.email }, 'name', 10),
+            const [existingGoals] = await Promise.all([
                 base44.entities.BudgetGoal.filter({ user_email: user.email })
             ]);
 
-            if (existingCats.length > 0) {
+            if (existingGoals.length > 0) {
                 return;
             }
 
-            // 1. Create Categories
-            // Only create if specific name doesn't exist (Case insensitive check)
-            const categoryPromises = DEFAULT_SYSTEM_CATEGORIES
-                .filter(def => !existingCats.some(ex => ex.name.toLowerCase() === def.name.toLowerCase()))
-                .map(cat =>
-                    base44.entities.Category.create({ ...cat, user_email: user.email })
-                );
-
-            // 2. Create Goals and trigger snapshots
+            // 1. Create Goals and trigger snapshots
             // Only create if specific priority doesn't exist
             const goalPromises = DEFAULT_SYSTEM_GOALS
                 .filter(def => !existingGoals.some(ex => ex.priority === def.priority))
@@ -52,14 +43,14 @@ export const useSystemActions = (user) => {
                     return snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
                 });
 
-            await Promise.all([...categoryPromises, ...goalPromises]);
+            await Promise.all([...goalPromises]);
 
-            // 3. Refresh everything
+            // 2. Refresh everything
             await queryClient.invalidateQueries();
 
             showToast({
                 title: "Defaults Created",
-                description: `Created ${categoryPromises.length} categories and ${goalPromises.length} goals.`,
+                description: `Created ${goalPromises.length} goals.`,
             });
         } catch (error) {
             console.error("Initialization Failed:", error);
