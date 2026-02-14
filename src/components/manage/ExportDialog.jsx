@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Download, FileJson, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
-import { DateRangePicker } from "@/components/ui/DateRangePicker";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ExportDialog({ 
@@ -101,15 +101,13 @@ export default function ExportDialog({
                                 <div className="space-y-2">
                                     <Label>Select Date Range</Label>
                                     <DateRangePicker
-                                        value={{
-                                            from: dateRange.from ? new Date(dateRange.from) : undefined,
-                                            to: dateRange.to ? new Date(dateRange.to) : undefined
-                                        }}
-                                        onChange={(range) => {
+                                        startDate={dateRange.from}
+                                        endDate={dateRange.to}
+                                        onRangeChange={(from, to) => {
                                             setDateRange({
                                                 enabled: true,
-                                                from: range?.from ? format(range.from, 'yyyy-MM-dd') : null,
-                                                to: range?.to ? format(range.to, 'yyyy-MM-dd') : null
+                                                from,
+                                                to
                                             });
                                         }}
                                     />
