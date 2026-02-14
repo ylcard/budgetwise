@@ -52,15 +52,31 @@ const FALLBACK_REGEX = [
 export const categorizeTransaction = (transaction, userRules = [], categories = []) => {
     const description = (transaction.title || transaction.description || '').toUpperCase();
 
+    // PRIORITIZATION: Sort categories so Custom (User) categories are checked BEFORE System categories.
+    // This ensures that if a user has "Transport" and System has "Transportation", the user's one wins.
+    const customCats = categories.filter(c => !c.isSystemCategory);
+    const systemCats = categories.filter(c => c.isSystemCategory);
+    const prioritizedCategories = [...customCats, ...systemCats];
+
     let categoryId = null;
     let categoryName = 'Uncategorized';
     let priority = 'wants';
 
     // Helper to find category by ID or Name
     const resolveCategory = (idOrName, isId = false) => {
-        const cat = categories.find(c =>
-            isId ? c.id === idOrName : c.name.toUpperCase() === idOrName.toUpperCase()
-        );
+        if (!idOrName) return null;
+        const target = String(idOrName).toUpperCase();
+
+        const cat = prioritizedCategories.find(c => {
+            if (isId) return c.id === idOrName;
+
+            const catName = c.name.toUpperCase();
+            // FUZZY MATCHING LOGIC:
+            // 1. Exact Match
+            // 2. Partial Match (e.g. "Dining Out" matches "Dining")
+            return catName === target || catName.includes(target) || target.includes(catName);
+        });
+
         return cat ? { categoryId: cat.id, categoryName: cat.name, priority: cat.priority || 'wants' } : null;
     };
 
@@ -103,7 +119,7 @@ export const categorizeTransaction = (transaction, userRules = [], categories = 
 
     // 4. Existing Basic Matching (from original ImportWizard logic, preserved as fallback)
     // This tries to find the category name directly in the description
-    for (const cat of categories) {
+    for (const cat of prioritizedCategories) {
         if (description.includes(cat.name.toUpperCase())) {
             return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority || 'wants' };
         }
