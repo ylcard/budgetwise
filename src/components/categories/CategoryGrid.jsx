@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Box, Lock, X } from "lucide-react";
+import { Layers, Box, Lock, Trash2, AlertTriangle } from "lucide-react";
 import { iconMap } from "../utils/iconMapConfig";
 
 export default function CategoryGrid({ systemCategories = [], customCategories = [], onEdit, onDelete, isLoading, isSelectionMode, selectedIds, onToggleSelection, onSelectionChange, isAdmin }) {
@@ -17,6 +17,8 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
     const startPos = useRef({ x: 0, y: 0 });
     const cardRefs = useRef(new Map());
     const initialSelection = useRef(new Set());
+
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, categoryId: null, categoryName: '' });
 
     // Register card refs
     const setCardRef = useCallback((id, node) => {
@@ -108,6 +110,17 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
         };
     }, [handleMouseMove]);
 
+    const handleDeleteRequest = (id, name) => {
+        setDeleteConfirm({ isOpen: true, categoryId: id, categoryName: name });
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteConfirm.categoryId) {
+            onDelete(deleteConfirm.categoryId);
+            setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '' });
+        }
+    };
+
     // Helper to render a group of categories in the "Bento" style
     const renderCategoryGroup = (categories, groupType) => {
         return (
@@ -131,7 +144,7 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
                                         isSystem={groupType === 'system'}
                                         isAdmin={isAdmin}
                                         onEdit={onEdit}
-                                        onDelete={onDelete}
+                                        onRequestDelete={handleDeleteRequest}
                                         isSelectionMode={isSelectionMode}
                                         isSelected={selectedIds?.has(cat.id)}
                                         onToggle={() => onToggleSelection(cat.id, !selectedIds?.has(cat.id))}
@@ -152,80 +165,88 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
     const currentCategories = activeTab === 'custom' ? customCategories : systemCategories;
 
     return (
-        <Card className="border-none shadow-lg relative select-none bg-transparent shadow-none" ref={containerRef} onMouseDown={handleMouseDown}>
-            {/* Selection Overlay */}
-            {selectionBox && (
-                <div
-                    className="fixed z-50 bg-blue-500/10 border border-blue-500 pointer-events-none"
-                    style={{
-                        left: selectionBox.left,
-                        top: selectionBox.top,
-                        width: selectionBox.width,
-                        height: selectionBox.height
-                    }}
-                />
-            )}
-            <CardHeader className="px-0 pt-0 pb-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    {/* Header Title */}
-                    <div>
-                        <CardTitle className="text-xl">
-                            {activeTab === 'custom' ? 'My Categories' : 'System Defaults'}
-                            <span className="ml-2 text-sm font-normal text-gray-500">
-                                ({currentCategories.length})
-                            </span>
-                        </CardTitle>
-                    </div>
+        <>
+            <DeleteConfirmationDialog
+                isOpen={deleteConfirm.isOpen}
+                onClose={() => setDeleteConfirm({ ...deleteConfirm, isOpen: false })}
+                onConfirm={handleConfirmDelete}
+                categoryName={deleteConfirm.categoryName}
+            />
+            <Card className="border-none shadow-lg relative select-none bg-transparent shadow-none" ref={containerRef} onMouseDown={handleMouseDown}>
+                {/* Selection Overlay */}
+                {selectionBox && (
+                    <div
+                        className="fixed z-50 bg-blue-500/10 border border-blue-500 pointer-events-none"
+                        style={{
+                            left: selectionBox.left,
+                            top: selectionBox.top,
+                            width: selectionBox.width,
+                            height: selectionBox.height
+                        }}
+                    />
+                )}
+                <CardHeader className="px-0 pt-0 pb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        {/* Header Title */}
+                        <div>
+                            <CardTitle className="text-xl">
+                                {activeTab === 'custom' ? 'My Categories' : 'System Defaults'}
+                                <span className="ml-2 text-sm font-normal text-gray-500">
+                                    ({currentCategories.length})
+                                </span>
+                            </CardTitle>
+                        </div>
 
-                    {/* Segmented Control */}
-                    <div className="bg-gray-100/80 p-1 rounded-lg flex items-center gap-1">
-                        <TabButton
-                            isActive={activeTab === 'custom'}
-                            onClick={() => setActiveTab('custom')}
-                            icon={Layers}
-                            label="Custom"
-                            count={customCategories.length}
-                        />
-                        <TabButton
-                            isActive={activeTab === 'system'}
-                            onClick={() => setActiveTab('system')}
-                            icon={Box}
-                            label="System"
-                            count={systemCategories.length}
-                        />
+                        {/* Segmented Control */}
+                        <div className="bg-gray-100/80 p-1 rounded-lg flex items-center gap-1">
+                            <TabButton
+                                isActive={activeTab === 'custom'}
+                                onClick={() => setActiveTab('custom')}
+                                icon={Layers}
+                                label="Custom"
+                                count={customCategories.length}
+                            />
+                            <TabButton
+                                isActive={activeTab === 'system'}
+                                onClick={() => setActiveTab('system')}
+                                icon={Box}
+                                label="System"
+                                count={systemCategories.length}
+                            />
+                        </div>
                     </div>
-                </div>
-            </CardHeader>
-            <CardContent className="px-0">
-                <AnimatePresence mode="wait">
-                    {activeTab === 'custom' ? (
-                        <motion.div
-                            key="custom"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {customCategories.length > 0 ? (
-                                renderCategoryGroup(customCategories, 'custom')
-                            ) : (
-                                <EmptyState type="custom" />
-                            )}
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="system"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {renderCategoryGroup(systemCategories, 'system')}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </CardContent>
-        </Card>
+                </CardHeader>
+                <CardContent className="px-0">
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'custom' ? (
+                            <motion.div
+                                key="custom"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {customCategories.length > 0 ? (
+                                    renderCategoryGroup(customCategories, 'custom')
+                                ) : (
+                                    <EmptyState type="custom" />
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="system"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {renderCategoryGroup(systemCategories, 'system')}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </CardContent>
+            </Card>
+        </>
     );
 }
 
@@ -246,7 +267,7 @@ function TabButton({ isActive, onClick, icon: Icon, label, count }) {
     );
 }
 
-const CategoryPill = forwardRef(({ category, isSystem, isAdmin, onEdit, onDelete, isSelectionMode, isSelected, onToggle }, ref) => {
+const CategoryPill = forwardRef(({ category, isSystem, isAdmin, onEdit, onRequestDelete, isSelectionMode, isSelected, onToggle }, ref) => {
     const Icon = iconMap[category.icon] || Box;
 
     const handleClick = (e) => {
@@ -259,17 +280,18 @@ const CategoryPill = forwardRef(({ category, isSystem, isAdmin, onEdit, onDelete
 
     const handleDelete = (e) => {
         e.stopPropagation();
-        onDelete(category.id);
+        onRequestDelete(category.id, category.name);
     };
 
     return (
         <div
             ref={ref}
             onClick={handleClick}
-            className={`group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border shadow-sm transition-all cursor-pointer relative
+            style={{ '--category-color': category.color }}
+            className={`group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border shadow-sm transition-all cursor-pointer relative select-none
                 ${isSelected
                     ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50'
-                    : 'border-gray-100 hover:border-blue-300 hover:shadow-md'
+                    : 'border-gray-100 hover:border-[var(--category-color)] hover:bg-[var(--category-color)]/5 hover:shadow-md'
                 }
                 ${isSystem && !isAdmin ? 'opacity-80 cursor-default hover:border-gray-100 hover:shadow-none' : ''}
             `}
@@ -285,13 +307,41 @@ const CategoryPill = forwardRef(({ category, isSystem, isAdmin, onEdit, onDelete
                 <Lock className="w-3 h-3 text-gray-300 group-hover:text-blue-400 transition-colors ml-1" />
             )}
             {!isSystem && !isSelectionMode && (
-                <button onClick={handleDelete} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-all ml-1">
-                    <X className="w-3 h-3" />
+                <button onClick={handleDelete} className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 p-1.5 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-all ml-1">
+                    <Trash2 className="w-3.5 h-3.5" />
                 </button>
             )}
         </div>
     );
 });
+
+function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, categoryName }) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
+                <div className="p-6 text-center">
+                    <div className="w-12 h-12 rounded-full bg-red-50 mx-auto flex items-center justify-center mb-4">
+                        <AlertTriangle className="w-6 h-6 text-red-500" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Category?</h3>
+                    <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                        Are you sure you want to remove <span className="font-semibold text-gray-900">{categoryName}</span>?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button onClick={onConfirm} className="px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 shadow-md shadow-red-200 transition-all">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function EmptyState({ type }) {
     return (
