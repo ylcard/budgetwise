@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { iconMap } from "../utils/iconMapConfig";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
-const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle }, ref) => {
+const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, isSelected, onToggle, isAdmin }, ref) => {
     const IconComponent = category.icon && iconMap[category.icon] ? iconMap[category.icon] : Circle;
     const priorityConfig = FINANCIAL_PRIORITIES[category.priority] || { label: category.priority, color: '#6b7280' };
 
@@ -65,7 +65,7 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
                 </div>
             ) : (
                 /* UPDATED 14-Feb-2026: Hide edit/delete for system categories */
-                !category.isSystemCategory ? (
+                !category.isSystemCategory || isAdmin ? (
                     <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm">
                         <CustomButton
                             variant="ghost"
@@ -75,14 +75,16 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
                         >
                             <Pencil className="w-4 h-4" />
                         </CustomButton>
-                        <CustomButton
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={(e) => { e.stopPropagation(); onDelete(category); }}
-                            className="h-6 w-6 hover:bg-red-50 hover:text-red-600"
-                        >
-                            <Trash2 className="w-3.5 h-3.5" />
-                        </CustomButton>
+                        {!category.isSystemCategory && (
+                            <CustomButton
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={(e) => { e.stopPropagation(); onDelete(category); }}
+                                className="h-6 w-6 hover:bg-red-50 hover:text-red-600"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </CustomButton>
+                        )}
                     </div>
                 ) : (
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
