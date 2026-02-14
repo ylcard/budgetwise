@@ -5,6 +5,8 @@ import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
 import { base44 } from "@/api/base44Client";
+import NotificationCenter from "./components/notifications/NotificationCenter"; // ADDED 14-Feb-2026
+import NotificationBell from "./components/notifications/NotificationBell"; // ADDED 14-Feb-2026
 import {
   Sidebar,
   SidebarContent,
@@ -134,20 +136,29 @@ const LayoutContent = ({ children }) => {
             </button>
           )}
           <h1 className="text-lg font-semibold text-foreground truncate max-w-[60%]">{currentPageTitle}</h1>
+          
+          {/* ADDED 14-Feb-2026: Notification Bell - Mobile Header */}
+          <div className="absolute right-4">
+            <NotificationCenter />
+          </div>
         </div>
       </header>
 
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--bg-subtle)' }}>
         <Sidebar className="hidden md:flex border-r border-border">
           <SidebarHeader className="border-b border-border p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Wallet className="w-6 h-6 text-white" />
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Wallet className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-foreground text-lg">BudgetWise</h2>
+                  <p className="text-xs text-muted-foreground">Personal Finance</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-foreground text-lg">BudgetWise</h2>
-                <p className="text-xs text-muted-foreground">Personal Finance</p>
-              </div>
+              {/* ADDED 14-Feb-2026: Notification Bell - Desktop Sidebar */}
+              <NotificationCenter />
             </div>
           </SidebarHeader>
 
