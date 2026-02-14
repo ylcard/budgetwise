@@ -23,9 +23,13 @@ export const useSystemActions = (user) => {
             // 0. SERVER-SIDE SAFETY CHECK
             // We fetch specific data for THIS user to prevent duplicates regardless of UI state
             const [existingCats, existingGoals] = await Promise.all([
-                base44.entities.Category.filter({ user_email: user.email }),
+                base44.entities.Category.filter({ user_email: user.email }, 'name', 10),
                 base44.entities.BudgetGoal.filter({ user_email: user.email })
             ]);
+
+            if (existingCats.length > 0) {
+                return;
+            }
 
             // 1. Create Categories
             // Only create if specific name doesn't exist (Case insensitive check)
