@@ -4,7 +4,7 @@ import {
     PiggyBank, Laptop, Smartphone, Tv, Pizza, Fuel, Bus, HandCoins, Beer,
     Popcorn, Gamepad2, Wifi, Droplets, Podcast, Hotel, Banknote, Cross, Pill, Guitar,
     Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark, Landmark,
-    Sandwich, Hamburger, BicepsFlexed, Scissors, SmartphoneNfc
+    Sandwich, Hamburger, BicepsFlexed, Scissors, SmartphoneNfc, GraduationCap
 } from "lucide-react";
 
 // Central icon map - single source of truth for all category icons
@@ -13,7 +13,7 @@ export const iconMap = {
     Dumbbell, Book, Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, Laptop, Smartphone,
     Tv, Pizza, Fuel, Bus, HandCoins, Beer, Popcorn, Gamepad2, Wifi, Droplets, Podcast, Hotel, Banknote,
     Cross, Pill, Guitar, Drama, Cat, ShoppingBasket, Store, CarTaxiFront, House, CircleQuestionMark, Landmark,
-    Sandwich, Hamburger, BicepsFlexed, Scissors, SmartphoneNfc
+    Sandwich, Hamburger, BicepsFlexed, Scissors, SmartphoneNfc, GraduationCap
 };
 
 // Legacy support if needed, but we prefer ICON_OPTIONS now
@@ -73,6 +73,7 @@ export const ICON_OPTIONS = [
     { value: 'BicepsFlexed', label: 'Personal Care', tags: ['perfume', 'personal care', 'groom'] },
     { value: 'Scissors', label: 'Haircut', tags: ['hair', 'haircut'] },
     { value: 'SmartphoneNfc', label: 'Transfer', tags: ['bizum', 'transfer'] },
+    { value: 'GraduationCap', label: 'Education', tags: ['education', 'study', 'student', 'school'] },
 ];
 
 /**
