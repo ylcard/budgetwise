@@ -25,8 +25,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { useSettings } from "@/components/utils/SettingsContext";
+import { useMergedCategories } from "../hooks/useMergedCategories"; // ADDED 14-Feb-2026
 
-export default function CategorySelect({ value, onValueChange, categories, placeholder = "Select category", multiple = false }) {
+export default function CategorySelect({ value, onValueChange, categories: providedCategories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [isCreating, setIsCreating] = useState(false);
@@ -34,6 +35,10 @@ export default function CategorySelect({ value, onValueChange, categories, place
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { user } = useSettings();
+    
+    // ADDED 14-Feb-2026: Use merged categories if not provided externally
+    const { categories: mergedCategories } = useMergedCategories();
+    const categories = providedCategories || mergedCategories;
 
     // SORTING LOGIC: Needs -> Wants -> Others (then Alphabetical)
     const sortedCategories = useMemo(() => {
@@ -59,10 +64,18 @@ export default function CategorySelect({ value, onValueChange, categories, place
         return sortedCategories.filter(c => value.includes(c.id));
     }, [sortedCategories, value, multiple]);
 
-    // Check if the current search term perfectly matches an existing category
+    // UPDATED 14-Feb-2026: Check if the current search term matches an existing category
+    // Also check if category is a system category to prevent duplicate creation
     const exactMatchExists = useMemo(() => {
         if (!searchTerm) return true; // Don't show create if empty
         return categories.some(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase());
+    }, [categories, searchTerm]);
+    
+    // ADDED 14-Feb-2026: Prevent creation if name matches system category
+    const canCreate = useMemo(() => {
+        if (!searchTerm.trim()) return false;
+        const matchingCategory = categories.find(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase());
+        return !matchingCategory; // Can only create if no match exists (system or custom)
     }, [categories, searchTerm]);
 
     const handleSelect = (categoryId) => {
@@ -192,14 +205,15 @@ export default function CategorySelect({ value, onValueChange, categories, place
                 isMobile ? "max-h-none flex-1 pb-[env(safe-area-inset-bottom)]" : "max-h-64"
             )}>
                 <CommandEmpty className="py-2 px-4 text-sm">
-                    {!exactMatchExists && searchTerm.trim().length > 0 ? (
+                    {/* UPDATED 14-Feb-2026: Show create button only if name doesn't match any category */}
+                    {canCreate && searchTerm.trim().length > 0 ? (
                         <button
                             onClick={handleCreateCategory}
                             disabled={isCreating}
                             className="flex items-center gap-2 w-full text-left p-2 rounded-md hover:bg-gray-100 text-blue-600 transition-colors"
                         >
                             {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
-                            <span className="font-semibold">Create "{searchTerm}"</span>
+                            <span className="font-semibold">Create custom "{searchTerm}"</span>
                         </button>
                     ) : (
                         <span className="text-gray-500">No matching category.</span>
@@ -237,13 +251,17 @@ export default function CategorySelect({ value, onValueChange, categories, place
                                             className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
                                         />
                                         <div
-                                            className="w-5 h-5 rounded flex items-center justify-center mr-2"
-                                            style={{ backgroundColor: `${category.color}20` }}
+                                           className="w-5 h-5 rounded flex items-center justify-center mr-2"
+                                           style={{ backgroundColor: `${category.color}20` }}
                                         >
-                                            <Icon className="w-3 h-3" style={{ color: category.color }} />
+                                           <Icon className="w-3 h-3" style={{ color: category.color }} />
                                         </div>
-                                        {category.name}
-                                    </CommandItem>
+                                        <span>{category.name}</span>
+                                        {/* ADDED 14-Feb-2026: Show badge for system categories */}
+                                        {category.isSystemCategory && (
+                                           <span className="ml-auto text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">System</span>
+                                        )}
+                                        </CommandItem>
                                 );
                             })}
                         </CommandGroup>
