@@ -15,6 +15,8 @@ Deno.serve(async (req) => {
 
     // 3. ROUTE: Portfolio (Standard API)
     const route = url.searchParams.get("route");
+    // FEATURE DISABLED
+    return new Response(JSON.stringify({ message: "Feature Disabled" }), { status: 404, headers: corsHeaders });
 
     if (route === "portfolio") {
         try {
