@@ -32,25 +32,30 @@ export default function Categories() {
     }, [categories]);
 
     // Actions (mutations and handlers)
-    const { handleSubmit, handleEdit, handleDelete, isSubmitting } = useCategoryActions(
+    const { handleSubmit, handleEdit, isSubmitting } = useCategoryActions(
         setShowForm,
         setEditingCategory
     );
 
     // SYSTEM CATEGORY SAFEGUARD
-    const onSafeDelete = (category) => {
-        // Allow deleting system categories
-        /*
-        if (category.is_system) {
+    const onSafeDelete = async (category) => {
+        if (!window.confirm(`Delete category "${category.name}"?`)) return;
+
+        try {
+            // FIX: Explicitly use the ID instead of passing the whole object to a generic hook
+            await base44.entities.Category.delete(category.id);
+
+            // Update UI immediately
+            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+            showToast({ title: "Deleted", description: `${category.name} has been removed.` });
+        } catch (error) {
+            console.error("Delete failed:", error);
             showToast({
-                title: "Action Denied",
-                description: "System categories cannot be deleted.",
+                title: "Error",
+                description: `Could not delete ${category.name}. It might be in use.`,
                 variant: "destructive"
             });
-            return;
         }
-        */
-        handleDelete(category);
     };
 
     // SELECTION LOGIC
