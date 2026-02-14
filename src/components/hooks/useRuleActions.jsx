@@ -18,7 +18,7 @@ export function useRuleActions() {
     // Fetch Rules
     const { data: rules = [], isLoading, isFetching } = useQuery({
         queryKey: [QUERY_KEYS.CATEGORY_RULES, user?.email],
-        queryFn: () => base44.entities.CategoryRule.filter({ user_email: user?.email }),
+        queryFn: () => base44.entities.CategoryRule.filter({ created_by: user?.email }),
         enabled: !!user?.email
     });
 
@@ -35,7 +35,7 @@ export function useRuleActions() {
 
     const createRule = useMutation({
         mutationFn: () => base44.entities.CategoryRule.create({
-            user_email: user.email,
+            created_by: user.email,
             categoryId: formData.categoryId,
             keyword: isRegexMode ? null : formData.keyword,
             regexPattern: isRegexMode ? formData.regexPattern : null,
