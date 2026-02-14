@@ -160,8 +160,15 @@ export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, 
                     }}
                 />
             )}
+            {/* UPDATED 14-Feb-2026: Show count of system vs custom categories */}
             <CardHeader>
-                <CardTitle>All Categories ({sortedCategories.length})</CardTitle>
+                <CardTitle>
+                    All Categories ({sortedCategories.length})
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                        {categories.filter(c => c.isSystemCategory).length} System,{' '}
+                        {categories.filter(c => !c.isSystemCategory).length} Custom
+                    </span>
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

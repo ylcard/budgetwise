@@ -4,7 +4,8 @@ import { Plus, Trash2, Pencil, CheckSquare, X, Check, Lock, CheckCheck } from "l
 import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
 import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
 import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
-import { useCategories } from "../components/hooks/useBase44Entities";
+import { useMergedCategories } from "../components/hooks/useMergedCategories"; // UPDATED 14-Feb-2026: Use merged categories
+// import { useCategories } from "../components/hooks/useBase44Entities"; // COMMENTED 14-Feb-2026: Replaced by useMergedCategories
 import { useCategoryActions } from "../components/hooks/useActions";
 import CategoryForm from "../components/categories/CategoryForm";
 import CategoryGrid from "../components/categories/CategoryGrid";
@@ -23,8 +24,9 @@ export default function Categories() {
     const queryClient = useQueryClient();
     const { setFabButtons, clearFabButtons } = useFAB();
 
-    // Data fetching
-    const { categories, isLoading } = useCategories();
+    // UPDATED 14-Feb-2026: Fetch merged system + custom categories
+    const { categories: allCategories, customCategories, isLoading } = useMergedCategories();
+    const categories = allCategories; // Use merged for display
 
     // Sort alphabetically A-Z
     const sortedCategories = useMemo(() => {
@@ -37,15 +39,22 @@ export default function Categories() {
         setEditingCategory
     );
 
-    // SYSTEM CATEGORY SAFEGUARD
+    // UPDATED 14-Feb-2026: Prevent deletion of system categories
     const onSafeDelete = async (category) => {
+        // ADDED 14-Feb-2026: Block deletion of system categories
+        if (category.isSystemCategory) {
+            showToast({
+                title: "Cannot Delete",
+                description: `"${category.name}" is a system category and cannot be deleted.`,
+                variant: "destructive"
+            });
+            return;
+        }
+
         if (!window.confirm(`Delete category "${category.name}"?`)) return;
 
         try {
-            // FIX: Explicitly use the ID instead of passing the whole object to a generic hook
             await base44.entities.Category.delete(category.id);
-
-            // Update UI immediately
             await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
             showToast({ title: "Deleted", description: `${category.name} has been removed.` });
         } catch (error) {
@@ -95,15 +104,35 @@ export default function Categories() {
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
-        if (window.confirm(`Delete ${selectedIds.size} categories? This cannot be undone.`)) {
+        // ADDED 14-Feb-2026: Filter out system categories from deletion
+        const selectedCategories = categories.filter(c => selectedIds.has(c.id));
+        const systemCategories = selectedCategories.filter(c => c.isSystemCategory);
+        const customCategoriesIds = selectedCategories
+            .filter(c => !c.isSystemCategory)
+            .map(c => c.id);
+
+        if (systemCategories.length > 0) {
+            showToast({
+                title: "System Categories Excluded",
+                description: `${systemCategories.length} system categories cannot be deleted and will be skipped.`,
+                variant: "warning"
+            });
+        }
+
+        if (customCategoriesIds.length === 0) {
+            showToast({
+                title: "No Deletable Categories",
+                description: "You can only delete custom categories, not system categories.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        if (window.confirm(`Delete ${customCategoriesIds.length} custom categories? This cannot be undone.`)) {
             setIsBulkDeleting(true);
             try {
-                const idsToDelete = Array.from(selectedIds);
-
-                // FIX: Use Promise.allSettled to handle individual constraints (FKs) gracefully.
-                // deleteMany fails the whole batch or silently skips if constraints exist.
                 const results = await Promise.allSettled(
-                    idsToDelete.map(id => base44.entities.Category.delete(id))
+                    customCategoriesIds.map(id => base44.entities.Category.delete(id))
                 );
 
                 const successCount = results.filter(r => r.status === 'fulfilled').length;
@@ -136,9 +165,12 @@ export default function Categories() {
         }
     };
 
-    // ADDED 03-Feb-2026: Pull-to-refresh handler
+    // UPDATED 14-Feb-2026: Pull-to-refresh for both system and custom categories
     const handleRefresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_CATEGORIES] })
+        ]);
     };
 
     // FAB Configuration
@@ -315,12 +347,19 @@ function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, selec
                     )}
                 </div>
                 <div>
-                    <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                    <p className="text-xs text-gray-500 capitalize">{category.type}</p>
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                        {/* ADDED 14-Feb-2026: System category badge */}
+                        {category.isSystemCategory && (
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">System</span>
+                        )}
+                    </div>
+                    <p className="text-xs text-gray-500 capitalize">{category.priority || 'No priority'}</p>
                 </div>
             </div>
 
-            {!hasSelection && (
+            {/* UPDATED 14-Feb-2026: Disable edit/delete for system categories */}
+            {!hasSelection && !category.isSystemCategory && (
                 <div className="flex items-center gap-1">
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(category); }}
@@ -335,6 +374,13 @@ function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, selec
                     >
                         <Trash2 className="w-5 h-5" />
                     </button>
+                </div>
+            )}
+            
+            {/* ADDED 14-Feb-2026: Lock icon for system categories */}
+            {!hasSelection && category.isSystemCategory && (
+                <div className="flex items-center gap-1 text-gray-400">
+                    <Lock className="w-4 h-4" />
                 </div>
             )}
         </div>
