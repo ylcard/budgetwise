@@ -70,7 +70,7 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
                     <CustomButton
                         variant="ghost"
                         size="icon-sm"
-                        onClick={(e) => { e.stopPropagation(); onDelete(category.id); }}
+                        onClick={(e) => { e.stopPropagation(); onDelete(category); }}
                         className="h-6 w-6 hover:bg-red-50 hover:text-red-600"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
