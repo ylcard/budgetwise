@@ -114,7 +114,7 @@ export default function RecurringTransactionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+    <form onSubmit={handleSubmit} className="pt-4">
       {validationError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -123,7 +123,7 @@ export default function RecurringTransactionForm({
       )}
 
       {/* Type Toggle */}
-      <div className="flex justify-center pb-2">
+      <div className="flex justify-center pb-2 mb-6">
         <div className="flex gap-2 p-1 bg-slate-100/80 rounded-lg">
           <CustomButton
             type="button"
@@ -147,7 +147,7 @@ export default function RecurringTransactionForm({
       </div>
 
       {/* Title */}
-      <div>
+      <div className="mb-6">
         <Input
           id="title"
           value={formData.title}
@@ -160,7 +160,7 @@ export default function RecurringTransactionForm({
       </div>
 
       {/* Amount */}
-      <div>
+      <div className="mb-6">
         <AmountInput
           id="amount"
           value={formData.amount}
@@ -173,7 +173,7 @@ export default function RecurringTransactionForm({
       </div>
 
       {/* Frequency & Date Row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Frequency</Label>
           <MobileDrawerSelect
@@ -204,25 +204,43 @@ export default function RecurringTransactionForm({
             transition={{ type: "spring", bounce: 0, duration: 0.4 }}
             className="overflow-hidden"
           >
-            <div className="flex gap-3 pt-1">
-              <div className="flex-[2]">
-                <CategorySelect
-                  value={formData.category_id}
-                  onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  categories={categories}
-                  placeholder="Category"
-                />
-              </div>
-              <div className="flex-1">
-                <MobileDrawerSelect
-                  value={formData.financial_priority || ''}
-                  onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
-                  placeholder="Priority"
-                  options={[
-                    { value: "needs", label: "Essentials" },
-                    { value: "wants", label: "Lifestyle" },
-                  ]}
-                />
+            {/* Margin added INSIDE the animated container to collapse smoothly */}
+            <div className="space-y-1.5 mb-6">
+              <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Category & Priority</Label>
+              <div className="flex gap-3">
+                <div className="flex-[3]">
+                  <CategorySelect
+                    value={formData.category_id}
+                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                    categories={categories}
+                    placeholder="Category"
+                  />
+                </div>
+                <div className="flex-[2]">
+                  <div className="flex h-10 bg-slate-100 rounded-md p-1 items-center">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, financial_priority: 'needs' })}
+                      className={cn(
+                        "flex-1 text-[10px] font-medium h-full rounded-sm transition-all",
+                        formData.financial_priority === 'needs' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      Essentials
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, financial_priority: 'wants' })}
+                      className={cn(
+                        "flex-1 text-[10px] font-medium h-full rounded-sm transition-all",
+                        formData.financial_priority === 'wants' ? "bg-white text-purple-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      Lifestyle
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -230,7 +248,7 @@ export default function RecurringTransactionForm({
       </AnimatePresence>
 
       {/* Notes */}
-      <div className="space-y-2">
+      <div className="space-y-2 mb-6">
         <AnimatePresence mode="wait">
           {!showNotes && !formData.notes ? (
             <motion.div key="add-note-btn" exit={{ opacity: 0, scale: 0.95 }}>
