@@ -2,17 +2,17 @@ import { useState, useMemo, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
-import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
-import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
+import { PullToRefresh } from "../components/ui/PullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
     useTransactions,
-    useCategories,
     useCustomBudgetsForPeriod,
     useSystemBudgetsForPeriod,
 } from "../components/hooks/useBase44Entities";
+import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
 import { getCustomBudgetStats } from "../components/utils/financialCalculations";
@@ -28,7 +28,7 @@ export default function Budgets() {
     const { setFabButtons, clearFabButtons } = useFAB();
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
     const { transactions } = useTransactions();
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
     const { customBudgets, systemBudgetsWithStats } = useBudgetsAggregates(
