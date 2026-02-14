@@ -13,4 +13,5 @@ export const QUERY_KEYS = {
     EXCHANGE_RATES: 'exchangeRates',
     CATEGORY_RULES: 'categoryRules',
     NOTIFICATIONS: 'notifications', // ADDED 14-Feb-2026
+    CURRENCIES: 'currencies', // ADDED 14-Feb-2026: REST Countries API currencies
 };
