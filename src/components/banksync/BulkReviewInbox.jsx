@@ -75,7 +75,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             const allTransactionUpdates = [];
 
             // 1. Fetch current rules to check for keyword collisions
-            const existingRules = await base44.entities.CategoryRule.list({ user_email: user.email }) || [];
+            const existingRules = await base44.entities.CategoryRule.list({ created_by: user.email }) || [];
 
             // Track keywords processed in this batch to prevent internal duplicates
             const keywordsProcessedInBatch = new Set();
@@ -96,7 +96,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                 } else if (!keywordsProcessedInBatch.has(finalKeywords)) {
                     // CREATE: Queue for bulk creation
                     rulesToCreate.push({
-                        user_email: user.email,
+                        created_by: user.email,
                         keyword: finalKeywords,
                         categoryId: categoryId,
                         renamedTitle: finalTitle
