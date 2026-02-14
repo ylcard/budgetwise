@@ -3,6 +3,7 @@
 export const QUERY_KEYS = {
     TRANSACTIONS: 'transactions',
     CATEGORIES: 'categories',
+    SYSTEM_CATEGORIES: 'systemCategories', // ADDED 14-Feb-2026: Global categories
     GOALS: 'goals',
     CUSTOM_BUDGETS: 'customBudgets',
     SYSTEM_BUDGETS: 'systemBudgets',
