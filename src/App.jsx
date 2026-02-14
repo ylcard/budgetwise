@@ -18,7 +18,8 @@ import ManagePage, { PreferencesSection, AccountSection } from './pages/Manage';
 import Categories from './pages/Categories';
 import Automation from './pages/Automation';
 import BankSync from './pages/BankSync';
-import TransactionsPage, { TransactionHistory, RecurringTransactions } from './pages/Transactions';
+import TransactionsPage, { TransactionHistory } from './pages/Transactions';
+import RecurringTransactions from './pages/RecurringTransactions';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
