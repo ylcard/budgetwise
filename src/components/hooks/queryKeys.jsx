@@ -11,4 +11,5 @@ export const QUERY_KEYS = {
     ALLOCATIONS: 'allocations',
     EXCHANGE_RATES: 'exchangeRates',
     CATEGORY_RULES: 'categoryRules',
+    NOTIFICATIONS: 'notifications', // ADDED 14-Feb-2026
 };
