@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CategorySelect from "@/components/ui/CategorySelect";
 import { Loader2, Code2, Type, ShieldCheck, Sparkles } from "lucide-react";
-import { useCategories } from "@/components/hooks/useBase44Entities";
+import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 
 export default function CreateRuleDialog({
     open,
@@ -18,7 +18,7 @@ export default function CreateRuleDialog({
     isSubmitting,
     isEditing
 }) {
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -78,7 +78,7 @@ export default function CreateRuleDialog({
                             onValueChange={(id) => setFormData({ ...formData, categoryId: id })}
                         />
                     </div>
-                    
+
                     <div className="grid gap-2">
                         <Label>Financial Priority</Label>
                         <Select
@@ -90,10 +90,10 @@ export default function CreateRuleDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="needs">
-                                    <span className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-500"/> Essentials</span>
+                                    <span className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-500" /> Essentials</span>
                                 </SelectItem>
                                 <SelectItem value="wants">
-                                    <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500"/> Lifestyle</span>
+                                    <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Lifestyle</span>
                                 </SelectItem>
                             </SelectContent>
                         </Select>
