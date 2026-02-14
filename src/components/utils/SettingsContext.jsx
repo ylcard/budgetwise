@@ -59,7 +59,7 @@ export const SettingsProvider = ({ children }) => {
             setUser(currentUser);
 
             // Filter by email directly to avoid fetching ALL user settings
-            const userSettingsArray = await base44.entities.UserSettings.filter({ user_email: currentUser.email });
+            const userSettingsArray = await base44.entities.UserSettings.filter({ created_by: currentUser.email });
             const userSettings = userSettingsArray[0];
 
             if (userSettings) {
@@ -118,7 +118,7 @@ export const SettingsProvider = ({ children }) => {
             let targetId = settingsId;
 
             if (!targetId && user?.email) {
-                const existing = await base44.entities.UserSettings.filter({ user_email: user.email });
+                const existing = await base44.entities.UserSettings.filter({ created_by: user.email });
                 if (existing && existing[0]) {
                     targetId = existing[0].id;
                     setSettingsId(targetId); // Update state for next time
@@ -134,7 +134,7 @@ export const SettingsProvider = ({ children }) => {
                 const created = await base44.entities.UserSettings.create({
                     ...updatedSettings, // CRITICAL: Use full, merged settings for creation
                     ...dbPayload,
-                    user_email: user.email
+                    created_by: user.email
                 });
                 if (created) setSettingsId(created.id);
             }
