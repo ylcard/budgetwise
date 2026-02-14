@@ -217,7 +217,7 @@ export const useGoalActions = (user, goals) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
 
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
-            const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
+            const allGoals = await base44.entities.BudgetGoal.filter({ created_by: user?.email });
             await snapshotFutureBudgets(
                 { ...variables.data, priority: variables.priority },
                 settings,
@@ -236,7 +236,7 @@ export const useGoalActions = (user, goals) => {
         onSuccess: async (data, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
-            const allGoals = await base44.entities.BudgetGoal.filter({ user_email: user?.email });
+            const allGoals = await base44.entities.BudgetGoal.filter({ created_by: user?.email });
             await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
@@ -264,7 +264,7 @@ export const useGoalActions = (user, goals) => {
                 return createGoalMutation.mutateAsync({
                     priority,
                     target_percentage: percentage,
-                    user_email: user.email,
+                    created_by: user.email,
                     ...extraData
                 });
             }
@@ -308,7 +308,7 @@ export const useCustomBudgetActions = (config = {}) => {
             return {
                 ...data,
                 status,
-                user_email: user.email,
+                created_by: user.email,
                 isSystemBudget: false
             };
         },
