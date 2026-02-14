@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { QUERY_KEYS } from './queryKeys';
-import { useSettings } from '../utils/SettingsContext';
+import { useAuth } from '@/lib/AuthContext';
 import { useMemo } from 'react';
 
 /**
@@ -10,7 +10,7 @@ import { useMemo } from 'react';
  * Custom categories are user-specific and editable
  */
 export const useMergedCategories = () => {
-    const { user } = useSettings();
+    const { user } = useAuth();
 
     // Fetch system categories (available to all users)
     const { data: systemCategories = [], isLoading: isLoadingSystem } = useQuery({
