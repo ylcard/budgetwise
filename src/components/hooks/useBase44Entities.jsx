@@ -87,17 +87,6 @@ export const useTransactions = (startDate = null, endDate = null) => {
     return { transactions, isLoading, error };
 };
 
-// Hook for fetching categories
-export const useCategories = () => {
-    const { data: categories = [], isLoading } = useQuery({
-        queryKey: [QUERY_KEYS.CATEGORIES],
-        queryFn: () => base44.entities.Category.list(),
-        initialData: [],
-    });
-
-    return { categories, isLoading };
-};
-
 // Hook for fetching budget goals
 export const useGoals = (user) => {
     const { data: goals = [], isLoading } = useQuery({
