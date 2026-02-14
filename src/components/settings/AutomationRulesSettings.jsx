@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSettings } from "@/components/utils/SettingsContext";
-import { useCategories } from "@/components/hooks/useBase44Entities";
+import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
@@ -16,7 +16,7 @@ import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
 
 export default function AutomationRulesSettings() {
     const { user } = useSettings();
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
 
     const {
         rules, isLoading,
