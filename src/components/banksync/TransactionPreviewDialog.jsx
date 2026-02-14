@@ -10,7 +10,8 @@ import {
 import { CustomButton } from "@/components/ui/CustomButton";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import CategorizeReview from "@/components/import/CategorizeReview";
-import { useCategories, useAllBudgets } from "@/components/hooks/useBase44Entities";
+import { useAllBudgets } from "@/components/hooks/useBase44Entities";
+import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { useSettings } from "@/components/utils/SettingsContext";
 
 /**
@@ -29,7 +30,7 @@ export default function TransactionPreviewDialog({
     isImporting
 }) {
     const { user } = useSettings();
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
     const { allBudgets } = useAllBudgets(user);
     const [localData, setLocalData] = useState([]);
 
