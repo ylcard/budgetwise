@@ -3,7 +3,7 @@ import { format, parseISO, isPast, isToday, isSameMonth } from "date-fns";
 import { Check, Clock, CreditCard, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils"; // Assuming you have a clsx/tailwind-merge utility
+import { cn } from "@/lib/utils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import RecurringTransactionForm from "../recurring/RecurringTransactionForm";
