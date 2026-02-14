@@ -26,6 +26,9 @@ import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
 import { Checkbox } from "@/components/ui/checkbox";
+import ExportDialog from "../components/manage/ExportDialog";
+import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
+import { format } from "date-fns";
 
 export default function ManageLayout() {
     return (
@@ -275,6 +278,9 @@ export function AccountSection() {
         settings: true,
         bankConnections: false // Sensitive - default off
     });
+    const [dateRange, setDateRange] = useState({ enabled: false, from: null, to: null });
+    const [fileFormat, setFileFormat] = useState('json'); // 'json' | 'csv' | 'pdf'
+    const [pdfTemplate, setPdfTemplate] = useState('summary'); // 'summary' | 'detailed' | 'comprehensive'
 
     // Check if user is using email/password auth (not Google)
     const isEmailPasswordAuth = !user?.picture; // Simple heuristic
@@ -425,9 +431,17 @@ export function AccountSection() {
 
             const exportData = {};
 
-            // Fetch selected data types
+            // Build date filter if enabled
+            const dateFilter = dateRange.enabled && dateRange.from && dateRange.to
+                ? { date: { $gte: dateRange.from, $lte: dateRange.to } }
+                : {};
+
+            // Fetch selected data types with date filtering where applicable
             if (exportSelections.transactions) {
-                exportData.transactions = await base44.entities.Transaction.filter({ created_by: userEmail });
+                exportData.transactions = await base44.entities.Transaction.filter({ 
+                    created_by: userEmail, 
+                    ...dateFilter 
+                });
             }
             if (exportSelections.categories) {
                 exportData.categories = await base44.entities.Category.filter({ created_by: userEmail });
@@ -436,10 +450,22 @@ export function AccountSection() {
                 exportData.budgetGoals = await base44.entities.BudgetGoal.filter({ created_by: userEmail });
             }
             if (exportSelections.systemBudgets) {
-                exportData.systemBudgets = await base44.entities.SystemBudget.filter({ created_by: userEmail });
+                const budgetFilter = dateRange.enabled && dateRange.from && dateRange.to
+                    ? { startDate: { $lte: dateRange.to }, endDate: { $gte: dateRange.from } }
+                    : {};
+                exportData.systemBudgets = await base44.entities.SystemBudget.filter({ 
+                    created_by: userEmail,
+                    ...budgetFilter
+                });
             }
             if (exportSelections.customBudgets) {
-                exportData.customBudgets = await base44.entities.CustomBudget.filter({ created_by: userEmail });
+                const budgetFilter = dateRange.enabled && dateRange.from && dateRange.to
+                    ? { startDate: { $lte: dateRange.to }, endDate: { $gte: dateRange.from } }
+                    : {};
+                exportData.customBudgets = await base44.entities.CustomBudget.filter({ 
+                    created_by: userEmail,
+                    ...budgetFilter
+                });
             }
             if (exportSelections.budgetAllocations) {
                 exportData.budgetAllocations = await base44.entities.CustomBudgetAllocation.filter({ created_by: userEmail });
@@ -467,22 +493,83 @@ export function AccountSection() {
             exportData._metadata = {
                 exportDate: new Date().toISOString(),
                 userEmail: userEmail,
-                appVersion: "1.0.0"
+                appVersion: "1.0.0",
+                dateRange: dateRange.enabled ? { from: dateRange.from, to: dateRange.to } : null
             };
 
-            // Create downloadable file
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `budgetwise-data-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            // Enrich with category names for better readability
+            if (exportData.transactions && exportData.categories) {
+                exportData.transactions = exportData.transactions.map(tx => ({
+                    ...tx,
+                    category: exportData.categories.find(c => c.id === tx.category_id)?.name || 'Uncategorized'
+                }));
+            }
 
-            showToast({ title: "Export Complete", description: "Your data has been downloaded." });
+            // Export based on selected format
+            if (fileFormat === 'json') {
+                const dataStr = JSON.stringify(exportData, null, 2);
+                downloadFile(
+                    dataStr, 
+                    `budgetwise-data-${new Date().toISOString().split('T')[0]}.json`,
+                    'application/json'
+                );
+                showToast({ title: "Export Complete", description: "JSON data downloaded successfully." });
+            } else if (fileFormat === 'csv') {
+                // Export each entity type as separate CSV
+                const csvFiles = [];
+                
+                Object.entries(exportData).forEach(([key, data]) => {
+                    if (key === '_metadata' || !Array.isArray(data) || data.length === 0) return;
+                    
+                    const headers = CSV_HEADERS[key];
+                    if (headers) {
+                        const csv = convertToCSV(data, headers);
+                        csvFiles.push({ name: key, content: csv });
+                    }
+                });
+
+                // For simplicity, download the first/largest dataset as CSV
+                // Or create a ZIP file with all CSVs (requires additional library)
+                if (csvFiles.length > 0) {
+                    const mainFile = csvFiles.find(f => f.name === 'transactions') || csvFiles[0];
+                    downloadFile(
+                        mainFile.content,
+                        `budgetwise-${mainFile.name}-${new Date().toISOString().split('T')[0]}.csv`,
+                        'text/csv'
+                    );
+                    showToast({ 
+                        title: "CSV Export Complete", 
+                        description: `Downloaded ${mainFile.name}.csv. Other entities available in JSON format.` 
+                    });
+                }
+            } else if (fileFormat === 'pdf') {
+                // Call backend function to generate PDF
+                showToast({ title: "Generating PDF", description: "Creating your report..." });
+                
+                const response = await base44.functions.invoke('generatePdfReport', {
+                    template: pdfTemplate,
+                    data: exportData,
+                    dateRange: dateRange.enabled ? { from: dateRange.from, to: dateRange.to } : null,
+                    settings: {
+                        currencySymbol: settings.currencySymbol || '$',
+                        decimalPlaces: settings.decimalPlaces || 2
+                    }
+                });
+
+                // Download PDF
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `budgetwise-report-${new Date().toISOString().split('T')[0]}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showToast({ title: "PDF Export Complete", description: "Your report has been downloaded." });
+            }
+
             setShowExportDialog(false);
         } catch (error) {
             console.error("Export failed:", error);
@@ -694,7 +781,7 @@ export function AccountSection() {
                     <CardTitle className="flex items-center gap-2">
                         <Download className="w-5 h-5" /> Export Your Data
                     </CardTitle>
-                    <CardDescription>Download all your financial data in JSON format.</CardDescription>
+                    <CardDescription>Download your financial data in JSON, CSV, or PDF format with custom date ranges.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <CustomButton
@@ -708,63 +795,20 @@ export function AccountSection() {
             </Card>
 
             {/* Export Dialog */}
-            <AlertDialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-                <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Export Your Data</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Select which data you want to include in the export. All selected data will be downloaded as a JSON file.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                        {Object.entries({
-                            transactions: "Transactions",
-                            categories: "Categories",
-                            budgetGoals: "Budget Goals",
-                            systemBudgets: "System Budgets",
-                            customBudgets: "Custom Budgets",
-                            budgetAllocations: "Budget Allocations",
-                            exchangeRates: "Exchange Rates",
-                            cashWallet: "Cash Wallet",
-                            categoryRules: "Category Rules",
-                            recurringTransactions: "Recurring Transactions",
-                            settings: "Settings",
-                            bankConnections: "Bank Connections (Sensitive)"
-                        }).map(([key, label]) => (
-                            <div key={key} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={key}
-                                    checked={exportSelections[key]}
-                                    onCheckedChange={(checked) =>
-                                        setExportSelections(prev => ({ ...prev, [key]: checked }))
-                                    }
-                                />
-                                <Label htmlFor={key} className="cursor-pointer text-sm">
-                                    {label}
-                                </Label>
-                            </div>
-                        ))}
-                    </div>
-
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isExporting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleExportData}
-                            disabled={isExporting || !Object.values(exportSelections).some(v => v)}
-                        >
-                            {isExporting ? (
-                                <>Exporting...</>
-                            ) : (
-                                <>
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download JSON
-                                </>
-                            )}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ExportDialog
+                open={showExportDialog}
+                onOpenChange={setShowExportDialog}
+                exportSelections={exportSelections}
+                setExportSelections={setExportSelections}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                fileFormat={fileFormat}
+                setFileFormat={setFileFormat}
+                pdfTemplate={pdfTemplate}
+                setPdfTemplate={setPdfTemplate}
+                onExport={handleExportData}
+                isExporting={isExporting}
+            />
 
             {/* Danger Zone */}
             <Card className="border-red-100 shadow-sm">
