@@ -74,7 +74,7 @@ export default function Categories() {
             }
         }
 
-        originalSubmit(data, editingCategory);
+        performMutation(data, editingCategory);
     };
 
     // UPDATED 14-Feb-2026: Prevent deletion of system categories
