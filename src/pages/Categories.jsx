@@ -27,7 +27,7 @@ export default function Categories() {
     const { user } = useAuth();
 
     // UPDATED 14-Feb-2026: Fetch merged system + custom categories
-    const { categories: allCategories, customCategories, isLoading } = useMergedCategories();
+    const { categories: allCategories, isLoading } = useMergedCategories();
     const categories = allCategories; // Use merged for display
 
     // Admin check
@@ -48,7 +48,7 @@ export default function Categories() {
     }, [categories]);
 
     // Actions (mutations and handlers)
-    const { handleSubmit, handleEdit, isSubmitting } = useCategoryActions(
+    const { handleSubmit: performMutation, handleEdit, isSubmitting } = useCategoryActions(
         setShowForm,
         setEditingCategory
     );
