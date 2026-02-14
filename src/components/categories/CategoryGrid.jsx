@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import CategoryCard from "./CategoryCard";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Box, Lock } from "lucide-react";
+import { Layers, Box, Lock, X } from "lucide-react";
 import { iconMap } from "../utils/iconMapConfig";
 
 export default function CategoryGrid({ systemCategories = [], customCategories = [], onEdit, onDelete, isLoading, isSelectionMode, selectedIds, onToggleSelection, onSelectionChange, isAdmin }) {
@@ -109,6 +108,43 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
         };
     }, [handleMouseMove]);
 
+    // Helper to render a group of categories in the "Bento" style
+    const renderCategoryGroup = (categories, groupType) => {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {['needs', 'wants', 'savings'].map(priority => {
+                    const priorityCats = categories.filter(c => c.priority === priority);
+                    if (priorityCats.length === 0) return null;
+
+                    return (
+                        <div key={priority} className="space-y-3">
+                            <h3 className="font-semibold capitalize text-gray-500 text-sm flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[priority].color }}></span>
+                                {priority}
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {priorityCats.map(cat => (
+                                    <CategoryPill
+                                        key={cat.id}
+                                        ref={(node) => setCardRef(cat.id, node)}
+                                        category={cat}
+                                        isSystem={groupType === 'system'}
+                                        isAdmin={isAdmin}
+                                        onEdit={onEdit}
+                                        onDelete={onDelete}
+                                        isSelectionMode={isSelectionMode}
+                                        isSelected={selectedIds?.has(cat.id)}
+                                        onToggle={() => onToggleSelection(cat.id, !selectedIds?.has(cat.id))}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     if (isLoading) {
         return <CategorySkeleton />;
     }
@@ -169,22 +205,9 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
                         >
                             {customCategories.length > 0 ? (
-                                customCategories.map((category) => (
-                                    <CategoryCard
-                                        key={category.id}
-                                        ref={(node) => setCardRef(category.id, node)}
-                                        category={category}
-                                        onEdit={onEdit}
-                                        onDelete={onDelete}
-                                        isSelectionMode={isSelectionMode}
-                                        isSelected={selectedIds?.has(category.id)}
-                                        onToggle={() => onToggleSelection(category.id, !selectedIds?.has(category.id))}
-                                        isAdmin={isAdmin}
-                                    />
-                                ))
+                                renderCategoryGroup(customCategories, 'custom')
                             ) : (
                                 <EmptyState type="custom" />
                             )}
@@ -196,21 +219,8 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
                         >
-                            {systemCategories.map((category) => (
-                                <CategoryCard
-                                    key={category.id}
-                                    ref={(node) => setCardRef(category.id, node)}
-                                    category={category}
-                                    onEdit={isAdmin ? onEdit : undefined}
-                                    onDelete={undefined} // System categories generally cannot be deleted
-                                    isSelectionMode={isSelectionMode}
-                                    isSelected={selectedIds?.has(category.id)}
-                                    onToggle={() => onToggleSelection(category.id, !selectedIds?.has(category.id))}
-                                    isAdmin={isAdmin}
-                                />
-                            ))}
+                            {renderCategoryGroup(systemCategories, 'system')}
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -235,6 +245,53 @@ function TabButton({ isActive, onClick, icon: Icon, label, count }) {
         </button>
     );
 }
+
+const CategoryPill = forwardRef(({ category, isSystem, isAdmin, onEdit, onDelete, isSelectionMode, isSelected, onToggle }, ref) => {
+    const Icon = iconMap[category.icon] || Box;
+
+    const handleClick = (e) => {
+        if (isSelectionMode) {
+            onToggle();
+        } else if ((isSystem && isAdmin) || (!isSystem)) {
+            onEdit(category);
+        }
+    };
+
+    const handleDelete = (e) => {
+        e.stopPropagation();
+        onDelete(category.id);
+    };
+
+    return (
+        <div
+            ref={ref}
+            onClick={handleClick}
+            className={`group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border shadow-sm transition-all cursor-pointer relative
+                ${isSelected
+                    ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50'
+                    : 'border-gray-100 hover:border-blue-300 hover:shadow-md'
+                }
+                ${isSystem && !isAdmin ? 'opacity-80 cursor-default hover:border-gray-100 hover:shadow-none' : ''}
+            `}
+        >
+            <div
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-xs"
+                style={{ backgroundColor: `${category.color}20`, color: category.color }}
+            >
+                <Icon className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-sm font-medium text-gray-700">{category.name}</span>
+            {isSystem && isAdmin && (
+                <Lock className="w-3 h-3 text-gray-300 group-hover:text-blue-400 transition-colors ml-1" />
+            )}
+            {!isSystem && !isSelectionMode && (
+                <button onClick={handleDelete} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-all ml-1">
+                    <X className="w-3 h-3" />
+                </button>
+            )}
+        </div>
+    );
+});
 
 function EmptyState({ type }) {
     return (
