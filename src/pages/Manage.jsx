@@ -21,7 +21,7 @@ import { showToast } from "@/components/ui/use-toast";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm } from "../components/hooks/useActions";
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components/utils/constants";
+import { SETTINGS_KEYS } from "../components/utils/constants";
 import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
