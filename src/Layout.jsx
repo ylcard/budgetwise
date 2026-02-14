@@ -42,7 +42,7 @@ const LayoutContent = ({ children }) => {
 
   // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
   const navigationHistory = useRef({});
-  const currentTab = useRef(null);  
+  const currentTab = useRef(null);
 
   // UPDATED 03-Feb-2026: Get current page title and determine if on root tab
   const primaryNav = navigationItems.slice(0, 4);
@@ -121,8 +121,8 @@ const LayoutContent = ({ children }) => {
 
   return (
     <SidebarProvider>
-      {/* UPDATED 03-Feb-2026: Mobile-only fixed top header with dynamic back button (iOS native standard) */}
-      <header className="md:hidden fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md border-b border-border z-[100] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {/* Mobile-only fixed top header with dynamic back button (iOS native standard) */}
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md border-b border-border z-40 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-center h-14 px-4 relative">
           {!isRootPage && (
             <button
@@ -219,7 +219,7 @@ const LayoutContent = ({ children }) => {
             </RouteTransition>
           </div>
 
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t border-border z-[100]" style={{ paddingBottom: 'var(--safe-bottom-inset)', height: 'var(--nav-total-height)' }}>
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t border-border z-40" style={{ paddingBottom: 'var(--safe-bottom-inset)', height: 'var(--nav-total-height)' }}>
             <div className="flex w-full items-center px-2 py-2 select-none h-[var(--mobile-bottom-nav-height)]">
               {primaryNav.map((item) => {
                 const isTabActive = activeTab === item.url;
