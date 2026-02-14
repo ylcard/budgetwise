@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEtoroData } from '../../components/hooks/useEtoroData';
 import { useSettings } from '../../components/utils/SettingsContext';
-import { Loader2, TrendingUp } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function EtoroTicker() {
@@ -13,8 +13,10 @@ export default function EtoroTicker() {
   const [shouldScroll, setShouldScroll] = useState(false);
   const contentRef = useRef(null);
 
-  // Default to 0 if undefined to prevent errors
-  const isPositiveDay = (dailyChange || 0) >= 0;
+  // Strict status checks
+  const isPositive = dailyChange > 0;
+  const isNegative = dailyChange < 0;
+  // Neutral covers 0, undefined, or null
 
   // Formatting: 10300 -> $10.9k (Respects Settings + Shortens)
   const formatValue = (val) => {
@@ -81,18 +83,31 @@ export default function EtoroTicker() {
           "pointer-events-auto flex items-center h-12 bg-slate-900 border shadow-2xl overflow-hidden cursor-pointer transition-colors duration-500",
           // Shape & Size
           isExpanded ? "rounded-full px-5 max-w-[90vw] md:max-w-2xl" : "rounded-full px-3 w-auto",
-          // Dynamic Border & Glow based on performance
-          isPositiveDay
+          // Dynamic Border & Glow based on strict performance
+          isPositive
             ? "border-emerald-500/30 shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] hover:border-emerald-500/50"
-            : "border-rose-500/30 shadow-[0_0_20px_-5px_rgba(244,63,94,0.3)] hover:border-rose-500/50"
+            : isNegative
+              ? "border-rose-500/30 shadow-[0_0_20px_-5px_rgba(244,63,94,0.3)] hover:border-rose-500/50"
+              : "border-slate-500/30 shadow-[0_0_20px_-5px_rgba(148,163,184,0.1)] hover:border-slate-500/50"
         )}
       >
         {/* Left Icon/Status */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="relative">
-            <TrendingUp className={cn("h-5 w-5", status === 'Live' ? (isPositiveDay ? 'text-emerald-500' : 'text-rose-500') : 'text-amber-500')} />
+            {/* Swap Icon based on state */}
+            {status === 'Live' ? (
+              isPositive ? <TrendingUp className="h-5 w-5 text-emerald-500" /> :
+                isNegative ? <TrendingDown className="h-5 w-5 text-rose-500" /> :
+                  <Minus className="h-5 w-5 text-slate-400" />
+            ) : (
+              <TrendingUp className="h-5 w-5 text-amber-500" />
+            )}
+
             {status === 'Live' && (
-              <span className={cn("absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full animate-pulse", isPositiveDay ? "bg-emerald-500" : "bg-rose-500")} />
+              <span className={cn(
+                "absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full animate-pulse",
+                isPositive ? "bg-emerald-500" : isNegative ? "bg-rose-500" : "bg-slate-400"
+              )} />
             )}
           </div>
           {!isExpanded && (
