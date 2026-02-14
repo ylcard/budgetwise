@@ -4,15 +4,17 @@
  * Updated: 11-Nov-2025 - Added formatCurrency from formatCurrency.js
  */
 
-import { CURRENCY_SYMBOLS_MAP } from "./constants";
-
 /**
  * Get the currency symbol for a given currency code
  * @param {string} currencyCode - The ISO currency code (e.g., 'USD', 'EUR', 'GBP')
  * @returns {string} The currency symbol or the currency code if not found
  */
 export const getCurrencySymbol = (currencyCode) => {
-    return CURRENCY_SYMBOLS_MAP[currencyCode] || currencyCode;
+    try {
+        return (0).toLocaleString(undefined, { style: 'currency', currency: currencyCode, minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(/\d/g, '').trim();
+    } catch (e) {
+        return currencyCode;
+    }
 };
 
 /**
