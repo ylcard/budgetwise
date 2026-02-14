@@ -13,6 +13,7 @@ import CategorySelect from "../ui/CategorySelect";
 import { useSettings } from "../utils/SettingsContext";
 import { formatDateString } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
+import { cn } from "@/lib/utils";
 
 const FREQUENCY_OPTIONS = [
   { value: "daily", label: "Daily" },
@@ -110,7 +111,7 @@ export default function RecurringTransactionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6 pt-4">
       {validationError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -119,22 +120,23 @@ export default function RecurringTransactionForm({
       )}
 
       {/* Type Toggle */}
-      <div className="space-y-2">
-        <Label>Type</Label>
-        <div className="flex gap-2">
+      <div className="flex justify-center pb-2">
+        <div className="flex gap-2 p-1 bg-slate-100/80 rounded-lg">
           <CustomButton
             type="button"
-            variant={formData.type === 'expense' ? 'default' : 'outline'}
+            variant={formData.type === 'expense' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setFormData({ ...formData, type: 'expense' })}
+            className={cn("w-24 transition-all", formData.type === 'expense' && "shadow-sm")}
           >
             Expense
           </CustomButton>
           <CustomButton
             type="button"
-            variant={formData.type === 'income' ? 'success' : 'outline'}
+            variant={formData.type === 'income' ? 'success' : 'ghost'}
             size="sm"
             onClick={() => setFormData({ ...formData, type: 'income' })}
+            className={cn("w-24 transition-all", formData.type === 'income' && "shadow-sm")}
           >
             Income
           </CustomButton>
@@ -142,21 +144,20 @@ export default function RecurringTransactionForm({
       </div>
 
       {/* Title */}
-      <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
+      <div>
         <Input
           id="title"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          placeholder="e.g., Monthly Rent, Salary"
+          placeholder="Template Title (e.g., Rent, Netflix)"
+          className="text-lg font-medium border-0 border-b rounded-none px-0 h-10 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
           required
           autoComplete="off"
         />
       </div>
 
       {/* Amount */}
-      <div className="space-y-2">
-        <Label htmlFor="amount">Amount</Label>
+      <div>
         <AmountInput
           id="amount"
           value={formData.amount}
@@ -164,47 +165,48 @@ export default function RecurringTransactionForm({
           placeholder="0.00"
           currency={settings?.baseCurrency || 'EUR'}
           required
+          className="text-2xl h-12 font-semibold"
         />
       </div>
 
-      {/* Frequency */}
-      <div className="space-y-2">
-        <Label>Frequency</Label>
-        <MobileDrawerSelect
-          value={formData.frequency}
-          onValueChange={(value) => setFormData({ ...formData, frequency: value })}
-          placeholder="Select frequency"
-          options={FREQUENCY_OPTIONS}
-        />
-      </div>
-
-      {/* Next Due Date */}
-      <div className="space-y-2">
-        <Label>Next Due Date</Label>
-        <DatePicker
-          value={formData.nextOccurrence}
-          onChange={(value) => setFormData({ ...formData, nextOccurrence: value })}
-          placeholder="Select date"
-        />
+      {/* Frequency & Date Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Frequency</Label>
+          <MobileDrawerSelect
+            value={formData.frequency}
+            onValueChange={(value) => setFormData({ ...formData, frequency: value })}
+            placeholder="Select frequency"
+            options={FREQUENCY_OPTIONS}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Next Due Date</Label>
+          <DatePicker
+            value={formData.nextOccurrence}
+            onChange={(value) => setFormData({ ...formData, nextOccurrence: value })}
+            placeholder="Select date"
+            className="h-10"
+          />
+        </div>
       </div>
 
       {/* Category & Priority (Expenses only) */}
       {formData.type === 'expense' && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Category</Label>
+        <div className="flex gap-3">
+          <div className="flex-[2]">
             <CategorySelect
               value={formData.category_id}
               onValueChange={(value) => setFormData({ ...formData, category_id: value })}
               categories={categories}
+              placeholder="Category"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Financial Priority</Label>
+          <div className="flex-1">
             <MobileDrawerSelect
               value={formData.financial_priority || ''}
               onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
-              placeholder="Select priority"
+              placeholder="Priority"
               options={[
                 { value: "needs", label: "Needs" },
                 { value: "wants", label: "Wants" },
@@ -216,26 +218,27 @@ export default function RecurringTransactionForm({
       )}
 
       {/* Notes */}
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="notes" className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Notes</Label>
         <Textarea
           id="notes"
           value={formData.notes}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Additional details..."
           rows={2}
+          className="resize-none"
         />
       </div>
 
       {/* Active Toggle */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
         <Checkbox
           id="isActive"
           checked={formData.isActive}
           onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
         />
-        <Label htmlFor="isActive" className="cursor-pointer">
-          Active (will generate transactions on schedule)
+        <Label htmlFor="isActive" className="cursor-pointer font-medium text-slate-700">
+          Active
         </Label>
       </div>
 
