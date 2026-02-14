@@ -64,6 +64,8 @@ export const useEtoroData = () => {
     const instrumentIdNum = parseInt(id);
 
     const marketRate = data?.rates?.find(r => r.instrumentID === instrumentIdNum);
+    // Try to get real symbol from API, fallback to Map, fallback to ID
+    const realSymbol = marketRate?.symbol || null;
     const assetName = INSTRUMENT_MAP[instrumentIdNum] || `Asset ${id}`;
     const totalUnits = _.sumBy(group, 'units');
 
@@ -108,6 +110,7 @@ export const useEtoroData = () => {
 
     return {
       instrumentId: instrumentIdNum,
+      symbol: realSymbol,
       name: assetName,
       value: valueEUR,
       previousValue: previousValueEUR,
@@ -126,6 +129,9 @@ export const useEtoroData = () => {
     ? ((calculatedTotalValueEUR - calculatedTotalPreviousValueEUR) / calculatedTotalPreviousValueEUR) * 100
     : 0;
 
+  // SANITIZER: If change is microscopic (floating point noise), force it to 0 to prevent "Fake Green"
+  const cleanDailyChange = Math.abs(totalDailyChangePct) < 0.001 ? 0 : totalDailyChangePct;
+
   let status = "Live";
   if (isLoading) status = "Syncing...";
   if (isError) status = "Error";
@@ -135,7 +141,7 @@ export const useEtoroData = () => {
     positions,
     status,
     totalValue,
-    dailyChange: totalDailyChangePct,
+    dailyChange: cleanDailyChange,
     isLoading
   };
 };
