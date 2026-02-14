@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEtoroData } from '../../components/hooks/useEtoroData';
@@ -10,6 +10,8 @@ export default function EtoroTicker() {
   const { positions, status, totalValue, dailyChange } = useEtoroData();
   const { settings } = useSettings();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const contentRef = useRef(null);
 
   // Default to 0 if undefined to prevent errors
   const isPositiveDay = (dailyChange || 0) >= 0;
@@ -37,7 +39,7 @@ export default function EtoroTicker() {
   };
 
   const tickerContent = useMemo(() => (
-    <div className="flex items-center gap-6 pr-8">
+    <div ref={contentRef} className="flex items-center gap-6 pr-8 whitespace-nowrap">
       {positions.map((pos) => (
         <div key={pos.instrumentId} className="flex items-center gap-1.5 shrink-0">
           <span className="text-[10px] font-bold text-slate-400 uppercase">
@@ -56,6 +58,16 @@ export default function EtoroTicker() {
       </div>
     </div>
   ), [positions, totalValue, settings]);
+
+  // Measure content width vs container width when expanded or data changes
+  useEffect(() => {
+    if (isExpanded && contentRef.current) {
+      const contentWidth = contentRef.current.scrollWidth;
+      // Approximate max width of the container (max-w-2xl is ~672px, minus padding)
+      const containerWidth = Math.min(window.innerWidth * 0.9, 672) - 40;
+      setShouldScroll(contentWidth > containerWidth);
+    }
+  }, [isExpanded, positions, totalValue]);
 
   if (status === "Error") return null;
 
@@ -105,19 +117,25 @@ export default function EtoroTicker() {
                 </div>
               ) : (
                 <div className="flex overflow-hidden">
-                  <motion.div
-                    animate={{ x: ["0%", "0%", "-50%", "-50%"] }}
-                    transition={{
-                      duration: Math.max(30, positions.length * 5), // Ensure it's slow enough
-                      ease: "linear",
-                      repeat: Infinity,
-                      times: [0, 0.15, 0.85, 1]
-                    }}
-                    className="flex shrink-0"
-                  >
-                    <div className="flex">{tickerContent}</div>
-                    {tickerContent}
-                  </motion.div>
+                  {shouldScroll ? (
+                    <motion.div
+                      animate={{ x: ["0%", "0%", "-50%", "-50%"] }}
+                      transition={{
+                        duration: Math.max(30, positions.length * 5),
+                        ease: "linear",
+                        repeat: Infinity,
+                        times: [0, 0.15, 0.85, 1]
+                      }}
+                      className="flex shrink-0"
+                    >
+                      <div className="flex">{tickerContent}</div>
+                      {/* Only render duplicate if scrolling */}
+                      {tickerContent}
+                    </motion.div>
+                  ) : (
+                    /* Static Layout (Centered) */
+                    <div className="flex justify-center w-full">{tickerContent}</div>
+                  )}
                 </div>
               )}
             </motion.div>
