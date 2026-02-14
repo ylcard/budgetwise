@@ -10,34 +10,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.18';
 // CONFIGURATION: Production Mode
 const BASE_API_URL = "https://api.truelayer.com";
 
-// --- DEFAULT CATEGORY TEMPLATE ---
-const DEFAULT_SYSTEM_CATEGORIES = [
-    { name: 'Housing', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
-    { name: 'Groceries', icon: 'ShoppingCart', color: '#10B981', priority: 'needs', is_system: true },
-    { name: 'Transport', icon: 'Car', color: '#F59E0B', priority: 'needs', is_system: true },
-    { name: 'Bills & Utilities', icon: 'Zap', color: '#06B6D4', priority: 'needs', is_system: true },
-    { name: 'Health', icon: 'HeartPulse', color: '#EF4444', priority: 'needs', is_system: true },
-    { name: 'Dining Out', icon: 'Utensils', color: '#F97316', priority: 'wants', is_system: true },
-    { name: 'Shopping', icon: 'ShoppingBag', color: '#8B5CF6', priority: 'wants', is_system: true },
-    { name: 'Entertainment', icon: 'Film', color: '#EC4899', priority: 'wants', is_system: true },
-    { name: 'Travel', icon: 'Plane', color: '#0EA5E9', priority: 'wants', is_system: true },
-    { name: 'Subscriptions', icon: 'Repeat', color: '#8B5CF6', priority: 'wants', is_system: true }
-];
-
-const ensureSystemCategories = async (base44, userEmail, categoriesList) => {
-    // Find exactly which default categories are missing
-    const missingDefaults = DEFAULT_SYSTEM_CATEGORIES.filter(
-        defCat => !categoriesList.some(c => c.name.toUpperCase() === defCat.name.toUpperCase())
-    );
-
-    if (missingDefaults.length > 0) {
-        console.log(`🌱 [SYNC] Seeding ${missingDefaults.length} missing default categories...`);
-        const promises = missingDefaults.map(cat => base44.entities.Category.create({ ...cat, user_email: userEmail }));
-        const newCats = await Promise.all(promises);
-        categoriesList.push(...newCats);
-    }
-};
-
 // --- SERVER-SIDE CATEGORIZATION & BUDGET LOGIC ---
 const HARDCODED_KEYWORDS = {
     'AMAZON': { name: 'Shopping', priority: 'wants' },
@@ -106,7 +78,7 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
         if (searchString.includes(keyword)) {
             const cat = categoriesList.find(c => c.name.toUpperCase() === data.name.toUpperCase());
             if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
-            return { categoryId: null, categoryName: data.name, priority: data.priority, needsReview: true, shouldCreate: true };
+            return { categoryId: null, categoryName: data.name, priority: data.priority, needsReview: true, shouldCreate: false };
         }
     }
 
@@ -115,7 +87,7 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
         if (pattern.test(searchString)) {
             const cat = categoriesList.find(c => c.name.toUpperCase() === category.toUpperCase());
             if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
-            return { categoryId: null, categoryName: category, priority: priority, needsReview: true, shouldCreate: true };
+            return { categoryId: null, categoryName: category, priority: priority, needsReview: true, shouldCreate: false };
         }
     }
 
@@ -319,8 +291,9 @@ Deno.serve(async (req) => {
         lookbackDate.setDate(lookbackDate.getDate() - 7);
         const dbQueryDate = lookbackDate.toISOString().split('T')[0];
 
-        const [categories, rules, existingTx] = await Promise.all([
+        const [customCategories, systemCategories, rules, existingTx] = await Promise.all([
             base44.entities.Category.filter({ user_email: user.email }),
+            base44.entities.SystemCategory.list(),
             base44.entities.CategoryRule.filter({ user_email: user.email }),
             base44.entities.Transaction.filter({
                 user_email: user.email,
@@ -330,8 +303,7 @@ Deno.serve(async (req) => {
         const existingBankIds = new Set(existingTx.filter(t => t.bankTransactionId).map(t => t.bankTransactionId));
         const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
 
-        // --- SEED DEFAULTS BEFORE CATEGORIZING ---
-        // await ensureSystemCategories(base44, user.email, categories);
+        const allCategories = [...systemCategories, ...customCategories];
 
         /**
          * Fetch transactions for each account
@@ -429,27 +401,8 @@ Deno.serve(async (req) => {
 
                 // Only run categorization engine for expenses
                 if (isExpense && !catResult.categoryId) {
-                    catResult = categorizeTransaction(searchString, rules, categories);
-
-                    // ON-DEMAND CATEGORY CREATION (The "Last Resort" Logic)
-                    if (catResult.shouldCreate && catResult.categoryName) {
-                        // Double check it wasn't created in a previous iteration of this loop
-                        const justCreated = categories.find(c => c.name.toUpperCase() === catResult.categoryName.toUpperCase());
-
-                        if (justCreated) {
-                            catResult.categoryId = justCreated.id;
-                        } else {
-                            console.log(`✨ [SYNC] Auto-creating missing category: ${catResult.categoryName}`);
-                            const newCat = await base44.entities.Category.create({
-                                name: catResult.categoryName,
-                                priority: catResult.priority,
-                                user_email: user.email,
-                                is_system: true
-                            });
-                            categories.push(newCat); // Add to local cache immediately
-                            catResult.categoryId = newCat.id;
-                        }
-                    }
+                    // Merged categories used here
+                    catResult = categorizeTransaction(searchString, rules, allCategories);
                 }
 
                 // Determine the clean name (AI/Rule result OR raw fallback)
