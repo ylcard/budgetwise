@@ -58,7 +58,6 @@ export const ICON_OPTIONS = [
     { value: 'Tv', label: 'TV/Streaming', tags: ['netflix', 'movies', 'subscription'] },
     { value: 'Gamepad2', label: 'Gaming', tags: ['games', 'steam', 'xbox', 'playstation'] },
     { value: 'Dumbbell', label: 'Fitness', tags: ['gym', 'sports', 'workout'] },
-    { value: 'Book', label: 'Education', tags: ['school', 'learning', 'course'] },
     { value: 'Briefcase', label: 'Work', tags: ['business', 'office', 'job'] },
     { value: 'DollarSign', label: 'Income', tags: ['salary', 'money'] },
     { value: 'HandCoins', label: 'Fees/Charges', tags: ['tax', 'bank', 'fine'] },
