@@ -28,7 +28,7 @@ export default function GlobalFAB() {
     };
 
     return (
-        <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-[110] flex flex-col-reverse items-end gap-3 pointer-events-none">
+        <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-[40] flex flex-col-reverse items-end gap-3 pointer-events-none">
             <motion.button
                 onClick={() => setIsOpen(!isOpen)}
                 className="pointer-events-auto w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg flex items-center justify-center"
