@@ -28,7 +28,8 @@ import { showToast } from "@/components/ui/use-toast";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm } from "../components/hooks/useActions";
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { CURRENCY_OPTIONS, SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components/utils/constants";
+import { SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components/utils/constants";
+import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -57,6 +58,7 @@ export default function ManageLayout() {
 export function PreferencesSection() {
     const { settings, updateSettings } = useSettings();
     const { formData, handleFormChange, resetForm } = useSettingsForm(settings, updateSettings);
+    const { currencies } = useCurrencies();
     const [isSaving, setIsSaving] = useState(false);
 
     // Dirty Check
@@ -91,7 +93,7 @@ export function PreferencesSection() {
     };
 
     const handleCurrencyChange = (code) => {
-        const selected = CURRENCY_OPTIONS.find(c => c.code === code);
+        const selected = currencies.find(c => c.code === code);
         if (selected) {
             handleFormChange('baseCurrency', code);
             handleFormChange('currencySymbol', selected.symbol);
@@ -115,7 +117,7 @@ export function PreferencesSection() {
                                 <Select value={formData.baseCurrency || 'USD'} onValueChange={handleCurrencyChange}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {CURRENCY_OPTIONS.map(c => (
+                                        {currencies.map(c => (
                                             <SelectItem key={c.code} value={c.code}>{c.symbol} - {c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -254,7 +256,7 @@ export function AccountSection() {
     const { settings, updateSettings } = useSettings();
     const [localName, setLocalName] = useState(settings.displayName || "");
     const [isSaving, setIsSaving] = useState(false);
-    
+
     // Email/Password Change State
     const [isChangingEmail, setIsChangingEmail] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -262,7 +264,7 @@ export function AccountSection() {
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    
+
     // Data Export State
     const [isExporting, setIsExporting] = useState(false);
     const [showExportDialog, setShowExportDialog] = useState(false);
@@ -309,21 +311,21 @@ export function AccountSection() {
             ]);
 
             // Note: Actual user account deletion from auth system would need a backend function
-            showToast({ 
-                title: "Data Deleted", 
-                description: "All your data has been removed. Logging out...", 
-                variant: "destructive" 
+            showToast({
+                title: "Data Deleted",
+                description: "All your data has been removed. Logging out...",
+                variant: "destructive"
             });
-            
+
             setTimeout(() => {
                 logout();
             }, 1500);
         } catch (error) {
             console.error("Deletion failed:", error);
-            showToast({ 
-                title: "Error", 
-                description: "Failed to delete account data. Please contact support.", 
-                variant: "destructive" 
+            showToast({
+                title: "Error",
+                description: "Failed to delete account data. Please contact support.",
+                variant: "destructive"
             });
         }
     };
@@ -350,7 +352,7 @@ export function AccountSection() {
             showToast({ title: "Error", description: "Name cannot be empty", variant: "destructive" });
             return;
         }
-        
+
         setIsSaving(true);
         try {
             await base44.auth.updateMe({ full_name: localName.trim() });
@@ -368,14 +370,14 @@ export function AccountSection() {
             showToast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
             return;
         }
-        
+
         setIsSaving(true);
         try {
             // This would require a backend function to update email in auth system
-            showToast({ 
-                title: "Not Implemented", 
-                description: "Email change requires backend support. Contact administrator.", 
-                variant: "destructive" 
+            showToast({
+                title: "Not Implemented",
+                description: "Email change requires backend support. Contact administrator.",
+                variant: "destructive"
             });
         } catch (err) {
             showToast({ title: "Error", description: err.message, variant: "destructive" });
@@ -392,24 +394,24 @@ export function AccountSection() {
             showToast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
             return;
         }
-        
+
         if (newPassword !== confirmPassword) {
             showToast({ title: "Error", description: "New passwords don't match", variant: "destructive" });
             return;
         }
-        
+
         if (newPassword.length < 8) {
             showToast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
             return;
         }
-        
+
         setIsSaving(true);
         try {
             // This would require a backend function to update password in auth system
-            showToast({ 
-                title: "Not Implemented", 
-                description: "Password change requires backend support. Contact administrator.", 
-                variant: "destructive" 
+            showToast({
+                title: "Not Implemented",
+                description: "Password change requires backend support. Contact administrator.",
+                variant: "destructive"
             });
         } catch (err) {
             showToast({ title: "Error", description: err.message, variant: "destructive" });
@@ -551,15 +553,15 @@ export function AccountSection() {
                     {isEmailPasswordAuth && (
                         <>
                             <Separator />
-                            
+
                             <div className="space-y-4">
                                 <h3 className="text-sm font-semibold text-gray-700">Authentication</h3>
-                                
+
                                 {/* Change Email */}
                                 <div className="space-y-2">
                                     {!isChangingEmail ? (
-                                        <CustomButton 
-                                            variant="outline" 
+                                        <CustomButton
+                                            variant="outline"
                                             size="sm"
                                             onClick={() => setIsChangingEmail(true)}
                                         >
@@ -584,8 +586,8 @@ export function AccountSection() {
                                                 onChange={(e) => setCurrentPassword(e.target.value)}
                                             />
                                             <div className="flex gap-2">
-                                                <CustomButton 
-                                                    variant="outline" 
+                                                <CustomButton
+                                                    variant="outline"
                                                     size="sm"
                                                     onClick={() => {
                                                         setIsChangingEmail(false);
@@ -595,8 +597,8 @@ export function AccountSection() {
                                                 >
                                                     Cancel
                                                 </CustomButton>
-                                                <CustomButton 
-                                                    variant="primary" 
+                                                <CustomButton
+                                                    variant="primary"
                                                     size="sm"
                                                     onClick={handleChangeEmail}
                                                     disabled={isSaving}
@@ -611,8 +613,8 @@ export function AccountSection() {
                                 {/* Change Password */}
                                 <div className="space-y-2">
                                     {!isChangingPassword ? (
-                                        <CustomButton 
-                                            variant="outline" 
+                                        <CustomButton
+                                            variant="outline"
                                             size="sm"
                                             onClick={() => setIsChangingPassword(true)}
                                         >
@@ -645,8 +647,8 @@ export function AccountSection() {
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                             />
                                             <div className="flex gap-2">
-                                                <CustomButton 
-                                                    variant="outline" 
+                                                <CustomButton
+                                                    variant="outline"
                                                     size="sm"
                                                     onClick={() => {
                                                         setIsChangingPassword(false);
@@ -657,8 +659,8 @@ export function AccountSection() {
                                                 >
                                                     Cancel
                                                 </CustomButton>
-                                                <CustomButton 
-                                                    variant="primary" 
+                                                <CustomButton
+                                                    variant="primary"
                                                     size="sm"
                                                     onClick={handleChangePassword}
                                                     disabled={isSaving}
@@ -702,7 +704,7 @@ export function AccountSection() {
                     <CardDescription>Download all your financial data in JSON format.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <CustomButton 
+                    <CustomButton
                         variant="outline"
                         onClick={() => setShowExportDialog(true)}
                     >
@@ -721,7 +723,7 @@ export function AccountSection() {
                             Select which data you want to include in the export. All selected data will be downloaded as a JSON file.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                         {Object.entries({
                             transactions: "Transactions",
@@ -741,7 +743,7 @@ export function AccountSection() {
                                 <Checkbox
                                     id={key}
                                     checked={exportSelections[key]}
-                                    onCheckedChange={(checked) => 
+                                    onCheckedChange={(checked) =>
                                         setExportSelections(prev => ({ ...prev, [key]: checked }))
                                     }
                                 />
@@ -754,7 +756,7 @@ export function AccountSection() {
 
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isExporting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                             onClick={handleExportData}
                             disabled={isExporting || !Object.values(exportSelections).some(v => v)}
                         >
