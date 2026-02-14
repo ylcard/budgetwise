@@ -23,7 +23,7 @@ export const useSystemActions = (user) => {
             // 0. SERVER-SIDE SAFETY CHECK
             // We fetch specific data for THIS user to prevent duplicates regardless of UI state
             const [existingGoals] = await Promise.all([
-                base44.entities.BudgetGoal.filter({ user_email: user.email })
+                base44.entities.BudgetGoal.filter({ created_by: user.email })
             ]);
 
             if (existingGoals.length > 0) {
@@ -37,7 +37,7 @@ export const useSystemActions = (user) => {
                 .map(async (goal) => {
                     const newGoal = await base44.entities.BudgetGoal.create({
                         ...goal,
-                        user_email: user.email
+                        created_by: user.email
                     });
                     // This ensures SystemBudgets are generated for the current/future months
                     return snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
@@ -93,7 +93,7 @@ export const useGoals = (user) => {
         queryKey: [QUERY_KEYS.GOALS],
         queryFn: async () => {
             if (!user) return [];
-            return await base44.entities.BudgetGoal.filter({ user_email: user.email });
+            return await base44.entities.BudgetGoal.filter({ created_by: user.email });
         },
         initialData: [],
         enabled: !!user,
@@ -112,14 +112,14 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
             if (monthStart && monthEnd) {
                 // Overlap Logic: Start <= EndSelected AND End >= StartSelected
                 return await base44.entities.CustomBudget.filter({
-                    user_email: user.email,
+                    created_by: user.email,
                     startDate: { $lte: monthEnd },
                     endDate: { $gte: monthStart }
                 });
             }
 
             return await base44.entities.CustomBudget.filter(
-                { user_email: user.email },
+                { created_by: user.email },
                 '-startDate',
                 100
             );
@@ -158,12 +158,12 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
             if (!user) return [];
             if (monthStart && monthEnd) {
                 return await base44.entities.SystemBudget.filter({
-                    user_email: user.email,
+                    created_by: user.email,
                     startDate: { $lte: monthEnd },
                     endDate: { $gte: monthStart }
                 });
             }
-            return await base44.entities.SystemBudget.filter({ user_email: user.email });
+            return await base44.entities.SystemBudget.filter({ created_by: user.email });
         },
         keepPreviousData: true,
         enabled: !!user,
@@ -179,7 +179,7 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
         queryFn: async () => {
             if (!user) return [];
             return await base44.entities.SystemBudget.filter({
-                user_email: user.email,
+                created_by: user.email,
                 startDate: monthStart,
                 endDate: monthEnd
             });
@@ -211,8 +211,8 @@ export const useAllBudgets = (user) => {
         queryKey: [QUERY_KEYS.ALL_BUDGETS],
         queryFn: async () => {
             if (!user) return [];
-            const customBudgets = await base44.entities.CustomBudget.filter({ user_email: user.email });
-            const systemBudgets = await base44.entities.SystemBudget.filter({ user_email: user.email });
+            const customBudgets = await base44.entities.CustomBudget.filter({ created_by: user.email });
+            const systemBudgets = await base44.entities.SystemBudget.filter({ created_by: user.email });
 
             const formattedSystem = systemBudgets.map(sb => ({
                 ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount
@@ -232,7 +232,7 @@ export const useCategoryRules = (user) => {
         queryKey: ['CATEGORY_RULES'],
         queryFn: async () => {
             if (!user) return [];
-            const allRules = await base44.entities.CategoryRule.filter({ user_email: user.email })
+            const allRules = await base44.entities.CategoryRule.filter({ created_by: user.email })
 
             return allRules
                 .sort((a, b) => (a.priority || 0) - (b.priority || 0));
