@@ -60,6 +60,10 @@ import MiniBudgets from './pages/MiniBudgets';
 import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import Transactions from './pages/Transactions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import FinancialDisclaimer from './pages/FinancialDisclaimer';
+import CookiePolicy from './pages/CookiePolicy';
 import __Layout from './Layout.jsx';
 
 
@@ -77,6 +81,10 @@ export const PAGES = {
     "RecurringTransactions": RecurringTransactions,
     "Reports": Reports,
     "Transactions": Transactions,
+    "PrivacyPolicy": PrivacyPolicy,
+    "TermsOfService": TermsOfService,
+    "FinancialDisclaimer": FinancialDisclaimer,
+    "CookiePolicy": CookiePolicy,
 }
 
 export const pagesConfig = {
