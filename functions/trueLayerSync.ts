@@ -76,7 +76,15 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
     // 2. Hardcoded Keywords
     for (const [keyword, data] of Object.entries(HARDCODED_KEYWORDS)) {
         if (searchString.includes(keyword)) {
-            const cat = categoriesList.find(c => c.name.toUpperCase() === data.name.toUpperCase());
+            // FUZZY MATCHING LOGIC:
+            // 1. Try Exact Match
+            // 2. Try "Includes" (e.g. "Transport" matches "Transportation")
+            const targetName = data.name.toUpperCase();
+            const cat = categoriesList.find(c =>
+                c.name.toUpperCase() === targetName ||
+                c.name.toUpperCase().includes(targetName) ||
+                targetName.includes(c.name.toUpperCase())
+            );
             if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
             return { categoryId: null, categoryName: data.name, priority: data.priority, needsReview: true, shouldCreate: false };
         }
@@ -303,7 +311,7 @@ Deno.serve(async (req) => {
         const existingBankIds = new Set(existingTx.filter(t => t.bankTransactionId).map(t => t.bankTransactionId));
         const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
 
-        const allCategories = [...systemCategories, ...customCategories];
+        const allCategories = [...customCategories, ...systemCategories];
 
         /**
          * Fetch transactions for each account
