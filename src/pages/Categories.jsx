@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Trash2, Pencil, CheckSquare, X, Check, Lock, CheckCheck } from "lucide-react";
-import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
-import { useQueryClient } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
-import { QUERY_KEYS } from "../components/hooks/queryKeys"; // ADDED 03-Feb-2026: For query invalidation
-import { useMergedCategories } from "../components/hooks/useMergedCategories"; // UPDATED 14-Feb-2026: Use merged categories
-// import { useCategories } from "../components/hooks/useBase44Entities"; // COMMENTED 14-Feb-2026: Replaced by useMergedCategories
+import { PullToRefresh } from "../components/ui/PullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "../components/hooks/queryKeys";
+import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import { useCategoryActions } from "../components/hooks/useActions";
 import CategoryForm from "../components/categories/CategoryForm";
 import CategoryGrid from "../components/categories/CategoryGrid";
