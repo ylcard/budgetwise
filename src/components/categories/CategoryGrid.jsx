@@ -3,8 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import CategoryCard from "./CategoryCard";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
+import { motion, AnimatePresence } from "framer-motion";
+import { Layers, Box, Lock } from "lucide-react";
+import { iconMap } from "../utils/iconMapConfig";
 
-export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, isSelectionMode, selectedIds, onToggleSelection, onSelectionChange, isAdmin }) {
+export default function CategoryGrid({ systemCategories = [], customCategories = [], onEdit, onDelete, isLoading, isSelectionMode, selectedIds, onToggleSelection, onSelectionChange, isAdmin }) {
+    // View State ('custom' | 'system')
+    const [activeTab, setActiveTab] = useState('custom');
+
     // Drag Selection State
     const [selectionBox, setSelectionBox] = useState(null);
     const containerRef = useRef(null);
@@ -104,50 +110,13 @@ export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, 
     }, [handleMouseMove]);
 
     if (isLoading) {
-        return (
-            <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle>Your Categories</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {Array(6).fill(0).map((_, i) => (
-                            <Skeleton key={i} className="h-32 w-full" />
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-        );
+        return <CategorySkeleton />;
     }
 
-    if (categories.length === 0) {
-        return (
-            <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle>Your Categories</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-40 flex items-center justify-center text-gray-400">
-                        <p>No categories yet. Create your first one!</p>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    // Sort logic: Priority Order (Needs -> Wants -> Savings) then Alphabetical
-    const sortedCategories = [...categories].sort((a, b) => {
-        const orderA = FINANCIAL_PRIORITIES[a.priority]?.order ?? 99;
-        const orderB = FINANCIAL_PRIORITIES[b.priority]?.order ?? 99;
-
-        // If priorities differ, sort by priority weight
-        if (orderA !== orderB) return orderA - orderB;
-        // If priorities are same, sort by name
-        return a.name.localeCompare(b.name);
-    });
+    const currentCategories = activeTab === 'custom' ? customCategories : systemCategories;
 
     return (
-        <Card className="border-none shadow-lg relative select-none" ref={containerRef} onMouseDown={handleMouseDown}>
+        <Card className="border-none shadow-lg relative select-none bg-transparent shadow-none" ref={containerRef} onMouseDown={handleMouseDown}>
             {/* Selection Overlay */}
             {selectionBox && (
                 <div
@@ -160,30 +129,168 @@ export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, 
                     }}
                 />
             )}
-            {/* UPDATED 14-Feb-2026: Show count of system vs custom categories */}
+            <CardHeader className="px-0 pt-0 pb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    {/* Header Title */}
+                    <div>
+                        <CardTitle className="text-xl">
+                            {activeTab === 'custom' ? 'My Categories' : 'System Defaults'}
+                            <span className="ml-2 text-sm font-normal text-gray-500">
+                                ({currentCategories.length})
+                            </span>
+                        </CardTitle>
+                    </div>
+
+                    {/* Segmented Control */}
+                    <div className="bg-gray-100/80 p-1 rounded-lg flex items-center gap-1">
+                        <TabButton
+                            isActive={activeTab === 'custom'}
+                            onClick={() => setActiveTab('custom')}
+                            icon={Layers}
+                            label="Custom"
+                            count={customCategories.length}
+                        />
+                        <TabButton
+                            isActive={activeTab === 'system'}
+                            onClick={() => setActiveTab('system')}
+                            icon={Box}
+                            label="System"
+                            count={systemCategories.length}
+                        />
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="px-0">
+                <AnimatePresence mode="wait">
+                    {activeTab === 'custom' ? (
+                        <motion.div
+                            key="custom"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+                        >
+                            {customCategories.length > 0 ? (
+                                customCategories.map((category) => (
+                                    <CategoryCard
+                                        key={category.id}
+                                        ref={(node) => setCardRef(category.id, node)}
+                                        category={category}
+                                        onEdit={onEdit}
+                                        onDelete={onDelete}
+                                        isSelectionMode={isSelectionMode}
+                                        isSelected={selectedIds?.has(category.id)}
+                                        onToggle={() => onToggleSelection(category.id, !selectedIds?.has(category.id))}
+                                        isAdmin={isAdmin}
+                                    />
+                                ))
+                            ) : (
+                                <EmptyState type="custom" />
+                            )}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="system"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {/* System Categories - Grouped by Priority for Bento Feel */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {['needs', 'wants', 'savings'].map(priority => {
+                                    const priorityCats = systemCategories.filter(c => c.priority === priority);
+                                    if (priorityCats.length === 0) return null;
+
+                                    return (
+                                        <div key={priority} className="space-y-3">
+                                            <h3 className="font-semibold capitalize text-gray-500 text-sm flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[priority].color }}></span>
+                                                {priority}
+                                            </h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {priorityCats.map(cat => (
+                                                    <SystemCategoryPill
+                                                        key={cat.id}
+                                                        category={cat}
+                                                        isAdmin={isAdmin}
+                                                        onEdit={onEdit}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Sub-components
+
+function TabButton({ isActive, onClick, icon: Icon, label, count }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${isActive
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
+                }`}
+        >
+            <Icon className="w-4 h-4" />
+            {label}
+        </button>
+    );
+}
+
+function SystemCategoryPill({ category, isAdmin, onEdit }) {
+    const Icon = iconMap[category.icon] || Box;
+
+    return (
+        <div
+            onClick={() => isAdmin && onEdit(category)}
+            className={`group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-100 shadow-sm transition-all ${isAdmin ? 'cursor-pointer hover:border-blue-300 hover:shadow-md' : 'opacity-80'
+                }`}
+        >
+            <div
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-xs"
+                style={{ backgroundColor: `${category.color}20`, color: category.color }}
+            >
+                <Icon className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-sm font-medium text-gray-700">{category.name}</span>
+            {isAdmin && (
+                <Lock className="w-3 h-3 text-gray-300 group-hover:text-blue-400 transition-colors ml-1" />
+            )}
+        </div>
+    );
+}
+
+function EmptyState({ type }) {
+    return (
+        <div className="col-span-full h-64 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
+            <Layers className="w-10 h-10 mb-3 opacity-20" />
+            <p className="font-medium">No custom categories yet</p>
+            <p className="text-sm mt-1">Create one to get started!</p>
+        </div>
+    );
+}
+
+function CategorySkeleton() {
+    return (
+        <Card className="border-none shadow-lg">
             <CardHeader>
-                <CardTitle>
-                    All Categories ({sortedCategories.length})
-                    <span className="text-sm font-normal text-gray-500 ml-2">
-                        {categories.filter(c => c.isSystemCategory).length} System,{' '}
-                        {categories.filter(c => !c.isSystemCategory).length} Custom
-                    </span>
-                </CardTitle>
+                <Skeleton className="h-8 w-48" />
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {sortedCategories.map((category) => (
-                        <CategoryCard
-                            key={category.id}
-                            ref={(node) => setCardRef(category.id, node)}
-                            category={category}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
-                            isSelectionMode={isSelectionMode}
-                            isSelected={selectedIds?.has(category.id)}
-                            onToggle={() => onToggleSelection(category.id, !selectedIds?.has(category.id))}
-							isAdmin={isAdmin}
-                        />
+                    {Array(6).fill(0).map((_, i) => (
+                        <Skeleton key={i} className="h-24 w-full rounded-xl" />
                     ))}
                 </div>
             </CardContent>
