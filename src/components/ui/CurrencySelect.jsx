@@ -6,16 +6,18 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-style action sheets
-import { SUPPORTED_CURRENCIES } from "../utils/constants";
+import { useCurrencies } from "../hooks/useCurrencies";
 
 export default function CurrencySelect({ value, onValueChange, filterCurrencies = null, limitToCurrencies = null }) {
+    const { currencies } = useCurrencies();
+
     // Support both filterCurrencies (legacy) and limitToCurrencies (new preferred name)
     const currencyLimit = limitToCurrencies || filterCurrencies;
 
     // Filter currencies if currencyLimit array is provided
     const displayCurrencies = currencyLimit && currencyLimit.length > 0
-        ? SUPPORTED_CURRENCIES.filter(c => currencyLimit.includes(c.code))
-        : SUPPORTED_CURRENCIES;
+        ? currencies.filter(c => currencyLimit.includes(c.code))
+        : currencies;
 
     // ADDED 03-Feb-2026: Prepare options for MobileDrawerSelect
     const options = displayCurrencies.map((currency) => ({
