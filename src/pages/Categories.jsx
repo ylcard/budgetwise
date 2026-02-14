@@ -13,6 +13,7 @@ import { useFAB } from "../components/hooks/FABContext";
 import { showToast } from "@/components/ui/use-toast";
 import { getCategoryIcon } from "../components/utils/iconMapConfig";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Categories() {
     // UI state
@@ -23,10 +24,14 @@ export default function Categories() {
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const queryClient = useQueryClient();
     const { setFabButtons, clearFabButtons } = useFAB();
+    const { user } = useAuth();
 
     // UPDATED 14-Feb-2026: Fetch merged system + custom categories
     const { categories: allCategories, customCategories, isLoading } = useMergedCategories();
     const categories = allCategories; // Use merged for display
+
+    // Admin check
+    const isAdmin = user?.role === 'admin';
 
     // Sort alphabetically A-Z
     const sortedCategories = useMemo(() => {
@@ -279,6 +284,7 @@ export default function Categories() {
                             selectedIds={selectedIds}
                             onToggleSelection={handleToggleSelection}
                             onSelectionChange={setSelectedIds}
+                            isAdmin={isAdmin}
                         />
                     </div>
 
@@ -295,6 +301,7 @@ export default function Categories() {
                                 isSelectionMode={isSelectionMode}
                                 selectedIds={selectedIds}
                                 onToggle={() => handleToggleSelection(cat.id, !selectedIds.has(cat.id))}
+                                isAdmin={isAdmin}
                             />
                         ))}
                     </div>
@@ -304,7 +311,7 @@ export default function Categories() {
     );
 }
 
-function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, selectedIds, onToggle }) {
+function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, selectedIds, onToggle, isAdmin }) {
     // Use your existing helper to resolve the icon component
     const Icon = getCategoryIcon(category.icon);
     const isSelected = selectedIds.has(category.id);
@@ -359,7 +366,7 @@ function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, selec
             </div>
 
             {/* UPDATED 14-Feb-2026: Disable edit/delete for system categories */}
-            {!hasSelection && !category.isSystemCategory && (
+            {!hasSelection && (!category.isSystemCategory || isAdmin) && (
                 <div className="flex items-center gap-1">
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(category); }}
@@ -368,15 +375,17 @@ function MobileCategoryItem({ category, onEdit, onDelete, isSelectionMode, selec
                         <Pencil className="w-5 h-5" />
                     </button>
 
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(category); }}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </button>
+                    {!category.isSystemCategory && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(category); }}
+                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
             )}
-            
+
             {/* ADDED 14-Feb-2026: Lock icon for system categories */}
             {!hasSelection && category.isSystemCategory && (
                 <div className="flex items-center gap-1 text-gray-400">
