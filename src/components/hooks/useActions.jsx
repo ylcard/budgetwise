@@ -146,6 +146,16 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
         }
     });
 
+    // UPDATED 14-Feb-2026: Mutation for System Categories (Admin only)
+    const updateSystemMutation = useUpdateEntity({
+        entityName: 'SystemCategory',
+        queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_CATEGORIES, QUERY_KEYS.CATEGORIES], // Invalidate both to be safe
+        onAfterSuccess: () => {
+            if (setShowForm) setShowForm(false);
+            if (setEditingCategory) setEditingCategory(null);
+        }
+    });
+
     // DELETE: Use generic hook (no dependencies to handle)
     const { handleDelete: handleDeleteCategory } = useDeleteEntity({
         entityName: 'Category',
@@ -156,7 +166,11 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
 
     const handleSubmit = (data, editingCategory) => {
         if (editingCategory) {
-            updateMutation.mutate({ id: editingCategory.id, data });
+            if (editingCategory.isSystemCategory) {
+                updateSystemMutation.mutate({ id: editingCategory.id, data });
+            } else {
+                updateMutation.mutate({ id: editingCategory.id, data });
+            }
         } else {
             createMutation.mutate(data);
         }
@@ -171,7 +185,7 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
         handleSubmit,
         handleEdit,
         handleDelete: handleDeleteCategory,
-        isSubmitting: createMutation.isPending || updateMutation.isPending,
+        isSubmitting: createMutation.isPending || updateMutation.isPending || updateSystemMutation.isPending,
     };
 };
 
