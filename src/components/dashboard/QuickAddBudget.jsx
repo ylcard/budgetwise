@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/dialog";
 import BudgetCreationWizard from "../custombudgets/BudgetCreationWizard";
 import { useSettings } from "../utils/SettingsContext";
-import { useTransactions, useCategories } from "../hooks/useBase44Entities";
+import { useTransactions } from "../hooks/useBase44Entities";
+import { useMergedCategories } from "../hooks/useMergedCategories";
 
 export default function QuickAddBudget({
     open,
@@ -17,7 +18,7 @@ export default function QuickAddBudget({
 }) {
     const { settings } = useSettings();
     const { transactions } = useTransactions();
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
 
     const handleSubmitWrapper = (data) => {
         onSubmit(data);
