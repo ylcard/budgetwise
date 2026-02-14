@@ -31,8 +31,10 @@ export const useEtoroData = () => {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['etoro-portfolio'],
+    enabled: false, // Completely disable fetching
     queryFn: async () => {
-      // 1. Fetch Portfolio
+      return { positions: [], rates: [] }; // Mock return
+      /*
       const pRes = await fetch('/functions/etoro?route=portfolio');
       if (!pRes.ok) throw new Error('Portfolio fetch failed');
       const pData = await pRes.json();
@@ -50,8 +52,10 @@ export const useEtoroData = () => {
         positions: rawPositions,
         rates: rData.rates || []
       };
+    */
     },
-    refetchInterval: 30000, // Faster poll for live ticker
+    // refetchInterval: 30000,
+    refetchInterval: false, // Stop polling
   });
 
   const grouped = _.groupBy(data?.positions || [], 'instrumentID');
