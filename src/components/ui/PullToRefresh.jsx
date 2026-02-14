@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
  * Usage: Wrap scrollable content with this component and provide onRefresh callback
  */
 
-export function PullToRefresh({ children, onRefresh, threshold = 80, disabled = false }) {
+export function PullToRefresh({ children, onRefresh, threshold = 80, disabled = false, className = "" }) {
     const [pullDistance, setPullDistance] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [canPull, setCanPull] = useState(false);
@@ -92,14 +92,14 @@ export function PullToRefresh({ children, onRefresh, threshold = 80, disabled = 
     const showIndicator = pullDistance > 0 || isRefreshing;
 
     return (
-        <div ref={containerRef} className="h-full overflow-auto relative">
+        <div ref={containerRef} className={`h-full overflow-auto relative ${className}`}>
             <AnimatePresence>
                 {showIndicator && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute top-0 left-0 right-0 flex items-center justify-center z-50 pointer-events-none"
+                        className="absolute top-0 left-0 right-0 flex items-center justify-center z-0 pointer-events-none"
                         style={{
                             height: `${isRefreshing ? 60 : pullDistance}px`,
                             transition: isRefreshing ? 'height 0.3s ease' : 'none'
@@ -125,7 +125,7 @@ export function PullToRefresh({ children, onRefresh, threshold = 80, disabled = 
                     </motion.div>
                 )}
             </AnimatePresence>
-            <div style={{ paddingTop: isRefreshing ? '60px' : '0', transition: 'padding-top 0.3s ease' }}>
+            <div className="relative z-10" style={{ paddingTop: isRefreshing ? '60px' : '0', transition: 'padding-top 0.3s ease' }}>
                 {children}
             </div>
         </div>
