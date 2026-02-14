@@ -3,11 +3,11 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
     useTransactions,
-    useCategories,
     useGoals,
     useSystemBudgetsForPeriod,
     useCustomBudgetsForPeriod
 } from "../components/hooks/useBase44Entities";
+import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/useDerivedData";
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import PriorityChart from "../components/reports/PriorityChart";
@@ -19,7 +19,7 @@ import { calculateProjection, estimateCurrentMonth } from "../components/utils/p
 import { calculateBonusSavingsPotential, getMonthlyIncome, getMonthlyPaidExpenses } from "../components/utils/financialCalculations";
 import GoalSettings from "../components/reports/GoalSettings";
 import { useGoalActions } from "../components/hooks/useActions";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { parseDate, getMonthBoundaries } from "../components/utils/dateUtils";
 
 export default function Reports() {
@@ -49,7 +49,7 @@ export default function Reports() {
 
     // Data fetching
     const { transactions, isLoading: loadingTransactions } = useTransactions(healthWindow.from, healthWindow.to);
-    const { categories, isLoading: loadingCategories } = useCategories();
+    const { categories, isLoading: loadingCategories } = useMergedCategories();
     const { goals, isLoading: loadingGoals } = useGoals(user);
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
