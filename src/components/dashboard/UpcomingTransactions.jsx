@@ -6,8 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils"; // Assuming you have a clsx/tailwind-merge utility
 import { getCategoryIcon } from "../utils/iconMapConfig";
 
-export default function UpcomingBills({ recurringWithStatus, onMarkPaid, isLoading, categories = [] }) {
-    // Filter: Only Current Month & Active
+export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, isLoading, categories = [] }) {
+    // Filter: Only Current Month & Active (Includes Paid)
     const currentBills = useMemo(() => {
         const now = new Date();
         return (recurringWithStatus || []).filter(bill => {
@@ -47,7 +47,7 @@ export default function UpcomingBills({ recurringWithStatus, onMarkPaid, isLoadi
         return (
             <Card className="h-full border shadow-sm">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-medium">Upcoming Bills</CardTitle>
+                    <CardTitle className="text-lg font-medium">Upcoming Transactions</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-3">
@@ -61,7 +61,7 @@ export default function UpcomingBills({ recurringWithStatus, onMarkPaid, isLoadi
     }
 
     return (
-        <Card className="h-full flex flex-col border shadow-sm">
+        <Card className="flex flex-col border shadow-sm h-fit">
             <CardHeader className="pb-3 border-b bg-gray-50/40 px-4 py-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
@@ -73,11 +73,12 @@ export default function UpcomingBills({ recurringWithStatus, onMarkPaid, isLoadi
                     </span>
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-auto p-0">
+            {/* Max height limited to approx 4 items (70px each) -> 280px */}
+            <CardContent className="p-0 overflow-y-auto max-h-[280px] scrollbar-thin scrollbar-thumb-gray-200">
                 {sortedBills.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                         <Check className="w-8 h-8 text-emerald-100 mb-2" />
-                        <p className="text-sm">No bills due this month</p>
+                        <p className="text-sm">No transactions this month</p>
                     </div>
                 ) : (
                     <div className="divide-y">
