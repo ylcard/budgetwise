@@ -39,7 +39,7 @@ export default function EtoroTicker() {
   };
 
   const tickerContent = useMemo(() => (
-    <div ref={contentRef} className="flex items-center gap-6 pr-8 whitespace-nowrap">
+    <div ref={contentRef} className="flex items-center gap-6 whitespace-nowrap">
       {positions.map((pos) => (
         <div key={pos.instrumentId} className="flex items-center gap-1.5 shrink-0">
           <span className="text-[10px] font-bold text-slate-400 uppercase">
@@ -126,7 +126,7 @@ export default function EtoroTicker() {
                         repeat: Infinity,
                         times: [0, 0.15, 0.85, 1]
                       }}
-                      className="flex shrink-0"
+                      className="flex shrink-0 gap-8"
                     >
                       <div className="flex">{tickerContent}</div>
                       {/* Only render duplicate if scrolling */}
@@ -142,17 +142,6 @@ export default function EtoroTicker() {
           )}
         </AnimatePresence>
       </motion.div>
-
-      {/* Tooltip hint for desktop */}
-      {!isExpanded && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 0.5, y: 0 }}
-          className="hidden md:block absolute -top-8 left-0 text-[10px] text-slate-500 font-medium tracking-tight"
-        >
-          TAP TO VIEW
-        </motion.div>
-      )}
     </div>
     , document.body
   );
