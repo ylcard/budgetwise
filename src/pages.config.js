@@ -47,6 +47,7 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import Automation from './pages/Automation';
 import BankSync from './pages/BankSync';
 import BudgetDetail from './pages/BudgetDetail';
 import Budgets from './pages/Budgets';
@@ -54,16 +55,16 @@ import Categories from './pages/Categories';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
+import Manage from './pages/Manage';
 import MiniBudgets from './pages/MiniBudgets';
 import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
-import Manage from './pages/Manage';
 import Transactions from './pages/Transactions';
-import Automation from "./pages/Automation";
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Automation": Automation,
     "BankSync": BankSync,
     "BudgetDetail": BudgetDetail,
     "Budgets": Budgets,
@@ -71,12 +72,11 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "Home": Home,
     "ImportData": ImportData,
+    "Manage": Manage,
     "MiniBudgets": MiniBudgets,
     "RecurringTransactions": RecurringTransactions,
     "Reports": Reports,
-    "Manage": Manage,
     "Transactions": Transactions,
-    "Automation": Automation,
 }
 
 export const pagesConfig = {

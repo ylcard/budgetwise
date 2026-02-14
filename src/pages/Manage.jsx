@@ -7,7 +7,9 @@ import {
     SlidersHorizontal,
     FolderOpen,
     RefreshCw,
-    Link2
+    Link2,
+    Download,
+    Check
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile"; // UPDATED IMPORT
 
@@ -28,6 +30,8 @@ import { useSettingsForm } from "../components/hooks/useActions";
 import { formatCurrency } from "../components/utils/currencyUtils";
 import { CURRENCY_OPTIONS, SETTINGS_KEYS, DEFAULT_SETTINGS } from "../components/utils/constants";
 import { useAuth } from '@/lib/AuthContext';
+import { base44 } from "@/api/base44Client";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function ManageLayout() {
     return (
@@ -250,10 +254,78 @@ export function AccountSection() {
     const { settings, updateSettings } = useSettings();
     const [localName, setLocalName] = useState(settings.displayName || "");
     const [isSaving, setIsSaving] = useState(false);
+    
+    // Email/Password Change State
+    const [isChangingEmail, setIsChangingEmail] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [newEmail, setNewEmail] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    
+    // Data Export State
+    const [isExporting, setIsExporting] = useState(false);
+    const [showExportDialog, setShowExportDialog] = useState(false);
+    const [exportSelections, setExportSelections] = useState({
+        transactions: true,
+        categories: true,
+        budgetGoals: true,
+        systemBudgets: true,
+        customBudgets: true,
+        budgetAllocations: true,
+        exchangeRates: true,
+        cashWallet: true,
+        categoryRules: true,
+        recurringTransactions: true,
+        settings: true,
+        bankConnections: false // Sensitive - default off
+    });
 
-    const handleAccountDeletion = () => {
-        showToast({ title: "Requested", description: "Account deletion initiated...", variant: "destructive" });
-        setTimeout(() => window.location.href = '/', 2000);
+    // Check if user is using email/password auth (not Google)
+    const isEmailPasswordAuth = !user?.picture; // Simple heuristic
+
+    const handleAccountDeletion = async () => {
+        try {
+            // Delete all user data first
+            const userEmail = user?.email;
+            if (!userEmail) throw new Error("No user email found");
+
+            showToast({ title: "Deleting...", description: "Removing all your data...", variant: "destructive" });
+
+            // Delete user's data from all entities
+            await Promise.all([
+                base44.entities.Transaction.deleteMany({ created_by: userEmail }),
+                base44.entities.Category.deleteMany({ created_by: userEmail }),
+                base44.entities.BudgetGoal.deleteMany({ created_by: userEmail }),
+                base44.entities.SystemBudget.deleteMany({ created_by: userEmail }),
+                base44.entities.CustomBudget.deleteMany({ created_by: userEmail }),
+                base44.entities.CustomBudgetAllocation.deleteMany({ created_by: userEmail }),
+                base44.entities.ExchangeRate.deleteMany({ created_by: userEmail }),
+                base44.entities.CashWallet.deleteMany({ created_by: userEmail }),
+                base44.entities.CategoryRule.deleteMany({ created_by: userEmail }),
+                base44.entities.RecurringTransaction.deleteMany({ created_by: userEmail }),
+                base44.entities.UserSettings.deleteMany({ created_by: userEmail }),
+                base44.entities.BankConnection.deleteMany({ created_by: userEmail })
+            ]);
+
+            // Note: Actual user account deletion from auth system would need a backend function
+            showToast({ 
+                title: "Data Deleted", 
+                description: "All your data has been removed. Logging out...", 
+                variant: "destructive" 
+            });
+            
+            setTimeout(() => {
+                logout();
+            }, 1500);
+        } catch (error) {
+            console.error("Deletion failed:", error);
+            showToast({ 
+                title: "Error", 
+                description: "Failed to delete account data. Please contact support.", 
+                variant: "destructive" 
+            });
+        }
     };
 
     // Sync local state if settings change (e.g., after initial load)
@@ -273,6 +345,158 @@ export function AccountSection() {
         }
     };
 
+    const handleUpdateFullName = async () => {
+        if (!localName.trim()) {
+            showToast({ title: "Error", description: "Name cannot be empty", variant: "destructive" });
+            return;
+        }
+        
+        setIsSaving(true);
+        try {
+            await base44.auth.updateMe({ full_name: localName.trim() });
+            showToast({ title: "Name Updated", description: "Your full name has been changed." });
+        } catch (err) {
+            console.error(err);
+            showToast({ title: "Error", description: "Failed to update name.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleChangeEmail = async () => {
+        if (!newEmail.trim() || !currentPassword.trim()) {
+            showToast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
+            return;
+        }
+        
+        setIsSaving(true);
+        try {
+            // This would require a backend function to update email in auth system
+            showToast({ 
+                title: "Not Implemented", 
+                description: "Email change requires backend support. Contact administrator.", 
+                variant: "destructive" 
+            });
+        } catch (err) {
+            showToast({ title: "Error", description: err.message, variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+            setIsChangingEmail(false);
+            setNewEmail("");
+            setCurrentPassword("");
+        }
+    };
+
+    const handleChangePassword = async () => {
+        if (!currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+            showToast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            showToast({ title: "Error", description: "New passwords don't match", variant: "destructive" });
+            return;
+        }
+        
+        if (newPassword.length < 8) {
+            showToast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
+            return;
+        }
+        
+        setIsSaving(true);
+        try {
+            // This would require a backend function to update password in auth system
+            showToast({ 
+                title: "Not Implemented", 
+                description: "Password change requires backend support. Contact administrator.", 
+                variant: "destructive" 
+            });
+        } catch (err) {
+            showToast({ title: "Error", description: err.message, variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+            setIsChangingPassword(false);
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+        }
+    };
+
+    const handleExportData = async () => {
+        setIsExporting(true);
+        try {
+            const userEmail = user?.email;
+            if (!userEmail) throw new Error("No user email found");
+
+            const exportData = {};
+
+            // Fetch selected data types
+            if (exportSelections.transactions) {
+                exportData.transactions = await base44.entities.Transaction.filter({ created_by: userEmail });
+            }
+            if (exportSelections.categories) {
+                exportData.categories = await base44.entities.Category.filter({ created_by: userEmail });
+            }
+            if (exportSelections.budgetGoals) {
+                exportData.budgetGoals = await base44.entities.BudgetGoal.filter({ created_by: userEmail });
+            }
+            if (exportSelections.systemBudgets) {
+                exportData.systemBudgets = await base44.entities.SystemBudget.filter({ created_by: userEmail });
+            }
+            if (exportSelections.customBudgets) {
+                exportData.customBudgets = await base44.entities.CustomBudget.filter({ created_by: userEmail });
+            }
+            if (exportSelections.budgetAllocations) {
+                exportData.budgetAllocations = await base44.entities.CustomBudgetAllocation.filter({ created_by: userEmail });
+            }
+            if (exportSelections.exchangeRates) {
+                exportData.exchangeRates = await base44.entities.ExchangeRate.filter({ created_by: userEmail });
+            }
+            if (exportSelections.cashWallet) {
+                exportData.cashWallet = await base44.entities.CashWallet.filter({ created_by: userEmail });
+            }
+            if (exportSelections.categoryRules) {
+                exportData.categoryRules = await base44.entities.CategoryRule.filter({ created_by: userEmail });
+            }
+            if (exportSelections.recurringTransactions) {
+                exportData.recurringTransactions = await base44.entities.RecurringTransaction.filter({ created_by: userEmail });
+            }
+            if (exportSelections.settings) {
+                exportData.settings = await base44.entities.UserSettings.filter({ created_by: userEmail });
+            }
+            if (exportSelections.bankConnections) {
+                exportData.bankConnections = await base44.entities.BankConnection.filter({ created_by: userEmail });
+            }
+
+            // Add metadata
+            exportData._metadata = {
+                exportDate: new Date().toISOString(),
+                userEmail: userEmail,
+                appVersion: "1.0.0"
+            };
+
+            // Create downloadable file
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `budgetwise-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast({ title: "Export Complete", description: "Your data has been downloaded." });
+            setShowExportDialog(false);
+        } catch (error) {
+            console.error("Export failed:", error);
+            showToast({ title: "Error", description: "Failed to export data.", variant: "destructive" });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const handleLogout = () => {
         showToast({ title: "Logging out", description: "Securely ending your session..." });
         logout();
@@ -284,61 +508,268 @@ export function AccountSection() {
             <Card>
                 <CardHeader>
                     <CardTitle>Profile Details</CardTitle>
-                    <CardDescription>Manage how you appear in the app.</CardDescription>
+                    <CardDescription>Manage your account information and authentication.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Google Info (Read Only) */}
+                    {/* Account Info */}
                     <div className="flex flex-col md:flex-row items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                         {user?.picture && (
                             <img src={user.picture} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-white shadow-sm" />
                         )}
                         <div className="text-center md:text-left">
-                            <p className="text-sm font-medium text-gray-500">Connected Google Account</p>
+                            <p className="text-sm font-medium text-gray-500">
+                                {user?.picture ? 'Connected Google Account' : 'Email Account'}
+                            </p>
                             <p className="font-semibold text-gray-900">{user?.email}</p>
+                            {user?.name && <p className="text-sm text-gray-600">{user.name}</p>}
                         </div>
                     </div>
 
-                    {/* Editable Display Name */}
-                    <div className="space-y-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="displayName">Display Name</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="displayName"
-                                    placeholder={user?.name || "Enter name..."}
-                                    value={localName}
-                                    onChange={(e) => setLocalName(e.target.value)}
-                                    className="max-w-md"
-                                />
-                                <CustomButton
-                                    disabled={isSaving || localName === settings.displayName}
-                                    onClick={handleSaveName}
-                                    variant="primary"
-                                >
-                                    {isSaving ? "..." : "Update"}
-                                </CustomButton>
-                            </div>
-                            <p className="text-xs text-gray-400">This name will be used across the dashboard and reports.</p>
+                    {/* Full Name (System Level) */}
+                    <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                id="fullName"
+                                placeholder="Enter your full name..."
+                                value={localName}
+                                onChange={(e) => setLocalName(e.target.value)}
+                                className="max-w-md"
+                            />
+                            <CustomButton
+                                disabled={isSaving || localName === (user?.name || settings.displayName)}
+                                onClick={handleUpdateFullName}
+                                variant="primary"
+                            >
+                                {isSaving ? "..." : "Update"}
+                            </CustomButton>
                         </div>
+                        <p className="text-xs text-gray-400">This name is used across your account and reports.</p>
+                    </div>
 
-                        <Separator />
+                    {/* Email/Password Management (Only for non-Google users) */}
+                    {isEmailPasswordAuth && (
+                        <>
+                            <Separator />
+                            
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-semibold text-gray-700">Authentication</h3>
+                                
+                                {/* Change Email */}
+                                <div className="space-y-2">
+                                    {!isChangingEmail ? (
+                                        <CustomButton 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => setIsChangingEmail(true)}
+                                        >
+                                            Change Email
+                                        </CustomButton>
+                                    ) : (
+                                        <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
+                                            <Label htmlFor="newEmail">New Email Address</Label>
+                                            <Input
+                                                id="newEmail"
+                                                type="email"
+                                                placeholder="new.email@example.com"
+                                                value={newEmail}
+                                                onChange={(e) => setNewEmail(e.target.value)}
+                                            />
+                                            <Label htmlFor="emailPassword">Current Password</Label>
+                                            <Input
+                                                id="emailPassword"
+                                                type="password"
+                                                placeholder="Enter current password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                            />
+                                            <div className="flex gap-2">
+                                                <CustomButton 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIsChangingEmail(false);
+                                                        setNewEmail("");
+                                                        setCurrentPassword("");
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </CustomButton>
+                                                <CustomButton 
+                                                    variant="primary" 
+                                                    size="sm"
+                                                    onClick={handleChangeEmail}
+                                                    disabled={isSaving}
+                                                >
+                                                    {isSaving ? "Updating..." : "Update Email"}
+                                                </CustomButton>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                        <div className="flex flex-wrap gap-3">
+                                {/* Change Password */}
+                                <div className="space-y-2">
+                                    {!isChangingPassword ? (
+                                        <CustomButton 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => setIsChangingPassword(true)}
+                                        >
+                                            Change Password
+                                        </CustomButton>
+                                    ) : (
+                                        <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
+                                            <Label htmlFor="currentPass">Current Password</Label>
+                                            <Input
+                                                id="currentPass"
+                                                type="password"
+                                                placeholder="Enter current password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                            />
+                                            <Label htmlFor="newPass">New Password</Label>
+                                            <Input
+                                                id="newPass"
+                                                type="password"
+                                                placeholder="At least 8 characters"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                            />
+                                            <Label htmlFor="confirmPass">Confirm New Password</Label>
+                                            <Input
+                                                id="confirmPass"
+                                                type="password"
+                                                placeholder="Re-enter new password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                            />
+                                            <div className="flex gap-2">
+                                                <CustomButton 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIsChangingPassword(false);
+                                                        setCurrentPassword("");
+                                                        setNewPassword("");
+                                                        setConfirmPassword("");
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </CustomButton>
+                                                <CustomButton 
+                                                    variant="primary" 
+                                                    size="sm"
+                                                    onClick={handleChangePassword}
+                                                    disabled={isSaving}
+                                                >
+                                                    {isSaving ? "Updating..." : "Update Password"}
+                                                </CustomButton>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    <Separator />
+
+                    <div className="flex flex-wrap gap-3">
+                        {user?.picture && (
                             <CustomButton variant="outline" size="sm" onClick={() => window.open('https://myaccount.google.com/security', '_blank')}>
                                 Google Security Settings
                             </CustomButton>
-                            <CustomButton
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-600 hover:text-red-600"
-                                onClick={handleLogout}
-                            >
-                                Sign Out
-                            </CustomButton>
-                        </div>
+                        )}
+                        <CustomButton
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-600 hover:text-red-600"
+                            onClick={handleLogout}
+                        >
+                            Sign Out
+                        </CustomButton>
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Data Export Card */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Download className="w-5 h-5" /> Export Your Data
+                    </CardTitle>
+                    <CardDescription>Download all your financial data in JSON format.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <CustomButton 
+                        variant="outline"
+                        onClick={() => setShowExportDialog(true)}
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export Data
+                    </CustomButton>
+                </CardContent>
+            </Card>
+
+            {/* Export Dialog */}
+            <AlertDialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+                <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Export Your Data</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Select which data you want to include in the export. All selected data will be downloaded as a JSON file.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                        {Object.entries({
+                            transactions: "Transactions",
+                            categories: "Categories",
+                            budgetGoals: "Budget Goals",
+                            systemBudgets: "System Budgets",
+                            customBudgets: "Custom Budgets",
+                            budgetAllocations: "Budget Allocations",
+                            exchangeRates: "Exchange Rates",
+                            cashWallet: "Cash Wallet",
+                            categoryRules: "Category Rules",
+                            recurringTransactions: "Recurring Transactions",
+                            settings: "Settings",
+                            bankConnections: "Bank Connections (Sensitive)"
+                        }).map(([key, label]) => (
+                            <div key={key} className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={key}
+                                    checked={exportSelections[key]}
+                                    onCheckedChange={(checked) => 
+                                        setExportSelections(prev => ({ ...prev, [key]: checked }))
+                                    }
+                                />
+                                <Label htmlFor={key} className="cursor-pointer text-sm">
+                                    {label}
+                                </Label>
+                            </div>
+                        ))}
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isExporting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={handleExportData}
+                            disabled={isExporting || !Object.values(exportSelections).some(v => v)}
+                        >
+                            {isExporting ? (
+                                <>Exporting...</>
+                            ) : (
+                                <>
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download JSON
+                                </>
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Danger Zone */}
             <Card className="border-red-100 shadow-sm">
