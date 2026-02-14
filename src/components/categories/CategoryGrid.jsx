@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
@@ -166,12 +167,15 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
 
     return (
         <>
-            <DeleteConfirmationDialog
-                isOpen={deleteConfirm.isOpen}
-                onClose={() => setDeleteConfirm({ ...deleteConfirm, isOpen: false })}
-                onConfirm={handleConfirmDelete}
-                categoryName={deleteConfirm.categoryName}
-            />
+            {createPortal(
+                <DeleteConfirmationDialog
+                    isOpen={deleteConfirm.isOpen}
+                    onClose={() => setDeleteConfirm({ ...deleteConfirm, isOpen: false })}
+                    onConfirm={handleConfirmDelete}
+                    categoryName={deleteConfirm.categoryName}
+                />,
+                document.body
+            )}
             <Card className="border-none shadow-lg relative select-none bg-transparent shadow-none" ref={containerRef} onMouseDown={handleMouseDown}>
                 {/* Selection Overlay */}
                 {selectionBox && (
@@ -272,8 +276,12 @@ const CategoryPill = forwardRef(({ category, isSystem, isAdmin, onEdit, onReques
 
     const handleClick = (e) => {
         if (isSelectionMode) {
+            e.preventDefault();
+            e.stopPropagation();
             onToggle();
-        } else if ((isSystem && isAdmin) || (!isSystem)) {
+            return;
+        }
+        if ((isSystem && isAdmin) || (!isSystem)) {
             onEdit(category);
         }
     };
@@ -307,7 +315,7 @@ const CategoryPill = forwardRef(({ category, isSystem, isAdmin, onEdit, onReques
                 <Lock className="w-3 h-3 text-gray-300 group-hover:text-blue-400 transition-colors ml-1" />
             )}
             {!isSystem && !isSelectionMode && (
-                <button onClick={handleDelete} className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 p-1.5 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-all ml-1">
+                <button onClick={handleDelete} className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-all ml-1">
                     <Trash2 className="w-3.5 h-3.5" />
                 </button>
             )}
@@ -319,8 +327,8 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, categoryName }) 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 relative z-[10000]">
                 <div className="p-6 text-center">
                     <div className="w-12 h-12 rounded-full bg-red-50 mx-auto flex items-center justify-center mb-4">
                         <AlertTriangle className="w-6 h-6 text-red-500" />
