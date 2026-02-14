@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
-import UpcomingBills from "../components/dashboard/UpcomingBills";
+import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useFAB } from "../components/hooks/FABContext";
 import {
@@ -302,7 +302,7 @@ export default function Dashboard() {
 
           {/* DESKTOP PLACEMENT: Right side of Hero */}
           <div className="hidden lg:block lg:col-span-1 h-full">
-            <UpcomingBills
+            <UpcomingTransactions
               recurringWithStatus={recurringWithStatus}
               onMarkPaid={handleMarkPaid}
               isLoading={isLoading}
@@ -320,7 +320,7 @@ export default function Dashboard() {
 
             {/* MOBILE PLACEMENT: Below Custom Budgets */}
             <div className="lg:hidden mt-6 h-96">
-              <UpcomingBills
+              <UpcomingTransactions
                 recurringWithStatus={recurringWithStatus}
                 onMarkPaid={handleMarkPaid}
                 isLoading={isLoading}
