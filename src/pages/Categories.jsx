@@ -33,9 +33,18 @@ export default function Categories() {
     // Admin check
     const isAdmin = user?.role === 'admin';
 
-    // Sort alphabetically A-Z
-    const sortedCategories = useMemo(() => {
-        return [...(categories || [])].sort((a, b) => a.name.localeCompare(b.name));
+    // Split categories for the new UI
+    const { systemCategories, customCategories: userCategories } = useMemo(() => {
+        const sys = [];
+        const cust = [];
+        (categories || []).forEach(cat => {
+            if (cat.isSystemCategory) sys.push(cat);
+            else cust.push(cat);
+        });
+
+        // Sort both: Priority first, then Alphabetical
+        const sorter = (a, b) => a.name.localeCompare(b.name);
+        return { systemCategories: sys.sort(sorter), customCategories: cust.sort(sorter) };
     }, [categories]);
 
     // Actions (mutations and handlers)
@@ -43,6 +52,30 @@ export default function Categories() {
         setShowForm,
         setEditingCategory
     );
+
+    // WRAPPED SUBMIT: Validation Logic
+    const handleSubmit = (data, editingCategory) => {
+        // Check for duplicates in System Categories (Name + Priority match)
+        // We only check if we are creating a NEW category (editingCategory is null)
+        // or if we are renaming an existing one.
+        if (!editingCategory || editingCategory.name !== data.name) {
+            const duplicate = systemCategories.find(sys =>
+                sys.name.toLowerCase() === data.name.toLowerCase() &&
+                sys.priority === data.priority
+            );
+
+            if (duplicate) {
+                showToast({
+                    title: "Duplicate Category",
+                    description: `A system category named "${duplicate.name}" already exists in "${duplicate.priority}".`,
+                    variant: "destructive"
+                });
+                return;
+            }
+        }
+
+        originalSubmit(data, editingCategory);
+    };
 
     // UPDATED 14-Feb-2026: Prevent deletion of system categories
     const onSafeDelete = async (category) => {
@@ -276,7 +309,8 @@ export default function Categories() {
                     {/* DESKTOP GRID */}
                     <div className="hidden md:block">
                         <CategoryGrid
-                            categories={sortedCategories}
+                            systemCategories={systemCategories}
+                            customCategories={userCategories}
                             onEdit={handleEdit}
                             onDelete={onSafeDelete}
                             isLoading={isLoading}
@@ -292,7 +326,7 @@ export default function Categories() {
                     <div className="md:hidden space-y-2 pb-24">
                         {isLoading ? (
                             <p className="text-center text-gray-500 py-8">Loading categories...</p>
-                        ) : sortedCategories.map((cat) => (
+                        ) : [...userCategories, ...systemCategories].map((cat) => (
                             <MobileCategoryItem
                                 key={cat.id}
                                 category={cat}
