@@ -99,15 +99,27 @@ export default function Categories() {
             setIsBulkDeleting(true);
             try {
                 const idsToDelete = Array.from(selectedIds);
-                const chunks = chunkArray(idsToDelete, 50);
 
-                for (const chunk of chunks) {
-                    // Using deleteMany for bulk operations
-                    await base44.entities.Category.deleteMany({ id: { $in: chunk } });
-                }
+                // FIX: Use Promise.allSettled to handle individual constraints (FKs) gracefully.
+                // deleteMany fails the whole batch or silently skips if constraints exist.
+                const results = await Promise.allSettled(
+                    idsToDelete.map(id => base44.entities.Category.delete(id))
+                );
+
+                const successCount = results.filter(r => r.status === 'fulfilled').length;
+                const failCount = results.filter(r => r.status === 'rejected').length;
 
                 await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-                showToast({ title: "Success", description: `Deleted ${selectedIds.size} categories.` });
+
+                if (failCount > 0) {
+                    showToast({
+                        title: "Partial Success",
+                        description: `Deleted ${successCount} categories. ${failCount} could not be deleted (likely in use).`,
+                        variant: "warning"
+                    });
+                } else {
+                    showToast({ title: "Success", description: `Deleted ${successCount} categories.` });
+                }
 
                 setSelectedIds(new Set());
                 setIsSelectionMode(false);
