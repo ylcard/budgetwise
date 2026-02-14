@@ -196,33 +196,21 @@ export default function CategoryGrid({ systemCategories = [], customCategories =
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
+                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
                         >
-                            {/* System Categories - Grouped by Priority for Bento Feel */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {['needs', 'wants', 'savings'].map(priority => {
-                                    const priorityCats = systemCategories.filter(c => c.priority === priority);
-                                    if (priorityCats.length === 0) return null;
-
-                                    return (
-                                        <div key={priority} className="space-y-3">
-                                            <h3 className="font-semibold capitalize text-gray-500 text-sm flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[priority].color }}></span>
-                                                {priority}
-                                            </h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                {priorityCats.map(cat => (
-                                                    <SystemCategoryPill
-                                                        key={cat.id}
-                                                        category={cat}
-                                                        isAdmin={isAdmin}
-                                                        onEdit={onEdit}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                            {systemCategories.map((category) => (
+                                <CategoryCard
+                                    key={category.id}
+                                    ref={(node) => setCardRef(category.id, node)}
+                                    category={category}
+                                    onEdit={isAdmin ? onEdit : undefined}
+                                    onDelete={undefined} // System categories generally cannot be deleted
+                                    isSelectionMode={isSelectionMode}
+                                    isSelected={selectedIds?.has(category.id)}
+                                    onToggle={() => onToggleSelection(category.id, !selectedIds?.has(category.id))}
+                                    isAdmin={isAdmin}
+                                />
+                            ))}
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -245,29 +233,6 @@ function TabButton({ isActive, onClick, icon: Icon, label, count }) {
             <Icon className="w-4 h-4" />
             {label}
         </button>
-    );
-}
-
-function SystemCategoryPill({ category, isAdmin, onEdit }) {
-    const Icon = iconMap[category.icon] || Box;
-
-    return (
-        <div
-            onClick={() => isAdmin && onEdit(category)}
-            className={`group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-100 shadow-sm transition-all ${isAdmin ? 'cursor-pointer hover:border-blue-300 hover:shadow-md' : 'opacity-80'
-                }`}
-        >
-            <div
-                className="w-6 h-6 rounded-lg flex items-center justify-center text-xs"
-                style={{ backgroundColor: `${category.color}20`, color: category.color }}
-            >
-                <Icon className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">{category.name}</span>
-            {isAdmin && (
-                <Lock className="w-3 h-3 text-gray-300 group-hover:text-blue-400 transition-colors ml-1" />
-            )}
-        </div>
     );
 }
 
