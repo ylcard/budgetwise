@@ -1,14 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, ArrowDown, History, Repeat, Play, FileUp, PlusCircle, MinusCircle } from "lucide-react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { toast } from "sonner";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
-import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
-import { useTransactions, useCategories, useCustomBudgetsForPeriod } from "../components/hooks/useBase44Entities";
+import { PullToRefresh } from "../components/ui/PullToRefresh";
+import { useTransactions, useCustomBudgetsForPeriod } from "../components/hooks/useBase44Entities";
+import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import { useRecurringTransactions, useRecurringTransactionActions } from "../components/hooks/useRecurringTransactions";
 import { useFAB } from "../components/hooks/FABContext";
 import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedData";
@@ -41,7 +40,7 @@ export default function TransactionsLayout() {
 
     // Data for Modals
     const { transactions } = useTransactions();
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
     const { handleSubmit, isSubmitting } = useTransactionActions({
@@ -126,7 +125,7 @@ export function TransactionHistory() {
 
     // Hooks
     const { transactions, isLoading } = useTransactions(filters.startDate, filters.endDate);
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { filteredTransactions } = useAdvancedTransactionFiltering(transactions, filters, setFilters);
     const { handleDelete } = useTransactionActions({});
@@ -247,7 +246,7 @@ export function RecurringTransactions() {
     const [isProcessingRecurring, setIsProcessingRecurring] = useState(false);
 
     const { recurringTransactions, isLoading } = useRecurringTransactions(user);
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
     const { handleCreate, handleUpdate, handleDelete, handleToggleActive, isSubmitting } = useRecurringTransactionActions(user);
 
     const handleProcessRecurring = useCallback(async () => {
