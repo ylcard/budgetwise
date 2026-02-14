@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEtoroData } from '../../components/hooks/useEtoroData';
 import { Loader2, TrendingUp } from 'lucide-react';
@@ -42,7 +43,7 @@ export default function EtoroTicker() {
 
   if (status === "Error") return null;
 
-  return (
+  return createPortal(
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex justify-center">
       <motion.div
         layout
@@ -119,5 +120,6 @@ export default function EtoroTicker() {
         </motion.div>
       )}
     </div>
+    , document.body
   );
 }
