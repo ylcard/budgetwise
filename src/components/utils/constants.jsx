@@ -66,6 +66,7 @@ export const DEFAULT_SETTINGS = {
     goalMode: true // true = Percentage, false = Absolute
 };
 
+/*
 export const DEFAULT_SYSTEM_CATEGORIES = [
     { name: 'Rent', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
     { name: 'Connectivity', icon: 'Home', color: '#6366F1', priority: 'needs', is_system: true },
@@ -86,6 +87,31 @@ export const DEFAULT_SYSTEM_CATEGORIES = [
     { name: 'Entertainment', icon: 'Film', color: '#EC4899', priority: 'wants', is_system: true },
     { name: 'Travel', icon: 'Plane', color: '#0EA5E9', priority: 'wants', is_system: true },
     { name: 'Subscriptions', icon: 'Repeat', color: '#8B5CF6', priority: 'wants', is_system: true }
+];
+*/
+
+export const DEFAULT_SYSTEM_CATEGORIES = [
+  // --- Essentials ---
+  { name: 'Debt', priority: 'needs', icon: 'CreditCard', color: '#EF4444' }, // Red for urgency/debt
+  { name: 'Education', priority: 'needs', icon: 'GraduationCap', color: '#6366F1' },
+  { name: 'Groceries', priority: 'needs', icon: 'ShoppingCart', color: '#10B981' },
+  { name: 'Health', priority: 'needs', icon: 'HeartPulse', color: '#F43F5E' },
+  { name: 'Housing', priority: 'needs', icon: 'Home', color: '#6366F1' },
+  { name: 'Insurance', priority: 'needs', icon: 'ShieldCheck', color: '#3B82F6' },
+  { name: 'Transport', priority: 'needs', icon: 'Car', color: '#F59E0B' },
+  { name: 'Utilities', priority: 'needs', icon: 'Zap', color: '#06B6D4' },
+  { name: 'Home Maintenance', priority: 'needs', icon: 'Wrench', color: '#71717A' },
+
+  // --- Lifestyle ---
+  { name: 'Dining', priority: 'wants', icon: 'Utensils', color: '#F97316' },
+  { name: 'Entertainment', priority: 'wants', icon: 'Film', color: '#EC4899' },
+  { name: 'Gifts', priority: 'wants', icon: 'Gift', color: '#D946EF' },
+  { name: 'Investments', priority: 'wants', icon: 'TrendingUp', color: '#8B5CF6' },
+  { name: 'Shopping', priority: 'wants', icon: 'ShoppingBag', color: '#8B5CF6' },
+  { name: 'Travel', priority: 'wants', icon: 'Plane', color: '#0EA5E9' },
+  { name: 'Subscriptions', priority: 'wants', icon: 'Repeat', color: '#6366F1' },
+  { name: 'Personal Care', priority: 'wants', icon: 'Sparkles', color: '#F472B6' },
+  { name: 'Miscellaneous', priority: 'wants', icon: 'HelpCircle', color: '#94A3B8' }
 ];
 
 export const DEFAULT_SYSTEM_GOALS = [
