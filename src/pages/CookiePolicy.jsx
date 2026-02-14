@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Cookie, Info, Settings } from "lucide-react";
+import { Cookie, Info, Settings, Shield } from "lucide-react"; // UPDATED 14-Feb-2026: Added Shield icon
 
 export default function CookiePolicy() {
     return (
@@ -207,12 +207,101 @@ export default function CookiePolicy() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>6. Do Not Track (DNT)</CardTitle>
+                        <CardTitle>6. Privacy Signal Support (DNT & GPC)</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-gray-700">
-                            Some browsers have a "Do Not Track" (DNT) feature. However, there is no industry standard for how websites should respond to DNT signals. BudgetWise does not currently respond to DNT browser settings, but we minimize tracking to only what is necessary for app functionality.
-                        </p>
+                    <CardContent className="space-y-4">
+                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4">
+                            <h5 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
+                                Global Privacy Control (GPC) - FULLY SUPPORTED
+                            </h5>
+                            <p className="text-sm text-green-800 mb-3">
+                                BudgetWise <strong>strictly honors</strong> the Global Privacy Control (GPC) signal as required by California Consumer Privacy Act (CCPA), General Data Protection Regulation (GDPR), and other privacy laws.
+                            </p>
+                            <div className="bg-white/50 rounded p-3 mb-3">
+                                <p className="text-sm text-gray-800 mb-2"><strong>When GPC is enabled, we:</strong></p>
+                                <ul className="list-disc pl-6 space-y-1 text-sm text-gray-700">
+                                    <li><strong>Block all non-essential tracking</strong> immediately upon detection</li>
+                                    <li><strong>Disable analytics tracking</strong> (including base44.analytics.track)</li>
+                                    <li><strong>Prevent third-party tracking cookies</strong> where technically feasible</li>
+                                    <li><strong>Restrict data sharing</strong> with external services (except essential operations)</li>
+                                    <li><strong>Display a confirmation banner</strong> confirming GPC enforcement</li>
+                                </ul>
+                            </div>
+                            <p className="text-xs text-green-700">
+                                <strong>Legal Status:</strong> GPC is legally binding under CCPA (§1798.135) and must be treated as an opt-out request. We comply fully with these requirements.
+                            </p>
+                        </div>
+
+                        <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-4">
+                            <h5 className="font-semibold text-blue-900 mb-2">Do Not Track (DNT) - HONORED (Best Effort)</h5>
+                            <p className="text-sm text-blue-800 mb-3">
+                                We honor Do Not Track (DNT) browser signals on a best-effort basis, though DNT is not legally binding and lacks industry standardization.
+                            </p>
+                            <div className="bg-white/50 rounded p-3">
+                                <p className="text-sm text-gray-800 mb-2"><strong>When DNT is enabled, we:</strong></p>
+                                <ul className="list-disc pl-6 space-y-1 text-sm text-gray-700">
+                                    <li><strong>Disable our own analytics tracking</strong></li>
+                                    <li><strong>Minimize data collection</strong> to essential functionality only</li>
+                                    <li><strong>Request third-party services respect DNT</strong> (though we cannot guarantee compliance)</li>
+                                    <li><strong>Store only necessary cookies</strong> for authentication and preferences</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="bg-amber-50 border-2 border-amber-500 rounded-lg p-4">
+                            <h5 className="font-semibold text-amber-900 mb-2">⚠️ Third-Party Service Disclaimer</h5>
+                            <p className="text-sm text-amber-800 mb-3">
+                                <strong>IMPORTANT:</strong> While we strictly enforce GPC and DNT within our own systems, we cannot fully guarantee compliance by third-party services we integrate with:
+                            </p>
+                            <ul className="list-disc pl-6 space-y-2 text-sm text-amber-800">
+                                <li>
+                                    <strong>Google Services:</strong> Google Sign-In and Google Maps may set cookies regardless of privacy signals. See <a href="https://policies.google.com/technologies/cookies" className="underline" target="_blank" rel="noopener noreferrer">Google's Cookie Policy</a>.
+                                </li>
+                                <li>
+                                    <strong>TrueLayer (Banking):</strong> Bank connection flows require authentication cookies. TrueLayer operates under UK/EU regulations. See <a href="https://truelayer.com/privacy/" className="underline" target="_blank" rel="noopener noreferrer">TrueLayer's Privacy Policy</a>.
+                                </li>
+                                <li>
+                                    <strong>eToro (Investments):</strong> Portfolio tracking requires API access which may involve cookies. See <a href="https://www.etoro.com/customer-service/privacy-policy/" className="underline" target="_blank" rel="noopener noreferrer">eToro's Privacy Policy</a>.
+                                </li>
+                                <li>
+                                    <strong>Currency APIs (Frankfurter/ECB):</strong> These services do not set cookies and are privacy-friendly.
+                                </li>
+                            </ul>
+                            <p className="text-sm text-amber-800 mt-3">
+                                We have implemented technical measures to minimize third-party tracking, but some essential services require cookies for authentication and security. If you have GPC or DNT enabled and wish to avoid all third-party tracking, we recommend not using these integrations.
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                            <h5 className="font-semibold text-gray-900 mb-2">How to Enable GPC or DNT</h5>
+                            <div className="space-y-2 text-sm text-gray-700">
+                                <div>
+                                    <p className="font-medium">Global Privacy Control (GPC):</p>
+                                    <ul className="list-disc pl-6 text-xs mt-1">
+                                        <li><strong>Chrome/Edge:</strong> Install the <a href="https://globalprivacycontrol.org/" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">GPC browser extension</a></li>
+                                        <li><strong>Firefox:</strong> Built-in support (Settings → Privacy & Security → Send websites a "Do Not Track" signal)</li>
+                                        <li><strong>Brave:</strong> Automatically enabled by default</li>
+                                        <li><strong>DuckDuckGo Privacy Browser:</strong> Automatically enabled</li>
+                                    </ul>
+                                </div>
+                                <div className="mt-3">
+                                    <p className="font-medium">Do Not Track (DNT):</p>
+                                    <ul className="list-disc pl-6 text-xs mt-1">
+                                        <li><strong>Chrome:</strong> Settings → Privacy and security → Send a "Do Not Track" request</li>
+                                        <li><strong>Firefox:</strong> Settings → Privacy & Security → Send websites a "Do Not Track" signal</li>
+                                        <li><strong>Safari:</strong> Preferences → Privacy → Ask websites not to track me</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-green-50 border border-green-300 rounded-lg p-4">
+                            <h5 className="font-semibold text-green-900 mb-2">✅ Verification & Transparency</h5>
+                            <p className="text-sm text-green-800">
+                                When GPC or DNT is detected, BudgetWise will display a confirmation banner at the top of the app indicating that enhanced privacy mode is active. You can verify privacy signal enforcement by checking your browser's developer console (F12) for privacy signal detection logs.
+                            </p>
+                        </div>
                     </CardContent>
                 </Card>
 

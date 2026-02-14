@@ -7,6 +7,8 @@ import { navigationItems } from "./components/utils/navigationConfig";
 import { base44 } from "@/api/base44Client";
 import NotificationCenter from "./components/notifications/NotificationCenter"; // ADDED 14-Feb-2026
 import NotificationBell from "./components/notifications/NotificationBell"; // ADDED 14-Feb-2026
+import PrivacyBanner from "./components/utils/PrivacyBanner"; // ADDED 14-Feb-2026: GPC/DNT support
+import { initializePrivacySignals } from "./components/utils/privacySignals"; // ADDED 14-Feb-2026
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +38,11 @@ const LayoutContent = ({ children }) => {
   const navigate = useNavigate();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  // ADDED 14-Feb-2026: Initialize privacy signal enforcement on mount
+  useEffect(() => {
+    initializePrivacySignals();
+  }, []);
 
   // Helper to toggle theme
   const toggleTheme = () => {
@@ -123,6 +130,9 @@ const LayoutContent = ({ children }) => {
 
   return (
     <SidebarProvider>
+      {/* ADDED 14-Feb-2026: Privacy signal banner (GPC/DNT) */}
+      <PrivacyBanner />
+
       {/* Mobile-only fixed top header with dynamic back button (iOS native standard) */}
       <header className="md:hidden fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md border-b border-border z-40 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-center h-14 px-4 relative">
