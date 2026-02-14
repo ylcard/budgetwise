@@ -145,9 +145,9 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
 
                     <div className="flex items-center gap-3 pl-2">
                       <span className={cn("font-semibold text-sm whitespace-nowrap text-slate-700", isPaid && "text-slate-400")}>
-                        {bill.originalAmount?.toLocaleString('en-US', {
+                        {bill.amount?.toLocaleString('en-US', {
                           style: 'currency',
-                          currency: bill.originalCurrency || 'USD'
+                          currency: user?.baseCurrency || 'EUR'
                         })}
                       </span>
                       {!isPaid && (
