@@ -106,6 +106,7 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
         if (searchString.includes(keyword)) {
             const cat = categoriesList.find(c => c.name.toUpperCase() === data.name.toUpperCase());
             if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
+            return { categoryId: null, categoryName: data.name, priority: data.priority, needsReview: true, shouldCreate: true };
         }
     }
 
@@ -114,6 +115,7 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
         if (pattern.test(searchString)) {
             const cat = categoriesList.find(c => c.name.toUpperCase() === category.toUpperCase());
             if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
+            return { categoryId: null, categoryName: category, priority: priority, needsReview: true, shouldCreate: true };
         }
     }
 
@@ -329,7 +331,7 @@ Deno.serve(async (req) => {
         const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
 
         // --- SEED DEFAULTS BEFORE CATEGORIZING ---
-        await ensureSystemCategories(base44, user.email, categories);
+        // await ensureSystemCategories(base44, user.email, categories);
 
         /**
          * Fetch transactions for each account
@@ -428,6 +430,26 @@ Deno.serve(async (req) => {
                 // Only run categorization engine for expenses
                 if (isExpense && !catResult.categoryId) {
                     catResult = categorizeTransaction(searchString, rules, categories);
+
+                    // ON-DEMAND CATEGORY CREATION (The "Last Resort" Logic)
+                    if (catResult.shouldCreate && catResult.categoryName) {
+                        // Double check it wasn't created in a previous iteration of this loop
+                        const justCreated = categories.find(c => c.name.toUpperCase() === catResult.categoryName.toUpperCase());
+
+                        if (justCreated) {
+                            catResult.categoryId = justCreated.id;
+                        } else {
+                            console.log(`✨ [SYNC] Auto-creating missing category: ${catResult.categoryName}`);
+                            const newCat = await base44.entities.Category.create({
+                                name: catResult.categoryName,
+                                priority: catResult.priority,
+                                user_email: user.email,
+                                is_system: true
+                            });
+                            categories.push(newCat); // Add to local cache immediately
+                            catResult.categoryId = newCat.id;
+                        }
+                    }
                 }
 
                 // Determine the clean name (AI/Rule result OR raw fallback)
