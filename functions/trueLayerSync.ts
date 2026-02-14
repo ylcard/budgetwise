@@ -133,7 +133,7 @@ const getOrCreateBudget = async (base44, userEmail, txDate, priority) => {
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const monthStart = `${y}-${m}-01`;
 
-    const existing = await base44.entities.SystemBudget.filter({ user_email: userEmail, startDate: monthStart, systemBudgetType: priority });
+    const existing = await base44.entities.SystemBudget.filter({ created_by: userEmail, startDate: monthStart, systemBudgetType: priority });
     if (existing && existing.length > 0) return existing[0].id;
 
     // Create basic placeholder budget if none exists (Amount can be updated later by the UI)
@@ -143,7 +143,7 @@ const getOrCreateBudget = async (base44, userEmail, txDate, priority) => {
         startDate: monthStart,
         endDate: new Date(y, date.getMonth() + 1, 0).toISOString().split('T')[0],
         color: priority === 'needs' ? 'emerald' : 'amber',
-        user_email: userEmail,
+        created_by: userEmail,
         systemBudgetType: priority
     });
     return newBudget.id;
@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
             provider: connection?.provider,
             provider_name: connection?.provider_name,
             status: connection?.status,
-            user_email: connection?.user_email,
+            created_by: connection?.user_email,
             hasAccessToken: !!connection?.access_token,
             hasRefreshToken: !!connection?.refresh_token,
             token_expiry: connection?.token_expiry
@@ -300,11 +300,11 @@ Deno.serve(async (req) => {
         const dbQueryDate = lookbackDate.toISOString().split('T')[0];
 
         const [customCategories, systemCategories, rules, existingTx] = await Promise.all([
-            base44.entities.Category.filter({ user_email: user.email }),
+            base44.entities.Category.filter({ created_by: user.email }),
             base44.entities.SystemCategory.list(),
-            base44.entities.CategoryRule.filter({ user_email: user.email }),
+            base44.entities.CategoryRule.filter({ created_by: user.email }),
             base44.entities.Transaction.filter({
-                user_email: user.email,
+                created_by: user.email,
                 date: { $gte: dbQueryDate }
             })
         ]);
