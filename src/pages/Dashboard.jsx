@@ -39,7 +39,6 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
-import EtoroTicker from "../components/stocks/EtoroTicker";
 import { format, startOfMonth, endOfMonth } from "date-fns"; // Added startOfMonth/endOfMonth
 
 export default function Dashboard() {
@@ -384,9 +383,6 @@ export default function Dashboard() {
           renderTrigger={false}
         />
       </div>
-
-      {/* eToro Ticker - Behaving as an expandable FAB */}
-      <EtoroTicker />
     </div>
   );
 }
