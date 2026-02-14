@@ -1,17 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import {
-    Settings as SettingsIcon,
     Save,
     Trash2,
-    SlidersHorizontal,
-    FolderOpen,
-    RefreshCw,
-    Link2,
-    Download,
-    Check
+    Download
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile"; // UPDATED IMPORT
 
 // UI Components
 import { Input } from "@/components/ui/input";
