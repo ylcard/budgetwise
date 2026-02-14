@@ -22,7 +22,6 @@ export const useMergedCategories = () => {
     // Fetch user's custom categories
     const { data: customCategories = [], isLoading: isLoadingCustom } = useQuery({
         queryKey: [QUERY_KEYS.CATEGORIES, user?.email],
-        // queryFn: () => base44.entities.Category.filter({ user_email: user?.email }),
         queryFn: () => base44.entities.Category.filter({ created_by: user?.email }),
         enabled: !!user,
         staleTime: 1000 * 60 * 5, // Cache for 5 minutes
