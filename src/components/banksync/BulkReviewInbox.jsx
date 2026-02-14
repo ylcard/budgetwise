@@ -16,7 +16,7 @@ import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, BrainCircuit, Receipt, Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useCategories } from "@/components/hooks/useBase44Entities";
+import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { Input } from "@/components/ui/input"
 
 /**
@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input"
  */
 export default function BulkReviewInbox({ open, onOpenChange, transactions = [] }) {
     const { settings, user } = useSettings();
-    const { categories } = useCategories();
+    const { categories } = useMergedCategories();
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
