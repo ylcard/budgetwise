@@ -16,7 +16,7 @@ export const useNotifications = () => {
         queryKey: [QUERY_KEYS.NOTIFICATIONS],
         queryFn: async () => {
             const all = await base44.entities.Notification.filter(
-                { user_email: user?.email },
+                { created_by: user?.email },
                 '-created_date'
             );
             
