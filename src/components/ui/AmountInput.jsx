@@ -21,12 +21,10 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-// COMMENTED 14-Feb-2026: Replaced with dynamic REST Countries API data via useCurrencies hook
-// import { SUPPORTED_CURRENCIES } from "../utils/constants";
-import { useCurrencies } from "../hooks/useCurrencies"; // ADDED 14-Feb-2026
+import { useCurrencies } from "../hooks/useCurrencies";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Loader2 } from "lucide-react"; // ADDED 14-Feb-2026: Loading spinner
+import { Loader2 } from "lucide-react";
 
 /**
  * Custom input component designed for monetary amounts.
@@ -56,13 +54,11 @@ export default function AmountInput({
     settingsOverride = null,
     ...props
 }) {
-    // const { settings } = useSettings();
     const { settings: contextSettings } = useSettings();
     const settings = settingsOverride || contextSettings;
     const [open, setOpen] = useState(false);
     const isMobile = useIsMobile();
     
-    // ADDED 14-Feb-2026: Fetch currencies from REST Countries API
     const { currencies, isLoading: currenciesLoading } = useCurrencies();
 
     // Use provided currencySymbol or fall back to user's base currency
@@ -149,7 +145,7 @@ export default function AmountInput({
             <Command className={mobile ? "h-full" : ""}>
                 <CommandInput placeholder="Search currency..." className={mobile ? "h-12 text-base" : "h-8 text-xs"} />
                 <CommandList>
-                    {/* UPDATED 14-Feb-2026: Show loading state while fetching currencies */}
+                    {/* Show loading state while fetching currencies */}
                     {currenciesLoading ? (
                         <div className="flex items-center justify-center py-6">
                             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
