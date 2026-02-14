@@ -103,76 +103,61 @@ const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
     }, [fabButtons, setFabButtons, clearFabButtons]);
 
     return (
-        <PullToRefresh onRefresh={handleRefreshData} className="h-[100dvh] bg-gray-50 dark:bg-slate-950">
-            <div className="min-h-full p-4 md:p-8 pb-24">
-                <div className="max-w-4xl mx-auto space-y-6">
-                    {/* Header */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Recurring Transactions</h1>
-                            <p className="text-gray-500 mt-1">Automate your regular income and expenses</p>
-                        </div>
-                        <div className="hidden md:flex gap-2">
-                            <CustomButton variant="create" onClick={() => handleOpenForm()}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Recurring
-                            </CustomButton>
-                        </div>
-                    </div>
+        <PullToRefresh onRefresh={handleRefreshData}>
+            <div className="space-y-6 pb-24">
 
-                    {/* Active Section */}
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <RefreshCw className="w-5 h-5 text-green-600" />
-                            Active ({activeRecurring.length})
+                {/* Active Section */}
+                <div>
+                    <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <RefreshCw className="w-5 h-5 text-green-600" />
+                        Active ({activeRecurring.length})
+                    </h2>
+                    <RecurringTransactionList
+                        recurringTransactions={activeRecurring}
+                        categories={categories}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onToggleActive={handleToggleActive}
+                        isLoading={isLoading}
+                    />
+                </div>
+
+                {/* Paused Section */}
+                {pausedRecurring.length > 0 && (
+                    <div className="mt-8">
+                        <h2 className="text-lg font-semibold text-gray-500 mb-3">
+                            Paused ({pausedRecurring.length})
                         </h2>
                         <RecurringTransactionList
-                            recurringTransactions={activeRecurring}
+                            recurringTransactions={pausedRecurring}
                             categories={categories}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
                             onToggleActive={handleToggleActive}
-                            isLoading={isLoading}
+                            isLoading={false}
                         />
                     </div>
+                )}
 
-                    {/* Paused Section */}
-                    {pausedRecurring.length > 0 && (
-                        <div className="mt-8">
-                            <h2 className="text-lg font-semibold text-gray-500 mb-3">
-                                Paused ({pausedRecurring.length})
-                            </h2>
-                            <RecurringTransactionList
-                                recurringTransactions={pausedRecurring}
-                                categories={categories}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                                onToggleActive={handleToggleActive}
-                                isLoading={false}
-                            />
-                        </div>
-                    )}
-
-                    {/* Form Dialog */}
-                    <Dialog open={showForm} onOpenChange={setShowForm}>
-                        <DialogContent className="sm:max-w-[500px]">
-                            <DialogHeader>
-                                <DialogTitle>
-                                    {editingRecurring ? 'Edit Recurring Transaction' : 'New Recurring Transaction'}
-                                </DialogTitle>
-                            </DialogHeader>
-                            <RecurringTransactionForm
-                                initialData={editingRecurring}
-                                categories={categories}
-                                onSubmit={handleSubmit}
-                                onCancel={handleCloseForm}
-                                isSubmitting={isSubmitting}
-                            />
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                {/* Form Dialog */}
+                <Dialog open={showForm} onOpenChange={setShowForm}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>
+                                {editingRecurring ? 'Edit Recurring Transaction' : 'New Recurring Transaction'}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <RecurringTransactionForm
+                            initialData={editingRecurring}
+                            categories={categories}
+                            onSubmit={handleSubmit}
+                            onCancel={handleCloseForm}
+                            isSubmitting={isSubmitting}
+                        />
+                    </DialogContent>
+                </Dialog>
             </div>
-        </PullToRefresh>
+        </PullToRefresh >
     );
 });
 
