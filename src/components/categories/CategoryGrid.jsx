@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import CategoryCard from "./CategoryCard";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
-export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, isSelectionMode, selectedIds, onToggleSelection, onSelectionChange }) {
+export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, isSelectionMode, selectedIds, onToggleSelection, onSelectionChange, isAdmin }) {
     // Drag Selection State
     const [selectionBox, setSelectionBox] = useState(null);
     const containerRef = useRef(null);
@@ -182,6 +182,7 @@ export default function CategoryGrid({ categories, onEdit, onDelete, isLoading, 
                             isSelectionMode={isSelectionMode}
                             isSelected={selectedIds?.has(category.id)}
                             onToggle={() => onToggleSelection(category.id, !selectedIds?.has(category.id))}
+							isAdmin={isAdmin}
                         />
                     ))}
                 </div>
