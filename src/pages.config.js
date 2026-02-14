@@ -52,18 +52,18 @@ import BankSync from './pages/BankSync';
 import BudgetDetail from './pages/BudgetDetail';
 import Budgets from './pages/Budgets';
 import Categories from './pages/Categories';
+import CookiePolicy from './pages/CookiePolicy';
 import Dashboard from './pages/Dashboard';
+import FinancialDisclaimer from './pages/FinancialDisclaimer';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
 import Manage from './pages/Manage';
 import MiniBudgets from './pages/MiniBudgets';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
-import Transactions from './pages/Transactions';
-import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
-import FinancialDisclaimer from './pages/FinancialDisclaimer';
-import CookiePolicy from './pages/CookiePolicy';
+import Transactions from './pages/Transactions';
 import __Layout from './Layout.jsx';
 
 
@@ -73,18 +73,18 @@ export const PAGES = {
     "BudgetDetail": BudgetDetail,
     "Budgets": Budgets,
     "Categories": Categories,
+    "CookiePolicy": CookiePolicy,
     "Dashboard": Dashboard,
+    "FinancialDisclaimer": FinancialDisclaimer,
     "Home": Home,
     "ImportData": ImportData,
     "Manage": Manage,
     "MiniBudgets": MiniBudgets,
+    "PrivacyPolicy": PrivacyPolicy,
     "RecurringTransactions": RecurringTransactions,
     "Reports": Reports,
-    "Transactions": Transactions,
-    "PrivacyPolicy": PrivacyPolicy,
     "TermsOfService": TermsOfService,
-    "FinancialDisclaimer": FinancialDisclaimer,
-    "CookiePolicy": CookiePolicy,
+    "Transactions": Transactions,
 }
 
 export const pagesConfig = {
