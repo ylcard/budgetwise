@@ -1,24 +1,22 @@
 import React, { useState, useMemo, useCallback, memo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, RefreshCw, Play } from "lucide-react";
-import { PullToRefresh } from "../components/ui/PullToRefresh"; // ADDED 03-Feb-2026: Native-style pull-to-refresh
-import { useQueryClient, useQuery } from "@tanstack/react-query"; // ADDED 03-Feb-2026: For manual refresh
+import { RefreshCw } from "lucide-react";
+import { PullToRefresh } from "../components/ui/PullToRefresh";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useSettings } from "../components/utils/SettingsContext";
-import { useCategories } from "../components/hooks/useBase44Entities";
+import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import { useRecurringTransactions, useRecurringTransactionActions } from "../components/hooks/useRecurringTransactions";
 import RecurringTransactionForm from "../components/recurring/RecurringTransactionForm";
 import RecurringTransactionList from "../components/recurring/RecurringTransactionList";
 import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useFAB } from "../components/hooks/FABContext";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
 
 const RecurringTransactionsPage = memo(function RecurringTransactionsPage() {
     const { user } = useSettings();
-    const queryClient = useQueryClient(); // ADDED 03-Feb-2026: For pull-to-refresh
-    const { categories } = useCategories();
+    const queryClient = useQueryClient();
+    const { categories } = useMergedCategories();
     const { recurringTransactions, isLoading } = useRecurringTransactions(user);
     const { handleCreate, handleUpdate, handleDelete, handleToggleActive, isSubmitting } = useRecurringTransactionActions(user);
     const { setFabButtons, clearFabButtons } = useFAB();
