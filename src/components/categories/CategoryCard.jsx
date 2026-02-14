@@ -43,7 +43,13 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
 
             {/* Content - Middle */}
             <div className="flex-1 min-w-0">
-                <h2 className="font-bold text-gray-900 text-sm truncate select-none">{category.name}</h2>
+                <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-gray-900 text-sm truncate select-none">{category.name}</h2>
+                    {/* ADDED 14-Feb-2026: System category badge */}
+                    {category.isSystemCategory && (
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded shrink-0">System</span>
+                    )}
+                </div>
                 <p className="text-xs font-medium truncate" style={{ color: priorityConfig.color }}>
                     {priorityConfig.label}
                 </p>
@@ -58,24 +64,31 @@ const CategoryCard = forwardRef(({ category, onEdit, onDelete, isSelectionMode, 
                     </div>
                 </div>
             ) : (
-                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm">
-                    <CustomButton
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={(e) => { e.stopPropagation(); onEdit(category); }}
-                        className="h-6 w-6 hover:bg-blue-50 hover:text-blue-600"
-                    >
-                        <Pencil className="w-4 h-4" />
-                    </CustomButton>
-                    <CustomButton
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={(e) => { e.stopPropagation(); onDelete(category); }}
-                        className="h-6 w-6 hover:bg-red-50 hover:text-red-600"
-                    >
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </CustomButton>
-                </div>
+                /* UPDATED 14-Feb-2026: Hide edit/delete for system categories */
+                !category.isSystemCategory ? (
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm">
+                        <CustomButton
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={(e) => { e.stopPropagation(); onEdit(category); }}
+                            className="h-6 w-6 hover:bg-blue-50 hover:text-blue-600"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </CustomButton>
+                        <CustomButton
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={(e) => { e.stopPropagation(); onDelete(category); }}
+                            className="h-6 w-6 hover:bg-red-50 hover:text-red-600"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                        </CustomButton>
+                    </div>
+                ) : (
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Lock className="w-4 h-4 text-gray-400" />
+                    </div>
+                )
             )}
         </motion.div >
     );
