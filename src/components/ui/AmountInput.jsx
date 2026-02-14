@@ -63,7 +63,7 @@ export default function AmountInput({
     const isMobile = useIsMobile();
     
     // ADDED 14-Feb-2026: Fetch currencies from REST Countries API
-    const { currencies: SUPPORTED_CURRENCIES, isLoading: currenciesLoading } = useCurrencies();
+    const { currencies, isLoading: currenciesLoading } = useCurrencies();
 
     // Use provided currencySymbol or fall back to user's base currency
     const displaySymbol = currencySymbol || settings.currencySymbol;
@@ -131,8 +131,7 @@ export default function AmountInput({
 
     // Render the Currency Selector Trigger
     const renderCurrencySelector = () => {
-        //const selectedCurrency = SUPPORTED_CURRENCIES.find(c => c.code === currency);
-        const selectedCurrencyObj = SUPPORTED_CURRENCIES.find(c => c.code === currency);
+        const selectedCurrencyObj = currencies.find(c => c.code === currency);
 
         const TriggerButton = (
             <CustomButton
@@ -159,7 +158,7 @@ export default function AmountInput({
                         <>
                             <CommandEmpty>No currency found.</CommandEmpty>
                             <CommandGroup className={mobile ? "overflow-y-auto" : "max-h-64 overflow-y-auto [&::-webkit-scrollbar]:hidden"}>
-                                {SUPPORTED_CURRENCIES.map((c) => (
+                                {currencies.map((c) => (
                                     <CommandItem
                                         key={c.code}
                                         value={`${c.code} ${c.name}`}
