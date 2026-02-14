@@ -157,11 +157,19 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
     });
 
     // DELETE: Use generic hook (no dependencies to handle)
-    const { handleDelete: handleDeleteCategory } = useDeleteEntity({
+    const { handleDelete: deleteCustomCategory } = useDeleteEntity({
         entityName: 'Category',
         queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
         confirmTitle: "Delete Category",
         confirmMessage: "Are you sure you want to delete this category? This will not delete associated transactions.",
+    });
+
+    // Delete hook for System Categories (Admin only)
+    const { handleDelete: deleteSystemCategory } = useDeleteEntity({
+        entityName: 'SystemCategory',
+        queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_CATEGORIES, QUERY_KEYS.CATEGORIES],
+        confirmTitle: "Delete System Category",
+        confirmMessage: "Warning: This is a system default. Deleting it will affect all users relying on it.",
     });
 
     const handleSubmit = (data, editingCategory) => {
@@ -181,10 +189,19 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
         if (setShowForm) setShowForm(true);
     };
 
+    //	Route delete action to the correct entity
+    const handleDeleteWrapper = (category) => {
+        if (category.isSystemCategory) {
+            deleteSystemCategory(category.id);
+        } else {
+            deleteCustomCategory(category.id);
+        }
+    };
+
     return {
         handleSubmit,
         handleEdit,
-        handleDelete: handleDeleteCategory,
+        handleDelete: handleDeleteWrapper,
         isSubmitting: createMutation.isPending || updateMutation.isPending || updateSystemMutation.isPending,
     };
 };
