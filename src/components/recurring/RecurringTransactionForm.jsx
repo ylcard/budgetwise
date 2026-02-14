@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, StickyNote } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
@@ -33,6 +34,7 @@ export default function RecurringTransactionForm({
 }) {
   const { settings, user } = useSettings();
   const [validationError, setValidationError] = useState(null);
+  const [showNotes, setShowNotes] = useState(!!initialData?.notes);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -60,6 +62,7 @@ export default function RecurringTransactionForm({
         notes: initialData.notes || '',
         isActive: initialData.isActive ?? true,
       });
+      if (initialData.notes) setShowNotes(true);
     }
   }, [initialData, settings?.baseCurrency]);
 
@@ -149,7 +152,7 @@ export default function RecurringTransactionForm({
           id="title"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          placeholder="Template Title (e.g., Rent, Netflix)"
+          placeholder="Title (e.g., Rent, Netflix)"
           className="text-lg font-medium border-0 border-b rounded-none px-0 h-10 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
           required
           autoComplete="off"
@@ -192,42 +195,70 @@ export default function RecurringTransactionForm({
       </div>
 
       {/* Category & Priority (Expenses only) */}
-      {formData.type === 'expense' && (
-        <div className="flex gap-3">
-          <div className="flex-[2]">
-            <CategorySelect
-              value={formData.category_id}
-              onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-              categories={categories}
-              placeholder="Category"
-            />
-          </div>
-          <div className="flex-1">
-            <MobileDrawerSelect
-              value={formData.financial_priority || ''}
-              onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
-              placeholder="Priority"
-              options={[
-                { value: "needs", label: "Needs" },
-                { value: "wants", label: "Wants" },
-                { value: "savings", label: "Savings" }
-              ]}
-            />
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {formData.type === 'expense' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+            className="overflow-hidden"
+          >
+            <div className="flex gap-3 pt-1">
+              <div className="flex-[2]">
+                <CategorySelect
+                  value={formData.category_id}
+                  onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                  categories={categories}
+                  placeholder="Category"
+                />
+              </div>
+              <div className="flex-1">
+                <MobileDrawerSelect
+                  value={formData.financial_priority || ''}
+                  onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
+                  placeholder="Priority"
+                  options={[
+                    { value: "needs", label: "Essentials" },
+                    { value: "wants", label: "Lifestyle" },
+                  ]}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Notes */}
-      <div className="space-y-1.5">
-        <Label htmlFor="notes" className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Notes</Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          placeholder="Additional details..."
-          rows={2}
-          className="resize-none"
-        />
+      <div className="space-y-2">
+        <AnimatePresence mode="wait">
+          {!showNotes && !formData.notes ? (
+            <motion.div key="add-note-btn" exit={{ opacity: 0, scale: 0.95 }}>
+              <CustomButton
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowNotes(true)}
+                className="text-muted-foreground h-8 px-2"
+              >
+                <StickyNote className="w-3.5 h-3.5 mr-2" />
+                Add Note
+              </CustomButton>
+            </motion.div>
+          ) : (
+            <motion.div key="notes-area" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Additional details..."
+                rows={2}
+                className="resize-none"
+                autoFocus={!initialData?.notes} // Focus only if freshly opened
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Active Toggle */}
