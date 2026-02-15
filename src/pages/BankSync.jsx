@@ -87,8 +87,14 @@ export default function BankSync() {
         }
     }, [toast]);
 
+    // Fix: Prevent React 18 double-fire of async useEffect
+    const processedRef = useRef(false);
+
     useEffect(() => {
         const handleCallback = async () => {
+            // If we have already processed a code in this session, stop.
+            if (processedRef.current) return;
+
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             const state = urlParams.get('state');
@@ -106,6 +112,9 @@ export default function BankSync() {
             }
 
             if (code && state) {
+                // Lock immediately to prevent race conditions
+                processedRef.current = true;
+
                 const storedState = sessionStorage.getItem('bank_sync_state');
                 const storedProvider = sessionStorage.getItem('bank_sync_provider');
 
@@ -171,6 +180,9 @@ export default function BankSync() {
                     window.history.replaceState({}, '', '/BankSync');
 
                 } catch (error) {
+                    // Reset lock on failure to allow retry if needed (optional)
+                    // processedRef.current = false;
+                    
                     toast({
                         title: "Failed to complete connection",
                         description: error.message,
