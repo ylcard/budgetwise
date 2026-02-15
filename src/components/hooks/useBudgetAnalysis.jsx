@@ -6,7 +6,8 @@
  */
 
 import { useState } from 'react';
-import { useAuth } from '@base44/react-client'; // Assuming standard Base44 auth hook
+// import { useAuth } from '@base44/react-client'; // Assuming standard Base44 auth hook
+import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
 export function useBudgetAnalysis() {
