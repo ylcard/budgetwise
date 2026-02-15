@@ -8,27 +8,27 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-    try {
-        const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
 
-        if (!user) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-        const { budgetData } = await req.json();
+    const { budgetData } = await req.json();
 
-        if (!budgetData) {
-            return Response.json({ error: 'Budget data is required' }, { status: 400 });
-        }
+    if (!budgetData) {
+      return Response.json({ error: 'Budget data is required' }, { status: 400 });
+    }
 
-        const apiKey = Deno.env.get('GEMINI_API_KEY');
-        if (!apiKey) {
-            return Response.json({ error: 'Gemini API key not configured' }, { status: 500 });
-        }
+    const apiKey = Deno.env.get('GROQ_API_KEY');
+    if (!apiKey) {
+      return Response.json({ error: 'Groq API key not configured' }, { status: 500 });
+    }
 
-        // Prepare prompt for Gemini
-        const prompt = `You are a financial advisor analyzing a budget. Provide concise, actionable insights (3-5 bullet points max).
+    // Prepare prompt for Gemini
+    const prompt = `You are a financial advisor analyzing a budget. Provide concise, actionable insights (3-5 bullet points max).
 
 Budget Data:
 - Name: ${budgetData.name}
@@ -49,39 +49,39 @@ Feasibility Analysis:
 
 Provide specific, actionable advice based on this data. Focus on practical tips to improve their budget management.`;
 
-        // Call Gemini API
-        const response = await fetch(
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': apiKey,
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 500,
-                    }
-                }),
-            }
-        );
+    // Call Groq API
+    const response = await fetch(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are a helpful financial advisor.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        }),
+      }
+    );
 
-        if (!response.ok) {
-            const errorData = await response.text();
-            console.error('Gemini API error:', errorData);
-            return Response.json({ error: 'Failed to generate insights' }, { status: 500 });
-        }
-
-        const data = await response.json();
-        const insight = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No insights generated';
-
-        return Response.json({ insight });
-    } catch (error) {
-        console.error('Error generating insights:', error);
-        return Response.json({ error: error.message }, { status: 500 });
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Groq API error:', errorData);
+      return Response.json({ error: 'Failed to generate insights' }, { status: 500 });
     }
+
+    const data = await response.json();
+    const insight = data.choices?.[0]?.message?.content || 'No insights generated';
+
+    return Response.json({ insight });
+  } catch (error) {
+    console.error('Error generating insights:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 });
