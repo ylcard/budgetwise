@@ -9,11 +9,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Badge } from "@/components/ui/badge";
-import { 
-    Plane, 
-    Music, 
-    ShoppingBag, 
-    Users, 
+import {
+    Plane,
+    Music,
+    Ticket,
+    Tent,
+    ShoppingBag,
+    Users,
     Calendar,
     Sparkles,
     TrendingUp,
@@ -26,6 +28,8 @@ const ARCHETYPE_ICONS = {
     'Trip': Plane,
     'Weekend Trip': Plane,
     'Day Trip': Plane,
+    'Concert Trip': Ticket,
+    'Event Holiday': Tent,
     'Event': Music,
     'Concert/Event': Music,
     'Social Week': Users,
@@ -33,11 +37,11 @@ const ARCHETYPE_ICONS = {
     'Special Occasion': Calendar
 };
 
-export default function BudgetArchetypeSelector({ 
-    archetypes, 
-    onSelectArchetype, 
+export default function BudgetArchetypeSelector({
+    archetypes,
+    onSelectArchetype,
     onSkip,
-    settings 
+    settings
 }) {
     if (!archetypes || archetypes.length === 0) {
         return (
@@ -68,13 +72,13 @@ export default function BudgetArchetypeSelector({
             <div className="grid gap-3">
                 {archetypes.slice(0, 5).map((archetype, idx) => {
                     const IconComponent = ARCHETYPE_ICONS[archetype.type] || Calendar;
-                    const confidenceColor = 
+                    const confidenceColor =
                         archetype.confidence >= 70 ? 'bg-green-100 text-green-700' :
-                        archetype.confidence >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-600';
+                            archetype.confidence >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-600';
 
                     return (
-                        <Card 
+                        <Card
                             key={idx}
                             className="hover:shadow-md transition-shadow cursor-pointer border-2 hover:border-blue-300"
                             onClick={() => onSelectArchetype(archetype)}
@@ -84,7 +88,7 @@ export default function BudgetArchetypeSelector({
                                     <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
                                         <IconComponent className="w-5 h-5 text-blue-600" />
                                     </div>
-                                    
+
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             <h4 className="font-semibold text-gray-900">
@@ -94,7 +98,7 @@ export default function BudgetArchetypeSelector({
                                                 {archetype.confidence}% match
                                             </Badge>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-4 text-xs text-gray-600 mb-2">
                                             <span className="flex items-center gap-1">
                                                 <TrendingUp className="w-3 h-3" />
@@ -116,8 +120,8 @@ export default function BudgetArchetypeSelector({
                                         )}
                                     </div>
 
-                                    <CustomButton 
-                                        variant="primary" 
+                                    <CustomButton
+                                        variant="primary"
                                         size="sm"
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -134,8 +138,8 @@ export default function BudgetArchetypeSelector({
             </div>
 
             <div className="pt-4 border-t">
-                <CustomButton 
-                    variant="ghost" 
+                <CustomButton
+                    variant="ghost"
                     onClick={onSkip}
                     className="w-full"
                 >
