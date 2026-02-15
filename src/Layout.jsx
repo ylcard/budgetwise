@@ -4,6 +4,8 @@ import { useMemo, useRef, useEffect, useState } from "react";
 import { SettingsProvider } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
+import { TutorialProvider } from "./components/tutorial/TutorialContext"; // ADDED 15-Feb-2026: Tutorial system
+import TutorialOverlay from "./components/tutorial/TutorialOverlay"; // ADDED 15-Feb-2026: Tutorial UI
 import { base44 } from "@/api/base44Client";
 import NotificationCenter from "./components/notifications/NotificationCenter"; // ADDED 14-Feb-2026
 import NotificationBell from "./components/notifications/NotificationBell"; // ADDED 14-Feb-2026
@@ -330,9 +332,12 @@ export default function Layout({ children }) {
     <SettingsProvider>
       <PeriodProvider>
         <ConfirmDialogProvider>
-          <FABProvider>
-            <LayoutContent>{children}</LayoutContent>
-          </FABProvider>
+          <TutorialProvider>
+            <FABProvider>
+              <LayoutContent>{children}</LayoutContent>
+              <TutorialOverlay />
+            </FABProvider>
+          </TutorialProvider>
         </ConfirmDialogProvider>
       </PeriodProvider>
     </SettingsProvider>
