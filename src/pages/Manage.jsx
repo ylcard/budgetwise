@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/use-toast";
+import TutorialSettings from "../components/tutorial/TutorialSettings"; // ADDED 15-Feb-2026: Tutorial management UI
 
 // Utils & Hooks
 import { useSettings } from "../components/utils/SettingsContext";
@@ -188,6 +189,9 @@ export function PreferencesSection() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* ADDED 15-Feb-2026: Tutorial Settings */}
+            <TutorialSettings />
 
             {/* Sticky Action Bar - Only visible when changes exist */}
             <div className={`
