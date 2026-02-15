@@ -36,6 +36,7 @@ import ExpensesCardContent from "../components/budgetdetail/ExpensesCardContent"
 import BudgetPostMortem from "../components/budgetdetail/BudgetPostMortem"; // ADDED: 16-Jan-2026
 import ExpenseFilters from "../components/budgetdetail/ExpenseFilters"; // ADDED: 16-Jan-2026
 import BudgetFeasibilityDisplay from "../components/custombudgets/BudgetFeasibilityDisplay"; // ADDED: 18-Jan-2026
+import { useBudgetAnalysis } from "../components/hooks/useBudgetAnalysis"; // ADDED: 03-Feb-2026
 
 export default function BudgetDetail() {
     const { settings } = useSettings();
@@ -44,6 +45,7 @@ export default function BudgetDetail() {
     const navigate = useNavigate();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const { confirmAction } = useConfirm();
+    const { triggerAnalysis } = useBudgetAnalysis();
 
     // ADDED: 16-Jan-2026 - Expense filtering state
     const [expenseFilters, setExpenseFilters] = useState({
@@ -203,6 +205,7 @@ export default function BudgetDetail() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
             queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
+            triggerAnalysis(true);
         },
     });
 
@@ -229,11 +232,11 @@ export default function BudgetDetail() {
                     const compDate = t.isPaid && t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
                     return compDate >= budgetStart && compDate <= budgetEnd;
                 }
-                
+
                 // Otherwise, only include unassigned expenses that match priority and date range
                 if (t.type !== 'expense' || !t.category_id) return false;
                 if (t.budgetId) return false; // Exclude if assigned to any custom budget
-                
+
                 const category = categories.find(c => c.id === t.category_id);
                 const effectivePriority = t.financial_priority || (category ? category.priority : null);
                 if (effectivePriority !== budget.systemBudgetType) return false;
@@ -364,190 +367,190 @@ export default function BudgetDetail() {
         <PullToRefresh onRefresh={handleRefresh}>
             <div className="min-h-screen p-4 md:p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center gap-4">
-                    <CustomButton variant="ghost" size="icon" onClick={() => navigate(location.state?.from || '/Budgets')}>
-                        <ArrowLeft className="w-5 h-5" />
-                    </CustomButton>
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{budget.name}</h1>
-                            {budget.isSystemBudget && <Badge variant="outline">System</Badge>}
-                            {isCompleted && <Badge className="bg-green-100 text-green-800">Completed</Badge>}
+                    <div className="flex items-center gap-4">
+                        <CustomButton variant="ghost" size="icon" onClick={() => navigate(location.state?.from || '/Budgets')}>
+                            <ArrowLeft className="w-5 h-5" />
+                        </CustomButton>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{budget.name}</h1>
+                                {budget.isSystemBudget && <Badge variant="outline">System</Badge>}
+                                {isCompleted && <Badge className="bg-green-100 text-green-800">Completed</Badge>}
+                            </div>
+                            <p className="text-gray-500 mt-1">
+                                {formatDate(budget.startDate, settings.dateFormat)} - {formatDate(budget.endDate, settings.dateFormat)}
+                            </p>
                         </div>
-                        <p className="text-gray-500 mt-1">
-                            {formatDate(budget.startDate, settings.dateFormat)} - {formatDate(budget.endDate, settings.dateFormat)}
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        {!budget.isSystemBudget && !isCompleted && (
-                            <Popover open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
-                                <PopoverTrigger asChild>
-                                    <CustomButton variant="modify">Edit Budget</CustomButton>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[600px] max-h-[90vh] overflow-y-auto">
-                                    <CustomBudgetForm
-                                        budget={budget}
-                                        onSubmit={handleEditBudget}
-                                        onCancel={() => budgetActions.setShowForm(false)}
-                                        isSubmitting={budgetActions.isSubmitting}
-                                        baseCurrency={settings.baseCurrency}
-                                        settings={settings}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        )}
-                        {!budget.isSystemBudget && (
-                            <>
-                                {budget.status === 'active' ? (
-                                    <CustomButton variant="success" onClick={() => completeBudgetMutation.mutate(budgetId)} disabled={completeBudgetMutation.isPending}>
-                                        <CheckCircle className="w-4 h-4 mr-2" /> Complete
+                        <div className="flex gap-2">
+                            {!budget.isSystemBudget && !isCompleted && (
+                                <Popover open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
+                                    <PopoverTrigger asChild>
+                                        <CustomButton variant="modify">Edit Budget</CustomButton>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[600px] max-h-[90vh] overflow-y-auto">
+                                        <CustomBudgetForm
+                                            budget={budget}
+                                            onSubmit={handleEditBudget}
+                                            onCancel={() => budgetActions.setShowForm(false)}
+                                            isSubmitting={budgetActions.isSubmitting}
+                                            baseCurrency={settings.baseCurrency}
+                                            settings={settings}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            )}
+                            {!budget.isSystemBudget && (
+                                <>
+                                    {budget.status === 'active' ? (
+                                        <CustomButton variant="success" onClick={() => completeBudgetMutation.mutate(budgetId)} disabled={completeBudgetMutation.isPending}>
+                                            <CheckCircle className="w-4 h-4 mr-2" /> Complete
+                                        </CustomButton>
+                                    ) : (
+                                        <CustomButton variant="success" onClick={() => reactivateBudgetMutation.mutate(budgetId)} disabled={reactivateBudgetMutation.isPending}>
+                                            Reactivate
+                                        </CustomButton>
+                                    )}
+                                    <CustomButton variant="delete" onClick={handleDeleteBudget}>
+                                        <Trash2 className="w-4 h-4 mr-2" /> Delete
                                     </CustomButton>
-                                ) : (
-                                    <CustomButton variant="success" onClick={() => reactivateBudgetMutation.mutate(budgetId)} disabled={reactivateBudgetMutation.isPending}>
-                                        Reactivate
-                                    </CustomButton>
-                                )}
-                                <CustomButton variant="delete" onClick={handleDeleteBudget}>
-                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
-                                </CustomButton>
-                            </>
-                        )}
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Budget Insights - ADDED: 16-Jan-2026, MODIFIED: 16-Jan-2026 - Disabled for system budgets */}
-                {!budget.isSystemBudget && (
-                    <>
-                        <BudgetPostMortem
-                            budget={budget}
-                            transactions={transactions}
+                    {/* Budget Insights - ADDED: 16-Jan-2026, MODIFIED: 16-Jan-2026 - Disabled for system budgets */}
+                    {!budget.isSystemBudget && (
+                        <>
+                            <BudgetPostMortem
+                                budget={budget}
+                                transactions={transactions}
+                                categories={categories}
+                                settings={settings}
+                            />
+
+                            {/* ADDED: 18-Jan-2026 - AI insights for existing budgets */}
+                            <BudgetFeasibilityDisplay
+                                feasibility={null}
+                                settings={settings}
+                                budgetData={{
+                                    ...budget,
+                                    transactions: budgetTransactions,
+                                    stats: stats,
+                                    allocations: allocations
+                                }}
+                            />
+                        </>
+                    )}
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                        <Card><CardContent className="pt-6 text-center">
+                            <p className="text-sm font-medium text-gray-500">Budget</p>
+                            <p className="text-lg font-bold">{formatCurrency(totalBudget, settings)}</p>
+                        </CardContent></Card>
+                        <Card><CardContent className="pt-6">
+                            <ExpensesCardContent budget={budget} stats={stats} settings={settings} />
+                        </CardContent></Card>
+                        <Card><CardContent className="pt-6 text-center">
+                            <p className="text-sm font-medium text-gray-500">Remaining</p>
+                            <p className={`text-lg font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(totalRemaining, settings)}
+                            </p>
+                        </CardContent></Card>
+                    </div>
+
+                    {!budget.isSystemBudget && budget.status !== 'completed' && allocationStats && (
+                        <AllocationManager
+                            customBudget={budget}
+                            allocations={allocations}
                             categories={categories}
-                            settings={settings}
+                            allocationStats={allocationStats}
+                            monthStart={monthStart}
+                            monthEnd={monthEnd}
+                            onCreateAllocation={(data) => createAllocationMutation.mutate(data)}
+                            onUpdateAllocation={({ id, data }) => updateAllocationMutation.mutate({ id, data })}
+                            onDeleteAllocation={(id) => deleteAllocationMutation.mutate(id)}
+                            isSubmitting={createAllocationMutation.isPending || updateAllocationMutation.isPending}
                         />
+                    )}
 
-                        {/* ADDED: 18-Jan-2026 - AI insights for existing budgets */}
-                        <BudgetFeasibilityDisplay
-                            feasibility={null}
-                            settings={settings}
-                            budgetData={{
-                                ...budget,
-                                transactions: budgetTransactions,
-                                stats: stats,
-                                allocations: allocations
-                            }}
-                        />
-                    </>
-                )}
+                    {budget.isSystemBudget && relatedCustomBudgetsForDisplay.length > 0 && (
+                        <Card className="border-none shadow-lg">
+                            <CardHeader>
+                                <CardTitle>Custom Budgets ({relatedCustomBudgetsForDisplay.length})</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                    {relatedCustomBudgetsForDisplay.map((cb) => (
+                                        <BudgetCard
+                                            key={cb.id}
+                                            budget={cb}
+                                            stats={getCustomBudgetStats(cb, transactions)}
+                                            settings={settings}
+                                        />
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
-                <div className="grid md:grid-cols-3 gap-4">
-                    <Card><CardContent className="pt-6 text-center">
-                        <p className="text-sm font-medium text-gray-500">Budget</p>
-                        <p className="text-lg font-bold">{formatCurrency(totalBudget, settings)}</p>
-                    </CardContent></Card>
-                    <Card><CardContent className="pt-6">
-                        <ExpensesCardContent budget={budget} stats={stats} settings={settings} />
-                    </CardContent></Card>
-                    <Card><CardContent className="pt-6 text-center">
-                        <p className="text-sm font-medium text-gray-500">Remaining</p>
-                        <p className={`text-lg font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(totalRemaining, settings)}
-                        </p>
-                    </CardContent></Card>
-                </div>
-
-                {!budget.isSystemBudget && budget.status !== 'completed' && allocationStats && (
-                    <AllocationManager
-                        customBudget={budget}
-                        allocations={allocations}
-                        categories={categories}
-                        allocationStats={allocationStats}
-                        monthStart={monthStart}
-                        monthEnd={monthEnd}
-                        onCreateAllocation={(data) => createAllocationMutation.mutate(data)}
-                        onUpdateAllocation={({ id, data }) => updateAllocationMutation.mutate({ id, data })}
-                        onDeleteAllocation={(id) => deleteAllocationMutation.mutate(id)}
-                        isSubmitting={createAllocationMutation.isPending || updateAllocationMutation.isPending}
-                    />
-                )}
-
-                {budget.isSystemBudget && relatedCustomBudgetsForDisplay.length > 0 && (
                     <Card className="border-none shadow-lg">
-                        <CardHeader>
-                            <CardTitle>Custom Budgets ({relatedCustomBudgetsForDisplay.length})</CardTitle>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>
+                                    {budget.isSystemBudget ? 'Direct Expenses' : 'Expenses'} ({filteredTransactions.length}{budgetTransactions.length !== filteredTransactions.length ? ` of ${budgetTransactions.length}` : ''})
+                                </CardTitle>
+                                {budget.isSystemBudget && <p className="text-sm text-gray-500">Expenses not part of any custom budget</p>}
+                            </div>
+                            <QuickAddTransaction
+                                open={showQuickAdd}
+                                onOpenChange={setShowQuickAdd}
+                                categories={categories}
+                                customBudgets={allBudgets}
+                                defaultCustomBudgetId={budgetId}
+                                onSubmit={(data) => createTransactionMutation.mutate(data)}
+                                isSubmitting={createTransactionMutation.isPending}
+                                transactions={transactions}
+                                triggerSize="sm"
+                            />
                         </CardHeader>
                         <CardContent>
-                            <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                {relatedCustomBudgetsForDisplay.map((cb) => (
-                                    <BudgetCard
-                                        key={cb.id}
-                                        budget={cb}
-                                        stats={getCustomBudgetStats(cb, transactions)}
-                                        settings={settings}
+                            <div className="flex flex-col md:flex-row gap-4">
+                                {/* ADDED: 16-Jan-2026 - Expense filters on left side */}
+                                <div className="flex-shrink-0">
+                                    <ExpenseFilters
+                                        categories={categories}
+                                        transactions={budgetTransactions}
+                                        filters={expenseFilters}
+                                        onFilterChange={setExpenseFilters}
+                                        activeFilterCount={activeFilterCount}
                                     />
-                                ))}
+                                </div>
+
+                                {/* Expense cards on right side */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap gap-4">
+                                        {filteredTransactions.length > 0 ? (
+                                            filteredTransactions.map((t) => (
+                                                <TransactionCard
+                                                    key={t.id}
+                                                    transaction={t}
+                                                    category={categoryMap[t.category_id]}
+                                                    onEdit={(t, data) => transactionActions.handleSubmit(data, t)}
+                                                    onDelete={() => transactionActions.handleDelete(t)}
+                                                />
+                                            ))
+                                        ) : (
+                                            <div className="col-span-full text-center py-8 text-gray-500">
+                                                {budgetTransactions.length === 0
+                                                    ? 'No expenses yet. Add your first expense above.'
+                                                    : 'No expenses match the selected filters.'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
-                )}
-
-                <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>
-                                {budget.isSystemBudget ? 'Direct Expenses' : 'Expenses'} ({filteredTransactions.length}{budgetTransactions.length !== filteredTransactions.length ? ` of ${budgetTransactions.length}` : ''})
-                            </CardTitle>
-                            {budget.isSystemBudget && <p className="text-sm text-gray-500">Expenses not part of any custom budget</p>}
-                        </div>
-                        <QuickAddTransaction
-                            open={showQuickAdd}
-                            onOpenChange={setShowQuickAdd}
-                            categories={categories}
-                            customBudgets={allBudgets}
-                            defaultCustomBudgetId={budgetId}
-                            onSubmit={(data) => createTransactionMutation.mutate(data)}
-                            isSubmitting={createTransactionMutation.isPending}
-                            transactions={transactions}
-                            triggerSize="sm"
-                        />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col md:flex-row gap-4">
-                            {/* ADDED: 16-Jan-2026 - Expense filters on left side */}
-                            <div className="flex-shrink-0">
-                                <ExpenseFilters
-                                    categories={categories}
-                                    transactions={budgetTransactions}
-                                    filters={expenseFilters}
-                                    onFilterChange={setExpenseFilters}
-                                    activeFilterCount={activeFilterCount}
-                                />
-                            </div>
-
-                            {/* Expense cards on right side */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap gap-4">
-                                    {filteredTransactions.length > 0 ? (
-                                        filteredTransactions.map((t) => (
-                                            <TransactionCard
-                                                key={t.id}
-                                                transaction={t}
-                                                category={categoryMap[t.category_id]}
-                                                onEdit={(t, data) => transactionActions.handleSubmit(data, t)}
-                                                onDelete={() => transactionActions.handleDelete(t)}
-                                            />
-                                        ))
-                                    ) : (
-                                        <div className="col-span-full text-center py-8 text-gray-500">
-                                            {budgetTransactions.length === 0 
-                                                ? 'No expenses yet. Add your first expense above.'
-                                                : 'No expenses match the selected filters.'}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
                 </div>
             </div>
         </PullToRefresh>
