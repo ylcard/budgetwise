@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import CategorySelect from "@/components/ui/CategorySelect";
 import { Loader2, Code2, Type, ShieldCheck, Sparkles } from "lucide-react";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
+import { useSettings } from "@/components/utils/SettingsContext";
 
 export default function CreateRuleDialog({
     open,
@@ -19,6 +21,19 @@ export default function CreateRuleDialog({
     isEditing
 }) {
     const { categories } = useMergedCategories();
+
+    const { user } = useSettings();
+
+    // Automatically inject user_email into formData when dialog opens
+    // This prevents 422 errors because the schema requires this field.
+    useEffect(() => {
+        if (open && user?.email && formData && !formData.user_email) {
+            setFormData(prev => ({
+                ...prev,
+                user_email: user.email
+            }));
+        }
+    }, [open, user, formData, setFormData]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
