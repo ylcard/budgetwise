@@ -40,19 +40,20 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         });
     }, [transactions, selectedMonth, selectedYear]);
 
+    // Calculate Totals for the "Idle" state
+    const monthTotals = useMemo(() => {
+        return chartData.reduce((acc, day) => ({
+            income: acc.income + day.income,
+            expense: acc.expense + day.expense
+        }), { income: 0, expense: 0 });
+    }, [chartData]);
+
     const [activeIndex, setActiveIndex] = useState(null);
 
-    // Set default active index to today if in current month, otherwise last day
-    useEffect(() => {
-        const today = new Date();
-        if (today.getMonth() === selectedMonth && today.getFullYear() === selectedYear) {
-            setActiveIndex(today.getDate() - 1);
-        } else {
-            setActiveIndex(chartData.length - 1);
-        }
-    }, [chartData, selectedMonth, selectedYear]);
-
-    const activeData = chartData[activeIndex] || chartData[chartData.length - 1] || {};
+    // Determine what to show: Hovered Day OR Month Total
+    const displayData = activeIndex !== null
+        ? chartData[activeIndex]
+        : { ...monthTotals, label: 'Total Monthly Flow' };
 
     // Haptic feedback function (browser support varies, but good for mobile)
     const triggerHaptic = () => {
@@ -67,8 +68,16 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         }
     };
 
+    const handleReset = () => {
+        setActiveIndex(null);
+    };
+
     return (
-        <div className="w-full bg-slate-900 rounded-3xl p-6 text-white shadow-2xl overflow-hidden relative isolate">
+        <div
+            className="w-full bg-slate-900 rounded-3xl p-6 text-white shadow-2xl overflow-hidden relative isolate"
+            onMouseLeave={handleReset} // Desktop Reset
+            onTouchEnd={handleReset}   // Mobile Reset
+        >
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full -z-10" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/10 blur-[80px] rounded-full -z-10" />
@@ -77,19 +86,19 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
             <div className="flex justify-between items-end mb-8">
                 <div>
                     <motion.p
-                        key={activeData.label}
+                        key={displayData.label}
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 0.7, y: 0 }}
                         className="text-sm font-medium uppercase tracking-wider text-slate-400"
                     >
-                        Flow on {activeData.label}
+                        {displayData.label}
                     </motion.p>
                     <div className="flex items-baseline gap-4 mt-1">
                         <h2 className="text-3xl font-bold tabular-nums text-emerald-400">
-                            +{formatCurrency(activeData.income || 0, settings)}
+                            +{formatCurrency(displayData.income || 0, settings)}
                         </h2>
                         <h2 className="text-2xl font-bold tabular-nums text-rose-400 opacity-90">
-                            -{formatCurrency(activeData.expense || 0, settings)}
+                            -{formatCurrency(displayData.expense || 0, settings)}
                         </h2>
                     </div>
                 </div>
