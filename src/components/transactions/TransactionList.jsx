@@ -35,6 +35,7 @@ export default function TransactionList({
   onSelectAll,
   onClearSelection,
   onDeleteSelected,
+  onEditSelected,
   isBulkDeleting,
   sortConfig = { key: 'date', direction: 'desc' },
   onSort
