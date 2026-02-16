@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 const SettingsContext = createContext();
 
@@ -32,6 +33,8 @@ export const useSettings = () => {
 };
 
 export const SettingsProvider = ({ children }) => {
+    const { user: authUser } = useAuth();
+
     // Load from localStorage immediately
     const [settings, setSettings] = useState(() => {
         try {
@@ -45,21 +48,19 @@ export const SettingsProvider = ({ children }) => {
         return defaultSettings;
     });
 
-    const [user, setUser] = useState(null);
     const [settingsId, setSettingsId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        loadSettings();
-    }, []);
+        if (authUser) {
+            loadSettings();
+        }
+    }, [authUser]);
 
     const loadSettings = async () => {
         try {
-            const currentUser = await base44.auth.me();
-            setUser(currentUser);
-
             // Filter by email directly to avoid fetching ALL user settings
-            const userSettingsArray = await base44.entities.UserSettings.filter({ created_by: currentUser.email });
+            const userSettingsArray = await base44.entities.UserSettings.filter({ created_by: authUser.email });
             const userSettings = userSettingsArray[0];
 
             if (userSettings) {
@@ -95,7 +96,7 @@ export const SettingsProvider = ({ children }) => {
 
     const updateSettings = async (newSettings) => {
         try {
-            if (!user) {
+            if (!authUser) {
                 throw new Error('User not logged in');
             }
 
@@ -117,8 +118,8 @@ export const SettingsProvider = ({ children }) => {
             // Safety: Ensure we have an ID. If state is empty, fetch it one last time.
             let targetId = settingsId;
 
-            if (!targetId && user?.email) {
-                const existing = await base44.entities.UserSettings.filter({ created_by: user.email });
+            if (!targetId && authUser?.email) {
+                const existing = await base44.entities.UserSettings.filter({ created_by: authUser.email });
                 if (existing && existing[0]) {
                     targetId = existing[0].id;
                     setSettingsId(targetId); // Update state for next time
@@ -129,12 +130,12 @@ export const SettingsProvider = ({ children }) => {
                 // Trying to apply a bug fix for the fixed mode not saving
                 // await base44.entities.UserSettings.update(targetId, updatedSettings);
                 await base44.entities.UserSettings.update(targetId, dbPayload);
-            } else if (user?.email) {
+            } else if (authUser?.email) {
                 // Only create if we genuinely couldn't find an existing record
                 const created = await base44.entities.UserSettings.create({
                     ...updatedSettings, // CRITICAL: Use full, merged settings for creation
                     ...dbPayload,
-                    created_by: user.email
+                    created_by: authUser.email
                 });
                 if (created) setSettingsId(created.id);
             }
@@ -145,7 +146,7 @@ export const SettingsProvider = ({ children }) => {
     };
 
     return (
-        <SettingsContext.Provider value={{ settings, updateSettings, user, isLoading }}>
+        <SettingsContext.Provider value={{ settings, updateSettings, user: authUser, isLoading }}>
             {children}
         </SettingsContext.Provider>
     );
