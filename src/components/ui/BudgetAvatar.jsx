@@ -222,10 +222,10 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
     }, [health]);
 
     const getStatusText = () => {
-        if (health >= 0.8) return "Vibe: Ascended";
-        if (health >= 0.4) return "Vibe: Chilling";
-        if (health >= 0.15) return "Vibe: Panicking";
-        return "Vibe: Deceased";
+        if (health >= 0.8) return "Ascended";
+        if (health >= 0.4) return "Chilling";
+        if (health >= 0.15) return "Panicking";
+        return "RIP 💀";
     };
 
     return (
