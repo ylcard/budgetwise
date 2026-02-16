@@ -219,12 +219,13 @@ export default function AutomationRulesSettings() {
                                                                         defaultValue={rule.regexPattern}
                                                                         className="h-6 w-full max-w-[200px] text-xs font-mono px-1 py-0 bg-white shadow-sm border-purple-400"
                                                                         onBlur={(e) => {
-                                                                            safeInlineUpdate(rule.id, 'regexPattern', e.target.value);
+                                                                            safeInlineUpdate(rule.id, 'regexPattern', e.target.value, e);
                                                                             setEditingKeyword(null);
                                                                         }}
                                                                         onKeyDown={(e) => {
                                                                             if (e.key === 'Enter') {
-                                                                                safeInlineUpdate(rule.id, 'regexPattern', e.currentTarget.value);
+                                                                                e.preventDefault();
+                                                                                safeInlineUpdate(rule.id, 'regexPattern', e.currentTarget.value, e);
                                                                                 setEditingKeyword(null);
                                                                             }
                                                                             if (e.key === 'Escape') setEditingKeyword(null);
@@ -297,12 +298,13 @@ export default function AutomationRulesSettings() {
                                                                 defaultValue={rule.renamedTitle || ""}
                                                                 className="h-8 text-sm"
                                                                 onBlur={(e) => {
-                                                                    safeInlineUpdate(rule.id, 'renamedTitle', e.target.value);
+                                                                    safeInlineUpdate(rule.id, 'renamedTitle', e.target.value, e);
                                                                     setEditingId(null);
                                                                 }}
                                                                 onKeyDown={(e) => {
                                                                     if (e.key === 'Enter') {
-                                                                        safeInlineUpdate(rule.id, 'renamedTitle', e.currentTarget.value);
+                                                                        e.preventDefault();
+                                                                        safeInlineUpdate(rule.id, 'renamedTitle', e.currentTarget.value, e);
                                                                         setEditingId(null);
                                                                     }
                                                                 }}
@@ -322,7 +324,7 @@ export default function AutomationRulesSettings() {
                                                     <CategorySelect
                                                         categories={categories}
                                                         value={rule.categoryId}
-                                                        onValueChange={(id) => safeInlineUpdate(rule.id, 'categoryId', id)}
+                                                        onValueChange={(id) => safeInlineUpdate(rule.id, 'categoryId', id, null)}
                                                         className="h-8 text-xs border-transparent bg-transparent hover:bg-gray-100 hover:border-gray-200 px-2"
                                                     />
                                                 </TableCell>
@@ -330,13 +332,15 @@ export default function AutomationRulesSettings() {
                                                     {/* Toggle Switch Style */}
                                                     <div className="flex bg-gray-100 p-0.5 rounded-lg w-fit">
                                                         <button
-                                                            onClick={() => safeInlineUpdate(rule.id, 'financial_priority', 'needs')}
+                                                            type="button"
+                                                            onClick={(e) => safeInlineUpdate(rule.id, 'financial_priority', 'needs', e)}
                                                             className={`px-2 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all ${rule.financial_priority === 'needs' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                                         >
                                                             <ShieldCheck className="w-3 h-3" /> Essentials
                                                         </button>
                                                         <button
-                                                            onClick={() => safeInlineUpdate(rule.id, 'financial_priority', 'wants')}
+                                                            type="button"
+                                                            onClick={(e) => safeInlineUpdate(rule.id, 'financial_priority', 'wants', e)}
                                                             className={`px-2 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all ${rule.financial_priority === 'wants' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                                         >
                                                             <Sparkles className="w-3 h-3" /> Lifestyle
@@ -345,6 +349,7 @@ export default function AutomationRulesSettings() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <CustomButton
+                                                        type="button"
                                                         variant="ghost"
                                                         size="sm"
                                                         className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
