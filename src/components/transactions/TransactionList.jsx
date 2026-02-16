@@ -50,6 +50,8 @@ export default function TransactionList({
         setFormData: setRuleFormData,
         isRegexMode,
         setIsRegexMode,
+        isWholeWord,
+        setIsWholeWord,
         createRule,
         updateRule,
         handleSaveRule,
@@ -174,6 +176,8 @@ export default function TransactionList({
                 setFormData={setRuleFormData}
                 isRegexMode={isRegexMode}
                 setIsRegexMode={setIsRegexMode}
+                isWholeWord={isWholeWord}
+                setIsWholeWord={setIsWholeWord}
                 onSubmit={handleSaveRule}
                 isSubmitting={createRule.isPending || updateRule.isPending}
                 isEditing={!!editingRuleId}
