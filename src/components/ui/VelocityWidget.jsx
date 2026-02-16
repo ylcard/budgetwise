@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { format, getDaysInMonth, parseISO, isSameDay } from "date-fns";
 import { formatCurrency } from "../utils/currencyUtils";
@@ -85,22 +85,28 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
             {/* Header Info */}
             <div className="flex justify-between items-end mb-8">
                 <div>
-                    <motion.p
-                        key={displayData.label}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 0.7, y: 0 }}
-                        className="text-sm font-medium uppercase tracking-wider text-slate-400"
-                    >
-                        {displayData.label}
-                    </motion.p>
-                    <div className="flex items-baseline gap-4 mt-1">
-                        <h2 className="text-3xl font-bold tabular-nums text-emerald-400">
-                            +{formatCurrency(displayData.income || 0, settings)}
-                        </h2>
-                        <h2 className="text-2xl font-bold tabular-nums text-rose-400 opacity-90">
-                            -{formatCurrency(displayData.expense || 0, settings)}
-                        </h2>
-                    </div>
+                    <AnimatePresence mode="popLayout" initial={false}>
+                        <motion.div
+                            key={displayData.label}
+                            initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="flex flex-col"
+                        >
+                            <p className="text-sm font-medium uppercase tracking-wider text-slate-400">
+                                {displayData.label}
+                            </p>
+                            <div className="flex items-baseline gap-4 mt-1">
+                                <h2 className="text-3xl font-bold tabular-nums text-emerald-400">
+                                    +{formatCurrency(displayData.income || 0, settings)}
+                                </h2>
+                                <h2 className="text-2xl font-bold tabular-nums text-rose-400 opacity-90">
+                                    -{formatCurrency(displayData.expense || 0, settings)}
+                                </h2>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </div>
 
