@@ -27,6 +27,17 @@ const BankConnectionCard = memo(function BankConnectionCard({
     onDelete,
     isSyncing
 }) {
+
+    // Helper: ISO Country Code to Emoji Flag
+    const getFlagEmoji = (countryCode) => {
+        if (!countryCode) return '🌍';
+        const codePoints = countryCode
+            .toUpperCase()
+            .split('')
+            .map(char => 127397 + char.charCodeAt());
+        return String.fromCodePoint(...codePoints);
+    };
+
     const statusConfig = {
         active: {
             icon: CheckCircle2,
@@ -38,13 +49,13 @@ const BankConnectionCard = memo(function BankConnectionCard({
             icon: Clock,
             color: 'text-orange-600',
             bg: 'bg-orange-50',
-            badge: 'bg-orange-100 text-orange-700'
+            dot: 'bg-orange-500'
         },
         error: {
             icon: XCircle,
             color: 'text-red-600',
             bg: 'bg-red-50',
-            badge: 'bg-red-100 text-red-700'
+            dot: 'bg-red-500'
         }
     };
 
@@ -65,15 +76,21 @@ const BankConnectionCard = memo(function BankConnectionCard({
                             <h3 className="font-semibold text-gray-900">
                                 {connection?.provider_name === 'Connecting...' ? 'Bank Connection' : (connection?.provider_name || 'Bank Account')}
                             </h3>
-                            <p className="text-xs text-gray-500">
-                                {String(connection?.country || 'UK')} • TrueLayer
-                            </p>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                <span className="flex items-center gap-1.5" title="Connection Status">
+                                    <span className={`w-2 h-2 rounded-full ${config?.dot || 'bg-green-500'}`} />
+                                    {connection?.status === 'active' ? 'Connected' : connection?.status}
+                                </span>
+                                <span className="text-gray-300">•</span>
+                                <span title="Country">{getFlagEmoji(connection?.country)}</span>
+                                <span className="text-gray-300">•</span>
+                                <span>via TrueLayer</span>
+                            </div>
                         </div>
                     </div>
-                    <Badge className={config?.badge || ''}>
-                        <StatusIcon className="w-3 h-3 mr-1" />
-                        {connection?.status || 'active'}
-                    </Badge>
+
+                    {/* Actions moved to bottom, badge removed in favor of dot */}
+
                 </div>
 
                 {/* Accounts */}
