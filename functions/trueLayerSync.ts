@@ -48,7 +48,34 @@ const FALLBACK_REGEX = [
     { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS)/i, category: 'Health', priority: 'needs' }
 ];
 
-const categorizeTransaction = (searchString, userRules, categoriesList) => {
+// --- HELPER: SMART CATEGORY MATCHING ---
+const findCategorySmart = (targetName, categoryList) => {
+    if (!targetName || !categoryList) return null;
+    const search = targetName.toUpperCase().trim();
+
+    // 1. Exact Match
+    let match = categoryList.find(c => c.name.toUpperCase() === search);
+    if (match) return match;
+
+    // 2. Singular/Plural Handling (e.g. "Investments" vs "Investment")
+    // We check if the category name is a substring of the search or vice versa to catch "Transportation" vs "Transport"
+    match = categoryList.find(c => {
+        const catName = c.name.toUpperCase();
+
+        // Direct substring check (covers Transport <-> Transportation)
+        if (catName.includes(search) || search.includes(catName)) return true;
+
+        // Simple plural check
+        const catSingular = catName.endsWith('S') ? catName.slice(0, -1) : catName;
+        const searchSingular = search.endsWith('S') ? search.slice(0, -1) : search;
+
+        return catSingular === searchSingular;
+    });
+
+    return match;
+};
+
+const categorizeTransaction = (searchString, userRules, userCategories, systemCategories) => {
     // 1. User Rules (Highest Priority)
     for (const rule of userRules) {
         let matched = false;
@@ -62,7 +89,7 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
             }
         }
         if (matched && rule.categoryId) {
-            const cat = categoriesList.find(c => c.id === rule.categoryId);
+            const cat = userCategories.find(c => c.id === rule.categoryId);
             if (cat) return {
                 categoryId: cat.id,
                 categoryName: cat.name,
@@ -73,29 +100,35 @@ const categorizeTransaction = (searchString, userRules, categoriesList) => {
         }
     }
 
+    // Helper to try User then System
+    const resolveCategory = (targetName, defaultPriority) => {
+        // A. Try User Categories (Preferred)
+        const userMatch = findCategorySmart(targetName, userCategories);
+        if (userMatch) {
+            return { categoryId: userMatch.id, categoryName: userMatch.name, priority: userMatch.priority || defaultPriority, needsReview: true };
+        }
+
+        // B. Try System Categories (Fallback - No ID assigned to avoid FK errors)
+        const sysMatch = findCategorySmart(targetName, systemCategories);
+        if (sysMatch) {
+            return { categoryId: null, categoryName: sysMatch.name, priority: sysMatch.priority || defaultPriority, needsReview: true };
+        }
+
+        // C. No match found, but we have a name
+        return { categoryId: null, categoryName: targetName, priority: defaultPriority, needsReview: true };
+    };
+
     // 2. Hardcoded Keywords
     for (const [keyword, data] of Object.entries(HARDCODED_KEYWORDS)) {
         if (searchString.includes(keyword)) {
-            // FUZZY MATCHING LOGIC:
-            // 1. Try Exact Match
-            // 2. Try "Includes" (e.g. "Transport" matches "Transportation")
-            const targetName = data.name.toUpperCase();
-            const cat = categoriesList.find(c =>
-                c.name.toUpperCase() === targetName ||
-                c.name.toUpperCase().includes(targetName) ||
-                targetName.includes(c.name.toUpperCase())
-            );
-            if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
-            return { categoryId: null, categoryName: data.name, priority: data.priority, needsReview: true, shouldCreate: false };
+            return resolveCategory(data.name, data.priority);
         }
     }
 
     // 3. Fallback Regex
     for (const { pattern, category, priority } of FALLBACK_REGEX) {
         if (pattern.test(searchString)) {
-            const cat = categoriesList.find(c => c.name.toUpperCase() === category.toUpperCase());
-            if (cat) return { categoryId: cat.id, categoryName: cat.name, priority: cat.priority, needsReview: true };
-            return { categoryId: null, categoryName: category, priority: priority, needsReview: true, shouldCreate: false };
+            return resolveCategory(category, priority);
         }
     }
 
@@ -311,7 +344,7 @@ Deno.serve(async (req) => {
         const existingBankIds = new Set(existingTx.filter(t => t.bankTransactionId).map(t => t.bankTransactionId));
         const existingNormalisedIds = new Set(existingTx.filter(t => t.normalisedProviderTransactionId).map(t => t.normalisedProviderTransactionId));
 
-        const allCategories = [...customCategories, ...systemCategories];
+        // const allCategories = [...customCategories, ...systemCategories];
 
         /**
          * Fetch transactions for each account
@@ -410,7 +443,7 @@ Deno.serve(async (req) => {
                 // Only run categorization engine for expenses
                 if (isExpense && !catResult.categoryId) {
                     // Merged categories used here
-                    catResult = categorizeTransaction(searchString, rules, allCategories);
+                    catResult = categorizeTransaction(searchString, rules, customCategories, systemCategories);
                 }
 
                 // Determine the clean name (AI/Rule result OR raw fallback)
