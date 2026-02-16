@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { addDays, format, differenceInDays, subDays } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +16,9 @@ import {
     Loader2,
     Sparkles,
     Info,
-    BellDot
+    BellDot,
+    Calendar as CalendarIcon,
+    History
 } from "lucide-react";
 import { useFAB } from "../components/hooks/FABContext";
 
@@ -48,7 +51,7 @@ export default function BankSync() {
 
     const [syncing, setSyncing] = useState(null);
     const [syncStatus, setSyncStatus] = useState("");
-    const [syncDays, setSyncDays] = useState("30");
+    const [syncDateFrom, setSyncDateFrom] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
 
     // Fetch bank connections
     const { data: connections = [], isLoading } = useQuery({
@@ -218,54 +221,66 @@ export default function BankSync() {
     }, [fabButtons]);
 
     const handleSync = useCallback(async (connection) => {
-        console.log('🔄 [SYNC] Starting sync for connection:', connection.id);
         setSyncing(connection.id);
 
-        // Set descriptive status for long-running historical syncs
-        if (syncDays === "all") {
-            setSyncStatus("Fetching full history. This may take a moment...");
-        } else {
-            setSyncStatus("Syncing transactions...");
-        }
+        setSyncStatus("Preparing sync...");
 
         try {
             const now = new Date();
-            const fromDate = new Date();
+            const fromDate = new Date(syncDateFrom);
 
-            if (syncDays === "all") {
-                // 6 years limit
-                // 2192 days times out
-                // trying 730 days
-                fromDate.setDate(now.getDate() - 730);
-            } else {
-                fromDate.setDate(now.getDate() - parseInt(syncDays));
+            // Calculate chunks to prevent timeouts (max 730 days per chunk)
+            const chunks = [];
+            let currentStart = fromDate;
+            const MAX_CHUNK_DAYS = 730;
+
+            while (currentStart < now) {
+                let currentEnd = addDays(currentStart, MAX_CHUNK_DAYS);
+                if (currentEnd > now) currentEnd = now;
+
+                chunks.push({
+                    from: format(currentStart, 'yyyy-MM-dd'),
+                    to: format(currentEnd, 'yyyy-MM-dd')
+                });
+
+                // Next chunk starts the day after currentEnd
+                currentStart = addDays(currentEnd, 1);
             }
 
-            // Format as YYYY-MM-DD strictly
-            const dateTo = now.toISOString().split('T')[0];
-            const dateFrom = fromDate.toISOString().split('T')[0];
+            let totalImported = 0;
 
-            const response = await base44.functions.invoke('trueLayerSync', {
-                connectionId: connection.id,
-                dateFrom,
-                dateTo
-            });
+            // Execute chunks sequentially
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                const progress = chunks.length > 1 ? ` (Part ${i + 1}/${chunks.length})` : '';
+                setSyncStatus(`Syncing history${progress}...`);
 
-            // BACKEND NOW HANDLES SAVING DIRECTLY
-            if (response.data?.importedCount > 0) {
+                console.log(`🔄 [SYNC] Chunk ${i + 1}: ${chunk.from} to ${chunk.to}`);
+
+                const response = await base44.functions.invoke('trueLayerSync', {
+                    connectionId: connection.id,
+                    dateFrom: chunk.from,
+                    dateTo: chunk.to
+                });
+
+                if (response.data?.importedCount) {
+                    totalImported += response.data.importedCount;
+                }
+            }
+
+            if (totalImported > 0) {
                 toast({
                     title: "Sync complete!",
-                    description: `Successfully imported ${response.data.importedCount} new transactions.`,
+                    description: `Successfully imported ${totalImported} new transactions.`,
                     variant: "success"
                 });
-                // Trigger refresh to update the "Needs Review" inbox counter
+
                 queryClient.invalidateQueries(['transactions']);
-                // Update connection cards (last synced time)
                 queryClient.invalidateQueries(['bankConnections']);
             } else {
                 toast({
                     title: "No new transactions",
-                    description: "All transactions are up to date"
+                    description: "All transactions are up to date."
                 });
                 // Still update connection to reflect the sync attempt time
                 queryClient.invalidateQueries(['bankConnections']);
@@ -286,7 +301,7 @@ export default function BankSync() {
             setSyncing(null);
             setSyncStatus("");
         }
-    }, [toast, queryClient, syncDays]);
+    }, [toast, queryClient, syncDateFrom]);
 
     // Delete connection
     const { mutate: deleteConnection } = useMutation({
@@ -334,18 +349,33 @@ export default function BankSync() {
                 </div>
 
                 {/* Date Range Selector */}
-                <div className="flex items-center gap-3 mb-6 bg-white p-3 rounded-xl border border-gray-100 shadow-sm w-fit">
-                    <span className="text-sm font-medium text-gray-500">Sync range:</span>
-                    <select
-                        value={syncDays}
-                        onChange={(e) => setSyncDays(e.target.value)}
-                        className="text-sm font-bold text-blue-600 bg-transparent focus:outline-none cursor-pointer"
+                <div className="flex flex-wrap items-center gap-4 mb-6">
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm">
+                        <CalendarIcon className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600 mr-1">Sync from:</span>
+                        <input
+                            type="date"
+                            value={syncDateFrom}
+                            max={format(new Date(), 'yyyy-MM-dd')}
+                            onChange={(e) => setSyncDateFrom(e.target.value)}
+                            className="text-sm font-medium text-gray-900 focus:outline-none bg-transparent"
+                        />
+                    </div>
+
+                    <button
+                        onClick={() => setSyncDateFrom(format(subDays(new Date(), 2192), 'yyyy-MM-dd'))}
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        title="Sync max available history (approx 6 years)"
                     >
-                        <option value="30">Last 30 Days</option>
-                        <option value="90">Last 90 Days</option>
-                        <option value="all">Full History (All Time)</option>
-                    </select>
+                        <History className="w-3.5 h-3.5" />
+                        Sync All History
+                    </button>
                 </div>
+
+                <p className="text-xs text-gray-400 mb-6 flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    Securely powered by TrueLayer. Connections are read-only.
+                </p>
 
                 {/* Progress Indicator */}
                 {syncing && (
@@ -354,14 +384,6 @@ export default function BankSync() {
                         <span className="font-medium">{syncStatus}</span>
                     </div>
                 )}
-
-                <Alert className="bg-blue-50 border-blue-200">
-                    <Info className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-900">
-                        <strong>Powered by TrueLayer:</strong> Securely connect to UK banks with industry-leading Open Banking.
-                        Your credentials are never stored, and connections are read-only.
-                    </AlertDescription>
-                </Alert>
 
                 {/* --- NEW: NEEDS REVIEW INBOX --- */}
                 {needsReviewTransactions.length > 0 && (
