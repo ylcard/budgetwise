@@ -33,11 +33,10 @@ import { useFAB } from "../components/hooks/FABContext";
  */
 
 export default function BankSync() {
-    const { settings } = useSettings();
+    const { settings, user } = useSettings();
     const { toast } = useToast();
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
-    const { user } = useSettings();
     const { setFabButtons, clearFabButtons } = useFAB();
 
     // --- NEW: Review Inbox State ---
@@ -94,6 +93,8 @@ export default function BankSync() {
         const handleCallback = async () => {
             // If we have already processed a code in this session, stop.
             if (processedRef.current) return;
+
+            if (!user) return;
 
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
@@ -160,7 +161,7 @@ export default function BankSync() {
                             accounts: [],
                             status: 'active',
                             auto_sync_enabled: true,
-                            user_email: (await base44.auth.me()).email
+                            user_email: user.email
                         });
 
                         // Immediately trigger first sync to populate account info
@@ -182,7 +183,7 @@ export default function BankSync() {
                 } catch (error) {
                     // Reset lock on failure to allow retry if needed (optional)
                     // processedRef.current = false;
-                    
+
                     toast({
                         title: "Failed to complete connection",
                         description: error.message,
@@ -193,7 +194,7 @@ export default function BankSync() {
         };
 
         handleCallback();
-    }, [queryClient, toast]);
+    }, [queryClient, toast, user]);
 
     // Use ref to stabilize the callback and prevent FAB context loops
     const connectionRef = useRef(initiateConnection);
