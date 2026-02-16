@@ -128,8 +128,9 @@ export function useRuleActions() {
     };
 
     // Moved from component: Inline validation and update
-    const handleInlineUpdate = (ruleId, field, value) => {
+    const handleInlineUpdate = (ruleId, field, value, e) => {
         // Validation logic reused
+        if (e && e.preventDefault) e.preventDefault();
         if (field === 'regexPattern' && value) {
             try {
                 new RegExp(value);
@@ -141,7 +142,8 @@ export function useRuleActions() {
     };
 
     // Unified Save Handler (Create vs Update)
-    const handleSaveRule = () => {
+    const handleSaveRule = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         if (!formData.categoryId) return toast({ title: "Missing Category", variant: "destructive" });
         if (isRegexMode && !formData.regexPattern) return toast({ title: "Missing Pattern", variant: "destructive" });
         if (!isRegexMode && !formData.keyword) return toast({ title: "Missing Keywords", variant: "destructive" });
