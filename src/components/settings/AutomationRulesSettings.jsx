@@ -3,7 +3,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type } from "lucide-react";
+import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import CategorySelect from "@/components/ui/CategorySelect";
@@ -32,7 +32,10 @@ export default function AutomationRulesSettings() {
     } = useRuleActions();
 
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [ruleToDelete, setRuleToDelete] = useState(null); // ID or 'bulk'
+    const [ruleToDelete, setRuleToDelete] = useState(null);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // FAB Integration
     const { setFabButtons, clearFabButtons } = useFAB();
@@ -89,12 +92,27 @@ export default function AutomationRulesSettings() {
     const [editingId, setEditingId] = useState(null); // Tracks which row is having its title edited
     const [editingKeyword, setEditingKeyword] = useState(null); // { ruleId, index, value }
 
+    // Pagination Logic
+    const totalPages = Math.ceil(rules.length / itemsPerPage);
+    const paginatedRules = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return rules.slice(start, start + itemsPerPage);
+    }, [rules, currentPage, itemsPerPage]);
+
+    // Reset page if filtered results shrink
+    useEffect(() => {
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+        }
+    }, [totalPages, currentPage]);
+
     // Wrapper to ensure user_email is included in inline updates
     const safeInlineUpdate = (id, field, value, e) => {
         updateRule.mutate({
             id,
-            [field]: value,
-            user_email: user.email
+            data: {
+                [field]: value
+            }
         });
     };
 
@@ -187,7 +205,7 @@ export default function AutomationRulesSettings() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {rules.map((rule) => {
+                                    {paginatedRules.map((rule) => {
                                         const category = categories.find(c => c.id === rule.categoryId);
                                         const isSelected = selectedIds.has(rule.id);
                                         const isEditingTitle = editingId === rule.id;
@@ -365,9 +383,36 @@ export default function AutomationRulesSettings() {
                             </Table>
                         </div>
 
+                        {/* Pagination Controls (Desktop) */}
+                        {totalPages > 1 && (
+                            <div className="hidden md:flex items-center justify-end p-4 border-t gap-2">
+                                <div className="text-sm text-gray-500 mr-2">
+                                    Page {currentPage} of {totalPages}
+                                </div>
+                                <CustomButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </CustomButton>
+                                <CustomButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </CustomButton>
+                            </div>
+                        )}
+
                         {/* --- MOBILE LIST VIEW (Simplified) --- */}
                         <div className="md:hidden space-y-3">
-                            {rules.map((rule) => {
+                            {paginatedRules.map((rule) => {
                                 const category = categories.find(c => c.id === rule.categoryId);
                                 return (
                                     <div
@@ -412,6 +457,31 @@ export default function AutomationRulesSettings() {
                                 );
                             })}
                         </div>
+
+                        {/* Pagination Controls (Mobile) */}
+                        {totalPages > 1 && (
+                            <div className="flex md:hidden items-center justify-center pt-4 gap-4">
+                                <CustomButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                                </CustomButton>
+                                <span className="text-sm font-medium text-gray-600">
+                                    {currentPage} / {totalPages}
+                                </span>
+                                <CustomButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                                </CustomButton>
+                            </div>
+                        )}
                     </>
                 )}
             </CardContent>
