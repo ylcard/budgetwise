@@ -90,7 +90,7 @@ export default function AutomationRulesSettings() {
     const [editingKeyword, setEditingKeyword] = useState(null); // { ruleId, index, value }
 
     // Wrapper to ensure user_email is included in inline updates
-    const safeInlineUpdate = (id, field, value) => {
+    const safeInlineUpdate = (id, field, value, e) => {
         updateRule.mutate({
             id,
             [field]: value,
@@ -98,7 +98,7 @@ export default function AutomationRulesSettings() {
         });
     };
 
-    if (isLoading) {
+    if (isLoading && rules.length === 0) {
         return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
     }
 
