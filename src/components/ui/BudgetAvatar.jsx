@@ -9,6 +9,12 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
         let animationFrameId;
         let frame = 0;
 
+        // Thriving Animation State
+        let phase = 'launch'; // launch -> explode -> fall -> reform -> exit
+        let particles = [];
+        let ghostY = 220; // Start off-screen bottom
+        let ghostAlpha = 1;
+
         const render = () => {
             frame++;
             const width = canvas.width;
@@ -37,7 +43,9 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
             let squashY = 1;
             let alpha = 1;
             let glitchOffset = 0;
-            let yOffset = 0;
+            let yOffset = 0; // Relative offset for normal animations
+            let overrideY = null; // Absolute position for thriving animation
+            let overrideColor = null;
 
             if (isDead) {
                 // --- DEAD: Glitch & Disintegrate ---
@@ -63,24 +71,97 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 bounce = Math.sin(frame * 0.2) * 2; // Fast nervous bounce
                 shakeX = (Math.random() - 0.5) * 3; // Tremble
             } else if (isThriving) {
-                // --- THRIVING: Happy Bouncing ---
-                const speed = 0.1;
-                bounce = Math.sin(frame * speed) * 10;
-                // Squash and stretch
-                squashX = 1 + Math.cos(frame * speed) * 0.05;
-                squashY = 1 + Math.sin(frame * speed) * -0.05;
-                yOffset = -10; // Float higher
+
+                // --- THRIVING: SNAPCHAT-STYLE ROCKET GHOST ---        
+                // 1. LAUNCH (Shoots up)
+                if (phase === 'launch') {
+                    ghostY -= 6; // Fast ascent
+                    squashX = 0.8; squashY = 1.4; // Stretch effect
+                    // Rainbow Cycle
+                    overrideColor = `hsl(${frame * 15}, 100%, 60%)`;
+
+                    if (ghostY < 50) phase = 'explode';
+                }
+
+                // 2. EXPLODE (Fireworks)
+                else if (phase === 'explode') {
+                    alpha = 0; // Hide Ghost
+                    // Spawn particles once
+                    if (particles.length === 0) {
+                        for (let i = 0; i < 30; i++) {
+                            particles.push({
+                                x: centerX,
+                                y: ghostY,
+                                vx: (Math.random() - 0.5) * 10,
+                                vy: (Math.random() - 0.5) * 10 - 5, // Upward bias
+                                color: `hsl(${Math.random() * 360}, 100%, 60%)`,
+                                life: 1.0
+                            });
+                        }
+                    }
+                    phase = 'fall';
+                }
+
+                // 3. FALL (Particles drop)
+                else if (phase === 'fall') {
+                    alpha = 0; // Ghost still hidden
+                    let activeParticles = 0;
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.4; // Gravity
+                        p.life -= 0.02;
+                        if (p.life > 0) activeParticles++;
+
+                        // Draw Particle
+                        ctx.globalAlpha = p.life;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+
+                    // Transition when particles hit bottom
+                    if (particles.every(p => p.y > height - 40 || p.life <= 0)) {
+                        phase = 'reform';
+                        ghostY = height - 60; // Position at bottom
+                        ghostAlpha = 0;
+                        particles = []; // Clear
+                    }
+                }
+
+                // 4. REFORM (Fade in at bottom)
+                else if (phase === 'reform') {
+                    ghostAlpha += 0.05;
+                    alpha = Math.min(1, ghostAlpha);
+                    if (alpha >= 1) {
+                        // Pause briefly then exit
+                        if (frame % 60 === 0) phase = 'exit';
+                    }
+                }
+
+                // 5. EXIT (Drop down)
+                else if (phase === 'exit') {
+                    ghostY += 5;
+                    if (ghostY > height + 60) {
+                        phase = 'launch'; // RESET LOOP
+                        ghostY = height + 60;
+                    }
+                }
+
+                overrideY = ghostY;
             } else {
                 // --- NORMAL: Calm Floating ---
                 bounce = Math.sin(frame * 0.05) * 5;
             }
 
             const xPos = centerX + shakeX + glitchOffset;
-            const yPos = centerY + bounce + yOffset;
+            // Use overrideY if we are in thriving animation, otherwise standard calculation
+            const yPos = overrideY !== null ? overrideY : (centerY + bounce + yOffset);
 
             // --- COLOR ---
             let color = "#3b82f6"; // Blue (Normal)
-            if (isThriving) color = "#10b981"; // Emerald
+            if (isThriving) color = overrideColor || "#10b981"; // Emerald or Rainbow
             else if (isCritical) color = "#f43f5e"; // Rose
             else if (isDead) color = "#94a3b8"; // Slate
 
