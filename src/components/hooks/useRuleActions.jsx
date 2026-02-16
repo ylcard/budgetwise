@@ -45,6 +45,7 @@ export function useRuleActions() {
             financial_priority: formData.financial_priority
         }),
         onSuccess: () => {
+            invalidate();
             handleCloseDialog();
             toast({ title: "Rule created", description: "Transactions will be categorized automatically." });
         }
