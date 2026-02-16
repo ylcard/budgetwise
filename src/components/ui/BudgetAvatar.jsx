@@ -77,7 +77,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 // --- THRIVING: PRIDE PARADE MODE --- 		
                 // 1. LAUNCH (Shoots up with Rainbow Trail)
                 if (phase === 'launch') {
-                    ghostY -= 7; // Fast ascent
+                    ghostY -= 4; // Slower, more majestic ascent
                     squashX = 0.7; squashY = 1.5; // Extreme stretch
                     // Super Fast Rainbow Cycle
                     overrideColor = `hsl(${frame * 25}, 100%, 60%)`;
@@ -101,17 +101,17 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 // 2. EXPLODE (Glitter Bomb)
                 else if (phase === 'explode') {
                     alpha = 0; // Hide Ghost
-                    // Spawn MASSIVE amount of particles
+                    // Spawn MASSIVE amount of particles (Sparks)
                     if (particles.length === 0) {
-                        for (let i = 0; i < 80; i++) {
+                        for (let i = 0; i < 100; i++) {
                             particles.push({
                                 x: centerX,
                                 y: ghostY,
-                                vx: (Math.random() - 0.5) * 15,
-                                vy: (Math.random() - 0.5) * 15 - 5,
+                                vx: (Math.random() - 0.5) * 35, // HUGE spread to reach edges
+                                vy: (Math.random() - 0.5) * 35 - 5,
                                 color: `hsl(${Math.random() * 360}, 100%, 60%)`,
                                 life: 1.0,
-                                type: Math.random() > 0.5 ? 'confetti' : 'sparkle'
+                                type: 'spark' // All sparks for fireworks look
                             });
                         }
                     }
@@ -119,36 +119,35 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                     phase = 'fall';
                 }
 
-                // 3. FALL (Confetti Parade)
+                // 3. FALL (Slow Motion Sparks)
                 else if (phase === 'fall') {
                     alpha = 0; // Ghost still hidden
                     let activeParticles = 0;
                     particles.forEach(p => {
-                        p.x += p.vx;
-                        p.y += p.vy;
-                        p.vy += 0.3; // Light Gravity
-                        p.vx *= 0.95; // Air resistance
-                        p.life -= 0.01; // Slower fade
+                        // Move slower (0.6 multiplier) for "Grand" feeling
+                        p.x += p.vx * 0.6;
+                        p.y += p.vy * 0.6;
 
-                        // Swaying motion (Confetti physics)
-                        p.x += Math.sin(frame * 0.1 + p.life * 10) * 1.5;
+                        // Physics
+                        p.vy += 0.15; // Very Low Gravity (Floaty)
+                        p.vx *= 0.96; // Low Air resistance
+                        p.life -= 0.008; // Very Slow fade
 
                         if (p.life > 0) activeParticles++;
 
                         // Draw Particle
                         ctx.save();
-                        ctx.globalAlpha = p.life;
                         ctx.fillStyle = p.color;
 
-                        if (p.type === 'confetti') {
-                            ctx.translate(p.x, p.y);
-                            ctx.rotate(frame * 0.2 + p.life);
-                            ctx.fillRect(-4, -2, 8, 4);
-                        } else {
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
+                        // Draw THIN SPARK (Line segment based on velocity)
+                        ctx.lineWidth = 1.5;
+                        ctx.lineCap = "round";
+                        ctx.strokeStyle = p.color;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        // Trail behind the particle to make it look like a spark
+                        ctx.lineTo(p.x - p.vx * 1.5, p.y - p.vy * 1.5);
+                        ctx.stroke();
                         ctx.restore();
                     });
 
