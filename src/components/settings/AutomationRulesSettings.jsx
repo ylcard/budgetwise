@@ -23,6 +23,7 @@ export default function AutomationRulesSettings() {
         isDialogOpen, setIsDialogOpen,
         selectedIds, setSelectedIds,
         isRegexMode, setIsRegexMode,
+        isWholeWord, setIsWholeWord,
         editingRuleId,
         formData, setFormData,
         createRule, deleteRule, updateRule, deleteBulkRules,
@@ -167,6 +168,8 @@ export default function AutomationRulesSettings() {
                             setFormData={setFormData}
                             isRegexMode={isRegexMode}
                             setIsRegexMode={setIsRegexMode}
+                            isWholeWord={isWholeWord}
+                            setIsWholeWord={setIsWholeWord}
                             onSubmit={handleSaveRule}
                             isSubmitting={createRule.isPending || updateRule.isPending}
                             isEditing={!!editingRuleId}
