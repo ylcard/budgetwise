@@ -72,7 +72,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             let totalTransactionsUpdated = 0;
             const rulesToCreate = [];
             const rulesToUpdate = [];
-            const allTransactionUpdates = [];
+            const transactionsToUpdate = [];
 
             // 1. Fetch current rules to check for keyword collisions
             const existingRules = await base44.entities.CategoryRule.list({ created_by: user.email }) || [];
@@ -88,11 +88,12 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                 const duplicateRule = existingRules.find(r => r.keyword.toUpperCase() === finalKeywords);
 
                 if (duplicateRule) {
-                    // Overwrite the existing record using its hidden 'id'
-                    rulesToUpdate.push(() => base44.entities.CategoryRule.update(duplicateRule.id, {
+                    // Push data object for bulkUpdate (instead of single update fn)
+                    rulesToUpdate.push({
+                        id: duplicateRule.id,
                         categoryId: categoryId,
                         renamedTitle: finalTitle
-                    }));
+                    });
                 } else if (!keywordsProcessedInBatch.has(finalKeywords)) {
                     // CREATE: Queue for bulk creation
                     rulesToCreate.push({
@@ -105,14 +106,15 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                     keywordsProcessedInBatch.add(finalKeywords);
                 }
 
-                // 3. Queue up all the transaction update promises
+                // 3. Queue up transaction updates as data objects
                 group.transactions.forEach(tx => {
-                    allTransactionUpdates.push(() => base44.entities.Transaction.update(tx.id, {
+                    transactionsToUpdate.push({
+                        id: tx.id,
                         category_id: categoryId,
                         financial_priority: priority,
                         needsReview: false,
-                        title: finalTitle // Overwrite messy string with clean name
-                    }));
+                        title: finalTitle
+                    });
                 });
                 totalTransactionsUpdated += group.transactions.length;
             }
@@ -123,17 +125,14 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             }
 
             if (rulesToUpdate.length > 0) {
-                // These are fired in parallel; usually a small enough amount to not hit 429
-                await Promise.all(rulesToUpdate.map(updateFn => updateFn()));
+                // Replaced singular updates loop with one bulk request
+                await base44.entities.CategoryRule.bulkUpdate(rulesToUpdate);
             }
 
-            // B. Process transaction updates in batches of 10 to avoid 429 errors
-            const BATCH_SIZE = 10;
-            for (let i = 0; i < allTransactionUpdates.length; i += BATCH_SIZE) {
-                const batch = allTransactionUpdates.slice(i, i + BATCH_SIZE);
-                await Promise.all(batch.map(updateFn => updateFn()));
-                // Wait 100ms before firing the next 10 to appease rate limiters
-                await new Promise(resolve => setTimeout(resolve, 100));
+            // B. Execute Transaction Operations (Bulk Only)
+            if (transactionsToUpdate.length > 0) {
+                // Replaced batching loop with one massive bulk update
+                await base44.entities.Transaction.bulkUpdate(transactionsToUpdate);
             }
 
             return { groupsCount: saveableGroups.length, txCount: totalTransactionsUpdated };
