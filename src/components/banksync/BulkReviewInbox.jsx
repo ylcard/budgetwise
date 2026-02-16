@@ -75,7 +75,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             const transactionsToUpdate = [];
 
             // 1. Fetch current rules to check for keyword collisions
-            const existingRules = await base44.entities.CategoryRule.list({ created_by: user.email }) || [];
+            const existingRules = await base44.entities.CategoryRule.filter({ created_by: user.email }) || [];
 
             // Track keywords processed in this batch to prevent internal duplicates
             const keywordsProcessedInBatch = new Set();
@@ -85,7 +85,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                 const finalTitle = cleanName ? cleanName.trim() : group.displayTitle;
 
                 // 2. The Duplicate Check: Does this keyword string already exist?
-                const duplicateRule = existingRules.find(r => r.keyword.toUpperCase() === finalKeywords);
+                const duplicateRule = existingRules.find(r => r.keyword && r.keyword.trim().toUpperCase() === finalKeywords);
 
                 if (duplicateRule) {
                     // Push data object for bulkUpdate (instead of single update fn)
