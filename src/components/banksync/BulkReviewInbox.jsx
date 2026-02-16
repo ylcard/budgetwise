@@ -99,9 +99,10 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                     // CREATE: Queue for bulk creation
                     console.log(`✨ [BulkReview] Creating new rule for ${finalKeywords}`);
                     rulesToCreate.push({
-                        created_by: user.email,
+                        user_email: user.email,
                         keyword: finalKeywords,
                         categoryId: categoryId,
+                        financial_priority: priority,
                         renamedTitle: finalTitle
                     });
                     keywordsProcessedInBatch.add(finalKeywords);
