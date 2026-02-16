@@ -43,11 +43,10 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             // Prefer merchantName. Fallback to title. Uppercase to normalize.
             let rawKey = tx.merchantName || tx.title || 'Unknown';
 
-            // AGGRESSIVE CLEANER: 
-            // 1. Removes prefixes like MNI* or PAYPAL*
-            // 2. Removes all numbers and special characters
-            // 3. Collapses multiple spaces into one
-            const key = rawKey.replace(/^[A-Z]{3,6}\*/i, '').replace(/[^a-zA-Z\s]/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+            // SMART GROUPING:
+            // 1. Remove common payment prefixes (SQ *, PAYPAL *, etc) but KEEP numbers/special chars
+            // 2. Collapse whitespace
+            const key = rawKey.replace(/^[A-Z]{3,6}\*|^\d{4,}\s\*/i, '').replace(/\s+/g, ' ').trim().toUpperCase();
 
             if (!groups[key]) {
                 groups[key] = {
@@ -174,13 +173,17 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     const readyToSaveGroups = useMemo(() => {
         return Object.entries(selections)
             .filter(([_, sel]) => sel.categoryId && sel.priority)
-            .map(([key, sel]) => ({
-                group: groupedTransactions.find(g => g.key === key),
-                categoryId: sel.categoryId,
-                priority: sel.priority,
-                matchKeywords: sel.matchKeywords !== undefined ? sel.matchKeywords : key,
-                cleanName: sel.cleanName !== undefined ? sel.cleanName : groupedTransactions.find(g => g.key === key).displayTitle
-            }));
+            .map(([key, sel]) => {
+                const originalGroup = groupedTransactions.find(g => g.key === key);
+                return {
+                    group: originalGroup,
+                    categoryId: sel.categoryId,
+                    priority: sel.priority,
+                    // Default to the GROUP KEY (which is now inclusive of numbers) if user didn't edit
+                    matchKeywords: sel.matchKeywords !== undefined ? sel.matchKeywords : originalGroup.key,
+                    cleanName: sel.cleanName !== undefined ? sel.cleanName : originalGroup.displayTitle
+                };
+            });
     }, [selections, groupedTransactions]);
 
     return (
