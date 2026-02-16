@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { clsx } from "clsx";
-import { format, getDate, getDaysInMonth, parseISO, isSameDay, startOfMonth, setDate } from "date-fns";
+import { motion } from "framer-motion";
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { format, getDaysInMonth, parseISO, isSameDay } from "date-fns";
 import { formatCurrency } from "../utils/currencyUtils";
 
 export const VelocityWidget = ({ transactions = [], settings, selectedMonth, selectedYear }) => {
