@@ -2,11 +2,11 @@ import { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { 
-    Building2, 
-    RefreshCw, 
-    Trash2, 
-    CheckCircle2, 
+import {
+    Building2,
+    RefreshCw,
+    Trash2,
+    CheckCircle2,
     XCircle,
     Clock
 } from "lucide-react";
@@ -48,6 +48,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
         }
     };
 
+    const maskID = (id) => id ? `•••• ${id.slice(-4)}` : '••••';
     const config = statusConfig[connection?.status] || statusConfig.active;
     const StatusIcon = config.icon;
 
@@ -62,7 +63,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
 
                         <div>
                             <h3 className="font-semibold text-gray-900">
-                                {String(connection?.provider_name || 'Bank Account')}
+                                {connection?.provider_name === 'Connecting...' ? 'Bank Connection' : (connection?.provider_name || 'Bank Account')}
                             </h3>
                             <p className="text-xs text-gray-500">
                                 {String(connection?.country || 'UK')} • TrueLayer
@@ -79,7 +80,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
                 {connection?.accounts && connection.accounts.length > 0 && (
                     <div className="space-y-2 mb-4">
                         {connection.accounts.map((account, idx) => (
-                            <div 
+                            <div
                                 key={idx}
                                 className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
                             >
@@ -88,7 +89,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
                                         {account.name || 'Account'}
                                     </p>
                                     <p className="text-xs text-gray-500 truncate">
-                                        {account.iban || account.account_id}
+                                        {maskID(account.iban || account.account_id)}
                                     </p>
                                 </div>
                                 {account.balance !== undefined && account.balance !== null && settings && (
