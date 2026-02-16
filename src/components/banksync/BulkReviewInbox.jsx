@@ -68,6 +68,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     // 2. The Save Mutation
     const { mutate: saveBulkRules, isPending: isSaving } = useMutation({
         mutationFn: async (saveableGroups) => {
+            if (!user?.email) throw new Error("User not authenticated");
             let totalTransactionsUpdated = 0;
             const rulesToCreate = [];
             const rulesToUpdate = [];
@@ -125,13 +126,29 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
 
             if (rulesToUpdate.length > 0) {
                 // Replaced singular updates loop with one bulk request
-                await base44.entities.CategoryRule.bulkUpdate(rulesToUpdate);
+                await Promise.all(rulesToUpdate.map(rule =>
+                    base44.entities.CategoryRule.update(rule.id, {
+                        categoryId: rule.categoryId,
+                        renamedTitle: rule.renamedTitle
+                    })
+                ));
             }
 
             // B. Execute Transaction Operations (Bulk Only)
             if (transactionsToUpdate.length > 0) {
-                // Replaced batching loop with one massive bulk update
-                await base44.entities.Transaction.bulkUpdate(transactionsToUpdate);
+                // We chunk this to avoid hitting API rate limits or payload size limits if many txs
+                const chunkSize = 50;
+                for (let i = 0; i < transactionsToUpdate.length; i += chunkSize) {
+                    const chunk = transactionsToUpdate.slice(i, i + chunkSize);
+                    await Promise.all(chunk.map(tx =>
+                        base44.entities.Transaction.update(tx.id, {
+                            category_id: tx.category_id,
+                            financial_priority: tx.financial_priority,
+                            needsReview: tx.needsReview,
+                            title: tx.title
+                        })
+                    ));
+                }
             }
 
             return { groupsCount: saveableGroups.length, txCount: totalTransactionsUpdated };
