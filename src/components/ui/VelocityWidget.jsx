@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { clsx } from "clsx";
 import { format, getDate, getDaysInMonth, parseISO, isSameDay, startOfMonth, setDate } from "date-fns";
-import { formatCurrency } from "../utils/financialCalculations";
+import { formatCurrency } from "../utils/currencyUtils";
 
 export const VelocityWidget = ({ transactions = [], settings, selectedMonth, selectedYear }) => {
     // 1. Process Data for the selected month
