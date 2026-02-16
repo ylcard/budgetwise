@@ -38,6 +38,7 @@ export default function CreateRuleDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
+            <form onSubmit={onSubmit}>
                 <DialogHeader>
                     <DialogTitle>{isEditing ? "Edit Rule" : "Create Automation Rule"}</DialogTitle>
                     <DialogDescription>
@@ -125,11 +126,12 @@ export default function CreateRuleDialog({
                     </div>
                 </div>
                 <DialogFooter>
-                    <CustomButton onClick={onSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
+                    <CustomButton type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Save Rule
                     </CustomButton>
                 </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );
