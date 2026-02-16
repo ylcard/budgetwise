@@ -171,15 +171,17 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     };
 
     // Calculate how many groups are fully filled out and ready to save
-    const readyToSaveGroups = Object.entries(selections)
-        .filter(([_, sel]) => sel.categoryId && sel.priority)
-        .map(([key, sel]) => ({
-            group: groupedTransactions.find(g => g.key === key),
-            categoryId: sel.categoryId,
-            priority: sel.priority,
-            matchKeywords: sel.matchKeywords !== undefined ? sel.matchKeywords : key,
-            cleanName: sel.cleanName !== undefined ? sel.cleanName : groupedTransactions.find(g => g.key === key).displayTitle
-        }));
+    const readyToSaveGroups = useMemo(() => {
+        return Object.entries(selections)
+            .filter(([_, sel]) => sel.categoryId && sel.priority)
+            .map(([key, sel]) => ({
+                group: groupedTransactions.find(g => g.key === key),
+                categoryId: sel.categoryId,
+                priority: sel.priority,
+                matchKeywords: sel.matchKeywords !== undefined ? sel.matchKeywords : key,
+                cleanName: sel.cleanName !== undefined ? sel.cleanName : groupedTransactions.find(g => g.key === key).displayTitle
+            }));
+    }, [selections, groupedTransactions]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
