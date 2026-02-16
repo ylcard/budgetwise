@@ -51,6 +51,7 @@ export default function BankSync() {
 
     const [syncing, setSyncing] = useState(null);
     const [syncStatus, setSyncStatus] = useState("");
+    const [syncProgress, setSyncProgress] = useState(0);
     const [syncDateFrom, setSyncDateFrom] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
 
     // Fetch bank connections
@@ -223,7 +224,8 @@ export default function BankSync() {
     const handleSync = useCallback(async (connection) => {
         setSyncing(connection.id);
 
-        setSyncStatus("Preparing sync...");
+        setSyncStatus("Initializing secure connection...");
+        setSyncProgress(5);
 
         try {
             const now = new Date();
@@ -252,8 +254,15 @@ export default function BankSync() {
             // Execute chunks sequentially
             for (let i = 0; i < chunks.length; i++) {
                 const chunk = chunks[i];
-                const progress = chunks.length > 1 ? ` (Part ${i + 1}/${chunks.length})` : '';
-                setSyncStatus(`Syncing history${progress}...`);
+                // Calculate base progress for this step
+                const baseProgress = Math.floor((i / chunks.length) * 100);
+                const nextBaseProgress = Math.floor(((i + 1) / chunks.length) * 100);
+
+                setSyncProgress(baseProgress + 5);
+                setSyncStatus(chunks.length > 1
+                    ? `Retrieving transaction history (${Math.round((i / chunks.length) * 100)}%)...`
+                    : "Syncing transactions..."
+                );
 
                 console.log(`🔄 [SYNC] Chunk ${i + 1}: ${chunk.from} to ${chunk.to}`);
 
@@ -263,10 +272,15 @@ export default function BankSync() {
                     dateTo: chunk.to
                 });
 
+                setSyncProgress(nextBaseProgress);
+
                 if (response.data?.importedCount) {
                     totalImported += response.data.importedCount;
                 }
             }
+
+            setSyncProgress(100);
+            setSyncStatus("Finalizing...");
 
             if (totalImported > 0) {
                 toast({
@@ -300,6 +314,7 @@ export default function BankSync() {
             console.log('🔄 [SYNC] Sync completed, resetting syncing state');
             setSyncing(null);
             setSyncStatus("");
+            setSyncProgress(0);
         }
     }, [toast, queryClient, syncDateFrom]);
 
@@ -379,9 +394,20 @@ export default function BankSync() {
 
                 {/* Progress Indicator */}
                 {syncing && (
-                    <div className="flex items-center gap-2 mb-6 text-sm text-blue-600 animate-pulse bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm w-fit">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="font-medium">{syncStatus}</span>
+                    <div className="mb-6 bg-white p-4 rounded-xl border border-blue-100 shadow-sm w-full max-w-md">
+                        <div className="flex justify-between text-sm mb-2">
+                            <span className="font-semibold text-blue-900 flex items-center gap-2">
+                                <Loader2 className="w-3 h-3 animate-spin text-blue-600" />
+                                {syncStatus}
+                            </span>
+                            <span className="text-blue-600 font-bold">{syncProgress}%</span>
+                        </div>
+                        <div className="h-2 bg-blue-50 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-blue-600 transition-all duration-500 ease-out"
+                                style={{ width: `${syncProgress}%` }}
+                            />
+                        </div>
                     </div>
                 )}
 
