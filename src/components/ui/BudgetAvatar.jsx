@@ -12,8 +12,10 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
         // Thriving Animation State
         let phase = 'launch'; // launch -> explode -> fall -> reform -> exit
         let particles = [];
+        let trails = [];
         let ghostY = 220; // Start off-screen bottom
         let ghostAlpha = 1;
+        let ghostRotation = 0;
 
         const render = () => {
             frame++;
@@ -72,68 +74,101 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 shakeX = (Math.random() - 0.5) * 3; // Tremble
             } else if (isThriving) {
 
-                // --- THRIVING: SNAPCHAT-STYLE ROCKET GHOST ---        
-                // 1. LAUNCH (Shoots up)
+                // --- THRIVING: PRIDE PARADE MODE --- 		
+                // 1. LAUNCH (Shoots up with Rainbow Trail)
                 if (phase === 'launch') {
-                    ghostY -= 6; // Fast ascent
-                    squashX = 0.8; squashY = 1.4; // Stretch effect
-                    // Rainbow Cycle
-                    overrideColor = `hsl(${frame * 15}, 100%, 60%)`;
+                    ghostY -= 7; // Fast ascent
+                    squashX = 0.7; squashY = 1.5; // Extreme stretch
+                    // Super Fast Rainbow Cycle
+                    overrideColor = `hsl(${frame * 25}, 100%, 60%)`;
 
-                    if (ghostY < 50) phase = 'explode';
+                    // Add Rainbow Trail
+                    trails.push({ x: centerX, y: ghostY + 50, color: overrideColor, size: 25 });
+                    if (trails.length > 15) trails.shift();
+
+                    // Draw Trail
+                    trails.forEach((t, i) => {
+                        ctx.beginPath();
+                        ctx.fillStyle = t.color;
+                        const s = t.size * (i / trails.length);
+                        ctx.arc(t.x + (Math.sin(frame * 0.8 + i) * 10), t.y, s, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+
+                    if (ghostY < 60) phase = 'explode';
                 }
 
-                // 2. EXPLODE (Fireworks)
+                // 2. EXPLODE (Glitter Bomb)
                 else if (phase === 'explode') {
                     alpha = 0; // Hide Ghost
-                    // Spawn particles once
+                    // Spawn MASSIVE amount of particles
                     if (particles.length === 0) {
-                        for (let i = 0; i < 30; i++) {
+                        for (let i = 0; i < 80; i++) {
                             particles.push({
                                 x: centerX,
                                 y: ghostY,
-                                vx: (Math.random() - 0.5) * 10,
-                                vy: (Math.random() - 0.5) * 10 - 5, // Upward bias
+                                vx: (Math.random() - 0.5) * 15,
+                                vy: (Math.random() - 0.5) * 15 - 5,
                                 color: `hsl(${Math.random() * 360}, 100%, 60%)`,
-                                life: 1.0
+                                life: 1.0,
+                                type: Math.random() > 0.5 ? 'confetti' : 'sparkle'
                             });
                         }
                     }
+                    trails = []; // Clear trail
                     phase = 'fall';
                 }
 
-                // 3. FALL (Particles drop)
+                // 3. FALL (Confetti Parade)
                 else if (phase === 'fall') {
                     alpha = 0; // Ghost still hidden
                     let activeParticles = 0;
                     particles.forEach(p => {
                         p.x += p.vx;
                         p.y += p.vy;
-                        p.vy += 0.4; // Gravity
-                        p.life -= 0.02;
+                        p.vy += 0.3; // Light Gravity
+                        p.vx *= 0.95; // Air resistance
+                        p.life -= 0.01; // Slower fade
+
+                        // Swaying motion (Confetti physics)
+                        p.x += Math.sin(frame * 0.1 + p.life * 10) * 1.5;
+
                         if (p.life > 0) activeParticles++;
 
                         // Draw Particle
+                        ctx.save();
                         ctx.globalAlpha = p.life;
                         ctx.fillStyle = p.color;
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-                        ctx.fill();
+
+                        if (p.type === 'confetti') {
+                            ctx.translate(p.x, p.y);
+                            ctx.rotate(frame * 0.2 + p.life);
+                            ctx.fillRect(-4, -2, 8, 4);
+                        } else {
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.restore();
                     });
 
                     // Transition when particles hit bottom
-                    if (particles.every(p => p.y > height - 40 || p.life <= 0)) {
+                    if (particles.every(p => p.y > height || p.life <= 0)) {
                         phase = 'reform';
                         ghostY = height - 60; // Position at bottom
                         ghostAlpha = 0;
+                        ghostRotation = 0;
                         particles = []; // Clear
                     }
                 }
 
-                // 4. REFORM (Fade in at bottom)
+                // 4. REFORM (Spin in with style)
                 else if (phase === 'reform') {
                     ghostAlpha += 0.05;
                     alpha = Math.min(1, ghostAlpha);
+                    ghostRotation = (1 - alpha) * 360; // Twirl in
+                    overrideColor = `hsl(${frame * 5}, 100%, 60%)`; // Gentle rainbow pulse
+
                     if (alpha >= 1) {
                         // Pause briefly then exit
                         if (frame % 60 === 0) phase = 'exit';
@@ -169,6 +204,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
             ctx.save();
             ctx.globalAlpha = alpha; // Apply fade for disintegration
             ctx.translate(xPos, yPos);
+            if (isThriving && phase === 'reform') ctx.rotate((ghostRotation * Math.PI) / 180);
             ctx.scale(squashX, squashY);
             ctx.translate(-xPos, -yPos);
 
@@ -259,22 +295,28 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                     ctx.fill();
                 }
             } else if (isThriving) {
-                // Happy Arches ^ ^
-                ctx.lineWidth = 4;
+                // Heart Eyes <3 <3
+                ctx.fillStyle = "#ec4899"; // Pink
                 ctx.beginPath();
-                ctx.arc(-15, 0, 8, Math.PI, 0); // Left Arch
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.arc(15, 0, 8, Math.PI, 0); // Right Arch
-                ctx.stroke();
+                const drawHeart = (ox, oy) => {
+                    const size = 8;
+                    ctx.moveTo(ox, oy + size * 0.3);
+                    ctx.bezierCurveTo(ox - size, oy - size, ox - size * 1.5, oy - size * 0.5, ox, oy + size * 0.5);
+                    ctx.bezierCurveTo(ox + size * 1.5, oy - size * 0.5, ox + size, oy - size, ox, oy + size * 0.3);
+                };
+                drawHeart(-15, -5);
+                drawHeart(15, -5);
+                ctx.fill();
 
                 // Big Smile
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 4;
                 ctx.beginPath();
                 ctx.arc(0, 5, 12, 0.2, Math.PI - 0.2);
                 ctx.stroke();
 
                 // Blush
-                ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                ctx.fillStyle = "rgba(236, 72, 153, 0.5)"; // Pink Blush
                 ctx.beginPath();
                 ctx.arc(-25, 10, 6, 0, Math.PI * 2);
                 ctx.arc(25, 10, 6, 0, Math.PI * 2);
@@ -303,7 +345,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
     }, [health]);
 
     const getStatusText = () => {
-        if (health >= 0.8) return "Ascended";
+        if (health >= 0.8) return "FABULOUS ✨";
         if (health >= 0.4) return "Chilling";
         if (health >= 0.15) return "Panicking";
         return "RIP 💀";
