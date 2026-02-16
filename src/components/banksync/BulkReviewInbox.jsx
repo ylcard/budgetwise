@@ -69,6 +69,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     // 2. The Save Mutation
     const { mutate: saveBulkRules, isPending: isSaving } = useMutation({
         mutationFn: async (saveableGroups) => {
+            console.log("🚀 [BulkReview] Starting save operation for groups:", saveableGroups);
             let totalTransactionsUpdated = 0;
             const rulesToCreate = [];
             const rulesToUpdate = [];
@@ -88,6 +89,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                 const duplicateRule = existingRules.find(r => r.keyword.toUpperCase() === finalKeywords);
 
                 if (duplicateRule) {
+                    console.log(`⚠️ [BulkReview] Found duplicate rule for ${finalKeywords}, scheduling update.`);
                     // UPDATE: Overwrite the existing record using its hidden 'id'
                     rulesToUpdate.push(() => base44.entities.CategoryRule.update(duplicateRule.id, {
                         categoryId: categoryId,
@@ -95,6 +97,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                     }));
                 } else if (!keywordsProcessedInBatch.has(finalKeywords)) {
                     // CREATE: Queue for bulk creation
+                    console.log(`✨ [BulkReview] Creating new rule for ${finalKeywords}`);
                     rulesToCreate.push({
                         created_by: user.email,
                         keyword: finalKeywords,
@@ -118,6 +121,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
 
             // A. Execute Rule Operations
             if (rulesToCreate.length > 0) {
+                console.log(`💾 [BulkReview] Executing bulkCreate for ${rulesToCreate.length} rules...`);
                 await base44.entities.CategoryRule.bulkCreate(rulesToCreate);
             }
 
@@ -128,6 +132,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
 
             // B. Process transaction updates in batches of 10 to avoid 429 errors
             const BATCH_SIZE = 10;
+            console.log(`🔄 [BulkReview] Updating ${allTransactionUpdates.length} transactions in batches...`);
             for (let i = 0; i < allTransactionUpdates.length; i += BATCH_SIZE) {
                 const batch = allTransactionUpdates.slice(i, i + BATCH_SIZE);
                 await Promise.all(batch.map(updateFn => updateFn()));
@@ -152,6 +157,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             onOpenChange(false);
         },
         onError: (error) => {
+            console.error("❌ [BulkReview] Save failed:", error);
             toast({
                 title: "Failed to save",
                 description: error.message,
@@ -302,7 +308,13 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                         <CustomButton
                             variant="success"
                             disabled={readyToSaveGroups.length === 0 || isSaving}
-                            onClick={() => saveBulkRules(readyToSaveGroups)}
+                            onClick={() => {
+                                if (readyToSaveGroups.length === 0) {
+                                    console.warn("⚠️ [BulkReview] No groups ready to save");
+                                    return;
+                                }
+                                saveBulkRules(readyToSaveGroups);
+                            }}
                         >
                             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BrainCircuit className="w-4 h-4 mr-2" />}
                             Save & Apply {readyToSaveGroups.length} Rules
