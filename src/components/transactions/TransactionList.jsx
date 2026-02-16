@@ -108,7 +108,7 @@ export default function TransactionList({
             : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
     };
 
-    if (isLoading) {
+    if (isLoading || (totalPages > 0 && currentPage > totalPages)) {
         return (
             <Card className="border-none shadow-lg">
                 <CardHeader>
