@@ -77,7 +77,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 // --- THRIVING: PRIDE PARADE MODE --- 		
                 // 1. LAUNCH (Shoots up with Rainbow Trail)
                 if (phase === 'launch') {
-                    ghostY -= 4; // Slower, more majestic ascent
+                    ghostY -= 3; // Slower, more majestic ascent
                     squashX = 0.7; squashY = 1.5; // Extreme stretch
                     // Super Fast Rainbow Cycle
                     overrideColor = `hsl(${frame * 25}, 100%, 60%)`;
@@ -107,8 +107,8 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                             particles.push({
                                 x: centerX,
                                 y: ghostY,
-                                vx: (Math.random() - 0.5) * 35, // HUGE spread to reach edges
-                                vy: (Math.random() - 0.5) * 35 - 5,
+                                vx: (Math.random() - 0.5) * 75, // HUGE spread to reach edges
+                                vy: (Math.random() - 0.5) * 75 - 5,
                                 color: `hsl(${Math.random() * 360}, 100%, 60%)`,
                                 life: 1.0,
                                 type: 'spark' // All sparks for fireworks look
@@ -125,8 +125,8 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                     let activeParticles = 0;
                     particles.forEach(p => {
                         // Move slower (0.6 multiplier) for "Grand" feeling
-                        p.x += p.vx * 0.6;
-                        p.y += p.vy * 0.6;
+                        p.x += p.vx * 0.4;
+                        p.y += p.vy * 0.5;
 
                         // Physics
                         p.vy += 0.15; // Very Low Gravity (Floaty)
