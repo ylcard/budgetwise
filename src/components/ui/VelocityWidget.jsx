@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { format, getDaysInMonth, parseISO, isSameDay } from "date-fns";
@@ -49,6 +49,7 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
     }, [chartData]);
 
     const [activeIndex, setActiveIndex] = useState(null);
+    const containerRef = useRef(null);
 
     // Determine what to show: Hovered Day OR Month Total
     const displayData = activeIndex !== null
@@ -60,12 +61,33 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         if (navigator.vibrate) navigator.vibrate(5);
     };
 
-    const handleMouseMove = (e) => {
-        if (!e.activeTooltipIndex) return;
-        if (e.activeTooltipIndex !== activeIndex) {
-            setActiveIndex(e.activeTooltipIndex);
+    // --- OUTSIDE THE BOX: Manual Hit Detection ---
+    // We calculate which "slot" the mouse is in based on raw pixel width.
+    // This bypasses Recharts' internal hitbox logic entirely.
+    const handleInteraction = (clientX) => {
+        if (!containerRef.current || chartData.length === 0) return;
+
+        const { left, width } = containerRef.current.getBoundingClientRect();
+        const x = clientX - left;
+
+        // Calculate percentage across the container (0.0 to 1.0)
+        const percent = Math.max(0, Math.min(1, x / width));
+
+        // Map to an index
+        const newIndex = Math.floor(percent * chartData.length);
+
+        // Only update if changed
+        if (newIndex !== activeIndex) {
+            setActiveIndex(newIndex);
             triggerHaptic();
         }
+    };
+
+    const onMouseMove = (e) => handleInteraction(e.clientX);
+    const onTouchMove = (e) => {
+        // Prevent scroll while scrubbing
+        // e.preventDefault(); // Optional: might block page scroll
+        handleInteraction(e.touches[0].clientX);
     };
 
     const handleReset = () => {
@@ -75,8 +97,6 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
     return (
         <div
             className="w-full bg-slate-900 rounded-3xl p-6 text-white shadow-2xl overflow-hidden relative isolate"
-            onMouseLeave={handleReset} // Desktop Reset
-            onTouchEnd={handleReset}   // Mobile Reset
         >
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full -z-10" />
@@ -111,16 +131,21 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
             </div>
 
             {/* Interactive Chart */}
-            <div className="h-40 -mx-6">
+            {/* We add the Ref here to measure the exact visual width of the chart area */}
+            <div
+                className="h-40 -mx-6 relative cursor-crosshair touch-none"
+                ref={containerRef}
+                onMouseMove={onMouseMove}
+                onMouseLeave={handleReset}
+                onTouchMove={onTouchMove}
+                onTouchEnd={handleReset}
+            >
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                         data={chartData}
-                        onMouseMove={handleMouseMove}
-                        onTouchMove={handleMouseMove} // Mobile support
                         margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
                     >
                         <defs>
-                            <XAxis dataKey="day" type="category" hide />
                             <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
                                 <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
