@@ -39,10 +39,9 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { BudgetAvatar } from "../components/ui/BudgetAvatar";
-import { calculateFinancialHealth } from "../components/utils/financialHealthAlgorithms";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -77,16 +76,6 @@ export default function Dashboard() {
         [allCustomBudgets]);
 
     const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
-
-    // --- INTELLIGENT HEALTH DATA FETCHING ---
-    // We fetch 6 months back from the SELECTED month to give the algorithm context
-    const historyStart = useMemo(() => {
-        const d = new Date(selectedYear, selectedMonth, 1);
-        return format(subMonths(d, 6), 'yyyy-MM-dd');
-    }, [selectedMonth, selectedYear]);
-
-    // Fetch historical data for the algorithm
-    const { transactions: fullHistory, isLoading: historyLoading } = useTransactions(historyStart, monthEnd);
 
     useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
 
@@ -229,27 +218,26 @@ export default function Dashboard() {
         return () => clearFabButtons();
     }, [fabButtons, setFabButtons, clearFabButtons]);
 
-    // --- CALCULATE REAL FINANCIAL HEALTH ---
+    // --- CASPER'S MOOD LOGIC (Monthly Context Only) ---
     const budgetHealth = useMemo(() => {
-        if (transactionsLoading || historyLoading) return 0.8; // Default to happy while loading
+        if (!currentMonthIncome || currentMonthIncome === 0) return 0.5; // Neutral if no data
+        const spendRatio = currentMonthExpenses / currentMonthIncome;
 
-        const healthData = calculateFinancialHealth(
-            transactions,
-            fullHistory || [],
-            currentMonthIncome,
-            monthStart,
-            settings,
-            goals,
-            categories,
-            allCustomBudgets
-        );
+        // 1. You spent more than you earned. Casper is dead.
+        if (spendRatio >= 1.0) return 0.1;
 
-        // Normalize 0-100 score to 0.0-1.0 for the Avatar
-        return (healthData?.totalScore || 50) / 100;
-    }, [transactions, fullHistory, currentMonthIncome, monthStart, settings, goals, categories, allCustomBudgets, transactionsLoading, historyLoading]);
+        // 2. You saved less than 10%. Casper is panicking (Living on the edge).
+        if (spendRatio >= 0.90) return 0.3;
+
+        // 3. You saved decent money (10-30%). Casper is chilling.
+        if (spendRatio >= 0.70) return 0.6;
+
+        // 4. You saved > 30%. Casper Ascends.
+        return 1.0;
+    }, [currentMonthIncome, currentMonthExpenses]);
 
     // Combine loading states. The dashboard summary relies heavily on transactions and categories.
-    const isLoading = transactionsLoading || categoriesLoading || recurringLoading || historyLoading;
+    const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
 
     return (
         <div className="min-h-screen p-4 md:p-8 relative">
