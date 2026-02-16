@@ -23,6 +23,7 @@ export function useRuleActions() {
     });
 
     const [isRegexMode, setIsRegexMode] = useState(false);
+    const [isWholeWord, setIsWholeWord] = useState(false);
     const [formData, setFormData] = useState({
         keyword: "",
         regexPattern: "",
@@ -38,8 +39,13 @@ export function useRuleActions() {
             created_by: user.email,
             user_email: user.email,
             categoryId: formData.categoryId,
-            keyword: isRegexMode ? null : formData.keyword,
-            regexPattern: isRegexMode ? formData.regexPattern : null,
+            // Logic: If Regex Mode -> use regexPattern
+            // If Whole Word -> generate regex with boundaries \b
+            // Else -> use simple keyword
+            keyword: (!isRegexMode && !isWholeWord) ? formData.keyword : null,
+            regexPattern: isRegexMode
+                ? formData.regexPattern
+                : (isWholeWord ? `(?i)\\b${formData.keyword.trim()}\\b` : null),
             renamedTitle: formData.renamedTitle || null,
             priority: 10,
             financial_priority: formData.financial_priority
@@ -145,16 +151,31 @@ export function useRuleActions() {
     const handleSaveRule = (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (!formData.categoryId) return toast({ title: "Missing Category", variant: "destructive" });
-        if (isRegexMode && !formData.regexPattern) return toast({ title: "Missing Pattern", variant: "destructive" });
-        if (!isRegexMode && !formData.keyword) return toast({ title: "Missing Keywords", variant: "destructive" });
-
+        // Validation
         if (isRegexMode) {
+            if (!formData.regexPattern) return toast({ title: "Missing Pattern", variant: "destructive" });
             try { new RegExp(formData.regexPattern); }
             catch (e) { return toast({ title: "Invalid Regex", description: e.message, variant: "destructive" }); }
+        } else {
+            if (!formData.keyword) return toast({ title: "Missing Keywords", variant: "destructive" });
+        }
+
+        // Prepare payload logic is now inside the mutationFn to keep this clean,
+        // but we need to pass the current state to the update mutation manually
+        const payload = { ...formData };
+
+        // TRANSFORM: Handle "Whole Word" conversion for Updates
+        if (!isRegexMode && isWholeWord) {
+            payload.regexPattern = `(?i)\\b${formData.keyword.trim()}\\b`;
+            payload.keyword = null;
+        } else if (isRegexMode) {
+            payload.keyword = null;
+        } else {
+            payload.regexPattern = null;
         }
 
         if (editingRuleId) {
-            updateRule.mutate({ id: editingRuleId, data: formData });
+            updateRule.mutate({ id: editingRuleId, data: payload });
         } else {
             createRule.mutate();
         }
@@ -170,6 +191,18 @@ export function useRuleActions() {
         });
         setEditingRuleId(rule.id);
         setIsRegexMode(!!rule.regexPattern);
+        // Detect if it was saved as a Whole Word regex (starts with (?i)\b and ends with \b)
+        const isWholeWordRegex = rule.regexPattern && rule.regexPattern.startsWith("(?i)\\b") && rule.regexPattern.endsWith("\\b");
+
+        if (isWholeWordRegex) {
+            setIsRegexMode(false); // Show as simple mode to the user
+            setIsWholeWord(true);
+            // Extract the keyword back out
+            const extracted = rule.regexPattern.replace("(?i)\\b", "").replace("\\b", "");
+            setFormData(prev => ({ ...prev, keyword: extracted, regexPattern: "" }));
+        } else {
+            setIsWholeWord(false);
+        }
         setIsDialogOpen(true);
     };
 
@@ -192,12 +225,14 @@ export function useRuleActions() {
         });
         setEditingRuleId(null); // Ensure we are creating a new rule, not editing an old one
         setIsRegexMode(false);
+        setIsWholeWord(true); // Default to Whole Word for safety when creating from transaction
         setIsDialogOpen(true);
     };
 
     const handleCloseDialog = () => {
         setIsDialogOpen(false);
         setIsRegexMode(false);
+        setIsWholeWord(false);
         setEditingRuleId(null);
         setFormData({ keyword: "", regexPattern: "", categoryId: "", renamedTitle: "", financial_priority: "wants" });
     };
@@ -211,6 +246,7 @@ export function useRuleActions() {
         isDialogOpen, setIsDialogOpen,
         selectedIds, setSelectedIds,
         isRegexMode, setIsRegexMode,
+        isWholeWord, setIsWholeWord,
         editingRuleId,
         formData, setFormData,
 
