@@ -13,7 +13,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
         let phase = 'launch'; // launch -> explode -> fall -> reform -> exit
         let particles = [];
         let trails = [];
-        let ghostY = 220; // Start off-screen bottom
+        let ghostY = canvas.height + 50; // Start off-screen bottom (Dynamic)
         let ghostAlpha = 1;
         let ghostRotation = 0;
 
@@ -84,7 +84,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
 
                     // Add Rainbow Trail
                     trails.push({ x: centerX, y: ghostY + 50, color: overrideColor, size: 25 });
-                    if (trails.length > 15) trails.shift();
+                    if (trails.length > 20) trails.shift();
 
                     // Draw Trail
                     trails.forEach((t, i) => {
@@ -95,7 +95,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                         ctx.fill();
                     });
 
-                    if (ghostY < 60) phase = 'explode';
+                    if (ghostY < height * 0.25) phase = 'explode'; // Explode at 25% height
                 }
 
                 // 2. EXPLODE (Glitter Bomb)
@@ -107,8 +107,8 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                             particles.push({
                                 x: centerX,
                                 y: ghostY,
-                                vx: (Math.random() - 0.5) * 75, // HUGE spread to reach edges
-                                vy: (Math.random() - 0.5) * 75 - 5,
+                                vx: (Math.random() - 0.5) * 50, // WIDER EXPLOSION (Range)
+                                vy: (Math.random() - 0.5) * 50 - 10, // Higher jump
                                 color: `hsl(${Math.random() * 360}, 100%, 60%)`,
                                 life: 1.0,
                                 type: 'spark' // All sparks for fireworks look
@@ -125,12 +125,12 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                     let activeParticles = 0;
                     particles.forEach(p => {
                         // Move slower (0.6 multiplier) for "Grand" feeling
-                        p.x += p.vx * 0.4;
+                        p.x += p.vx * 0.5; // SLOW MOTION FACTOR (Lower = Slower)
                         p.y += p.vy * 0.5;
 
                         // Physics
                         p.vy += 0.15; // Very Low Gravity (Floaty)
-                        p.vx *= 0.96; // Low Air resistance
+                        p.vx *= 0.95; // Air resistance
                         p.life -= 0.008; // Very Slow fade
 
                         if (p.life > 0) activeParticles++;
@@ -154,7 +154,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                     // Transition when particles hit bottom
                     if (particles.every(p => p.y > height || p.life <= 0)) {
                         phase = 'reform';
-                        ghostY = height - 60; // Position at bottom
+                        ghostY = height - 60; // Float near bottom
                         ghostAlpha = 0;
                         ghostRotation = 0;
                         particles = []; // Clear
@@ -177,9 +177,9 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 // 5. EXIT (Drop down)
                 else if (phase === 'exit') {
                     ghostY += 5;
-                    if (ghostY > height + 60) {
+                    if (ghostY > height + 100) {
                         phase = 'launch'; // RESET LOOP
-                        ghostY = height + 60;
+                        ghostY = height + 100;
                     }
                 }
 
@@ -351,8 +351,9 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded-xl border border-slate-800 transition-colors duration-500">
-            <canvas ref={canvasRef} width={200} height={200} />
+        <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded-xl border border-slate-800 transition-colors duration-500 w-full overflow-hidden">
+            {/* Canvas Resolution increased and set to w-full to fill container */}
+            <canvas ref={canvasRef} width={400} height={350} className="w-full h-auto max-w-[400px]" />
             <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest transition-all">
                 {getStatusText()}
             </p>
