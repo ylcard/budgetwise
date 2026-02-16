@@ -41,7 +41,6 @@ import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns"; // Added startOfMonth/endOfMonth
 import { VelocityWidget } from "../components/ui/VelocityWidget";
-import { BudgetAvatar } from "../components/ui/BudgetAvatar";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -218,13 +217,6 @@ export default function Dashboard() {
         return () => clearFabButtons();
     }, [fabButtons, setFabButtons, clearFabButtons]);
 
-    // Calculate Health for the Avatar (0.0 to 1.0)
-    const budgetHealth = useMemo(() => {
-        if (!currentMonthIncome || currentMonthIncome === 0) return 0.5; // Neutral start
-        const ratio = currentMonthExpenses / currentMonthIncome;
-        return Math.max(0, Math.min(1, 1 - ratio));
-    }, [currentMonthIncome, currentMonthExpenses]);
-
     // Combine loading states. The dashboard summary relies heavily on transactions and categories.
     const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
 
@@ -244,7 +236,12 @@ export default function Dashboard() {
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
                         {/* INNOVATION: Velocity Widget at the top */}
-                        <VelocityWidget />
+                        <VelocityWidget
+                            transactions={transactions}
+                            currency={settings?.baseCurrency || 'USD'}
+                            selectedMonth={selectedMonth}
+                            selectedYear={selectedYear}
+                        />
                         {isMobile ? (
                             <MobileRemainingBudgetCard
                                 breakdown={detailedBreakdown}
@@ -313,7 +310,6 @@ export default function Dashboard() {
 
                     {/* DESKTOP PLACEMENT: Right side of Hero */}
                     <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
-                        <BudgetAvatar health={budgetHealth} />
                         <UpcomingTransactions
                             recurringWithStatus={recurringWithStatus}
                             onMarkPaid={handleMarkPaid}
