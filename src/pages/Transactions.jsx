@@ -30,347 +30,358 @@ import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 
 export default function TransactionsLayout() {
-  const { user } = useSettings();
-  const location = useLocation();
+    const { user } = useSettings();
+    const location = useLocation();
 
-  // Shared Modals State
-  const [showAddIncome, setShowAddIncome] = useState(false);
-  const [showAddExpense, setShowAddExpense] = useState(false);
-  const [showImportWizard, setShowImportWizard] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState(null); // ADDED
+    // Shared Modals State
+    const [showAddIncome, setShowAddIncome] = useState(false);
+    const [showAddExpense, setShowAddExpense] = useState(false);
+    const [showImportWizard, setShowImportWizard] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState(null); // ADDED
 
-  // Data for Modals
-  const { transactions } = useTransactions();
-  const { categories } = useMergedCategories();
-  const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
+    // Data for Modals
+    const { transactions } = useTransactions();
+    const { categories } = useMergedCategories();
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
-  const { handleSubmit, isSubmitting } = useTransactionActions({
-    onSuccess: () => {
-      setShowAddIncome(false);
-      setShowAddExpense(false);
-      setEditingTransaction(null);
-    }
-  });
+    const { handleSubmit, isSubmitting } = useTransactionActions({
+        onSuccess: () => {
+            setShowAddIncome(false);
+            setShowAddExpense(false);
+            setEditingTransaction(null);
+        }
+    });
 
-  // ADDED: Custom submit wrapper to pass the editing context
-  const handleFormSubmit = (data) => {
-    // The hook expects (data, existingEntity) for updates
-    handleSubmit(data, editingTransaction);
-  };
+    // ADDED: Custom submit wrapper to pass the editing context
+    const handleFormSubmit = (data) => {
+        // The hook expects (data, existingEntity) for updates
+        handleSubmit(data, editingTransaction);
+    };
 
-  return (
-    <>
-      <div className="min-h-screen p-2 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-4">
-          <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 px-2">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold">Transactions</h1>
-              <p className="text-xs text-muted-foreground">Monitor and automate your finances</p>
+    return (
+        <>
+            <div className="min-h-screen p-2 md:p-8">
+                <div className="max-w-6xl mx-auto space-y-4">
+                    <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 px-2">
+                        <div>
+                            <h1 className="text-2xl md:text-4xl font-bold">Transactions</h1>
+                            <p className="text-xs text-muted-foreground">Monitor and automate your finances</p>
+                        </div>
+                    </div>
+
+                    {/* Nested Content: History or Recurring */}
+                    <Outlet context={{ setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard }} />
+                </div>
             </div>
-          </div>
 
-          {/* Nested Content: History or Recurring */}
-          <Outlet context={{ setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard }} />
-        </div>
-      </div>
-
-      {/* Global Modals Container */}
-      <QuickAddIncome
-        open={showAddIncome}
-        onOpenChange={(open) => { setShowAddIncome(open); if (!open) setEditingTransaction(null); }}
-        onSubmit={handleFormSubmit}
-        isSubmitting={isSubmitting}
-        renderTrigger={false}
-        transaction={editingTransaction}
-      />
-      <QuickAddTransaction
-        open={showAddExpense}
-        onOpenChange={(open) => { setShowAddExpense(open); if (!open) setEditingTransaction(null); }}
-        categories={categories}
-        customBudgets={allCustomBudgets}
-        onSubmit={handleFormSubmit}
-        isSubmitting={isSubmitting}
-        transactions={transactions}
-        renderTrigger={false}
-        transaction={editingTransaction}
-      />
-      <ImportWizardDialog
-        open={showImportWizard}
-        onOpenChange={setShowImportWizard}
-        renderTrigger={false}
-      />
-    </>
-  );
+            {/* Global Modals Container */}
+            <QuickAddIncome
+                open={showAddIncome}
+                onOpenChange={(open) => { setShowAddIncome(open); if (!open) setEditingTransaction(null); }}
+                onSubmit={handleFormSubmit}
+                isSubmitting={isSubmitting}
+                renderTrigger={false}
+                transaction={editingTransaction}
+            />
+            <QuickAddTransaction
+                open={showAddExpense}
+                onOpenChange={(open) => { setShowAddExpense(open); if (!open) setEditingTransaction(null); }}
+                categories={categories}
+                customBudgets={allCustomBudgets}
+                onSubmit={handleFormSubmit}
+                isSubmitting={isSubmitting}
+                transactions={transactions}
+                renderTrigger={false}
+                transaction={editingTransaction}
+            />
+            <ImportWizardDialog
+                open={showImportWizard}
+                onOpenChange={setShowImportWizard}
+                renderTrigger={false}
+            />
+        </>
+    );
 }
 
 export function TransactionHistory() {
-  const { user } = useSettings();
-  const { confirmAction } = useConfirm();
-  const queryClient = useQueryClient();
+    const { user } = useSettings();
+    const { confirmAction } = useConfirm();
+    const queryClient = useQueryClient();
 
-  // FAB Logic moved to leaf component
-  const { setFabButtons } = useFAB();
-  const { setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard } = useOutletContext() || {};
+    // FAB Logic moved to leaf component
+    const { setFabButtons } = useFAB();
+    const { setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard } = useOutletContext() || {};
 
-  // History State
-  const [filters, setFilters] = useState({
-    search: '', type: 'all', category: [], paymentStatus: 'all',
-    cashStatus: 'all', financialPriority: 'all', budgetId: 'all',
-    startDate: usePeriod().monthStart, endDate: usePeriod().monthEnd, minAmount: '', maxAmount: ''
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [showMassEdit, setShowMassEdit] = useState(false); // NEW STATE
+    // History State
+    const [filters, setFilters] = useState({
+        search: '', type: 'all', category: [], paymentStatus: 'all',
+        cashStatus: 'all', financialPriority: 'all', budgetId: 'all',
+        startDate: usePeriod().monthStart, endDate: usePeriod().monthEnd, minAmount: '', maxAmount: ''
+    });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [showMassEdit, setShowMassEdit] = useState(false); // NEW STATE
 
-  // Hooks
-  const { transactions, isLoading } = useTransactions(filters.startDate, filters.endDate);
-  const { categories } = useMergedCategories();
-  const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
-  const { filteredTransactions } = useAdvancedTransactionFiltering(transactions, filters, setFilters);
-  const { handleDelete } = useTransactionActions({});
+    // Hooks
+    const { transactions, isLoading } = useTransactions(filters.startDate, filters.endDate);
+    const { categories } = useMergedCategories();
+    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
+    const { filteredTransactions } = useAdvancedTransactionFiltering(transactions, filters, setFilters);
+    const { handleDelete } = useTransactionActions({});
 
-  // Logic
-  const sortedTransactions = useMemo(() => {
-    const sortableItems = [...filteredTransactions];
-    if (sortConfig.key) {
-      const categoryMap = {};
-      if (sortConfig.key === 'category') categories.forEach(c => categoryMap[c.id] = c.name.toLowerCase());
-      sortableItems.sort((a, b) => {
-        let aValue = a[sortConfig.key], bValue = b[sortConfig.key];
-        if (sortConfig.key === 'amount') { aValue = Number(aValue); bValue = Number(bValue); }
-        else if (sortConfig.key === 'category') { aValue = categoryMap[a.category_id] || ''; bValue = categoryMap[b.category_id] || ''; }
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    return sortableItems;
-  }, [filteredTransactions, sortConfig, categories]);
+    // Reset pagination proactively when filters change to prevent "stale page" flash
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters]);
 
-  const paginatedTransactions = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedTransactions.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedTransactions, currentPage, itemsPerPage]);
+    // Logic
+    const sortedTransactions = useMemo(() => {
+        const sortableItems = [...filteredTransactions];
+        if (sortConfig.key) {
+            const categoryMap = {};
+            if (sortConfig.key === 'category') categories.forEach(c => categoryMap[c.id] = c.name.toLowerCase());
+            sortableItems.sort((a, b) => {
+                let aValue = a[sortConfig.key], bValue = b[sortConfig.key];
+                if (sortConfig.key === 'amount') { aValue = Number(aValue); bValue = Number(bValue); }
+                else if (sortConfig.key === 'category') { aValue = categoryMap[a.category_id] || ''; bValue = categoryMap[b.category_id] || ''; }
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [filteredTransactions, sortConfig, categories]);
 
-  const handleRefresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-  };
+    const paginatedTransactions = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedTransactions.slice(startIndex, startIndex + itemsPerPage);
+    }, [sortedTransactions, currentPage, itemsPerPage]);
 
-  const handleEdit = (transaction) => {
-    if (setEditingTransaction) setEditingTransaction(transaction);
-    if (transaction.type === 'income' && setShowAddIncome) setShowAddIncome(true);
-    else if (setShowAddExpense) setShowAddExpense(true);
-  };
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+    };
 
-  const handleDeleteSelected = async () => {
-    if (selectedIds.size === 0) return;
-    confirmAction("Delete Transactions", `Delete ${selectedIds.size} items?`, async () => {
-      setIsBulkDeleting(true);
-      try {
-        const idsToDelete = Array.from(selectedIds);
-        const chunks = chunkArray(idsToDelete, 50);
-        for (const chunk of chunks) await base44.entities.Transaction.deleteMany({ id: { $in: chunk } });
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-        showToast({ title: "Success", description: `Deleted ${selectedIds.size} transactions.` });
-        setSelectedIds(new Set());
-      } catch (e) { showToast({ title: "Error", variant: "destructive" }); }
-      finally { setIsBulkDeleting(false); }
-    }, { destructive: true });
-  };
+    const handleEdit = (transaction) => {
+        if (setEditingTransaction) setEditingTransaction(transaction);
+        if (transaction.type === 'income' && setShowAddIncome) setShowAddIncome(true);
+        else if (setShowAddExpense) setShowAddExpense(true);
+    };
 
-  // NEW: Handle Mass Update
-  const handleMassUpdate = async (updates) => {
-    try {
-      const idsToUpdate = Array.from(selectedIds);
+    const handleDeleteSelected = async () => {
+        if (selectedIds.size === 0) return;
+        confirmAction("Delete Transactions", `Delete ${selectedIds.size} items?`, async () => {
+            setIsBulkDeleting(true);
+            try {
+                const idsToDelete = Array.from(selectedIds);
+                const chunks = chunkArray(idsToDelete, 50);
+                for (const chunk of chunks) await base44.entities.Transaction.deleteMany({ id: { $in: chunk } });
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+                showToast({ title: "Success", description: `Deleted ${selectedIds.size} transactions.` });
+                setSelectedIds(new Set());
+            } catch (e) { showToast({ title: "Error", variant: "destructive" }); }
+            finally { setIsBulkDeleting(false); }
+        }, { destructive: true });
+    };
 
-      // Process in chunks to avoid overwhelming the API
-      const chunks = chunkArray(idsToUpdate, 50);
-      for (const chunk of chunks) {
-        // Using updateMany if available, or Promise.all loop
-        await Promise.all(chunk.map(id => base44.entities.Transaction.update(id, updates)));
-      }
+    // NEW: Handle Mass Update
+    const handleMassUpdate = async (updates) => {
+        try {
+            const idsToUpdate = Array.from(selectedIds);
 
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-      showToast({ title: "Success", description: `Updated ${selectedIds.size} transactions.` });
-      setSelectedIds(new Set()); // Clear selection
-      setShowMassEdit(false);
-    } catch (e) {
-      showToast({ title: "Update Failed", description: "Could not update some transactions.", variant: "destructive" });
-    }
-  };
+            // Process in chunks to avoid overwhelming the API
+            const chunks = chunkArray(idsToUpdate, 50);
+            for (const chunk of chunks) {
+                // Using updateMany if available, or Promise.all loop
+                await Promise.all(chunk.map(id => base44.entities.Transaction.update(id, updates)));
+            }
 
-  // ADDED: Define FAB buttons here
-  const historyFab = useMemo(() => [
-    {
-      key: 'import',
-      label: 'Import Data',
-      icon: 'FileUp',
-      variant: 'primary',
-      onClick: () => setShowImportWizard(true) // Assumes these setters are available or passed via context
-    },
-    {
-      key: 'expense',
-      label: 'Add Expense',
-      icon: 'MinusCircle',
-      variant: 'warning',
-      onClick: () => setShowAddExpense(true)
-    },
-    {
-      key: 'income',
-      label: 'Add Income',
-      icon: 'PlusCircle',
-      variant: 'success',
-      onClick: () => setShowAddIncome(true)
-    }
-  ], [setShowImportWizard, setShowAddExpense, setShowAddIncome]);
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            showToast({ title: "Success", description: `Updated ${selectedIds.size} transactions.` });
+            setSelectedIds(new Set()); // Clear selection
+            setShowMassEdit(false);
+        } catch (e) {
+            showToast({ title: "Update Failed", description: "Could not update some transactions.", variant: "destructive" });
+        }
+    };
 
-  useEffect(() => {
-    setFabButtons(historyFab);
-    // Removing setFabButtons from dependency array to prevent loops
-  }, [historyFab]);
+    // ADDED: Define FAB buttons here
+    const historyFab = useMemo(() => [
+        {
+            key: 'import',
+            label: 'Import Data',
+            icon: 'FileUp',
+            variant: 'primary',
+            onClick: () => setShowImportWizard(true) // Assumes these setters are available or passed via context
+        },
+        {
+            key: 'expense',
+            label: 'Add Expense',
+            icon: 'MinusCircle',
+            variant: 'warning',
+            onClick: () => setShowAddExpense(true)
+        },
+        {
+            key: 'income',
+            label: 'Add Income',
+            icon: 'PlusCircle',
+            variant: 'success',
+            onClick: () => setShowAddIncome(true)
+        }
+    ], [setShowImportWizard, setShowAddExpense, setShowAddIncome]);
 
-  return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="space-y-4 mt-0">
-        <TransactionFilters
-          filters={filters} setFilters={setFilters}
-          categories={categories} allCustomBudgets={allCustomBudgets}
-        />
-        <TransactionList
-          transactions={paginatedTransactions} categories={categories}
-          onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading}
-          customBudgets={allCustomBudgets}
-          monthStart={usePeriod().monthStart} monthEnd={usePeriod().monthEnd}
-          currentPage={currentPage} totalPages={Math.ceil(filteredTransactions.length / itemsPerPage)}
-          onPageChange={setCurrentPage} itemsPerPage={itemsPerPage} onItemsPerPageChange={setItemsPerPage}
-          totalItems={filteredTransactions.length}
-          selectedIds={selectedIds}
-          onToggleSelection={(id, s) => { const n = new Set(selectedIds); s ? n.add(id) : n.delete(id); setSelectedIds(n); }}
-          onSelectAll={(ids, s) => { const n = new Set(selectedIds); ids.forEach(id => s ? n.add(id) : n.delete(id)); setSelectedIds(n); }}
-          onClearSelection={() => setSelectedIds(new Set())}
-          onDeleteSelected={handleDeleteSelected} isBulkDeleting={isBulkDeleting}
-          onEditSelected={() => setShowMassEdit(true)} // Pass the handler
-          sortConfig={sortConfig} onSort={setSortConfig}
-        />
+    useEffect(() => {
+        setFabButtons(historyFab);
+        // Removing setFabButtons from dependency array to prevent loops
+    }, [historyFab]);
 
-        <MassEditDrawer
-          open={showMassEdit}
-          onOpenChange={setShowMassEdit}
-          selectedCount={selectedIds.size}
-          onSave={handleMassUpdate}
-          categories={categories}
-          customBudgets={allCustomBudgets}
-        />
-      </div>
-    </PullToRefresh>
-  );
+    return (
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="space-y-4 mt-0">
+                <TransactionFilters
+                    filters={filters} setFilters={setFilters}
+                    categories={categories} allCustomBudgets={allCustomBudgets}
+                />
+                <TransactionList
+                    transactions={paginatedTransactions} categories={categories}
+                    onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading}
+                    customBudgets={allCustomBudgets}
+                    monthStart={usePeriod().monthStart} monthEnd={usePeriod().monthEnd}
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(filteredTransactions.length / itemsPerPage) || 1}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={(val) => {
+                        setItemsPerPage(val);
+                        setCurrentPage(1);
+                    }}
+                    totalItems={filteredTransactions.length}
+                    selectedIds={selectedIds}
+                    onToggleSelection={(id, s) => { const n = new Set(selectedIds); s ? n.add(id) : n.delete(id); setSelectedIds(n); }}
+                    onSelectAll={(ids, s) => { const n = new Set(selectedIds); ids.forEach(id => s ? n.add(id) : n.delete(id)); setSelectedIds(n); }}
+                    onClearSelection={() => setSelectedIds(new Set())}
+                    onDeleteSelected={handleDeleteSelected} isBulkDeleting={isBulkDeleting}
+                    onEditSelected={() => setShowMassEdit(true)} // Pass the handler
+                    sortConfig={sortConfig} onSort={setSortConfig}
+                />
+
+                <MassEditDrawer
+                    open={showMassEdit}
+                    onOpenChange={setShowMassEdit}
+                    selectedCount={selectedIds.size}
+                    onSave={handleMassUpdate}
+                    categories={categories}
+                    customBudgets={allCustomBudgets}
+                />
+            </div>
+        </PullToRefresh>
+    );
 }
 
 export function RecurringTransactions() {
-  const { user } = useSettings();
-  const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
-  const { setFabButtons, clearFabButtons } = useFAB();
-  const [showRecurringForm, setShowRecurringForm] = useState(false);
-  const [editingRecurring, setEditingRecurring] = useState(null);
-  const [isProcessingRecurring, setIsProcessingRecurring] = useState(false);
+    const { user } = useSettings();
+    const queryClient = useQueryClient();
+    const isMobile = useIsMobile();
+    const { setFabButtons, clearFabButtons } = useFAB();
+    const [showRecurringForm, setShowRecurringForm] = useState(false);
+    const [editingRecurring, setEditingRecurring] = useState(null);
+    const [isProcessingRecurring, setIsProcessingRecurring] = useState(false);
 
-  const { recurringTransactions, isLoading } = useRecurringTransactions(user);
-  const { categories } = useMergedCategories();
-  const { handleCreate, handleUpdate, handleDelete, handleToggleActive, isSubmitting } = useRecurringTransactionActions(user);
+    const { recurringTransactions, isLoading } = useRecurringTransactions(user);
+    const { categories } = useMergedCategories();
+    const { handleCreate, handleUpdate, handleDelete, handleToggleActive, isSubmitting } = useRecurringTransactionActions(user);
 
-  const handleProcessRecurring = useCallback(async () => {
-    setIsProcessingRecurring(true);
-    const toastId = toast.loading('Processing...');
-    try {
-      const userLocalDate = format(new Date(), 'yyyy-MM-dd');
-      const response = await base44.functions.invoke('processRecurringTransactions', { userLocalDate });
-      if (response.data.success) {
-        toast.success(`Processed ${response.data.processed}`, { id: toastId });
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-      } else toast.error('Failed', { id: toastId });
-    } catch (e) { toast.error('Error', { id: toastId }); }
-    finally { setIsProcessingRecurring(false); }
-  }, [queryClient]);
+    const handleProcessRecurring = useCallback(async () => {
+        setIsProcessingRecurring(true);
+        const toastId = toast.loading('Processing...');
+        try {
+            const userLocalDate = format(new Date(), 'yyyy-MM-dd');
+            const response = await base44.functions.invoke('processRecurringTransactions', { userLocalDate });
+            if (response.data.success) {
+                toast.success(`Processed ${response.data.processed}`, { id: toastId });
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            } else toast.error('Failed', { id: toastId });
+        } catch (e) { toast.error('Error', { id: toastId }); }
+        finally { setIsProcessingRecurring(false); }
+    }, [queryClient]);
 
-  useEffect(() => {
-    const buttons = [{
-      key: 'add-recurring', label: 'Add Recurring', icon: 'PlusCircle', variant: 'create',
-      onClick: () => { setEditingRecurring(null); setShowRecurringForm(true); }
-    }];
-    if (user?.role === 'admin') buttons.push({
-      key: 'process', label: 'Process Now', icon: 'Play', variant: 'info',
-      onClick: handleProcessRecurring, disabled: isProcessingRecurring
-    });
-    setFabButtons(buttons);
-    return () => clearFabButtons();
-  }, [user, handleProcessRecurring, isProcessingRecurring, setFabButtons, clearFabButtons]);
+    useEffect(() => {
+        const buttons = [{
+            key: 'add-recurring', label: 'Add Recurring', icon: 'PlusCircle', variant: 'create',
+            onClick: () => { setEditingRecurring(null); setShowRecurringForm(true); }
+        }];
+        if (user?.role === 'admin') buttons.push({
+            key: 'process', label: 'Process Now', icon: 'Play', variant: 'info',
+            onClick: handleProcessRecurring, disabled: isProcessingRecurring
+        });
+        setFabButtons(buttons);
+        return () => clearFabButtons();
+    }, [user, handleProcessRecurring, isProcessingRecurring, setFabButtons, clearFabButtons]);
 
-  const handleRecurringSubmit = (data) => {
-    if (editingRecurring) handleUpdate(editingRecurring.id, data);
-    else handleCreate(data);
-    setShowRecurringForm(false);
-    setEditingRecurring(null);
-  };
+    const handleRecurringSubmit = (data) => {
+        if (editingRecurring) handleUpdate(editingRecurring.id, data);
+        else handleCreate(data);
+        setShowRecurringForm(false);
+        setEditingRecurring(null);
+    };
 
-  const handleRefresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
-  };
+    const handleRefresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
+    };
 
-  return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="space-y-4">
-        <RecurringTransactionList
-          recurringTransactions={recurringTransactions}
-          categories={categories}
-          onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
-          onDelete={handleDelete}
-          onToggleActive={handleToggleActive}
-          isLoading={isLoading}
-        />
-      </div>
-      {isMobile ? (
-        <Drawer open={showRecurringForm} onOpenChange={setShowRecurringForm}>
-          <DrawerContent className="max-h-[92vh] z-[500] bg-background">
-            <DrawerHeader className="text-left">
-              <DrawerTitle className="text-xl font-bold px-4">
-                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
-              </DrawerTitle>
-            </DrawerHeader>
-            <div className="p-6 pt-0 overflow-y-auto pb-24">
-              <RecurringTransactionForm
-                initialData={editingRecurring}
-                categories={categories}
-                onSubmit={handleRecurringSubmit}
-                onCancel={() => setShowRecurringForm(false)}
-                isSubmitting={isSubmitting}
-              />
+    return (
+        <PullToRefresh onRefresh={handleRefresh}>
+            <div className="space-y-4">
+                <RecurringTransactionList
+                    recurringTransactions={recurringTransactions}
+                    categories={categories}
+                    onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
+                    onDelete={handleDelete}
+                    onToggleActive={handleToggleActive}
+                    isLoading={isLoading}
+                />
             </div>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={showRecurringForm} onOpenChange={setShowRecurringForm}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle className="text-xl font-bold">
-                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="p-6 max-h-[85vh] overflow-y-auto pb-6">
-              <RecurringTransactionForm
-                initialData={editingRecurring}
-                categories={categories}
-                onSubmit={handleRecurringSubmit}
-                onCancel={() => setShowRecurringForm(false)}
-                isSubmitting={isSubmitting}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </PullToRefresh>
-  );
+            {isMobile ? (
+                <Drawer open={showRecurringForm} onOpenChange={setShowRecurringForm}>
+                    <DrawerContent className="max-h-[92vh] z-[500] bg-background">
+                        <DrawerHeader className="text-left">
+                            <DrawerTitle className="text-xl font-bold px-4">
+                                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
+                            </DrawerTitle>
+                        </DrawerHeader>
+                        <div className="p-6 pt-0 overflow-y-auto pb-24">
+                            <RecurringTransactionForm
+                                initialData={editingRecurring}
+                                categories={categories}
+                                onSubmit={handleRecurringSubmit}
+                                onCancel={() => setShowRecurringForm(false)}
+                                isSubmitting={isSubmitting}
+                            />
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showRecurringForm} onOpenChange={setShowRecurringForm}>
+                    <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+                        <DialogHeader className="p-6 pb-0">
+                            <DialogTitle className="text-xl font-bold">
+                                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="p-6 max-h-[85vh] overflow-y-auto pb-6">
+                            <RecurringTransactionForm
+                                initialData={editingRecurring}
+                                categories={categories}
+                                onSubmit={handleRecurringSubmit}
+                                onCancel={() => setShowRecurringForm(false)}
+                                isSubmitting={isSubmitting}
+                            />
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+        </PullToRefresh>
+    );
 }
