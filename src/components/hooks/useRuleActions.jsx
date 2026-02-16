@@ -36,6 +36,7 @@ export function useRuleActions() {
     const createRule = useMutation({
         mutationFn: () => base44.entities.CategoryRule.create({
             created_by: user.email,
+            user_email: user.email,
             categoryId: formData.categoryId,
             keyword: isRegexMode ? null : formData.keyword,
             regexPattern: isRegexMode ? formData.regexPattern : null,
@@ -55,7 +56,10 @@ export function useRuleActions() {
     });
 
     const updateRule = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, data),
+        mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, {
+            ...data,
+            user_email: user.email
+        }),
         onSuccess: () => {
             invalidate();
             if (isDialogOpen) handleCloseDialog();
