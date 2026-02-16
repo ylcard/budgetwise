@@ -39,9 +39,10 @@ import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns"; // Added startOfMonth/endOfMonth
+import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { BudgetAvatar } from "../components/ui/BudgetAvatar";
+import { calculateFinancialHealth } from "../components/utils/financialHealthAlgorithms";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -76,6 +77,16 @@ export default function Dashboard() {
         [allCustomBudgets]);
 
     const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
+
+    // --- INTELLIGENT HEALTH DATA FETCHING ---
+    // We fetch 6 months back from the SELECTED month to give the algorithm context
+    const historyStart = useMemo(() => {
+        const d = new Date(selectedYear, selectedMonth, 1);
+        return format(subMonths(d, 6), 'yyyy-MM-dd');
+    }, [selectedMonth, selectedYear]);
+
+    // Fetch historical data for the algorithm
+    const { transactions: fullHistory, isLoading: historyLoading } = useTransactions(historyStart, monthEnd);
 
     useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
 
@@ -218,15 +229,27 @@ export default function Dashboard() {
         return () => clearFabButtons();
     }, [fabButtons, setFabButtons, clearFabButtons]);
 
-    // Calculate Health for the Avatar (0.0 to 1.0)
+    // --- CALCULATE REAL FINANCIAL HEALTH ---
     const budgetHealth = useMemo(() => {
-        if (!currentMonthIncome || currentMonthIncome === 0) return 0.5; // Neutral start
-        const ratio = currentMonthExpenses / currentMonthIncome;
-        return Math.max(0, Math.min(1, 1 - ratio));
-    }, [currentMonthIncome, currentMonthExpenses]);
+        if (transactionsLoading || historyLoading) return 0.8; // Default to happy while loading
+
+        const healthData = calculateFinancialHealth(
+            transactions,
+            fullHistory || [],
+            currentMonthIncome,
+            monthStart,
+            settings,
+            goals,
+            categories,
+            allCustomBudgets
+        );
+
+        // Normalize 0-100 score to 0.0-1.0 for the Avatar
+        return (healthData?.totalScore || 50) / 100;
+    }, [transactions, fullHistory, currentMonthIncome, monthStart, settings, goals, categories, allCustomBudgets, transactionsLoading, historyLoading]);
 
     // Combine loading states. The dashboard summary relies heavily on transactions and categories.
-    const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
+    const isLoading = transactionsLoading || categoriesLoading || recurringLoading || historyLoading;
 
     return (
         <div className="min-h-screen p-4 md:p-8 relative">
