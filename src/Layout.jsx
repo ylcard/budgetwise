@@ -36,6 +36,7 @@ import GlobalFAB from "@/components/ui/GlobalFAB"; // ADDED 04-Feb-2026: Floatin
 import { Switch } from "@/components/ui/switch"; // Assuming you have this shadcn component
 import { useTheme } from "next-themes";
 import { BudgetAvatar } from "./components/ui/BudgetAvatar";
+import { HealthProvider, useHealth } from "./components/utils/HealthContext";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
@@ -43,6 +44,7 @@ const LayoutContent = ({ children }) => {
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const { theme, setTheme } = useTheme();
     const { logout } = useAuth();
+    const { budgetHealth } = useHealth();
 
     // ADDED 14-Feb-2026: Initialize privacy signal enforcement on mount
     useEffect(() => {
@@ -241,7 +243,7 @@ const LayoutContent = ({ children }) => {
                 <main className="flex-1 flex flex-col relative">
                     {/* Global Floating Casper */}
                     <div className="fixed bottom-24 right-6 z-[60] pointer-events-none md:bottom-10 md:right-10">
-                        <BudgetAvatar health={0.8} size={80} showText={false} isFloating={true} />
+                        <BudgetAvatar health={budgetHealth} size={80} showText={false} isFloating={true} />
                     </div>
                     <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
                         <RouteTransition>
@@ -338,14 +340,16 @@ export default function Layout({ children }) {
     return (
         <SettingsProvider>
             <PeriodProvider>
-                <ConfirmDialogProvider>
-                    <TutorialProvider>
-                        <FABProvider>
-                            <LayoutContent>{children}</LayoutContent>
-                            <TutorialOverlay />
-                        </FABProvider>
-                    </TutorialProvider>
-                </ConfirmDialogProvider>
+                <HealthProvider>
+                    <ConfirmDialogProvider>
+                        <TutorialProvider>
+                            <FABProvider>
+                                <LayoutContent>{children}</LayoutContent>
+                                <TutorialOverlay />
+                            </FABProvider>
+                        </TutorialProvider>
+                    </ConfirmDialogProvider>
+                </HealthProvider>
             </PeriodProvider>
         </SettingsProvider>
     );
