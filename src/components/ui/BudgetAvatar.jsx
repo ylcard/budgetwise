@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloating = false }) => {
+export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloating = false }) => {
     const canvasRef = useRef(null);
     const [isVisible, setIsVisible] = useState(true);
-    const ghostPos = useRef({ x: 0, y: 0 });
 
     const [position, setPosition] = useState({
         x: window.innerWidth - 250, // Initial safe position
@@ -58,12 +57,16 @@ export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloa
             // Add scroll offset for absolute positioning check
             const y = (e.clientY || (e.touches && e.touches[0].clientY)) + window.scrollY;
 
-            // Check distance against current visual center
-            const dx = x - ghostPos.current.x;
-            const dy = y - ghostPos.current.y;
+            // Use TARGET position state, not stale ref.
+            // This prevents him from getting scared of the spot he JUST left.
+            const centerX = position.x + size / 2;
+            const centerY = position.y + size / 2;
+            const dx = x - centerX;
+            const dy = y - centerY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < 150 && isVisible) {
+            // Increased trigger distance for the Big Boy size
+            if (distance < 200 && isVisible) {
                 roam();
             }
         };
@@ -96,16 +99,6 @@ export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloa
             const height = canvas.height;
             const centerX = width / 2;
             const centerY = height / 2;
-
-            // Update ref for proximity checking
-            const rect = canvas.getBoundingClientRect();
-            if (rect) {
-                // Use cached position state for smoother logic, but update exact center relative to canvas
-                ghostPos.current = {
-                    x: rect.left + rect.width / 2 + window.scrollX,
-                    y: rect.top + rect.height / 2 + window.scrollY
-                };
-            }
 
             ctx.clearRect(0, 0, width, height);
 
@@ -424,7 +417,7 @@ export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloa
         render();
 
         return () => cancelAnimationFrame(animationFrameId);
-    }, [health]);
+    }, [health, isVisible]);
 
     const getStatusText = () => {
         if (health >= 0.8) return "FABULOUS ✨";
