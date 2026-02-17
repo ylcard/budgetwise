@@ -44,9 +44,10 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams } from "react-router-dom"; // Added for notification linking
 import { MonthlyRewind } from "../components/dashboard/MonthlyRewind";
-// import { WrappedStory } from "../components/dashboard/WrappedStory";
+import { WrappedStory } from "../components/dashboard/WrappedStory";
 import { notifyMonthlyRewindReady } from "../components/utils/notificationHelpers"; // TEMP: For testing
 import { HealthProvider } from "../components/utils/HealthContext";
+import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -54,6 +55,7 @@ export default function Dashboard() {
     const [quickAddIncomeState, setQuickAddIncomeState] = useState(null); // UPDATED: null | 'new' | templateObject
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const [showImportWizard, setShowImportWizard] = useState(false);
+    const [storyContext, setStoryContext] = useState(null); // { month, year }
     const { setFabButtons, clearFabButtons } = useFAB();
     const [searchParams, setSearchParams] = useSearchParams();
     const [showStory, setShowStory] = useState(false);
@@ -69,6 +71,9 @@ export default function Dashboard() {
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
 
+    // Automated trigger: Only creates a notification if the previous month's story is missing
+    useMonthlyRewindTrigger(user?.email);
+
     // --- NOTIFICATION LISTENER ---
     // Checks if the user arrived via a "Monthly Rewind" notification click
     useEffect(() => {
@@ -77,15 +82,14 @@ export default function Dashboard() {
         const paramYear = searchParams.get("year");
 
         if (isStoryMode && paramMonth && paramYear) {
-            // Switch the dashboard context to the requested month
-            setSelectedMonth(parseInt(paramMonth));
-            setSelectedYear(parseInt(paramYear));
+            // Set story context independently of Dashboard month
+            setStoryContext({ month: parseInt(paramMonth), year: parseInt(paramYear) });
             setShowStory(true);
 
             // Clean the URL so it doesn't reopen on refresh
             setSearchParams({});
         }
-    }, [searchParams, setSelectedMonth, setSelectedYear, setSearchParams]);
+    }, [searchParams, setSearchParams]);
 
     // Data fetching
     // CRITICAL: Extract isLoading states to control the UI transitions
@@ -295,7 +299,11 @@ export default function Dashboard() {
                                 <MonthlyRewind
                                     selectedMonth={selectedMonth}
                                     selectedYear={selectedYear}
-                                    onOpen={() => setShowStory(true)}
+                                    onOpen={() => {
+                                        // Manual trigger: View currently selected month
+                                        setStoryContext({ month: selectedMonth, year: selectedYear });
+                                        setShowStory(true);
+                                    }}
                                 />
 
                                 {/* TEMP: Test Button for Notification Flow */}
@@ -456,6 +464,15 @@ export default function Dashboard() {
                         open={showImportWizard}
                         onOpenChange={setShowImportWizard}
                         renderTrigger={false}
+                    />
+
+                    <WrappedStory
+                        isOpen={showStory}
+                        onClose={() => setShowStory(false)}
+                        month={storyContext?.month}
+                        year={storyContext?.year}
+                        settings={settings}
+                        user={user}
                     />
                 </div>
             </div>
