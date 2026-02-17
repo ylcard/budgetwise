@@ -5,6 +5,7 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
     const canvasRef = useRef(null);
     const fxCanvasRef = useRef(null); // New global canvas for effects
     const [isVisible, setIsVisible] = useState(true);
+    const ghostPos = useRef({ x: 0, y: 0 });
 
     const [position, setPosition] = useState({
         x: window.innerWidth - 250, // Initial safe position
@@ -114,6 +115,15 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
             ctx.clearRect(0, 0, width, height);
             // Clear global effects canvas (or use semi-transparent fill for trails)
             fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+
+            // Update ghostPos so trails/explosions know where to spawn
+            const rect = canvas.getBoundingClientRect();
+            if (rect) {
+                ghostPos.current = {
+                    x: rect.left + rect.width / 2 + window.scrollX,
+                    y: rect.top + rect.height / 2 + window.scrollY
+                };
+            }
 
             // --- STATE DETERMINATION ---
             const isDead = health < 0.15;
