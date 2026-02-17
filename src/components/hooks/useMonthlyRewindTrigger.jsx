@@ -1,17 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { subMonths, getMonth, getYear } from 'date-fns';
 import { notifyMonthlyRewindReady } from '../utils/notificationHelpers';
 import { useNotifications } from './useNotifications';
 
 /**
- * Triggered on app load. Checks if a notification exists for the previous month.
+ * Triggered on Dashboard load. Checks if a notification exists for the previous month.
  * If not, it creates one.
  */
 export const useMonthlyRewindTrigger = (userEmail) => {
-    const { allNotifications } = useNotifications();
+    const { allNotifications, isLoading } = useNotifications();
+    const hasChecked = useRef(false);
 
     useEffect(() => {
-        if (!userEmail || !allNotifications) return;
+        if (!userEmail || isLoading || hasChecked.current) return;
 
         // 1. Identify the month that just ended (e.g., if today is March, check February)
         const lastMonthDate = subMonths(new Date(), 1);
@@ -25,9 +26,11 @@ export const useMonthlyRewindTrigger = (userEmail) => {
             n.metadata?.year === lastMonthYear
         );
 
+        hasChecked.current = true;
+
         // 3. If no notification exists, create it
         if (!exists) {
             notifyMonthlyRewindReady(userEmail, lastMonthIndex, lastMonthYear);
         }
-    }, [userEmail, allNotifications]);
+    }, [userEmail, isLoading]); // Removed allNotifications to break the loop
 };
