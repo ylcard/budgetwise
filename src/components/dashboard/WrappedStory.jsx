@@ -84,19 +84,25 @@ export const WrappedStory = ({
     const { categories: rawCategories } = useMergedCategories();
     const { customBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
 
+    // Filter out the 30-day buffer fetched by useTransactions
+    // We need strictly the transactions for this month's story
+    const storyTransactions = useMemo(() => {
+        return transactions.filter(t => t.date >= monthStart && t.date <= monthEnd);
+    }, [transactions, monthStart, monthEnd]);
+
     // Using raw transactions for calculations instead of the hook which might lean on Budgeted Amounts
     const income = useMonthlyIncome(transactions, month, year);
 
     // Calculate total expenses strictly from transactions
     const expenses = useMemo(() =>
-        transactions
+        storyTransactions
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + Number(t.amount), 0),
-        [transactions]
+        [storyTransactions]
     );
 
     // Get Top 10 based on actuals
-    const topCategories = useActualCategoryStats(transactions, rawCategories);
+    const topCategories = useActualCategoryStats(storyTransactions, rawCategories);
 
     const monthName = useMemo(() =>
         (month !== undefined && year !== undefined) ? format(new Date(year, month), 'MMMM') : '',
