@@ -34,8 +34,18 @@ const useTopMerchant = (transactions) => {
         if (!transactions || transactions.length === 0) return null;
         const map = {};
         transactions.forEach(t => {
-            if (t.type === 'expense') {
-                const name = t.merchant || t.title;
+            // Only count valid expenses (exclude refunds or zero amounts)
+            if (t.type === 'expense' && t.amount > 0) {
+                // Use Merchant field if available, fallback to Title
+                let name = t.merchant || t.title || "Unknown";
+
+                // CLEANUP: Remove common bank junk (e.g. "Payment to", dates, random numbers)
+                // This is a basic cleaner to group "Starbucks 001" and "Starbucks 002"
+                name = name.replace(/\b(POS|DEBIT|CARD|PURCHASE|Payment to|Transfer to)\b/gi, "")
+                    .replace(/[0-9]{2,}/g, "") // Remove long number strings
+                    .replace(/[\*\-]/g, " ")   // Replace special chars with space
+                    .trim();
+
                 map[name] = (map[name] || 0) + Number(t.amount);
             }
         });
@@ -164,7 +174,7 @@ export const WrappedStory = ({
 
             {topMerchant && (
                 <div className="bg-slate-800 p-6 rounded-3xl w-full border border-slate-700">
-                    <p className="text-slate-400 font-medium mb-1">Most visited place</p>
+                    <p className="text-slate-400 font-medium mb-1">Top Expense</p>
                     <h2 className="text-xl font-bold text-white mb-1 truncate">{topMerchant.name}</h2>
                     <p className="text-lg font-mono text-slate-300">{formatCurrency(topMerchant.amount, settings)}</p>
                 </div>
