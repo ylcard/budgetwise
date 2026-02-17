@@ -43,6 +43,9 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 // import { BudgetAvatar } from "../components/ui/BudgetAvatar";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams } from "react-router-dom"; // Added for notification linking
+import { MonthlyRewind } from "../components/dashboard/MonthlyRewind";
+import { WrappedStory } from "../components/dashboard/WrappedStory";
+import { notifyMonthlyRewindReady } from "../components/utils/notificationHelpers"; // TEMP: For testing
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -52,6 +55,7 @@ export default function Dashboard() {
     const [showImportWizard, setShowImportWizard] = useState(false);
     const { setFabButtons, clearFabButtons } = useFAB();
     const [searchParams, setSearchParams] = useSearchParams();
+    const [showStory, setShowStory] = useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -285,6 +289,23 @@ export default function Dashboard() {
                             selectedYear={selectedYear}
                         />
 
+                        <div className="grid grid-cols-2 gap-4">
+                            <MonthlyRewind
+                                selectedMonth={selectedMonth}
+                                selectedYear={selectedYear}
+                                onOpen={() => setShowStory(true)}
+                            />
+
+                            {/* TEMP: Test Button for Notification Flow */}
+                            <Button
+                                variant="outline"
+                                className="h-full border-dashed border-indigo-500 text-indigo-400 hover:bg-indigo-950/20"
+                                onClick={() => notifyMonthlyRewindReady(user.email, selectedMonth, selectedYear)}
+                            >
+                                🔔 Test Notify
+                            </Button>
+                        </div>
+
                         {isMobile ? (
                             <MobileRemainingBudgetCard
                                 breakdown={detailedBreakdown}
@@ -433,6 +454,19 @@ export default function Dashboard() {
                     open={showImportWizard}
                     onOpenChange={setShowImportWizard}
                     renderTrigger={false}
+                />
+
+                <WrappedStory
+                    isOpen={showStory}
+                    onClose={() => setShowStory(false)}
+                    monthName={format(new Date(selectedYear, selectedMonth), 'MMMM')}
+                    year={selectedYear}
+                    income={currentMonthIncome}
+                    expenses={currentMonthExpenses}
+                    transactions={transactions}
+                    categories={detailedBreakdown?.categoryBreakdown || []}
+                    healthScore={budgetHealth}
+                    settings={settings}
                 />
             </div>
         </div>
