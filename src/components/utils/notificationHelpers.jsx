@@ -12,7 +12,7 @@ import {
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
-} from "../components/hooks/useBase44Entities";
+} from "../hooks/useBase44Entities";
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import {
     useMonthlyIncome,
