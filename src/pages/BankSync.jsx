@@ -21,7 +21,7 @@ import {
     History
 } from "lucide-react";
 import { useFAB } from "../components/hooks/FABContext";
-import { notifyBankSyncSuccess, notifyTransactionsNeedReview } from "../components/utils/notificationHelpers";
+import { notifyBankSyncSuccess, notifyBankSyncWithReviews } from "../components/utils/notificationHelpers";
 
 /**
  * Bank Sync Page
@@ -286,17 +286,16 @@ export default function BankSync() {
             setSyncStatus("Finalizing...");
 
             if (totalImported > 0) {
-                // Trigger notifications in parallel
                 const dateStr = format(new Date(), 'MMM d, yyyy');
-                const notifications = [
-                    notifyBankSyncSuccess(user.email, totalImported, dateStr)
-                ];
 
+                // Smart Notification Logic:
+                // If ANY transactions need review, we send a single "Action" notification pointing to the Inbox.
+                // If ALL are clean, we send a "Success" notification pointing to History.
                 if (totalNeedsReview > 0) {
-                    notifications.push(notifyTransactionsNeedReview(user.email, totalNeedsReview));
+                    await notifyBankSyncWithReviews(user.email, totalImported, totalNeedsReview, dateStr);
+                } else {
+                    await notifyBankSyncSuccess(user.email, totalImported, dateStr);
                 }
-
-                await Promise.all(notifications);
 
                 toast({
                     title: "Sync complete!",
