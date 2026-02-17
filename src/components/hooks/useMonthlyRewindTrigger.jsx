@@ -8,20 +8,20 @@ import { useNotifications } from './useNotifications';
  * If not, it creates one.
  */
 export const useMonthlyRewindTrigger = (userEmail) => {
-    const { notifications } = useNotifications();
+    const { allNotifications } = useNotifications();
 
     useEffect(() => {
-        if (!userEmail || !notifications) return;
+        if (!userEmail || !allNotifications) return;
 
         // 1. Identify the month that just ended (e.g., if today is March, check February)
         const lastMonthDate = subMonths(new Date(), 1);
-        const lastMonthIndex = getMonth(lastMonthDate); 
+        const lastMonthIndex = getMonth(lastMonthDate);
         const lastMonthYear = getYear(lastMonthDate);
 
         // 2. Check if a 'story' notification already exists for this period in the database
-        const exists = notifications.some(n => 
-            n.type === 'story' && 
-            n.metadata?.monthIndex === lastMonthIndex && 
+        const exists = allNotifications.some(n =>
+            n.type === 'story' &&
+            n.metadata?.monthIndex === lastMonthIndex &&
             n.metadata?.year === lastMonthYear
         );
 
@@ -29,5 +29,5 @@ export const useMonthlyRewindTrigger = (userEmail) => {
         if (!exists) {
             notifyMonthlyRewindReady(userEmail, lastMonthIndex, lastMonthYear);
         }
-    }, [userEmail, notifications]);
+    }, [userEmail, allNotifications]);
 };
