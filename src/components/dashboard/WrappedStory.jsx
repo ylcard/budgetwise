@@ -7,7 +7,7 @@ import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { getMonthBoundaries } from "../utils/dateUtils";
-import { useTransactions, useCustomBudgetsForPeriod, useBase44Entities } from "../hooks/useBase44Entities";
+import { useTransactions, useCustomBudgetsForPeriod, useGoals } from "../hooks/useBase44Entities";
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { useMonthlyIncome, useMonthlyBreakdown } from "../hooks/useDerivedData";
 import { getCategoryIcon } from "../utils/iconMapConfig"; // Assuming this utility exists based on context
@@ -87,9 +87,7 @@ export const WrappedStory = ({
     const { customBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
 
     // Fetch Goals specifically for the health calculation
-    const { data: allGoals } = useBase44Entities('Goal', {
-        user_email: user?.email
-    });
+    const { goals: allGoals, isLoading: goalsLoading } = useGoals(user);
 
     // Filter out the 30-day buffer fetched by useTransactions
     // We need strictly the transactions for this month's story
@@ -122,7 +120,7 @@ export const WrappedStory = ({
     // 3. Centralized Financial Health Logic
     const healthData = useMemo(() => {
         // Ensure goals are loaded before calculating to avoid crash and inaccuracy
-        if (!storyTransactions.length || !allTransactions.length || !allGoals) return null;
+        if (!storyTransactions.length || !allTransactions.length || !allGoals?.length) return null;
         return calculateFinancialHealth(
             storyTransactions,
             allTransactions,
