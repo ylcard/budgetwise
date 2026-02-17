@@ -241,10 +241,9 @@ const LayoutContent = ({ children }) => {
                 </Sidebar>
 
                 <main className="flex-1 flex flex-col relative">
-                    {/* Global Floating Casper */}
-                    <div className="fixed bottom-24 right-6 z-[60] pointer-events-none md:bottom-10 md:right-10">
-                        <BudgetAvatar health={budgetHealth} size={80} showText={false} isFloating={true} />
-                    </div>
+                    {/* Global Roaming Casper */}
+                    <BudgetAvatar health={budgetHealth} size={80} showText={false} isFloating={true} />
+
                     <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
                         <RouteTransition>
                             {children}
