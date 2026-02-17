@@ -465,7 +465,6 @@ export default function Dashboard() {
                     expenses={currentMonthExpenses}
                     transactions={transactions}
                     categories={detailedBreakdown?.categoryBreakdown || []}
-                    healthScore={budgetHealth}
                     settings={settings}
                 />
             </div>
