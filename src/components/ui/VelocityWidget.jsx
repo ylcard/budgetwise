@@ -317,11 +317,12 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
 
     return (
         <div
-            className="w-full bg-slate-900 rounded-3xl p-6 text-white shadow-2xl overflow-hidden relative isolate"
+            className="w-full bg-white dark:bg-slate-900 rounded-3xl p-6 text-slate-900 dark:text-white shadow-lg dark:shadow-2xl overflow-hidden relative isolate border border-slate-100 dark:border-none"
         >
             {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full -z-10" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/10 blur-[80px] rounded-full -z-10" />
+            {/* Reduced opacity for light mode to prevent muddy look */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 dark:bg-emerald-500/10 blur-[80px] rounded-full -z-10" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/5 dark:bg-rose-500/10 blur-[80px] rounded-full -z-10" />
 
             {/* Header Info */}
             <div className="flex justify-between items-end mb-8">
@@ -335,14 +336,14 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             className="flex flex-col"
                         >
-                            <p className="text-sm font-medium uppercase tracking-wider text-slate-400">
+                            <p className="text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 {displayData.label}
                             </p>
                             <div className="flex items-baseline gap-4 mt-1">
-                                <h2 className="text-3xl font-bold tabular-nums text-emerald-400">
+                                <h2 className="text-3xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                                     +{formatCurrency(displayData.income || 0, settings)}
                                 </h2>
-                                <h2 className="text-2xl font-bold tabular-nums text-rose-400 opacity-90">
+                                <h2 className="text-2xl font-bold tabular-nums text-rose-500 dark:text-rose-400 opacity-90">
                                     -{formatCurrency(displayData.expense || 0, settings)}
                                 </h2>
                             </div>
