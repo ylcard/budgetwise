@@ -5,12 +5,8 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
-import { useHealth } from "../utils/HealthContext";
 import { getMonthBoundaries } from "../utils/dateUtils";
-import {
-    useTransactions,
-    useCustomBudgetsForPeriod
-} from "../hooks/useBase44Entities";
+import { useTransactions, useCustomBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { useMonthlyIncome, useMonthlyBreakdown } from "../hooks/useDerivedData";
 
@@ -57,19 +53,20 @@ const useTopCategories = (categories) => {
 export const WrappedStory = ({
     isOpen,
     onClose,
-    month, // Received from Notification/URL
-    year,  // Received from Notification/URL
+    month, // Target month (0-11)
+    year,  // Target year
     settings,
     user
 }) => {
-    // 1. Independent Data Fetching for the specific month
+    // 1. Calculate boundaries for the target month
     const { monthStart, monthEnd } = useMemo(() =>
         (month !== undefined && year !== undefined)
             ? getMonthBoundaries(month, year)
             : { monthStart: null, monthEnd: null },
         [month, year]);
 
-    const { transactions, isLoading: tLoading } = useTransactions(monthStart, monthEnd);
+    // 2. Fetch data specific to this story's period
+    const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories: rawCategories } = useMergedCategories();
     const { customBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
 
@@ -84,21 +81,21 @@ export const WrappedStory = ({
     );
 
     const monthName = useMemo(() =>
-        month !== undefined ? format(new Date(year, month), 'MMMM') : '',
+        (month !== undefined && year !== undefined) ? format(new Date(year, month), 'MMMM') : '',
         [month, year]);
-
 
     const [page, setPage] = useState(0);
     const [direction, setDirection] = useState(0);
     const exportRef = useRef(null);
-    const { budgetHealth: healthScore } = useHealth();
 
-    // 2. Local Vibe Check (so it doesn't use the Dashboard's current health)
+    // 3. Internalized Vibe Check Logic (matches HealthContext)
     const healthScore = useMemo(() => {
         if (!income || income === 0) return 0.5;
-        const ratio = expenses / income;
-        if (ratio >= 1.0) return 0.1;
-        if (ratio >= 0.9) return 0.3;
+        const spendRatio = expenses / income;
+
+        if (spendRatio >= 1.0) return 0.1;
+        if (spendRatio >= 0.90) return 0.3;
+        if (spendRatio >= 0.70) return 0.6;
         return 1.0;
     }, [income, expenses]);
 
