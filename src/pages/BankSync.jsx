@@ -21,6 +21,7 @@ import {
     History
 } from "lucide-react";
 import { useFAB } from "../components/hooks/FABContext";
+import { notifyBankSyncSuccess, notifyTransactionsNeedReview } from "../components/utils/notificationHelpers";
 
 /**
  * Bank Sync Page
@@ -250,6 +251,7 @@ export default function BankSync() {
             }
 
             let totalImported = 0;
+            let totalNeedsReview = 0;
 
             // Execute chunks sequentially
             for (let i = 0; i < chunks.length; i++) {
@@ -276,6 +278,7 @@ export default function BankSync() {
 
                 if (response.data?.importedCount) {
                     totalImported += response.data.importedCount;
+                    totalNeedsReview += (response.data.needsReviewCount || 0);
                 }
             }
 
@@ -283,6 +286,18 @@ export default function BankSync() {
             setSyncStatus("Finalizing...");
 
             if (totalImported > 0) {
+                // Trigger notifications in parallel
+                const dateStr = format(new Date(), 'MMM d, yyyy');
+                const notifications = [
+                    notifyBankSyncSuccess(user.email, totalImported, dateStr)
+                ];
+
+                if (totalNeedsReview > 0) {
+                    notifications.push(notifyTransactionsNeedReview(user.email, totalNeedsReview));
+                }
+
+                await Promise.all(notifications);
+
                 toast({
                     title: "Sync complete!",
                     description: `Successfully imported ${totalImported} new transactions.`,
