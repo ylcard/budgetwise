@@ -44,7 +44,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams } from "react-router-dom"; // Added for notification linking
 import { MonthlyRewind } from "../components/dashboard/MonthlyRewind";
-import { WrappedStory } from "../components/dashboard/WrappedStory";
+// import { WrappedStory } from "../components/dashboard/WrappedStory";
 import { notifyMonthlyRewindReady } from "../components/utils/notificationHelpers"; // TEMP: For testing
 import { HealthProvider } from "../components/utils/HealthContext";
 
@@ -456,18 +456,6 @@ export default function Dashboard() {
                         open={showImportWizard}
                         onOpenChange={setShowImportWizard}
                         renderTrigger={false}
-                    />
-
-                    <WrappedStory
-                        isOpen={showStory}
-                        onClose={() => setShowStory(false)}
-                        monthName={format(new Date(selectedYear, selectedMonth), 'MMMM')}
-                        year={selectedYear}
-                        income={currentMonthIncome}
-                        expenses={currentMonthExpenses}
-                        transactions={transactions}
-                        categories={detailedBreakdown?.categoryBreakdown || []}
-                        settings={settings}
                     />
                 </div>
             </div>
