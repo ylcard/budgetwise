@@ -1,475 +1,283 @@
-import { useState, useMemo, useEffect } from "react";
-import { useSettings } from "./SettingsContext";
-import { useRecurringTransactions } from "../hooks/useRecurringTransactions";
-import { useRecurringStatus } from "../hooks/useRecurringStatus";
-import UpcomingTransactions from "../dashboard/UpcomingTransactions";
-import { usePeriod } from "../hooks/usePeriod";
-import { useFAB } from "../hooks/FABContext";
-import {
-    useTransactions,
-    useGoals,
-    useCustomBudgetsForPeriod,
-    useSystemBudgetsAll,
-    useSystemBudgetsForPeriod,
-    useSystemBudgetManagement,
-} from "../hooks/useBase44Entities";
-import { useMergedCategories } from "../hooks/useMergedCategories";
-import {
-    useMonthlyIncome,
-    useDashboardSummary,
-    useActiveBudgets,
-    useMonthlyBreakdown
-} from "../hooks/useDerivedData";
-import {
-    useTransactionActions,
-    useCustomBudgetActions,
-} from "../hooks/useActions";
-import {
-    getCustomBudgetStats,
-    getSystemBudgetStats
-} from "./financialCalculations";
-import MonthNavigator from "../ui/MonthNavigator";
-import RemainingBudgetCard from "../dashboard/RemainingBudgetCard";
-import MobileRemainingBudgetCard from "../dashboard/MobileRemainingBudgetCard";
-import CustomBudgetsDisplay from "../dashboard/CustomBudgetsDisplay";
-import RecentTransactions from "../dashboard/RecentTransactions";
-import QuickAddTransaction from "../transactions/QuickAddTransaction";
-import QuickAddIncome from "../transactions/QuickAddIncome";
-import QuickAddBudget from "../dashboard/QuickAddBudget";
-import { ImportWizardDialog } from "../import/ImportWizard";
-import { Button } from "@/components/ui/button";
-import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-// import { BudgetAvatar } from "../components/ui/BudgetAvatar";
-import { VelocityWidget } from "../ui/VelocityWidget";
-import { useSearchParams } from "react-router-dom"; // Added for notification linking
-import { MonthlyRewind } from "../components/dashboard/MonthlyRewind";
-import { WrappedStory } from "../components/dashboard/WrappedStory";
-import { notifyMonthlyRewindReady } from "../components/utils/notificationHelpers"; // TEMP: For testing
-import { HealthProvider } from "../components/utils/HealthContext";
+import { base44 } from '@/api/base44Client';
 
-export default function Dashboard() {
-    const { user, settings } = useSettings();
-    const [quickAddState, setQuickAddState] = useState(null); // null | 'new' | templateObject
-    const [quickAddIncomeState, setQuickAddIncomeState] = useState(null); // UPDATED: null | 'new' | templateObject
-    const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
-    const [showImportWizard, setShowImportWizard] = useState(false);
-    const [storyContext, setStoryContext] = useState(null); // { month: number, year: number }
-    const { setFabButtons, clearFabButtons } = useFAB();
-    const [searchParams, setSearchParams] = useSearchParams();
-    const [showStory, setShowStory] = useState(false);
+/**
+ * CREATED 14-Feb-2026: Centralized notification creation helpers
+ * Any feature can use these to create standardized notifications
+ */
 
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+/**
+ * Create a generic notification
+ */
+export const createNotification = async ({
+    title,
+    message,
+    type = 'info',
+    category,
+    priority = 'medium',
+    actionUrl = null,
+    actionLabel = null,
+    metadata = {},
+    expiresAt = null,
+    userEmail
+}) => {
+    try {
+        return await base44.entities.Notification.create({
+            title,
+            message,
+            type,
+            category,
+            priority,
+            actionUrl,
+            actionLabel,
+            metadata,
+            expiresAt,
+            user_email: userEmail,
+            isRead: false,
+            isDismissed: false
+        });
+    } catch (error) {
+        console.error('Failed to create notification:', error);
+        return null;
+    }
+};
 
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    // Period management
-    const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
-
-    // --- NOTIFICATION LISTENER ---
-    // Checks if the user arrived via a "Monthly Rewind" notification click
-    useEffect(() => {
-        const isStoryMode = searchParams.get("story") === "true";
-        const paramMonth = searchParams.get("month");
-        const paramYear = searchParams.get("year");
-
-        if (isStoryMode && paramMonth && paramYear) {
-            setStoryContext({ month: parseInt(paramMonth), year: parseInt(paramYear) });
-            setShowStory(true);
-
-            // Clean the URL so it doesn't reopen on refresh
-            setSearchParams({});
-        }
-    }, [searchParams, setSearchParams]);
-
-    // Data fetching
-    // CRITICAL: Extract isLoading states to control the UI transitions
-    const { transactions, isLoading: transactionsLoading } = useTransactions(monthStart, monthEnd);
-    const { categories, isLoading: categoriesLoading } = useMergedCategories();
-    const { goals } = useGoals(user);
-    const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
-    const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
-    const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
-
-    const activeCustomBudgetIds = useMemo(() =>
-        allCustomBudgets.map(cb => cb.id),
-        [allCustomBudgets]);
-
-    const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
-
-    useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
-
-    const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
-
-    const { currentMonthIncome, currentMonthExpenses, bonusSavingsPotential } = useDashboardSummary(
-        transactions,
-        selectedMonth,
-        selectedYear,
-        allCustomBudgets,
-        systemBudgets,
-        categories,
-        settings
-    );
-
-    const { detailedBreakdown } = useMonthlyBreakdown(
-        transactions,
-        categories,
-        monthlyIncome,
-        allCustomBudgets,
-        selectedMonth,
-        selectedYear
-    );
-
-    const { activeCustomBudgets } = useActiveBudgets(
-        allCustomBudgets,
-        allSystemBudgets,
-        selectedMonth,
-        selectedYear
-    );
-
-    const systemBudgetsData = useMemo(() => {
-        return systemBudgets.map(sb => ({
-            ...sb,
-            ...getSystemBudgetStats(
-                sb,
-                transactions,
-                categories,
-                allCustomBudgets,
-                monthStart,
-                monthEnd,
-                monthlyIncome,
-                settings
-            )
-        }));
-    }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
-
-    // --- RECURRING BILLS LOGIC ---
-    const { recurringTransactions, isLoading: recurringLoading } = useRecurringTransactions(user);
-
-    // Fetch REAL current month transactions for the widget status logic (independent of navigator)
-    const today = new Date();
-    const realMonthStart = format(startOfMonth(today), 'yyyy-MM-dd');
-    const realMonthEnd = format(endOfMonth(today), 'yyyy-MM-dd');
-    const { transactions: realTransactions } = useTransactions(realMonthStart, realMonthEnd);
-
-    // Use the REAL transactions for status matching
-    const recurringWithStatus = useRecurringStatus(recurringTransactions, realTransactions);
-
-
-    const handleMarkPaid = (bill) => {
-        const template = {
-            title: bill.title,
-            amount: bill.amount,
-            category_id: bill.category_id,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            recurringTransactionId: bill.id, // The Link ID
-            type: bill.type
-        };
-
-        // Route to appropriate form based on type
-        if (bill.type === 'income') {
-            setQuickAddIncomeState(template);
-        } else {
-            setQuickAddState(template);
-        }
-    };
-
-    const savingsTarget = useMemo(() => {
-        const savingsGoal = goals.find(g => g.priority === 'savings');
-        return savingsGoal ? (monthlyIncome * (savingsGoal.target_percentage / 100)) : 0;
-    }, [goals, monthlyIncome]);
-
-    const totalActualSavings = useMemo(() => {
-        return transactions
-            .filter(t => t.type === 'savings' || (categories.find(c => c.id === t.category_id)?.priority === 'savings'))
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-    }, [transactions, categories]);
-
-    // Seemingly unused
-    // const savingsShortfall = useMemo(() => Math.max(0, savingsTarget - totalActualSavings), [savingsTarget, totalActualSavings]);
-
-    const transactionActions = useTransactionActions({
-        onSuccess: () => {
-            setQuickAddState(null);
-            setQuickAddIncomeState(null);
-        }
+/**
+ * Bank Sync Notifications
+ */
+export const notifyBankSyncSuccess = (userEmail, transactionCount) => {
+    return createNotification({
+        title: 'Bank Sync Complete',
+        message: `Successfully synced ${transactionCount} new transaction${transactionCount !== 1 ? 's' : ''} from your bank.`,
+        type: 'success',
+        category: 'bank_sync',
+        priority: 'low',
+        actionUrl: '/transactions/history',
+        actionLabel: 'View Transactions',
+        metadata: { transactionCount },
+        userEmail
     });
+};
 
-    const budgetActions = useCustomBudgetActions({
-        transactions,
-        onSuccess: () => {
-            setShowQuickAddBudget(false);
-        }
+export const notifyBankSyncError = (userEmail, errorMessage) => {
+    return createNotification({
+        title: 'Bank Sync Failed',
+        message: `Unable to sync transactions: ${errorMessage}`,
+        type: 'error',
+        category: 'bank_sync',
+        priority: 'high',
+        actionUrl: '/manage/banksync',
+        actionLabel: 'Check Connection',
+        userEmail
     });
+};
 
-    // UPDATED 04-Feb-2026: FAB buttons use simple configs with onClick handlers
-    const fabButtons = useMemo(() => {
-        const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
-        return [
-            {
-                key: 'import',
-                label: 'Import Data',
-                icon: 'FileUp',
-                variant: 'primary',
-                onClick: () => {
-                    setShowImportWizard(true);
-                }
-            },
-            {
-                key: 'expense',
-                label: 'Add Expense',
-                icon: 'MinusCircle',
-                variant: 'warning',
-                onClick: () => setQuickAddState('new')
-            },
-            {
-                key: 'income',
-                label: 'Add Income',
-                icon: 'PlusCircle',
-                variant: 'success',
-                highlighted: isEmptyMonth,
-                onClick: () => setQuickAddIncomeState('new')
-            }
-        ];
-    }, [currentMonthIncome, currentMonthExpenses]);
+export const notifyBankTokenExpiring = (userEmail, bankName, daysLeft) => {
+    return createNotification({
+        title: 'Bank Connection Expiring',
+        message: `Your connection to ${bankName} will expire in ${daysLeft} days. Reconnect to continue automatic sync.`,
+        type: 'warning',
+        category: 'bank_sync',
+        priority: 'high',
+        actionUrl: '/manage/banksync',
+        actionLabel: 'Reconnect Now',
+        metadata: { bankName, daysLeft },
+        userEmail
+    });
+};
 
-    useEffect(() => {
-        setFabButtons(fabButtons);
-        return () => clearFabButtons();
-    }, [fabButtons, setFabButtons, clearFabButtons]);
+/**
+ * Budget Notifications
+ */
+export const notifyBudgetExceeded = (userEmail, budgetName, percentage) => {
+    return createNotification({
+        title: 'Budget Alert',
+        message: `You've spent ${percentage.toFixed(0)}% of your "${budgetName}" budget.`,
+        type: 'warning',
+        category: 'budgets',
+        priority: percentage >= 100 ? 'urgent' : 'high',
+        actionUrl: '/budgets',
+        actionLabel: 'Review Budget',
+        metadata: { budgetName, percentage },
+        userEmail
+    });
+};
 
-    // --- CASPER'S MOOD LOGIC (Monthly Context Only) ---
-    /*
-    const budgetHealth = useMemo(() => {
-        if (!currentMonthIncome || currentMonthIncome === 0) return 0.5; // Neutral if no data
-        const spendRatio = currentMonthExpenses / currentMonthIncome;
+export const notifyBudgetLowFunds = (userEmail, budgetName, remaining) => {
+    return createNotification({
+        title: 'Low Budget Funds',
+        message: `Only ${remaining} remaining in "${budgetName}".`,
+        type: 'warning',
+        category: 'budgets',
+        priority: 'medium',
+        actionUrl: '/budgets',
+        actionLabel: 'View Details',
+        metadata: { budgetName, remaining },
+        userEmail
+    });
+};
 
-        // 1. You spent more than you earned. Casper is dead.
-        if (spendRatio >= 1.0) return 0.1;
+/**
+ * Transaction Notifications
+ */
+export const notifyTransactionsNeedReview = (userEmail, count) => {
+    return createNotification({
+        title: 'Review Required',
+        message: `${count} transaction${count !== 1 ? 's' : ''} need${count === 1 ? 's' : ''} your review for accurate categorization.`,
+        type: 'action',
+        category: 'transactions',
+        priority: 'medium',
+        actionUrl: '/manage/banksync',
+        actionLabel: 'Review Now',
+        metadata: { count },
+        userEmail
+    });
+};
 
-        // 2. You saved less than 10%. Casper is panicking (Living on the edge).
-        if (spendRatio >= 0.90) return 0.3;
+export const notifyDuplicateDetected = (userEmail, count) => {
+    return createNotification({
+        title: 'Possible Duplicates',
+        message: `We detected ${count} potential duplicate transaction${count !== 1 ? 's' : ''}.`,
+        type: 'warning',
+        category: 'transactions',
+        priority: 'high',
+        actionUrl: '/transactions/history',
+        actionLabel: 'Review Duplicates',
+        metadata: { count },
+        userEmail
+    });
+};
 
-        // 3. You saved decent money (10-30%). Casper is chilling.
-        if (spendRatio >= 0.70) return 0.6;
+/**
+ * Recurring Transaction Notifications
+ */
+export const notifyRecurringDue = (userEmail, transactionTitle, dueDate) => {
+    return createNotification({
+        title: 'Bill Due Soon',
+        message: `"${transactionTitle}" is due on ${dueDate}.`,
+        type: 'info',
+        category: 'recurring',
+        priority: 'medium',
+        actionUrl: '/transactions/recurring',
+        actionLabel: 'Mark as Paid',
+        metadata: { transactionTitle, dueDate },
+        userEmail
+    });
+};
 
-        // 4. You saved > 30%. Casper Ascends.
-        return 1.0;
-    }, [currentMonthIncome, currentMonthExpenses]);
-    */
+export const notifyRecurringOverdue = (userEmail, transactionTitle) => {
+    return createNotification({
+        title: 'Overdue Bill',
+        message: `"${transactionTitle}" is overdue. Mark as paid or update the schedule.`,
+        type: 'error',
+        category: 'recurring',
+        priority: 'urgent',
+        actionUrl: '/transactions/recurring',
+        actionLabel: 'Take Action',
+        metadata: { transactionTitle },
+        userEmail
+    });
+};
 
-    // Combine loading states. The dashboard summary relies heavily on transactions and categories.
-    const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
+/**
+ * System Notifications
+ */
+export const notifySystemSetupRequired = (userEmail, setupType) => {
+    return createNotification({
+        title: 'Setup Required',
+        message: `Complete your ${setupType} setup to unlock full app functionality.`,
+        type: 'info',
+        category: 'system',
+        priority: 'high',
+        actionUrl: '/manage/preferences',
+        actionLabel: 'Complete Setup',
+        metadata: { setupType },
+        userEmail
+    });
+};
 
-    return (
-        <HealthProvider>
-            <div className="min-h-screen p-4 md:p-8 relative">
-                <div className="max-w-7xl mx-auto space-y-6 pb-24">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Dashboard</h1>
-                            <p className="text-muted-foreground mt-1">
-                                Welcome back, {settings?.displayName || user?.name || 'User'}!
-                            </p>
-                        </div>
-                    </div>
+export const notifyDataExportReady = (userEmail, filename) => {
+    return createNotification({
+        title: 'Export Complete',
+        message: `Your data export "${filename}" is ready for download.`,
+        type: 'success',
+        category: 'system',
+        priority: 'low',
+        metadata: { filename },
+        userEmail
+    });
+};
 
-                    {/* GRID LAYOUT: Split Hero Row */}
-                    <div className="grid lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 space-y-6">
+/**
+ * Goal Notifications
+ */
+export const notifyGoalAchieved = (userEmail, goalType, percentage) => {
+    return createNotification({
+        title: 'Goal Achieved! 🎉',
+        message: `You've reached ${percentage}% of your ${goalType} savings goal this month.`,
+        type: 'success',
+        category: 'goals',
+        priority: 'low',
+        actionUrl: '/reports',
+        actionLabel: 'View Report',
+        metadata: { goalType, percentage },
+        userEmail
+    });
+};
 
-                            {/* INNOVATION: Velocity Widget at the top */}
-                            <VelocityWidget
-                                transactions={transactions}
-                                settings={settings}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
-                            />
+export const notifyGoalAtRisk = (userEmail, goalType, shortfall) => {
+    return createNotification({
+        title: 'Savings Goal at Risk',
+        message: `You're ${shortfall} short of your ${goalType} goal. Adjust spending to stay on track.`,
+        type: 'warning',
+        category: 'goals',
+        priority: 'medium',
+        actionUrl: '/reports',
+        actionLabel: 'Review Goals',
+        metadata: { goalType, shortfall },
+        userEmail
+    });
+};
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <MonthlyRewind
-                                    selectedMonth={selectedMonth}
-                                    selectedYear={selectedYear}
-                                    onOpen={() => {
-                                        setStoryContext({ month: selectedMonth, year: selectedYear });
-                                        setShowStory(true);
-                                    }}
-                                />
+/**
+ * Report/Story Notifications
+ */
+export const notifyMonthlyRewindReady = (userEmail, monthIndex, year) => {
+    // Get full month name for the message
+    const monthName = new Date(year, monthIndex).toLocaleString('default', { month: 'long' });
 
-                                {/* TEMP: Test Button for Notification Flow */}
-                                <Button
-                                    variant="outline"
-                                    className="h-full border-dashed border-indigo-500 text-indigo-400 hover:bg-indigo-950/20"
-                                    onClick={() => notifyMonthlyRewindReady(user.email, selectedMonth, selectedYear)}
-                                >
-                                    🔔 Test Notify
-                                </Button>
-                            </div>
+    return createNotification({
+        title: `${monthName} Rewind Ready 🎬`,
+        message: `Your financial story for ${monthName} is ready. See your highlights!`,
+        type: 'story',
+        category: 'reports',
+        priority: 'low',
+        actionUrl: `/?story=true&month=${monthIndex}&year=${year}`, // Deep link to Dashboard
+        actionLabel: 'Watch Story',
+        metadata: { monthIndex, year },
+        userEmail
+    });
+};
 
-                            {isMobile ? (
-                                <MobileRemainingBudgetCard
-                                    breakdown={detailedBreakdown}
-                                    systemBudgets={systemBudgetsData}
-                                    currentMonthIncome={currentMonthIncome}
-                                    currentMonthExpenses={currentMonthExpenses}
-                                    settings={settings}
-                                    isLoading={isLoading}
-                                    selectedMonth={selectedMonth}
-                                    selectedYear={selectedYear}
-                                    monthNavigator={
-                                        <MonthNavigator
-                                            currentMonth={selectedMonth}
-                                            currentYear={selectedYear}
-                                            resetPosition="right"
-                                            onMonthChange={(month, year) => {
-                                                setSelectedMonth(month);
-                                                setSelectedYear(year);
-                                            }}
-                                        />
-                                    }
-                                />
-                            ) : (
-                                <RemainingBudgetCard
-                                    breakdown={detailedBreakdown}
-                                    systemBudgets={systemBudgetsData}
-                                    bonusSavingsPotential={bonusSavingsPotential}
-                                    currentMonthIncome={currentMonthIncome}
-                                    currentMonthExpenses={currentMonthExpenses}
-                                    goals={goals}
-                                    settings={settings}
-                                    selectedMonth={selectedMonth}
-                                    selectedYear={selectedYear}
-                                    importDataButton={
-                                        <Button variant="outline" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
-                                            <FileUp className="h-3.5 w-3.5" />
-                                            <span className="hidden xl:inline">Import</span>
-                                        </Button>
-                                    }
-                                    addIncomeButton={
-                                        <Button size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">
-                                            <PlusCircle className="h-3.5 w-3.5" />
-                                            <span className="hidden xl:inline">Income</span>
-                                        </Button>
-                                    }
-                                    addExpenseButton={
-                                        <Button variant="destructive" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
-                                            <MinusCircle className="h-3.5 w-3.5" />
-                                            <span className="hidden xl:inline">Expense</span>
-                                        </Button>
-                                    }
-                                    monthNavigator={
-                                        <MonthNavigator
-                                            currentMonth={selectedMonth}
-                                            currentYear={selectedYear}
-                                            resetPosition="right"
-                                            onMonthChange={(month, year) => {
-                                                setSelectedMonth(month);
-                                                setSelectedYear(year);
-                                            }}
-                                        />
-                                    }
-                                />
-                            )}
-                        </div>
+/**
+ * Batch notification cleanup
+ */
+export const dismissExpiredNotifications = async (userEmail) => {
+    try {
+        const expired = await base44.entities.Notification.filter({
+            user_email: userEmail,
+            expiresAt: { $lte: new Date().toISOString() },
+            isDismissed: false
+        });
 
-                        {/* DESKTOP PLACEMENT: Right side of Hero */}
-                        <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
-                            {/* <BudgetAvatar health={budgetHealth} /> */}
-                            <UpcomingTransactions
-                                recurringWithStatus={recurringWithStatus}
-                                onMarkPaid={handleMarkPaid}
-                                isLoading={isLoading}
-                                categories={categories}
-                            />
-                        </div>
-                    </div>
+        if (expired.length > 0) {
+            await Promise.all(expired.map(n =>
+                base44.entities.Notification.update(n.id, { isDismissed: true })
+            ));
+        }
 
-                    <div className="grid lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 flex flex-col min-w-0">
-
-                            <CustomBudgetsDisplay
-                                onCreateBudget={() => setShowQuickAddBudget(true)}
-                            />
-
-                            {/* MOBILE PLACEMENT: Below Custom Budgets */}
-                            <div className="lg:hidden mt-6 h-96">
-                                <UpcomingTransactions
-                                    recurringWithStatus={recurringWithStatus}
-                                    onMarkPaid={handleMarkPaid}
-                                    isLoading={isLoading}
-                                    categories={categories}
-                                />
-                            </div>
-
-                        </div>
-
-                        <div className="lg:col-span-1 flex flex-col">
-                            <RecentTransactions
-                                categories={categories}
-                                settings={settings}
-                                customBudgets={allCustomBudgets}
-                                onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
-                                onDelete={transactionActions.handleDelete}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Hidden dialog components - opened by FAB button onClick handlers */}
-                    <QuickAddTransaction
-                        open={!!quickAddState}
-                        selectedMonth={selectedMonth}
-                        selectedYear={selectedYear}
-                        onOpenChange={(isOpen) => !isOpen && setQuickAddState(null)}
-                        // Pass template if state is object, otherwise null
-                        transactionTemplate={typeof quickAddState === 'object' ? quickAddState : null}
-                        categories={categories}
-                        customBudgets={activeCustomBudgets}
-                        onSubmit={transactionActions.handleSubmit}
-                        isSubmitting={transactionActions.isSubmitting}
-                        transactions={transactions}
-                        renderTrigger={false}
-                    />
-
-                    <QuickAddIncome
-                        open={!!quickAddIncomeState}
-                        selectedMonth={selectedMonth}
-                        selectedYear={selectedYear}
-                        onOpenChange={(isOpen) => !isOpen && setQuickAddIncomeState(null)}
-                        transactionTemplate={typeof quickAddIncomeState === 'object' ? quickAddIncomeState : null}
-                        onSubmit={transactionActions.handleSubmit}
-                        isSubmitting={transactionActions.isSubmitting}
-                        renderTrigger={false}
-                    />
-
-                    <QuickAddBudget
-                        open={showQuickAddBudget}
-                        onOpenChange={setShowQuickAddBudget}
-                        onSubmit={budgetActions.handleSubmit}
-                        onCancel={() => setShowQuickAddBudget(false)}
-                        isSubmitting={budgetActions.isSubmitting}
-                        baseCurrency={settings.baseCurrency}
-                    />
-
-                    <ImportWizardDialog
-                        open={showImportWizard}
-                        onOpenChange={setShowImportWizard}
-                        renderTrigger={false}
-                    />
-
-                    <WrappedStory
-                        isOpen={showStory}
-                        onClose={() => setShowStory(false)}
-                        month={storyContext?.month}
-                        year={storyContext?.year}
-                        settings={settings}
-                        user={user}
-                    />
-                </div>
-            </div>
-        </HealthProvider>
-    );
-}
+        return expired.length;
+    } catch (error) {
+        console.error('Failed to dismiss expired notifications:', error);
+        return 0;
+    }
+};
