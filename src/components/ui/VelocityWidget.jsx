@@ -280,14 +280,18 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                 isTotal: false
             };
         }
+
+        const today = new Date();
+        const isPast = selectedYear < today.getFullYear() || (selectedYear === today.getFullYear() && selectedMonth < today.getMonth());
+
         // For total, we sum Actual + Future Predictions
         return {
             income: monthTotals.income + monthTotals.predictedIncome,
             expense: monthTotals.expense + monthTotals.predictedExpense,
-            label: 'Total Projected Flow',
+            label: isPast ? 'Total Cash Flow' : 'Total Projected Flow',
             isTotal: true
         };
-    }, [activeIndex, chartData, monthTotals]);
+    }, [activeIndex, chartData, monthTotals, selectedMonth, selectedYear]);
 
     // Haptic feedback function (browser support varies, but good for mobile)
     /*
