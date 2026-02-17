@@ -21,7 +21,8 @@ const defaultSettings = {
     // goalAllocationMode: 'percentage', // 'percentage' or 'absolute'
     // absoluteGoals: { needs: 0, wants: 0, savings: 0 }, // Store absolute amounts
     goalMode: true, // true = percentage, false = absolute
-    displayName: ''
+    displayName: '',
+    showMascot: true
 };
 
 export const useSettings = () => {
@@ -80,7 +81,8 @@ export const SettingsProvider = ({ children }) => {
                     // goalAllocationMode: userSettings.goalAllocationMode || 'percentage',
                     // absoluteGoals: userSettings.absoluteGoals || { needs: 0, wants: 0, savings: 0 }
                     goalMode: userSettings.goalMode ?? true,
-                    displayName: userSettings.displayName || ''
+                    displayName: userSettings.displayName || '',
+                    showMascot: userSettings.showMascot ?? true
                 };
 
                 // Update state and localStorage
@@ -109,7 +111,8 @@ export const SettingsProvider = ({ children }) => {
             const dbPayload = {
                 ...updatedSettings,
                 fixedMode: updatedSettings.fixedLifestyleMode, // Map UI 'fixedLifestyleMode' to DB 'fixedMode'
-                displayName: updatedSettings.displayName
+                displayName: updatedSettings.displayName,
+                showMascot: updatedSettings.showMascot
             };
             // Remove the UI-only key to be clean (optional, but good practice if DB is strict)
             delete dbPayload.fixedLifestyleMode;
