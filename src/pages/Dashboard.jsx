@@ -40,7 +40,7 @@ import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { BudgetAvatar } from "../components/ui/BudgetAvatar";
+// import { BudgetAvatar } from "../components/ui/BudgetAvatar";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 
 export default function Dashboard() {
@@ -219,6 +219,7 @@ export default function Dashboard() {
     }, [fabButtons, setFabButtons, clearFabButtons]);
 
     // --- CASPER'S MOOD LOGIC (Monthly Context Only) ---
+    /*
     const budgetHealth = useMemo(() => {
         if (!currentMonthIncome || currentMonthIncome === 0) return 0.5; // Neutral if no data
         const spendRatio = currentMonthExpenses / currentMonthIncome;
@@ -235,6 +236,7 @@ export default function Dashboard() {
         // 4. You saved > 30%. Casper Ascends.
         return 1.0;
     }, [currentMonthIncome, currentMonthExpenses]);
+    */
 
     // Combine loading states. The dashboard summary relies heavily on transactions and categories.
     const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
@@ -331,7 +333,7 @@ export default function Dashboard() {
 
                     {/* DESKTOP PLACEMENT: Right side of Hero */}
                     <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
-                        <BudgetAvatar health={budgetHealth} />
+                        {/* <BudgetAvatar health={budgetHealth} /> */}
                         <UpcomingTransactions
                             recurringWithStatus={recurringWithStatus}
                             onMarkPaid={handleMarkPaid}
