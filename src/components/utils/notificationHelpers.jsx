@@ -13,30 +13,30 @@ import {
     useSystemBudgetsForPeriod,
     useSystemBudgetManagement,
 } from "../components/hooks/useBase44Entities";
-import { useMergedCategories } from "../components/hooks/useMergedCategories";
+import { useMergedCategories } from "../hooks/useMergedCategories";
 import {
     useMonthlyIncome,
     useDashboardSummary,
     useActiveBudgets,
     useMonthlyBreakdown
-} from "../components/hooks/useDerivedData";
+} from "../hooks/useDerivedData";
 import {
     useTransactionActions,
     useCustomBudgetActions,
-} from "../components/hooks/useActions";
+} from "../hooks/useActions";
 import {
     getCustomBudgetStats,
     getSystemBudgetStats
-} from "../components/utils/financialCalculations";
-import MonthNavigator from "../components/ui/MonthNavigator";
-import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
-import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard";
-import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
-import RecentTransactions from "../components/dashboard/RecentTransactions";
-import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
-import QuickAddIncome from "../components/transactions/QuickAddIncome";
-import QuickAddBudget from "../components/dashboard/QuickAddBudget";
-import { ImportWizardDialog } from "../components/import/ImportWizard";
+} from "./financialCalculations";
+import MonthNavigator from "../ui/MonthNavigator";
+import RemainingBudgetCard from "../dashboard/RemainingBudgetCard";
+import MobileRemainingBudgetCard from "../dashboard/MobileRemainingBudgetCard";
+import CustomBudgetsDisplay from "../dashboard/CustomBudgetsDisplay";
+import RecentTransactions from "../dashboard/RecentTransactions";
+import QuickAddTransaction from "../transactions/QuickAddTransaction";
+import QuickAddIncome from "../transactions/QuickAddIncome";
+import QuickAddBudget from "../dashboard/QuickAddBudget";
+import { ImportWizardDialog } from "../import/ImportWizard";
 import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
