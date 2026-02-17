@@ -12,11 +12,98 @@ import { formatDateString, parseDate } from "../utils/dateUtils";
  * across future days based on historical intensity.
  * Complexity: O(N) - Single pass over history.
  */
-const calculateDailyProjections = (historyTxns, currentTxns, daysInMonth, todayDay, type) => {
+const calculateDailyProjections = (historyTxns, currentTxns, daysInMonth, todayDay, type, settings) => {
     const predictionMap = {};
     if (!historyTxns || historyTxns.length === 0) return predictionMap;
 
-    // 1. Calculate Historical Average (The "Target")
+    // --- MODE A: DISCRETE INCOME ENGINE ---
+    if (type === 'income') {
+        const months = {}; // Grouped by YYYY-MM
+
+        historyTxns.forEach(t => {
+            if (t.type !== 'income') return;
+            const date = t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
+            if (!date) return;
+            const key = format(date, 'yyyy-MM');
+            if (!months[key]) months[key] = [];
+            months[key].push({ amount: Math.abs(Number(t.amount)), day: getDate(date) });
+        });
+
+        const monthKeys = Object.keys(months);
+        const numMonths = Math.max(1, monthKeys.size || monthKeys.length);
+
+        // 1. Extract Salary (Max transaction per month)
+        const monthlySalaries = monthKeys.map(k => {
+            const sorted = months[k].sort((a, b) => b.amount - a.amount);
+            return sorted[0] || { amount: 0, day: 25 };
+        });
+
+        const avgSalary = monthlySalaries.reduce((sum, s) => sum + s.amount, 0) / numMonths;
+        const salaryDays = monthlySalaries.map(s => s.day).sort((a, b) => a - b);
+        const medianSalaryDay = salaryDays[Math.floor(salaryDays.length / 2)] || 25;
+
+        // 2. Extract "Large Secondary" (> €100 and not the Salary)
+        // We use the Median of monthly secondary totals to kill outliers (like August)
+        const secondaryMonthlyTotals = monthKeys.map(k => {
+            const sorted = months[k].sort((a, b) => b.amount - a.amount);
+            return sorted.slice(1)
+                .filter(t => t.amount >= 100)
+                .reduce((sum, t) => sum + t.amount, 0);
+        }).sort((a, b) => a - b);
+
+        const medianSecondaryAmount = secondaryMonthlyTotals[Math.floor(secondaryMonthlyTotals.length / 2)] || 0;
+
+        // 3. Petty Rewards (Average of everything else)
+        const totalPetty = monthKeys.reduce((sum, k) => {
+            const sorted = months[k].sort((a, b) => b.amount - a.amount);
+            const pettySum = sorted.slice(1)
+                .filter(t => t.amount < 100)
+                .reduce((s, t) => s + t.amount, 0);
+            return sum + pettySum;
+        }, 0);
+        const avgPettyTotal = totalPetty / numMonths;
+
+        // 4. Check Current Month Progress
+        const currentIncomes = currentTxns.map(t => Math.abs(Number(t.amount))).sort((a, b) => b - a);
+        const currentMax = currentIncomes[0] || 0;
+        const currentSecondaryTotal = currentTxns
+            .filter(t => {
+                const amt = Math.abs(Number(t.amount));
+                return amt >= 100 && amt < (avgSalary * 0.8);
+            })
+            .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+
+        // --- APPLY PREDICTIONS ---
+        // A. Predict Salary if missing (Threshold 80% of average)
+        if (currentMax < (avgSalary * 0.8) && medianSalaryDay > todayDay) {
+            predictionMap[medianSalaryDay] = (predictionMap[medianSalaryDay] || 0) + avgSalary;
+        }
+
+        // B. Predict Secondary if missing and "likely" (occured in > 50% of months)
+        const secondaryLikelihood = secondaryMonthlyTotals.filter(v => v > 0).length / numMonths;
+        if (currentSecondaryTotal < (medianSecondaryAmount * 0.7) && secondaryLikelihood > 0.5) {
+            // We place this roughly in the middle of the remaining month
+            const middleDay = Math.min(daysInMonth, Math.max(todayDay + 1, 15));
+            predictionMap[middleDay] = (predictionMap[middleDay] || 0) + medianSecondaryAmount;
+        }
+
+        // C. Predict Petty (Aggregate into one single expected "Bonus" on the last day)
+        if (avgPettyTotal > 0 && todayDay < daysInMonth) {
+            predictionMap[daysInMonth] = (predictionMap[daysInMonth] || 0) + avgPettyTotal;
+        }
+
+        return predictionMap;
+    }
+
+    // --- MODE B: WEIGHTED HEATMAP (For Expenses) ---
+    return calculateExpenseHeatmap(historyTxns, currentTxns, daysInMonth, todayDay, type);
+};
+
+/**
+ * HELPER: Original Heatmap Logic for Expenses
+ */
+const calculateExpenseHeatmap = (historyTxns, currentTxns, daysInMonth, todayDay, type) => {
+    const predictionMap = {};
     let totalHistory = 0;
     const dayWeights = new Array(32).fill(0); // Index 1-31
     const uniqueMonths = new Set();
@@ -107,8 +194,8 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
             });
 
             // Run the Heatmap Engine
-            predictedExpenses = calculateDailyProjections(historyTxns, currentExpenses, daysInMonth, todayDay, 'expense');
-            predictedIncomes = calculateDailyProjections(historyTxns, currentIncomes, daysInMonth, todayDay, 'income');
+            predictedExpenses = calculateDailyProjections(historyTxns, currentExpenses, daysInMonth, todayDay, 'expense', settings);
+            predictedIncomes = calculateDailyProjections(historyTxns, currentIncomes, daysInMonth, todayDay, 'income', settings);
         }
 
         // Create an array of days 1..N
