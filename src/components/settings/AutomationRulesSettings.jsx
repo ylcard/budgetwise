@@ -3,14 +3,13 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, ChevronLeft, ChevronRight, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
+import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, ChevronLeft, ChevronRight, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import CategorySelect from "@/components/ui/CategorySelect";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFAB } from "@/components/hooks/FABContext"; // Import Global FAB
 import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
@@ -276,22 +275,33 @@ export default function AutomationRulesSettings() {
                     <div className="hidden md:flex items-center gap-2">
                         <CategorySelect
                             categories={categories}
-                            value={filterCategory}
-                            onValueChange={setFilterCategory}
+                            value={filterCategory === 'all' ? undefined : filterCategory}
+                            onValueChange={(val) => setFilterCategory(val || 'all')}
                             placeholder="All Categories"
                             className="w-[180px] h-9 bg-white"
                         />
 
-                        <Select value={filterPriority} onValueChange={setFilterPriority}>
-                            <SelectTrigger className="w-[140px] h-9 bg-white">
-                                <SelectValue placeholder="Priority" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Priorities</SelectItem>
-                                <SelectItem value="needs">Needs</SelectItem>
-                                <SelectItem value="wants">Wants</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        {/* Toggle Style Filter for Priority */}
+                        <div className="flex bg-gray-100 p-0.5 rounded-lg h-9 items-center">
+                            <button
+                                onClick={() => setFilterPriority('all')}
+                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${filterPriority === 'all' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                All
+                            </button>
+                            <button
+                                onClick={() => setFilterPriority('needs')}
+                                className={`px-3 py-1 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${filterPriority === 'needs' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                <ShieldCheck className="w-3 h-3" /> Essentials
+                            </button>
+                            <button
+                                onClick={() => setFilterPriority('wants')}
+                                className={`px-3 py-1 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${filterPriority === 'wants' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                <Sparkles className="w-3 h-3" /> Lifestyle
+                            </button>
+                        </div>
 
                         {(filterText || filterCategory !== 'all' || filterPriority !== 'all') && (
                             <CustomButton variant="ghost" size="sm" onClick={() => {
