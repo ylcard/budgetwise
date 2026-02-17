@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, TrendingUp, TrendingDown, Award, Calendar, ChevronDown } from "lucide-react";
+import { X, Download, TrendingUp, TrendingDown, Award, Calendar, ChevronDown, BarChart2, ArrowRight } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { format } from "date-fns";
 import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
@@ -116,6 +117,7 @@ export const WrappedStory = ({
     const [page, setPage] = useState(0);
     const [direction, setDirection] = useState(0);
     const exportRef = useRef(null);
+    const navigate = useNavigate();
 
     // 3. Centralized Financial Health Logic
     const healthData = useMemo(() => {
@@ -339,12 +341,33 @@ export const WrappedStory = ({
                 </div>
             </div>
 
-            <button
-                onClick={handleDownload}
-                className="mt-8 bg-white text-indigo-900 px-6 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-indigo-50 transition-colors"
-            >
-                <Download size={18} /> Save Receipt
-            </button>
+            <div className="mt-8 space-y-6 flex flex-col items-center">
+                <div className="max-w-[280px]">
+                    <p className="text-slate-400 text-sm leading-relaxed">
+                        This is just the surface. Your <span className="text-indigo-300 font-semibold">Reports</span> page contains a deep-dive into your
+                        pacing, lifestyle creep, and stability metrics.
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => {
+                        onClose();
+                        navigate("/reports");
+                    }}
+                    className="bg-white text-indigo-900 px-8 py-4 rounded-full font-bold flex items-center gap-3 hover:bg-indigo-50 shadow-xl transition-all hover:scale-105 active:scale-95 group"
+                >
+                    <BarChart2 size={20} className="text-indigo-600" />
+                    View Deep Dive
+                    <ArrowRight size={18} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                <button
+                    onClick={handleDownload}
+                    className="text-slate-500 text-xs font-medium hover:text-slate-300 transition-colors flex items-center gap-1.5"
+                >
+                    <Download size={14} /> Save snapshot for records
+                </button>
+            </div>
         </div>
     ];
 
