@@ -1,7 +1,38 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, useAnimation } from "framer-motion";
 
-export const BudgetAvatar = ({ health = 0.5 }) => {
+export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloating = false }) => {
     const canvasRef = useRef(null);
+    const [scurryOffset, setScurryOffset] = useState({ x: 0, y: 0 });
+    const ghostPos = useRef({ x: 0, y: 0 });
+
+    // Proximity detection for "scurrying"
+    useEffect(() => {
+        const handlePointer = (e) => {
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+
+            const dx = x - ghostPos.current.x;
+            const dy = y - ghostPos.current.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 80) { // Scurry threshold
+                setScurryOffset({
+                    x: (Math.random() - 0.5) * 150,
+                    y: (Math.random() - 0.5) * 150
+                });
+                // Reset after a bit
+                setTimeout(() => setScurryOffset({ x: 0, y: 0 }), 1000);
+            }
+        };
+
+        window.addEventListener("mousemove", handlePointer);
+        window.addEventListener("touchstart", handlePointer);
+        return () => {
+            window.removeEventListener("mousemove", handlePointer);
+            window.removeEventListener("touchstart", handlePointer);
+        };
+    }, []);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -23,6 +54,10 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
             const height = canvas.height;
             const centerX = width / 2;
             const centerY = height / 2;
+
+            // Update ref for proximity checking
+            const rect = canvas.getBoundingClientRect();
+            ghostPos.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 
             ctx.clearRect(0, 0, width, height);
 
@@ -74,7 +109,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 shakeX = (Math.random() - 0.5) * 3; // Tremble
             } else if (isThriving) {
 
-                // --- THRIVING: PRIDE PARADE MODE --- 		
+                // --- THRIVING: PRIDE PARADE MODE ---      
                 // 1. LAUNCH (Shoots up with Rainbow Trail)
                 if (phase === 'launch') {
                     ghostY -= 7; // Slower, more majestic ascent
@@ -241,7 +276,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
             }
             ctx.restore();
 
-            // --- EYES ---			
+            // --- EYES ---         
             ctx.save();
             ctx.globalAlpha = alpha;
             ctx.translate(xPos, yPos + (bounce * 0.1)); // Face follows body slightly less
@@ -351,12 +386,22 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded-xl border border-slate-800 transition-colors duration-500 w-full overflow-hidden">
-            {/* Canvas Resolution increased and set to w-full to fill container */}
-            <canvas ref={canvasRef} width={400} height={350} className="w-full h-auto max-w-[400px]" />
-            <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest transition-all">
-                {getStatusText()}
-            </p>
-        </div>
+        <motion.div
+            animate={{ x: scurryOffset.x, y: scurryOffset.y }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className={`flex flex-col items-center justify-center pointer-events-none select-none ${!isFloating ? 'w-full' : ''}`}
+        >
+            <canvas
+                ref={canvasRef}
+                width={400}
+                height={350}
+                style={{ width: size, height: 'auto' }}
+            />
+            {showText && (
+                <p className="text-slate-400 text-[10px] font-bold mt-1 uppercase tracking-widest opacity-50">
+                    {getStatusText()}
+                </p>
+            )}
+        </motion.div>
     );
 };
