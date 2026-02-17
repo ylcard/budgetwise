@@ -24,23 +24,27 @@ const calculateDailyProjections = (historyTxns, currentTxns, daysInMonth, todayD
     // Single Pass: Build Heatmap & Totals
     historyTxns.forEach(t => {
         if (t.type !== type) return;
-        const date = parseDate(t.date);
-        if (!date) return;
+        // Priority: paidDate -> date for actual cash flow impact
+        const effectiveDate = t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
+        if (!effectiveDate) return;
 
         const amt = Number(t.amount);
         totalHistory += amt;
 
         // Weighting: We add the AMOUNT to the day's weight.
-        // Large transactions (Salary/Rent) create massive gravity wells on specific days.
-        dayWeights[getDate(date)] += amt;
-        uniqueMonths.add(format(date, 'yyyy-MM'));
+        dayWeights[getDate(effectiveDate)] += amt;
+        uniqueMonths.add(format(effectiveDate, 'yyyy-MM'));
     });
 
-    const numMonths = Math.max(3, uniqueMonths.size); // Min 3 to smooth out noise
+    // Use actual month count to avoid diluting averages for new users
+    const numMonths = Math.max(1, uniqueMonths.size);
     const avgMonthly = totalHistory / numMonths;
 
     // 2. Calculate Remaining "Gap" to fill
-    const currentTotal = currentTxns.reduce((sum, t) => sum + Number(t.amount), 0);
+    // Use absolute value to ensure math is consistent regardless of sign
+    const currentTotal = currentTxns.reduce((sum, t) => {
+        return sum + Math.abs(Number(t.amount));
+    }, 0);
     let remainingGap = Math.max(0, avgMonthly - currentTotal);
 
     if (remainingGap <= 0) return predictionMap;
@@ -52,11 +56,18 @@ const calculateDailyProjections = (historyTxns, currentTxns, daysInMonth, todayD
         totalFutureWeight += dayWeights[d];
     }
 
-    // If history has data for future days, distribute proportionally
+    const remainingDays = daysInMonth - todayDay;
+
     if (totalFutureWeight > 0) {
+        // Weighted distribution based on historical "gravity wells"
         for (let d = todayDay + 1; d <= daysInMonth; d++) {
             const share = remainingGap * (dayWeights[d] / totalFutureWeight);
             predictionMap[d] = share;
+        }
+    } else if (remainingDays > 0) {
+        // Fallback: Even distribution if no historical weights exist for future days
+        for (let d = todayDay + 1; d <= daysInMonth; d++) {
+            predictionMap[d] = remainingGap / remainingDays;
         }
     }
 
@@ -86,8 +97,14 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
 
         if (isCurrentMonth && historyTxns.length > 0) {
             // Filter current transactions for context
-            const currentExpenses = transactions.filter(t => t.type === 'expense');
-            const currentIncomes = transactions.filter(t => t.type === 'income');
+            const currentExpenses = transactions.filter(t => {
+                const tDate = t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
+                return t.type === 'expense' && tDate && tDate.getMonth() === selectedMonth && tDate.getFullYear() === selectedYear;
+            });
+            const currentIncomes = transactions.filter(t => {
+                const tDate = t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
+                return t.type === 'income' && tDate && tDate.getMonth() === selectedMonth && tDate.getFullYear() === selectedYear;
+            });
 
             // Run the Heatmap Engine
             predictedExpenses = calculateDailyProjections(historyTxns, currentExpenses, daysInMonth, todayDay, 'expense');
