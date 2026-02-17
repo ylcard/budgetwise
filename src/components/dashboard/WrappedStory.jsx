@@ -299,16 +299,20 @@ export const WrappedStory = ({
                     <div className="text-slate-500 italic mt-8">No expenses recorded yet.</div>
                 ) : null}
             </div>
+
+            {/* Gradient Fade to hint at more content */}
+            {topCategories.length > 3 && (
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none z-10" />
+            )}
+
             {/* Scroll Indicator */}
             {topCategories.length > 3 && (
                 <motion.div
-                    animate={{ y: [0, 5, 0] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none"
+                    animate={{ y: [0, 8, 0], opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none z-20"
                 >
-                    <div className="bg-slate-900/80 backdrop-blur rounded-full p-2 text-slate-400 shadow-lg border border-slate-700">
-                        <ChevronDown size={20} />
-                    </div>
+                    <ChevronDown size={28} className="text-slate-400" strokeWidth={1.5} />
                 </motion.div>
             )}
         </div>,
