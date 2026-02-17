@@ -122,10 +122,12 @@ export const WrappedStory = ({
     const exportRef = useRef(null);
     const navigate = useNavigate();
 
-    // Reset scroll states when page changes
+    // Reset scroll states when page changes to Slide 4
     useEffect(() => {
-        setShowScrollHint(true);
-        setIsAtBottom(false);
+        if (page === 3) {
+            setShowScrollHint(true);
+            setIsAtBottom(false);
+        }
     }, [page]);
 
     // Lock body scroll when story is open
@@ -241,12 +243,13 @@ export const WrappedStory = ({
         // SLIDE 4: HEAVY HITTERS
         <div
             ref={heavyHittersRef}
-            className="h-full w-full overflow-y-auto no-scrollbar relative"
+            className="flex-1 w-full overflow-y-auto no-scrollbar relative"
             onScroll={(e) => {
                 const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-                setShowScrollHint(scrollTop < 20);
-                // Detect bottom with 10px buffer
-                setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
+                // Use Math.ceil to handle fractional pixels on high-DPI screens
+                const atBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight - 20;
+                setShowScrollHint(scrollTop < 30);
+                setIsAtBottom(atBottom);
             }}
         >
             <div className="flex flex-col items-center min-h-full p-8 pb-32">
@@ -387,14 +390,14 @@ export const WrappedStory = ({
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-8">
             {/* Close Button */}
-            <button onClick={onClose} className="absolute top-4 right-4 z-50 text-white/50 hover:text-white p-2">
-                <X size={32} />
+            <button onClick={onClose} className="fixed top-6 right-6 z-[60] text-white/50 hover:text-white p-2">
+                <X size={36} />
             </button>
 
             {/* Story Container */}
-            <div className="relative w-full h-full md:w-[400px] md:h-[700px] md:rounded-[40px] bg-slate-900 overflow-hidden shadow-2xl border-none md:border border-slate-800">
+            <div className="relative w-full h-full max-h-[850px] md:w-[400px] md:h-[700px] md:rounded-[40px] bg-slate-900 overflow-hidden shadow-2xl border-none md:border border-slate-800 flex flex-col">
 
                 {/* Progress Bars */}
                 <div className="absolute top-6 left-4 right-4 z-20 flex gap-1.5">
@@ -426,7 +429,7 @@ export const WrappedStory = ({
                         dragElastic={1}
                         onDragEnd={(e, { offset, velocity }) => {
                             const swipe = Math.abs(offset.x) * velocity.x;
-                            if (swipe < -100) paginate(1);
+                            if (swipe < -100 && !isAtBottom) paginate(1); // Optional: prevent swipe if scrolling
                             else if (swipe > 100) paginate(-1);
                         }}
                     >
@@ -435,29 +438,34 @@ export const WrappedStory = ({
                 </AnimatePresence>
 
                 {/* Fixed Scroll Hint - Sticks to modal bottom specifically for Slide 4 */}
-                <AnimatePresence>
-                    {page === 3 && topCategories.length > 3 && (showScrollHint || isAtBottom) && (
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none z-20 flex flex-col justify-end pb-6"
-                        >
-                            <motion.button
-                                onClick={() => {
-                                    if (isAtBottom) heavyHittersRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                                animate={isAtBottom ? { scale: [1, 1.1, 1], opacity: 1 } : { y: [0, 8, 0], opacity: [0.3, 0.6, 0.3] }}
-                                transition={isAtBottom ? { repeat: Infinity, duration: 3 } : { repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                                className={`flex justify-center mx-auto transition-all ${isAtBottom ? 'pointer-events-auto cursor-pointer p-2 rounded-full bg-indigo-500/20 border border-indigo-500/30' : 'pointer-events-none'}`}
+                {page === 3 && topCategories.length > 3 && (
+                    <AnimatePresence>
+                        {(showScrollHint || isAtBottom) && (
+                            <motion.div
+                                key="scroll-hint-wrapper"
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none z-[40] flex flex-col justify-end pb-6"
                             >
-                                {isAtBottom ? (
-                                    <ChevronUp size={28} className="text-indigo-400" strokeWidth={2.5} />
-                                ) : (
-                                    <ChevronDown size={28} className="text-slate-400" strokeWidth={1.5} />
-                                )}
-                            </motion.button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                <motion.button
+                                    key={isAtBottom ? "up-btn" : "down-hint"}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (isAtBottom) heavyHittersRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    animate={isAtBottom ? { scale: [1, 1.1, 1], opacity: 1 } : { y: [0, 8, 0], opacity: [0.3, 0.6, 0.3] }}
+                                    transition={isAtBottom ? { repeat: Infinity, duration: 3 } : { repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                                    className={`flex justify-center mx-auto transition-all ${isAtBottom ? 'pointer-events-auto cursor-pointer p-2 rounded-full bg-indigo-500/20 border border-indigo-500/30' : 'pointer-events-none'}`}
+                                >
+                                    {isAtBottom ? (
+                                        <ChevronUp size={28} className="text-indigo-400" strokeWidth={2.5} />
+                                    ) : (
+                                        <ChevronDown size={28} className="text-slate-400" strokeWidth={1.5} />
+                                    )}
+                                </motion.button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                )}
 
                 {/* Navigation Tap Zones */}
                 <div className="absolute inset-0 z-10 flex pointer-events-none">
