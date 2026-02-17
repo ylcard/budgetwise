@@ -9,6 +9,7 @@ export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloa
         width: window.innerWidth,
         height: Math.max(document.documentElement.scrollHeight, window.innerHeight)
     });
+    const ghostPos = useRef({ x: 0, y: 0 });
 
     const [position, setPosition] = useState({
         x: window.innerWidth - 200,
@@ -82,7 +83,9 @@ export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloa
 
             // Update ref for proximity checking
             const rect = canvas.getBoundingClientRect();
-            ghostPos.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            if (rect) {
+                ghostPos.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            }
 
             ctx.clearRect(0, 0, width, height);
 
