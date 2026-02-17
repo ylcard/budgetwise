@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, TrendingUp, TrendingDown, Award, Calendar, ChevronDown, BarChart2, ArrowRight } from "lucide-react";
