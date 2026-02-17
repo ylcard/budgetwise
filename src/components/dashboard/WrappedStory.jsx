@@ -132,6 +132,19 @@ export const WrappedStory = ({
         }
     }, [page]);
 
+    // Auto-advance logic
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const autoAdvanceTimer = setTimeout(() => {
+            if (page < 4) { // Advance until the last slide (Slide 5 / Index 4)
+                paginate(1);
+            }
+        }, 5000); // Match the 5s duration of the progress bars
+
+        return () => clearTimeout(autoAdvanceTimer);
+    }, [page, isOpen]);
+
     // Lock body scroll when story is open
     useEffect(() => {
         if (isOpen) {
