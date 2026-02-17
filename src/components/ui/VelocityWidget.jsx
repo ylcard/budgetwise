@@ -53,34 +53,46 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
 
             // 2. Separate Current Month Data
             const currentTxns = transactions
-                .filter(t => (t.type === type || (type === 'expense' && t.type === 'savings')))
+                .filter(t => t.type === type)
                 .map(t => ({ ...t, amount: Number(t.amount) }));
 
             const currentTotal = currentTxns.reduce((sum, t) => sum + t.amount, 0);
             const todayDay = getDate(today);
 
             // --- 3. ANCHOR LOGIC (Salary/Rent Detection) ---
-            // We look for Large Recurring Amounts, not just dates.
-            const clusters = [];
+            // PERFORMANCE FIX: Use a Map for O(1) clustering instead of array.find (O(N))
+            // We round amounts to creating "Buckets" (e.g. 1742 -> 1740)
+            const clusterMap = new Map();
 
-            // Simple clustering: group by amount +/- 10%
-            historyTxns.filter(t => t.type === type).forEach(t => {
+            historyTxns.forEach(t => {
+                if (t.type !== type) return;
                 const amt = Number(t.amount);
                 if (amt < (avgMonthly * 0.15)) return; // Ignore small noise for anchors
 
-                const match = clusters.find(c => Math.abs(c.avgAmount - amt) / c.avgAmount < 0.1);
-                if (match) {
-                    match.count++;
-                    match.total += amt;
-                    match.avgAmount = match.total / match.count;
-                    match.days.push(getDate(parseDate(t.date)));
-                } else {
-                    clusters.push({ avgAmount: amt, total: amt, count: 1, days: [getDate(parseDate(t.date))] });
+
+                // Round to nearest 10 to group similar amounts
+                const key = Math.round(amt / 10) * 10;
+
+                if (!clusterMap.has(key)) {
+                    clusterMap.set(key, { total: 0, count: 0, days: [] });
                 }
+                const bucket = clusterMap.get(key);
+                bucket.total += amt;
+                bucket.count++;
+                bucket.days.push(getDate(parseDate(t.date)));
             });
 
             // Valid Anchors must appear in at least 50% of history
-            const validAnchors = clusters.filter(c => c.count >= (numMonths * 0.5));
+            const validAnchors = [];
+            clusterMap.forEach(bucket => {
+                if (bucket.count >= (numMonths * 0.5)) {
+                    validAnchors.push({
+                        avgAmount: bucket.total / bucket.count,
+                        days: bucket.days,
+                        count: bucket.count
+                    });
+                }
+            });
             let predictedAnchorTotal = 0;
 
             validAnchors.forEach(anchor => {
@@ -152,7 +164,7 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                 .reduce((sum, t) => sum + Number(t.amount), 0);
 
             const expense = dayTxns
-                .filter(t => t.type === 'expense' || t.type === 'savings') // specific logic can be adjusted
+                .filter(t => t.type === 'expense')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
 
             // Map data for charts
