@@ -239,6 +239,26 @@ export const notifyGoalAtRisk = (userEmail, goalType, shortfall) => {
 };
 
 /**
+ * Report/Story Notifications
+ */
+export const notifyMonthlyRewindReady = (userEmail, monthIndex, year) => {
+    // Get full month name for the message
+    const monthName = new Date(year, monthIndex).toLocaleString('default', { month: 'long' });
+
+    return createNotification({
+        title: `${monthName} Rewind Ready 🎬`,
+        message: `Your financial story for ${monthName} is ready. See your highlights!`,
+        type: 'story',
+        category: 'reports',
+        priority: 'low',
+        actionUrl: `/?story=true&month=${monthIndex}&year=${year}`, // Deep link to Dashboard
+        actionLabel: 'Watch Story',
+        metadata: { monthIndex, year },
+        userEmail
+    });
+};
+
+/**
  * Batch notification cleanup
  */
 export const dismissExpiredNotifications = async (userEmail) => {
@@ -250,7 +270,7 @@ export const dismissExpiredNotifications = async (userEmail) => {
         });
 
         if (expired.length > 0) {
-            await Promise.all(expired.map(n => 
+            await Promise.all(expired.map(n =>
                 base44.entities.Notification.update(n.id, { isDismissed: true })
             ));
         }
