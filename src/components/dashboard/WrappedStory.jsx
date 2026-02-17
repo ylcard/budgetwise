@@ -28,30 +28,16 @@ const variants = {
     })
 };
 
-// Helper to aggregate top merchant from transactions
-const useTopMerchant = (transactions) => {
+// Helper to get top 3 expense categories
+const useTopCategories = (categories) => {
     return useMemo(() => {
-        if (!transactions || transactions.length === 0) return null;
-        const map = {};
-        transactions.forEach(t => {
-            // Only count valid expenses (exclude refunds or zero amounts)
-            if (t.type === 'expense' && t.amount > 0) {
-                // Use Merchant field if available, fallback to Title
-                let name = t.merchant || t.title || "Unknown";
-
-                // CLEANUP: Remove common bank junk (e.g. "Payment to", dates, random numbers)
-                // This is a basic cleaner to group "Starbucks 001" and "Starbucks 002"
-                name = name.replace(/\b(POS|DEBIT|CARD|PURCHASE|Payment to|Transfer to)\b/gi, "")
-                    .replace(/[0-9]{2,}/g, "") // Remove long number strings
-                    .replace(/[\*\-]/g, " ")   // Replace special chars with space
-                    .trim();
-
-                map[name] = (map[name] || 0) + Number(t.amount);
-            }
-        });
-        const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-        return sorted.length > 0 ? { name: sorted[0][0], amount: sorted[0][1] } : null;
-    }, [transactions]);
+        if (!categories || categories.length === 0) return [];
+        // Filter out income/zero and sort by amount
+        return [...categories]
+            .filter(c => c.amount > 0)
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 3);
+    }, [categories]);
 };
 
 export const WrappedStory = ({
@@ -71,14 +57,9 @@ export const WrappedStory = ({
     const { budgetHealth: healthScore } = useHealth();
 
     // Derived Data
-    const topMerchant = useTopMerchant(transactions);
     const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
 
-    // Find top category from categories array (assuming it's sorted or we sort it)
-    const topCategory = useMemo(() => {
-        if (!categories || categories.length === 0) return null;
-        return [...categories].sort((a, b) => b.amount - a.amount)[0];
-    }, [categories]);
+    const topCategories = useTopCategories(categories);
 
     const paginate = (newDirection) => {
         const nextPage = page + newDirection;
@@ -159,26 +140,43 @@ export const WrappedStory = ({
             </p>
         </div>,
 
-        // SLIDE 4: GUILTY PLEASURE
+        // SLIDE 4: WHERE IT WENT (KANBAN)
         <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-12">Top Categories</h3>
+            <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-8">Heavy Hitters</h3>
 
-            {topCategory && (
-                <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-3xl w-full shadow-xl mb-6">
-                    <div className="text-4xl mb-4">🏆</div>
-                    <p className="text-indigo-100 font-medium mb-1">Top Category</p>
-                    <h2 className="text-3xl font-bold text-white mb-2">{topCategory.name}</h2>
-                    <p className="text-2xl font-mono text-indigo-200">{formatCurrency(topCategory.amount, settings)}</p>
-                </div>
-            )}
+            <div className="w-full space-y-4">
+                {topCategories.map((cat, index) => (
+                    <motion.div
+                        key={cat.id}
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`p-5 rounded-2xl flex items-center justify-between text-left ${index === 0 ? 'bg-gradient-to-r from-amber-600/80 to-orange-600/80 border border-amber-500/30' :
+                                index === 1 ? 'bg-slate-800 border border-slate-700' :
+                                    'bg-slate-800/50 border border-slate-800'
+                            }`}
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="text-2xl">{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</div>
+                            <div>
+                                <h4 className={`font-bold ${index === 0 ? 'text-white' : 'text-slate-200'}`}>
+                                    {cat.name}
+                                </h4>
+                                <p className={`text-xs ${index === 0 ? 'text-amber-100' : 'text-slate-400'}`}>
+                                    {cat.percentage?.toFixed(1)}% of expenses
+                                </p>
+                            </div>
+                        </div>
+                        <div className={`text-lg font-mono font-bold ${index === 0 ? 'text-white' : 'text-slate-300'}`}>
+                            {formatCurrency(cat.amount, settings)}
+                        </div>
+                    </motion.div>
+                ))}
 
-            {topMerchant && (
-                <div className="bg-slate-800 p-6 rounded-3xl w-full border border-slate-700">
-                    <p className="text-slate-400 font-medium mb-1">Top Expense</p>
-                    <h2 className="text-xl font-bold text-white mb-1 truncate">{topMerchant.name}</h2>
-                    <p className="text-lg font-mono text-slate-300">{formatCurrency(topMerchant.amount, settings)}</p>
-                </div>
-            )}
+                {topCategories.length === 0 && (
+                    <div className="text-slate-500 italic">No expenses recorded yet.</div>
+                )}
+            </div>
         </div>,
 
         // SLIDE 5: SUMMARY (EXPORTABLE)
@@ -202,7 +200,7 @@ export const WrappedStory = ({
                     </div>
                     <div className="flex justify-between border-b border-slate-700 pb-2">
                         <span className="text-slate-400">Top Spend</span>
-                        <span className="font-bold text-white truncate max-w-[150px]">{topCategory?.name || '-'}</span>
+                        <span className="font-bold text-white truncate max-w-[150px]">{topCategories[0]?.name || '-'}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-slate-400">Vibe Check</span>
