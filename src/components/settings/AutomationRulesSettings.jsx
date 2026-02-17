@@ -3,13 +3,14 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, ChevronLeft, ChevronRight } from "lucide-react";
+import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, ChevronLeft, ChevronRight, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import CategorySelect from "@/components/ui/CategorySelect";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFAB } from "@/components/hooks/FABContext"; // Import Global FAB
 import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
@@ -37,6 +38,12 @@ export default function AutomationRulesSettings() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // --- SORTING & FILTERING STATE ---
+    const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+    const [filterText, setFilterText] = useState('');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterPriority, setFilterPriority] = useState('all');
 
     // FAB Integration
     const { setFabButtons, clearFabButtons } = useFAB();
@@ -93,12 +100,58 @@ export default function AutomationRulesSettings() {
     const [editingId, setEditingId] = useState(null); // Tracks which row is having its title edited
     const [editingKeyword, setEditingKeyword] = useState(null); // { ruleId, index, value }
 
+    // --- FILTERING & SORTING LOGIC ---
+    const processedRules = useMemo(() => {
+        let result = [...rules];
+
+        // 1. Filtering
+        if (filterText) {
+            const lowerText = filterText.toLowerCase();
+            result = result.filter(r =>
+                (r.renamedTitle && r.renamedTitle.toLowerCase().includes(lowerText)) ||
+                (r.keyword && r.keyword.toLowerCase().includes(lowerText)) ||
+                (r.regexPattern && r.regexPattern.toLowerCase().includes(lowerText))
+            );
+        }
+        if (filterCategory !== 'all') {
+            result = result.filter(r => r.categoryId === filterCategory);
+        }
+        if (filterPriority !== 'all') {
+            result = result.filter(r => r.financial_priority === filterPriority);
+        }
+
+        // 2. Sorting
+        result.sort((a, b) => {
+            let aValue = a[sortConfig.key];
+            let bValue = b[sortConfig.key];
+
+            // Custom Sort Getters
+            if (sortConfig.key === 'keywords') {
+                aValue = a.regexPattern || a.keyword || "";
+                bValue = b.regexPattern || b.keyword || "";
+            } else if (sortConfig.key === 'category') {
+                aValue = categories.find(c => c.id === a.categoryId)?.name || "";
+                bValue = categories.find(c => c.id === b.categoryId)?.name || "";
+            }
+
+            // Handle nulls/undefined for generic strings
+            if (!aValue) aValue = "";
+            if (!bValue) bValue = "";
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return result;
+    }, [rules, filterText, filterCategory, filterPriority, sortConfig, categories]);
+
     // Pagination Logic
-    const totalPages = Math.ceil(rules.length / itemsPerPage);
+    const totalPages = Math.ceil(processedRules.length / itemsPerPage);
     const paginatedRules = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
-        return rules.slice(start, start + itemsPerPage);
-    }, [rules, currentPage, itemsPerPage]);
+        return processedRules.slice(start, start + itemsPerPage);
+    }, [processedRules, currentPage, itemsPerPage]);
 
     // Reset page if filtered results shrink
     useEffect(() => {
@@ -115,6 +168,29 @@ export default function AutomationRulesSettings() {
                 [field]: value
             }
         });
+    };
+
+    // Header Sort Handler
+    const handleSort = (key) => {
+        setSortConfig(current => ({
+            key,
+            direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    // Sort Icon Helper
+    const SortIcon = ({ columnKey }) => {
+        if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-muted-foreground opacity-30" />;
+        return sortConfig.direction === 'asc'
+            ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
+    };
+
+    // Row Click Handler (Smart Selection)
+    const handleRowClick = (e, ruleId) => {
+        // Prevent selection if clicking interactive elements (inputs, buttons, checkboxes, etc)
+        if (e.target.closest('input, button, [role="checkbox"], [role="combobox"], a, label')) return;
+        toggleSelection(ruleId);
     };
 
     if (isLoading && rules.length === 0) {
@@ -182,6 +258,54 @@ export default function AutomationRulesSettings() {
                     </div>
                 </div>
             </CardHeader>
+
+            {/* --- FILTER BAR --- */}
+            <div className="px-6 py-4 border-b bg-gray-50/50 flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div className="flex flex-1 w-full md:w-auto items-center gap-3">
+                    <div className="relative flex-1 md:max-w-xs">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Filter by keyword or name..."
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            className="pl-9 h-9 bg-white"
+                        />
+                    </div>
+
+                    {/* Desktop Filters */}
+                    <div className="hidden md:flex items-center gap-2">
+                        <CategorySelect
+                            categories={categories}
+                            value={filterCategory}
+                            onValueChange={setFilterCategory}
+                            placeholder="All Categories"
+                            className="w-[180px] h-9 bg-white"
+                        />
+
+                        <Select value={filterPriority} onValueChange={setFilterPriority}>
+                            <SelectTrigger className="w-[140px] h-9 bg-white">
+                                <SelectValue placeholder="Priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Priorities</SelectItem>
+                                <SelectItem value="needs">Needs</SelectItem>
+                                <SelectItem value="wants">Wants</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {(filterText || filterCategory !== 'all' || filterPriority !== 'all') && (
+                            <CustomButton variant="ghost" size="sm" onClick={() => {
+                                setFilterText('');
+                                setFilterCategory('all');
+                                setFilterPriority('all');
+                            }}>
+                                <X className="w-4 h-4 text-gray-500" />
+                            </CustomButton>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             <CardContent>
                 {rules.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
@@ -200,10 +324,18 @@ export default function AutomationRulesSettings() {
                                                 onCheckedChange={toggleSelectAll}
                                             />
                                         </TableHead>
-                                        <TableHead className="w-[30%]">If Text Contains (Keywords)</TableHead>
-                                        <TableHead className="w-[25%]">Rename To</TableHead>
-                                        <TableHead className="w-[20%]">Category</TableHead>
-                                        <TableHead className="w-[15%]">Priority</TableHead>
+                                        <TableHead className="w-[30%] cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('keywords')}>
+                                            <div className="flex items-center">If Text Contains (Keywords) <SortIcon columnKey="keywords" /></div>
+                                        </TableHead>
+                                        <TableHead className="w-[25%] cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('renamedTitle')}>
+                                            <div className="flex items-center">Rename To <SortIcon columnKey="renamedTitle" /></div>
+                                        </TableHead>
+                                        <TableHead className="w-[20%] cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('category')}>
+                                            <div className="flex items-center">Category <SortIcon columnKey="category" /></div>
+                                        </TableHead>
+                                        <TableHead className="w-[15%] cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('financial_priority')}>
+                                            <div className="flex items-center">Priority <SortIcon columnKey="financial_priority" /></div>
+                                        </TableHead>
                                         <TableHead className="w-[50px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -214,7 +346,11 @@ export default function AutomationRulesSettings() {
                                         const isEditingTitle = editingId === rule.id;
 
                                         return (
-                                            <TableRow key={rule.id} className={isSelected ? "bg-blue-50/40" : ""}>
+                                            <TableRow
+                                                key={rule.id}
+                                                className={`cursor-pointer ${isSelected ? "bg-blue-50/40 hover:bg-blue-50/60" : "hover:bg-gray-50/50"}`}
+                                                onClick={(e) => handleRowClick(e, rule.id)}
+                                            >
                                                 <TableCell>
                                                     <Checkbox
                                                         checked={isSelected}
