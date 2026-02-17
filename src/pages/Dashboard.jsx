@@ -42,6 +42,7 @@ import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 // import { BudgetAvatar } from "../components/ui/BudgetAvatar";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
+import { useSearchParams } from "react-router-dom"; // Added for notification linking
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -50,6 +51,7 @@ export default function Dashboard() {
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const [showImportWizard, setShowImportWizard] = useState(false);
     const { setFabButtons, clearFabButtons } = useFAB();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -61,6 +63,24 @@ export default function Dashboard() {
 
     // Period management
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, monthStart, monthEnd } = usePeriod();
+
+    // --- NOTIFICATION LISTENER ---
+    // Checks if the user arrived via a "Monthly Rewind" notification click
+    useEffect(() => {
+        const isStoryMode = searchParams.get("story") === "true";
+        const paramMonth = searchParams.get("month");
+        const paramYear = searchParams.get("year");
+
+        if (isStoryMode && paramMonth && paramYear) {
+            // Switch the dashboard context to the requested month
+            setSelectedMonth(parseInt(paramMonth));
+            setSelectedYear(parseInt(paramYear));
+            setShowStory(true);
+
+            // Clean the URL so it doesn't reopen on refresh
+            setSearchParams({});
+        }
+    }, [searchParams, setSelectedMonth, setSelectedYear, setSearchParams]);
 
     // Data fetching
     // CRITICAL: Extract isLoading states to control the UI transitions
