@@ -35,6 +35,7 @@ import { FABProvider, useFAB } from "./components/hooks/FABContext"; // ADDED 04
 import GlobalFAB from "@/components/ui/GlobalFAB"; // ADDED 04-Feb-2026: Floating Action Button
 import { Switch } from "@/components/ui/switch"; // Assuming you have this shadcn component
 import { useTheme } from "next-themes";
+import { BudgetAvatar } from "./components/ui/BudgetAvatar";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
@@ -238,6 +239,10 @@ const LayoutContent = ({ children }) => {
                 </Sidebar>
 
                 <main className="flex-1 flex flex-col relative">
+                    {/* Global Floating Casper */}
+                    <div className="fixed bottom-24 right-6 z-[60] pointer-events-none md:bottom-10 md:right-10">
+                        <BudgetAvatar health={0.8} size={80} showText={false} isFloating={true} />
+                    </div>
                     <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
                         <RouteTransition>
                             {children}
