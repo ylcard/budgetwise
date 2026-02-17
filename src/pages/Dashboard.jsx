@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { BudgetAvatar } from "../components/ui/BudgetAvatar";
+import { VelocityWidget } from "../components/ui/VelocityWidget";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -253,6 +254,15 @@ export default function Dashboard() {
                 {/* GRID LAYOUT: Split Hero Row */}
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
+
+                        {/* INNOVATION: Velocity Widget at the top */}
+                        <VelocityWidget
+                            transactions={transactions}
+                            settings={settings}
+                            selectedMonth={selectedMonth}
+                            selectedYear={selectedYear}
+                        />
+
                         {isMobile ? (
                             <MobileRemainingBudgetCard
                                 breakdown={detailedBreakdown}
