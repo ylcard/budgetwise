@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, TrendingUp, TrendingDown, Award, Calendar } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
+import { format } from "date-fns";
 import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
