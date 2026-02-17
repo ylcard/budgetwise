@@ -122,11 +122,13 @@ export const WrappedStory = ({
     const exportRef = useRef(null);
     const navigate = useNavigate();
 
-    // Reset scroll states when page changes to Slide 4
+    // Reset scroll states when page changes
     useEffect(() => {
-        if (page === 3) {
-            setShowScrollHint(true);
-            setIsAtBottom(false);
+        setShowScrollHint(true);
+        setIsAtBottom(false);
+        // Reset scroll position of Slide 4 if we navigate away and back
+        if (page !== 3 && heavyHittersRef.current) {
+            heavyHittersRef.current.scrollTop = 0;
         }
     }, [page]);
 
@@ -243,12 +245,13 @@ export const WrappedStory = ({
         // SLIDE 4: HEAVY HITTERS
         <div
             ref={heavyHittersRef}
-            className="flex-1 w-full overflow-y-auto no-scrollbar relative"
+            className="absolute inset-0 overflow-y-auto no-scrollbar"
             onScroll={(e) => {
                 const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-                // Use Math.ceil to handle fractional pixels on high-DPI screens
-                const atBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight - 20;
-                setShowScrollHint(scrollTop < 30);
+                // Improved detection for various screen densities
+                const atBottom = scrollTop + clientHeight >= scrollHeight - 50;
+                const atTop = scrollTop < 20;
+                setShowScrollHint(atTop);
                 setIsAtBottom(atBottom);
             }}
         >
@@ -390,14 +393,14 @@ export const WrappedStory = ({
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm w-screen h-[100dvh] overflow-hidden p-4">
             {/* Close Button */}
-            <button onClick={onClose} className="fixed top-6 right-6 z-[60] text-white/50 hover:text-white p-2">
-                <X size={36} />
+            <button onClick={onClose} className="absolute top-6 right-6 z-[70] text-white/50 hover:text-white p-2">
+                <X size={32} />
             </button>
 
             {/* Story Container */}
-            <div className="relative w-full h-full max-h-[850px] md:w-[400px] md:h-[700px] md:rounded-[40px] bg-slate-900 overflow-hidden shadow-2xl border-none md:border border-slate-800 flex flex-col">
+            <div className="relative w-full h-full max-h-[750px] md:w-[400px] md:h-[700px] md:rounded-[40px] bg-slate-900 overflow-hidden shadow-2xl border-none md:border border-slate-800">
 
                 {/* Progress Bars */}
                 <div className="absolute top-6 left-4 right-4 z-20 flex gap-1.5">
@@ -443,24 +446,20 @@ export const WrappedStory = ({
                         {(showScrollHint || isAtBottom) && (
                             <motion.div
                                 key="scroll-hint-wrapper"
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none z-[40] flex flex-col justify-end pb-6"
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                                className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none z-[50] flex flex-col justify-end pb-8"
                             >
                                 <motion.button
-                                    key={isAtBottom ? "up-btn" : "down-hint"}
+                                    key={isAtBottom ? "back-to-top" : "scroll-down"}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (isAtBottom) heavyHittersRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                                        heavyHittersRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                                     }}
-                                    animate={isAtBottom ? { scale: [1, 1.1, 1], opacity: 1 } : { y: [0, 8, 0], opacity: [0.3, 0.6, 0.3] }}
+                                    animate={isAtBottom ? { scale: [1, 1.1, 1] } : { y: [0, 8, 0], opacity: [0.4, 0.8, 0.4] }}
                                     transition={isAtBottom ? { repeat: Infinity, duration: 3 } : { repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                                    className={`flex justify-center mx-auto transition-all ${isAtBottom ? 'pointer-events-auto cursor-pointer p-2 rounded-full bg-indigo-500/20 border border-indigo-500/30' : 'pointer-events-none'}`}
+                                    className={`flex justify-center mx-auto transition-all duration-300 ${isAtBottom ? 'pointer-events-auto cursor-pointer p-3 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/40 text-white' : 'pointer-events-none text-slate-400'}`}
                                 >
-                                    {isAtBottom ? (
-                                        <ChevronUp size={28} className="text-indigo-400" strokeWidth={2.5} />
-                                    ) : (
-                                        <ChevronDown size={28} className="text-slate-400" strokeWidth={1.5} />
-                                    )}
+                                    {isAtBottom ? <ChevronUp size={24} strokeWidth={3} /> : <ChevronDown size={28} strokeWidth={1.5} />}
                                 </motion.button>
                             </motion.div>
                         )}
