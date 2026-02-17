@@ -116,14 +116,14 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                 // Distribute based on historical frequency (weighted)
                 const totalFrequency = fillerCandidates.reduce((sum, c) => sum + c.stat.count, 0);
 
-                fillerCandidates.forEach(candidate => {
+                for (const candidate of fillerCandidates) {
                     if (remainingGap <= 0) break;
 
                     const weight = candidate.stat.count / totalFrequency;
                     const share = remainingGap * weight;
 
                     predictionMap[candidate.day] = (predictionMap[candidate.day] || 0) + share;
-                });
+                }
             }
             return predictionMap;
         };
