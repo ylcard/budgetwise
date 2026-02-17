@@ -44,16 +44,16 @@ export const createNotification = async ({
 /**
  * Bank Sync Notifications
  */
-export const notifyBankSyncSuccess = (userEmail, transactionCount) => {
+export const notifyBankSyncSuccess = (userEmail, transactionCount, dateStr = 'today') => {
     return createNotification({
         title: 'Bank Sync Complete',
-        message: `Successfully synced ${transactionCount} new transaction${transactionCount !== 1 ? 's' : ''} from your bank.`,
+        message: `${transactionCount} new transaction${transactionCount !== 1 ? 's' : ''} were synced on ${dateStr}.`,
         type: 'success',
         category: 'bank_sync',
         priority: 'low',
         actionUrl: '/transactions/history',
         actionLabel: 'View Transactions',
-        metadata: { transactionCount },
+        metadata: { transactionCount, date: dateStr },
         userEmail
     });
 };
@@ -126,7 +126,7 @@ export const notifyTransactionsNeedReview = (userEmail, count) => {
         type: 'action',
         category: 'transactions',
         priority: 'medium',
-        actionUrl: '/manage/banksync',
+        actionUrl: '/BankSync',
         actionLabel: 'Review Now',
         metadata: { count },
         userEmail
