@@ -406,24 +406,28 @@ export const WrappedStory = ({
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm w-screen h-[100dvh] overflow-hidden p-4">
+        <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm w-screen h-[100dvh] overflow-hidden p-4 cursor-pointer">
             {/* Close Button */}
             <button onClick={onClose} className="absolute top-6 right-6 z-[70] text-white/50 hover:text-white p-2">
                 <X size={32} />
             </button>
 
             {/* Story Container */}
-            <div className="relative w-full h-full max-h-[750px] md:w-[400px] md:h-[700px] md:rounded-[40px] bg-slate-900 overflow-hidden shadow-2xl border-none md:border border-slate-800">
+            <div onClick={(e) => e.stopPropagation()} className="relative w-full h-full max-h-[750px] md:w-[400px] md:h-[700px] md:rounded-[40px] bg-slate-900 overflow-hidden shadow-2xl border-none md:border border-slate-800 cursor-default">
 
                 {/* Progress Bars */}
                 <div className="absolute top-6 left-4 right-4 z-20 flex gap-1.5">
                     {slides.map((_, i) => (
                         <div key={i} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
                             <motion.div
-                                className="h-full bg-white"
-                                initial={{ width: "0%" }}
-                                animate={{ width: i < page ? "100%" : i === page ? "100%" : "0%" }}
-                                transition={{ duration: i === page ? 5 : 0.3 }} // Auto-advance simulation
+                                key={`bar-${i}-${page}`}
+                                className="h-full bg-white origin-left"
+                                initial={{ width: i < page ? "100%" : "0%" }}
+                                animate={{ width: i <= page ? "100%" : "0%" }}
+                                transition={{
+                                    duration: i === page ? 5 : 0.1,
+                                    ease: i === page ? "linear" : "easeInOut"
+                                }}
                             />
                         </div>
                     ))}
