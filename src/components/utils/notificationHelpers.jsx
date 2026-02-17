@@ -41,7 +41,7 @@ import { Button } from "@/components/ui/button";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 // import { BudgetAvatar } from "../components/ui/BudgetAvatar";
-import { VelocityWidget } from "../components/ui/VelocityWidget";
+import { VelocityWidget } from "../ui/VelocityWidget";
 import { useSearchParams } from "react-router-dom"; // Added for notification linking
 import { MonthlyRewind } from "../components/dashboard/MonthlyRewind";
 import { WrappedStory } from "../components/dashboard/WrappedStory";
