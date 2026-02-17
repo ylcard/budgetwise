@@ -1,10 +1,11 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { format, getDaysInMonth, isSameDay, subMonths, startOfMonth, endOfMonth, isAfter, isBefore, getDate, isToday } from "date-fns";
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { format, getDaysInMonth, isSameDay, subMonths, startOfMonth, endOfMonth, isAfter, getDate, isToday } from "date-fns";
 import { formatCurrency } from "../utils/currencyUtils";
 import { useTransactions } from "../hooks/useBase44Entities";
 import { formatDateString, parseDate } from "../utils/dateUtils";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 /**
  * PURE FUNCTION: High-Performance Projection Engine
@@ -162,6 +163,16 @@ const calculateExpenseHeatmap = (historyTxns, currentTxns, daysInMonth, todayDay
 };
 
 export const VelocityWidget = ({ transactions = [], settings, selectedMonth, selectedYear }) => {
+    // --- STATE: Expansion (Persisted) ---
+    const [isExpanded, setIsExpanded] = useState(() => {
+        const saved = localStorage.getItem("velocity_widget_expanded");
+        return saved === "true"; // Defaults to false (collapsed) if null
+    });
+
+    useEffect(() => {
+        localStorage.setItem("velocity_widget_expanded", isExpanded);
+    }, [isExpanded]);
+
     // --- 0. PREDICTION ENGINE CONTEXT ---
     // We need 6 months of history to calculate the "Puzzle" (Anchors vs Fillers)
     // We fetch this quietly in the background.
@@ -242,10 +253,11 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                 isPrediction: isFutureDate && ((predictedExpenses[currentDay] > 0) || (predictedIncomes[currentDay] > 0))
             };
         });
-    }, [transactions, selectedMonth, selectedYear, historyTxns]);
+    }, [transactions, selectedMonth, selectedYear, historyTxns, settings]);
 
     // Calculate Totals for the "Idle" state
     const monthTotals = useMemo(() => {
+        if (!chartData || chartData.length === 0) return { income: 0, expense: 0, predictedExpense: 0, predictedIncome: 0 };
         return chartData.reduce((acc, day) => ({
             income: acc.income + (day.income || 0),
             expense: acc.expense + (day.expense || 0),
@@ -259,28 +271,30 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
 
     // Determine what to show: Hovered Day OR Month Total
     const displayData = useMemo(() => {
-        if (activeIndex !== null) {
+        if (activeIndex !== null && chartData[activeIndex]) {
             const data = chartData[activeIndex];
             return {
-                ...data,
-                // If it's a future prediction, use the predicted value for the display
-                expense: data.isFuture ? data.predictedExpense : data.expense,
                 income: data.isFuture ? data.predictedIncome : data.income,
-                label: data.isPrediction ? `${data.label} (Est.)` : data.label
+                expense: data.isFuture ? data.predictedExpense : data.expense,
+                label: data.isPrediction ? `${data.label} (Est.)` : data.label,
+                isTotal: false
             };
         }
         // For total, we sum Actual + Future Predictions
         return {
             income: monthTotals.income + monthTotals.predictedIncome,
             expense: monthTotals.expense + monthTotals.predictedExpense,
-            label: 'Total Projected Flow'
+            label: 'Total Projected Flow',
+            isTotal: true
         };
     }, [activeIndex, chartData, monthTotals]);
 
     // Haptic feedback function (browser support varies, but good for mobile)
+    /*
     const triggerHaptic = () => {
         if (navigator.vibrate) navigator.vibrate(5);
     };
+    */
 
     // --- OUTSIDE THE BOX: Manual Hit Detection ---
     // We calculate which "slot" the mouse is in based on raw pixel width.
@@ -300,137 +314,153 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         // Only update if changed
         if (newIndex !== activeIndex) {
             setActiveIndex(newIndex);
-            triggerHaptic();
+            // triggerHaptic();
+            if (navigator.vibrate) navigator.vibrate(5);
         }
     };
 
+    /*
     const onMouseMove = (e) => handleInteraction(e.clientX);
     const onTouchMove = (e) => {
         // Prevent scroll while scrubbing
         // e.preventDefault(); // Optional: might block page scroll
         handleInteraction(e.touches[0].clientX);
     };
+    */
 
     const handleReset = () => {
         setActiveIndex(null);
     };
 
     return (
-        <div
-            className="w-full bg-white dark:bg-slate-900 rounded-3xl p-6 text-slate-900 dark:text-white shadow-lg dark:shadow-2xl overflow-hidden relative isolate border border-slate-100 dark:border-none"
+        <motion.div
+            layout
+            initial={false}
+            className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden relative isolate"
         >
-            {/* Background Glow */}
-            {/* Reduced opacity for light mode to prevent muddy look */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 dark:bg-emerald-500/10 blur-[80px] rounded-full -z-10" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/5 dark:bg-rose-500/10 blur-[80px] rounded-full -z-10" />
+            {/* Header / Trigger Area */}
+            <div
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-5 cursor-pointer flex flex-col relative z-10 group"
+            >
+                {/* Background Glows (Subtle) */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 blur-[40px] rounded-full -z-10 transition-opacity duration-500" style={{ opacity: isExpanded ? 1 : 0.5 }} />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-rose-500/5 dark:bg-rose-500/10 blur-[40px] rounded-full -z-10 transition-opacity duration-500" style={{ opacity: isExpanded ? 1 : 0.5 }} />
 
-            {/* Header Info */}
-            <div className="flex justify-between items-end mb-8">
-                <div>
-                    <AnimatePresence mode="popLayout" initial={false}>
-                        <motion.div
-                            key={displayData.label}
-                            initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                            exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="flex flex-col"
-                        >
-                            <p className="text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="flex justify-between items-center w-full">
+                    {/* Left Side: Label & Data */}
+                    <div className="flex flex-col flex-1">
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 {displayData.label}
                             </p>
-                            <div className="flex items-baseline gap-4 mt-1">
-                                <h2 className="text-3xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                                    +{formatCurrency(displayData.income || 0, settings)}
-                                </h2>
-                                <h2 className="text-2xl font-bold tabular-nums text-rose-500 dark:text-rose-400 opacity-90">
-                                    -{formatCurrency(displayData.expense || 0, settings)}
-                                </h2>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
+                        </div>
+
+                        <div className="flex items-baseline gap-3 mt-1">
+                            <h2 className="text-lg md:text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                +{formatCurrency(displayData.income || 0, settings)}
+                            </h2>
+                            <h2 className="text-lg md:text-xl font-bold tabular-nums text-rose-500 dark:text-rose-400 opacity-90">
+                                -{formatCurrency(displayData.expense || 0, settings)}
+                            </h2>
+                        </div>
+                    </div>
+
+                    {/* Right Side: Chevron */}
+                    <div className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </div>
                 </div>
             </div>
 
-            {/* Interactive Chart */}
-            {/* We add the Ref here to measure the exact visual width of the chart area */}
-            <div
-                className="h-40 -mx-6 relative cursor-crosshair touch-none"
-                ref={containerRef}
-                onMouseMove={onMouseMove}
-                onMouseLeave={handleReset}
-                onTouchMove={onTouchMove}
-                onTouchEnd={handleReset}
-            >
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                        data={chartData}
-                        margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            {/* Expandable Chart Area */}
+            <AnimatePresence>
+                {isExpanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800"
                     >
-                        <defs>
-                            <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <Tooltip
-                            cursor={{ stroke: "#fff", strokeWidth: 1, strokeDasharray: "4 4" }}
-                            content={<></>} // Hide default tooltip, we use the header
-                        />
-                        <Area
-                            type="monotone"
-                            dataKey="income"
-                            stroke="#10b981"
-                            strokeWidth={3}
-                            fillOpacity={1}
-                            fill="url(#colorIncome)"
-                            animationDuration={500}
-                            connectNulls={true}
-                        />
+                        <div
+                            className="h-40 relative cursor-crosshair touch-none pt-4 pb-0"
+                            ref={containerRef}
+                            onMouseMove={(e) => handleInteraction(e.clientX)}
+                            onMouseLeave={handleReset}
+                            onTouchMove={(e) => handleInteraction(e.touches[0].clientX)}
+                            onTouchEnd={handleReset}
+                        >
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart
+                                    data={chartData}
+                                    margin={{ top: 5, right: 0, left: 0, bottom: 0 }}
+                                >
+                                    <defs>
+                                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <Tooltip cursor={{ stroke: "#94a3b8", strokeWidth: 1, strokeDasharray: "4 4" }} content={<></>} />
 
-                        {/* PREDICTED INCOME (Dashed) */}
-                        <Area
-                            type="monotone"
-                            dataKey="predictedIncome"
-                            stroke="#10b981"
-                            strokeWidth={2}
-                            strokeDasharray="5 5"
-                            fillOpacity={0.1}
-                            fill="url(#colorIncome)"
-                            animationDuration={0}
-                            connectNulls={true}
-                        />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="income"
+                                        stroke="#10b981"
+                                        strokeWidth={3}
+                                        fill="url(#colorIncome)"
+                                        connectNulls={true}
+                                        animationDuration={500}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="predictedIncome"
+                                        stroke="#10b981"
+                                        strokeWidth={2}
+                                        strokeDasharray="5 5"
+                                        fill="url(#colorIncome)"
+                                        fillOpacity={0.1}
+                                        connectNulls={true}
+                                        animationDuration={0}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="expense"
+                                        stroke="#f43f5e"
+                                        strokeWidth={3}
+                                        fill="url(#colorExpense)"
+                                        connectNulls={true}
+                                        animationDuration={500}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="predictedExpense"
+                                        stroke="#f43f5e"
+                                        strokeWidth={2}
+                                        strokeDasharray="5 5"
+                                        fill="url(#colorExpense)"
+                                        fillOpacity={0.1}
+                                        connectNulls={true}
+                                        animationDuration={0}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
 
-                        <Area
-                            type="monotone"
-                            dataKey="expense"
-                            stroke="#f43f5e"
-                            strokeWidth={3}
-                            fillOpacity={1}
-                            fill="url(#colorExpense)"
-                            animationDuration={500}
-                            connectNulls={true}
-                        />
-
-                        {/* PREDICTED DATA (Dashed) */}
-                        <Area
-                            type="monotone"
-                            dataKey="predictedExpense"
-                            stroke="#f43f5e"
-                            strokeWidth={2}
-                            strokeDasharray="5 5"
-                            fillOpacity={0.1}
-                            fill="url(#colorExpense)"
-                            animationDuration={0}
-                            connectNulls={true}
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
+                        {/* Legend / Helper Text */}
+                        <div className="flex justify-center gap-4 pb-4 text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Income</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-rose-500"></div> Expense</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full border border-slate-400 border-dashed"></div> Projected</span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 };
