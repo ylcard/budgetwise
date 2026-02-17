@@ -55,7 +55,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
 
                 if (cycle < 150) {
                     // Normal Float
-                    yOffset = Math.sin(frame * 0.05) * 5; // Float
+                    yOffset = Math.sin(frame * 0.1) * 5; // Float
                 } else if (cycle < 220) {
                     // Fall & Disintegrate
                     const progress = (cycle - 150) / 70; // 0 to 1
