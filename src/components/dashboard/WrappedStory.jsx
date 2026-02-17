@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, TrendingUp, TrendingDown, Award, Calendar, ChevronDown, BarChart2, ArrowRight } from "lucide-react";
+import { X, Download, TrendingUp, TrendingDown, Award, Calendar, ChevronDown, ChevronUp, BarChart2, ArrowRight } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { format } from "date-fns";
 import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
@@ -117,11 +117,16 @@ export const WrappedStory = ({
     const [page, setPage] = useState(0);
     const [direction, setDirection] = useState(0);
     const [showScrollHint, setShowScrollHint] = useState(true);
+    const [isAtBottom, setIsAtBottom] = useState(false);
+    const heavyHittersRef = useRef(null);
     const exportRef = useRef(null);
     const navigate = useNavigate();
 
-    // Reset hint when page changes
-    useEffect(() => { setShowScrollHint(true); }, [page]);
+    // Reset scroll states when page changes
+    useEffect(() => {
+        setShowScrollHint(true);
+        setIsAtBottom(false);
+    }, [page]);
 
     // Lock body scroll when story is open
     useEffect(() => {
@@ -234,11 +239,17 @@ export const WrappedStory = ({
         </div>,
 
         // SLIDE 4: HEAVY HITTERS
-        <div className="h-full w-full overflow-y-auto no-scrollbar relative">
-            <div
-                className="flex flex-col items-center min-h-full p-8 pb-32"
-                onScroll={(e) => { if (e.target.scrollTop > 20) setShowScrollHint(false); }}
-            >
+        <div
+            ref={heavyHittersRef}
+            className="h-full w-full overflow-y-auto no-scrollbar relative"
+            onScroll={(e) => {
+                const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+                setShowScrollHint(scrollTop < 20);
+                // Detect bottom with 10px buffer
+                setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
+            }}
+        >
+            <div className="flex flex-col items-center min-h-full p-8 pb-32">
                 <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-6 sticky top-0 bg-slate-900/95 backdrop-blur-sm w-full text-center py-2 z-10">
                     Heavy Hitters
                 </h3>
@@ -425,18 +436,25 @@ export const WrappedStory = ({
 
                 {/* Fixed Scroll Hint - Sticks to modal bottom specifically for Slide 4 */}
                 <AnimatePresence>
-                    {page === 3 && topCategories.length > 3 && showScrollHint && (
+                    {page === 3 && topCategories.length > 3 && (showScrollHint || isAtBottom) && (
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none z-20 flex flex-col justify-end pb-6"
                         >
-                            <motion.div
-                                animate={{ y: [0, 8, 0], opacity: [0.3, 0.6, 0.3] }}
-                                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                                className="flex justify-center"
+                            <motion.button
+                                onClick={() => {
+                                    if (isAtBottom) heavyHittersRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                animate={isAtBottom ? { scale: [1, 1.1, 1], opacity: 1 } : { y: [0, 8, 0], opacity: [0.3, 0.6, 0.3] }}
+                                transition={isAtBottom ? { repeat: Infinity, duration: 3 } : { repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                                className={`flex justify-center mx-auto transition-all ${isAtBottom ? 'pointer-events-auto cursor-pointer p-2 rounded-full bg-indigo-500/20 border border-indigo-500/30' : 'pointer-events-none'}`}
                             >
-                                <ChevronDown size={28} className="text-slate-400" strokeWidth={1.5} />
-                            </motion.div>
+                                {isAtBottom ? (
+                                    <ChevronUp size={28} className="text-indigo-400" strokeWidth={2.5} />
+                                ) : (
+                                    <ChevronDown size={28} className="text-slate-400" strokeWidth={1.5} />
+                                )}
+                            </motion.button>
                         </motion.div>
                     )}
                 </AnimatePresence>
