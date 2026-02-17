@@ -4,31 +4,40 @@ import { motion, AnimatePresence } from "framer-motion";
 export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloating = false }) => {
     const canvasRef = useRef(null);
     const [isVisible, setIsVisible] = useState(true);
-
-    // Get full page height for absolute roaming
-    const getPageBounds = () => ({
-        width: window.innerWidth,
-        // Keep him in the visible area + a bit of scroll depth
-        height: Math.min(window.innerHeight * 2, Math.max(document.documentElement.scrollHeight, window.innerHeight))
-    });
     const ghostPos = useRef({ x: 0, y: 0 });
 
     const [position, setPosition] = useState({
-        x: window.innerWidth - 200,
-        y: 200
+        x: window.innerWidth - 250, // Initial safe position
+        y: 150
     });
 
-    // Function to "Teleport" Casper
+    // Function to "Teleport" Casper safely within bounds
     const roam = useCallback(() => {
         if (!isFloating) return;
 
         setIsVisible(false); // Start fade out
 
         setTimeout(() => {
-            const bounds = getPageBounds();
-            const padding = 120;
-            const newX = Math.random() * (bounds.width - size - padding * 2) + padding;
-            const newY = Math.random() * (bounds.height - size - padding * 2) + padding;
+            // 1. Get precise dimensions
+            const viewportWidth = window.innerWidth;
+            // Cap him at 2x screen height so he doesn't get lost in footer
+            const maxPageHeight = Math.min(document.documentElement.scrollHeight, window.innerHeight * 2);
+
+            // 2. Define Safety Buffer (pixels from edge)
+            const buffer = 20;
+
+            // 3. Calculate Maximum Allowed X/Y
+            // Crucial: Subtract the GHOST'S SIZE from the viewport width
+            const maxX = viewportWidth - size - buffer;
+            const maxY = maxPageHeight - size - buffer;
+
+            // 4. Ensure min is at least buffer (prevent negative range on small screens)
+            const safeMaxX = Math.max(buffer, maxX);
+            const safeMaxY = Math.max(buffer, maxY);
+
+            // 5. Generate coordinates
+            const newX = Math.random() * (safeMaxX - buffer) + buffer;
+            const newY = Math.random() * (safeMaxY - buffer) + buffer;
 
             setPosition({ x: newX, y: newY });
             setIsVisible(true); // Fade back in at new spot
@@ -47,7 +56,7 @@ export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloa
         const handlePointer = (e) => {
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             // Add scroll offset for absolute positioning check
-            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) + window.scrollY;
 
             // Check distance against current visual center
             const dx = x - ghostPos.current.x;
@@ -87,13 +96,17 @@ export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloa
             const height = canvas.height;
             // const centerX = width / 2;
             // const centerY = height / 2;
-            const centerX = width / 4;
-            const centerY = height / 4;
+            const centerX = width;
+            const centerY = height;
 
             // Update ref for proximity checking
             const rect = canvas.getBoundingClientRect();
             if (rect) {
-                ghostPos.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                // Use cached position state for smoother logic, but update exact center relative to canvas
+                ghostPos.current = {
+                    x: rect.left + rect.width / 2 + window.scrollX,
+                    y: rect.top + rect.height / 2 + window.scrollY
+                };
             }
 
             ctx.clearRect(0, 0, width, height);
@@ -440,24 +453,26 @@ export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloa
                         y: { type: "spring", stiffness: 20, damping: 20 }
                     }}
                     className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'absolute top-0 left-0 z-[100]' : 'w-full relative'}`}
+                    style={{ width: size }} // Explicit width to help browser layout
                 >
                     {/* The "Drifting" container */}
                     <motion.div
                         animate={{ y: [0, -15, 0], rotate: [-2, 2, -2] }}
                         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="w-full flex justify-center"
                     >
                         <canvas
                             ref={canvasRef}
                             width={500}
                             height={450}
-                            style={{ width: size, height: 'auto' }}
+                            style={{ width: '100%', height: 'auto' }} // Scale to container
                         />
-                        {showText && (
-                            <p className="text-slate-400 text-[10px] font-bold mt-1 text-center uppercase tracking-widest opacity-50">
-                                {getStatusText()}
-                            </p>
-                        )}
                     </motion.div>
+                    {showText && (
+                        <p className="text-slate-400 text-[10px] font-bold -mt-4 text-center uppercase tracking-widest opacity-50 relative z-10">
+                            {getStatusText()}
+                        </p>
+                    )}
                 </motion.div>
             )}
         </AnimatePresence>
