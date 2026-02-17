@@ -46,6 +46,7 @@ import { useSearchParams } from "react-router-dom"; // Added for notification li
 import { MonthlyRewind } from "../components/dashboard/MonthlyRewind";
 import { WrappedStory } from "../components/dashboard/WrappedStory";
 import { notifyMonthlyRewindReady } from "../components/utils/notificationHelpers"; // TEMP: For testing
+import { HealthProvider } from "../components/utils/HealthContext";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -266,133 +267,116 @@ export default function Dashboard() {
     const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
 
     return (
-        <div className="min-h-screen p-4 md:p-8 relative">
-            <div className="max-w-7xl mx-auto space-y-6 pb-24">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-foreground">Dashboard</h1>
-                        <p className="text-muted-foreground mt-1">
-                            Welcome back, {settings?.displayName || user?.name || 'User'}!
-                        </p>
+        <HealthProvider>
+            <div className="min-h-screen p-4 md:p-8 relative">
+                <div className="max-w-7xl mx-auto space-y-6 pb-24">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Dashboard</h1>
+                            <p className="text-muted-foreground mt-1">
+                                Welcome back, {settings?.displayName || user?.name || 'User'}!
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                {/* GRID LAYOUT: Split Hero Row */}
-                <div className="grid lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-6">
+                    {/* GRID LAYOUT: Split Hero Row */}
+                    <div className="grid lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 space-y-6">
 
-                        {/* INNOVATION: Velocity Widget at the top */}
-                        <VelocityWidget
-                            transactions={transactions}
-                            settings={settings}
-                            selectedMonth={selectedMonth}
-                            selectedYear={selectedYear}
-                        />
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <MonthlyRewind
+                            {/* INNOVATION: Velocity Widget at the top */}
+                            <VelocityWidget
+                                transactions={transactions}
+                                settings={settings}
                                 selectedMonth={selectedMonth}
                                 selectedYear={selectedYear}
-                                onOpen={() => setShowStory(true)}
                             />
 
-                            {/* TEMP: Test Button for Notification Flow */}
-                            <Button
-                                variant="outline"
-                                className="h-full border-dashed border-indigo-500 text-indigo-400 hover:bg-indigo-950/20"
-                                onClick={() => notifyMonthlyRewindReady(user.email, selectedMonth, selectedYear)}
-                            >
-                                🔔 Test Notify
-                            </Button>
+                            <div className="grid grid-cols-2 gap-4">
+                                <MonthlyRewind
+                                    selectedMonth={selectedMonth}
+                                    selectedYear={selectedYear}
+                                    onOpen={() => setShowStory(true)}
+                                />
+
+                                {/* TEMP: Test Button for Notification Flow */}
+                                <Button
+                                    variant="outline"
+                                    className="h-full border-dashed border-indigo-500 text-indigo-400 hover:bg-indigo-950/20"
+                                    onClick={() => notifyMonthlyRewindReady(user.email, selectedMonth, selectedYear)}
+                                >
+                                    🔔 Test Notify
+                                </Button>
+                            </div>
+
+                            {isMobile ? (
+                                <MobileRemainingBudgetCard
+                                    breakdown={detailedBreakdown}
+                                    systemBudgets={systemBudgetsData}
+                                    currentMonthIncome={currentMonthIncome}
+                                    currentMonthExpenses={currentMonthExpenses}
+                                    settings={settings}
+                                    isLoading={isLoading}
+                                    selectedMonth={selectedMonth}
+                                    selectedYear={selectedYear}
+                                    monthNavigator={
+                                        <MonthNavigator
+                                            currentMonth={selectedMonth}
+                                            currentYear={selectedYear}
+                                            resetPosition="right"
+                                            onMonthChange={(month, year) => {
+                                                setSelectedMonth(month);
+                                                setSelectedYear(year);
+                                            }}
+                                        />
+                                    }
+                                />
+                            ) : (
+                                <RemainingBudgetCard
+                                    breakdown={detailedBreakdown}
+                                    systemBudgets={systemBudgetsData}
+                                    bonusSavingsPotential={bonusSavingsPotential}
+                                    currentMonthIncome={currentMonthIncome}
+                                    currentMonthExpenses={currentMonthExpenses}
+                                    goals={goals}
+                                    settings={settings}
+                                    selectedMonth={selectedMonth}
+                                    selectedYear={selectedYear}
+                                    importDataButton={
+                                        <Button variant="outline" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
+                                            <FileUp className="h-3.5 w-3.5" />
+                                            <span className="hidden xl:inline">Import</span>
+                                        </Button>
+                                    }
+                                    addIncomeButton={
+                                        <Button size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">
+                                            <PlusCircle className="h-3.5 w-3.5" />
+                                            <span className="hidden xl:inline">Income</span>
+                                        </Button>
+                                    }
+                                    addExpenseButton={
+                                        <Button variant="destructive" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
+                                            <MinusCircle className="h-3.5 w-3.5" />
+                                            <span className="hidden xl:inline">Expense</span>
+                                        </Button>
+                                    }
+                                    monthNavigator={
+                                        <MonthNavigator
+                                            currentMonth={selectedMonth}
+                                            currentYear={selectedYear}
+                                            resetPosition="right"
+                                            onMonthChange={(month, year) => {
+                                                setSelectedMonth(month);
+                                                setSelectedYear(year);
+                                            }}
+                                        />
+                                    }
+                                />
+                            )}
                         </div>
 
-                        {isMobile ? (
-                            <MobileRemainingBudgetCard
-                                breakdown={detailedBreakdown}
-                                systemBudgets={systemBudgetsData}
-                                currentMonthIncome={currentMonthIncome}
-                                currentMonthExpenses={currentMonthExpenses}
-                                settings={settings}
-                                isLoading={isLoading}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
-                                monthNavigator={
-                                    <MonthNavigator
-                                        currentMonth={selectedMonth}
-                                        currentYear={selectedYear}
-                                        resetPosition="right"
-                                        onMonthChange={(month, year) => {
-                                            setSelectedMonth(month);
-                                            setSelectedYear(year);
-                                        }}
-                                    />
-                                }
-                            />
-                        ) : (
-                            <RemainingBudgetCard
-                                breakdown={detailedBreakdown}
-                                systemBudgets={systemBudgetsData}
-                                bonusSavingsPotential={bonusSavingsPotential}
-                                currentMonthIncome={currentMonthIncome}
-                                currentMonthExpenses={currentMonthExpenses}
-                                goals={goals}
-                                settings={settings}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
-                                importDataButton={
-                                    <Button variant="outline" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
-                                        <FileUp className="h-3.5 w-3.5" />
-                                        <span className="hidden xl:inline">Import</span>
-                                    </Button>
-                                }
-                                addIncomeButton={
-                                    <Button size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">
-                                        <PlusCircle className="h-3.5 w-3.5" />
-                                        <span className="hidden xl:inline">Income</span>
-                                    </Button>
-                                }
-                                addExpenseButton={
-                                    <Button variant="destructive" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
-                                        <MinusCircle className="h-3.5 w-3.5" />
-                                        <span className="hidden xl:inline">Expense</span>
-                                    </Button>
-                                }
-                                monthNavigator={
-                                    <MonthNavigator
-                                        currentMonth={selectedMonth}
-                                        currentYear={selectedYear}
-                                        resetPosition="right"
-                                        onMonthChange={(month, year) => {
-                                            setSelectedMonth(month);
-                                            setSelectedYear(year);
-                                        }}
-                                    />
-                                }
-                            />
-                        )}
-                    </div>
-
-                    {/* DESKTOP PLACEMENT: Right side of Hero */}
-                    <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
-                        {/* <BudgetAvatar health={budgetHealth} /> */}
-                        <UpcomingTransactions
-                            recurringWithStatus={recurringWithStatus}
-                            onMarkPaid={handleMarkPaid}
-                            isLoading={isLoading}
-                            categories={categories}
-                        />
-                    </div>
-                </div>
-
-                <div className="grid lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 flex flex-col min-w-0">
-
-                        <CustomBudgetsDisplay
-                            onCreateBudget={() => setShowQuickAddBudget(true)}
-                        />
-
-                        {/* MOBILE PLACEMENT: Below Custom Budgets */}
-                        <div className="lg:hidden mt-6 h-96">
+                        {/* DESKTOP PLACEMENT: Right side of Hero */}
+                        <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
+                            {/* <BudgetAvatar health={budgetHealth} /> */}
                             <UpcomingTransactions
                                 recurringWithStatus={recurringWithStatus}
                                 onMarkPaid={handleMarkPaid}
@@ -400,74 +384,93 @@ export default function Dashboard() {
                                 categories={categories}
                             />
                         </div>
-
                     </div>
 
-                    <div className="lg:col-span-1 flex flex-col">
-                        <RecentTransactions
-                            categories={categories}
-                            settings={settings}
-                            customBudgets={allCustomBudgets}
-                            onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
-                            onDelete={transactionActions.handleDelete}
-                        />
+                    <div className="grid lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 flex flex-col min-w-0">
+
+                            <CustomBudgetsDisplay
+                                onCreateBudget={() => setShowQuickAddBudget(true)}
+                            />
+
+                            {/* MOBILE PLACEMENT: Below Custom Budgets */}
+                            <div className="lg:hidden mt-6 h-96">
+                                <UpcomingTransactions
+                                    recurringWithStatus={recurringWithStatus}
+                                    onMarkPaid={handleMarkPaid}
+                                    isLoading={isLoading}
+                                    categories={categories}
+                                />
+                            </div>
+
+                        </div>
+
+                        <div className="lg:col-span-1 flex flex-col">
+                            <RecentTransactions
+                                categories={categories}
+                                settings={settings}
+                                customBudgets={allCustomBudgets}
+                                onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
+                                onDelete={transactionActions.handleDelete}
+                            />
+                        </div>
                     </div>
+
+                    {/* Hidden dialog components - opened by FAB button onClick handlers */}
+                    <QuickAddTransaction
+                        open={!!quickAddState}
+                        selectedMonth={selectedMonth}
+                        selectedYear={selectedYear}
+                        onOpenChange={(isOpen) => !isOpen && setQuickAddState(null)}
+                        // Pass template if state is object, otherwise null
+                        transactionTemplate={typeof quickAddState === 'object' ? quickAddState : null}
+                        categories={categories}
+                        customBudgets={activeCustomBudgets}
+                        onSubmit={transactionActions.handleSubmit}
+                        isSubmitting={transactionActions.isSubmitting}
+                        transactions={transactions}
+                        renderTrigger={false}
+                    />
+
+                    <QuickAddIncome
+                        open={!!quickAddIncomeState}
+                        selectedMonth={selectedMonth}
+                        selectedYear={selectedYear}
+                        onOpenChange={(isOpen) => !isOpen && setQuickAddIncomeState(null)}
+                        transactionTemplate={typeof quickAddIncomeState === 'object' ? quickAddIncomeState : null}
+                        onSubmit={transactionActions.handleSubmit}
+                        isSubmitting={transactionActions.isSubmitting}
+                        renderTrigger={false}
+                    />
+
+                    <QuickAddBudget
+                        open={showQuickAddBudget}
+                        onOpenChange={setShowQuickAddBudget}
+                        onSubmit={budgetActions.handleSubmit}
+                        onCancel={() => setShowQuickAddBudget(false)}
+                        isSubmitting={budgetActions.isSubmitting}
+                        baseCurrency={settings.baseCurrency}
+                    />
+
+                    <ImportWizardDialog
+                        open={showImportWizard}
+                        onOpenChange={setShowImportWizard}
+                        renderTrigger={false}
+                    />
+
+                    <WrappedStory
+                        isOpen={showStory}
+                        onClose={() => setShowStory(false)}
+                        monthName={format(new Date(selectedYear, selectedMonth), 'MMMM')}
+                        year={selectedYear}
+                        income={currentMonthIncome}
+                        expenses={currentMonthExpenses}
+                        transactions={transactions}
+                        categories={detailedBreakdown?.categoryBreakdown || []}
+                        settings={settings}
+                    />
                 </div>
-
-                {/* Hidden dialog components - opened by FAB button onClick handlers */}
-                <QuickAddTransaction
-                    open={!!quickAddState}
-                    selectedMonth={selectedMonth}
-                    selectedYear={selectedYear}
-                    onOpenChange={(isOpen) => !isOpen && setQuickAddState(null)}
-                    // Pass template if state is object, otherwise null
-                    transactionTemplate={typeof quickAddState === 'object' ? quickAddState : null}
-                    categories={categories}
-                    customBudgets={activeCustomBudgets}
-                    onSubmit={transactionActions.handleSubmit}
-                    isSubmitting={transactionActions.isSubmitting}
-                    transactions={transactions}
-                    renderTrigger={false}
-                />
-
-                <QuickAddIncome
-                    open={!!quickAddIncomeState}
-                    selectedMonth={selectedMonth}
-                    selectedYear={selectedYear}
-                    onOpenChange={(isOpen) => !isOpen && setQuickAddIncomeState(null)}
-                    transactionTemplate={typeof quickAddIncomeState === 'object' ? quickAddIncomeState : null}
-                    onSubmit={transactionActions.handleSubmit}
-                    isSubmitting={transactionActions.isSubmitting}
-                    renderTrigger={false}
-                />
-
-                <QuickAddBudget
-                    open={showQuickAddBudget}
-                    onOpenChange={setShowQuickAddBudget}
-                    onSubmit={budgetActions.handleSubmit}
-                    onCancel={() => setShowQuickAddBudget(false)}
-                    isSubmitting={budgetActions.isSubmitting}
-                    baseCurrency={settings.baseCurrency}
-                />
-
-                <ImportWizardDialog
-                    open={showImportWizard}
-                    onOpenChange={setShowImportWizard}
-                    renderTrigger={false}
-                />
-
-                <WrappedStory
-                    isOpen={showStory}
-                    onClose={() => setShowStory(false)}
-                    monthName={format(new Date(selectedYear, selectedMonth), 'MMMM')}
-                    year={selectedYear}
-                    income={currentMonthIncome}
-                    expenses={currentMonthExpenses}
-                    transactions={transactions}
-                    categories={detailedBreakdown?.categoryBreakdown || []}
-                    settings={settings}
-                />
             </div>
-        </div>
+        </HealthProvider>
     );
 }
