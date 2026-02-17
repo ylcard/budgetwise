@@ -59,20 +59,6 @@ export const notifyBankSyncSuccess = (userEmail, transactionCount, dateStr = 'to
 };
 
 export const notifyBankSyncWithReviews = (userEmail, totalCount, reviewCount, dateStr = 'today') => {
-    return createNotification({
-        title: 'Review Required',
-        message: `Synced ${totalCount} transactions (${reviewCount} need review) on ${dateStr}.`,
-        type: 'action',
-        category: 'bank_sync',
-        priority: 'high',
-        actionUrl: '/BankSync',
-        actionLabel: 'Review Now',
-        metadata: { totalCount, reviewCount, date: dateStr },
-        userEmail
-    });
-};
-
-export const notifyBankSyncWithReviews = (userEmail, totalCount, reviewCount, dateStr = 'today') => {
     // Grammar logic: 
     // 1. "transaction" vs "transactions"
     // 2. "needs review" (singular) vs "need review" (plural)
