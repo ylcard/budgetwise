@@ -77,7 +77,7 @@ export const BudgetAvatar = ({ health = 0.5 }) => {
                 // --- THRIVING: PRIDE PARADE MODE --- 		
                 // 1. LAUNCH (Shoots up with Rainbow Trail)
                 if (phase === 'launch') {
-                    ghostY -= 3; // Slower, more majestic ascent
+                    ghostY -= 7; // Slower, more majestic ascent
                     squashX = 0.7; squashY = 1.5; // Extreme stretch
                     // Super Fast Rainbow Cycle
                     overrideColor = `hsl(${frame * 25}, 100%, 60%)`;
