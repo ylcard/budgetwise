@@ -32,5 +32,5 @@ export const useMonthlyRewindTrigger = (userEmail) => {
         if (!exists) {
             notifyMonthlyRewindReady(userEmail, lastMonthIndex, lastMonthYear);
         }
-    }, [userEmail, isLoading]); // Removed allNotifications to break the loop
+    }, [userEmail, isLoading]);
 };
