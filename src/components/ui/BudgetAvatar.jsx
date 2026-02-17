@@ -1,10 +1,31 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, useAnimation } from "framer-motion";
 
 export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloating = false }) => {
     const canvasRef = useRef(null);
-    const [scurryOffset, setScurryOffset] = useState({ x: 0, y: 0 });
+    const [position, setPosition] = useState({
+        x: window.innerWidth - 120,
+        y: window.innerHeight - 150
+    });
     const ghostPos = useRef({ x: 0, y: 0 });
+
+    // Function to find a new random spot on screen
+    const roam = useCallback(() => {
+        if (!isFloating) return;
+
+        const padding = 50;
+        const newX = Math.random() * (window.innerWidth - size - padding * 2) + padding;
+        const newY = Math.random() * (window.innerHeight - size - padding * 2) + padding;
+
+        setPosition({ x: newX, y: newY });
+    }, [isFloating, size]);
+
+    // Roam periodically
+    useEffect(() => {
+        if (!isFloating) return;
+        const interval = setInterval(roam, 10000); // Moves every 10 seconds
+        return () => clearInterval(interval);
+    }, [roam, isFloating]);
 
     // Proximity detection for "scurrying"
     useEffect(() => {
@@ -12,17 +33,13 @@ export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloa
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
 
-            const dx = x - ghostPos.current.x;
-            const dy = y - ghostPos.current.y;
+            // Use the actual current position for distance check
+            const dx = x - (position.x + size / 2);
+            const dy = y - (position.y + size / 2);
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance < 80) { // Scurry threshold
-                setScurryOffset({
-                    x: (Math.random() - 0.5) * 150,
-                    y: (Math.random() - 0.5) * 150
-                });
-                // Reset after a bit
-                setTimeout(() => setScurryOffset({ x: 0, y: 0 }), 1000);
+                roam(); // Just find a new spot immediately
             }
         };
 
@@ -387,9 +404,12 @@ export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloa
 
     return (
         <motion.div
-            animate={{ x: scurryOffset.x, y: scurryOffset.y }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            className={`flex flex-col items-center justify-center pointer-events-none select-none ${!isFloating ? 'w-full' : ''}`}
+            animate={{
+                x: isFloating ? position.x : 0,
+                y: isFloating ? position.y : 0
+            }}
+            transition={{ type: "spring", stiffness: 30, damping: 10 }}
+            className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'fixed top-0 left-0 z-[100]' : 'w-full relative'}`}
         >
             <canvas
                 ref={canvasRef}
