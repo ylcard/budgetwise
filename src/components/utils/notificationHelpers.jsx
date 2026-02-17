@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useSettings } from "../components/utils/SettingsContext";
+import { useSettings } from "../utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
 import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
