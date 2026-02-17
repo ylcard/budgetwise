@@ -119,10 +119,20 @@ export const WrappedStory = ({
     const exportRef = useRef(null);
     const navigate = useNavigate();
 
+    // Lock body scroll when story is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [isOpen]);
+
     // 3. Centralized Financial Health Logic
     const healthData = useMemo(() => {
         // Ensure goals are loaded before calculating to avoid crash and inaccuracy
-        if (!storyTransactions.length || !allTransactions.length || !allGoals?.length) return null;
+        if (!storyTransactions.length || !allTransactions.length || !allGoals) return null;
         return calculateFinancialHealth(
             storyTransactions,
             allTransactions,
@@ -420,10 +430,10 @@ export const WrappedStory = ({
                 </AnimatePresence>
 
                 {/* Navigation Tap Zones */}
-                <div className="absolute inset-0 z-10 flex">
-                    <div className="w-1/3 h-full" onClick={() => paginate(-1)} />
+                <div className="absolute inset-0 z-10 flex pointer-events-none">
+                    <div className="w-1/3 h-full pointer-events-auto cursor-pointer" onClick={() => paginate(-1)} />
                     <div className="w-1/3 h-full" /> {/* Center deadzone for scrolling/dragging */}
-                    <div className="w-1/3 h-full" onClick={() => paginate(1)} />
+                    <div className="w-1/3 h-full pointer-events-auto cursor-pointer" onClick={() => paginate(1)} />
                 </div>
             </div>
         </div>
