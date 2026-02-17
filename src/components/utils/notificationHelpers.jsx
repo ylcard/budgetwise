@@ -72,6 +72,26 @@ export const notifyBankSyncWithReviews = (userEmail, totalCount, reviewCount, da
     });
 };
 
+export const notifyBankSyncWithReviews = (userEmail, totalCount, reviewCount, dateStr = 'today') => {
+    // Grammar logic: 
+    // 1. "transaction" vs "transactions"
+    // 2. "needs review" (singular) vs "need review" (plural)
+    const txLabel = totalCount === 1 ? 'transaction' : 'transactions';
+    const reviewVerb = reviewCount === 1 ? 'needs' : 'need';
+
+    return createNotification({
+        title: 'Review Required',
+        message: `Synced ${totalCount} ${txLabel} (${reviewCount} ${reviewVerb} review) on ${dateStr}.`,
+        type: 'action',
+        category: 'bank_sync',
+        priority: 'high',
+        actionUrl: '/BankSync',
+        actionLabel: 'Review Now',
+        metadata: { totalCount, reviewCount, date: dateStr },
+        userEmail
+    });
+};
+
 export const notifyBankSyncError = (userEmail, errorMessage) => {
     return createNotification({
         title: 'Bank Sync Failed',
