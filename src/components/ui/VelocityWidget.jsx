@@ -1,16 +1,17 @@
 import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { format, getDaysInMonth, parseISO, isSameDay, subMonths, startOfMonth, endOfMonth, isAfter, isBefore, getDate, isToday } from "date-fns";
+import { format, getDaysInMonth, isSameDay, subMonths, startOfMonth, endOfMonth, isAfter, isBefore, getDate, isToday } from "date-fns";
 import { formatCurrency } from "../utils/currencyUtils";
 import { useTransactions } from "../hooks/useBase44Entities";
+import { formatDateString, parseDate } from "../utils/dateUtils";
 
 export const VelocityWidget = ({ transactions = [], settings, selectedMonth, selectedYear }) => {
     // --- 0. PREDICTION ENGINE CONTEXT ---
     // We need 6 months of history to calculate the "Puzzle" (Anchors vs Fillers)
     // We fetch this quietly in the background.
-    const historyStart = useMemo(() => format(startOfMonth(subMonths(new Date(), 6)), 'yyyy-MM-dd'), []);
-    const historyEnd = useMemo(() => format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'), []);
+    const historyStart = useMemo(() => formatDateString(startOfMonth(subMonths(new Date(), 6))), []);
+    const historyEnd = useMemo(() => formatDateString(endOfMonth(subMonths(new Date(), 1))), []);
 
     const { transactions: historyTxns } = useTransactions(historyStart, historyEnd);
 
@@ -22,87 +23,91 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         const isCurrentMonth = selectedYear === today.getFullYear() && selectedMonth === today.getMonth();
 
         // --- STEP A: CALCULATE "THE PUZZLE" PIECES ---
-        let predictionMap = {};
+        // Helper to solve the puzzle for both Income and Expenses
+        const solvePuzzle = (type) => {
+            const predictionMap = {};
+            if (!isCurrentMonth || historyTxns.length === 0) return predictionMap;
 
-        if (isCurrentMonth && historyTxns.length > 0) {
-            // 1. Analyze History by Day of Month (1..31)
-            const dayStats = {}; // { 1: { count: 0, total: 0 }, ... }
-            let totalHistoryExpense = 0;
+            // 1. Analyze History
+            const dayStats = {};
+            let totalHistory = 0;
 
             historyTxns.forEach(t => {
-                if (t.type !== 'expense') return;
-                const day = getDate(parseISO(t.date));
+                if (t.type !== type) return;
+                const tDate = parseDate(t.date);
+                if (!tDate) return;
+                const day = getDate(tDate);
+
                 if (!dayStats[day]) dayStats[day] = { count: 0, amounts: [] };
                 dayStats[day].count++;
                 dayStats[day].amounts.push(Number(t.amount));
-                totalHistoryExpense += Number(t.amount);
+                totalHistory += Number(t.amount);
             });
 
-            const avgMonthlyExpense = totalHistoryExpense / 6;
+            const avgMonthly = totalHistory / 6;
 
-            // 2. Calculate Current "Burn"
-            const currentSpent = transactions
-                .filter(t => t.type === 'expense' || t.type === 'savings')
+            // 2. Calculate Current "Burn" or "Accumulation"
+            const currentTotal = transactions
+                .filter(t => (t.type === type || (type === 'expense' && t.type === 'savings')))
                 .reduce((sum, t) => sum + Number(t.amount), 0);
 
             // 3. Define The Gap
-            let remainingBudget = Math.max(0, avgMonthlyExpense - currentSpent);
+            let remainingGap = Math.max(0, avgMonthly - currentTotal);
 
-            // 4. Identify ANCHORS (High Confidence > 85%) & FILLERS
+            // 4. Identify ANCHORS & FILLERS
             const todayDay = getDate(today);
             const anchors = [];
             const fillers = [];
 
-            // Only predict for days AFTER today
             for (let d = todayDay + 1; d <= daysInMonth; d++) {
                 const stat = dayStats[d];
                 if (!stat) continue;
 
                 const probability = stat.count / 6;
                 const avgAmount = stat.amounts.reduce((a, b) => a + b, 0) / stat.count;
-
                 const item = { day: d, amount: avgAmount, probability };
 
-                if (probability > 0.8) {
-                    anchors.push(item);
-                } else {
-                    fillers.push(item);
-                }
+                // Salary/Rent is usually > 0.8 probability
+                if (probability > 0.8) anchors.push(item);
+                else fillers.push(item);
             }
 
-            // 5. Solve the Puzzle
-            // First, place Anchors (Fixed Reality)
+            // 5. Fill
+            // Anchors: Always happen (Salary, Rent)
             anchors.forEach(a => {
                 predictionMap[a.day] = (predictionMap[a.day] || 0) + a.amount;
-                remainingBudget -= a.amount;
+                remainingGap -= a.amount;
             });
 
-            // Second, distribute Fillers if we have budget left (Variable Reality)
-            if (remainingBudget > 0) {
-                // Sort fillers by probability (most likely first)
+            // Fillers: Only if we have gap left
+            if (remainingGap > 0) {
                 fillers.sort((a, b) => b.probability - a.probability);
-
                 for (const filler of fillers) {
-                    if (remainingBudget <= 0) break;
-                    const take = Math.min(remainingBudget, filler.amount);
+                    if (remainingGap <= 0) break;
+                    const take = Math.min(remainingGap, filler.amount);
                     predictionMap[filler.day] = (predictionMap[filler.day] || 0) + take;
-                    remainingBudget -= take;
+                    remainingGap -= take;
                 }
             }
-        }
+            return predictionMap;
+        };
+
+        const predictedExpenses = solvePuzzle('expense');
+        const predictedIncomes = solvePuzzle('income');
 
         // Create an array of days 1..N
         return Array.from({ length: daysInMonth }, (_, i) => {
             const currentDay = i + 1;
             const dateObj = new Date(selectedYear, selectedMonth, currentDay);
-            const dateStr = format(dateObj, 'yyyy-MM-dd');
+            const dateStr = formatDateString(dateObj);
             const isFutureDate = isAfter(dateObj, today);
             const isTodayDate = isToday(dateObj);
 
             // Filter transactions for this specific day
             const dayTxns = transactions.filter(t => {
                 // Use paidDate if available, else date
-                const tDate = t.paidDate ? parseISO(t.paidDate) : parseISO(t.date);
+                const tDate = t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
+                if (!tDate) return false;
                 return isSameDay(tDate, dateObj);
             });
 
@@ -126,13 +131,13 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
 
                 // Projected Data (Today + Future)
                 // For Today: we start projection at the actual value to ensure lines connect
-                predictedExpense: isFutureDate ? (predictionMap[currentDay] || 0) : (isTodayDate ? expense : null),
+                predictedExpense: isFutureDate ? (predictedExpenses[currentDay] || 0) : (isTodayDate ? expense : null),
                 // We can optionally predict income too, but sticking to expense for the "Flow" logic
-                predictedIncome: isFutureDate ? 0 : (isTodayDate ? income : null),
+                predictedIncome: isFutureDate ? (predictedIncomes[currentDay] || 0) : (isTodayDate ? income : null),
 
                 isFuture: isFutureDate,
                 label: format(dateObj, 'MMM d'),
-                isPrediction: isFutureDate && (predictionMap[currentDay] > 0)
+                isPrediction: isFutureDate && ((predictedExpenses[currentDay] > 0) || (predictedIncomes[currentDay] > 0))
             };
         });
     }, [transactions, selectedMonth, selectedYear, historyTxns]);
@@ -142,8 +147,9 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         return chartData.reduce((acc, day) => ({
             income: acc.income + (day.income || 0),
             expense: acc.expense + (day.expense || 0),
-            predictedExpense: acc.predictedExpense + (day.predictedExpense || 0)
-        }), { income: 0, expense: 0, predictedExpense: 0 });
+            predictedExpense: acc.predictedExpense + (day.predictedExpense || 0),
+            predictedIncome: acc.predictedIncome + (day.predictedIncome || 0)
+        }), { income: 0, expense: 0, predictedExpense: 0, predictedIncome: 0 });
     }, [chartData]);
 
     const [activeIndex, setActiveIndex] = useState(null);
@@ -163,7 +169,7 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         }
         // For total, we sum Actual + Future Predictions
         return {
-            income: monthTotals.income,
+            income: monthTotals.income + monthTotals.predictedIncome,
             expense: monthTotals.expense + monthTotals.predictedExpense,
             label: 'Total Projected Flow'
         };
@@ -282,6 +288,20 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                             animationDuration={500}
                             connectNulls={true}
                         />
+
+                        {/* PREDICTED INCOME (Dashed) */}
+                        <Area
+                            type="monotone"
+                            dataKey="predictedIncome"
+                            stroke="#10b981"
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            fillOpacity={0.1}
+                            fill="url(#colorIncome)"
+                            animationDuration={0}
+                            connectNulls={true}
+                        />
+
                         <Area
                             type="monotone"
                             dataKey="expense"
