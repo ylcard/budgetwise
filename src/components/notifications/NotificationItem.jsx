@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { X, ExternalLink, CheckCircle, AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
+import { X, ExternalLink, CheckCircle, AlertTriangle, Info, AlertCircle, Zap, Sparkles } from 'lucide-react';
 import { CustomButton } from '../ui/CustomButton';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -18,6 +18,7 @@ const NotificationItem = memo(({ notification, onMarkRead, onDismiss, onNavigate
         warning: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
         info: { icon: Info, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
         action: { icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+        story: { icon: Sparkles, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
     };
 
     const config = typeConfig[notification.type] || typeConfig.info;
