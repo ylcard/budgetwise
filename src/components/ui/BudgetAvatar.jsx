@@ -85,8 +85,10 @@ export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloa
             frame++;
             const width = canvas.width;
             const height = canvas.height;
-            const centerX = width / 2;
-            const centerY = height / 2;
+            // const centerX = width / 2;
+            // const centerY = height / 2;
+            const centerX = width;
+            const centerY = height;
 
             // Update ref for proximity checking
             const rect = canvas.getBoundingClientRect();
