@@ -82,7 +82,7 @@ export const SettingsProvider = ({ children }) => {
                     // absoluteGoals: userSettings.absoluteGoals || { needs: 0, wants: 0, savings: 0 }
                     goalMode: userSettings.goalMode ?? true,
                     displayName: userSettings.displayName || '',
-                    showMascot: userSettings.showMascot ?? true
+                    showMascot: userSettings.showMascot ?? settings.showMascot ?? true
                 };
 
                 // Update state and localStorage
