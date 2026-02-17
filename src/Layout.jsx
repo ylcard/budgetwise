@@ -242,7 +242,8 @@ const LayoutContent = ({ children }) => {
 
                 <main className="flex-1 flex flex-col relative">
                     {/* Global Roaming Casper */}
-                    <BudgetAvatar health={budgetHealth} size={80} showText={false} isFloating={true} />
+                    {/* <BudgetAvatar health={budgetHealth} size={80} showText={false} isFloating={true} /> */}
+                    <BudgetAvatar health={budgetHealth} showText={false} isFloating={true} />
 
                     <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
                         <RouteTransition>
