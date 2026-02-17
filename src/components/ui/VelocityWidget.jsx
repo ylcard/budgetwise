@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { format, getDaysInMonth, isSameDay, subMonths, startOfMonth, endOfMonth, isAfter, isBefore, getDate, isToday } from "date-fns";
@@ -15,133 +15,144 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
 
     const { transactions: historyTxns } = useTransactions(historyStart, historyEnd);
 
-    // 1. Process Data for the selected month
-    const chartData = useMemo(() => {
-        const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
+    // STATE: Store predictions asynchronously to avoid blocking the main thread
+    const [predictions, setPredictions] = useState({ expense: {}, income: {} });
 
+    // --- EFFECT: NON-BLOCKING CALCULATION ---
+    useEffect(() => {
         const today = new Date();
         const isCurrentMonth = selectedYear === today.getFullYear() && selectedMonth === today.getMonth();
 
-        // --- STEP A: CALCULATE "THE PUZZLE" PIECES ---
-        // Helper to solve the puzzle for both Income and Expenses
-        const solvePuzzle = (type) => {
-            const predictionMap = {};
-            if (!isCurrentMonth || historyTxns.length === 0) return predictionMap;
+        // We wrap this in a timeout to push it to the end of the event loop.
+        // This allows the browser to paint the initial frame/animations BEFORE crunching numbers.
+        const timerId = setTimeout(() => {
+            if (!isCurrentMonth || historyTxns.length === 0) {
+                setPredictions({ expense: {}, income: {} });
+                return;
+            }
 
-            // 1. Analyze History
-            const dayStats = {};
-            let totalHistory = 0;
-            const uniqueMonths = new Set();
+            const solvePuzzle = (type) => {
+                const predictionMap = {};
 
-            historyTxns.forEach(t => {
-                if (t.type !== type) return;
-                const tDate = parseDate(t.date);
-                if (!tDate) return;
-                const day = getDate(tDate);
-                const amount = Number(t.amount);
+                // 1. Analyze History
+                const dayStats = {};
+                let totalHistory = 0;
+                const uniqueMonths = new Set();
 
-                if (!dayStats[day]) dayStats[day] = { count: 0, amounts: [] };
-                dayStats[day].count++;
-                dayStats[day].amounts.push(amount);
-                totalHistory += amount;
-                uniqueMonths.add(format(tDate, 'yyyy-MM'));
-            });
+                const clusterMap = new Map();
 
-            // Use actual number of months in data, defaulting to 3 to avoid extreme skew for new users
-            const numMonths = Math.max(3, uniqueMonths.size);
-            const avgMonthly = totalHistory / numMonths;
+                // PERFORMANCE: Single pass loop for both Stats and Anchors
+                historyTxns.forEach(t => {
+                    if (t.type !== type) return;
+                    const tDate = parseDate(t.date);
+                    if (!tDate) return;
+                    const day = getDate(tDate);
+                    const amount = Number(t.amount);
 
-            // 2. Separate Current Month Data
-            const currentTxns = transactions
-                .filter(t => t.type === type)
-                .map(t => ({ ...t, amount: Number(t.amount) }));
+                    // A. Daily Stats for Filler
+                    if (!dayStats[day]) dayStats[day] = { count: 0, amounts: [] };
+                    dayStats[day].count++;
+                    dayStats[day].amounts.push(amount);
+                    totalHistory += amount;
+                    uniqueMonths.add(format(tDate, 'yyyy-MM'));
 
-            const currentTotal = currentTxns.reduce((sum, t) => sum + t.amount, 0);
-            const todayDay = getDate(today);
+                    // B. Cluster Logic for Anchors (Round to nearest 10 for buckets)
+                    // We do this here to avoid a second loop over history
+                    if (amount > 0) {
+                        const key = Math.round(amount / 10) * 10;
+                        if (!clusterMap.has(key)) clusterMap.set(key, { total: 0, count: 0, days: [] });
+                        const bucket = clusterMap.get(key);
+                        bucket.total += amount;
+                        bucket.count++;
+                        bucket.days.push(day);
+                    }
+                });
 
-            // --- 3. ANCHOR LOGIC (Salary/Rent Detection) ---
-            // PERFORMANCE FIX: Use a Map for O(1) clustering instead of array.find (O(N))
-            // We round amounts to creating "Buckets" (e.g. 1742 -> 1740)
-            const clusterMap = new Map();
+                // Use actual number of months in data, defaulting to 3 to avoid extreme skew for new users
+                const numMonths = Math.max(3, uniqueMonths.size);
+                const avgMonthly = totalHistory / numMonths;
 
-            historyTxns.forEach(t => {
-                if (t.type !== type) return;
-                const amt = Number(t.amount);
-                if (amt < (avgMonthly * 0.15)) return; // Ignore small noise for anchors
+                // 2. Separate Current Month Data
+                const currentTxns = transactions
+                    .filter(t => t.type === type)
+                    .map(t => ({ ...t, amount: Number(t.amount) }));
 
+                const currentTotal = currentTxns.reduce((sum, t) => sum + t.amount, 0);
+                const todayDay = getDate(today);
 
-                // Round to nearest 10 to group similar amounts
-                const key = Math.round(amt / 10) * 10;
+                // --- 3. ANCHOR LOGIC (Salary/Rent Detection) ---
+                // Valid Anchors must appear in at least 50% of history
+                const validAnchors = [];
+                clusterMap.forEach(bucket => {
+                    const avgAmt = bucket.total / bucket.count;
+                    // Must be significant (>15% of avg monthly flow) AND frequent
+                    if (bucket.count >= (numMonths * 0.5) && avgAmt > (avgMonthly * 0.15)) {
+                        validAnchors.push({ avgAmount: avgAmt, days: bucket.days, count: bucket.count });
+                    }
+                });
 
-                if (!clusterMap.has(key)) {
-                    clusterMap.set(key, { total: 0, count: 0, days: [] });
+                let predictedAnchorTotal = 0;
+                const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
+
+                validAnchors.forEach(anchor => {
+                    // Check if this anchor has ALREADY happened this month (by amount matching)
+                    const hasHappened = currentTxns.some(t =>
+                        Math.abs(t.amount - anchor.avgAmount) / anchor.avgAmount < 0.1
+                    );
+
+                    if (!hasHappened) {
+                        // Predict it!
+                        const avgDay = Math.round(anchor.days.reduce((a, b) => a + b, 0) / anchor.count);
+                        // Force to future if today is past the average day
+                        const targetDay = Math.max(avgDay, todayDay + 1);
+
+                        if (targetDay <= daysInMonth) {
+                            predictionMap[targetDay] = (predictionMap[targetDay] || 0) + anchor.avgAmount;
+                            predictedAnchorTotal += anchor.avgAmount;
+                        }
+                    }
+                });
+
+                // --- 4. FILLER LOGIC (The Rest) ---
+                // Gap = (Average Monthly Total) - (Already Spent/Earned) - (Predicted Anchors)
+                let remainingGap = avgMonthly - currentTotal - predictedAnchorTotal;
+
+                // Gather "Filler" candidates (days with historical activity > today)
+                const fillerCandidates = [];
+                for (let d = todayDay + 1; d <= daysInMonth; d++) {
+                    if (dayStats[d]) fillerCandidates.push({ day: d, stat: dayStats[d] });
                 }
-                const bucket = clusterMap.get(key);
-                bucket.total += amt;
-                bucket.count++;
-                bucket.days.push(getDate(parseDate(t.date)));
-            });
 
-            // Valid Anchors must appear in at least 50% of history
-            const validAnchors = [];
-            clusterMap.forEach(bucket => {
-                if (bucket.count >= (numMonths * 0.5)) {
-                    validAnchors.push({
-                        avgAmount: bucket.total / bucket.count,
-                        days: bucket.days,
-                        count: bucket.count
-                    });
-                }
-            });
-            let predictedAnchorTotal = 0;
+                if (remainingGap > 0 && fillerCandidates.length > 0) {
+                    // Distribute based on historical frequency (weighted)
+                    const totalFrequency = fillerCandidates.reduce((sum, c) => sum + c.stat.count, 0);
 
-            validAnchors.forEach(anchor => {
-                // Check if this anchor has ALREADY happened this month (by amount matching)
-                const hasHappened = currentTxns.some(t =>
-                    Math.abs(t.amount - anchor.avgAmount) / anchor.avgAmount < 0.1
-                );
+                    for (const candidate of fillerCandidates) {
+                        if (remainingGap <= 0) break;
 
-                if (!hasHappened) {
-                    // Predict it!
-                    const avgDay = Math.round(anchor.days.reduce((a, b) => a + b, 0) / anchor.count);
-                    // Force to future if today is past the average day
-                    const targetDay = Math.max(avgDay, todayDay + 1);
+                        const weight = candidate.stat.count / totalFrequency;
+                        const share = remainingGap * weight;
 
-                    if (targetDay <= daysInMonth) {
-                        predictionMap[targetDay] = (predictionMap[targetDay] || 0) + anchor.avgAmount;
-                        predictedAnchorTotal += anchor.avgAmount;
+                        predictionMap[candidate.day] = (predictionMap[candidate.day] || 0) + share;
                     }
                 }
+                return predictionMap;
+            };
+
+            setPredictions({
+                expense: solvePuzzle('expense'),
+                income: solvePuzzle('income')
             });
 
-            // --- 4. FILLER LOGIC (The Rest) ---
-            // Gap = (Average Monthly Total) - (Already Spent/Earned) - (Predicted Anchors)
-            let remainingGap = avgMonthly - currentTotal - predictedAnchorTotal;
+        }, 10); // Short delay to unblock main thread
 
-            // Gather "Filler" candidates (days with historical activity > today)
-            const fillerCandidates = [];
-            for (let d = todayDay + 1; d <= daysInMonth; d++) {
-                if (dayStats[d]) fillerCandidates.push({ day: d, stat: dayStats[d] });
-            }
+        return () => clearTimeout(timerId);
+    }, [historyTxns, transactions, selectedMonth, selectedYear]);
 
-            if (remainingGap > 0 && fillerCandidates.length > 0) {
-                // Distribute based on historical frequency (weighted)
-                const totalFrequency = fillerCandidates.reduce((sum, c) => sum + c.stat.count, 0);
-
-                for (const candidate of fillerCandidates) {
-                    if (remainingGap <= 0) break;
-
-                    const weight = candidate.stat.count / totalFrequency;
-                    const share = remainingGap * weight;
-
-                    predictionMap[candidate.day] = (predictionMap[candidate.day] || 0) + share;
-                }
-            }
-            return predictionMap;
-        };
-
-        const predictedExpenses = solvePuzzle('expense');
-        const predictedIncomes = solvePuzzle('income');
+    // 1. Process Data for the selected month (Now purely synchronous and fast)
+    const chartData = useMemo(() => {
+        const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
+        const today = new Date();
 
         // Create an array of days 1..N
         return Array.from({ length: daysInMonth }, (_, i) => {
@@ -178,17 +189,16 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                 expense: isFutureDate ? null : expense,
 
                 // Projected Data (Today + Future)
-                // For Today: we start projection at the actual value to ensure lines connect
-                predictedExpense: isFutureDate ? (predictedExpenses[currentDay] || 0) : (isTodayDate ? expense : null),
-                // We can optionally predict income too, but sticking to expense for the "Flow" logic
-                predictedIncome: isFutureDate ? (predictedIncomes[currentDay] || 0) : (isTodayDate ? income : null),
+                // We read from the ASYNC predictions state now
+                predictedExpense: isFutureDate ? (predictions.expense[currentDay] || 0) : (isTodayDate ? expense : null),
+                predictedIncome: isFutureDate ? (predictions.income[currentDay] || 0) : (isTodayDate ? income : null),
 
                 isFuture: isFutureDate,
                 label: format(dateObj, 'MMM d'),
-                isPrediction: isFutureDate && ((predictedExpenses[currentDay] > 0) || (predictedIncomes[currentDay] > 0))
+                isPrediction: isFutureDate && ((predictions.expense[currentDay] > 0) || (predictions.income[currentDay] > 0))
             };
         });
-    }, [transactions, selectedMonth, selectedYear, historyTxns]);
+    }, [transactions, selectedMonth, selectedYear, predictions]);
 
     // Calculate Totals for the "Idle" state
     const monthTotals = useMemo(() => {
