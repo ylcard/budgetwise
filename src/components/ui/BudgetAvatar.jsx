@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { motion, useAnimation } from "framer-motion";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloating = false }) => {
+export const BudgetAvatar = ({ health = 0.5, size = 220, showText = true, isFloating = false }) => {
     const canvasRef = useRef(null);
+    const [isVisible, setIsVisible] = useState(true);
 
     // Get full page height for absolute roaming
     const getPageBounds = () => ({
         width: window.innerWidth,
-        height: Math.max(document.documentElement.scrollHeight, window.innerHeight)
+        // Keep him in the visible area + a bit of scroll depth
+        height: Math.min(window.innerHeight * 2, Math.max(document.documentElement.scrollHeight, window.innerHeight))
     });
     const ghostPos = useRef({ x: 0, y: 0 });
 
@@ -16,22 +18,27 @@ export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloa
         y: 200
     });
 
-    // Function to find a new random spot on screen
+    // Function to "Teleport" Casper
     const roam = useCallback(() => {
         if (!isFloating) return;
 
-        const bounds = getPageBounds();
-        const padding = 100;
-        const newX = Math.random() * (bounds.width - size - padding * 2) + padding;
-        const newY = Math.random() * (bounds.height - size - padding * 2) + padding;
+        setIsVisible(false); // Start fade out
 
-        setPosition({ x: newX, y: newY });
+        setTimeout(() => {
+            const bounds = getPageBounds();
+            const padding = 120;
+            const newX = Math.random() * (bounds.width - size - padding * 2) + padding;
+            const newY = Math.random() * (bounds.height - size - padding * 2) + padding;
+
+            setPosition({ x: newX, y: newY });
+            setIsVisible(true); // Fade back in at new spot
+        }, 1000); // Wait for fade out to complete
     }, [isFloating, size]);
 
     // Roam periodically
     useEffect(() => {
         if (!isFloating) return;
-        const interval = setInterval(roam, 12000); // Moves every 12 seconds
+        const interval = setInterval(roam, 15000);
         return () => clearInterval(interval);
     }, [roam, isFloating]);
 
@@ -40,15 +47,15 @@ export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloa
         const handlePointer = (e) => {
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             // Add scroll offset for absolute positioning check
-            const y = (e.clientY || (e.touches && e.touches[0].clientY)) + window.scrollY;
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
 
-            // Use the actual current position for distance check
-            const dx = x - (position.x + size / 2);
-            const dy = y - (position.y + size / 2);
+            // Check distance against current visual center
+            const dx = x - ghostPos.current.x;
+            const dy = y - ghostPos.current.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < 120) { // Bigger scurry threshold for bigger ghost
-                roam(); // Just find a new spot immediately
+            if (distance < 150 && isVisible) {
+                roam();
             }
         };
 
@@ -58,7 +65,7 @@ export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloa
             window.removeEventListener("mousemove", handlePointer);
             window.removeEventListener("touchstart", handlePointer);
         };
-    }, [position, roam, size]);
+    }, [roam, isVisible]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -413,43 +420,44 @@ export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloa
         return "RIP 💀";
     };
 
-    // Drifting animation logic (Separate from the roaming X/Y)
-    const drift = {
-        y: [0, -15, 5, -10, 0],
-        x: [0, 10, -10, 5, 0],
-        rotate: [0, 5, -5, 2, 0]
-    };
-
     return (
-        <motion.div
-            animate={{
-                x: isFloating ? position.x : 0,
-                y: isFloating ? position.y : 0,
-                // Subtle organic "drift" overlay
-                ...(isFloating && {
-                    translateY: drift.y,
-                    translateX: drift.x,
-                    rotate: drift.rotate
-                })
-            }}
-            transition={{
-                x: { type: "spring", stiffness: 15, damping: 15 }, // Slower, more "fluid" move
-                y: { type: "spring", stiffness: 15, damping: 15 },
-                default: { duration: 8, repeat: Infinity, ease: "easeInOut" } // Infinite drift
-            }}
-            className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'absolute top-0 left-0 z-[100]' : 'w-full relative'}`}
-        >
-            <canvas
-                ref={canvasRef}
-                width={400}
-                height={350}
-                style={{ width: size, height: 'auto' }}
-            />
-            {showText && (
-                <p className="text-slate-400 text-[10px] font-bold mt-1 uppercase tracking-widest opacity-50">
-                    {getStatusText()}
-                </p>
+        <AnimatePresence>
+            {isVisible && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{
+                        opacity: 1,
+                        scale: 1,
+                        x: isFloating ? position.x : 0,
+                        y: isFloating ? position.y : 0,
+                    }}
+                    exit={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
+                    transition={{
+                        opacity: { duration: 0.8 },
+                        x: { type: "spring", stiffness: 20, damping: 20 },
+                        y: { type: "spring", stiffness: 20, damping: 20 }
+                    }}
+                    className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'absolute top-0 left-0 z-[100]' : 'w-full relative'}`}
+                >
+                    {/* The "Drifting" container */}
+                    <motion.div
+                        animate={{ y: [0, -15, 0], rotate: [-2, 2, -2] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                        <canvas
+                            ref={canvasRef}
+                            width={500}
+                            height={450}
+                            style={{ width: size, height: 'auto' }}
+                        />
+                        {showText && (
+                            <p className="text-slate-400 text-[10px] font-bold mt-1 text-center uppercase tracking-widest opacity-50">
+                                {getStatusText()}
+                            </p>
+                        )}
+                    </motion.div>
+                </motion.div>
             )}
-        </motion.div>
+        </AnimatePresence>
     );
 };
