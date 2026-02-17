@@ -5,6 +5,7 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { useHealth } from "../utils/HealthContext";
 
 // Slide Transition Variants
 const variants = {
@@ -52,12 +53,11 @@ export const WrappedStory = ({
   expenses, 
   transactions, 
   categories,
-  healthScore, // 0.0 to 1.0
   settings
 }) => {
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState(0);
-  const exportRef = useRef(null);
+  const { budgetHealth: healthScore } = useHealth();
 
   // Derived Data
   const topMerchant = useTopMerchant(transactions);
