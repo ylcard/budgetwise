@@ -11,6 +11,7 @@ import { useTransactions, useCustomBudgetsForPeriod } from "../hooks/useBase44En
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { useMonthlyIncome, useMonthlyBreakdown } from "../hooks/useDerivedData";
 import { getCategoryIcon } from "../utils/iconMapConfig"; // Assuming this utility exists based on context
+import { calculateFinancialHealth } from "../utils/financialHealthAlgorithms";
 
 // Slide Transition Variants
 const variants = {
@@ -80,6 +81,7 @@ export const WrappedStory = ({
         [month, year]);
 
     // 2. Fetch data specific to this story's period
+    const { transactions: allTransactions } = useTransactions(); // Get history for algorithm
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories: rawCategories } = useMergedCategories();
     const { customBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
@@ -112,16 +114,22 @@ export const WrappedStory = ({
     const [direction, setDirection] = useState(0);
     const exportRef = useRef(null);
 
-    // 3. Internalized Vibe Check Logic (matches HealthContext)
-    const healthScore = useMemo(() => {
-        if (!income || income === 0) return 0.5;
-        const spendRatio = expenses / income;
+    // 3. Centralized Financial Health Logic
+    const healthData = useMemo(() => {
+        if (!storyTransactions.length || !allTransactions.length) return null;
+        return calculateFinancialHealth(
+            storyTransactions,
+            allTransactions,
+            income,
+            monthStart,
+            settings,
+            settings?.goals || {},
+            rawCategories,
+            customBudgets
+        );
+    }, [storyTransactions, allTransactions, income, monthStart, settings, rawCategories, customBudgets]);
 
-        if (spendRatio >= 1.0) return 0.1;
-        if (spendRatio >= 0.90) return 0.3;
-        if (spendRatio >= 0.70) return 0.6;
-        return 1.0;
-    }, [income, expenses]);
+    const totalScore = healthData?.totalScore || 0;
 
     const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
 
@@ -169,7 +177,43 @@ export const WrappedStory = ({
             <p className="text-slate-400 text-lg">Your financial story for {year}.</p>
         </div>,
 
-        // SLIDE 2: THE FLOW
+        // SLIDE 2: THE MONEY FLOW
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+            <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-8">The Money Flow</h3>
+            <div className="w-full space-y-6">
+                <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20">
+                    <div className="flex items-center justify-center gap-2 text-emerald-400 mb-2">
+                        <TrendingUp size={20} /> <span className="font-bold">Income</span>
+                    </div>
+                    <p className="text-3xl font-bold text-white">{formatCurrency(income, settings)}</p>
+                </div>
+                <div className="bg-rose-500/10 p-6 rounded-2xl border border-rose-500/20">
+                    <div className="flex items-center justify-center gap-2 text-rose-400 mb-2">
+                        <TrendingDown size={20} /> <span className="font-bold">Spent</span>
+                    </div>
+                    <p className="text-3xl font-bold text-white">{formatCurrency(expenses, settings)}</p>
+                </div>
+            </div>
+        </div>,
+
+        // SLIDE 3: THE VIBE (GHOST)
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+            <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-8">Monthly Pulse</h3>
+            <div className="scale-150 mb-8">
+                <BudgetAvatar health={totalScore / 100} />
+            </div>
+            <p className="text-2xl font-bold text-white mt-8">
+                {totalScore >= 90 ? "Absolute Legend 🚀" :
+                    totalScore >= 75 ? "Solid Standing 😎" :
+                        totalScore >= 60 ? "Keeping it Cool 🤝" :
+                            "Living on the Edge 😅"}
+            </p>
+            <div className="mt-4 px-4 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono text-sm">
+                Health Score: <span className="text-white font-bold">{totalScore}</span>
+            </div>
+        </div>,
+
+        // SLIDE 4: HEAVY HITTERS
         <div className="h-full w-full overflow-y-auto no-scrollbar relative">
             {/* Content Container - Flex column start to allow scrolling */}
             <div className="flex flex-col items-center min-h-full p-8 pb-24">
@@ -276,9 +320,17 @@ export const WrappedStory = ({
                         <span className="text-slate-400">Top Spend</span>
                         <span className="font-bold text-white truncate max-w-[150px]">{topCategories[0]?.name || '-'}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-slate-400">Vibe Check</span>
-                        <span className="font-bold text-white">{healthScore >= 0.5 ? 'Passed ✅' : 'Failed ❌'}</span>
+                    <div className="flex justify-between items-center pt-2">
+                        <span className="text-slate-400">Financial Pulse</span>
+                        <div className="flex items-center gap-2">
+                            <div className="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full ${totalScore >= 75 ? 'bg-emerald-500' : totalScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                                    style={{ width: `${totalScore}%` }}
+                                />
+                            </div>
+                            <span className="font-bold text-white text-sm">{totalScore}</span>
+                        </div>
                     </div>
                 </div>
             </div>
