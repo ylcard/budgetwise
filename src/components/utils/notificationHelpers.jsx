@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSettings } from "./SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
-import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
-import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
-import { usePeriod } from "../components/hooks/usePeriod";
-import { useFAB } from "../components/hooks/FABContext";
+import { useRecurringStatus } from "../hooks/useRecurringStatus";
+import UpcomingTransactions from "../dashboard/UpcomingTransactions";
+import { usePeriod } from "../hooks/usePeriod";
+import { useFAB } from "../hooks/FABContext";
 import {
     useTransactions,
     useGoals,
