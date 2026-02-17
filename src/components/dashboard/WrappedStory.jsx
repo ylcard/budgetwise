@@ -7,7 +7,7 @@ import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { getMonthBoundaries } from "../utils/dateUtils";
-import { useTransactions, useCustomBudgetsForPeriod } from "../hooks/useBase44Entities";
+import { useTransactions, useCustomBudgetsForPeriod, useBase44Entities } from "../hooks/useBase44Entities";
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { useMonthlyIncome, useMonthlyBreakdown } from "../hooks/useDerivedData";
 import { getCategoryIcon } from "../utils/iconMapConfig"; // Assuming this utility exists based on context
@@ -86,6 +86,11 @@ export const WrappedStory = ({
     const { categories: rawCategories } = useMergedCategories();
     const { customBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
 
+    // Fetch Goals specifically for the health calculation
+    const { data: allGoals } = useBase44Entities('Goal', {
+        user_email: user?.email
+    });
+
     // Filter out the 30-day buffer fetched by useTransactions
     // We need strictly the transactions for this month's story
     const storyTransactions = useMemo(() => {
@@ -116,18 +121,19 @@ export const WrappedStory = ({
 
     // 3. Centralized Financial Health Logic
     const healthData = useMemo(() => {
-        if (!storyTransactions.length || !allTransactions.length) return null;
+        // Ensure goals are loaded before calculating to avoid crash and inaccuracy
+        if (!storyTransactions.length || !allTransactions.length || !allGoals) return null;
         return calculateFinancialHealth(
             storyTransactions,
             allTransactions,
             income,
             monthStart,
             settings,
-            settings?.goals || {},
+            allGoals,
             rawCategories,
             customBudgets
         );
-    }, [storyTransactions, allTransactions, income, monthStart, settings, rawCategories, customBudgets]);
+    }, [storyTransactions, allTransactions, income, monthStart, settings, rawCategories, customBudgets, allGoals]);
 
     const totalScore = healthData?.totalScore || 0;
 
