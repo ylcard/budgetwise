@@ -531,7 +531,10 @@ Deno.serve(async (req) => {
             importedCount += toUpdate.length;
         }
 
-        console.log(`✅ [SYNC] Processed ${importedCount} transactions (Created: ${toCreate.length}, Merged: ${toUpdate.length})`);
+        // Calculate how many transactions require user attention
+        const needsReviewCount = toCreate.filter(t => t.needsReview).length + toUpdate.filter(t => t.needsReview).length;
+
+        console.log(`✅ [SYNC] Processed ${importedCount} transactions (${needsReviewCount} need review)`);
 
         // Update connection metadata
         console.log('💾 [SYNC] Updating connection metadata...');
@@ -554,6 +557,7 @@ Deno.serve(async (req) => {
 
         const response = {
             importedCount: importedCount,
+            needsReviewCount: needsReviewCount,
             accounts: accounts,
             count: importedCount
         };
