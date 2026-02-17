@@ -1,19 +1,103 @@
 import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { format, getDaysInMonth, parseISO, isSameDay } from "date-fns";
+import { format, getDaysInMonth, parseISO, isSameDay, subMonths, startOfMonth, endOfMonth, isAfter, isBefore, getDate, isToday } from "date-fns";
 import { formatCurrency } from "../utils/currencyUtils";
+import { useTransactions } from "../hooks/useBase44Entities";
 
 export const VelocityWidget = ({ transactions = [], settings, selectedMonth, selectedYear }) => {
+    // --- 0. PREDICTION ENGINE CONTEXT ---
+    // We need 6 months of history to calculate the "Puzzle" (Anchors vs Fillers)
+    // We fetch this quietly in the background.
+    const historyStart = useMemo(() => format(startOfMonth(subMonths(new Date(), 6)), 'yyyy-MM-dd'), []);
+    const historyEnd = useMemo(() => format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'), []);
+
+    const { transactions: historyTxns } = useTransactions(historyStart, historyEnd);
+
     // 1. Process Data for the selected month
     const chartData = useMemo(() => {
         const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
+
+        const today = new Date();
+        const isCurrentMonth = selectedYear === today.getFullYear() && selectedMonth === today.getMonth();
+
+        // --- STEP A: CALCULATE "THE PUZZLE" PIECES ---
+        let predictionMap = {};
+
+        if (isCurrentMonth && historyTxns.length > 0) {
+            // 1. Analyze History by Day of Month (1..31)
+            const dayStats = {}; // { 1: { count: 0, total: 0 }, ... }
+            let totalHistoryExpense = 0;
+
+            historyTxns.forEach(t => {
+                if (t.type !== 'expense') return;
+                const day = getDate(parseISO(t.date));
+                if (!dayStats[day]) dayStats[day] = { count: 0, amounts: [] };
+                dayStats[day].count++;
+                dayStats[day].amounts.push(Number(t.amount));
+                totalHistoryExpense += Number(t.amount);
+            });
+
+            const avgMonthlyExpense = totalHistoryExpense / 6;
+
+            // 2. Calculate Current "Burn"
+            const currentSpent = transactions
+                .filter(t => t.type === 'expense' || t.type === 'savings')
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            // 3. Define The Gap
+            let remainingBudget = Math.max(0, avgMonthlyExpense - currentSpent);
+
+            // 4. Identify ANCHORS (High Confidence > 85%) & FILLERS
+            const todayDay = getDate(today);
+            const anchors = [];
+            const fillers = [];
+
+            // Only predict for days AFTER today
+            for (let d = todayDay + 1; d <= daysInMonth; d++) {
+                const stat = dayStats[d];
+                if (!stat) continue;
+
+                const probability = stat.count / 6;
+                const avgAmount = stat.amounts.reduce((a, b) => a + b, 0) / stat.count;
+
+                const item = { day: d, amount: avgAmount, probability };
+
+                if (probability > 0.8) {
+                    anchors.push(item);
+                } else {
+                    fillers.push(item);
+                }
+            }
+
+            // 5. Solve the Puzzle
+            // First, place Anchors (Fixed Reality)
+            anchors.forEach(a => {
+                predictionMap[a.day] = (predictionMap[a.day] || 0) + a.amount;
+                remainingBudget -= a.amount;
+            });
+
+            // Second, distribute Fillers if we have budget left (Variable Reality)
+            if (remainingBudget > 0) {
+                // Sort fillers by probability (most likely first)
+                fillers.sort((a, b) => b.probability - a.probability);
+
+                for (const filler of fillers) {
+                    if (remainingBudget <= 0) break;
+                    const take = Math.min(remainingBudget, filler.amount);
+                    predictionMap[filler.day] = (predictionMap[filler.day] || 0) + take;
+                    remainingBudget -= take;
+                }
+            }
+        }
 
         // Create an array of days 1..N
         return Array.from({ length: daysInMonth }, (_, i) => {
             const currentDay = i + 1;
             const dateObj = new Date(selectedYear, selectedMonth, currentDay);
             const dateStr = format(dateObj, 'yyyy-MM-dd');
+            const isFutureDate = isAfter(dateObj, today);
+            const isTodayDate = isToday(dateObj);
 
             // Filter transactions for this specific day
             const dayTxns = transactions.filter(t => {
@@ -30,31 +114,60 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                 .filter(t => t.type === 'expense' || t.type === 'savings') // specific logic can be adjusted
                 .reduce((sum, t) => sum + Number(t.amount), 0);
 
+            // Map data for charts
+            // We need continuity: "Today" needs both Real and Projected data points to connect lines
             return {
                 day: currentDay,
                 fullDate: dateStr,
-                income,
-                expense,
-                label: format(dateObj, 'MMM d')
+
+                // Real Data (Past + Today)
+                income: isFutureDate ? null : income,
+                expense: isFutureDate ? null : expense,
+
+                // Projected Data (Today + Future)
+                // For Today: we start projection at the actual value to ensure lines connect
+                predictedExpense: isFutureDate ? (predictionMap[currentDay] || 0) : (isTodayDate ? expense : null),
+                // We can optionally predict income too, but sticking to expense for the "Flow" logic
+                predictedIncome: isFutureDate ? 0 : (isTodayDate ? income : null),
+
+                isFuture: isFutureDate,
+                label: format(dateObj, 'MMM d'),
+                isPrediction: isFutureDate && (predictionMap[currentDay] > 0)
             };
         });
-    }, [transactions, selectedMonth, selectedYear]);
+    }, [transactions, selectedMonth, selectedYear, historyTxns]);
 
     // Calculate Totals for the "Idle" state
     const monthTotals = useMemo(() => {
         return chartData.reduce((acc, day) => ({
-            income: acc.income + day.income,
-            expense: acc.expense + day.expense
-        }), { income: 0, expense: 0 });
+            income: acc.income + (day.income || 0),
+            expense: acc.expense + (day.expense || 0),
+            predictedExpense: acc.predictedExpense + (day.predictedExpense || 0)
+        }), { income: 0, expense: 0, predictedExpense: 0 });
     }, [chartData]);
 
     const [activeIndex, setActiveIndex] = useState(null);
     const containerRef = useRef(null);
 
     // Determine what to show: Hovered Day OR Month Total
-    const displayData = activeIndex !== null
-        ? chartData[activeIndex]
-        : { ...monthTotals, label: 'Total Monthly Flow' };
+    const displayData = useMemo(() => {
+        if (activeIndex !== null) {
+            const data = chartData[activeIndex];
+            return {
+                ...data,
+                // If it's a future prediction, use the predicted value for the display
+                expense: data.isFuture ? data.predictedExpense : data.expense,
+                income: data.isFuture ? data.predictedIncome : data.income,
+                label: data.isPrediction ? `${data.label} (Est.)` : data.label
+            };
+        }
+        // For total, we sum Actual + Future Predictions
+        return {
+            income: monthTotals.income,
+            expense: monthTotals.expense + monthTotals.predictedExpense,
+            label: 'Total Projected Flow'
+        };
+    }, [activeIndex, chartData, monthTotals]);
 
     // Haptic feedback function (browser support varies, but good for mobile)
     const triggerHaptic = () => {
@@ -167,6 +280,7 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                             fillOpacity={1}
                             fill="url(#colorIncome)"
                             animationDuration={500}
+                            connectNulls={true}
                         />
                         <Area
                             type="monotone"
@@ -176,6 +290,20 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
                             fillOpacity={1}
                             fill="url(#colorExpense)"
                             animationDuration={500}
+                            connectNulls={true}
+                        />
+
+                        {/* PREDICTED DATA (Dashed) */}
+                        <Area
+                            type="monotone"
+                            dataKey="predictedExpense"
+                            stroke="#f43f5e"
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            fillOpacity={0.1}
+                            fill="url(#colorExpense)"
+                            animationDuration={0}
+                            connectNulls={true}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
