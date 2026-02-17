@@ -31,9 +31,16 @@ const variants = {
 // Helper to get top 3 expense categories
 const useTopCategories = (categories) => {
     return useMemo(() => {
-        if (!categories || categories.length === 0) return [];
-        // Filter out income/zero and sort by amount
+        // Robust check: handles both raw category entities and processed breakdown objects
+        if (!Array.isArray(categories) || categories.length === 0) return [];
+
         return [...categories]
+            .map(c => ({
+                id: c.id || Math.random().toString(),
+                name: c.name || 'Unknown',
+                amount: Number(c.amount) || 0,
+                percentage: Number(c.expensePercentage) || Number(c.percentage) || 0
+            }))
             .filter(c => c.amount > 0)
             .sort((a, b) => b.amount - a.amount)
             .slice(0, 3);
@@ -145,15 +152,15 @@ export const WrappedStory = ({
             <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-8">Heavy Hitters</h3>
 
             <div className="w-full space-y-4">
-                {topCategories.map((cat, index) => (
+                {topCategories.length > 0 ? topCategories.map((cat, index) => (
                     <motion.div
                         key={cat.id}
                         initial={{ x: -50, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: index * 0.1 }}
                         className={`p-5 rounded-2xl flex items-center justify-between text-left ${index === 0 ? 'bg-gradient-to-r from-amber-600/80 to-orange-600/80 border border-amber-500/30' :
-                                index === 1 ? 'bg-slate-800 border border-slate-700' :
-                                    'bg-slate-800/50 border border-slate-800'
+                            index === 1 ? 'bg-slate-800 border border-slate-700' :
+                                'bg-slate-800/50 border border-slate-800'
                             }`}
                     >
                         <div className="flex items-center gap-4">
@@ -163,7 +170,7 @@ export const WrappedStory = ({
                                     {cat.name}
                                 </h4>
                                 <p className={`text-xs ${index === 0 ? 'text-amber-100' : 'text-slate-400'}`}>
-                                    {cat.percentage?.toFixed(1)}% of expenses
+                                    {cat.percentage > 0 ? `${cat.percentage.toFixed(1)}% of month` : 'Top Expense'}
                                 </p>
                             </div>
                         </div>
@@ -171,9 +178,7 @@ export const WrappedStory = ({
                             {formatCurrency(cat.amount, settings)}
                         </div>
                     </motion.div>
-                ))}
-
-                {topCategories.length === 0 && (
+                )) : (
                     <div className="text-slate-500 italic">No expenses recorded yet.</div>
                 )}
             </div>
