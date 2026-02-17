@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSettings } from "./SettingsContext";
-import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
+import { useRecurringTransactions } from "../hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../hooks/useRecurringStatus";
 import UpcomingTransactions from "../dashboard/UpcomingTransactions";
 import { usePeriod } from "../hooks/usePeriod";
