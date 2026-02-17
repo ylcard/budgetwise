@@ -873,7 +873,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     );
 
     return (
-        <Card className="border-none shadow-md bg-card overflow-hidden h-full flex flex-col">
+        <Card className="border-none shadow-md bg-card overflow-hidden flex flex-col">
             <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
                     <div className="flex-1 w-full sm:w-auto">
