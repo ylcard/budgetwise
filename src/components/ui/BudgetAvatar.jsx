@@ -1,21 +1,28 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 
-export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloating = false }) => {
+export const BudgetAvatar = ({ health = 0.5, size = 160, showText = true, isFloating = false }) => {
     const canvasRef = useRef(null);
-    const [position, setPosition] = useState({
-        x: window.innerWidth - 120,
-        y: window.innerHeight - 150
+
+    // Get full page height for absolute roaming
+    const getPageBounds = () => ({
+        width: window.innerWidth,
+        height: Math.max(document.documentElement.scrollHeight, window.innerHeight)
     });
-    const ghostPos = useRef({ x: 0, y: 0 });
+
+    const [position, setPosition] = useState({
+        x: window.innerWidth - 200,
+        y: 200
+    });
 
     // Function to find a new random spot on screen
     const roam = useCallback(() => {
         if (!isFloating) return;
 
-        const padding = 50;
-        const newX = Math.random() * (window.innerWidth - size - padding * 2) + padding;
-        const newY = Math.random() * (window.innerHeight - size - padding * 2) + padding;
+        const bounds = getPageBounds();
+        const padding = 100;
+        const newX = Math.random() * (bounds.width - size - padding * 2) + padding;
+        const newY = Math.random() * (bounds.height - size - padding * 2) + padding;
 
         setPosition({ x: newX, y: newY });
     }, [isFloating, size]);
@@ -23,7 +30,7 @@ export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloa
     // Roam periodically
     useEffect(() => {
         if (!isFloating) return;
-        const interval = setInterval(roam, 10000); // Moves every 10 seconds
+        const interval = setInterval(roam, 12000); // Moves every 12 seconds
         return () => clearInterval(interval);
     }, [roam, isFloating]);
 
@@ -31,14 +38,15 @@ export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloa
     useEffect(() => {
         const handlePointer = (e) => {
             const x = e.clientX || (e.touches && e.touches[0].clientX);
-            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            // Add scroll offset for absolute positioning check
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) + window.scrollY;
 
             // Use the actual current position for distance check
             const dx = x - (position.x + size / 2);
             const dy = y - (position.y + size / 2);
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < 80) { // Scurry threshold
+            if (distance < 120) { // Bigger scurry threshold for bigger ghost
                 roam(); // Just find a new spot immediately
             }
         };
@@ -49,7 +57,7 @@ export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloa
             window.removeEventListener("mousemove", handlePointer);
             window.removeEventListener("touchstart", handlePointer);
         };
-    }, []);
+    }, [position, roam, size]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -402,14 +410,31 @@ export const BudgetAvatar = ({ health = 0.5, size = 100, showText = true, isFloa
         return "RIP 💀";
     };
 
+    // Drifting animation logic (Separate from the roaming X/Y)
+    const drift = {
+        y: [0, -15, 5, -10, 0],
+        x: [0, 10, -10, 5, 0],
+        rotate: [0, 5, -5, 2, 0]
+    };
+
     return (
         <motion.div
             animate={{
                 x: isFloating ? position.x : 0,
-                y: isFloating ? position.y : 0
+                y: isFloating ? position.y : 0,
+                // Subtle organic "drift" overlay
+                ...(isFloating && {
+                    translateY: drift.y,
+                    translateX: drift.x,
+                    rotate: drift.rotate
+                })
             }}
-            transition={{ type: "spring", stiffness: 30, damping: 10 }}
-            className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'fixed top-0 left-0 z-[100]' : 'w-full relative'}`}
+            transition={{
+                x: { type: "spring", stiffness: 15, damping: 15 }, // Slower, more "fluid" move
+                y: { type: "spring", stiffness: 15, damping: 15 },
+                default: { duration: 8, repeat: Infinity, ease: "easeInOut" } // Infinite drift
+            }}
+            className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'absolute top-0 left-0 z-[100]' : 'w-full relative'}`}
         >
             <canvas
                 ref={canvasRef}
