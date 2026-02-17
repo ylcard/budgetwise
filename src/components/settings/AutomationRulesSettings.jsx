@@ -41,7 +41,7 @@ export default function AutomationRulesSettings() {
     // --- SORTING & FILTERING STATE ---
     const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
     const [filterText, setFilterText] = useState('');
-    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterCategory, setFilterCategory] = useState([]);
     const [filterPriority, setFilterPriority] = useState('all');
 
     // FAB Integration
@@ -112,8 +112,8 @@ export default function AutomationRulesSettings() {
                 (r.regexPattern && r.regexPattern.toLowerCase().includes(lowerText))
             );
         }
-        if (filterCategory !== 'all') {
-            result = result.filter(r => r.categoryId === filterCategory);
+        if (filterCategory.length > 0) {
+            result = result.filter(r => filterCategory.includes(r.categoryId));
         }
         if (filterPriority !== 'all') {
             result = result.filter(r => r.financial_priority === filterPriority);
@@ -275,8 +275,9 @@ export default function AutomationRulesSettings() {
                     <div className="hidden md:flex items-center gap-2">
                         <CategorySelect
                             categories={categories}
-                            value={filterCategory === 'all' ? undefined : filterCategory}
-                            onValueChange={(val) => setFilterCategory(val || 'all')}
+                            value={filterCategory}
+                            onValueChange={setFilterCategory}
+                            multiple={true}
                             placeholder="All Categories"
                             className="w-[180px] h-9 bg-white"
                         />
@@ -284,29 +285,23 @@ export default function AutomationRulesSettings() {
                         {/* Toggle Style Filter for Priority */}
                         <div className="flex bg-gray-100 p-0.5 rounded-lg h-9 items-center">
                             <button
-                                onClick={() => setFilterPriority('all')}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${filterPriority === 'all' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                            >
-                                All
-                            </button>
-                            <button
-                                onClick={() => setFilterPriority('needs')}
+                                onClick={() => setFilterPriority(current => current === 'needs' ? 'all' : 'needs')}
                                 className={`px-3 py-1 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${filterPriority === 'needs' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 <ShieldCheck className="w-3 h-3" /> Essentials
                             </button>
                             <button
-                                onClick={() => setFilterPriority('wants')}
+                                onClick={() => setFilterPriority(current => current === 'wants' ? 'all' : 'wants')}
                                 className={`px-3 py-1 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${filterPriority === 'wants' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 <Sparkles className="w-3 h-3" /> Lifestyle
                             </button>
                         </div>
 
-                        {(filterText || filterCategory !== 'all' || filterPriority !== 'all') && (
+                        {(filterText || filterCategory.length > 0 || filterPriority !== 'all') && (
                             <CustomButton variant="ghost" size="sm" onClick={() => {
                                 setFilterText('');
-                                setFilterCategory('all');
+                                setFilterCategory([]);
                                 setFilterPriority('all');
                             }}>
                                 <X className="w-4 h-4 text-gray-500" />
