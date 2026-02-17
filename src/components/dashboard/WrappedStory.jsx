@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, TrendingUp, TrendingDown, Award, Calendar } from "lucide-react";
+import { X, Download, TrendingUp, TrendingDown, Award, Calendar, ChevronDown } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { format } from "date-fns";
 import { BudgetAvatar } from "../ui/BudgetAvatar"; // Re-using your ghost!
@@ -10,6 +10,7 @@ import { getMonthBoundaries } from "../utils/dateUtils";
 import { useTransactions, useCustomBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { useMonthlyIncome, useMonthlyBreakdown } from "../hooks/useDerivedData";
+import { getCategoryIcon } from "../utils/iconMapConfig"; // Assuming this utility exists based on context
 
 // Slide Transition Variants
 const variants = {
@@ -32,23 +33,35 @@ const variants = {
     })
 };
 
-// Helper to get top 3 expense categories
-const useTopCategories = (categories) => {
+// Helper to calculate actuals locally (Fixing Math Issue #1)
+const useActualCategoryStats = (transactions, categories) => {
     return useMemo(() => {
-        // Robust check: handles both raw category entities and processed breakdown objects
-        if (!Array.isArray(categories) || categories.length === 0) return [];
+        if (!Array.isArray(transactions) || !Array.isArray(categories)) return [];
 
-        return [...categories]
-            .map(c => ({
-                id: c.id || Math.random().toString(),
-                name: c.name || 'Unknown',
-                amount: Number(c.amount) || 0,
-                percentage: Number(c.expensePercentage) || Number(c.percentage) || 0
-            }))
+        // 1. Raw Summation of Expenses
+        const sums = transactions
+            .filter(t => t.type === 'expense')
+            .reduce((acc, t) => {
+                acc[t.category_id] = (acc[t.category_id] || 0) + Number(t.amount);
+                return acc;
+            }, {});
+
+        // 2. Map to Categories and Sort
+        const totalExpenses = Object.values(sums).reduce((a, b) => a + b, 0);
+
+        return categories
+            .map(c => {
+                const amount = sums[c.id] || 0;
+                return {
+                    ...c,
+                    amount,
+                    percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
+                };
+            })
             .filter(c => c.amount > 0)
             .sort((a, b) => b.amount - a.amount)
-            .slice(0, 3);
-    }, [categories]);
+            .slice(0, 10); // Get Top 10
+    }, [transactions, categories]);
 };
 
 export const WrappedStory = ({
@@ -71,15 +84,19 @@ export const WrappedStory = ({
     const { categories: rawCategories } = useMergedCategories();
     const { customBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
 
+    // Using raw transactions for calculations instead of the hook which might lean on Budgeted Amounts
     const income = useMonthlyIncome(transactions, month, year);
-    const { categoryBreakdown, totalExpenses: expenses } = useMonthlyBreakdown(
-        transactions,
-        rawCategories,
-        income,
-        customBudgets,
-        month,
-        year
+
+    // Calculate total expenses strictly from transactions
+    const expenses = useMemo(() =>
+        transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + Number(t.amount), 0),
+        [transactions]
     );
+
+    // Get Top 10 based on actuals
+    const topCategories = useActualCategoryStats(transactions, rawCategories);
 
     const monthName = useMemo(() =>
         (month !== undefined && year !== undefined) ? format(new Date(year, month), 'MMMM') : '',
@@ -101,7 +118,6 @@ export const WrappedStory = ({
     }, [income, expenses]);
 
     const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
-    const topCategories = useTopCategories(categoryBreakdown);
 
     const paginate = (newDirection) => {
         const nextPage = page + newDirection;
@@ -148,75 +164,87 @@ export const WrappedStory = ({
         </div>,
 
         // SLIDE 2: THE FLOW
-        <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-8">The Money Flow</h3>
-            <div className="w-full space-y-6">
-                <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20">
-                    <div className="flex items-center justify-center gap-2 text-emerald-400 mb-2">
-                        <TrendingUp size={20} /> <span className="font-bold">Income</span>
-                    </div>
-                    <p className="text-3xl font-bold text-white">{formatCurrency(income, settings)}</p>
-                </div>
-                <div className="bg-rose-500/10 p-6 rounded-2xl border border-rose-500/20">
-                    <div className="flex items-center justify-center gap-2 text-rose-400 mb-2">
-                        <TrendingDown size={20} /> <span className="font-bold">Spent</span>
-                    </div>
-                    <p className="text-3xl font-bold text-white">{formatCurrency(expenses, settings)}</p>
-                </div>
-            </div>
-        </div>,
+        <div className="h-full w-full overflow-y-auto no-scrollbar relative">
+            {/* Content Container - Flex column start to allow scrolling */}
+            <div className="flex flex-col items-center min-h-full p-8 pb-24">
+                <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-6 sticky top-0 bg-slate-900/95 backdrop-blur-sm w-full text-center py-2 z-10">
+                    Heavy Hitters
+                </h3>
 
-        // SLIDE 3: THE VIBE (CASPER)
-        <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-8">The Vibe</h3>
-            <div className="scale-150 mb-8">
-                <BudgetAvatar health={healthScore} />
-            </div>
-            <p className="text-2xl font-bold text-white mt-8">
-                {healthScore >= 0.8 ? "Absolute Legend 🚀" :
-                    healthScore >= 0.4 ? "Keeping it Cool 😎" :
-                        "Living on the Edge 😅"}
-            </p>
-            <p className="text-slate-400 mt-2">
-                Savings Rate: <span className="text-white font-bold">{savingsRate.toFixed(1)}%</span>
-            </p>
-        </div>,
-
-        // SLIDE 4: WHERE IT WENT (KANBAN)
-        <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <h3 className="text-xl text-slate-400 uppercase tracking-widest font-bold mb-8">Heavy Hitters</h3>
-
-            <div className="w-full space-y-4">
-                {topCategories.length > 0 ? topCategories.map((cat, index) => (
-                    <motion.div
-                        key={cat.id}
-                        initial={{ x: -50, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                        className={`p-5 rounded-2xl flex items-center justify-between text-left ${index === 0 ? 'bg-gradient-to-r from-amber-600/80 to-orange-600/80 border border-amber-500/30' :
-                            index === 1 ? 'bg-slate-800 border border-slate-700' :
-                                'bg-slate-800/50 border border-slate-800'
-                            }`}
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="text-2xl">{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</div>
-                            <div>
-                                <h4 className={`font-bold ${index === 0 ? 'text-white' : 'text-slate-200'}`}>
-                                    {cat.name}
-                                </h4>
-                                <p className={`text-xs ${index === 0 ? 'text-amber-100' : 'text-slate-400'}`}>
-                                    {cat.percentage > 0 ? `${cat.percentage.toFixed(1)}% of month` : 'Top Expense'}
-                                </p>
+                <div className="w-full space-y-4">
+                    {/* Top 3 - The Medals */}
+                    {topCategories.slice(0, 3).map((cat, index) => (
+                        <motion.div
+                            key={cat.id}
+                            initial={{ x: -50, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: index * 0.1 }}
+                            className={`p-5 rounded-2xl flex items-center justify-between text-left ${index === 0 ? 'bg-gradient-to-r from-amber-600/80 to-orange-600/80 border border-amber-500/30' :
+                                index === 1 ? 'bg-slate-800 border border-slate-700' :
+                                    'bg-slate-800/50 border border-slate-800'
+                                }`}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="text-2xl">{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</div>
+                                <div>
+                                    <h4 className={`font-bold ${index === 0 ? 'text-white' : 'text-slate-200'}`}>
+                                        {cat.name}
+                                    </h4>
+                                    <p className={`text-xs ${index === 0 ? 'text-amber-100' : 'text-slate-400'}`}>
+                                        {cat.percentage > 0 ? `${cat.percentage.toFixed(1)}% of month` : 'Top Expense'}
+                                    </p>
+                                </div>
                             </div>
+                            <div className={`text-lg font-mono font-bold ${index === 0 ? 'text-white' : 'text-slate-300'}`}>
+                                {formatCurrency(cat.amount, settings)}
+                            </div>
+                        </motion.div>
+                    ))}
+
+                    {/* The Rest - Dense List */}
+                    {topCategories.length > 3 && (
+                        <div className="pt-4 space-y-2">
+                            <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-2 text-left px-2">The Rest</p>
+                            {topCategories.slice(3).map((cat, index) => {
+                                // const Icon = getCategoryIcon(cat.icon); // Assuming you have this helper or pass generic
+                                return (
+                                    <motion.div
+                                        key={cat.id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.3 + (index * 0.05) }}
+                                        className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-800 hover:bg-slate-800/50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 text-xs">
+                                                {index + 4}
+                                            </div>
+                                            <span className="text-slate-300 font-medium">{cat.name}</span>
+                                        </div>
+                                        <span className="text-slate-400 font-mono text-sm">{formatCurrency(cat.amount, settings)}</span>
+                                    </motion.div>
+                                );
+                            })}
                         </div>
-                        <div className={`text-lg font-mono font-bold ${index === 0 ? 'text-white' : 'text-slate-300'}`}>
-                            {formatCurrency(cat.amount, settings)}
-                        </div>
-                    </motion.div>
-                )) : (
-                    <div className="text-slate-500 italic">No expenses recorded yet.</div>
-                )}
+                    )}
+                </div>
+
+                {topCategories.length === 0 ? (
+                    <div className="text-slate-500 italic mt-8">No expenses recorded yet.</div>
+                ) : null}
             </div>
+            {/* Scroll Indicator */}
+            {topCategories.length > 3 && (
+                <motion.div
+                    animate={{ y: [0, 5, 0] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none"
+                >
+                    <div className="bg-slate-900/80 backdrop-blur rounded-full p-2 text-slate-400 shadow-lg border border-slate-700">
+                        <ChevronDown size={20} />
+                    </div>
+                </motion.div>
+            )}
         </div>,
 
         // SLIDE 5: SUMMARY (EXPORTABLE)
