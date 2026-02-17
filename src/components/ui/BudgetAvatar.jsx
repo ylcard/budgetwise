@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloating = false }) => {
     const canvasRef = useRef(null);
+    const fxCanvasRef = useRef(null); // New global canvas for effects
     const [isVisible, setIsVisible] = useState(true);
 
     const [position, setPosition] = useState({
@@ -81,9 +82,19 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
 
     useEffect(() => {
         const canvas = canvasRef.current;
+        const fxCanvas = fxCanvasRef.current;
         const ctx = canvas.getContext("2d");
+        const fxCtx = fxCanvas.getContext("2d");
         let animationFrameId;
         let frame = 0;
+
+        // Resize FX canvas to fill screen
+        const handleResize = () => {
+            fxCanvas.width = window.innerWidth;
+            fxCanvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', handleResize);
+        handleResize();
 
         // Thriving Animation State
         let phase = 'launch'; // launch -> explode -> fall -> reform -> exit
@@ -101,6 +112,8 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
             const centerY = height / 2;
 
             ctx.clearRect(0, 0, width, height);
+            // Clear global effects canvas (or use semi-transparent fill for trails)
+            fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
 
             // --- STATE DETERMINATION ---
             const isDead = health < 0.15;
@@ -158,17 +171,26 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
                     // Super Fast Rainbow Cycle
                     overrideColor = `hsl(${frame * 25}, 100%, 60%)`;
 
-                    // Add Rainbow Trail
-                    trails.push({ x: centerX, y: ghostY + 50, color: overrideColor, size: 25 });
+                    // Add Rainbow Trail (Global Coordinates)
+                    // Calculate the world position of the "butt" of the ghost
+                    const worldX = ghostPos.current.x;
+                    const worldY = ghostPos.current.y + (ghostY - centerY) + 50;
+
+                    trails.push({ x: worldX, y: worldY, color: overrideColor, size: 25 });
                     if (trails.length > 20) trails.shift();
 
-                    // Draw Trail
+                    // Draw Trail on GLOBAL FX Context
                     trails.forEach((t, i) => {
-                        ctx.beginPath();
-                        ctx.fillStyle = t.color;
+                        fxCtx.beginPath();
+                        fxCtx.fillStyle = t.color;
                         const s = t.size * (i / trails.length);
-                        ctx.arc(t.x + (Math.sin(frame * 0.8 + i) * 10), t.y, s, 0, Math.PI * 2);
-                        ctx.fill();
+                        // Render relative to viewport scroll to simulate world attachment
+                        fxCtx.arc(
+                            t.x + (Math.sin(frame * 0.8 + i) * 10) - window.scrollX,
+                            t.y - window.scrollY,
+                            s, 0, Math.PI * 2
+                        );
+                        fxCtx.fill();
                     });
 
                     if (ghostY < height * 0.25) phase = 'explode'; // Explode at 25% height
@@ -179,10 +201,14 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
                     alpha = 0; // Hide Ghost
                     // Spawn MASSIVE amount of particles (Sparks)
                     if (particles.length === 0) {
+                        // Spawn center in World Space
+                        const spawnX = ghostPos.current.x;
+                        const spawnY = ghostPos.current.y + (ghostY - centerY);
+
                         for (let i = 0; i < 100; i++) {
                             particles.push({
-                                x: centerX,
-                                y: ghostY,
+                                x: spawnX,
+                                y: spawnY,
                                 vx: (Math.random() - 0.5) * 50, // WIDER EXPLOSION (Range)
                                 vy: (Math.random() - 0.5) * 50 - 10, // Higher jump
                                 color: `hsl(${Math.random() * 360}, 100%, 60%)`,
@@ -211,24 +237,26 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
 
                         if (p.life > 0) activeParticles++;
 
-                        // Draw Particle
-                        ctx.save();
-                        ctx.fillStyle = p.color;
+                        // Draw Particle on GLOBAL FX Context
+                        fxCtx.save();
+                        fxCtx.lineWidth = 1.5;
+                        fxCtx.lineCap = "round";
+                        fxCtx.strokeStyle = p.color;
+                        fxCtx.beginPath();
 
-                        // Draw THIN SPARK (Line segment based on velocity)
-                        ctx.lineWidth = 1.5;
-                        ctx.lineCap = "round";
-                        ctx.strokeStyle = p.color;
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        // Trail behind the particle to make it look like a spark
-                        ctx.lineTo(p.x - p.vx * 1.5, p.y - p.vy * 1.5);
-                        ctx.stroke();
-                        ctx.restore();
+                        // Convert World Space -> Screen Space
+                        const screenX = p.x - window.scrollX;
+                        const screenY = p.y - window.scrollY;
+
+                        fxCtx.moveTo(screenX, screenY);
+                        fxCtx.lineTo(screenX - p.vx * 1.5, screenY - p.vy * 1.5);
+                        fxCtx.stroke();
+                        fxCtx.restore();
                     });
 
                     // Transition when particles hit bottom
-                    if (particles.every(p => p.y > height || p.life <= 0)) {
+                    // Check world Y vs visible height approx
+                    if (particles.every(p => p.life <= 0)) {
                         phase = 'reform';
                         ghostY = height - 60; // Float near bottom
                         ghostAlpha = 0;
@@ -416,7 +444,10 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
 
         render();
 
-        return () => cancelAnimationFrame(animationFrameId);
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+            window.removeEventListener('resize', handleResize);
+        };
     }, [health, isVisible]);
 
     const getStatusText = () => {
@@ -427,45 +458,53 @@ export const BudgetAvatar = ({ health = 0.5, size = 300, showText = true, isFloa
     };
 
     return (
-        <AnimatePresence>
-            {isVisible && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                        opacity: 1,
-                        scale: 1,
-                        x: isFloating ? position.x : 0,
-                        y: isFloating ? position.y : 0,
-                    }}
-                    exit={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
-                    transition={{
-                        opacity: { duration: 0.8 },
-                        x: { type: "spring", stiffness: 20, damping: 20 },
-                        y: { type: "spring", stiffness: 20, damping: 20 }
-                    }}
-                    className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'absolute top-0 left-0 z-[100]' : 'w-full relative'}`}
-                    style={{ width: size }} // Explicit width to help browser layout
-                >
-                    {/* The "Drifting" container */}
+        <>
+            {/* Global Effects Layer - Fixed to viewport, passes clicks through */}
+            <canvas
+                ref={fxCanvasRef}
+                className="fixed inset-0 pointer-events-none z-[120]"
+            />
+
+            <AnimatePresence>
+                {isVisible && (
                     <motion.div
-                        animate={{ y: [0, -15, 0], rotate: [-2, 2, -2] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="w-full flex justify-center"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                            x: isFloating ? position.x : 0,
+                            y: isFloating ? position.y : 0,
+                        }}
+                        exit={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
+                        transition={{
+                            opacity: { duration: 0.8 },
+                            x: { type: "spring", stiffness: 20, damping: 20 },
+                            y: { type: "spring", stiffness: 20, damping: 20 }
+                        }}
+                        className={`flex flex-col items-center justify-center pointer-events-none select-none ${isFloating ? 'absolute top-0 left-0 z-[100]' : 'w-full relative'}`}
+                        style={{ width: size }} // Explicit width to help browser layout
                     >
-                        <canvas
-                            ref={canvasRef}
-                            width={500}
-                            height={450}
-                            style={{ width: '100%', height: 'auto' }} // Scale to container
-                        />
+                        {/* The "Drifting" container */}
+                        <motion.div
+                            animate={{ y: [0, -15, 0], rotate: [-2, 2, -2] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="w-full flex justify-center"
+                        >
+                            <canvas
+                                ref={canvasRef}
+                                width={500}
+                                height={450}
+                                style={{ width: '100%', height: 'auto' }} // Scale to container
+                            />
+                        </motion.div>
+                        {showText && (
+                            <p className="text-slate-400 text-[10px] font-bold -mt-4 text-center uppercase tracking-widest opacity-50 relative z-10">
+                                {getStatusText()}
+                            </p>
+                        )}
                     </motion.div>
-                    {showText && (
-                        <p className="text-slate-400 text-[10px] font-bold -mt-4 text-center uppercase tracking-widest opacity-50 relative z-10">
-                            {getStatusText()}
-                        </p>
-                    )}
-                </motion.div>
-            )}
-        </AnimatePresence>
+                )}
+            </AnimatePresence>
+        </>
     );
 };
