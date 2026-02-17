@@ -31,63 +31,99 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
             // 1. Analyze History
             const dayStats = {};
             let totalHistory = 0;
+            const uniqueMonths = new Set();
 
             historyTxns.forEach(t => {
                 if (t.type !== type) return;
                 const tDate = parseDate(t.date);
                 if (!tDate) return;
                 const day = getDate(tDate);
+                const amount = Number(t.amount);
 
                 if (!dayStats[day]) dayStats[day] = { count: 0, amounts: [] };
                 dayStats[day].count++;
-                dayStats[day].amounts.push(Number(t.amount));
-                totalHistory += Number(t.amount);
+                dayStats[day].amounts.push(amount);
+                totalHistory += amount;
+                uniqueMonths.add(format(tDate, 'yyyy-MM'));
             });
 
-            const avgMonthly = totalHistory / 6;
+            // Use actual number of months in data, defaulting to 3 to avoid extreme skew for new users
+            const numMonths = Math.max(3, uniqueMonths.size);
+            const avgMonthly = totalHistory / numMonths;
 
-            // 2. Calculate Current "Burn" or "Accumulation"
-            const currentTotal = transactions
+            // 2. Separate Current Month Data
+            const currentTxns = transactions
                 .filter(t => (t.type === type || (type === 'expense' && t.type === 'savings')))
-                .reduce((sum, t) => sum + Number(t.amount), 0);
+                .map(t => ({ ...t, amount: Number(t.amount) }));
 
-            // 3. Define The Gap
-            let remainingGap = Math.max(0, avgMonthly - currentTotal);
-
-            // 4. Identify ANCHORS & FILLERS
+            const currentTotal = currentTxns.reduce((sum, t) => sum + t.amount, 0);
             const todayDay = getDate(today);
-            const anchors = [];
-            const fillers = [];
 
+            // --- 3. ANCHOR LOGIC (Salary/Rent Detection) ---
+            // We look for Large Recurring Amounts, not just dates.
+            const clusters = [];
+
+            // Simple clustering: group by amount +/- 10%
+            historyTxns.filter(t => t.type === type).forEach(t => {
+                const amt = Number(t.amount);
+                if (amt < (avgMonthly * 0.15)) return; // Ignore small noise for anchors
+
+                const match = clusters.find(c => Math.abs(c.avgAmount - amt) / c.avgAmount < 0.1);
+                if (match) {
+                    match.count++;
+                    match.total += amt;
+                    match.avgAmount = match.total / match.count;
+                    match.days.push(getDate(parseDate(t.date)));
+                } else {
+                    clusters.push({ avgAmount: amt, total: amt, count: 1, days: [getDate(parseDate(t.date))] });
+                }
+            });
+
+            // Valid Anchors must appear in at least 50% of history
+            const validAnchors = clusters.filter(c => c.count >= (numMonths * 0.5));
+            let predictedAnchorTotal = 0;
+
+            validAnchors.forEach(anchor => {
+                // Check if this anchor has ALREADY happened this month (by amount matching)
+                const hasHappened = currentTxns.some(t =>
+                    Math.abs(t.amount - anchor.avgAmount) / anchor.avgAmount < 0.1
+                );
+
+                if (!hasHappened) {
+                    // Predict it!
+                    const avgDay = Math.round(anchor.days.reduce((a, b) => a + b, 0) / anchor.count);
+                    // Force to future if today is past the average day
+                    const targetDay = Math.max(avgDay, todayDay + 1);
+
+                    if (targetDay <= daysInMonth) {
+                        predictionMap[targetDay] = (predictionMap[targetDay] || 0) + anchor.avgAmount;
+                        predictedAnchorTotal += anchor.avgAmount;
+                    }
+                }
+            });
+
+            // --- 4. FILLER LOGIC (The Rest) ---
+            // Gap = (Average Monthly Total) - (Already Spent/Earned) - (Predicted Anchors)
+            let remainingGap = avgMonthly - currentTotal - predictedAnchorTotal;
+
+            // Gather "Filler" candidates (days with historical activity > today)
+            const fillerCandidates = [];
             for (let d = todayDay + 1; d <= daysInMonth; d++) {
-                const stat = dayStats[d];
-                if (!stat) continue;
-
-                const probability = stat.count / 6;
-                const avgAmount = stat.amounts.reduce((a, b) => a + b, 0) / stat.count;
-                const item = { day: d, amount: avgAmount, probability };
-
-                // Salary/Rent is usually > 0.8 probability
-                if (probability > 0.8) anchors.push(item);
-                else fillers.push(item);
+                if (dayStats[d]) fillerCandidates.push({ day: d, stat: dayStats[d] });
             }
 
-            // 5. Fill
-            // Anchors: Always happen (Salary, Rent)
-            anchors.forEach(a => {
-                predictionMap[a.day] = (predictionMap[a.day] || 0) + a.amount;
-                remainingGap -= a.amount;
-            });
+            if (remainingGap > 0 && fillerCandidates.length > 0) {
+                // Distribute based on historical frequency (weighted)
+                const totalFrequency = fillerCandidates.reduce((sum, c) => sum + c.stat.count, 0);
 
-            // Fillers: Only if we have gap left
-            if (remainingGap > 0) {
-                fillers.sort((a, b) => b.probability - a.probability);
-                for (const filler of fillers) {
+                fillerCandidates.forEach(candidate => {
                     if (remainingGap <= 0) break;
-                    const take = Math.min(remainingGap, filler.amount);
-                    predictionMap[filler.day] = (predictionMap[filler.day] || 0) + take;
-                    remainingGap -= take;
-                }
+
+                    const weight = candidate.stat.count / totalFrequency;
+                    const share = remainingGap * weight;
+
+                    predictionMap[candidate.day] = (predictionMap[candidate.day] || 0) + share;
+                });
             }
             return predictionMap;
         };
