@@ -110,7 +110,7 @@ export default function Dashboard() {
 
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
-    const { currentMonthIncome, currentMonthExpenses, bonusSavingsPotential } = useDashboardSummary(
+    const { currentMonthIncome, currentMonthExpenses, bonusSavingsPotential, projectedIncome, isUsingProjection } = useDashboardSummary(
         transactions,
         selectedMonth,
         selectedYear,
@@ -322,6 +322,8 @@ export default function Dashboard() {
                                     systemBudgets={systemBudgetsData}
                                     currentMonthIncome={currentMonthIncome}
                                     currentMonthExpenses={currentMonthExpenses}
+                                    projectedIncome={projectedIncome}
+                                    isUsingProjection={isUsingProjection}
                                     settings={settings}
                                     isLoading={isLoading}
                                     selectedMonth={selectedMonth}
@@ -345,6 +347,8 @@ export default function Dashboard() {
                                     bonusSavingsPotential={bonusSavingsPotential}
                                     currentMonthIncome={currentMonthIncome}
                                     currentMonthExpenses={currentMonthExpenses}
+                                    projectedIncome={projectedIncome}
+                                    isUsingProjection={isUsingProjection}
                                     goals={goals}
                                     settings={settings}
                                     selectedMonth={selectedMonth}
