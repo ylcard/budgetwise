@@ -218,8 +218,10 @@ export default function Reports() {
                     </button>
                 </div>
             )}
-            <div className={`flex-1 min-h-0 min-w-0 p-2 ${contentClassName || 'overflow-hidden'}`}>
-                {children}
+            <div className={`flex-1 min-h-0 min-w-0 relative ${contentClassName || 'overflow-hidden'}`}>
+                <div className="absolute inset-0 p-2 overflow-auto">
+                    {children}
+                </div>
             </div>
         </div>
     );
