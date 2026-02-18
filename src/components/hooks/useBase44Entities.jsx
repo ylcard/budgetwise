@@ -115,7 +115,7 @@ export const useGoals = (user) => {
             if (!user) return [];
             return await base44.entities.BudgetGoal.filter({ created_by: user.email });
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!user,
         staleTime: 1000 * 60 * 60,
     });
@@ -147,7 +147,7 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
         },
         keepPreviousData: true,
         enabled: !!user,
-        initialData: [],
+        // initialData: [],
         staleTime: 1000 * 60 * 5,
     });
 
@@ -166,7 +166,7 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = []) => {
         },
         keepPreviousData: true,
         enabled: customBudgetIds && customBudgetIds.length > 0,
-        initialData: [],
+        // initialData: [],
         staleTime: 1000 * 60 * 5,
     });
 
@@ -244,7 +244,7 @@ export const useAllBudgets = (user) => {
             }));
             return [...formattedSystem, ...customBudgets];
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!user,
         staleTime: 1000 * 60 * 5,
     });
@@ -263,7 +263,7 @@ export const useCategoryRules = (user) => {
             return allRules
                 .sort((a, b) => (a.priority || 0) - (b.priority || 0));
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!user,
         staleTime: 1000 * 60 * 60,
     });
