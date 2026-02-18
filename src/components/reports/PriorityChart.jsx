@@ -21,7 +21,7 @@ export default function PriorityChart({ transactions, categories, goals, monthly
     }
 
     return (
-        <Card className="border-none shadow-lg flex flex-col h-full max-h-[500px]">
+        <Card className="border-none shadow-lg flex flex-col h-full overflow-hidden">
             <CardHeader>
                 <CardTitle>Actual vs Target by Priority</CardTitle>
             </CardHeader>
@@ -32,7 +32,7 @@ export default function PriorityChart({ transactions, categories, goals, monthly
                     </div>
                 ) : (
                     <ResponsiveContainer width="99%" height="100%">
-                        <BarChart data={chartData} margin={{ left: -20, right: 0, top: 0, bottom: 0 }}>
+                        <BarChart data={chartData} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                             {/* Remove vertical label on mobile, rely on tick formatting */}
