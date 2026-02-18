@@ -10,6 +10,8 @@ import confetti from "canvas-confetti";
 const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     currentMonthIncome,
     currentMonthExpenses,
+    projectedIncome = 0,
+    isUsingProjection = false,
     settings,
     isLoading,
     monthNavigator,
@@ -40,13 +42,21 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
     const { income, expenses, breakdown: displayBreakdown } = displayedData;
 
-    const isDisplayedEmpty = (!income || income === 0) && (!expenses || expenses === 0);
-    const safeIncome = income && income > 0 ? income : 1;
+    // --- LOGIC FIX: Projection Integration ---
+    // Use projected income if provided and active, otherwise actual income
+    const effectiveIncome = isUsingProjection ? projectedIncome : income;
+    const calculationBase = effectiveIncome && effectiveIncome > 0 ? effectiveIncome : 1;
+
+    // Empty state only if NO income (real or projected) AND NO expenses
+    const isDisplayedEmpty = (!effectiveIncome || effectiveIncome === 0) && (!expenses || expenses === 0);
 
     const totalSpent = expenses;
-    const savingsAmount = Math.max(0, income - totalSpent);
-    const overAmount = Math.max(0, totalSpent - income); // Calculate how much we are over
-    const isTotalOver = totalSpent > income;
+    const savingsAmount = Math.max(0, effectiveIncome - totalSpent);
+    const overAmount = Math.max(0, totalSpent - effectiveIncome);
+    const isTotalOver = totalSpent > effectiveIncome;
+
+    // Helper: Is this "Bad" over (Real Money gone) or "Soft" over (Waiting for payday)?
+    // If we are using projection, being "Over" actual cash is normal. We only alert if over PROJECTION.
 
     // --- LOGIC FIX: Use Actual Breakdown (Paid + Unpaid) instead of Limits ---
     const needsData = displayBreakdown?.needs || { paid: 0, unpaid: 0 };
@@ -57,7 +67,6 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
         (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
 
     // Calculate Percentages. If Empty, everything forces to 0 to create the "Morph" to empty effect.
-    const calculationBase = isTotalOver ? expenses : safeIncome;
     const needsPct = isDisplayedEmpty ? 0 : (needsTotal / calculationBase) * 100;
     const wantsPct = isDisplayedEmpty ? 0 : (wantsTotal / calculationBase) * 100;
     const savingsPct = (isDisplayedEmpty || isTotalOver) ? 0 : Math.max(0, 100 - needsPct - wantsPct);
@@ -137,18 +146,18 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
         prevYearRef.current = selectedYear;
     }, [currentMonthIncome, selectedMonth, selectedYear]);
 
-    const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
+    const savingsPctDisplay = (savingsAmount / calculationBase) * 100;
 
     return (
-        <Card className="border-none shadow-md bg-card overflow-hidden h-full flex flex-col relative">
-            <CardContent className="p-4 flex-1 flex flex-col">
+        <Card className="w-auto mx-4 max-w-md md:mx-auto border-none shadow-md bg-card overflow-hidden h-auto flex flex-col relative">
+            <CardContent className="p-4 md:p-5 flex-1 flex flex-col gap-6">
                 {/* Top Navigation Bar - Centered Month Navigator */}
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center -mb-2">
                     {monthNavigator}
                 </div>
 
                 {/* Main Content */}
-                <div className="relative flex flex-col items-center justify-center flex-1 gap-4 min-h-[320px]">
+                <div className="relative flex flex-col items-center justify-start flex-1 gap-6">
                     {/* +                        CRITICAL FIX: Removed AnimatePresence mode="wait" wrapper.
                         We now ALWAYS render the Chart structure.
                         If data is empty, we simply animate values to 0 and crossfade the text.
@@ -162,12 +171,12 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.5, delay: 0.2 }} // Delay slightly to let chart morph out
-                                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/80 backdrop-blur-[2px]"
+                                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/90 backdrop-blur-[2px] rounded-full"
                             >
                                 <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm mb-4">
                                     <Calendar className="w-8 h-8 text-emerald-600" />
                                 </div>
-                                <h3 className="text-xl font-bold text-foreground mb-2">Ready to plan for {getMonthName(selectedMonth)}?</h3>
+                                <h3 className="text-lg font-bold text-foreground mb-2">Plan for {getMonthName(selectedMonth)}</h3>
                                 <p className="text-muted-foreground text-sm max-w-[260px]">
                                     Start by adding your expected income.
                                 </p>
@@ -280,7 +289,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                     <p className="text-sm font-medium text-muted-foreground">
                                         Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>
                                             {formatCurrency(totalSpent, settings)}
-                                        </strong> of <strong>{formatCurrency(income, settings)}</strong>
+                                        </strong> of <strong>{formatCurrency(effectiveIncome, settings)}</strong>
                                     </p>
 
                                     {/* Dynamic Pill: Changes color and icon based on status, but layout stays stable */}
@@ -291,7 +300,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                                         {isTotalOver ? <AlertCircle className="w-3.5 h-3.5" /> : <Wallet className="w-3.5 h-3.5" />}
                                         <span className="text-sm font-medium">
                                             {isTotalOver
-                                                ? `Over: ${formatCurrency(overAmount, settings)}`
+                                                ? `Over Limit: ${formatCurrency(overAmount, settings)}`
                                                 : `Left: ${formatCurrency(savingsAmount, settings)}`
                                             }
                                         </span>
@@ -300,18 +309,24 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
                                 {/* Legend */}
                                 <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs px-1">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="font-semibold" style={{ color: needsColor }}>{FINANCIAL_PRIORITIES.needs.label}</span>
-                                        <span className="font-bold text-foreground">{Math.round(needsPct)}%</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="font-semibold" style={{ color: wantsColor }}>{FINANCIAL_PRIORITIES.wants.label}</span>
-                                        <span className="font-bold text-foreground">{Math.round(wantsPct)}%</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="font-semibold" style={{ color: savingsColor }}>Savings</span>
-                                        <span className="font-bold text-foreground">{Math.round(savingsPct)}%</span>
-                                    </div>
+                                    {needsPct > 0 && (
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold" style={{ color: needsColor }}>{FINANCIAL_PRIORITIES.needs.label}</span>
+                                            <span className="font-bold text-foreground">{Math.round(needsPct)}%</span>
+                                        </div>
+                                    )}
+                                    {wantsPct > 0 && (
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold" style={{ color: wantsColor }}>{FINANCIAL_PRIORITIES.wants.label}</span>
+                                            <span className="font-bold text-foreground">{Math.round(wantsPct)}%</span>
+                                        </div>
+                                    )}
+                                    {savingsPct > 0 && (
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold" style={{ color: savingsColor }}>Savings</span>
+                                            <span className="font-bold text-foreground">{Math.round(savingsPct)}%</span>
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         </motion.div>
