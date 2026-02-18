@@ -79,7 +79,7 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
     return (
         <>
             {/* Removed h-full, added max-height constraint */}
-            <Card className="flex flex-col border shadow-sm max-h-[420px]">
+            <Card className="flex flex-col border shadow-sm h-auto">
                 <CardHeader className="pb-3 border-b bg-gray-50/40 px-4 py-3 flex-none">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
@@ -102,7 +102,7 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
                     </div>
                 </CardHeader>
                 {/* Added standard scrollbar hiding classes */}
-                <CardContent className="p-0 flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:none]">
+                <CardContent className="p-0 flex-1 min-h-0">
                     {sortedBills.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
                             <Check className="w-8 h-8 text-emerald-100 mb-2" />
@@ -110,7 +110,8 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
                         </div>
                     ) : (
                         <div className="divide-y">
-                            {sortedBills.map((bill) => {
+                            {/* Show max 5 items to avoid scroll trap on mobile */}
+                            {sortedBills.slice(0, 5).map((bill) => {
                                 const isPaid = bill.status === 'paid';
                                 const dueDate = parseISO(bill.nextOccurrence);
                                 const isOverdue = !isPaid && isPast(dueDate) && !isToday(dueDate);
@@ -120,7 +121,7 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
                                     <div
                                         key={bill.id}
                                         className={cn(
-                                            "flex items-center justify-between p-3 transition-colors hover:bg-slate-50",
+                                            "flex items-center justify-between p-4 transition-colors hover:bg-slate-50",
                                             isPaid ? "bg-slate-50/50" : "",
                                             isOverdue && "border-red-200 bg-red-50/30"
                                         )}
@@ -156,7 +157,7 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="h-7 px-2.5 text-[10px] border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                                    className="h-9 px-3 text-xs border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
                                                     onClick={() => onMarkPaid(bill)}
                                                 >
                                                     Pay
@@ -166,6 +167,13 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
                                     </div>
                                 );
                             })}
+                            {sortedBills.length > 5 && (
+                                <div className="p-2 text-center">
+                                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground w-full">
+                                        View All ({sortedBills.length})
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </CardContent>
