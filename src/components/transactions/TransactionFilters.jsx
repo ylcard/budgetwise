@@ -126,6 +126,78 @@ const FilterToggle = ({ value, onChange, options }) => (
     </div>
 );
 
+// Reusable filter fields content - MOVED OUTSIDE the function to prevent remounting
+const FilterFields = ({ filters, setFilters, categories, filteredCustomBudgets, handleCategoryChange }) => (
+    <>
+        {/* Category (Multi-select) */}
+        <div className="space-y-1 lg:col-span-1">
+            <Label className="text-xs text-muted-foreground">Category</Label>
+            <CategorySelect
+                value={filters.category}
+                onValueChange={handleCategoryChange}
+                categories={categories}
+                placeholder="All Categories"
+                multiple={true}
+            />
+        </div>
+
+        {/* Custom Budget */}
+        <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Budget</Label>
+            <div className="md:hidden">
+                <MobileSelectTrigger
+                    label="Select Budget"
+                    value={filters.budgetId}
+                    placeholder="All Budgets"
+                    onSelect={(val) => setFilters({ ...filters, budgetId: val })}
+                    options={[
+                        { value: 'all', label: 'All Budgets' },
+                        ...filteredCustomBudgets.map(b => ({ value: b.id, label: b.name }))
+                    ]}
+                />
+            </div>
+            <div className="hidden md:block">
+                <Select
+                    value={filters.budgetId}
+                    onValueChange={(value) => setFilters({ ...filters, budgetId: value })}
+                >
+                    <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All Budgets" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Budgets</SelectItem>
+                        {filteredCustomBudgets.map(b => (
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+
+        {/* Amount Range */}
+        <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
+            <Label className="text-xs text-muted-foreground">Amount Range</Label>
+            <div className="flex items-center gap-2">
+                <AmountInput
+                    placeholder="Min"
+                    className="h-9 text-xs"
+                    hideSymbol={true}
+                    value={filters.minAmount}
+                    onChange={(val) => setFilters({ ...filters, minAmount: val })}
+                />
+                <span className="text-muted-foreground">-</span>
+                <AmountInput
+                    placeholder="Max"
+                    className="h-9 text-xs"
+                    hideSymbol={true}
+                    value={filters.maxAmount}
+                    onChange={(val) => setFilters({ ...filters, maxAmount: val })}
+                />
+            </div>
+        </div>
+    </>
+);
+
 export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [], sortConfig, onSort }) {
     const { monthStart, monthEnd } = usePeriod();
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -182,133 +254,6 @@ export default function TransactionFilters({ filters, setFilters, categories, al
         filters.minAmount !== '',
         filters.maxAmount !== ''
     ].filter(Boolean).length;
-
-    // Reusable filter fields content
-    //const FilterFields = () => (
-    // Move FilterFields OUTSIDE the main component to prevent remounting/focus loss
-    const FilterFields = ({ filters, setFilters, categories, filteredCustomBudgets, handleCategoryChange }) => (
-        <>
-            {/* Category (Multi-select) */}
-            <div className="space-y-1 lg:col-span-1">
-                <Label className="text-xs text-muted-foreground">Category</Label>
-                <CategorySelect
-                    value={filters.category}
-                    onValueChange={handleCategoryChange}
-                    categories={categories}
-                    placeholder="All Categories"
-                    multiple={true}
-                />
-            </div>
-
-            {/* Custom Budget */}
-            <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Budget</Label>
-                {/* Mobile version uses the Drawer helper */}
-                <div className="md:hidden">
-                    <MobileSelectTrigger
-                        label="Select Budget"
-                        value={filters.budgetId}
-                        placeholder="All Budgets"
-                        onSelect={(val) => setFilters({ ...filters, budgetId: val })}
-                        options={[
-                            { value: 'all', label: 'All Budgets' },
-                            ...filteredCustomBudgets.map(b => ({ value: b.id, label: b.name }))
-                        ]}
-                    />
-                </div>
-                {/* Desktop version uses standard Select */}
-                <div className="hidden md:block">
-                    <Select
-                        value={filters.budgetId}
-                        onValueChange={(value) => setFilters({ ...filters, budgetId: value })}
-                    >
-                        <SelectTrigger className="h-9">
-                            <SelectValue placeholder="All Budgets" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Budgets</SelectItem>
-                            {filteredCustomBudgets.map(b => (
-                                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-
-            {/* Type */}
-            <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Type</Label>
-                <FilterToggle
-                    value={filters.type}
-                    onChange={(val) => setFilters({ ...filters, type: val })}
-                    options={[
-                        { value: 'income', label: 'Income', icon: TrendingUp },
-                        { value: 'expense', label: 'Expense', icon: TrendingDown }
-                    ]}
-                />
-            </div>
-            {/* Financial Priority */}
-            <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Priority</Label>
-                <FilterToggle
-                    value={filters.financialPriority}
-                    onChange={(val) => setFilters({ ...filters, financialPriority: val })}
-                    options={[
-                        { value: 'needs', label: 'Essentials', icon: Shield },
-                        { value: 'wants', label: 'Lifestyle', icon: Sparkles }
-                    ]}
-                />
-            </div>
-
-            {/* Payment Status */}
-            <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Payment</Label>
-                <FilterToggle
-                    value={filters.paymentStatus}
-                    onChange={(val) => setFilters({ ...filters, paymentStatus: val })}
-                    options={[
-                        { value: 'paid', label: 'Paid', icon: CheckCircle },
-                        { value: 'unpaid', label: 'Unpaid', icon: Clock }
-                    ]}
-                />
-            </div>
-
-            {/* Cash Status */}
-            <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Cash</Label>
-                <FilterToggle
-                    value={filters.cashStatus}
-                    onChange={(val) => setFilters({ ...filters, cashStatus: val })}
-                    options={[
-                        { value: 'cash_only', label: 'Cash', icon: Banknote },
-                        { value: 'exclude_cash', label: 'Card', icon: CreditCard }
-                    ]}
-                />
-            </div>
-
-            {/* Amount Range */}
-            <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
-                <Label className="text-xs text-muted-foreground">Amount Range</Label>
-                <div className="flex items-center gap-2">
-                    <AmountInput
-                        placeholder="Min"
-                        className="h-9 text-xs"
-                        hideSymbol={true}
-                        value={filters.minAmount}
-                        onChange={(val) => setFilters({ ...filters, minAmount: val })}
-                    />
-                    <span className="text-muted-foreground">-</span>
-                    <AmountInput
-                        placeholder="Max"
-                        className="h-9 text-xs"
-                        hideSymbol={true}
-                        value={filters.maxAmount}
-                        onChange={(val) => setFilters({ ...filters, maxAmount: val })}
-                    />
-                </div>
-            </div>
-        </>
-    );
 
     return (
         <Card className="border-none shadow-md md:shadow-lg bg-card">
