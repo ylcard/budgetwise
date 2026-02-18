@@ -13,10 +13,24 @@ import { base44 } from "@/api/base44Client";
 import { getMonthBoundaries } from "./dateUtils";
 import { FINANCIAL_PRIORITIES } from "./constants";
 import { resolveBudgetLimit } from "./financialCalculations";
+import { format, parseISO, isValid, addMonths, startOfMonth, endOfMonth } from "date-fns";
 
 // In-memory lock to prevent race conditions during concurrent budget creation
 const inFlightRequests = new Map();
 
+
+/**
+ * Helper to ensure consistent date strings (YYYY-MM-DD)
+ * Handles both Date objects and strings.
+ */
+const normalizeDate = (dateInput) => {
+    if (!dateInput) return null;
+    try {
+        const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
+        if (!isValid(date)) return null;
+        return format(date, 'yyyy-MM-dd');
+    } catch (e) { return null; }
+};
 
 /**
  * ADDED 05-Feb-2026: Helper function to get or create a SystemBudget for a specific transaction.
@@ -68,7 +82,7 @@ export const getOrCreateSystemBudgetForTransaction = async (
 /**
  * Ensures SystemBudget entities exist for a given user, month, and priority types.
  * This function is the SINGLE SOURCE OF TRUTH for creating system budgets.
- * It prevents duplicate budgets by checking existence before creation.
+ * It prevents duplicate budgets by checking existence before creation and using bulk operations.
  * 
  * OPTIMIZATION 17-Jan-2026: Fetches all existing budgets in a single query to prevent race conditions.
  * 
@@ -91,16 +105,17 @@ export const getOrCreateSystemBudgetForTransaction = async (
  */
 export const ensureSystemBudgetsExist = async (
     userEmail,
-    startDate,
-    endDate,
+    startDateRaw,
+    endDateRaw,
     budgetGoals = [],
     settings = {},
     monthlyIncome = 0,
     options = {}
 ) => {
-    if (!userEmail || !startDate || !endDate) {
-        throw new Error('ensureSystemBudgetsExist: userEmail, startDate, and endDate are required');
-    }
+    const startDate = normalizeDate(startDateRaw);
+    const endDate = normalizeDate(endDateRaw);
+
+    if (!userEmail || !startDate || !endDate) return {};
 
     // Destructure options with defaults to ensure properties aren't undefined if the object is partially provided
     const { allowUpdates = false, historicalAverage = 0 } = options;
@@ -118,61 +133,83 @@ export const ensureSystemBudgetsExist = async (
         try {
             const priorityTypes = ['needs', 'wants'];
             const results = {};
+            const toCreate = [];
+            const toUpdate = [];
 
             // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
-            // This prevents race conditions during concurrent operations
             const existingBudgetsForMonth = await base44.entities.SystemBudget.filter({
                 user_email: userEmail,
-                startDate: startDate,
-                endDate: endDate
+                startDate: startDate
             });
 
-            for (const priorityType of priorityTypes) {
-                const existingForThisPriority = existingBudgetsForMonth.find(
-                    (b) => b.systemBudgetType === priorityType
-                );
+            // Map for O(1) lookup
+            const budgetMap = new Map();
+            existingBudgetsForMonth.forEach(b => budgetMap.set(b.systemBudgetType, b));
 
-                if (existingForThisPriority) {
-                    const goal = budgetGoals.find(g => g.priority === priorityType);
-                    const calculatedAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+            for (const type of priorityTypes) {
+                const existing = budgetMap.get(type);
+                const goal = budgetGoals.find(g => g.priority === type);
+                const amount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+
+                if (existing) {
 
                     // Update logic: Only update if allowed, or if the budget is currently uninitialized (0)
-                    const needsUpdate = (allowUpdates || existingForThisPriority.budgetAmount === 0) &&
-                        Math.abs(existingForThisPriority.budgetAmount - calculatedAmount) > 0.01;
+                    const needsUpdate = (allowUpdates || existing.budgetAmount === 0) &&
+                        Math.abs(existing.budgetAmount - amount) > 0.01;
 
                     if (needsUpdate) {
-                        const updated = await base44.entities.SystemBudget.update(existingForThisPriority.id, {
-                            budgetAmount: calculatedAmount,
-                            target_percentage: goal?.target_percentage || 0,
-                            target_amount: goal?.target_amount || 0
+                        toUpdate.push({
+                            id: existing.id,
+                            data: {
+                                budgetAmount: amount,
+                                target_percentage: goal?.target_percentage || 0,
+                                target_amount: goal?.target_amount || 0
+                            }
                         });
-                        results[priorityType] = updated;
-                    } else {
-                        results[priorityType] = existingForThisPriority;
                     }
+                    results[type] = existing; // Return existing for now, will update memory if needed
                 } else {
-                    // Create a new SystemBudget
-                    const goal = budgetGoals.find(g => g.priority === priorityType);
-                    const budgetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
-
-                    const newBudget = await base44.entities.SystemBudget.create({
-                        name: FINANCIAL_PRIORITIES[priorityType].label,
-                        budgetAmount,
+                    // Queue for Bulk Creation
+                    toCreate.push({
+                        name: FINANCIAL_PRIORITIES[type].label,
+                        budgetAmount: amount,
                         startDate,
                         endDate,
-                        color: FINANCIAL_PRIORITIES[priorityType].color,
+                        color: FINANCIAL_PRIORITIES[type].color,
                         user_email: userEmail,
-                        systemBudgetType: priorityType,
-                        // Store the goal data for reference if available
+                        systemBudgetType: type,
                         target_percentage: goal?.target_percentage || 0,
                         target_amount: goal?.target_amount || 0
                     });
-
-                    results[priorityType] = newBudget;
                 }
             }
 
+            // 4. Execute Writes (Parallel / Bulk)
+            const promises = [];
+
+            // A. Bulk Create (Atomic-ish)
+            if (toCreate.length > 0) {
+                promises.push(
+                    base44.entities.SystemBudget.bulkCreate(toCreate).then(created => {
+                        created.forEach(b => results[b.systemBudgetType] = b);
+                    })
+                );
+            }
+
+            // B. Updates (Parallel)
+            if (toUpdate.length > 0) {
+                // Batch update if API supports it, otherwise Promise.all
+                const updatePromises = toUpdate.map(({ id, data }) =>
+                    base44.entities.SystemBudget.update(id, data).then(updated => {
+                        results[updated.systemBudgetType] = updated;
+                    })
+                );
+                promises.push(Promise.all(updatePromises));
+            }
+
+            await Promise.all(promises);
             return results;
+
         } finally {
             // 4. Always clean up the lock when the work is finished (success or error)
             inFlightRequests.delete(lockKey);
@@ -182,4 +219,79 @@ export const ensureSystemBudgetsExist = async (
     // 5. Register the promise in the lock map so other callers can wait for it
     inFlightRequests.set(lockKey, work);
     return work;
+};
+
+/**
+ * NEW: Bulk Sync Future Budgets
+ * Fetches next 12 months, identifies missing vs existing, and performs bulk ops.
+ * This guarantees NO duplicates and minimizes requests.
+ */
+export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, allGoals = []) => {
+    if (!userEmail || !settings) return;
+
+    const now = new Date();
+    const monthsToSync = 12;
+    const requiredBudgets = [];
+
+    for (let i = 0; i < monthsToSync; i++) {
+        const date = addMonths(now, i);
+        const start = format(startOfMonth(date), 'yyyy-MM-dd');
+        const end = format(endOfMonth(date), 'yyyy-MM-dd');
+        ['needs', 'wants'].forEach(type => requiredBudgets.push({ start, end, type }));
+    }
+
+    const startOfRange = requiredBudgets[0].start;
+    const existingBudgets = await base44.entities.SystemBudget.filter({
+        user_email: userEmail,
+        startDate: { $gte: startOfRange }
+    });
+
+    const budgetMap = new Map();
+    existingBudgets.forEach(b => budgetMap.set(`${b.startDate}|${b.systemBudgetType}`, b));
+
+    const toCreate = [];
+    const toUpdate = [];
+
+    requiredBudgets.forEach(req => {
+        const existing = budgetMap.get(`${req.start}|${req.type}`);
+        const goal = allGoals.find(g => g.priority === req.type);
+        const amount = resolveBudgetLimit(goal, 0, settings, 0);
+
+        if (existing) {
+            if (Math.abs(existing.budgetAmount - amount) > 0.01) {
+                toUpdate.push({
+                    id: existing.id,
+                    data: {
+                        budgetAmount: amount,
+                        target_percentage: goal?.target_percentage || 0,
+                        target_amount: goal?.target_amount || 0
+                    }
+                });
+            }
+        } else {
+            toCreate.push({
+                name: FINANCIAL_PRIORITIES[req.type].label,
+                budgetAmount: amount,
+                startDate: req.start,
+                endDate: req.end,
+                color: FINANCIAL_PRIORITIES[req.type].color,
+                user_email: userEmail,
+                systemBudgetType: req.type,
+                target_percentage: goal?.target_percentage || 0,
+                target_amount: goal?.target_amount || 0
+            });
+        }
+    });
+
+    if (toCreate.length > 0) await base44.entities.SystemBudget.bulkCreate(toCreate);
+
+    if (toUpdate.length > 0) {
+        // Simple chunking for updates to avoid overwhelming connection pool if needed
+        const chunkSize = 20;
+        for (let i = 0; i < toUpdate.length; i += chunkSize) {
+            await Promise.all(toUpdate.slice(i, i + chunkSize).map(u =>
+                base44.entities.SystemBudget.update(u.id, u.data)
+            ));
+        }
+    }
 };
