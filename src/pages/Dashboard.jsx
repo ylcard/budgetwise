@@ -300,19 +300,6 @@ export default function Dashboard() {
                                 selectedMonth={selectedMonth}
                                 selectedYear={selectedYear}
                             />
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <MonthlyRewind
-                                    selectedMonth={selectedMonth}
-                                    selectedYear={selectedYear}
-                                    onOpen={() => {
-                                        // Manual trigger: View currently selected month
-                                        setStoryContext({ month: selectedMonth, year: selectedYear });
-                                        setShowStory(true);
-                                    }}
-                                />
-                            </div>
-
                             {isMobile ? (
                                 <MobileRemainingBudgetCard
                                     breakdown={detailedBreakdown}
