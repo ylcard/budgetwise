@@ -421,22 +421,22 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 3: Projection */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2 overflow-y-auto">
+                                    {/* <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Financial Horizon" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
                                                 {projectionComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     {/* Slide 4: Priority */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2 overflow-y-auto">
+                                    {/* <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Priority Allocations" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
                                                 {priorityComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                             {/* Dots Indicator */}
