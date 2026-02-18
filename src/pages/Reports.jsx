@@ -431,13 +431,13 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 4: Priority */}
-                                    <div className="basis-full flex-none min-w-0 px-2 overflow-y-auto">
+                                    {/* <div className="basis-full flex-none min-w-0 px-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Priority Allocations" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
                                                 {priorityComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                 </div>
                             </div>
