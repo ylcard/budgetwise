@@ -423,8 +423,7 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
         const newAmount = resolveBudgetLimit(goal, 0, settings, 0);
 
         // Only fire update request if values actually changed
-        if (Math.abs(budget.budgetAmount - newAmount) > 0.01 ||
-            budget.target_percentage !== goal.target_percentage) {
+        if (Math.abs(budget.budgetAmount - newAmount) > 0.01) {
 
             return base44.entities.SystemBudget.update(budget.id, {
                 budgetAmount: newAmount,
