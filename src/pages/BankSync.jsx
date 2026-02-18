@@ -48,6 +48,7 @@ export default function BankSync() {
     const { data: needsReviewTransactions = [] } = useQuery({
         queryKey: ['transactions', 'needsReview'],
         queryFn: () => base44.entities.Transaction.filter({ needsReview: true }),
+        staleTime: 1000 * 60 * 5,
     });
 
     const [syncing, setSyncing] = useState(null);
@@ -59,6 +60,7 @@ export default function BankSync() {
     const { data: connections = [], isLoading } = useQuery({
         queryKey: ['bankConnections'],
         queryFn: () => base44.entities.BankConnection.list(),
+        staleTime: 1000 * 60 * 5,
     });
 
     // MODIFIED: 26-Jan-2026 - TrueLayer shows banks in auth dialog, no API to fetch list
