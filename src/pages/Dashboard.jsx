@@ -338,7 +338,7 @@ export default function Dashboard() {
                                     selectedMonth={selectedMonth}
                                     selectedYear={selectedYear}
                                     importDataButton={
-                                        <CustomButton variant="outline" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
+                                        <CustomButton variant="primary" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
                                             <FileUp className="h-3.5 w-3.5" />
                                             <span className="hidden xl:inline">Import</span>
                                         </CustomButton>
