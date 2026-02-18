@@ -169,8 +169,11 @@ export default function ProjectionChart({ settings }) {
                                         <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{item.subLabel}</p>
                                     </div>
 
-                                    {/* Hover Tooltip */}
-                                    <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs p-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none">
+                                    {/* Hover Tooltip - Smart Alignment for Mobile Edges */}
+                                    <div className={`
+                                        absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs p-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none
+                                        ${idx === 0 ? 'left-0' : idx === 2 ? 'right-0' : 'left-1/2 -translate-x-1/2'}
+                                    `}>
                                         <p className="font-bold mb-1 border-b border-gray-700 pb-1">{item.label}</p>
                                         <div className="space-y-1">
                                             <p className="flex justify-between gap-4 text-emerald-300">
