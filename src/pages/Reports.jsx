@@ -403,23 +403,23 @@ export default function Reports() {
                                 <div className="flex h-full touch-pan-y">
 
                                     {/* Slide 1: Summary Stats */}
-                                    <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto pb-1">
+                                    {/* <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto pb-1">
                                         <div className="space-y-4 pb-12">
                                             {statsComponent}
                                             <MobileChartCard title="Financial Health" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
                                                 {healthComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     {/* Slide 2: Wave */}
-                                    {/* <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
+                                    <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                                 {waveComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div> */}
+                                    </div>
 
                                     {/* Slide 3: Projection */}
                                     {/* <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
