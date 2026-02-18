@@ -168,10 +168,13 @@ export default function GoalSettings({
                                     onPointerDown={(e) => handlePointerDown(e, 1)}
                                     onPointerMove={handlePointerMove}
                                     onPointerUp={handlePointerUp}
-                                    className={`absolute top-0 bottom-0 w-4 -ml-2 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 1 ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                    className={`absolute top-1/2 -translate-y-1/2 w-8 h-8 -ml-4 bg-transparent flex items-center justify-center z-10 cursor-grab touch-none`}
                                     style={{ left: `${splits.split1}%` }}
                                 >
-                                    <GripVertical className="w-2.5 h-2.5 text-gray-400" />
+                                    {/* Visual Thumb */}
+                                    <div className={`w-4 h-4 bg-white shadow-md rounded-full border border-gray-200 flex items-center justify-center transition-transform ${activeThumb === 1 ? 'scale-125 border-blue-400' : ''}`}>
+                                        <GripVertical className="w-2.5 h-2.5 text-gray-400" />
+                                    </div>
                                 </div>
 
                                 {/* Thumb 2 */}
@@ -179,10 +182,12 @@ export default function GoalSettings({
                                     onPointerDown={(e) => handlePointerDown(e, 2)}
                                     onPointerMove={handlePointerMove}
                                     onPointerUp={handlePointerUp}
-                                    className={`absolute top-0 bottom-0 w-4 -ml-2 bg-white shadow-sm rounded-full border flex items-center justify-center z-10 hover:scale-110 transition-transform ${activeThumb === 2 ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                    className={`absolute top-1/2 -translate-y-1/2 w-8 h-8 -ml-4 bg-transparent flex items-center justify-center z-10 cursor-grab touch-none`}
                                     style={{ left: `${splits.split2}%` }}
                                 >
-                                    <GripVertical className="w-3 h-3 text-gray-400" />
+                                    <div className={`w-4 h-4 bg-white shadow-md rounded-full border border-gray-200 flex items-center justify-center transition-transform ${activeThumb === 2 ? 'scale-125 border-blue-400' : ''}`}>
+                                        <GripVertical className="w-2.5 h-2.5 text-gray-400" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -201,8 +206,8 @@ export default function GoalSettings({
                         </div>
 
                         {/* Inflation Protection */}
-                        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 gap-3">
+                            <div className="flex items-center gap-3 flex-1">
                                 <div className="p-2 bg-blue-100 rounded-full text-blue-600">
                                     <Lock className="w-4 h-4" />
                                 </div>
@@ -216,7 +221,9 @@ export default function GoalSettings({
                                     </div>
                                 </div>
                             </div>
-                            <Switch checked={fixedLifestyleMode} onCheckedChange={setFixedLifestyleMode} />
+                            <div className="flex justify-end w-full sm:w-auto">
+                                <Switch checked={fixedLifestyleMode} onCheckedChange={setFixedLifestyleMode} />
+                            </div>
                         </div>
                     </div>
 
