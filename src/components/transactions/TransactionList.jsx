@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote, StickyNote, CheckCircle2, BrainCircuit } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote, StickyNote, CheckCircle2, BrainCircuit, MoreHorizontal, Copy } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,7 @@ import { getCategoryIcon } from "../utils/iconMapConfig";
 import QuickAddTransaction from "./QuickAddTransaction";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function TransactionList({
     transactions,
@@ -176,7 +177,7 @@ export default function TransactionList({
 
 
     return (
-        <Card className="border-none shadow-md md:shadow-lg overflow-hidden bg-card">
+        <Card className="border-none shadow-md md:shadow-lg overflow-hidden bg-card pb-20 md:pb-0">
             {/* Automation Rule Dialog */}
             <CreateRuleDialog
                 open={isRuleDialogOpen}
@@ -337,21 +338,26 @@ export default function TransactionList({
                                     </td>
                                     <td className="px-4 py-2">
                                         <div className="flex items-center justify-center gap-1">
-                                            <CustomButton
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => { e.stopPropagation(); openCreateRuleFromTransaction(transaction); }}
-                                                className="h-8 w-8 p-0 hover:bg-amber-50 hover:text-amber-600"
-                                                title="Create Automation Rule"
-                                            >
-                                                <BrainCircuit className="w-3 h-3" />
-                                            </CustomButton>
-                                            <CustomButton variant="ghost" size="sm" onClick={() => onEdit(transaction)} className="h-8 w-8 p-0 hover:bg-accent">
-                                                <Edit2 className="w-3 h-3 text-muted-foreground" />
-                                            </CustomButton>
-                                            <CustomButton variant="ghost" size="sm" onClick={() => onDelete(transaction)} className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600">
-                                                <Trash2 className="w-3 h-3" />
-                                            </CustomButton>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <CustomButton variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                                    </CustomButton>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                                                        <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => openCreateRuleFromTransaction(transaction)}>
+                                                        <BrainCircuit className="w-4 h-4 mr-2" /> Create Rule
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => onDelete(transaction)} className="text-red-600">
+                                                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </td>
                                 </tr>
@@ -424,13 +430,27 @@ export default function TransactionList({
 
                                     <div className="shrink-0 text-right">
 
-                                        {/* Mobile Rule Button */}
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); openCreateRuleFromTransaction(transaction); }}
-                                            className="p-1.5 -mr-1 text-gray-300 hover:text-amber-500"
-                                        >
-                                            <BrainCircuit className="w-4 h-4" />
-                                        </button>
+                                        {/* Mobile Actions Menu */}
+                                        <div className="flex justify-end mb-1" onClick={(e) => e.stopPropagation()}>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="p-1 -mr-2 text-gray-400">
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48">
+                                                    <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                                                        <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => openCreateRuleFromTransaction(transaction)}>
+                                                        <BrainCircuit className="w-4 h-4 mr-2" /> Create Rule
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => onDelete(transaction)} className="text-red-600 focus:text-red-600">
+                                                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
 
                                         <span className={`text-sm font-mono font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
