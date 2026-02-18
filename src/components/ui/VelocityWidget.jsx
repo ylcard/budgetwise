@@ -340,7 +340,7 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         <motion.div
             layout
             initial={false}
-            className="w-auto mx-4 max-w-md md:mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden relative isolate"
+            className="mx-4 md:mx-0 bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden relative isolate"
         >
             {/* Header / Trigger Area */}
             <div
