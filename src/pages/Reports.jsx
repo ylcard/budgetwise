@@ -399,12 +399,12 @@ export default function Reports() {
                     {/* TAB: ANALYSIS (Carousel) */}
                     {mobileTab === 'analysis' && (
                         <div className="h-full flex flex-col space-y-4 min-w-0">
-                            <div className="embla overflow-hidden flex-1 w-full min-w-0 relative" ref={emblaRef}>
-                                <div className="flex h-full touch-pan-y">
+                            <div className="embla overflow-hidden flex-1 w-full relative" ref={emblaRef}>
+                                <div className="flex h-full touch-pan-y backface-hidden">
 
                                     {/* Slide 1: Summary Stats */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden pb-1">
-                                        <div className="space-y-4 pb-12 max-w-full">
+                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden pb-1 box-border">
+                                        <div className="space-y-4 pb-12 w-full max-w-full">
                                             {statsComponent}
                                             <MobileChartCard title="Financial Health" className="h-[500px]" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
                                                 {healthComponent}
@@ -413,7 +413,7 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 2: Wave */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden">
+                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden box-border">
                                         <div className="pb-12">
                                             <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                                 {waveComponent}
@@ -422,7 +422,7 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 3: Projection */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden">
+                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden box-border">
                                         <div className="pb-12">
                                             <MobileChartCard title="Financial Horizon" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
                                                 {projectionComponent}
@@ -431,7 +431,7 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 4: Priority */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden">
+                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden box-border">
                                         <div className="pb-12">
                                             <MobileChartCard title="Priority Allocations" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
                                                 {priorityComponent}
