@@ -32,10 +32,13 @@ export default function PriorityChart({ transactions, categories, goals, monthly
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
+                        <BarChart data={chartData} margin={{ left: -20, right: 0, top: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                            <XAxis dataKey="name" />
-                            <YAxis label={{ value: '% of Income', angle: -90, position: 'insideLeft' }} />
+                            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                            {/* Remove vertical label on mobile, rely on tick formatting */}
+                            <YAxis
+                                tick={{ fontSize: 11 }}
+                            />
                             <Tooltip
                                 formatter={(value) => `${value.toFixed(1)}%`}
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
