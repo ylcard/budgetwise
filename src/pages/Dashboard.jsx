@@ -38,7 +38,7 @@ import QuickAddTransaction from "../components/transactions/QuickAddTransaction"
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
-import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 // import { BudgetAvatar } from "../components/ui/BudgetAvatar";
@@ -338,22 +338,22 @@ export default function Dashboard() {
                                     selectedMonth={selectedMonth}
                                     selectedYear={selectedYear}
                                     importDataButton={
-                                        <Button variant="outline" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
+                                        <CustomButton variant="outline" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
                                             <FileUp className="h-3.5 w-3.5" />
                                             <span className="hidden xl:inline">Import</span>
-                                        </Button>
+                                        </CustomButton>
                                     }
                                     addIncomeButton={
-                                        <Button size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">
+                                        <CustomButton variant="success" size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs">
                                             <PlusCircle className="h-3.5 w-3.5" />
                                             <span className="hidden xl:inline">Income</span>
-                                        </Button>
+                                        </CustomButton>
                                     }
                                     addExpenseButton={
-                                        <Button variant="destructive" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
+                                        <CustomButton variant="delete" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
                                             <MinusCircle className="h-3.5 w-3.5" />
                                             <span className="hidden xl:inline">Expense</span>
-                                        </Button>
+                                        </CustomButton>
                                     }
                                     monthNavigator={
                                         <MonthNavigator
