@@ -205,7 +205,7 @@ export default function Reports() {
     const scrollTo = useCallback((index) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
 
     // --- Helper for Mobile Chart Wrapper ---
-    const MobileChartCard = ({ children, title, onMaximize, className }) => (
+    const MobileChartCard = ({ children, title, onMaximize, className, contentClassName }) => (
         <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full ${className}`}>
             {onMaximize && (
                 <div className="flex justify-between items-center px-4 py-2 border-b border-gray-50 bg-gray-50/50">
@@ -218,7 +218,7 @@ export default function Reports() {
                     </button>
                 </div>
             )}
-            <div className="flex-1 overflow-auto p-2">
+            <div className={`flex-1 min-h-0 p-2 ${contentClassName || 'overflow-hidden'}`}>
                 {children}
             </div>
         </div>
@@ -379,8 +379,8 @@ export default function Reports() {
                                     key={tab.id}
                                     onClick={() => setMobileTab(tab.id)}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${mobileTab === tab.id
-                                            ? 'bg-white text-blue-600 shadow-sm'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        ? 'bg-white text-blue-600 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
                                     <tab.icon className="w-3.5 h-3.5" />
@@ -403,7 +403,7 @@ export default function Reports() {
                                     <div className="flex-[0_0_100%] min-w-0 overflow-y-auto pl-1 pr-1 pb-1">
                                         <div className="space-y-4 pb-12">
                                             {statsComponent}
-                                            <MobileChartCard title="Financial Health" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
+                                            <MobileChartCard title="Financial Health" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
                                                 {healthComponent}
                                             </MobileChartCard>
                                         </div>
