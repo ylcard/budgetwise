@@ -167,8 +167,8 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 min-h-[300px] min-w-0">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+            <CardContent className="flex-1 min-h-0 min-w-0 relative h-[300px] md:h-auto">
+                <ResponsiveContainer width="99%" height="100%">
                     <ComposedChart
                         data={data}
                         margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
