@@ -402,7 +402,8 @@ export default function Reports() {
                             <div className="embla overflow-hidden flex-1" ref={emblaRef}>
                                 <div className="flex h-full touch-pan-y">
                                     {/* Slide 1: Summary Stats */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto pb-1">
+                                    {/* w-[calc(100vw-2rem)] forces the slide to ignore the wide flex track and fit the screen minus p-4 padding */}
+                                    <div className="flex-[0_0_100%] min-w-0 w-[calc(100vw-2rem)] px-2 overflow-y-auto pb-1">
                                         <div className="space-y-4 pb-12">
                                             {statsComponent}
                                             <MobileChartCard title="Financial Health" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
@@ -412,16 +413,16 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 2: Wave */}
-                                    {/* <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2 overflow-y-auto">
+                                    <div className="flex-[0_0_100%] min-w-0 w-[calc(100vw-2rem)] px-2">
                                         <div className="pb-12">
                                             <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                                 {waveComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div> */}
+                                    </div>
 
                                     {/* Slide 3: Projection */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2 overflow-y-auto">
+                                    <div className="flex-[0_0_100%] min-w-0 w-[calc(100vw-2rem)] px-2">
                                         <div className="pb-12">
                                             <MobileChartCard title="Financial Horizon" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
                                                 {projectionComponent}
@@ -430,7 +431,7 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 4: Priority */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2 overflow-y-auto">
+                                    <div className="flex-[0_0_100%] min-w-0 w-[calc(100vw-2rem)] px-2">
                                         <div className="pb-12">
                                             <MobileChartCard title="Priority Allocations" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
                                                 {priorityComponent}
