@@ -149,12 +149,21 @@ export const ensureSystemBudgetsExist = async (
             for (const type of priorityTypes) {
                 const existing = budgetMap.get(type);
                 const goal = budgetGoals.find(g => g.priority === type);
-                const amount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+
+                // RESPECT goalMode: true = percentage, false = absolute
+                const isPercentageMode = settings?.goalMode !== false;
+                let amount = 0;
+
+                if (!isPercentageMode && goal?.target_amount > 0) {
+                    amount = goal.target_amount;
+                } else {
+                    amount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+                }
 
                 if (existing) {
-
-                    // Update logic: Only update if allowed, or if the budget is currently uninitialized (0)
-                    const needsUpdate = (allowUpdates || existing.budgetAmount === 0) &&
+                    // FORCE update if income/goals changed OR if initialization is needed
+                    const isUninitialized = existing.budgetAmount === 0 && amount > 0;
+                    const needsUpdate = (allowUpdates || isUninitialized) &&
                         Math.abs(existing.budgetAmount - amount) > 0.01;
 
                     if (needsUpdate) {
@@ -255,7 +264,16 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, al
     requiredBudgets.forEach(req => {
         const existing = budgetMap.get(`${req.start}|${req.type}`);
         const goal = allGoals.find(g => g.priority === req.type);
-        const amount = resolveBudgetLimit(goal, 0, settings, 0);
+
+        // Consistent Logic: Use Absolute mode if goalMode is false
+        const isPercentageMode = settings?.goalMode !== false;
+        let amount = 0;
+
+        if (!isPercentageMode && goal?.target_amount > 0) {
+            amount = goal.target_amount;
+        } else {
+            amount = resolveBudgetLimit(goal, 0, settings, 0);
+        }
 
         if (existing) {
             if (Math.abs(existing.budgetAmount - amount) > 0.01) {
@@ -337,7 +355,16 @@ export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], 
         priorityTypes.forEach(type => {
             if (!budgetMap.has(`${monthStart}|${type}`)) {
                 const goal = budgetGoals.find(g => g.priority === type);
-                const amount = resolveBudgetLimit(goal, 0, settings, 0);
+
+                // Consistent Logic: Use Absolute mode if goalMode is false
+                const isPercentageMode = settings?.goalMode !== false;
+                let amount = 0;
+
+                if (!isPercentageMode && goal?.target_amount > 0) {
+                    amount = goal.target_amount;
+                } else {
+                    amount = resolveBudgetLimit(goal, 0, settings, 0);
+                }
 
                 toCreate.push({
                     name: FINANCIAL_PRIORITIES[type].label,
