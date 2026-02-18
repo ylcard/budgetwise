@@ -393,50 +393,6 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 };
 
 /**
- * Recalculates System Budgets for Current and Future months based on updated Goals.
- * STRICTLY ignores past months to preserve history.
- * OPTIMIZED 17-Jan-2026: Creates budgets for the next 12 months proactively to prevent duplicates.
- * @param {Object} updatedGoal - The specific goal updated (e.g., { priority: 'needs', target_percentage: 50 })
- * @param {Object} settings - App settings (to determine if we are in 'absolute' or 'percentage' mode)
- * @param {string} userEmail - User's email to ensure budgets exist for
- * @param {Array} allGoals - All budget goals for calculating amounts
- */
-export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = null, allGoals = []) => {
-    if (!updatedGoal || !settings || !userEmail) return;
-
-    const now = new Date();
-    const currentMonthStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
-
-    // ATOMIC CHANGE: Only update budgets that the user has already "activated" 
-    // by viewing or adding transactions to.
-    const activeSystemBudgets = await base44.entities.SystemBudget.filter({
-        user_email: userEmail,
-        startDate: { $gte: currentMonthStart }
-    });
-
-    const updatePromises = activeSystemBudgets.map(async (budget) => {
-        // OPTIMIZATION: Calculate updates locally to avoid N+1 DB reads
-        const goal = allGoals.find(g => g.priority === budget.systemBudgetType);
-        if (!goal) return;
-
-        // Use 0 for income/history for future snapshots (standard baseline)
-        const newAmount = resolveBudgetLimit(goal, 0, settings, 0);
-
-        // Only fire update request if values actually changed
-        if (Math.abs(budget.budgetAmount - newAmount) > 0.01) {
-
-            return base44.entities.SystemBudget.update(budget.id, {
-                budgetAmount: newAmount,
-                target_percentage: goal.target_percentage || 0,
-                target_amount: goal.target_amount || 0
-            });
-        }
-    });
-
-    await Promise.all(updatePromises);
-};
-
-/**
  * HELPER: Math Utils for Projection
  */
 const calculateMedian = (values) => {
