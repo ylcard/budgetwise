@@ -25,13 +25,13 @@ export default function PriorityChart({ transactions, categories, goals, monthly
             <CardHeader>
                 <CardTitle>Actual vs Target by Priority</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0 min-w-0 pb-6">
+            <CardContent className="flex-1 min-h-0 min-w-0 relative h-[300px] md:h-auto pb-6">
                 {chartData.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-gray-400">
                         <p>No expenses to show yet</p>
                     </div>
                 ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="99%" height="100%">
                         <BarChart data={chartData} margin={{ left: -20, right: 0, top: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
