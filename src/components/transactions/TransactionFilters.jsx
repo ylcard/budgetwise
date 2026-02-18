@@ -125,7 +125,7 @@ const FilterToggle = ({ value, onChange, options }) => (
     </div>
 );
 
-export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [] }) {
+export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [], sortConfig, onSort }) {
     const { monthStart, monthEnd } = usePeriod();
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
@@ -340,6 +340,38 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                     <DrawerTitle>Filters</DrawerTitle>
                                 </DrawerHeader>
                                 <div className="p-4 overflow-y-auto space-y-4">
+
+                                    {/* Sorting Section */}
+                                    <div className="space-y-2 pb-4 border-b border-border">
+                                        <Label className="text-xs text-muted-foreground">Sort By</Label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { label: 'Date', key: 'date' },
+                                                { label: 'Amount', key: 'amount' },
+                                                { label: 'Category', key: 'category' },
+                                                { label: 'Paid Date', key: 'paidDate' }
+                                            ].map((sortItem) => {
+                                                const isActive = sortConfig?.key === sortItem.key;
+                                                return (
+                                                    <button
+                                                        key={sortItem.key}
+                                                        onClick={() => onSort({
+                                                            key: sortItem.key,
+                                                            direction: isActive && sortConfig.direction === 'desc' ? 'asc' : 'desc'
+                                                        })}
+                                                        className={cn(
+                                                            "flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium border transition-colors",
+                                                            isActive ? "bg-primary/10 border-primary text-primary" : "bg-card border-input hover:bg-accent"
+                                                        )}
+                                                    >
+                                                        {sortItem.label}
+                                                        {isActive && (sortConfig.direction === 'asc' ? <TrendingUp className="w-3 h-3 ml-2" /> : <TrendingDown className="w-3 h-3 ml-2" />)}
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+
                                     {/* Date Range Picker (Moved from top bar) */}
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Date Range</Label>
