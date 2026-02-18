@@ -359,6 +359,11 @@ export default function Reports() {
                 {/* 1. Mobile Fixed Header */}
                 <header className="bg-white border-b border-gray-100 flex-none z-20">
                     <div className="px-4 py-3 flex items-center justify-between">
+                        {/* Restore Title to push Navigator to the right */}
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">Reports</h1>
+                            <p className="text-xs text-gray-500">Financial Performance</p>
+                        </div>
                         <MonthNavigator
                             currentMonth={selectedMonth}
                             currentYear={selectedYear}
