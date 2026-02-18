@@ -490,21 +490,21 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
     return (
         <div className={`flex flex-col gap-4 h-full ${className || ''}`}>
             {/* Main Header Card - Redesigned with color and badge */}
-            <div className={`flex-none relative overflow-hidden flex items-center justify-between p-5 rounded-xl border shadow-md transition-colors duration-300 ${headerStyle.bg} ${headerStyle.border}`}>
+            <div className={`flex-none relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-5 rounded-xl border shadow-md transition-colors duration-300 gap-4 ${headerStyle.bg} ${headerStyle.border}`}>
 
                 {/* Subtle Gradient Overlay */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${headerStyle.gradient} opacity-60`} />
 
-                <div className="relative z-10 flex items-center gap-4">
+                <div className="relative z-10 flex items-center gap-3 md:gap-4 w-full sm:w-auto">
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${headerStyle.iconBg} shadow-sm`}>
                         <Activity className={`w-7 h-7 ${headerStyle.iconColor}`} />
                     </div>
                     <div>
-                        <h3 className={`font-bold text-lg ${headerStyle.text}`}>Financial Health Score</h3>
+                        <h3 className={`font-bold text-base md:text-lg leading-tight ${headerStyle.text}`}>Financial Health Score</h3>
                         <p className={`text-sm font-medium ${headerStyle.subtext}`}>Composite wellness analysis</p>
                     </div>
                 </div>
-                <div className="relative z-10 flex flex-col items-end">
+                <div className="relative z-10 flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto mt-2 sm:mt-0">
                     <div className="flex items-baseline gap-1">
                         <span className={`text-4xl font-extrabold ${headerStyle.text}`}>
                             <RollingNumber value={totalScore} duration={2} />
@@ -515,7 +515,7 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1 }} // Wait for the big number to finish rolling
-                        className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/60 backdrop-blur-sm ${headerStyle.iconColor} mt-1`}
+                        className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/60 backdrop-blur-sm ${headerStyle.iconColor} ml-auto sm:ml-0 sm:mt-1`}
                     >
                         {headerStyle.verdict}
                     </motion.span>
