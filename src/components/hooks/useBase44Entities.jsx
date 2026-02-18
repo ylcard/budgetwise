@@ -82,6 +82,7 @@ export const useTransactions = (startDate = null, endDate = null) => {
             return await base44.entities.Transaction.list('-date', 500);
         },
         keepPreviousData: true,
+        staleTime: 1000 * 60 * 5,
     });
 
     return { transactions, isLoading, error };
@@ -100,7 +101,8 @@ export const useHistoricalIncomeTransactions = (user) => {
                 date: { $gte: startDate }
             });
         },
-        enabled: !!user
+        enabled: !!user,
+        staleTime: 1000 * 60 * 60 * 24,
     });
     return { incomeTransactions };
 };
@@ -115,6 +117,7 @@ export const useGoals = (user) => {
         },
         initialData: [],
         enabled: !!user,
+        staleTime: 1000 * 60 * 60,
     });
 
     return { goals, isLoading };
@@ -145,6 +148,7 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
         keepPreviousData: true,
         enabled: !!user,
         initialData: [],
+        staleTime: 1000 * 60 * 5,
     });
 
     return { customBudgets, isLoading };
@@ -163,6 +167,7 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = []) => {
         keepPreviousData: true,
         enabled: customBudgetIds && customBudgetIds.length > 0,
         initialData: [],
+        staleTime: 1000 * 60 * 5,
     });
 
     return { transactions, isLoading };
@@ -185,6 +190,7 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
         },
         keepPreviousData: true,
         enabled: !!user,
+        staleTime: 1000 * 60 * 5,
     });
 
     return { allSystemBudgets, isLoading };
@@ -204,6 +210,7 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
         },
         keepPreviousData: true,
         enabled: !!user && !!monthStart && !!monthEnd,
+        staleTime: 1000 * 60 * 5,
     });
 
     return { systemBudgets, isLoading };
@@ -239,6 +246,7 @@ export const useAllBudgets = (user) => {
         },
         initialData: [],
         enabled: !!user,
+        staleTime: 1000 * 60 * 5,
     });
 
     return { allBudgets, isLoading };
@@ -257,6 +265,7 @@ export const useCategoryRules = (user) => {
         },
         initialData: [],
         enabled: !!user,
+        staleTime: 1000 * 60 * 60,
     });
 
     return { rules, isLoading };
