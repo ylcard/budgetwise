@@ -986,26 +986,19 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
                                 {!isTotalOver && (
                                     <div className="hidden sm:flex flex-col items-end relative">
-                                        <motion.div
-                                            layout
-                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border z-20 relative"
-                                        >
-                                            <Wallet className="w-3 h-3 text-muted-foreground" />
-                                            <span className="text-xs font-medium text-muted-foreground">Left: {formatCurrency(savingsAmount, settings)}</span>
-                                        </motion.div>
                                         <AnimatePresence>
-                                            {!isSimpleView && bonusSavingsPotential > 0 && (
+                                            {!isSimpleView && extraSavingsAmount > 0 && (
                                                 <motion.div
                                                     key="efficiency-badge"
                                                     initial={{ opacity: 0, height: 0, marginTop: 0, y: 10 }}
-                                                    animate={{ opacity: 1, height: "auto", marginTop: 8, y: 0 }}
+                                                    animate={{ opacity: 1, height: "auto", marginTop: 0, y: 0 }}
                                                     exit={{ opacity: 0, height: 0, marginTop: 0, y: 10 }}
                                                     transition={{ duration: 0.3, ease: "easeInOut" }}
                                                     className="overflow-hidden flex justify-end"
                                                 >
                                                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
                                                         <TrendingUp className="w-3 h-3 text-emerald-600" />
-                                                        <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(bonusSavingsPotential, settings)}</span>
+                                                        <span className="text-xs font-medium text-emerald-700">Efficiency: +{formatCurrency(extraSavingsAmount, settings)}</span>
                                                     </div>
                                                 </motion.div>
                                             )}
