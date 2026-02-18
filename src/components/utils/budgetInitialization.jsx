@@ -309,7 +309,7 @@ export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], 
 
     // 1. Fetch all transactions to find which months actually have data
     // NOTE: Assuming 'Transaction' entity. If your schema uses 'Expense', update this.
-    const transactions = await base44.entities.Transaction.filter({ user_email: userEmail });
+    const transactions = await base44.entities.Transaction.filter({ created_by: userEmail });
 
     const activeMonths = new Set();
     transactions.forEach(t => {
@@ -317,8 +317,11 @@ export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], 
         const d = t.date || t.paidDate;
         if (d) {
             try {
-                // Normalize to the 1st of the month for uniqueness (YYYY-MM-01)
-                activeMonths.add(format(new Date(d), 'yyyy-MM-01'));
+                // Safely parse date string to avoid timezone shifts
+                const dateObj = typeof d === 'string' ? parseISO(d) : d;
+                if (isValid(dateObj)) {
+                    activeMonths.add(format(dateObj, 'yyyy-MM-01'));
+                }
             } catch (e) {
                 console.warn('Invalid date in transaction during budget repair', t);
             }
@@ -346,7 +349,7 @@ export const reconcileTransactionBudgets = async (userEmail) => {
     if (!userEmail) return 0;
 
     const [transactions, budgets] = await Promise.all([
-        base44.entities.Transaction.filter({ user_email: userEmail }),
+        base44.entities.Transaction.filter({ created_by: userEmail }),
         base44.entities.SystemBudget.filter({ user_email: userEmail })
     ]);
 
@@ -360,14 +363,15 @@ export const reconcileTransactionBudgets = async (userEmail) => {
     const updates = [];
     for (const t of transactions) {
         // Check if budget is missing OR if the linked budget ID no longer exists in our fetch
-        const isOrphaned = !t.budgetId || !budgets.find(b => b.id === t.budgetId);
+        const isOrphaned = !t.budgetId || (t.budgetId && !budgets.some(b => b.id === t.budgetId));
 
         if (isOrphaned) {
             const d = t.date || t.paidDate;
             const priority = t.financialPriority; // 'needs' or 'wants'
 
             if (d && priority) {
-                const dateKey = format(new Date(d), 'yyyy-MM');
+                const dateObj = typeof d === 'string' ? parseISO(d) : d;
+                const dateKey = format(dateObj, 'yyyy-MM');
                 const targetKey = `${dateKey}-${priority}`;
                 const correctBudgetId = budgetMap.get(targetKey);
 
