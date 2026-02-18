@@ -60,7 +60,7 @@ export default function AmountInput({
     const settings = settingsOverride || contextSettings;
     const [open, setOpen] = useState(false);
     const isMobile = useIsMobile();
-    
+
     const { currencies, isLoading: currenciesLoading } = useCurrencies();
 
     // Use provided currencySymbol or fall back to user's base currency
@@ -74,7 +74,7 @@ export default function AmountInput({
      */
     const [displayValue, setDisplayValue] = useState(
         // Use empty string instead of formatted "0" for zero/null values
-        value !== null && value !== undefined && !isNaN(value) && value !== 0
+        value !== null && value !== undefined && value !== '' && !isNaN(value) && value !== 0
             ? formatCurrency(Math.abs(value), settings).replace(displaySymbol, '').trim()
             : ''
     );
@@ -88,7 +88,7 @@ export default function AmountInput({
         // Check if external 'value' (number) differs from the number represented by our display string
         const currentNumericValue = parseFloat(unformatCurrency(displayValue || '', settings));
 
-        if (value === null || value === undefined || isNaN(value) || value === 0) {
+        if (value === null || value === undefined || value === '' || isNaN(value) || value === 0) {
             // Set to empty string to show placeholder instead of "0"
             if (displayValue !== '') setDisplayValue('');
         } else if (Math.abs(value) !== Math.abs(currentNumericValue)) {
@@ -237,10 +237,10 @@ export default function AmountInput({
                 // Always show placeholder when input is empty
                 placeholder={placeholder}
                 className={`
-                    ${hideSymbol 
-                        ? 'pl-3 pr-3' 
-                        : isCombined 
-                            ? 'pl-[5.3rem]' 
+                    ${hideSymbol
+                        ? 'pl-3 pr-3'
+                        : isCombined
+                            ? 'pl-[5.3rem]'
                             : (settings.currencyPosition === 'before' ? 'pl-8' : 'pr-8')}
                     ${className}
                 `}
