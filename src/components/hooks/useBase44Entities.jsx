@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
 import { getMonthlyIncome, getHistoricalAverageIncome } from "../utils/financialCalculations"; // Removed snapshot import
-import { ensureSystemBudgetsExist } from "../utils/budgetInitialization";
+import { ensureSystemBudgetsExist, snapshotFutureBudgets } from "../utils/budgetInitialization";
 import { useSettings } from "../utils/SettingsContext";
 import { DEFAULT_SYSTEM_GOALS } from "../utils/constants";
 import { subDays, format } from "date-fns";
