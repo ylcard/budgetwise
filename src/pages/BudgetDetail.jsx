@@ -102,7 +102,7 @@ export default function BudgetDetail() {
     const { data: categories = [] } = useQuery({
         queryKey: ['categories'],
         queryFn: () => base44.entities.Category.list(),
-        initialData: [],
+        // initialData: [],
         staleTime: 1000 * 60 * 60,
     });
 
@@ -115,7 +115,7 @@ export default function BudgetDetail() {
                 endDate: { $gte: monthStart }
             });
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!budget,
         staleTime: 1000 * 60 * 5,
     });
@@ -143,7 +143,7 @@ export default function BudgetDetail() {
                 ]
             });
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!budget,
         staleTime: 1000 * 60 * 5,
     });
@@ -163,7 +163,7 @@ export default function BudgetDetail() {
             const sysB = await base44.entities.SystemBudget.list();
             return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!budget,
         staleTime: 1000 * 60 * 5,
     });
@@ -174,7 +174,7 @@ export default function BudgetDetail() {
         queryFn: async () => {
             return await base44.entities.CustomBudgetAllocation.filter({ budgetId: budgetId });
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!budgetId && !!budget && !budget.isSystemBudget,
         staleTime: 1000 * 60 * 5,
     });
