@@ -174,6 +174,58 @@ const FilterFields = ({ filters, setFilters, categories, filteredCustomBudgets, 
             </div>
         </div>
 
+        {/* Type */}
+        <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Type</Label>
+            <FilterToggle
+                value={filters.type}
+                onChange={(val) => setFilters({ ...filters, type: val })}
+                options={[
+                    { value: 'income', label: 'Income', icon: TrendingUp },
+                    { value: 'expense', label: 'Expense', icon: TrendingDown }
+                ]}
+            />
+        </div>
+
+        {/* Financial Priority */}
+        <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Priority</Label>
+            <FilterToggle
+                value={filters.financialPriority}
+                onChange={(val) => setFilters({ ...filters, financialPriority: val })}
+                options={[
+                    { value: 'needs', label: 'Essentials', icon: Shield },
+                    { value: 'wants', label: 'Lifestyle', icon: Sparkles }
+                ]}
+            />
+        </div>
+
+        {/* Payment Status */}
+        <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Payment</Label>
+            <FilterToggle
+                value={filters.paymentStatus}
+                onChange={(val) => setFilters({ ...filters, paymentStatus: val })}
+                options={[
+                    { value: 'paid', label: 'Paid', icon: CheckCircle },
+                    { value: 'unpaid', label: 'Unpaid', icon: Clock }
+                ]}
+            />
+        </div>
+
+        {/* Cash Status */}
+        <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Cash</Label>
+            <FilterToggle
+                value={filters.cashStatus}
+                onChange={(val) => setFilters({ ...filters, cashStatus: val })}
+                options={[
+                    { value: 'cash_only', label: 'Cash', icon: Banknote },
+                    { value: 'exclude_cash', label: 'Card', icon: CreditCard }
+                ]}
+            />
+        </div>
+
         {/* Amount Range */}
         <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
             <Label className="text-xs text-muted-foreground">Amount Range</Label>
