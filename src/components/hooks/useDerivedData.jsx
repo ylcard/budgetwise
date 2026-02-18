@@ -10,7 +10,8 @@ import {
     getCustomBudgetStats,
     calculateBonusSavingsPotential,
     resolveBudgetLimit,
-    getHistoricalAverageIncome
+    getHistoricalAverageIncome,
+    calculateIncomeProjection
 } from "../utils/financialCalculations";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
@@ -161,6 +162,58 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
     // 1. Calculate Historical Average
     const historicalAverage = useHistoricalIncome(transactions, selectedMonth, selectedYear);
 
+    // 2. LOGIC: Smart Projection for Current Month
+    // Only runs if we are viewing the *Actual* current calendar month
+    const { projectedIncome, isUsingProjection } = useMemo(() => {
+        const now = new Date();
+        const isCurrentRealMonth = (
+            selectedMonth === now.getMonth() &&
+            selectedYear === now.getFullYear()
+        );
+
+        // If it's past or future, or we have no transactions, skip logic
+        if (!isCurrentRealMonth || !transactions || transactions.length === 0) {
+            return { projectedIncome: 0, isUsingProjection: false };
+        }
+
+        // SLICE: Filter ONLY the past 6 months of data
+        // We do this here to respect the "caller provides data" rule
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of previous month
+
+        const historicalSlice = transactions.filter(t => {
+            if (t.type !== 'income') return false;
+            const tDate = new Date(t.date);
+            return tDate >= sixMonthsAgo && tDate <= lastMonthEnd;
+        });
+
+        const stats = calculateIncomeProjection(historicalSlice, now);
+
+        // Decide: Use Projection OR Actual?
+        // We calculate 'actual' income so far this month
+        const { monthStart: startStr, monthEnd: endStr } = getMonthBoundaries(selectedMonth, selectedYear);
+        const currentActualIncome = getMonthlyIncome(transactions, startStr, endStr);
+
+        // THRESHOLD LOGIC:
+        // If actual income is significantly lower (< 85%) of projection, we assume 
+        // the main salary hasn't hit yet. Use Projection.
+        // If actual income is close to or higher than projection, use Actual.
+
+        // Safety: If projection is 0, never use it.
+        if (stats.projectedIncome > 0 && currentActualIncome < (stats.projectedIncome * 0.85)) {
+            return {
+                projectedIncome: stats.projectedIncome,
+                isUsingProjection: true
+            };
+        }
+
+        return {
+            projectedIncome: stats.projectedIncome,
+            isUsingProjection: false
+        };
+
+    }, [transactions, selectedMonth, selectedYear]);
+
     // Memoize the month boundaries (used by all calculations)
     const { monthStartStr, monthEndStr, monthStartDate, monthEndDate } = useMemo(() => {
         if (selectedMonth === undefined || selectedYear === undefined) {
@@ -183,7 +236,11 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
 
         if (!monthStartStr || !monthEndStr || !monthStartDate || !monthEndDate) return 0;
 
-        const income = currentMonthIncome;
+        // SMART BALANCE FIX:
+        // If we determined we are "Waiting for Income" (isUsingProjection), 
+        // calculate remaining budget based on the Projection, not the current low balance.
+        const income = isUsingProjection ? projectedIncome : currentMonthIncome;
+
         const paidExpenses = getMonthlyPaidExpenses(transactions, monthStartStr, monthEndStr);
 
         const unpaidExpenses = transactions
@@ -197,7 +254,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
             .reduce((sum, t) => sum + t.amount, 0);
 
         return income - paidExpenses - unpaidExpenses;
-    }, [transactions, currentMonthIncome, monthStartStr, monthEndStr, monthStartDate, monthEndDate, getMonthlyPaidExpenses, parseDate]);
+    }, [transactions, currentMonthIncome, projectedIncome, isUsingProjection, monthStartStr, monthEndStr, monthStartDate, monthEndDate, getMonthlyPaidExpenses, parseDate]);
 
     const currentMonthExpenses = useMemo(() => {
         if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
@@ -227,7 +284,10 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
         remainingBudget,
         currentMonthIncome,
         currentMonthExpenses,
-        bonusSavingsPotential
+        bonusSavingsPotential,
+        // Expose these so UI can show a "Projected" badge if needed
+        projectedIncome,
+        isUsingProjection
     };
 };
 
