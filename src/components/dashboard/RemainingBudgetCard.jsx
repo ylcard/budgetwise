@@ -970,7 +970,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     <div className="text-sm text-muted-foreground mt-1">
                                         {effectiveIncome > 0 ? (
                                             <div className="flex items-center gap-2">
-                                                <span>Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(effectiveIncome, settings)}</strong> {isUsingProjection && "(Est.)"}</span>
+                                                <span>Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(effectiveIncome, settings)}</strong></span>
 
                                                 {/* Visual Badge for Projection Mode */}
                                                 {isUsingProjection && (
