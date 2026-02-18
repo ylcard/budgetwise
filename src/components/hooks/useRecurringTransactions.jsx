@@ -18,7 +18,7 @@ export const useRecurringTransactions = (user) => {
             const all = await base44.entities.RecurringTransaction.list('-created_date');
             return all.filter(rt => rt.user_email === user.email);
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!user,
         staleTime: 1000 * 60 * 5,
     });
