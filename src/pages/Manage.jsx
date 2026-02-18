@@ -3,7 +3,9 @@ import { Outlet } from "react-router-dom";
 import {
     Save,
     Trash2,
-    Download
+    Download,
+    Wrench,
+    RefreshCw
 } from "lucide-react";
 
 // UI Components
@@ -30,6 +32,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import { format } from "date-fns";
+import { BudgetRepairCard } from "../components/utils/BudgetRepairCard";
 
 export default function ManageLayout() {
     return (
@@ -256,6 +259,7 @@ export function AccountSection() {
     const { settings, updateSettings } = useSettings();
     const [localName, setLocalName] = useState(settings.displayName || "");
     const [isSaving, setIsSaving] = useState(false);
+    const [isRepairing, setIsRepairing] = useState(false);
 
     // Email/Password Change State
     const [isChangingEmail, setIsChangingEmail] = useState(false);
@@ -442,9 +446,9 @@ export function AccountSection() {
 
             // Fetch selected data types with date filtering where applicable
             if (exportSelections.transactions) {
-                exportData.transactions = await base44.entities.Transaction.filter({ 
-                    created_by: userEmail, 
-                    ...dateFilter 
+                exportData.transactions = await base44.entities.Transaction.filter({
+                    created_by: userEmail,
+                    ...dateFilter
                 });
             }
             if (exportSelections.categories) {
@@ -457,7 +461,7 @@ export function AccountSection() {
                 const budgetFilter = dateRange.enabled && dateRange.from && dateRange.to
                     ? { startDate: { $lte: dateRange.to }, endDate: { $gte: dateRange.from } }
                     : {};
-                exportData.systemBudgets = await base44.entities.SystemBudget.filter({ 
+                exportData.systemBudgets = await base44.entities.SystemBudget.filter({
                     created_by: userEmail,
                     ...budgetFilter
                 });
@@ -466,7 +470,7 @@ export function AccountSection() {
                 const budgetFilter = dateRange.enabled && dateRange.from && dateRange.to
                     ? { startDate: { $lte: dateRange.to }, endDate: { $gte: dateRange.from } }
                     : {};
-                exportData.customBudgets = await base44.entities.CustomBudget.filter({ 
+                exportData.customBudgets = await base44.entities.CustomBudget.filter({
                     created_by: userEmail,
                     ...budgetFilter
                 });
@@ -513,7 +517,7 @@ export function AccountSection() {
             if (fileFormat === 'json') {
                 const dataStr = JSON.stringify(exportData, null, 2);
                 downloadFile(
-                    dataStr, 
+                    dataStr,
                     `budgetwise-data-${new Date().toISOString().split('T')[0]}.json`,
                     'application/json'
                 );
@@ -521,10 +525,10 @@ export function AccountSection() {
             } else if (fileFormat === 'csv') {
                 // Export each entity type as separate CSV
                 const csvFiles = [];
-                
+
                 Object.entries(exportData).forEach(([key, data]) => {
                     if (key === '_metadata' || !Array.isArray(data) || data.length === 0) return;
-                    
+
                     const headers = CSV_HEADERS[key];
                     if (headers) {
                         const csv = convertToCSV(data, headers);
@@ -541,15 +545,15 @@ export function AccountSection() {
                         `budgetwise-${mainFile.name}-${new Date().toISOString().split('T')[0]}.csv`,
                         'text/csv'
                     );
-                    showToast({ 
-                        title: "CSV Export Complete", 
-                        description: `Downloaded ${mainFile.name}.csv. Other entities available in JSON format.` 
+                    showToast({
+                        title: "CSV Export Complete",
+                        description: `Downloaded ${mainFile.name}.csv. Other entities available in JSON format.`
                     });
                 }
             } else if (fileFormat === 'pdf') {
                 // Call backend function to generate PDF
                 showToast({ title: "Generating PDF", description: "Creating your report..." });
-                
+
                 const response = await base44.functions.invoke('generatePdfReport', {
                     template: pdfTemplate,
                     data: exportData,
@@ -580,6 +584,32 @@ export function AccountSection() {
             showToast({ title: "Error", description: "Failed to export data.", variant: "destructive" });
         } finally {
             setIsExporting(false);
+        }
+    };
+
+    const handleRepairBudgets = async () => {
+        if (!user?.email) return;
+
+        setIsRepairing(true);
+        try {
+            showToast({ title: "Maintenance Started", description: "Restoring budgets and re-linking transactions..." });
+
+            // 1. Fetch current goals to ensure budgets are created with correct targets
+            const goals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
+
+            // 2. Run the repair sequence
+            await ensureBudgetsForActiveMonths(user.email, goals, settings);
+            const updatedCount = await reconcileTransactionBudgets(user.email);
+
+            showToast({
+                title: "Maintenance Complete",
+                description: `System budgets restored and ${updatedCount} transactions re-linked.`
+            });
+        } catch (error) {
+            console.error("Repair failed:", error);
+            showToast({ title: "Error", description: "Failed to repair budget data.", variant: "destructive" });
+        } finally {
+            setIsRepairing(false);
         }
     };
 
@@ -794,6 +824,29 @@ export function AccountSection() {
                     >
                         <Download className="w-4 h-4 mr-2" />
                         Export Data
+                    </CustomButton>
+                </CardContent>
+            </Card>
+
+            {/* System Maintenance Card */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wrench className="w-5 h-5" /> System Maintenance
+                    </CardTitle>
+                    <CardDescription>Fix broken budget links or restore accidentally deleted system budgets for past months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <CustomButton
+                        variant="outline"
+                        onClick={handleRepairBudgets}
+                        disabled={isRepairing}
+                    >
+                        {isRepairing ? (
+                            <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Repairing...</>
+                        ) : (
+                            "Run Budget Repair"
+                        )}
                     </CustomButton>
                 </CardContent>
             </Card>
