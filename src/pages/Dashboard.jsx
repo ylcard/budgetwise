@@ -11,6 +11,7 @@ import {
     useCustomBudgetsForPeriod,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
+    useHistoricalIncomeTransactions,
     useSystemBudgetManagement,
 } from "../components/hooks/useBase44Entities";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
@@ -108,6 +109,10 @@ export default function Dashboard() {
 
     useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
 
+    // NEW: Fetch specific history for the projection engine
+    // This ensures we have the full 6-month context, not just the current view's buffer
+    const { incomeTransactions: historicalIncome } = useHistoricalIncomeTransactions(user);
+
     const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
     const { currentMonthIncome, currentMonthExpenses, bonusSavingsPotential, projectedIncome, isUsingProjection } = useDashboardSummary(
@@ -117,7 +122,8 @@ export default function Dashboard() {
         allCustomBudgets,
         systemBudgets,
         categories,
-        settings
+        settings,
+        historicalIncome // Pass the full history
     );
 
     const { detailedBreakdown } = useMonthlyBreakdown(
