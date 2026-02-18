@@ -9,56 +9,17 @@ import { useIsMobile } from '@/hooks/use-mobile';
  */
 
 const SegmentedControl = ({ options, value, onChange, className }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const isMobile = useIsMobile();
-    const containerRef = useRef(null);
-
     // Syncing parent and child transitions prevents the 2-step stutter
     const sharedTransition = { type: "spring", bounce: 0, duration: 0.35 };
 
-    // Collapse when clicking outside or scrolling
-    useEffect(() => {
-        if (!isExpanded) return;
-        const handleCollapse = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
-                setIsExpanded(false);
-            }
-        };
-
-        const handleScroll = () => setIsExpanded(false);
-        document.addEventListener("mousedown", handleCollapse);
-        window.addEventListener("scroll", handleScroll, { passive: true });
-
-        return () => {
-            document.removeEventListener("mousedown", handleCollapse);
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, [isExpanded]);
-
-    const handleSelect = (val) => {
-        // If collapsed on mobile, clicking the icon just expands it
-        if (isMobile && !isExpanded) {
-            setIsExpanded(true);
-            return;
-        }
-
-        // Otherwise, update the view and collapse
-        onChange(val);
-        if (isMobile) {
-            setIsExpanded(false);
-        }
-    };
-
     // The Wrapper: Holds physical space in the UI so the header never jumps
     return (
-        <div ref={containerRef} className={cn("relative flex items-center justify-end h-[40px] z-50 md:w-auto", isMobile ? "w-[40px]" : "", className)}>
+        <div className={cn("flex items-center justify-end h-[40px]", className)}>
             <motion.div
                 layout
                 className={cn(
                     "flex items-center gap-1 rounded-lg transition-colors overflow-hidden",
-                    isMobile
-                        ? (isExpanded ? "bg-popover border border-border shadow-xl p-1 absolute right-0 flex-row" : "bg-transparent")
-                        : "bg-muted p-1 shadow-sm relative md:w-auto"
+                    "bg-muted p-1 shadow-sm relative"
                 )}
                 initial={false}
                 transition={sharedTransition}
@@ -66,14 +27,13 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                 <AnimatePresence initial={false}>
                     {options.map((option) => {
                         const isActive = value === option.value;
-                        const isSingleMobileIcon = isMobile && !isExpanded && isActive;
-                        const shouldShow = !isMobile || isExpanded || isActive;
+                        // Removed complex mobile logic: Always show all options.
+                        // This is simpler, more stable, and prevents layout overlap.
+                        const shouldShow = true;
 
                         if (!shouldShow) return null;
 
-                        const animationProps = isSingleMobileIcon
-                            ? { opacity: 1, width: 40, paddingLeft: 0, paddingRight: 0 }
-                            : { opacity: 1, width: "auto", paddingLeft: 8, paddingRight: 8 };
+                        const animationProps = { opacity: 1, width: "auto", paddingLeft: 8, paddingRight: 8 };
 
                         return (
                             <motion.button
@@ -83,12 +43,10 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
                                 animate={animationProps}
                                 exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
                                 transition={sharedTransition}
-                                onClick={() => handleSelect(option.value)}
+                                onClick={() => onChange(option.value)}
                                 className={cn(
                                     "flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-colors shrink-0 overflow-hidden whitespace-nowrap",
-                                    isActive && (!isMobile || isExpanded) ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                                    // Single icon state formatting
-                                    isSingleMobileIcon && "bg-muted shadow-sm h-10 rounded-lg"
+                                    isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                                 )}
                             >
                                 <span className="flex items-center justify-center shrink-0">
