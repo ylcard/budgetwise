@@ -39,6 +39,7 @@ import { Loader2 } from "lucide-react";
  * @param {string|null} [props.currencySymbol=null] - Optional symbol to override the user's base currency symbol.
  * @param {string} [props.currency=null] - Optional currency code (e.g. "USD"). If provided along with onCurrencyChange, enables the selector.
  * @param {function(string)} [props.onCurrencyChange=null] - Handler for currency change.
+ * @param {boolean} [props.hideSymbol=false] - Whether to hide the currency symbol/selector visually.
  * @param {object} [props.settingsOverride=null] - Optional settings object to override context (for previews).
  * @param {object} props.... - Remaining props passed directly to the underlying Input component.
  * @returns {JSX.Element} The styled amount input with currency symbol or selector.
@@ -51,6 +52,7 @@ export default function AmountInput({
     currencySymbol = null,
     currency = null,
     onCurrencyChange = null,
+    hideSymbol = false,
     settingsOverride = null,
     ...props
 }) {
@@ -212,12 +214,12 @@ export default function AmountInput({
     return (
         <div className="relative flex items-center">
             {/* Left Side: Currency Selector OR Static Symbol */}
-            {isCombined ? (
+            {isCombined && !hideSymbol ? (
                 <div className="absolute inset-y-0 left-0 z-10">
                     {renderCurrencySelector()}
                 </div>
             ) : (
-                settings.currencyPosition === 'before' && (
+                !hideSymbol && settings.currencyPosition === 'before' && (
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span className="text-gray-500 sm:text-sm font-medium">
                             {displaySymbol}
@@ -235,7 +237,11 @@ export default function AmountInput({
                 // Always show placeholder when input is empty
                 placeholder={placeholder}
                 className={`
-                    ${isCombined ? 'pl-[5.3rem]' : (settings.currencyPosition === 'before' ? 'pl-8' : 'pr-8')}
+                    ${hideSymbol 
+                        ? 'pl-3 pr-3' 
+                        : isCombined 
+                            ? 'pl-[5.3rem]' 
+                            : (settings.currencyPosition === 'before' ? 'pl-8' : 'pr-8')}
                     ${className}
                 `}
                 // Disable browser autocomplete for amount fields
@@ -244,7 +250,7 @@ export default function AmountInput({
             />
 
             {/* Right Side: Static Symbol (if position is after and not combined) */}
-            {!isCombined && settings.currencyPosition === 'after' && (
+            {!hideSymbol && !isCombined && settings.currencyPosition === 'after' && (
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 sm:text-sm font-medium">
                         {displaySymbol}
