@@ -28,10 +28,13 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 
 export default function TransactionsLayout() {
     const { user } = useSettings();
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Shared Modals State
     const [showAddIncome, setShowAddIncome] = useState(false);
@@ -61,13 +64,26 @@ export default function TransactionsLayout() {
     return (
         <>
             <div className="min-h-screen p-2 md:p-8">
-                <div className="max-w-6xl mx-auto space-y-4">
-                    <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 px-2">
+                <div className="max-w-6xl mx-auto space-y-4 pb-24">
+                    {/* Header: Hidden on mobile, visible on desktop */}
+                    <div className="hidden md:flex flex-col md:flex-row justify-between items-end md:items-center gap-4 px-2">
                         <div>
                             <h1 className="text-2xl md:text-4xl font-bold">Transactions</h1>
                             <p className="text-xs text-muted-foreground">Monitor and automate your finances</p>
                         </div>
                     </div>
+
+                    {/* Mobile/Desktop Navigation Tabs */}
+                    <Tabs
+                        defaultValue={location.pathname.includes("recurring") ? "recurring" : "history"}
+                        className="w-full"
+                        onValueChange={(val) => navigate(val === "history" ? "/transactions" : "/transactions/recurring")}
+                    >
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="history">History</TabsTrigger>
+                            <TabsTrigger value="recurring">Recurring</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
 
                     {/* Nested Content: History or Recurring */}
                     <Outlet context={{ setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard }} />
@@ -243,6 +259,7 @@ export function TransactionHistory() {
                 <TransactionFilters
                     filters={filters} setFilters={setFilters}
                     categories={categories} allCustomBudgets={allCustomBudgets}
+                    sortConfig={sortConfig} onSort={setSortConfig} // Passed down for Mobile Drawer
                 />
                 <TransactionList
                     transactions={paginatedTransactions} categories={categories}
