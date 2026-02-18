@@ -6,6 +6,7 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { useTransactions } from "../hooks/useBase44Entities";
 import { formatDateString, parseDate } from "../utils/dateUtils";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * PURE FUNCTION: High-Performance Projection Engine
@@ -340,7 +341,14 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         <motion.div
             layout
             initial={false}
-            className="mx-4 md:mx-0 bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden relative isolate"
+            className={cn(
+                // Layout
+                "mx-4 md:mx-0 overflow-hidden relative isolate",
+                // Appearance
+                "bg-white dark:bg-slate-900",
+                "rounded-2xl shadow-sm dark:shadow-md",
+                "border border-slate-100 dark:border-slate-800"
+            )}
         >
             {/* Header / Trigger Area */}
             <div
