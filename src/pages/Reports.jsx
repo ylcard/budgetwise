@@ -206,7 +206,7 @@ export default function Reports() {
 
     // --- Helper for Mobile Chart Wrapper ---
     const MobileChartCard = ({ children, title, onMaximize, className, contentClassName }) => (
-        <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full ${className}`}>
+        <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col ${className}`}>
             {onMaximize && (
                 <div className="flex justify-between items-center px-4 py-2 border-b border-gray-50 bg-gray-50/50">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{title}</span>
@@ -413,27 +413,25 @@ export default function Reports() {
 
                                     {/* Slide 2: Wave */}
                                     {/* <div className="flex-[0_0_100%] min-w-0 w-full px-2 h-full"> */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto">
-                                    <div className="h-[400px]">
-                                        <MobileChartCard title="Cash Flow Wave" className="h-full" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
+                                    <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2">
+                                        <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                             {waveComponent}
                                         </MobileChartCard>
-                                        </div>
                                     </div>
 
                                     {/* Slide 3: Projection */}
-                                    {/* <div className="flex-[0_0_100%] min-w-0 w-full px-2 h-full">
-                                        <MobileChartCard title="Financial Horizon" className="h-full" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
+                                    <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2">
+                                        <MobileChartCard title="Financial Horizon" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
                                             {projectionComponent}
                                         </MobileChartCard>
-                                    </div> */}
+                                    </div>
 
                                     {/* Slide 4: Priority */}
-                                    {/* <div className="flex-[0_0_100%] min-w-0 w-full px-2 h-full">
-                                        <MobileChartCard title="Priority Allocations" className="h-full" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
+                                    <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2">
+                                        <MobileChartCard title="Priority Allocations" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
                                             {priorityComponent}
                                         </MobileChartCard>
-                                    </div> */}
+                                    </div>
                                 </div>
                             </div>
                             {/* Dots Indicator */}
