@@ -412,7 +412,6 @@ export default function Reports() {
                                     </div>
 
                                     {/* Slide 2: Wave */}
-                                    {/* <div className="flex-[0_0_100%] min-w-0 w-full px-2 h-full"> */}
                                     <div className="flex-[0_0_100%] min-w-0 w-full max-w-full px-2">
                                         <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                             {waveComponent}
