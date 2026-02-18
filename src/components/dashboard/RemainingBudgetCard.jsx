@@ -954,7 +954,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     ) : (
                                         <div className="space-y-1">
                                             <h2 className="text-4xl font-extrabold text-foreground flex items-center gap-2 tracking-tight">
-                                                {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">{isUsingProjection ? "Projected" : "Saved"}</span>
+                                                {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">{isUsingProjection ? "Projected to save" : "Saved"}</span>
                                             </h2>
                                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-500">
                                                 {extraSavingsAmount > 0 ? (
