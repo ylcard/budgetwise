@@ -7,7 +7,9 @@ import { useUpdateEntity } from "./useUpdateEntity";
 import { useDeleteEntity } from "./useDeleteEntity";
 import { QUERY_KEYS } from "./queryKeys";
 import { parseDate } from "../utils/dateUtils";
-import { snapshotFutureBudgets } from "../utils/budgetInitialization";
+import { snapshotFutureBudgets, ensureSystemBudgetsExist } from "../utils/budgetInitialization";
+import { getMonthBoundaries } from "../utils/dateUtils";
+import { getHistoricalAverageIncome } from "../utils/financialCalculations";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../utils/SettingsContext";
 
@@ -16,6 +18,7 @@ import { useSettings } from "../utils/SettingsContext";
 export const useTransactionActions = (config = {}) => {
     const { setShowForm, setEditingTransaction, ...options } = config;
     const queryClient = useQueryClient();
+    const { settings, user } = useSettings();
 
     // CREATE: Use generic hook with cash wallet preprocessing + optimistic updates
     const createMutation = useCreateEntity({
@@ -41,7 +44,33 @@ export const useTransactionActions = (config = {}) => {
             // Rollback on error
             queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
         },
-        onAfterSuccess: () => {
+        onAfterSuccess: async (newDoc) => {
+            // RE-CALCULATE BUDGETS IF INCOME ADDED
+            if (newDoc?.type === 'income' && user?.email) {
+                const date = parseDate(newDoc.date);
+                const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
+
+                // 1. Get all transactions for this month to sum actual income
+                const allTransactions = await base44.entities.Transaction.filter({
+                    created_by: user.email,
+                    date: { $gte: monthStart, $lte: monthEnd }
+                });
+
+                const monthlyIncome = allTransactions
+                    .filter(t => t.type === 'income')
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+                const budgetGoals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
+                const histAvg = getHistoricalAverageIncome(allTransactions, date.getMonth(), date.getFullYear());
+
+                // 2. Force the budget engine to update allocations
+                await ensureSystemBudgetsExist(user.email, monthStart, monthEnd, budgetGoals, settings, monthlyIncome, {
+                    allowUpdates: true,
+                    historicalAverage: histAvg
+                });
+
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+            }
             if (setShowForm) setShowForm(false);
             if (setEditingTransaction) setEditingTransaction(null);
             if (options.onSuccess) options.onSuccess();
