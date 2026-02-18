@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -19,8 +19,9 @@ import { calculateProjection, estimateCurrentMonth } from "../components/utils/p
 import { calculateBonusSavingsPotential, getMonthlyIncome, getMonthlyPaidExpenses } from "../components/utils/financialCalculations";
 import GoalSettings from "../components/reports/GoalSettings";
 import { useGoalActions } from "../components/hooks/useActions";
-import { useState, useEffect } from "react";
+import { LayoutDashboard, Target, List, Maximize2, X, ChevronRight, ChevronLeft } from "lucide-react";
 import { parseDate, getMonthBoundaries } from "../components/utils/dateUtils";
+import useEmblaCarousel from "embla-carousel-react";
 
 export default function Reports() {
     const { user, settings, updateSettings } = useSettings();
@@ -60,6 +61,10 @@ export default function Reports() {
     const [splits, setSplits] = useState({ split1: 50, split2: 80 });
     const [absoluteValues, setAbsoluteValues] = useState({ needs: '', wants: '', savings: '' });
     const [fixedLifestyleMode, setFixedLifestyleMode] = useState(settings.fixedLifestyleMode ?? false);
+
+    // ADDED: Mobile State
+    const [mobileTab, setMobileTab] = useState("analysis"); // 'analysis' | 'goals' | 'breakdown'
+    const [fullScreenChart, setFullScreenChart] = useState(null); // Content to show in full screen
 
     // Sync with DB settings
     useEffect(() => {
@@ -187,9 +192,111 @@ export default function Reports() {
         return dataPoints;
     }, [transactions, loadingTransactions, selectedMonth, selectedYear, projectionData]);
 
+    // --- Mobile Embla Carousel Setup ---
+    const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    useEffect(() => {
+        if (emblaApi) {
+            emblaApi.on('select', () => setCurrentSlide(emblaApi.selectedScrollSnap()));
+        }
+    }, [emblaApi]);
+
+    const scrollTo = useCallback((index) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+
+    // --- Helper for Mobile Chart Wrapper ---
+    const MobileChartCard = ({ children, title, onMaximize, className }) => (
+        <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full ${className}`}>
+            {onMaximize && (
+                <div className="flex justify-between items-center px-4 py-2 border-b border-gray-50 bg-gray-50/50">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{title}</span>
+                    <button
+                        onClick={onMaximize}
+                        className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-500 hover:text-blue-600 active:scale-95 transition-all"
+                    >
+                        <Maximize2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+            <div className="flex-1 overflow-auto p-2">
+                {children}
+            </div>
+        </div>
+    );
+
+    // --- Component Instances (memoized/variable to avoid duplication logic) ---
+    // We render these once and use CSS/Structure to place them.
+    // Note: For React, passing the same component instance to two locations in DOM is not possible without re-rendering.
+    // However, since we use `md:hidden`, we are rendering two separate trees. This is acceptable for responsiveness vs complexity trade-off.
+
+    const statsComponent = (
+        <ReportStats
+            transactions={monthlyTransactions}
+            monthlyIncome={monthlyIncome}
+            prevTransactions={prevMonthlyTransactions}
+            prevMonthlyIncome={prevMonthlyIncome}
+            isLoading={isLoading}
+            settings={settings}
+            safeBaseline={projectionData.totalProjectedMonthly}
+            startDate={monthStart}
+            endDate={monthEnd}
+            bonusSavingsPotential={bonusSavingsPotential}
+        />
+    );
+
+    const healthComponent = (
+        <FinancialHealthScore
+            monthlyIncome={monthlyIncome}
+            transactions={monthlyTransactions}
+            prevMonthlyIncome={prevMonthlyIncome}
+            fullHistory={transactions}
+            prevTransactions={prevMonthlyTransactions}
+            startDate={monthStart}
+            endDate={monthEnd}
+            isLoading={isLoading}
+            settings={settings}
+            categories={categories}
+            allCustomBudgets={allCustomBudgets}
+            goals={goals}
+            className="h-full"
+        />
+    );
+
+    const waveComponent = <CashFlowWave data={cashFlowData} settings={settings} />;
+    const projectionComponent = <ProjectionChart settings={settings} projectionData={projectionData} />;
+    const priorityComponent = (
+        <PriorityChart
+            transactions={monthlyTransactions}
+            categories={categories}
+            goals={goals}
+            monthlyIncome={monthlyIncome}
+            isLoading={isLoading}
+            settings={settings}
+        />
+    );
+
+    const goalSettingsComponent = (
+        <GoalSettings
+            className="w-full h-full"
+            isLoading={loadingGoals}
+            isSaving={isGoalSaving}
+            goalMode={localGoalMode}
+            setGoalMode={setLocalGoalMode}
+            splits={splits}
+            setSplits={setSplits}
+            absoluteValues={absoluteValues}
+            setAbsoluteValues={setAbsoluteValues}
+            fixedLifestyleMode={fixedLifestyleMode}
+            setFixedLifestyleMode={setFixedLifestyleMode}
+            settings={settings}
+            onSave={handleGoalSave}
+        />
+    );
+
     return (
-        <div className="min-h-screen px-4 md:px-8 pb-4 md:pb-8 pt-2 md:pt-4">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="min-h-screen bg-gray-50/50">
+            {/* --- DESKTOP VIEW (Original Layout) --- */}
+            <div className="hidden md:block max-w-7xl mx-auto px-8 py-8 space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
                     <div className="flex-1">
@@ -213,66 +320,19 @@ export default function Reports() {
                 {/* 1. Top Row: KPIs + Goal Allocation */}
                 <div className="grid lg:grid-cols-3 gap-8 items-stretch">
                     <div className="lg:col-span-2 flex flex-col gap-8">
-                        <ReportStats
-                            transactions={monthlyTransactions}
-                            monthlyIncome={monthlyIncome}
-                            prevTransactions={prevMonthlyTransactions}
-                            prevMonthlyIncome={prevMonthlyIncome}
-                            isLoading={isLoading}
-                            settings={settings}
-                            safeBaseline={projectionData.totalProjectedMonthly}
-                            startDate={monthStart}
-                            endDate={monthEnd}
-                            bonusSavingsPotential={bonusSavingsPotential}
-                        />
-
-                        <FinancialHealthScore
-                            monthlyIncome={monthlyIncome}
-                            transactions={monthlyTransactions}
-                            prevMonthlyIncome={prevMonthlyIncome}
-                            fullHistory={transactions}
-                            prevTransactions={prevMonthlyTransactions}
-                            startDate={monthStart}
-                            endDate={monthEnd}
-                            isLoading={isLoading}
-                            settings={settings}
-                            categories={categories}
-                            allCustomBudgets={allCustomBudgets}
-                            goals={goals}
-                            className="flex-1"
-                        />
+                        {statsComponent}
+                        {healthComponent}
                     </div>
 
                     <div className="lg:col-span-1 flex">
-                        <GoalSettings
-                            className="w-full"
-                            isLoading={loadingGoals}
-                            isSaving={isGoalSaving}
-                            goalMode={localGoalMode}
-                            setGoalMode={setLocalGoalMode}
-                            splits={splits}
-                            setSplits={setSplits}
-                            absoluteValues={absoluteValues}
-                            setAbsoluteValues={setAbsoluteValues}
-                            fixedLifestyleMode={fixedLifestyleMode}
-                            setFixedLifestyleMode={setFixedLifestyleMode}
-                            settings={settings}
-                            onSave={handleGoalSave}
-                        />
+                        {goalSettingsComponent}
                     </div>
                 </div>
 
                 {/* 2. Historical Context & Future Projection */}
                 <div className="w-full space-y-8">
-                    {/* New Wave Chart added ABOVE the Projection Chart */}
-                    <CashFlowWave
-                        data={cashFlowData}
-                        settings={settings}
-                    />
-                    <ProjectionChart
-                        settings={settings}
-                        projectionData={projectionData}
-                    />
+                    {waveComponent}
+                    {projectionComponent}
                 </div>
 
                 {/* 3. Bottom Row: Monthly Breakdown + Priority Chart */}
@@ -285,19 +345,146 @@ export default function Reports() {
                             isLoading={isLoading}
                             selectedMonth={selectedMonth}
                             selectedYear={selectedYear}
+                            allCustomBudgets={allCustomBudgets}
                         />
                     </div>
                     <div className="lg:col-span-1">
-                        <PriorityChart
-                            transactions={monthlyTransactions}
-                            categories={categories}
-                            goals={goals}
-                            monthlyIncome={monthlyIncome}
-                            isLoading={isLoading}
-                            settings={settings}
-                        />
+                        {priorityComponent}
                     </div>
                 </div>
+            </div>
+
+            {/* --- MOBILE VIEW (New App-Like Layout) --- */}
+            <div className="md:hidden flex flex-col h-screen overflow-hidden">
+                {/* 1. Mobile Fixed Header */}
+                <header className="bg-white border-b border-gray-100 flex-none z-20">
+                    <div className="px-4 py-3 flex items-center justify-between">
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">Reports</h1>
+                            <p className="text-xs text-gray-500">Financial Performance</p>
+                        </div>
+                        <MonthNavigator
+                            currentMonth={selectedMonth}
+                            currentYear={selectedYear}
+                            onMonthChange={(m, y) => { setSelectedMonth(m); setSelectedYear(y); }}
+                            resetPosition="right"
+                        />
+                    </div>
+
+                    {/* Segmented Control Tabs */}
+                    <div className="px-4 pb-3">
+                        <div className="flex p-1 bg-gray-100 rounded-lg">
+                            {[
+                                { id: 'analysis', label: 'Analysis', icon: LayoutDashboard },
+                                { id: 'goals', label: 'Goals', icon: Target },
+                                { id: 'breakdown', label: 'Details', icon: List },
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setMobileTab(tab.id)}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${mobileTab === tab.id
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                >
+                                    <tab.icon className="w-3.5 h-3.5" />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </header>
+
+                {/* 2. Mobile Content Area */}
+                <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
+
+                    {/* TAB: ANALYSIS (Carousel) */}
+                    {mobileTab === 'analysis' && (
+                        <div className="h-full flex flex-col space-y-4">
+                            <div className="embla overflow-hidden flex-1" ref={emblaRef}>
+                                <div className="flex h-full touch-pan-y gap-4">
+                                    {/* Slide 1: Summary Stats */}
+                                    <div className="flex-[0_0_100%] min-w-0 overflow-y-auto pl-1 pr-1 pb-1">
+                                        <div className="space-y-4 pb-12">
+                                            {statsComponent}
+                                            <MobileChartCard title="Financial Health" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
+                                                {healthComponent}
+                                            </MobileChartCard>
+                                        </div>
+                                    </div>
+                                    {/* Slide 2: Wave */}
+                                    <div className="flex-[0_0_100%] min-w-0 h-full">
+                                        <MobileChartCard title="Cash Flow Wave" className="h-full" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
+                                            {waveComponent}
+                                        </MobileChartCard>
+                                    </div>
+                                    {/* Slide 3: Projection */}
+                                    <div className="flex-[0_0_100%] min-w-0 h-full">
+                                        <MobileChartCard title="Financial Horizon" className="h-full" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
+                                            {projectionComponent}
+                                        </MobileChartCard>
+                                    </div>
+                                    {/* Slide 4: Priority */}
+                                    <div className="flex-[0_0_100%] min-w-0 h-full">
+                                        <MobileChartCard title="Priority Allocations" className="h-full" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
+                                            {priorityComponent}
+                                        </MobileChartCard>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Dots Indicator */}
+                            <div className="flex justify-center gap-1.5 py-2">
+                                {[0, 1, 2, 3].map((idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => scrollTo(idx)}
+                                        className={`w-2 h-2 rounded-full transition-all ${idx === currentSlide ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: GOALS */}
+                    {mobileTab === 'goals' && (
+                        <div className="h-full pb-20 overflow-y-auto">
+                            {goalSettingsComponent}
+                        </div>
+                    )}
+
+                    {/* TAB: BREAKDOWN */}
+                    {mobileTab === 'breakdown' && (
+                        <div className="h-full pb-20 overflow-y-auto">
+                            <MonthlyBreakdown
+                                transactions={monthlyTransactions}
+                                categories={categories}
+                                monthlyIncome={monthlyIncome}
+                                isLoading={isLoading}
+                                selectedMonth={selectedMonth}
+                                selectedYear={selectedYear}
+                                allCustomBudgets={allCustomBudgets}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* 3. Full Screen Overlay (Focus Mode) */}
+                {fullScreenChart && (
+                    <div className="fixed inset-0 z-50 bg-white animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+                        <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+                            <h2 className="font-bold text-gray-900">{fullScreenChart.title}</h2>
+                            <button
+                                onClick={() => setFullScreenChart(null)}
+                                className="p-2 bg-white rounded-full border shadow-sm hover:bg-gray-100"
+                            >
+                                <X className="w-5 h-5 text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="flex-1 p-4 overflow-auto flex flex-col">
+                            {fullScreenChart.content}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
