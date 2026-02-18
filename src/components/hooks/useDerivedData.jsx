@@ -155,7 +155,8 @@ export const useHistoricalIncome = (transactions, selectedMonth, selectedYear) =
  * currentMonthExpenses: number
  * }} Dashboard summary metrics.
  */
-export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets, categories, settings) => {
+
+export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets, categories, settings, historicalTransactions = []) => {
     // Centralized hook call for Income (must remain at top level)
     const currentMonthIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
@@ -176,12 +177,13 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
             return { projectedIncome: 0, isUsingProjection: false };
         }
 
-        // SLICE: Filter ONLY the past 6 months of data
-        // We do this here to respect the "caller provides data" rule
+        // SLICE: Filter ONLY the past 6 months of data from the HISTORICAL source
+        // Use historicalTransactions if available, otherwise fall back to main list (which usually fails due to limited scope)
+        const sourceData = historicalTransactions.length > 0 ? historicalTransactions : transactions;
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
         const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of previous month
 
-        const historicalSlice = transactions.filter(t => {
+        const historicalSlice = sourceData.filter(t => {
             if (t.type !== 'income') return false;
             const tDate = new Date(t.date);
             return tDate >= sixMonthsAgo && tDate <= lastMonthEnd;
@@ -211,8 +213,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
             projectedIncome: stats.projectedIncome,
             isUsingProjection: false
         };
-
-    }, [transactions, selectedMonth, selectedYear]);
+    }, [transactions, historicalTransactions, selectedMonth, selectedYear]);
 
     // Memoize the month boundaries (used by all calculations)
     const { monthStartStr, monthEndStr, monthStartDate, monthEndDate } = useMemo(() => {
