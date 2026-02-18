@@ -26,15 +26,15 @@ import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Outlet, useLocation, useOutletContext } from "react-router-dom";
+import { useLocation } from "react-router-dom"; // Outlet/Context removed
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
 
 export default function TransactionsLayout() {
     const { user } = useSettings();
     const location = useLocation();
-    const navigate = useNavigate();
+    // Initialize tab based on URL, but then handle locally
+    const [activeTab, setActiveTab] = useState(location.pathname.includes("recurring") ? "recurring" : "history");
 
     // Shared Modals State
     const [showAddIncome, setShowAddIncome] = useState(false);
@@ -75,18 +75,28 @@ export default function TransactionsLayout() {
 
                     {/* Mobile/Desktop Navigation Tabs */}
                     <Tabs
-                        defaultValue={location.pathname.includes("recurring") ? "recurring" : "history"}
+                        value={activeTab}
                         className="w-full"
-                        onValueChange={(val) => navigate(val === "history" ? "/transactions" : "/transactions/recurring")}
+                        onValueChange={setActiveTab}
                     >
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="history">History</TabsTrigger>
                             <TabsTrigger value="recurring">Recurring</TabsTrigger>
                         </TabsList>
-                    </Tabs>
 
-                    {/* Nested Content: History or Recurring */}
-                    <Outlet context={{ setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard }} />
+                        <div className="mt-4">
+                            {activeTab === 'history' ? (
+                                <TransactionHistory
+                                    setEditingTransaction={setEditingTransaction}
+                                    setShowAddIncome={setShowAddIncome}
+                                    setShowAddExpense={setShowAddExpense}
+                                    setShowImportWizard={setShowImportWizard}
+                                />
+                            ) : (
+                                <RecurringTransactions />
+                            )}
+                        </div>
+                    </Tabs>
                 </div>
             </div>
 
@@ -119,14 +129,18 @@ export default function TransactionsLayout() {
     );
 }
 
-export function TransactionHistory() {
+export function TransactionHistory({
+    setEditingTransaction,
+    setShowAddIncome,
+    setShowAddExpense,
+    setShowImportWizard
+}) {
     const { user } = useSettings();
     const { confirmAction } = useConfirm();
     const queryClient = useQueryClient();
 
     // FAB Logic moved to leaf component
     const { setFabButtons } = useFAB();
-    const { setEditingTransaction, setShowAddIncome, setShowAddExpense, setShowImportWizard } = useOutletContext() || {};
 
     // History State
     const [filters, setFilters] = useState({
