@@ -92,7 +92,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
 
     // Custom legend
     const CustomLegend = () => (
-        <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 text-xs md:text-sm">
             <div className="flex items-center gap-2">
                 <div className="w-4 h-3 bg-green-500/20 border-2 border-green-500 rounded" />
                 <span className="text-gray-700">Income</span>
@@ -132,11 +132,11 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
     }
 
     return (
-        <Card className="border-none shadow-lg">
-            <CardHeader>
-                <div className="flex items-center justify-between">
+        <Card className="border-none shadow-lg h-full flex flex-col">
+            <CardHeader className="pb-2">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <CardTitle>Cash Flow Wave</CardTitle>
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center justify-between w-full md:w-auto gap-4 text-sm bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg">
                         <div className="flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-green-600" />
                             <div>
@@ -167,8 +167,8 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
+            <CardContent className="flex-1 min-h-[300px]">
+                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                     <ComposedChart
                         data={data}
                         margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
