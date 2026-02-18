@@ -6,7 +6,7 @@
  */
 
 import { base44 } from "@/api/base44Client";
-import { parseDate, getFirstDayOfMonth, isDateInRange, getMonthBoundaries } from "./dateUtils";
+import { parseDate, getFirstDayOfMonth, isDateInRange, getMonthBoundaries, getLastDayOfMonth } from "./dateUtils";
 import { ensureSystemBudgetsExist } from "./budgetInitialization";
 
 /**
@@ -429,4 +429,104 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
     });
 
     await Promise.all(updatePromises);
+};
+
+/**
+ * HELPER: Math Utils for Projection
+ */
+const calculateMedian = (values) => {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+const calculateStandardDeviation = (values, mean) => {
+    if (values.length < 2) return 0;
+    const squareDiffs = values.map(value => Math.pow(value - mean, 2));
+    const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+    return Math.sqrt(avgSquareDiff);
+};
+
+/**
+ * Calculates a smart income projection based on a provided slice of historical transactions.
+ * Expects the caller (Dashboard) to provide ONLY the relevant historical period (e.g. past 6 months).
+ * + * @param {Array} historicalTransactions - Filtered list of income transactions from the lookback period
+ * @param {Date} referenceDate - The anchor date (usually today) to determine "recency" for weighting
+ * @returns {Object} { projectedIncome, reliability, cv }
+ */
+export const calculateIncomeProjection = (historicalTransactions, referenceDate = new Date()) => {
+    if (!historicalTransactions || historicalTransactions.length === 0) return { projectedIncome: 0, reliability: 'low', cv: 0 };
+
+    // 1. Bucket transactions by month relative to reference date
+    // We map 1..6 (months ago) to totals
+    const monthlyTotals = {};
+
+    historicalTransactions.forEach(t => {
+        const tDate = new Date(t.date);
+        // Calculate how many months ago this was (approximate is fine for bucketing)
+        const monthDiff = (referenceDate.getFullYear() - tDate.getFullYear()) * 12 + (referenceDate.getMonth() - tDate.getMonth());
+
+        // Only care about buckets 1 to 6
+        if (monthDiff >= 1 && monthDiff <= 6) {
+            monthlyTotals[monthDiff] = (monthlyTotals[monthDiff] || 0) + t.amount;
+        }
+    });
+
+    const values = Object.values(monthlyTotals).filter(v => v > 0);
+
+    // Not enough data points for statistical analysis
+    if (values.length < 3) {
+        const simpleAvg = values.reduce((a, b) => a + b, 0) / (values.length || 1);
+        return { projectedIncome: simpleAvg, reliability: 'low', cv: 0 };
+    }
+
+    // 2. IQR Method (Tukey's Fences) to remove anomalies
+    const sorted = [...values].sort((a, b) => a - b);
+    const q1 = sorted[Math.floor((sorted.length / 4))];
+    const q3 = sorted[Math.ceil((sorted.length * (3 / 4))) - 1];
+    const iqr = q3 - q1;
+
+    const lowerFence = q1 - (1.5 * iqr);
+    const upperFence = q3 + (1.5 * iqr);
+
+    // 3. Filter Outliers & Calculate Weighted Mean
+    // Weights: Month 1 (recent) = 6, Month 6 (old) = 1
+    let weightedSum = 0;
+    let totalWeight = 0;
+    let cleanValues = [];
+
+    // Iterate 1 to 6 to handle empty months correctly (as 0 if needed, or skip)
+    // Financial preference: Skip months with 0 income rather than treating them as $0 salary days? 
+    // For salary projection, usually we only care about months where money came in.
+    Object.entries(monthlyTotals).forEach(([monthsAgo, amount]) => {
+        if (amount >= lowerFence && amount <= upperFence) {
+            const weight = 7 - parseInt(monthsAgo); // 1 month ago = weight 6
+            weightedSum += (amount * weight);
+            totalWeight += weight;
+            cleanValues.push(amount);
+        }
+    });
+
+    // Fallback: If IQR killed everything (rare), return Median
+    if (cleanValues.length === 0) {
+        return { projectedIncome: calculateMedian(values), reliability: 'low', cv: 0 };
+    }
+
+    const projectedIncome = weightedSum / totalWeight;
+
+    // 4. Calculate CV for Reliability
+    const mean = cleanValues.reduce((a, b) => a + b, 0) / cleanValues.length;
+    const stdDev = calculateStandardDeviation(cleanValues, mean);
+    const cv = mean > 0 ? (stdDev / mean) * 100 : 0;
+
+    let reliability = 'high';
+    if (cv > 10) reliability = 'medium';
+    if (cv > 25) reliability = 'low';
+
+    return {
+        projectedIncome,
+        reliability,
+        cv
+    };
 };
