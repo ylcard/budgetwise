@@ -28,7 +28,7 @@ export default function ProjectionChart({ settings }) {
         if (isLoading || !transactions || transactions.length === 0) {
             return { data: [], sixMonthAvg: 0 };
         }
-        
+
         const realToday = new Date();
 
         // --- 0. CALCULATE 6-MONTH EXPENSE BASELINE ---
@@ -57,7 +57,7 @@ export default function ProjectionChart({ settings }) {
         const currentBoundaries = getMonthBoundaries(today.getMonth(), today.getFullYear());
 
         // Filter strictly by this month's boundaries (Day 1 to Day 31)
-        const currentMonthTransactions = transactions.filter(t => 
+        const currentMonthTransactions = transactions.filter(t =>
             isTransactionInDateRange(t, currentBoundaries.monthStart, currentBoundaries.monthEnd)
         );
 
@@ -84,7 +84,7 @@ export default function ProjectionChart({ settings }) {
 
     if (isLoading || data.length < 3) {
         return (
-            <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px]">
+            <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px] w-full">
                 <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
             </Card>
         );
@@ -164,8 +164,8 @@ export default function ProjectionChart({ settings }) {
                                     </div>
 
                                     {/* Labels */}
-                                    <div className="text-center mt-2 h-8">
-                                        <p className={`text-xs font-bold ${item.type === 'current' ? 'text-blue-600' : 'text-gray-700'}`}>{item.label}</p>
+                                    <div className="text-center mt-2 min-h-[32px]">
+                                        <p className={`text-[11px] md:text-xs font-bold leading-tight ${item.type === 'current' ? 'text-blue-600' : 'text-gray-700'}`}>{item.label}</p>
                                         <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{item.subLabel}</p>
                                     </div>
 
