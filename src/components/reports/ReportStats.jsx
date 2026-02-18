@@ -102,7 +102,7 @@ const ReportStats = memo(function ReportStats({
             <Card className="border-none shadow-lg">
                 <CardContent className="p-6 text-center">
                     <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium text-gray-500 inline-flex items-center">
+                        <p className="text-sm font-medium text-gray-500 flex items-center justify-center gap-1">
                             Savings Rate
                             <InfoTooltip
                                 title="Savings Rate"
