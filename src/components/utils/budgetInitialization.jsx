@@ -307,35 +307,56 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, al
 export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], settings = {}) => {
     if (!userEmail) return;
 
-    // 1. Fetch all transactions to find which months actually have data
-    // NOTE: Assuming 'Transaction' entity. If your schema uses 'Expense', update this.
-    const transactions = await base44.entities.Transaction.filter({ created_by: userEmail });
+    // 1. Fetch ALL transactions and ALL existing budgets for this user in parallel
+    const [transactions, existingBudgets] = await Promise.all([
+        base44.entities.Transaction.filter({ created_by: userEmail }),
+        base44.entities.SystemBudget.filter({ user_email: userEmail })
+    ]);
 
+    // 2. Identify unique months from transactions
     const activeMonths = new Set();
     transactions.forEach(t => {
-        // Use date or paidDate. Fallback safely if missing.
         const d = t.date || t.paidDate;
         if (d) {
-            try {
-                // Safely parse date string to avoid timezone shifts
-                const dateObj = typeof d === 'string' ? parseISO(d) : d;
-                if (isValid(dateObj)) {
-                    activeMonths.add(format(dateObj, 'yyyy-MM-01'));
-                }
-            } catch (e) {
-                console.warn('Invalid date in transaction during budget repair', t);
-            }
+            const dateObj = typeof d === 'string' ? parseISO(d) : d;
+            if (isValid(dateObj)) activeMonths.add(format(dateObj, 'yyyy-MM-01'));
         }
     });
 
-    // 2. For each active month found, ensure budgets exist
-    for (const monthDate of activeMonths) {
+    // 3. Map existing budgets for O(1) lookup: "YYYY-MM-DD|type"
+    const budgetMap = new Set(existingBudgets.map(b => `${b.startDate}|${b.systemBudgetType}`));
+
+    // 4. Determine which budgets are missing
+    const toCreate = [];
+    const priorityTypes = ['needs', 'wants'];
+
+    activeMonths.forEach(monthDate => {
         const date = parseISO(monthDate);
         const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
-        // We pass 0 for income as this is a repair operation ensuring existence.
-        // The limits will be set based on the passed budgetGoals or defaults.
-        await ensureSystemBudgetsExist(userEmail, monthStart, monthEnd, budgetGoals, settings, 0);
+        priorityTypes.forEach(type => {
+            if (!budgetMap.has(`${monthStart}|${type}`)) {
+                const goal = budgetGoals.find(g => g.priority === type);
+                const amount = resolveBudgetLimit(goal, 0, settings, 0);
+
+                toCreate.push({
+                    name: FINANCIAL_PRIORITIES[type].label,
+                    budgetAmount: amount,
+                    startDate: monthStart,
+                    endDate: monthEnd,
+                    color: FINANCIAL_PRIORITIES[type].color,
+                    user_email: userEmail,
+                    systemBudgetType: type,
+                    target_percentage: goal?.target_percentage || 0,
+                    target_amount: goal?.target_amount || 0
+                });
+            }
+        });
+    });
+
+    // 5. Single Bulk Write
+    if (toCreate.length > 0) {
+        await base44.entities.SystemBudget.bulkCreate(toCreate);
     }
 };
 
