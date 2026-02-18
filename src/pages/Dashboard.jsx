@@ -311,15 +311,6 @@ export default function Dashboard() {
                                         setShowStory(true);
                                     }}
                                 />
-
-                                {/* TEMP: Test Button for Notification Flow */}
-                                <Button
-                                    variant="outline"
-                                    className="h-full border-dashed border-indigo-500 text-indigo-400 hover:bg-indigo-950/20"
-                                    onClick={() => notifyMonthlyRewindReady(user.email, selectedMonth, selectedYear)}
-                                >
-                                    🔔 Test Notify
-                                </Button>
                             </div>
 
                             {isMobile ? (
