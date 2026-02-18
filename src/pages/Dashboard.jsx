@@ -107,7 +107,7 @@ export default function Dashboard() {
 
     const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
 
-    useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
+    // useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
 
     // NEW: Fetch specific history for the projection engine
     // This ensures we have the full 6-month context, not just the current view's buffer
