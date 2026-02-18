@@ -20,6 +20,34 @@ export const useTransactionActions = (config = {}) => {
     const queryClient = useQueryClient();
     const { settings, user } = useSettings();
 
+    // Helper to sync budgets when income changes
+    const syncBudgetsAfterIncomeChange = async (dateString) => {
+        if (!user?.email) return;
+        const date = parseDate(dateString);
+        const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
+
+        // 1. Get all transactions for this month to sum actual income
+        const allTransactions = await base44.entities.Transaction.filter({
+            created_by: user.email,
+            date: { $gte: monthStart, $lte: monthEnd }
+        });
+
+        const monthlyIncome = allTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+        const budgetGoals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
+        const histAvg = getHistoricalAverageIncome(allTransactions, date.getMonth(), date.getFullYear());
+
+        // 2. Force the budget engine to update allocations
+        await ensureSystemBudgetsExist(user.email, monthStart, monthEnd, budgetGoals, settings, monthlyIncome, {
+            allowUpdates: true,
+            historicalAverage: histAvg
+        });
+
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+    };
+
     // CREATE: Use generic hook with cash wallet preprocessing + optimistic updates
     const createMutation = useCreateEntity({
         entityName: 'Transaction',
@@ -45,32 +73,7 @@ export const useTransactionActions = (config = {}) => {
             queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
         },
         onAfterSuccess: async (newDoc) => {
-            // RE-CALCULATE BUDGETS IF INCOME ADDED
-            if (newDoc?.type === 'income' && user?.email) {
-                const date = parseDate(newDoc.date);
-                const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
-
-                // 1. Get all transactions for this month to sum actual income
-                const allTransactions = await base44.entities.Transaction.filter({
-                    created_by: user.email,
-                    date: { $gte: monthStart, $lte: monthEnd }
-                });
-
-                const monthlyIncome = allTransactions
-                    .filter(t => t.type === 'income')
-                    .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-                const budgetGoals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
-                const histAvg = getHistoricalAverageIncome(allTransactions, date.getMonth(), date.getFullYear());
-
-                // 2. Force the budget engine to update allocations
-                await ensureSystemBudgetsExist(user.email, monthStart, monthEnd, budgetGoals, settings, monthlyIncome, {
-                    allowUpdates: true,
-                    historicalAverage: histAvg
-                });
-
-                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-            }
+            if (newDoc?.type === 'income') await syncBudgetsAfterIncomeChange(newDoc.date);
             if (setShowForm) setShowForm(false);
             if (setEditingTransaction) setEditingTransaction(null);
             if (options.onSuccess) options.onSuccess();
@@ -97,7 +100,8 @@ export const useTransactionActions = (config = {}) => {
         onError: (err, variables, context) => {
             queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
         },
-        onAfterSuccess: () => {
+        onAfterSuccess: async (updatedDoc) => {
+            if (updatedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(updatedDoc.date);
             if (setShowForm) setShowForm(false);
             if (setEditingTransaction) setEditingTransaction(null);
         }
@@ -124,6 +128,9 @@ export const useTransactionActions = (config = {}) => {
         },
         onError: (err, id, context) => {
             queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
+        },
+        onAfterSuccess: async (deletedDoc) => {
+            if (deletedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(deletedDoc.date);
         }
     });
 
