@@ -278,9 +278,11 @@ export default function Dashboard() {
 
     return (
         <HealthProvider>
-            <div className="min-h-screen p-4 md:p-8 relative">
-                <div className="max-w-7xl mx-auto space-y-6 pb-24">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            {/* Mobile: No padding on sides (components handle it). Desktop: Standard padding. */}
+            <div className="min-h-screen px-0 py-4 md:p-8 relative">
+                <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24">
+                    {/* Header with horizontal margin for mobile safety */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-4 md:px-0">
                         <div>
                             <h1 className="text-3xl md:text-4xl font-bold text-foreground">Dashboard</h1>
                             <p className="text-muted-foreground mt-1">
@@ -291,7 +293,7 @@ export default function Dashboard() {
 
                     {/* GRID LAYOUT: Split Hero Row */}
                     <div className="grid lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="lg:col-span-2 space-y-4 md:space-y-6">
 
                             {/* INNOVATION: Velocity Widget at the top */}
                             <VelocityWidget
@@ -383,14 +385,16 @@ export default function Dashboard() {
                     </div>
 
                     <div className="grid lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 flex flex-col min-w-0">
+                        {/* Added spacing between elements in this column */}
+                        <div className="lg:col-span-2 flex flex-col min-w-0 space-y-4 md:space-y-6">
 
                             <CustomBudgetsDisplay
                                 onCreateBudget={() => setShowQuickAddBudget(true)}
                             />
 
                             {/* MOBILE PLACEMENT: Below Custom Budgets */}
-                            <div className="lg:hidden mt-6 h-96">
+                            {/* Removed fixed height 'h-96' to let content flow naturally */}
+                            <div className="lg:hidden w-full">
                                 <UpcomingTransactions
                                     recurringWithStatus={recurringWithStatus}
                                     onMarkPaid={handleMarkPaid}
