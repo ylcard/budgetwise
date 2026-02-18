@@ -21,7 +21,7 @@ import GoalSettings from "../components/reports/GoalSettings";
 import { useGoalActions } from "../components/hooks/useActions";
 import { LayoutDashboard, Target, List, Maximize2, X, ChevronRight, ChevronLeft } from "lucide-react";
 import { parseDate, getMonthBoundaries } from "../components/utils/dateUtils";
-import useEmblaCarousel from "embla-carousel-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselDots } from "../components/ui/carousel";
 
 export default function Reports() {
     const { user, settings, updateSettings } = useSettings();
@@ -192,17 +192,7 @@ export default function Reports() {
         return dataPoints;
     }, [transactions, loadingTransactions, selectedMonth, selectedYear, projectionData]);
 
-    // --- Mobile Embla Carousel Setup ---
-    const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
-    const [currentSlide, setCurrentSlide] = useState(0);
-
-    useEffect(() => {
-        if (emblaApi) {
-            emblaApi.on('select', () => setCurrentSlide(emblaApi.selectedScrollSnap()));
-        }
-    }, [emblaApi]);
-
-    const scrollTo = useCallback((index) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+    const [api, setApi] = useState(null);
 
     // --- Helper for Mobile Chart Wrapper ---
     const MobileChartCard = ({ children, title, onMaximize, className, contentClassName }) => (
@@ -398,59 +388,49 @@ export default function Reports() {
 
                     {/* TAB: ANALYSIS (Carousel) */}
                     {mobileTab === 'analysis' && (
-                        <div className="h-full flex flex-col space-y-4 min-w-0">
-                            <div className="embla overflow-hidden flex-1 w-full relative" ref={emblaRef}>
-                                <div className="flex h-full touch-pan-y backface-hidden">
+                        <div className="h-full flex flex-col min-w-0">
+                            <Carousel setApi={setApi} className="flex-1 w-full">
+                                <CarouselContent className="-ml-2">
 
                                     {/* Slide 1: Summary Stats */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden pb-1 box-border">
-                                        <div className="space-y-4 pb-12 w-full max-w-full">
+                                    <CarouselItem className="pl-2 overflow-y-auto">
+                                        <div className="space-y-4 pb-12">
                                             {statsComponent}
                                             <MobileChartCard title="Financial Health" className="h-[500px]" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
                                                 {healthComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </CarouselItem>
 
                                     {/* Slide 2: Wave */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden box-border">
+                                    <CarouselItem className="pl-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                                 {waveComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </CarouselItem>
 
                                     {/* Slide 3: Projection */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden box-border">
+                                    <CarouselItem className="pl-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Financial Horizon" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
                                                 {projectionComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </CarouselItem>
 
                                     {/* Slide 4: Priority */}
-                                    <div className="flex-[0_0_100%] min-w-0 w-full px-2 overflow-y-auto overflow-x-hidden box-border">
+                                    <CarouselItem className="pl-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Priority Allocations" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
                                                 {priorityComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
-
-                                </div>
-                            </div>
-                            {/* Dots Indicator */}
-                            <div className="flex justify-center gap-1.5 py-2">
-                                {[0, 1, 2, 3].map((idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => scrollTo(idx)}
-                                        className={`w-2 h-2 rounded-full transition-all ${idx === currentSlide ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}
-                                    />
-                                ))}
-                            </div>
+                                    </CarouselItem>
+                                    
+                                </CarouselContent>
+                            </Carousel>
                         </div>
                     )}
 
