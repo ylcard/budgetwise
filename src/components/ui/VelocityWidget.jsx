@@ -340,12 +340,12 @@ export const VelocityWidget = ({ transactions = [], settings, selectedMonth, sel
         <motion.div
             layout
             initial={false}
-            className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden relative isolate"
+            className="w-auto mx-4 max-w-md md:mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden relative isolate"
         >
             {/* Header / Trigger Area */}
             <div
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-5 cursor-pointer flex flex-col relative z-10 group"
+                className="p-4 md:p-5 cursor-pointer flex flex-col relative z-10 group"
             >
                 {/* Background Glows (Subtle) */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 blur-[40px] rounded-full -z-10 transition-opacity duration-500" style={{ opacity: isExpanded ? 1 : 0.5 }} />
