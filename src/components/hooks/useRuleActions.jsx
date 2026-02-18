@@ -19,7 +19,8 @@ export function useRuleActions() {
     const { data: rules = [], isLoading, isFetching } = useQuery({
         queryKey: [QUERY_KEYS.CATEGORY_RULES, user?.email],
         queryFn: () => base44.entities.CategoryRule.filter({ created_by: user?.email }),
-        enabled: !!user?.email
+        enabled: !!user?.email,
+        staleTime: 1000 * 60 * 60,
     });
 
     const [isRegexMode, setIsRegexMode] = useState(false);
