@@ -291,6 +291,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     <AmountInput
                         placeholder="Min"
                         className="h-9 text-xs"
+                        hideSymbol={true}
                         value={filters.minAmount}
                         onChange={(val) => setFilters({ ...filters, minAmount: val })}
                     />
@@ -298,6 +299,7 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                     <AmountInput
                         placeholder="Max"
                         className="h-9 text-xs"
+                        hideSymbol={true}
                         value={filters.maxAmount}
                         onChange={(val) => setFilters({ ...filters, maxAmount: val })}
                     />
