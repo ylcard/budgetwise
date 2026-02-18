@@ -87,6 +87,24 @@ export const useTransactions = (startDate = null, endDate = null) => {
     return { transactions, isLoading, error };
 };
 
+// UPDATED 18-Feb-2026: Specialized hook for projection data
+export const useHistoricalIncomeTransactions = (user) => {
+    const { data: incomeTransactions = [] } = useQuery({
+        queryKey: [QUERY_KEYS.TRANSACTIONS, 'history', user?.email],
+        queryFn: async () => {
+            if (!user) return [];
+            // Fetch last 180 days (approx 6 months)
+            const startDate = format(subDays(new Date(), 180), 'yyyy-MM-dd');
+            return await base44.entities.Transaction.filter({
+                type: 'income',
+                date: { $gte: startDate }
+            });
+        },
+        enabled: !!user
+    });
+    return { incomeTransactions };
+};
+
 // Hook for fetching budget goals
 export const useGoals = (user) => {
     const { data: goals = [], isLoading } = useQuery({
