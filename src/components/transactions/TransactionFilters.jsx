@@ -278,8 +278,8 @@ export default function TransactionFilters({ filters, setFilters, categories, al
             budgetId: 'all',
             startDate: monthStart,
             endDate: monthEnd,
-            minAmount: '',
-            maxAmount: ''
+            minAmount: null,
+            maxAmount: null
         });
     };
 
