@@ -403,9 +403,9 @@ export default function Reports() {
                                     <div className="flex-[0_0_100%] min-w-0 overflow-y-auto pl-1 pr-1 pb-1">
                                         <div className="space-y-4 pb-12">
                                             {statsComponent}
-                                            {/* <MobileChartCard title="Financial Health" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
+                                            <MobileChartCard title="Financial Health" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
                                                 {healthComponent}
-                                            </MobileChartCard> */}
+                                            </MobileChartCard>
                                         </div>
                                     </div>
 
