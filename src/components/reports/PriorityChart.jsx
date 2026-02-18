@@ -25,7 +25,7 @@ export default function PriorityChart({ transactions, categories, goals, monthly
             <CardHeader>
                 <CardTitle>Actual vs Target by Priority</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0 pb-6">
+            <CardContent className="flex-1 min-h-0 min-w-0 pb-6">
                 {chartData.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-gray-400">
                         <p>No expenses to show yet</p>
