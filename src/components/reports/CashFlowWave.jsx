@@ -92,7 +92,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
 
     // Custom legend
     const CustomLegend = () => (
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 text-xs md:text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 md:gap-x-6 gap-y-2 mt-4 text-[10px] md:text-sm">
             <div className="flex items-center gap-2">
                 <div className="w-4 h-3 bg-green-500/20 border-2 border-green-500 rounded" />
                 <span className="text-gray-700">Income</span>
@@ -167,7 +167,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0 min-w-0 relative h-[300px] md:h-auto">
+            <CardContent className="flex-1 min-h-0 min-w-0 relative h-[300px] md:h-auto px-2 md:px-6">
                 <ResponsiveContainer width="99%" height="100%">
                     <ComposedChart
                         data={data}
