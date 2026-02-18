@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar, Wallet } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar, Wallet, Sparkles } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext";
@@ -279,15 +279,22 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     breakdown = null,
     historicalAverage = 0,
     selectedMonth,
-    selectedYear
+    selectedYear,
+    projectedIncome = 0,
+    isUsingProjection = false
 }) {
     const { updateSettings, user } = useSettings();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     if (!settings) return null;
 
-    // REFACTORED: 23-Jan-2026 - Improved zero income handling for accurate bar rendering
-    const safeIncome = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
+    // REFACTORED: 18-Feb-2026 - Integrated Smart Income Projection
+    // If we are "Waiting for Payday" (isUsingProjection), we use the projected amount 
+    // to render the budget bars and limits. Otherwise, we use actual income.
+    const effectiveIncome = isUsingProjection ? projectedIncome : currentMonthIncome;
+
+    // Safe fallback for division logic
+    const safeIncome = effectiveIncome && effectiveIncome > 0 ? effectiveIncome : 1;
     const isSimpleView = settings.barViewMode; // true = simple
 
     // --- DATA EXTRACTION ---
@@ -396,7 +403,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const wantsUtil = wantsLimit > 0 ? (wantsTotal / wantsLimit) * 100 : 0;
 
     // --- SHARED SAVINGS CALCULATIONS ---
-    const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
+    // Use effectiveIncome so savings potential is shown based on EXPECTED salary
+    const savingsAmount = Math.max(0, effectiveIncome - totalSpent);
     const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
     const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
 
@@ -413,7 +421,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const isEndOfMonth = currentDay >= (daysInMonth - 3);
 
     // Detect "Clean Slate" State (No income AND no expenses)
-    const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
+    // If we have a projection, it's NOT an empty month (we show the template)
+    const isEmptyMonth = (!effectiveIncome || effectiveIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
 
     // Get explicit month name for the empty state message
     const monthName = getMonthName(selectedMonth);
@@ -507,7 +516,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const CLICKABLE_MIN_PCT = 5;
 
         // --- WIDTH CALCULATIONS ---
-        const calculationBase = currentMonthIncome && currentMonthIncome > 0 ? currentMonthIncome : 1;
+        const calculationBase = effectiveIncome && effectiveIncome > 0 ? effectiveIncome : 1;
 
         let needsOuterPct, wantsOuterPct, savingsOuterPct;
 
@@ -549,7 +558,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Savings Split
         // Simple: Target = 100%, Extra = 0% (Visually combined)
         // Detailed: Split based on actuals
-        const totalSavings = Math.max(0, currentMonthIncome - totalSpent); // This aligns with 'savingsAmount'
+        const totalSavings = Math.max(0, effectiveIncome - totalSpent); // This aligns with 'savingsAmount'
         // If we have extra savings, the "Target" bar shouldn't shrink below the target amount in detailed view
         // actually, savings logic is: 
         // Bar 1 (Dark): min(total, limit)
@@ -833,9 +842,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         );
     };
 
-    // const savingsAmount = Math.max(0, currentMonthIncome - totalSpent);
+    // Calculate display percentage based on safeIncome (which includes projection)
     const savingsPctDisplay = (savingsAmount / safeIncome) * 100;
-    const isTotalOver = totalSpent > currentMonthIncome;
+
+    // Over Budget logic now respects the Projection (if active)
+    const isTotalOver = totalSpent > effectiveIncome;
 
     const ViewToggle = () => (
         <div className="flex bg-muted/50 p-1 rounded-lg border border-border/50 relative isolate">
@@ -943,7 +954,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     ) : (
                                         <div className="space-y-1">
                                             <h2 className="text-4xl font-extrabold text-foreground flex items-center gap-2 tracking-tight">
-                                                {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">Saved</span>
+                                                {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">{isUsingProjection ? "Projected" : "Saved"}</span>
                                             </h2>
                                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-500">
                                                 {extraSavingsAmount > 0 ? (
@@ -957,8 +968,18 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                         </div>
                                     )}
                                     <div className="text-sm text-muted-foreground mt-1">
-                                        {currentMonthIncome > 0 ? (
-                                            <>Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(currentMonthIncome, settings)}</strong></>
+                                        {effectiveIncome > 0 ? (
+                                            <div className="flex items-center gap-2">
+                                                <span>Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(effectiveIncome, settings)}</strong> {isUsingProjection && "(Est.)"}</span>
+
+                                                {/* Visual Badge for Projection Mode */}
+                                                {isUsingProjection && (
+                                                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100/50 shadow-sm animate-in fade-in zoom-in-90">
+                                                        <Sparkles className="w-2.5 h-2.5" />
+                                                        <span>Estimated Income</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : "No income recorded."}
                                     </div>
                                 </div>
