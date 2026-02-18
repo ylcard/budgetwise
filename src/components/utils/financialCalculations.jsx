@@ -490,20 +490,15 @@ export const calculateIncomeProjection = (historicalTransactions, referenceDate 
     const lowerFence = q1 - (1.5 * iqr);
     const upperFence = q3 + (1.5 * iqr);
 
-    // 3. Filter Outliers & Calculate Weighted Mean
-    // Weights: Month 1 (recent) = 6, Month 6 (old) = 1
-    let weightedSum = 0;
-    let totalWeight = 0;
+    // 3. Filter Outliers & Calculate Simple Mean
     let cleanValues = [];
 
     // Iterate 1 to 6 to handle empty months correctly (as 0 if needed, or skip)
     // Financial preference: Skip months with 0 income rather than treating them as $0 salary days? 
     // For salary projection, usually we only care about months where money came in.
-    Object.entries(monthlyTotals).forEach(([monthsAgo, amount]) => {
+    Object.values(monthlyTotals).forEach((amount) => {
+        if (amount === 0) return; // Ignore months with no activity
         if (amount >= lowerFence && amount <= upperFence) {
-            const weight = 7 - parseInt(monthsAgo); // 1 month ago = weight 6
-            weightedSum += (amount * weight);
-            totalWeight += weight;
             cleanValues.push(amount);
         }
     });
@@ -513,7 +508,7 @@ export const calculateIncomeProjection = (historicalTransactions, referenceDate 
         return { projectedIncome: calculateMedian(values), reliability: 'low', cv: 0 };
     }
 
-    const projectedIncome = weightedSum / totalWeight;
+    const projectedIncome = cleanValues.reduce((a, b) => a + b, 0) / cleanValues.length;
 
     // 4. Calculate CV for Reliability
     const mean = cleanValues.reduce((a, b) => a + b, 0) / cleanValues.length;
