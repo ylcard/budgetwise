@@ -400,13 +400,13 @@ export default function Reports() {
                     {mobileTab === 'analysis' && (
                         <div className="h-full flex flex-col space-y-4 min-w-0">
                             <div className="embla overflow-hidden flex-1 w-full min-w-0 relative" ref={emblaRef}>
-                                <div className="flex h-full touch-pan-y">
+                                <div className="flex h-full touch-pan-y min-w-0">
 
                                     {/* Slide 1: Summary Stats */}
                                     <div className="basis-full flex-none min-w-0 px-2 overflow-y-auto pb-1">
                                         <div className="space-y-4 pb-12">
                                             {statsComponent}
-                                            <MobileChartCard title="Financial Health" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
+                                            <MobileChartCard title="Financial Health" className="h-[500px]" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
                                                 {healthComponent}
                                             </MobileChartCard>
                                         </div>
