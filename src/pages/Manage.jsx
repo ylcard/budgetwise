@@ -33,6 +33,10 @@ import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import { format } from "date-fns";
 import { BudgetRepairCard } from "../components/utils/BudgetRepairCard";
+import { 
+    ensureBudgetsForActiveMonths, 
+    reconcileTransactionBudgets 
+} from "@/components/utils/budgetInitialization";
 
 export default function ManageLayout() {
     return (
