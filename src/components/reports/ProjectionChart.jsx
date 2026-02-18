@@ -99,7 +99,7 @@ export default function ProjectionChart({ settings }) {
     const isPositive = currentNet >= 0;
 
     return (
-        <Card className="border-none shadow-sm h-full flex flex-col">
+        <Card className="border-none shadow-sm h-full flex flex-col overflow-hidden">
             <CardHeader className="pb-2 flex-none">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold text-gray-800">
@@ -121,7 +121,7 @@ export default function ProjectionChart({ settings }) {
                         : `Projected to overspend by ${formatCurrency(Math.abs(currentNet), settings)}.`}
                 </p>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0 shadow-lg relative h-[300px] md:h-auto">
+           <CardContent className="flex-1 min-h-0 relative h-[300px] md:h-auto">
                 <div className="absolute inset-4 flex flex-col justify-end">
                     {/* The Chart Area - 3 distinct columns */}
                     <div className="flex items-end justify-between h-full gap-4 pt-6 px-2 relative">
@@ -171,7 +171,7 @@ export default function ProjectionChart({ settings }) {
 
                                     {/* Hover Tooltip - Smart Alignment for Mobile Edges */}
                                     <div className={`
-                                        absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs p-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none
+                                        absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs p-2 rounded shadow-lg z-20 w-32 md:w-auto pointer-events-none
                                         ${idx === 0 ? 'left-0' : idx === 2 ? 'right-0' : 'left-1/2 -translate-x-1/2'}
                                     `}>
                                         <p className="font-bold mb-1 border-b border-gray-700 pb-1">{item.label}</p>
