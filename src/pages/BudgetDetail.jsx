@@ -95,6 +95,7 @@ export default function BudgetDetail() {
         },
         enabled: !!budgetId,
         retry: false,
+        staleTime: 1000 * 60 * 5,
     });
 
     // 2. Fetch Categories (Defined ONCE)
@@ -102,6 +103,7 @@ export default function BudgetDetail() {
         queryKey: ['categories'],
         queryFn: () => base44.entities.Category.list(),
         initialData: [],
+        staleTime: 1000 * 60 * 60,
     });
 
     // 3. Fetch all Custom Budgets for the period (Defined ONCE)
@@ -114,7 +116,8 @@ export default function BudgetDetail() {
             });
         },
         initialData: [],
-        enabled: !!budget
+        enabled: !!budget,
+        staleTime: 1000 * 60 * 5,
     });
 
     // 4. Calculate related IDs
@@ -141,7 +144,8 @@ export default function BudgetDetail() {
             });
         },
         initialData: [],
-        enabled: !!budget
+        enabled: !!budget,
+        staleTime: 1000 * 60 * 5,
     });
 
     // 6. Monthly Income Hook
@@ -160,7 +164,8 @@ export default function BudgetDetail() {
             return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         initialData: [],
-        enabled: !!budget
+        enabled: !!budget,
+        staleTime: 1000 * 60 * 5,
     });
 
     // 8. Allocations specific to this budget
@@ -171,6 +176,7 @@ export default function BudgetDetail() {
         },
         initialData: [],
         enabled: !!budgetId && !!budget && !budget.isSystemBudget,
+        staleTime: 1000 * 60 * 5,
     });
 
     // Actions & Mutation logic
