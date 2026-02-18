@@ -7,7 +7,6 @@
 
 import { base44 } from "@/api/base44Client";
 import { parseDate, getFirstDayOfMonth, isDateInRange, getMonthBoundaries, getLastDayOfMonth } from "./dateUtils";
-import { ensureSystemBudgetsExist } from "./budgetInitialization";
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -416,16 +415,23 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail = n
     });
 
     const updatePromises = activeSystemBudgets.map(async (budget) => {
-        // We trigger a re-sync for existing future budgets to reflect the new goal
-        return ensureSystemBudgetsExist(
-            userEmail,
-            budget.startDate,
-            budget.endDate,
-            allGoals,
-            settings,
-            0, // Income will be handled by the Dashboard sync
-            { allowUpdates: true }
-        );
+        // OPTIMIZATION: Calculate updates locally to avoid N+1 DB reads
+        const goal = allGoals.find(g => g.priority === budget.systemBudgetType);
+        if (!goal) return;
+
+        // Use 0 for income/history for future snapshots (standard baseline)
+        const newAmount = resolveBudgetLimit(goal, 0, settings, 0);
+
+        // Only fire update request if values actually changed
+        if (Math.abs(budget.budgetAmount - newAmount) > 0.01 ||
+            budget.target_percentage !== goal.target_percentage) {
+
+            return base44.entities.SystemBudget.update(budget.id, {
+                budgetAmount: newAmount,
+                target_percentage: goal.target_percentage || 0,
+                target_amount: goal.target_amount || 0
+            });
+        }
     });
 
     await Promise.all(updatePromises);
