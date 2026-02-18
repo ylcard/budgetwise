@@ -479,7 +479,7 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${headerStyle.iconBg} shadow-sm`}>
                         <Activity className={`w-7 h-7 ${headerStyle.iconColor}`} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h3 className={`font-bold text-base md:text-lg leading-tight ${headerStyle.text}`}>Financial Health Score</h3>
                         <p className={`text-sm font-medium ${headerStyle.subtext}`}>Composite wellness analysis</p>
                     </div>
