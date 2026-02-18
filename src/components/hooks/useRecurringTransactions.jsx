@@ -20,6 +20,7 @@ export const useRecurringTransactions = (user) => {
         },
         initialData: [],
         enabled: !!user,
+        staleTime: 1000 * 60 * 5,
     });
 
     return { recurringTransactions, isLoading, error };
