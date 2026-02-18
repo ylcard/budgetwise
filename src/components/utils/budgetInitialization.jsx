@@ -150,15 +150,8 @@ export const ensureSystemBudgetsExist = async (
                 const existing = budgetMap.get(type);
                 const goal = budgetGoals.find(g => g.priority === type);
 
-                // RESPECT goalMode: true = percentage, false = absolute
-                const isPercentageMode = settings?.goalMode !== false;
-                let amount = 0;
-
-                if (!isPercentageMode && goal?.target_amount > 0) {
-                    amount = goal.target_amount;
-                } else {
-                    amount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
-                }
+                // resolveBudgetLimit handles both goalMode and fixedMode logic
+                const amount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
 
                 if (existing) {
                     // FORCE update if income/goals changed OR if initialization is needed
