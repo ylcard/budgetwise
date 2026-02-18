@@ -25,15 +25,15 @@ export default function MonthlyBreakdown({
     const sortedBreakdown = [...categoryBreakdown].sort((a, b) => b.amount - a.amount);
 
     // Helper for header styling
-    const SummaryItem = ({ label, amount }) => (
-        <div className="text-center px-3">
+    const SummaryItem = ({ label, amount, className }) => (
+        <div className={`text-center px-2 md:px-3 ${className}`}>
             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">{label}</p>
             <p className="text-sm font-bold text-gray-900">{formatCurrency(amount, settings)}</p>
         </div>
     );
 
     // Helper for header divider
-    const Divider = () => <div className="h-8 w-px bg-gray-200"></div>;
+    const Divider = () => <div className="hidden md:block h-8 w-px bg-gray-200"></div>;
 
     return (
         <Card className="w-full h-full border-none shadow-lg flex flex-col bg-white">
@@ -53,20 +53,24 @@ export default function MonthlyBreakdown({
                 <>
                     {/* Integrated Header - Replaces the floating black pill */}
                     <CardHeader className="pb-2 border-b border-gray-50">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
                                 <CardTitle className="text-xl font-bold text-gray-900">Monthly Breakdown</CardTitle>
                             </div>
 
-                            {/* The "Fancier" Summary Section */}
-                            <div className="flex items-center bg-gray-50 px-1 py-2 rounded-xl border border-gray-100">
-                                <SummaryItem label="Income" amount={monthlyIncome} />
+                            {/* The "Fancier" Summary Section - Grid on Mobile, Flex on Desktop */}
+                            <div className="w-full md:w-auto grid grid-cols-2 md:flex items-center bg-gray-50 px-1 py-2 rounded-xl border border-gray-100 gap-y-2 md:gap-y-0">
+                                <SummaryItem label="Income" amount={monthlyIncome} className="border-r border-gray-200 md:border-none" />
+                                {/* Mobile only spacer implies 2nd col is Expenses */}
+                                <Divider />
                                 <Divider />
                                 <SummaryItem label="Expenses" amount={totalExpenses} />
 
                                 {/* Extra columns for Needs/Wants */}
+                                <div className="col-span-2 border-t border-gray-200 md:border-none md:hidden w-full my-1" />
+
                                 <Divider />
-                                <SummaryItem label="Needs" amount={needsTotal} />
+                                <SummaryItem label="Needs" amount={needsTotal} className="border-r border-gray-200 md:border-none" />
                                 <Divider />
                                 <SummaryItem label="Wants" amount={wantsTotal} />
                             </div>
