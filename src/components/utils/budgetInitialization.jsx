@@ -295,3 +295,94 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, al
         }
     }
 };
+
+
+/**
+ * REPAIR UTILITY: Ensures system budgets exist for any past month that has transactions.
+ * This handles the "deleted by accident" scenario by restoring budgets only where needed.
+ * @param {string} userEmail
+ * @param {Array} budgetGoals - Current goals to use for initialization
+ * @param {Object} settings 
+ */
+export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], settings = {}) => {
+    if (!userEmail) return;
+
+    // 1. Fetch all transactions to find which months actually have data
+    // NOTE: Assuming 'Transaction' entity. If your schema uses 'Expense', update this.
+    const transactions = await base44.entities.Transaction.filter({ user_email: userEmail });
+
+    const activeMonths = new Set();
+    transactions.forEach(t => {
+        // Use date or paidDate. Fallback safely if missing.
+        const d = t.date || t.paidDate;
+        if (d) {
+            try {
+                // Normalize to the 1st of the month for uniqueness (YYYY-MM-01)
+                activeMonths.add(format(new Date(d), 'yyyy-MM-01'));
+            } catch (e) {
+                console.warn('Invalid date in transaction during budget repair', t);
+            }
+        }
+    });
+
+    // 2. For each active month found, ensure budgets exist
+    for (const monthDate of activeMonths) {
+        const date = parseISO(monthDate);
+        const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
+
+        // We pass 0 for income as this is a repair operation ensuring existence.
+        // The limits will be set based on the passed budgetGoals or defaults.
+        await ensureSystemBudgetsExist(userEmail, monthStart, monthEnd, budgetGoals, settings, 0);
+    }
+};
+
+/**
+ * REPAIR UTILITY: Links orphaned transactions to their correct SystemBudget.
+ * Should be run AFTER ensureBudgetsForActiveMonths to ensure targets exist.
+ * @param {string} userEmail 
+ * @returns {Promise<number>} Number of transactions updated
+ */
+export const reconcileTransactionBudgets = async (userEmail) => {
+    if (!userEmail) return 0;
+
+    const [transactions, budgets] = await Promise.all([
+        base44.entities.Transaction.filter({ user_email: userEmail }),
+        base44.entities.SystemBudget.filter({ user_email: userEmail })
+    ]);
+
+    // Create a Lookup Map: "YYYY-MM-priority" -> budgetId
+    const budgetMap = new Map();
+    budgets.forEach(b => {
+        const key = `${b.startDate.substring(0, 7)}-${b.systemBudgetType}`;
+        budgetMap.set(key, b.id);
+    });
+
+    const updates = [];
+    for (const t of transactions) {
+        // Check if budget is missing OR if the linked budget ID no longer exists in our fetch
+        const isOrphaned = !t.budgetId || !budgets.find(b => b.id === t.budgetId);
+
+        if (isOrphaned) {
+            const d = t.date || t.paidDate;
+            const priority = t.financialPriority; // 'needs' or 'wants'
+
+            if (d && priority) {
+                const dateKey = format(new Date(d), 'yyyy-MM');
+                const targetKey = `${dateKey}-${priority}`;
+                const correctBudgetId = budgetMap.get(targetKey);
+
+                // Only update if we found a valid destination budget
+                if (correctBudgetId) {
+                    updates.push(base44.entities.Transaction.update(t.id, { budgetId: correctBudgetId }));
+                }
+            }
+        }
+    }
+
+    if (updates.length > 0) {
+        // Process in parallel
+        await Promise.all(updates);
+    }
+
+    return updates.length;
+};
