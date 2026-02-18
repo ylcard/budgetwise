@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import AmountInput from "../ui/AmountInput";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Search, X, Check, Tag, ChevronRight, TrendingUp, TrendingDown, Shield, Sparkles, CheckCircle, Clock, Banknote, CreditCard, SlidersHorizontal, CalendarDays } from "lucide-react";
 import DateRangePicker from "../ui/DateRangePicker";
@@ -287,20 +288,18 @@ export default function TransactionFilters({ filters, setFilters, categories, al
             <div className="space-y-1 col-span-1 md:col-span-2 lg:col-span-1">
                 <Label className="text-xs text-muted-foreground">Amount Range</Label>
                 <div className="flex items-center gap-2">
-                    <Input
-                        type="number"
+                    <AmountInput
                         placeholder="Min"
                         className="h-9 text-xs"
                         value={filters.minAmount}
-                        onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                        onChange={(val) => setFilters({ ...filters, minAmount: val })}
                     />
                     <span className="text-muted-foreground">-</span>
-                    <Input
-                        type="number"
+                    <AmountInput
                         placeholder="Max"
                         className="h-9 text-xs"
                         value={filters.maxAmount}
-                        onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                        onChange={(val) => setFilters({ ...filters, maxAmount: val })}
                     />
                 </div>
             </div>
