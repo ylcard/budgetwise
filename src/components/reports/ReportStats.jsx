@@ -1,30 +1,12 @@
-import { useMemo, memo, useEffect, useState } from "react";
+import { useMemo, memo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank, Activity, TrendingDown, ShieldCheck, Loader2 } from "lucide-react";
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank, Activity } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
-import { calculateFinancialHealth } from "../utils/financialHealthAlgorithms"; // ADDED: 16-Jan-2026
-import { motion, useSpring, useTransform, animate, useMotionValue } from "framer-motion";
-import InfoTooltip from "../ui/InfoTooltip"; // ADDED: 16-Jan-2026
-
-// COMMENTED OUT: 16-Jan-2026 - Moved to financialHealthAlgorithms.jsx
-// // Helper: Calculate spend up to a specific day of the month
-// const getSpendByDayX = (allTransactions, targetMonth, targetYear, dayLimit) => {
-//     return allTransactions.reduce((sum, t) => {
-//         const tDate = new Date(t.date || t.created_date); // Adjust key if needed
-
-//         // 1. Match Month/Year
-//         if (tDate.getMonth() !== targetMonth || tDate.getFullYear() !== targetYear) return sum;
-
-//         // 2. Stop if transaction is after "Day X"
-//         if (tDate.getDate() > dayLimit) return sum;
-
-//         // 3. Sum Expenses (Positive numbers, exclude Income)
-//         if (t.category?.name === 'Income' || t.type === 'income') return sum;
-//         return sum + (Number(t.amount) || 0);
-//     }, 0);
-// };
+import { calculateFinancialHealth } from "../utils/financialHealthAlgorithms";
+import { motion, useTransform, animate, useMotionValue } from "framer-motion";
+import InfoTooltip from "../ui/InfoTooltip";
 
 const ReportStats = memo(function ReportStats({
     transactions = [],
@@ -33,8 +15,6 @@ const ReportStats = memo(function ReportStats({
     prevMonthlyIncome = 0,
     isLoading,
     settings,
-    categories = [],
-    allCustomBudgets = [],
     safeBaseline = 0,
     startDate,
     endDate,
