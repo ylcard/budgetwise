@@ -183,14 +183,6 @@ export default function BudgetDetail() {
     const budgetActions = useCustomBudgetActions({ transactions });
     const transactionActions = useTransactionActions();
 
-    const createTransactionMutation = useMutation({
-        mutationFn: (data) => base44.entities.Transaction.create(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            setShowQuickAdd(false);
-        },
-    });
-
     const createAllocationMutation = useMutation({
         mutationFn: (data) => base44.entities.CustomBudgetAllocation.create(data),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] }),
@@ -513,8 +505,8 @@ export default function BudgetDetail() {
                                 categories={categories}
                                 customBudgets={allBudgets}
                                 defaultCustomBudgetId={budgetId}
-                                onSubmit={(data) => createTransactionMutation.mutate(data)}
-                                isSubmitting={createTransactionMutation.isPending}
+                                onSubmit={(data) => transactionActions.handleSubmit(data)}
+                                isSubmitting={transactionActions.isSubmitting}
                                 transactions={transactions}
                                 triggerSize="sm"
                             />
