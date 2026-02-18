@@ -7,7 +7,7 @@ import { useUpdateEntity } from "./useUpdateEntity";
 import { useDeleteEntity } from "./useDeleteEntity";
 import { QUERY_KEYS } from "./queryKeys";
 import { parseDate } from "../utils/dateUtils";
-import { snapshotFutureBudgets } from "../utils/financialCalculations";
+import { snapshotFutureBudgets } from "../utils/budgetInitialization";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../utils/SettingsContext";
 
