@@ -413,22 +413,22 @@ export default function Reports() {
                                     </div> */}
 
                                     {/* Slide 2: Wave */}
-                                    <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
+                                    {/* <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                                 {waveComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     {/* Slide 3: Projection */}
-                                    {/* <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
+                                    <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Financial Horizon" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
                                                 {projectionComponent}
                                             </MobileChartCard>
                                         </div>
-                                    </div> */}
+                                    </div>
 
                                     {/* Slide 4: Priority */}
                                     {/* <div className="flex-[0_0_100%] min-w-0 px-2 overflow-y-auto">
