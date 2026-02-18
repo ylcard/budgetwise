@@ -404,7 +404,7 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
         return (
             <div className={`flex flex-col gap-4 h-full animate-pulse ${className || ''}`}>
                 <div className="h-24 bg-gray-100 rounded-xl border border-gray-200" />
-                <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
                     {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i} className="h-32 bg-gray-50 rounded-lg border border-gray-100" />
                     ))}
