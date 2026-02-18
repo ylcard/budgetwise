@@ -78,9 +78,9 @@ const ReportStats = memo(function ReportStats({
         : <ArrowDownRight className="w-3 h-3" />;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full min-w-0">
             <Card className="border-none shadow-lg">
-                <CardContent className="p-6 text-center">
+                <CardContent className="p-4 md:p-6 text-center">
                     <div className="flex flex-col items-center">
                         <p className="text-sm font-medium text-gray-500 flex items-center justify-center gap-1">
                             Savings Rate
@@ -113,7 +113,7 @@ const ReportStats = memo(function ReportStats({
             </Card>
 
             <Card className="border-none shadow-lg">
-                <CardContent className="p-6 text-center">
+                <CardContent className="p-4 md:p-6 text-center">
                     <div className="flex flex-col items-center">
                         <p className="text-sm font-medium text-gray-500 flex items-center justify-center gap-1">
                             Net Flow
@@ -138,9 +138,9 @@ const ReportStats = memo(function ReportStats({
                         </div>
                         {/* Projection Badge */}
                         {isCurrentMonth ? (
-                            <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${projectedNetFlow >= 0 ? 'text-blue-600' : 'text-rose-500'}`}>
+                            <div className={`flex items-center justify-center flex-wrap gap-1 mt-2 text-xs font-medium ${projectedNetFlow >= 0 ? 'text-blue-600' : 'text-rose-500'}`}>
                                 <Target className="w-3 h-3" />
-                                <span>Proj. End of Month: {formatCurrency(projectedNetFlow, settings)}</span>
+                                <span className="text-center">Proj: {formatCurrency(projectedNetFlow, settings)}</span>
                             </div>
                         ) : (
                             <div className="flex items-center gap-1 mt-2 text-xs font-medium text-gray-400">
@@ -157,7 +157,7 @@ const ReportStats = memo(function ReportStats({
             </Card>
 
             <Card className="border-none shadow-lg">
-                <CardContent className="p-6 text-center">
+                <CardContent className="p-4 md:p-6 text-center">
                     <div className="flex flex-col items-center">
                         <p className="text-sm font-medium text-gray-500 flex items-center justify-center gap-1">
                             Efficiency Bonus
@@ -503,7 +503,7 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
             </div>
 
             {/* DNA Grid - 5 Cards */}
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 min-w-0">
                 <HealthCell
                     label="Pacing"
                     score={pacingScore}
