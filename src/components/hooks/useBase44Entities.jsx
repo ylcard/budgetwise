@@ -223,8 +223,9 @@ export const useAllocations = (budgetId) => {
         queryFn: async () => {
             return await base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId });
         },
-        initialData: [],
+        // initialData: [],
         enabled: !!budgetId,
+        staleTime: 1000 * 60 * 5,
     });
 
     return { allocations, isLoading };
