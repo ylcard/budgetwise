@@ -87,7 +87,7 @@ export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historica
 
     // --- INFLATION PROTECTION LOGIC ---
     // If enabled AND we have history AND current income exceeds history
-    if (settings.fixedLifestyleMode && historicalAverage > 0 && monthlyIncome > historicalAverage) {
+    if (settings.fixedMode && historicalAverage > 0 && monthlyIncome > historicalAverage) {
         const basisIncome = historicalAverage;
         const overflow = monthlyIncome - basisIncome;
 
