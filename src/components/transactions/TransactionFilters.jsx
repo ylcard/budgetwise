@@ -184,7 +184,9 @@ export default function TransactionFilters({ filters, setFilters, categories, al
     ].filter(Boolean).length;
 
     // Reusable filter fields content
-    const FilterFields = () => (
+    //const FilterFields = () => (
+    // Move FilterFields OUTSIDE the main component to prevent remounting/focus loss
+    const FilterFields = ({ filters, setFilters, categories, filteredCustomBudgets, handleCategoryChange }) => (
         <>
             {/* Category (Multi-select) */}
             <div className="space-y-1 lg:col-span-1">
@@ -383,7 +385,13 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                                             className="w-full"
                                         />
                                     </div>
-                                    <FilterFields />
+                                    <FilterFields
+                                        filters={filters}
+                                        setFilters={setFilters}
+                                        categories={categories}
+                                        filteredCustomBudgets={filteredCustomBudgets}
+                                        handleCategoryChange={handleCategoryChange}
+                                    />
                                 </div>
                                 <DrawerFooter>
                                     <div className="flex gap-2 w-full">
@@ -435,7 +443,13 @@ export default function TransactionFilters({ filters, setFilters, categories, al
 
                 {/* DESKTOP: Grid Layout (Hidden on Mobile) */}
                 <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <FilterFields />
+                    <FilterFields
+                        filters={filters}
+                        setFilters={setFilters}
+                        categories={categories}
+                        filteredCustomBudgets={filteredCustomBudgets}
+                        handleCategoryChange={handleCategoryChange}
+                    />
                 </div>
 
                 {/* Mobile Active Filters Summary (Visual Cue) */}
