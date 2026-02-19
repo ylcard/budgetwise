@@ -498,14 +498,28 @@ export default function TransactionFormContent({
             return isDateInRange(relevantDate, b.startDate, b.endDate);
         });
 
-        // C. Search Filter
-        if (budgetSearchTerm && budgetSearchTerm.length > 0) {
-            filtered = filtered.filter(b =>
-                b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase())
-            );
-        }
+        // C. Status & Search Filter (Smart Defaults)
+        const hasSearch = budgetSearchTerm && budgetSearchTerm.trim().length > 0;
+
+        filtered = filtered.filter(b => {
+            // Always keep System Budgets (they are already filtered by date/priority above)
+            if (b.isSystemBudget) return true;
+
+            // CRITICAL: Always keep the currently selected budget visible in the list, 
+            // even if it's "completed" or "planned", so it displays correctly when editing.
+            if (formData.budgetId === b.id) return true;
+
+            if (hasSearch) {
+                // If searching, allow finding ANY custom budget
+                return b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase());
+            } else {
+                // By default, only show 'active' custom budgets to prevent clutter
+                return b.status === 'active';
+            }
+        });
+
         return filtered;
-    }, [mergedBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type]);
+    }, [mergedBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type, formData.budgetId]);
 
     const executeRefresh = async (force) => {
         const result = await refreshRates(
