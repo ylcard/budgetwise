@@ -28,13 +28,50 @@ const calculateStdDev = (values) => {
     return Math.sqrt(variance);
 };
 
+// --- DATA PREP (O(N) Optimization) ---
+
+/**
+ * Single-pass bucket builder to prevent massive O(N * 18) looping in algorithms.
+ * Groups raw transactions by month and pre-calculates top-level aggregates.
+ */
+const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudgets) => {
+    const start = new Date(startDate);
+
+    // 1. Single pass: Group all historical transactions by YYYY-MM
+    const groupedTxns = {};
+    for (const t of fullHistory) {
+        const monthKey = t.date.substring(0, 7); // Safe extraction of YYYY-MM
+        if (!groupedTxns[monthKey]) groupedTxns[monthKey] = [];
+        groupedTxns[monthKey].push(t);
+    }
+
+    // 2. Compute the precise 6 months we care about for the baseline
+    const historySummary = {};
+    for (let i = 1; i <= 6; i++) {
+        const targetDate = new Date(start.getFullYear(), start.getMonth() - i, 1);
+        const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+        const { monthStart, monthEnd } = getMonthBoundaries(targetDate.getMonth(), targetDate.getFullYear());
+
+        const monthTxns = groupedTxns[monthKey] || [];
+
+        historySummary[i] = {
+            txns: monthTxns,
+            monthStart,
+            monthEnd,
+            totalIncome: getMonthlyIncome(monthTxns, monthStart, monthEnd),
+            totalExpenses: getFinancialBreakdown(monthTxns, categories, allCustomBudgets, monthStart, monthEnd).totalExpenses
+        };
+    }
+    return historySummary;
+};
+
 // METRIC CALCULATORS
 
 /**
  * METRIC 1: Pacing Score (0-100)
  * Real-time: Compare current spend vs 3-month average for same day range
  */
-const calculatePacingScore = (transactions, fullHistory, categories, allCustomBudgets, startDate) => {
+const calculatePacingScore = (transactions, historySummary, categories, allCustomBudgets, startDate) => {
     const today = new Date();
     const start = new Date(startDate);
 
@@ -48,10 +85,8 @@ const calculatePacingScore = (transactions, fullHistory, categories, allCustomBu
 
     // Historical context (Average of last 3 months by Day X)
     const getHistoryByDayX = (offset) => {
-        const d = new Date(start);
-        d.setMonth(start.getMonth() - offset);
-        const bounds = getMonthBoundaries(d.getMonth(), d.getFullYear());
-        return getFinancialBreakdown(fullHistory, categories, allCustomBudgets, bounds.monthStart, bounds.monthEnd, dayCursor).totalExpenses;
+        const summary = historySummary[offset];
+        return getFinancialBreakdown(summary.txns, categories, allCustomBudgets, summary.monthStart, summary.monthEnd, dayCursor).totalExpenses;
     };
 
     const spendM1 = getHistoryByDayX(1);
@@ -107,17 +142,14 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
  * Historical: Coefficient of Variation of monthly expenses over last 6 months
  * Lower CV = Higher stability = Better score
  */
-const calculateStabilityScore = (fullHistory, categories, allCustomBudgets, startDate) => {
-    const start = new Date(startDate);
+const calculateStabilityScore = (historySummary) => {
     const monthlyExpenses = [];
 
     // Collect last 6 months of expenses
     for (let i = 1; i <= 6; i++) {
-        const targetDate = new Date(start);
-        targetDate.setMonth(start.getMonth() - i);
-        const { monthStart, monthEnd } = getMonthBoundaries(targetDate.getMonth(), targetDate.getFullYear());
-        const expenses = getFinancialBreakdown(fullHistory, categories, allCustomBudgets, monthStart, monthEnd).totalExpenses;
-        if (expenses > 0) monthlyExpenses.push(expenses);
+        if (historySummary[i].totalExpenses > 0) {
+            monthlyExpenses.push(historySummary[i].totalExpenses);
+        }
     }
 
     if (monthlyExpenses.length < 2) return 50; // Not enough data, neutral score
@@ -136,19 +168,16 @@ const calculateStabilityScore = (fullHistory, categories, allCustomBudgets, star
  * Historical: Risk-adjusted savings consistency
  * Formula: (Average Monthly Net Savings) / (Std Dev of Net Savings)
  */
-const calculateSharpeRatio = (fullHistory, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals) => {
-    const start = new Date(startDate);
+const calculateSharpeRatio = (historySummary) => {
     const monthlySavings = [];
 
     // Collect last 6 months of net savings
     for (let i = 1; i <= 6; i++) {
-        const targetDate = new Date(start);
-        targetDate.setMonth(start.getMonth() - i);
-        const { monthStart, monthEnd } = getMonthBoundaries(targetDate.getMonth(), targetDate.getFullYear());
-        const income = getMonthlyIncome(fullHistory, monthStart, monthEnd);
-        const expenses = getFinancialBreakdown(fullHistory, categories, allCustomBudgets, monthStart, monthEnd).totalExpenses;
-        const netSavings = income - expenses;
-        if (income > 0) monthlySavings.push(netSavings); // Only include months with income
+        const income = historySummary[i].totalIncome;
+        const expenses = historySummary[i].totalExpenses;
+        if (income > 0) {
+            monthlySavings.push(income - expenses);
+        }
     }
 
     if (monthlySavings.length < 2) return 50; // Not enough data, neutral score
@@ -164,7 +193,7 @@ const calculateSharpeRatio = (fullHistory, categories, allCustomBudgets, monthly
     // Map Sharpe to 0-100 scale using a more forgiving curve
     // If Sharpe is negative (Average is a loss), score is 0-25
     if (sharpe < 0) {
-        return Math.max(0, 25 + (sharpe * 25)); 
+        return Math.max(0, 25 + (sharpe * 25));
     }
 
     // If Sharpe is positive, we use a multiplier that rewards getting 
@@ -181,17 +210,13 @@ const calculateSharpeRatio = (fullHistory, categories, allCustomBudgets, monthly
  * Historical: Compare expense growth vs income growth over last 6 months
  * Penalize if expenses grow faster than income
  */
-const calculateLifestyleCreepIndex = (fullHistory, categories, allCustomBudgets, startDate) => {
-    const start = new Date(startDate);
+const calculateLifestyleCreepIndex = (historySummary) => {
     const dataPoints = [];
 
     // Collect last 6 months of income and expenses
     for (let i = 1; i <= 6; i++) {
-        const targetDate = new Date(start);
-        targetDate.setMonth(start.getMonth() - i);
-        const { monthStart, monthEnd } = getMonthBoundaries(targetDate.getMonth(), targetDate.getFullYear());
-        const income = getMonthlyIncome(fullHistory, monthStart, monthEnd);
-        const expenses = getFinancialBreakdown(fullHistory, categories, allCustomBudgets, monthStart, monthEnd).totalExpenses;
+        const income = historySummary[i].totalIncome;
+        const expenses = historySummary[i].totalExpenses;
         if (income > 0) dataPoints.push({ income, expenses });
     }
 
@@ -230,12 +255,15 @@ const calculateLifestyleCreepIndex = (fullHistory, categories, allCustomBudgets,
  * @returns {Object} { totalScore, breakdown, label }
  */
 export const calculateFinancialHealth = (transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets) => {
-    // Calculate all 5 metrics
-    const pacing = calculatePacingScore(transactions, fullHistory, categories, allCustomBudgets, startDate);
+    // --- 1. PREP PHASE (Tier 2 Optimization) ---
+    const historySummary = buildMonthlyBuckets(fullHistory, startDate, categories, allCustomBudgets);
+
+    // --- 2. CALCULATE METRICS ---
+    const pacing = calculatePacingScore(transactions, historySummary, categories, allCustomBudgets, startDate);
     const ratio = calculateBurnRatio(transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals);
-    const stability = calculateStabilityScore(fullHistory, categories, allCustomBudgets, startDate);
-    const sharpe = calculateSharpeRatio(fullHistory, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals);
-    const creep = calculateLifestyleCreepIndex(fullHistory, categories, allCustomBudgets, startDate);
+    const stability = calculateStabilityScore(historySummary);
+    const sharpe = calculateSharpeRatio(historySummary);
+    const creep = calculateLifestyleCreepIndex(historySummary);
 
     // Weighted average (can adjust weights as needed)
     // Current weights: Pacing 25%, Ratio 25%, Stability 20%, Sharpe 15%, Creep 15%
