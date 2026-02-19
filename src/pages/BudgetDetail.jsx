@@ -481,14 +481,23 @@ export default function BudgetDetail() {
                             </CardHeader>
                             <CardContent>
                                 <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                    {relatedCustomBudgetsForDisplay.map((cb) => (
-                                        <BudgetCard
-                                            key={cb.id}
-                                            budget={cb}
-                                            stats={getCustomBudgetStats(cb, transactions)}
-                                            settings={settings}
-                                        />
-                                    ))}
+                                    {relatedCustomBudgetsForDisplay.map((cb) => {
+                                        // Locally enrich the budget for the child component
+                                        const cbStats = getCustomBudgetStats(cb, transactions);
+                                        const enrichedCb = {
+                                            ...cb,
+                                            calculatedPaid: cbStats?.paid?.totalBaseCurrencyAmount ?? cbStats?.paidAmount ?? cbStats?.spent ?? 0,
+                                            calculatedUnpaid: cbStats?.unpaid?.totalBaseCurrencyAmount ?? cbStats?.unpaidAmount ?? 0,
+                                            calculatedTotal: cb.allocatedAmount || cb.budgetAmount || 0
+                                        };
+                                        return (
+                                            <BudgetCard
+                                                key={cb.id}
+                                                budgets={[enrichedCb]}
+                                                settings={settings}
+                                            />
+                                        );
+                                    })}
                                 </div>
                             </CardContent>
                         </Card>
