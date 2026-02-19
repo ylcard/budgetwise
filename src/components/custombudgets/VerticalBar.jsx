@@ -13,6 +13,7 @@ import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
 export default function VerticalBar({
     budget,
+    transactions,
     isCustom = false,
     settings,
     onDelete,
@@ -20,10 +21,11 @@ export default function VerticalBar({
     hideActions = false
 }) {
     const {
-        stats,
-        targetAmount,
         expectedAmount = 0,
-        maxHeight
+        maxHeight,
+        calculatedPaid: paidAmount = 0,
+        calculatedUnpaid: unpaidAmount = 0,
+        calculatedTotal: allocated = 0
     } = budget;
 
     const isCompleted = budget.status === 'completed';
@@ -35,21 +37,6 @@ export default function VerticalBar({
         }
         return budget.color || '#3B82F6';
     }, [budget.color, budget.systemBudgetType]);
-
-    // --- Unified Data Calculation ---
-    let allocated = 0;
-    let paidAmount = 0;
-    let unpaidAmount = 0;
-
-    if (isCustom && stats) {
-        allocated = stats.totalBudget || 0;
-        paidAmount = stats.paidAmount || 0;
-        unpaidAmount = expectedAmount;
-    } else {
-        allocated = targetAmount || budget.budgetAmount || budget.allocatedAmount || 0;
-        paidAmount = stats?.paidAmount || 0;
-        unpaidAmount = expectedAmount;
-    }
 
     // Recalculate Over/Surplus logic locally
     const used = paidAmount + unpaidAmount;
