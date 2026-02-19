@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { PRESET_COLORS } from "../utils/constants";
 import { normalizeAmount } from "../utils/generalUtils";
 import { usePeriod } from "../hooks/usePeriod";
+import { useSettings } from "../utils/SettingsContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CustomBudgetForm({
@@ -23,6 +24,7 @@ export default function CustomBudgetForm({
     onFormChange // ADDED: 16-Jan-2026 - Real-time form updates for feasibility
 }) {
     const { monthStart, monthEnd } = usePeriod();
+    const { user } = useSettings();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -95,6 +97,7 @@ export default function CustomBudgetForm({
         return onSubmit({
             ...formData,
             allocatedAmount: parseFloat(normalizedAmount),
+            user_email: budget?.user_email || user?.email,
             status: budget?.status || 'active'
         });
     };
