@@ -42,8 +42,9 @@ export default function TransactionsLayout() {
     const [showImportWizard, setShowImportWizard] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null); // ADDED
 
+    const { monthStart, monthEnd } = usePeriod(); // Bound fetches to current month
     // Data for Modals
-    const { transactions } = useTransactions();
+    const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useMergedCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
