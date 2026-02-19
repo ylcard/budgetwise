@@ -361,6 +361,7 @@ export const useCustomBudgetActions = (config = {}) => {
             return {
                 ...data,
                 status,
+                user_email: user.email,
                 created_by: user.email,
                 isSystemBudget: false
             };
