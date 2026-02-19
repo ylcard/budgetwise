@@ -50,7 +50,7 @@ import { notifyMonthlyRewindReady } from "../components/utils/notificationHelper
 import { HealthProvider } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
-import { calculateFinancialHealth } from "../components/utils/financialHealthAlgorithms";
+import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -189,19 +189,7 @@ export default function Dashboard() {
     const isCurrentMonth = monthStatus === 'current';
 
     // --- FINANCIAL HEALTH SCORE ---
-    const healthData = useMemo(() => {
-        if (!historyTxns || historyTxns.length === 0 || categories.length === 0) return null;
-        return calculateFinancialHealth(
-            transactions,
-            historyTxns,
-            monthlyIncome,
-            monthStart,
-            settings,
-            goals,
-            categories,
-            allCustomBudgets
-        );
-    }, [transactions, historyTxns, monthlyIncome, monthStart, settings, goals, categories, allCustomBudgets]);
+    const { healthData } = useFinancialHealthScore(user, selectedMonth, selectedYear);
 
     const handleMarkPaid = (bill) => {
         const template = {
