@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar, Wallet, Sparkles } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar, Wallet, Sparkles, Activity } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext";
@@ -283,7 +283,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     projectedIncome = 0,
     isUsingProjection = false,
     projectedRemainingExpense = 0,
-    monthStatus = 'current'
+    monthStatus = 'current',
+    healthData = null
 }) {
     const { updateSettings, user } = useSettings();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -590,6 +591,23 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const wantsLabel = `${Math.round(wantsUtil)}%`;
 
         const projectedExpenseOuterPct = !isSimpleView ? Math.max((projectedRemainingExpense / calculationBase) * 100, 0) : 0;
+
+        // Dynamic styling for Health Badge
+        const getHealthBadgeStyle = (score) => {
+            if (!score) return "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200";
+            if (score >= 90) return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
+            if (score >= 75) return "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
+            if (score >= 60) return "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
+            return "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100";
+        };
+
+        const getHealthIconColor = (score) => {
+            if (!score) return "text-slate-400";
+            if (score >= 90) return "text-emerald-500";
+            if (score >= 75) return "text-blue-500";
+            if (score >= 60) return "text-amber-500";
+            return "text-rose-500";
+        };
 
         return (
             <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
@@ -1083,6 +1101,19 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <GoalSummary />
+
+                                        {/* Subtle Health Score Badge linking to Reports */}
+                                        {healthData && (
+                                            <Link
+                                                to="/reports"
+                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] sm:text-xs font-semibold transition-colors ${getHealthBadgeStyle(healthData.totalScore)}`}
+                                                title={`Financial Health: ${healthData.label}`}
+                                            >
+                                                <Activity className={`w-3 h-3 ${getHealthIconColor(healthData.totalScore)}`} />
+                                                Score: {healthData.totalScore}
+                                            </Link>
+                                        )}
+
                                         <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                                             <PopoverTrigger asChild>
                                                 <button className="flex items-center gap-1 text-xs hover:text-blue-600 transition-colors outline-none">
@@ -1101,8 +1132,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             </PopoverContent>
                                         </Popover>
                                     </div>
-
-
                                 </div>
                             </div>
                         </>
