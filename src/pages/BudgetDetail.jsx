@@ -39,7 +39,7 @@ import BudgetFeasibilityDisplay from "../components/custombudgets/BudgetFeasibil
 import { useBudgetAnalysis } from "../components/hooks/useBudgetAnalysis"; // ADDED: 03-Feb-2026
 
 export default function BudgetDetail() {
-    const { settings } = useSettings();
+    const { settings, user } = useSettings();
     const queryClient = useQueryClient();
     const location = useLocation();
     const navigate = useNavigate();
@@ -108,15 +108,17 @@ export default function BudgetDetail() {
 
     // 3. Fetch all Custom Budgets for the period (Defined ONCE)
     const { data: allCustomBudgets = [] } = useQuery({
-        queryKey: ['allCustomBudgets', monthStart, monthEnd],
+        queryKey: ['allCustomBudgets', monthStart, monthEnd, user?.email],
         queryFn: async () => {
+            if (!user?.email) return [];
             return await base44.entities.CustomBudget.filter({
+                created_by: user.email,
                 startDate: { $lte: monthEnd },
                 endDate: { $gte: monthStart }
             });
         },
         // initialData: [],
-        enabled: !!budget,
+        enabled: !!budget && !!user?.email && budget.isSystemBudget === true,
         staleTime: 1000 * 60 * 5,
     });
 
@@ -155,16 +157,17 @@ export default function BudgetDetail() {
     // CRITICAL FIX 17-Jan-2026: Fetch ALL budgets without date filtering
     // This ensures that when editing old transactions, their linked budget appears in the dropdown
     const { data: allBudgets = [] } = useQuery({
-        queryKey: ['allBudgets'],
+        queryKey: ['allBudgets', user?.email],
         queryFn: async () => {
-            // Fetch ALL custom budgets (no date filter)
-            const customB = await base44.entities.CustomBudget.list();
-            // Fetch ALL system budgets (no date filter) 
-            const sysB = await base44.entities.SystemBudget.list();
+            if (!user?.email) return [];
+            // Fetch ALL custom budgets for this user
+            const customB = await base44.entities.CustomBudget.filter({ created_by: user.email });
+            // Fetch ALL system budgets for this user
+            const sysB = await base44.entities.SystemBudget.filter({ created_by: user.email });
             return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         // initialData: [],
-        enabled: !!budget,
+        enabled: !!user?.email,
         staleTime: 1000 * 60 * 5,
     });
 
