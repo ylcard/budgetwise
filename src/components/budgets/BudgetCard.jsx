@@ -63,7 +63,8 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
             statusColor: statColor,
             statusLabel: statLabel
         };
-    }, [stats, isSystemBudget, budget]);
+    // }, [stats, isSystemBudget, budget]);
+    }, [isSystemBudget, budget]);
 
     // Visual Theme Helper
     const theme = useMemo(() => {
