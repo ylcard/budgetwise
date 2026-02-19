@@ -16,6 +16,7 @@ import {
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { Banknote } from "lucide-react";
+import { useCustomBudgetsForPeriod, useTransactionsForCustomBudgets } from "./useBase44Entities";
 
 /**
  * Hook for filtering and limiting paid transactions.
@@ -865,5 +866,42 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
         filters,
         setFilters,
         filteredTransactions,
+    };
+};
+
+/**
+ * NEW HOOK: Global Stat Engine for Custom Budgets
+ * Fetches custom budgets and their transactions for a specific period,
+ * then applies financial calculations to return standardized, enriched budget objects.
+ * + * @param {Object} user - The current user object
+ * @param {string} monthStart - Start date of the period
+ * @param {string} monthEnd - End date of the period
+ * @returns {{ enrichedBudgets: Array<Object>, isLoading: boolean }}
+ */
+export const useEnrichedCustomBudgets = (user, monthStart, monthEnd) => {
+    // 1. Fetch raw budget definitions
+    const { customBudgets = [], isLoading: loadingBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
+
+    // 2. Fetch raw transactions for those specific budgets
+    const budgetIds = useMemo(() => customBudgets.map(b => b.id), [customBudgets]);
+    const { transactions = [], isLoading: loadingTx } = useTransactionsForCustomBudgets(budgetIds, monthStart, monthEnd);
+
+    // 3. Transformation Layer: Calculate stats once and standardize keys
+    const enrichedBudgets = useMemo(() => {
+        return customBudgets.map(budget => {
+            const stats = getCustomBudgetStats(budget, transactions);
+            return {
+                ...budget,
+                calculatedPaid: stats?.paid?.totalBaseCurrencyAmount ?? stats?.paidAmount ?? stats?.spent ?? 0,
+                calculatedUnpaid: stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaidAmount ?? 0,
+                calculatedTotal: budget.allocatedAmount || budget.budgetAmount || 0,
+                rawStats: stats // Kept just in case a complex view needs granular details
+            };
+        });
+    }, [customBudgets, transactions]);
+
+    return {
+        enrichedBudgets,
+        isLoading: loadingBudgets || loadingTx
     };
 };
