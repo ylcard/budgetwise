@@ -13,9 +13,8 @@ import {
     useSystemBudgetsForPeriod,
 } from "../components/hooks/useBase44Entities";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
-import { useBudgetsAggregates } from "../components/hooks/useDerivedData";
+import { useBudgetsAggregates, useEnrichedCustomBudgets } from "../components/hooks/useDerivedData";
 import { useCustomBudgetActions } from "../components/hooks/useActions";
-import { getCustomBudgetStats } from "../components/utils/financialCalculations";
 import BudgetCard from "../components/budgets/BudgetCard";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
@@ -31,7 +30,10 @@ export default function Budgets() {
     const { categories } = useMergedCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
-    const { customBudgets, systemBudgetsWithStats } = useBudgetsAggregates(
+
+    // Get enriched custom budgets directly
+    const { enrichedBudgets: customBudgets } = useEnrichedCustomBudgets(user, monthStart, monthEnd);
+    const { systemBudgetsWithStats } = useBudgetsAggregates(
         transactions,
         categories,
         allCustomBudgets,
@@ -187,13 +189,11 @@ export default function Budgets() {
                             <CardContent>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                                     {sortedCustomBudgets.map((budget) => {
-                                        const stats = getCustomBudgetStats(budget, transactions, monthStart, monthEnd);
-
                                         return (
                                             <BudgetCard
                                                 key={budget.id}
                                                 budgets={[budget]}
-                                                transactions={transactions}
+                                                transactions={[]}
                                                 settings={settings}
                                                 onActivateBudget={handleActivateBudget}
                                             />
