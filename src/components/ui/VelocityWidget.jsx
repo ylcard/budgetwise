@@ -5,7 +5,7 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const VelocityWidget = ({ chartData = [], totals = {}, settings }) => {
+export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthStatus = 'current' }) => {
     // --- STATE: Expansion (Persisted) ---
     const [isExpanded, setIsExpanded] = useState(() => {
         const saved = localStorage.getItem("velocity_widget_expanded");
@@ -31,14 +31,33 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings }) => {
             };
         }
 
+        // --- LABEL LOGIC ---
+        let labelStr = 'Total Flow';
+        if (monthStatus === 'past') labelStr = 'Total Historical Flow';
+        if (monthStatus === 'current') labelStr = 'Total Projected Flow';
+
         // For total, we sum Actual + Future Predictions
         return {
             income: totals?.finalProjectedIncome || 0,
             expense: totals?.finalProjectedExpense || 0,
-            label: 'Total Projected Flow',
+            label: labelStr,
             isTotal: true
         };
-    }, [activeIndex, chartData, totals]);
+    }, [activeIndex, chartData, totals, monthStatus]);
+
+    // --- EMPTY STATE FOR FUTURE MONTHS ---
+    if (monthStatus === 'future') {
+        return (
+            <div className="mx-4 md:mx-0 bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-md border border-slate-100 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center space-y-2 h-[104px]">
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    Future Projections Unavailable
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Cash flow projections are only active for the current month.
+                </p>
+            </div>
+        );
+    }
 
     // Haptic feedback function (browser support varies, but good for mobile)
     /*
