@@ -884,7 +884,7 @@ export const useEnrichedCustomBudgets = (user, monthStart, monthEnd) => {
 
     // 2. Fetch raw transactions for those specific budgets
     const budgetIds = useMemo(() => customBudgets.map(b => b.id), [customBudgets]);
-    const { transactions = [], isLoading: loadingTx } = useTransactionsForCustomBudgets(budgetIds, monthStart, monthEnd);
+    const { transactions = [], isLoading: loadingTx } = useTransactionsForCustomBudgets(budgetIds);
 
     // 3. Transformation Layer: Calculate stats once and standardize keys
     const enrichedBudgets = useMemo(() => {
