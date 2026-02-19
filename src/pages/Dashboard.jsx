@@ -50,6 +50,7 @@ import { notifyMonthlyRewindReady } from "../components/utils/notificationHelper
 import { HealthProvider } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
+import { calculateFinancialHealth } from "../components/utils/financialHealthAlgorithms";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -184,8 +185,23 @@ export default function Dashboard() {
     }, [selectedMonth, selectedYear]);
 
     // Centralized Projection Engine
-    const { chartData, totals: projectionTotals } = useProjections(transactions, selectedMonth, selectedYear);
+    const { chartData, totals: projectionTotals, historyTxns } = useProjections(transactions, selectedMonth, selectedYear);
     const isCurrentMonth = monthStatus === 'current';
+
+    // --- FINANCIAL HEALTH SCORE ---
+    const healthData = useMemo(() => {
+        if (!historyTxns || historyTxns.length === 0 || categories.length === 0) return null;
+        return calculateFinancialHealth(
+            transactions,
+            historyTxns,
+            monthlyIncome,
+            monthStart,
+            settings,
+            goals,
+            categories,
+            allCustomBudgets
+        );
+    }, [transactions, historyTxns, monthlyIncome, monthStart, settings, goals, categories, allCustomBudgets]);
 
     const handleMarkPaid = (bill) => {
         const template = {
@@ -329,6 +345,7 @@ export default function Dashboard() {
                                     projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
                                     settings={settings}
                                     monthStatus={monthStatus}
+                                    healthData={healthData}
                                     isLoading={isLoading}
                                     selectedMonth={selectedMonth}
                                     selectedYear={selectedYear}
@@ -354,6 +371,7 @@ export default function Dashboard() {
                                     projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
                                     isUsingProjection={isCurrentMonth || isUsingProjection}
                                     projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
+                                    healthData={healthData}
                                     goals={goals}
                                     monthStatus={monthStatus}
                                     settings={settings}
