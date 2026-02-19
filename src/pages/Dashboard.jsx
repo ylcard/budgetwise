@@ -49,6 +49,7 @@ import { WrappedStory } from "../components/dashboard/WrappedStory";
 import { notifyMonthlyRewindReady } from "../components/utils/notificationHelpers"; // TEMP: For testing
 import { HealthProvider } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
+import { useProjections } from "../components/hooks/useProjections";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -170,6 +171,8 @@ export default function Dashboard() {
     // Use the REAL transactions for status matching
     const recurringWithStatus = useRecurringStatus(recurringTransactions, realTransactions);
 
+    // Centralized Projection Engine
+    const { chartData, totals: projectionTotals } = useProjections(transactions, selectedMonth, selectedYear);
 
     const handleMarkPaid = (bill) => {
         const template = {
@@ -297,10 +300,9 @@ export default function Dashboard() {
 
                             {/* INNOVATION: Velocity Widget at the top */}
                             <VelocityWidget
-                                transactions={transactions}
+                                chartData={chartData}
+                                totals={projectionTotals}
                                 settings={settings}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
                             />
                             {isMobile ? (
                                 <MobileRemainingBudgetCard
@@ -310,6 +312,7 @@ export default function Dashboard() {
                                     currentMonthExpenses={currentMonthExpenses}
                                     projectedIncome={projectedIncome}
                                     isUsingProjection={isUsingProjection}
+                                    projectedRemainingExpense={projectionTotals?.projectedRemainingExpense || 0}
                                     settings={settings}
                                     isLoading={isLoading}
                                     selectedMonth={selectedMonth}
@@ -335,6 +338,7 @@ export default function Dashboard() {
                                     currentMonthExpenses={currentMonthExpenses}
                                     projectedIncome={projectedIncome}
                                     isUsingProjection={isUsingProjection}
+                                    projectedRemainingExpense={projectionTotals?.projectedRemainingExpense || 0}
                                     goals={goals}
                                     settings={settings}
                                     selectedMonth={selectedMonth}
