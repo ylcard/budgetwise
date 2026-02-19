@@ -13,9 +13,6 @@ import { useMemo } from 'react';
 
 const BudgetHealthCircular = ({ budget, transactions, settings }) => {
 
-    const spent = budget.calculatedPaid || 0;
-    const total = budget.calculatedTotal || 0;
-
     const getCircleColor = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'stroke-cyan-400';
         if (budget.systemBudgetType === 'wants') return 'stroke-purple-500';
