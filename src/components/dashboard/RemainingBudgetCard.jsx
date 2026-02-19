@@ -281,7 +281,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     selectedMonth,
     selectedYear,
     projectedIncome = 0,
-    isUsingProjection = false
+    isUsingProjection = false,
+    projectedRemainingExpense = 0
 }) {
     const { updateSettings, user } = useSettings();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -403,8 +404,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const wantsUtil = wantsLimit > 0 ? (wantsTotal / wantsLimit) * 100 : 0;
 
     // --- SHARED SAVINGS CALCULATIONS ---
-    // Use effectiveIncome so savings potential is shown based on EXPECTED salary
-    const savingsAmount = Math.max(0, effectiveIncome - totalSpent);
+    // Account for BOTH actual expenses and future projected expenses
+    const savingsAmount = Math.max(0, effectiveIncome - totalSpent - projectedRemainingExpense);
     const targetSavingsAmount = Math.min(savingsLimit, savingsAmount);
     const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
 
@@ -536,7 +537,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             // DETAILED VIEW: Widths based on INCOME SHARE (Original Logic)
             needsOuterPct = Math.max((safeTotalNeeds / calculationBase) * 100, safeTotalNeeds > 0 ? CLICKABLE_MIN_PCT : 0);
             wantsOuterPct = Math.max((safeTotalWants / calculationBase) * 100, safeTotalWants > 0 ? CLICKABLE_MIN_PCT : 0);
-            savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct);
+
+            const projectedExpenseOuterPct = Math.max((projectedRemainingExpense / calculationBase) * 100, projectedRemainingExpense > 0 ? CLICKABLE_MIN_PCT : 0);
+            savingsOuterPct = Math.max(0, 100 - needsOuterPct - wantsOuterPct - projectedExpenseOuterPct);
         }
 
         // Internal Split Ratios (0 to 1)
@@ -558,7 +561,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Savings Split
         // Simple: Target = 100%, Extra = 0% (Visually combined)
         // Detailed: Split based on actuals
-        const totalSavings = Math.max(0, effectiveIncome - totalSpent); // This aligns with 'savingsAmount'
+        const totalSavings = savingsAmount; // This aligns with updated 'savingsAmount'
         // If we have extra savings, the "Target" bar shouldn't shrink below the target amount in detailed view
         // actually, savings logic is: 
         // Bar 1 (Dark): min(total, limit)
@@ -584,6 +587,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         // Labels
         const needsLabel = `${Math.round(needsUtil)}%`;
         const wantsLabel = `${Math.round(wantsUtil)}%`;
+
+        const projectedExpenseOuterPct = !isSimpleView ? Math.max((projectedRemainingExpense / calculationBase) * 100, 0) : 0;
 
         return (
             <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
@@ -763,6 +768,30 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                         </div>
                     </Link>
                 </motion.div>
+
+                {/* GHOST SEGMENT (Projected Future Spend) */}
+                {projectedExpenseOuterPct > 0 && !isSimpleView && (
+                    <motion.div
+                        layout
+                        initial={false}
+                        animate={{ flex: `${projectedExpenseOuterPct} 1 auto` }}
+                        transition={{ ...fluidSpring, layout: fluidSpring }}
+                        className="h-full relative flex group border-l border-white/20"
+                    >
+                        <SmartSegment
+                            widthPct={100}
+                            color="#94a3b8" // slate-400
+                            style={{ ...STRIPE_PATTERN, opacity: 0.4 }}
+                            direction="center"
+                        >
+                            <div className="w-full px-1 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-slate-700 whitespace-nowrap">
+                                <TextSwap>
+                                    {formatCurrency(projectedRemainingExpense, settings)} (Est.)
+                                </TextSwap>
+                            </div>
+                        </SmartSegment>
+                    </motion.div>
+                )}
 
                 {/* SAVINGS SEGMENT (Unified) */}
                 {savingsOuterPct > 0 && (
@@ -1034,6 +1063,12 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: savingsColor }}></div>
                                                         Savings
                                                     </span>
+                                                    {projectedRemainingExpense > 0 && (
+                                                        <span className="flex items-center gap-1.5 ml-2">
+                                                            <div className="w-2 h-2 rounded-full bg-slate-400/50" style={STRIPE_PATTERN}></div>
+                                                            Upcoming
+                                                        </span>
+                                                    )}
                                                     <span className="flex items-center gap-1.5">
                                                         <div className="w-2 h-2 rounded-full bg-emerald-300"></div>
                                                         Extra
