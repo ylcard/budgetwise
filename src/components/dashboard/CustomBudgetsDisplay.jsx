@@ -9,8 +9,7 @@ import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
 import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
 import { useSettings } from "../utils/SettingsContext";
 import { usePeriod } from "../hooks/usePeriod";
-import { useCustomBudgetsForPeriod, useTransactionsForCustomBudgets } from "../hooks/useBase44Entities";
-import { getCustomBudgetStats } from "../utils/financialCalculations";
+import { useEnrichedCustomBudgets } from "../hooks/useDerivedData";
 import {
     Carousel,
     CarouselContent,
@@ -37,29 +36,9 @@ export default function CustomBudgetsDisplay({
     const { user, settings } = useSettings();
     const { monthStart, monthEnd } = usePeriod();
 
-    // Fetch custom budgets for the selected period
-    const { customBudgets: budgets = [] } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
-
-    // Extract custom budget IDs and fetch all their transactions
-    const customBudgetIds = useMemo(() => budgets.map(b => b.id), [budgets]);
-    const { transactions = [] } = useTransactionsForCustomBudgets(customBudgetIds, monthStart, monthEnd);
+    // Unified Stat Engine: Fetch and calculate once
+    const { enrichedBudgets: budgets = [] } = useEnrichedCustomBudgets(user, monthStart, monthEnd);
     const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
-
-    // Unified Stat Engine: Calculate once for all views
-    const processedBudgets = useMemo(() => {
-        return budgets.map(budget => {
-            const budgetTransactions = transactions.filter(t => t.budgetId === budget.id);
-            const stats = getCustomBudgetStats(budget, budgetTransactions);
-
-            // Normalize the stats so every child sees the same keys
-            return {
-                ...budget,
-                calculatedPaid: stats?.paid?.totalBaseCurrencyAmount ?? stats?.paidAmount ?? stats?.spent ?? 0,
-                calculatedUnpaid: stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0,
-                calculatedTotal: budget.allocatedAmount || budget.budgetAmount || 0
-            };
-        });
-    }, [budgets, transactions]);
 
     const VIEW_OPTIONS = [
         { value: 'bars', label: <BarChart2 className="w-4 h-4" />, desktopLabel: 'Bars' },
@@ -140,31 +119,30 @@ export default function CustomBudgetsDisplay({
                                                     {viewMode === 'bars' && (
                                                         <VerticalBar
                                                             budget={budget}
-                                                            transactions={transactions}
+                                                            transactions={[]}
                                                             settings={settings}
                                                             isCustom={true}
                                                         />
                                                     )}
                                                     {viewMode === 'cards' && (
                                                         <BudgetCard
-                                                            // BudgetCard still expects an array, so we wrap it
                                                             budgets={[budget]}
-                                                            transactions={transactions}
+                                                            transactions={[]}
                                                             settings={settings}
                                                             size={cardSize}
                                                         />
                                                     )}
                                                     {viewMode === 'circular' && (
                                                         <BudgetHealthCircular
-                                                            budget={budget} // Passing SINGLE budget
-                                                            transactions={transactions}
+                                                            budget={budget}
+                                                            transactions={[]}
                                                             settings={settings}
                                                         />
                                                     )}
                                                     {viewMode === 'compact' && (
                                                         <BudgetHealthCompact
-                                                            budget={budget} // Passing SINGLE budget
-                                                            transactions={transactions}
+                                                            budget={budget}
+                                                            transactions={[]}
                                                             settings={settings}
                                                         />
                                                     )}
