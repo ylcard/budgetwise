@@ -14,12 +14,6 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
 
     if (!budget) return null;
 
-    // Calculate stats from raw data
-    const stats = useMemo(() => {
-        const budgetTransactions = transactions?.filter(t => t.budgetId === budget.id) || [];
-        return getCustomBudgetStats(budget, budgetTransactions);
-    }, [budget, transactions]);
-
     const isSystemBudget = budget.isSystemBudget || false;
 
     // Check if planned budget's start date has arrived
@@ -37,19 +31,9 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
 
     // Unified Data Calculation
     const { allocated, paid, unpaid, percentage, isOverBudget, remaining, overAmount, statusLabel, statusColor } = useMemo(() => {
-        let alloc = 0;
-        let pd = 0;
-        let unpd = 0;
-
-        if (isSystemBudget) {
-            alloc = Number(stats?.totalAllocatedUnits ?? budget.budgetAmount ?? 0);
-            pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? stats?.paidAmount ?? 0);
-            unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
-        } else {
-            alloc = Number(stats?.totalAllocatedUnits ?? 0);
-            pd = Number(stats?.paid?.totalBaseCurrencyAmount ?? 0);
-            unpd = Number(stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaid ?? 0);
-        }
+        const alloc = budget.calculatedTotal || 0;
+        const pd = budget.calculatedPaid || 0;
+        const unpd = budget.calculatedUnpaid || 0;
 
         const used = pd + unpd;
         let pct = alloc > 0 ? (used / alloc) * 100 : 0;
