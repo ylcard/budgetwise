@@ -13,9 +13,6 @@ import { useMemo } from 'react';
 
 const BudgetHealthCompact = ({ budget, transactions, settings }) => {
 
-    const spent = budget.calculatedPaid || 0;
-    const total = budget.calculatedTotal || 0;
-
     const getBarColor = (budget) => {
         return budget.color || '#F97316';
     };
@@ -24,15 +21,10 @@ const BudgetHealthCompact = ({ budget, transactions, settings }) => {
         return budget.color || '#F97316';
     };
 
-    const calculatePercentage = (spent, total) => {
-        if (!total) return 0;
-        return Math.round((spent / total) * 100);
-    };
-
-    const spent = stats.spent || 0;
-    const total = budget.allocatedAmount || 0;
+    const spent = budget.calculatedPaid || 0;
+    const total = budget.calculatedTotal || 0;
     const remaining = total - spent;
-    const percentage = calculatePercentage(spent, total)
+    const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
 
     return (
         <div className="bg-white h-full rounded-xl p-4 border border-gray-200 shadow-sm flex flex-col justify-center min-h-[120px]">
