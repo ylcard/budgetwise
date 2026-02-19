@@ -10,15 +10,11 @@ import { Link } from 'react-router-dom';
  */
 
 import { useMemo } from 'react';
-import { getCustomBudgetStats } from '../utils/financialCalculations';
 
 const BudgetHealthCircular = ({ budget, transactions, settings }) => {
 
-    // Calculate stats for this specific budget
-    const stats = useMemo(() => {
-        const budgetTransactions = transactions.filter(t => t.budgetId === budget.id);
-        return getCustomBudgetStats(budget, budgetTransactions);
-    }, [budget, transactions]);
+    const spent = budget.calculatedPaid || 0;
+    const total = budget.calculatedTotal || 0;
 
     const getCircleColor = (budget) => {
         if (budget.systemBudgetType === 'needs') return 'stroke-cyan-400';
