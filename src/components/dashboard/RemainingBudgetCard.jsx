@@ -265,6 +265,23 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
     );
 });
 
+// --- HEALTH BADGE HELPERS ---
+const getHealthBadgeStyle = (score) => {
+    if (!score) return "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200";
+    if (score >= 90) return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
+    if (score >= 75) return "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
+    if (score >= 60) return "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
+    return "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100";
+};
+
+const getHealthIconColor = (score) => {
+    if (!score) return "text-slate-400";
+    if (score >= 90) return "text-emerald-500";
+    if (score >= 75) return "text-blue-500";
+    if (score >= 60) return "text-amber-500";
+    return "text-rose-500";
+};
+
 const RemainingBudgetCard = memo(function RemainingBudgetCard({
     bonusSavingsPotential,
     currentMonthIncome,
@@ -591,23 +608,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         const wantsLabel = `${Math.round(wantsUtil)}%`;
 
         const projectedExpenseOuterPct = !isSimpleView ? Math.max((projectedRemainingExpense / calculationBase) * 100, 0) : 0;
-
-        // Dynamic styling for Health Badge
-        const getHealthBadgeStyle = (score) => {
-            if (!score) return "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200";
-            if (score >= 90) return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
-            if (score >= 75) return "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
-            if (score >= 60) return "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
-            return "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100";
-        };
-
-        const getHealthIconColor = (score) => {
-            if (!score) return "text-slate-400";
-            if (score >= 90) return "text-emerald-500";
-            if (score >= 75) return "text-blue-500";
-            if (score >= 60) return "text-amber-500";
-            return "text-rose-500";
-        };
 
         return (
             <div className="relative h-10 w-full bg-gray-100 rounded-xl overflow-hidden flex shadow-inner border border-gray-200">
