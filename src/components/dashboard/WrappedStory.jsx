@@ -12,7 +12,7 @@ import { useTransactions, useCustomBudgetsForPeriod, useGoals } from "../hooks/u
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { useMonthlyIncome, useMonthlyBreakdown } from "../hooks/useDerivedData";
 import { getCategoryIcon } from "../utils/iconMapConfig"; // Assuming this utility exists based on context
-import { calculateFinancialHealth } from "../utils/financialHealthAlgorithms";
+import { useFinancialHealthScore } from "../hooks/useFinancialHealth";
 
 // Slide Transition Variants
 const variants = {
@@ -82,13 +82,8 @@ export const WrappedStory = ({
         [month, year]);
 
     // 2. Fetch data specific to this story's period
-    const { transactions: allTransactions } = useTransactions(); // Get history for algorithm
     const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories: rawCategories } = useMergedCategories();
-    const { customBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
-
-    // Fetch Goals specifically for the health calculation
-    const { goals: allGoals, isLoading: goalsLoading } = useGoals(user);
 
     // Filter out the 30-day buffer fetched by useTransactions
     // We need strictly the transactions for this month's story
@@ -156,20 +151,7 @@ export const WrappedStory = ({
     }, [isOpen]);
 
     // 3. Centralized Financial Health Logic
-    const healthData = useMemo(() => {
-        // Ensure goals are loaded before calculating to avoid crash and inaccuracy
-        if (!storyTransactions.length || !allTransactions.length || !allGoals) return null;
-        return calculateFinancialHealth(
-            storyTransactions,
-            allTransactions,
-            income,
-            monthStart,
-            settings,
-            allGoals,
-            rawCategories,
-            customBudgets
-        );
-    }, [storyTransactions, allTransactions, income, monthStart, settings, rawCategories, customBudgets, allGoals]);
+    const { healthData } = useFinancialHealthScore(user, month, year);
 
     const totalScore = healthData?.totalScore || 0;
 
