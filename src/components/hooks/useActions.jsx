@@ -29,12 +29,11 @@ export const useTransactionActions = (config = {}) => {
         // 1. Get all transactions for this month to sum actual income
         const allTransactions = await base44.entities.Transaction.filter({
             created_by: user.email,
+            type: 'income',
             date: { $gte: monthStart, $lte: monthEnd }
         });
 
-        const monthlyIncome = allTransactions
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
+        const monthlyIncome = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
         const budgetGoals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
         const histAvg = getHistoricalAverageIncome(allTransactions, date.getMonth(), date.getFullYear());
@@ -51,28 +50,36 @@ export const useTransactionActions = (config = {}) => {
     // CREATE: Use generic hook with cash wallet preprocessing + optimistic updates
     const createMutation = useCreateEntity({
         entityName: 'Transaction',
-        queryKeysToInvalidate: [QUERY_KEYS.TRANSACTIONS, QUERY_KEYS.SYSTEM_BUDGETS],
+        queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_BUDGETS], // Removed TRANSACTIONS to prevent background refetch
         // ADDED 03-Feb-2026: Optimistic create - immediately add to cache
         onMutate: async (newTransaction) => {
             // Cancel outgoing refetches
             await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
             // Snapshot previous value
-            const previousTransactions = queryClient.getQueryData([QUERY_KEYS.TRANSACTIONS]);
+            const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
             // Optimistically add new transaction with temporary ID
-            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], (old = []) => [
+            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => [
                 { ...newTransaction, id: `temp-${Date.now()}`, _optimistic: true },
                 ...old
             ]);
 
-            return { previousTransactions };
+            return { previousQueries };
         },
         onError: (err, newTransaction, context) => {
             // Rollback on error
-            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
+            context.previousQueries.forEach(([queryKey, oldData]) => {
+                queryClient.setQueryData(queryKey, oldData);
+            });
         },
         onAfterSuccess: async (newDoc) => {
+            // Swap temporary optimistic transaction with the real database record
+            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
+                if (!old) return [newDoc];
+                return old.map(t => (t._optimistic && t.id.startsWith('temp-')) ? newDoc : t);
+            });
+
             if (newDoc?.type === 'income') await syncBudgetsAfterIncomeChange(newDoc.date);
             if (setShowForm) setShowForm(false);
             if (setEditingTransaction) setEditingTransaction(null);
@@ -83,24 +90,32 @@ export const useTransactionActions = (config = {}) => {
     // UPDATE: Use generic hook with complex cash transaction handling + optimistic updates
     const updateMutation = useUpdateEntity({
         entityName: 'Transaction',
-        queryKeysToInvalidate: [QUERY_KEYS.TRANSACTIONS],
+        queryKeysToInvalidate: [], // Removed TRANSACTIONS to prevent background refetch
         // ADDED 03-Feb-2026: Optimistic update - immediately update cache
         onMutate: async ({ id, data }) => {
             await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
-            const previousTransactions = queryClient.getQueryData([QUERY_KEYS.TRANSACTIONS]);
+            const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
             // Optimistically update transaction
-            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], (old = []) =>
+            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
                 old.map(t => t.id === id ? { ...t, ...data, _optimistic: true } : t)
             );
 
-            return { previousTransactions };
+            return { previousQueries };
         },
         onError: (err, variables, context) => {
-            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
+            context.previousQueries.forEach(([queryKey, oldData]) => {
+                queryClient.setQueryData(queryKey, oldData);
+            });
         },
         onAfterSuccess: async (updatedDoc) => {
+            // Replace with real data from server
+            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
+                if (!old) return [];
+                return old.map(t => t.id === updatedDoc.id ? updatedDoc : t);
+            });
+
             if (updatedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(updatedDoc.date);
             if (setShowForm) setShowForm(false);
             if (setEditingTransaction) setEditingTransaction(null);
@@ -110,24 +125,26 @@ export const useTransactionActions = (config = {}) => {
     // DELETE: Use generic hook with cash wallet reversal + optimistic updates
     const { handleDelete: handleDeleteTransaction } = useDeleteEntity({
         entityName: 'Transaction',
-        queryKeysToInvalidate: [QUERY_KEYS.TRANSACTIONS],
+        queryKeysToInvalidate: [], // Removed TRANSACTIONS to prevent background refetch
         confirmTitle: "Delete Transaction",
         confirmMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
         // ADDED 03-Feb-2026: Optimistic delete - immediately remove from cache
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
-            const previousTransactions = queryClient.getQueryData([QUERY_KEYS.TRANSACTIONS]);
+            const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
             // Optimistically remove transaction
-            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], (old = []) =>
+            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
                 old.filter(t => t.id !== id)
             );
 
-            return { previousTransactions };
+            return { previousQueries };
         },
         onError: (err, id, context) => {
-            queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], context.previousTransactions);
+            context.previousQueries.forEach(([queryKey, oldData]) => {
+                queryClient.setQueryData(queryKey, oldData);
+            });
         },
         onAfterSuccess: async (deletedDoc) => {
             if (deletedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(deletedDoc.date);
