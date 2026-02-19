@@ -10,15 +10,11 @@ import { Link } from 'react-router-dom';
  */
 
 import { useMemo } from 'react';
-import { getCustomBudgetStats } from '../utils/financialCalculations';
 
 const BudgetHealthCompact = ({ budget, transactions, settings }) => {
 
-    // Calculate stats for this specific budget
-    const stats = useMemo(() => {
-        const budgetTransactions = transactions.filter(t => t.budgetId === budget.id);
-        return getCustomBudgetStats(budget, budgetTransactions);
-    }, [budget, transactions]);
+    const spent = budget.calculatedPaid || 0;
+    const total = budget.calculatedTotal || 0;
 
     const getBarColor = (budget) => {
         return budget.color || '#F97316';
