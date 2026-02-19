@@ -27,7 +27,7 @@ export default function Budgets() {
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const { setFabButtons, clearFabButtons } = useFAB();
     const { selectedMonth, setSelectedMonth, selectedYear, setSelectedYear, displayDate, monthStart, monthEnd } = usePeriod();
-    const { transactions } = useTransactions();
+    const { transactions } = useTransactions(monthStart, monthEnd);
     const { categories } = useMergedCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
