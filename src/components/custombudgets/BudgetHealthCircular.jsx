@@ -30,15 +30,10 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
         return budget.name || 'Custom';
     };
 
-    const calculatePercentage = (spent, total) => {
-        if (!total) return 0;
-        return Math.round((spent / total) * 100);
-    };
-
-    const spent = stats.spent || 0;
-    const total = budget.allocatedAmount || 0;
+    const spent = budget.calculatedPaid || 0;
+    const total = budget.calculatedTotal || 0;
     const remaining = total - spent;
-    const percentage = calculatePercentage(spent, total);
+    const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
 
     // UPDATED 02-Feb-2026: Changed to semi-circle (speedometer style)
     const radius = 40;
