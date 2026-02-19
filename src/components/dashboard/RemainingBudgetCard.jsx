@@ -282,7 +282,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     selectedYear,
     projectedIncome = 0,
     isUsingProjection = false,
-    projectedRemainingExpense = 0
+    projectedRemainingExpense = 0,
+    monthStatus = 'current'
 }) {
     const { updateSettings, user } = useSettings();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -983,7 +984,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     ) : (
                                         <div className="space-y-1">
                                             <h2 className="text-4xl font-extrabold text-foreground flex items-center gap-2 tracking-tight">
-                                                {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">{isUsingProjection ? "Projected to save" : "Saved"}</span>
+                                                {Math.round(savingsPctDisplay)}% <span className="text-xl font-semibold text-emerald-600">{monthStatus === 'current' ? "Projected to save" : "Saved"}</span>
                                             </h2>
                                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-500">
                                                 {extraSavingsAmount > 0 ? (
@@ -1103,8 +1104,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             </PopoverContent>
                                         </Popover>
                                     </div>
-
-
                                 </div>
                             </div>
                         </>
