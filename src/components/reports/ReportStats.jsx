@@ -4,9 +4,10 @@ import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank, Ac
 import { formatCurrency } from "../utils/currencyUtils";
 import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
-import { calculateFinancialHealth } from "../utils/financialHealthAlgorithms";
 import { motion, useTransform, animate, useMotionValue } from "framer-motion";
 import InfoTooltip from "../ui/InfoTooltip";
+import { useFinancialHealthScore } from "../hooks/useFinancialHealth";
+import { useSettings } from "../utils/SettingsContext";
 
 const ReportStats = memo(function ReportStats({
     transactions = [],
@@ -255,129 +256,15 @@ const HealthCell = memo(({ label, score, description, wiki }) => {
 
 // --- Financial Health Score Component (Appended to existing file) ---
 export const FinancialHealthScore = memo(function FinancialHealthScore({
-    monthlyIncome,
-    transactions,
-    fullHistory = [],
     startDate,
-    isLoading,
-    settings,
-    goals,
-    categories,
-    allCustomBudgets,
     className
 }) {
-    // if (isLoading) return null;
+    const { user } = useSettings();
+    const start = new Date(startDate);
+    const month = start.getMonth();
+    const year = start.getFullYear();
 
-    // COMMENTED OUT: 16-Jan-2026 - All calculation logic moved to financialHealthAlgorithms.jsx
-    // // 1. Current Month Data
-    // // const currentExpenses = Math.abs(getMonthlyPaidExpenses(transactions, startDate, endDate));
-    // // const currentNet = monthlyIncome - currentExpenses;
-    // // const currentSavingsRate = monthlyIncome > 0 ? (currentNet / monthlyIncome) : 0;
-
-    // // 2. Previous Month Data (Approximate using available prevTransactions)
-    // // const prevExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
-    // // const prevExpenses = prevTransactions.reduce((sum, t) => {
-    // //     if (t.category?.name === 'Income' || t.type === 'income') return sum; 
-    // //     return sum + (Number(t.amount) || 0);
-    // // }, 0);
-
-    // // --- INTELLIGENT PACING ALGORITHM ---    
-    // const today = new Date();
-    // const start = new Date(startDate);
-    // // If viewing current month, compare "Day 1 to Today". If past month, compare "Day 1 to 31".
-    // const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
-    // const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
-
-    // // 1. Current Spend (Day 1 to X)
-    // const currentSpend = getSpendByDayX(transactions, start.getMonth(), start.getFullYear(), dayCursor);
-
-    // // 2. Historical Context (Average of Last 3 Months by Day X)
-    // // We calculate the same "Day 1 to X" spend for M-1, M-2, M-3
-    // const m1 = new Date(start); m1.setMonth(start.getMonth() - 1);
-    // const m2 = new Date(start); m2.setMonth(start.getMonth() - 2);
-    // const m3 = new Date(start); m3.setMonth(start.getMonth() - 3);
-
-    // const spendM1 = getSpendByDayX(fullHistory, m1.getMonth(), m1.getFullYear(), dayCursor);
-    // const spendM2 = getSpendByDayX(fullHistory, m2.getMonth(), m2.getFullYear(), dayCursor);
-    // const spendM3 = getSpendByDayX(fullHistory, m3.getMonth(), m3.getFullYear(), dayCursor);
-
-    // // Calculate Baseline (Average of non-zero months)
-    // const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
-    // const averageSpendAtPointX = historyPoints.length > 0
-    //     ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
-    //     : currentSpend; // No history fallback
-
-
-    // // --- SCORING ALGORITHM (Max 100) ---
-    // // A. Savings Score (Max 50)
-    // // let savingsScore = 0;
-    // // if (currentSavingsRate > 0) {
-    // //     savingsScore = Math.min(50, (currentSavingsRate / 0.20) * 50);
-    // // }
-
-    // // // B. Efficiency Score (Max 30) - Rewards staying under budget ceilings
-    // // let efficiencyScore = 0;
-    // // if (currentNet >= 0) {
-    // //     efficiencyScore = 15; // Base solvency
-    // //     // Bonus for every 1% saved
-    // //     efficiencyScore += Math.min(15, (currentSavingsRate * 100) * 0.5);
-    // // } else {
-    // //     const overspendRatio = monthlyIncome > 0 ? (Math.abs(currentNet) / monthlyIncome) : 1;
-    // //     efficiencyScore = Math.max(0, 15 - (overspendRatio * 100));
-    // // }
-
-    // // // C. Trend Score (Max 20)
-    // // let trendScore = 0;
-    // // console.log(currentExpenses);
-    // // console.log(prevExpenses);
-    // // console.log(prevMonthlyIncome);
-    // // if (currentExpenses < prevExpenses) {
-    // //     trendScore += 10;
-    // // }
-    // // if (currentNet > (prevMonthlyIncome - prevExpenses)) {
-    // //     trendScore += 10;
-    // // }
-
-
-    // // Metric 1: Pacing Score (Max 40) - "Are you spending less than USUAL by this day?"
-    // let pacingScore = 0;
-    // const diff = currentSpend - averageSpendAtPointX;
-    // if (diff <= 0) {
-    //     pacingScore = 40; // Under average = Perfect
-    // } else {
-    //     // Lose points for being over average
-    //     const deviation = averageSpendAtPointX > 0 ? diff / averageSpendAtPointX : 1;
-    //     pacingScore = Math.max(0, 40 - (deviation * 100));
-    // }
-
-    // // Metric 2: Burn Ratio (Max 40) - "Is your spending rate sustainable for your income?"
-    // // Target: Spend < 80% of income by end of month.
-    // // Allowed Spend at Day X = (Income * 0.8) * (Day X / 30)
-    // let efficiencyScore = 0;
-    // const targetMaxSpend = monthlyIncome * 0.8 * (dayCursor / 30);
-
-    // if (currentSpend <= targetMaxSpend) {
-    //     efficiencyScore = 40;
-    // } else {
-    //     const overRatio = targetMaxSpend > 0 ? (currentSpend - targetMaxSpend) / targetMaxSpend : 1;
-    //     efficiencyScore = Math.max(0, 40 - (overRatio * 100));
-    // }
-
-    // // Metric 3: Control (Max 20) - "Did you behave better than last month specifically?"
-    // let trendScore = 0;
-    // if (currentSpend <= spendM1) trendScore = 20; // Better than last month
-    // else if (currentSpend <= spendM1 * 1.1) trendScore = 10; // Within 10% margin
-    // else trendScore = 0;
-
-
-    // // const totalScore = Math.round(savingsScore + efficiencyScore + trendScore);
-    // const totalScore = Math.round(pacingScore + efficiencyScore + trendScore);
-
-    // ADDED: 16-Jan-2026 - Use new centralized algorithm
-    const healthData = useMemo(() => {
-        if (isLoading && (!transactions || transactions.length === 0)) return null;
-        return calculateFinancialHealth(transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets);
-    }, [transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets]);
+    const { healthData, isLoading } = useFinancialHealthScore(user, month, year);
 
     // 2. If no healthData (First time loading this month), show Skeleton
     if (!healthData) {
@@ -398,14 +285,6 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
 
     const { totalScore, breakdown } = healthData;
     const { pacing: pacingScore, ratio: ratioScore, stability: stabilityScore, sharpe: sharpeScore, creep: creepScore } = breakdown;
-
-    // COMMENTED OUT: 16-Jan-2026 - Label now comes from algorithm
-    // // Visuals
-    // let color = '#10B981'; // Green
-    // let label = 'Excellent';
-    // if (totalScore < 80) { color = '#3B82F6'; label = 'Good'; }
-    // if (totalScore < 60) { color = '#F59E0B'; label = 'Fair'; }
-    // if (totalScore < 40) { color = '#EF4444'; label = 'Needs Work'; }
 
     // HELPER: Dynamic styling for the DNA cards
     const getScoreStyle = (score) => {
