@@ -111,5 +111,5 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
         };
     }, [currentTransactions, selectedMonth, selectedYear, historyTxns]);
 
-    return { ...projectionData, isLoadingHistory };
+    return { ...projectionData, isLoadingHistory, historyTxns };
 };
