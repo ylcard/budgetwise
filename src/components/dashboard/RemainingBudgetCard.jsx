@@ -990,7 +990,12 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                                 {extraSavingsAmount > 0 ? (
                                                     <><TrendingUp className="w-4 h-4 text-emerald-500" /> You've crushed your goal by <span className="text-emerald-700 font-bold">{formatCurrency(extraSavingsAmount, settings)}</span>!</>
                                                 ) : savingsAmount > 0 ? (
-                                                    <><Target className="w-4 h-4 text-blue-500" /> You're <span className="text-blue-600 font-bold">{formatCurrency(savingsLimit - savingsAmount, settings)}</span> away from your monthly target.</>
+                                                    <><Target className="w-4 h-4 text-blue-500" />
+                                                        {monthStatus === 'current'
+                                                            ? <>Try to reduce upcoming expenses by <span className="text-blue-600 font-bold">{formatCurrency(savingsLimit - savingsAmount, settings)}</span> to hit your target.</>
+                                                            : <>You missed your target by <span className="text-blue-600 font-bold">{formatCurrency(savingsLimit - savingsAmount, settings)}</span>.</>
+                                                        }
+                                                    </>
                                                 ) : (
                                                     "Every cent counts. Start your savings journey today!"
                                                 )}
@@ -1000,15 +1005,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                     <div className="text-sm text-muted-foreground mt-1">
                                         {effectiveIncome > 0 ? (
                                             <div className="flex items-center gap-2">
-                                                <span>Spent <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>{formatCurrency(totalSpent, settings)}</strong> of <strong>{formatCurrency(effectiveIncome, settings)}</strong></span>
-
-                                                {/* Visual Badge for Projection Mode */}
-                                                {isUsingProjection && (
-                                                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100/50 shadow-sm animate-in fade-in zoom-in-90">
-                                                        <Sparkles className="w-2.5 h-2.5" />
-                                                        <span>Estimated Income</span>
-                                                    </div>
-                                                )}
+                                                <span>{monthStatus === 'current' ? 'Spent so far: ' : 'Total spent: '} <strong className={isTotalOver ? "text-red-600" : "text-foreground"}>{formatCurrency(totalSpent, settings)}</strong></span>
                                             </div>
                                         ) : "No income recorded."}
                                     </div>
@@ -1104,6 +1101,8 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                                             </PopoverContent>
                                         </Popover>
                                     </div>
+
+
                                 </div>
                             </div>
                         </>
