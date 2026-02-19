@@ -171,8 +171,21 @@ export default function Dashboard() {
     // Use the REAL transactions for status matching
     const recurringWithStatus = useRecurringStatus(recurringTransactions, realTransactions);
 
+    // --- TEMPORAL CONTEXT ---
+    // Determine if we are looking at the past, present, or future
+    const monthStatus = useMemo(() => {
+        const today = new Date();
+        const currentY = today.getFullYear();
+        const currentM = today.getMonth();
+
+        if (selectedYear < currentY || (selectedYear === currentY && selectedMonth < currentM)) return 'past';
+        if (selectedYear > currentY || (selectedYear === currentY && selectedMonth > currentM)) return 'future';
+        return 'current';
+    }, [selectedMonth, selectedYear]);
+
     // Centralized Projection Engine
     const { chartData, totals: projectionTotals } = useProjections(transactions, selectedMonth, selectedYear);
+    const isCurrentMonth = monthStatus === 'current';
 
     const handleMarkPaid = (bill) => {
         const template = {
@@ -302,6 +315,7 @@ export default function Dashboard() {
                             <VelocityWidget
                                 chartData={chartData}
                                 totals={projectionTotals}
+                                monthStatus={monthStatus}
                                 settings={settings}
                             />
                             {isMobile ? (
@@ -310,10 +324,11 @@ export default function Dashboard() {
                                     systemBudgets={systemBudgetsData}
                                     currentMonthIncome={currentMonthIncome}
                                     currentMonthExpenses={currentMonthExpenses}
-                                    projectedIncome={projectedIncome}
-                                    isUsingProjection={isUsingProjection}
-                                    projectedRemainingExpense={projectionTotals?.projectedRemainingExpense || 0}
+                                    projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
+                                    isUsingProjection={isCurrentMonth || isUsingProjection}
+                                    projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
                                     settings={settings}
+                                    monthStatus={monthStatus}
                                     isLoading={isLoading}
                                     selectedMonth={selectedMonth}
                                     selectedYear={selectedYear}
@@ -336,10 +351,11 @@ export default function Dashboard() {
                                     bonusSavingsPotential={bonusSavingsPotential}
                                     currentMonthIncome={currentMonthIncome}
                                     currentMonthExpenses={currentMonthExpenses}
-                                    projectedIncome={projectedIncome}
-                                    isUsingProjection={isUsingProjection}
-                                    projectedRemainingExpense={projectionTotals?.projectedRemainingExpense || 0}
+                                    projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
+                                    isUsingProjection={isCurrentMonth || isUsingProjection}
+                                    projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
                                     goals={goals}
+                                    monthStatus={monthStatus}
                                     settings={settings}
                                     selectedMonth={selectedMonth}
                                     selectedYear={selectedYear}
