@@ -15,7 +15,7 @@ import { useTransactionActions } from "../components/hooks/useActions";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { chunkArray, fetchWithRetry } from "../components/utils/generalUtils";
-import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
+import ExpenseForm from "../components/transactions/dialogs/ExpenseFormDialog";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import TransactionList from "../components/transactions/TransactionList";
 import TransactionFilters from "../components/transactions/TransactionFilters";
@@ -110,7 +110,7 @@ export default function TransactionsLayout() {
                 renderTrigger={false}
                 transaction={editingTransaction}
             />
-            <QuickAddTransaction
+            <ExpenseForm
                 open={showAddExpense}
                 onOpenChange={(open) => { setShowAddExpense(open); if (!open) setEditingTransaction(null); }}
                 categories={categories}
