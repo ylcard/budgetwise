@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
-import QuickAddTransaction from "./QuickAddTransaction";
+import ExpenseFormDialog from "../dialogs/ExpenseFormDialog";
 import { detectCrossPeriodSettlement } from "../utils/calculationEngine";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -169,7 +169,7 @@ export default function TransactionItem({
                 </div>
 
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <QuickAddTransaction
+                    <ExpenseFormDialog
                         transaction={transaction}
                         categories={categories}
                         customBudgets={customBudgets}
