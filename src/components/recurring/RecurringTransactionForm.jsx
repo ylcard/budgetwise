@@ -51,7 +51,7 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
                     <Tag className="h-4 w-4 opacity-50" />
                 </CustomButton>
             </DrawerTrigger>
-            <DrawerContent className="z-[200] flex flex-col max-h-[90dvh]">
+            <DrawerContent className="z-[600] flex flex-col max-h-[90dvh]">
                 <DrawerHeader>
                     <DrawerTitle>Select Category</DrawerTitle>
                 </DrawerHeader>
@@ -114,7 +114,7 @@ const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
                         {value ? formatDate(dateValue, 'MMM dd, yyyy') : <span>{placeholder}</span>}
                     </CustomButton>
                 </DrawerTrigger>
-                <DrawerContent className="z-[200]">
+                <DrawerContent className="z-[600]">
                     <div className="p-4 pb-8 flex justify-center">
                         <CalendarView selected={dateValue} onSelect={(d) => onChange(d ? formatDateString(d) : '')} />
                     </div>
