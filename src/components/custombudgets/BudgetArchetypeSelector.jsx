@@ -18,8 +18,7 @@ import {
     Users,
     Calendar,
     Sparkles,
-    TrendingUp,
-    Clock
+    Target
 } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { format } from "date-fns";
@@ -89,52 +88,26 @@ export default function BudgetArchetypeSelector({
                                 onClick={() => onSelectArchetype(archetype)}
                             >
                                 <CardContent className="p-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                            <IconComponent className="w-5 h-5 text-blue-600" />
-                                        </div>
+                                    <div className="flex items-center justify-between gap-3 w-full">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
+                                            <div className="w-10 h-10 rounded-lg bg-blue-100/50 flex items-center justify-center flex-shrink-0">
+                                                <IconComponent className="w-5 h-5 text-blue-600" />
+                                            </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold text-gray-900">
+                                            <div className="flex flex-col min-w-0">
+                                                <h4 className="font-semibold text-gray-900 truncate">
                                                     {archetype.name}
                                                 </h4>
-                                                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${confidenceColor}`}>
-                                                    {archetype.confidence}% match
-                                                </Badge>
-                                            </div>
-
-                                            <div className="flex items-center gap-4 text-xs text-gray-600 mb-2">
-                                                <span className="flex items-center gap-1">
-                                                    <TrendingUp className="w-3 h-3" />
+                                                <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-0.5">
+                                                    <Target className="w-3.5 h-3.5 text-gray-400" />
+                                                    <span className="font-medium">{formatCurrency(archetype.recommendedAmount, settings)}</span>
                                                     {formatCurrency(archetype.recommendedAmount, settings)}
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Clock className="w-3 h-3" />
-                                                    ~{archetype.typicalDuration} days
-                                                </span>
-                                                <span className="text-gray-400">
-                                                    {archetype.occurrences} times before
-                                                </span>
+                                                </div>
                                             </div>
-
-                                            {archetype.lastOccurrence && (
-                                                <p className="text-xs text-gray-400">
-                                                    Last: {format(new Date(archetype.lastOccurrence), 'MMM yyyy')}
-                                                </p>
-                                            )}
                                         </div>
-
-                                        <CustomButton
-                                            variant="primary"
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onSelectArchetype(archetype);
-                                            }}
-                                        >
-                                            Use Template
-                                        </CustomButton>
+                                        <Badge variant="secondary" className={`text-[10px] px-2 py-0.5 shrink-0 ${confidenceColor}`}>
+                                            {archetype.confidence}% match
+                                        </Badge>
                                     </div>
                                 </CardContent>
                             </Card>
