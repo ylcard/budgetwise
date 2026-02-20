@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "@/components/utils/SettingsContext";
-import { useCustomBudgetsForPeriod, useSystemBudgetsForPeriod } from "@/hooks/useBase44Entities";
+import { useCustomBudgetsForPeriod, useSystemBudgetsForPeriod } from "@/components/hooks/useBase44Entities";
 import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "@/utils/dateUtils";
 import ExpenseForm from "../forms/ExpenseForm";
 
