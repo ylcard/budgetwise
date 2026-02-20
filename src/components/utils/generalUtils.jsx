@@ -5,6 +5,8 @@
  * @updated 2025-11-13
  */
 
+import { formatDate } from './dateUtils';
+
 /**
  * Utility function to create a map from an array of entities.
  * Can optionally extract a specific field value instead of the whole entity.
@@ -69,4 +71,26 @@ export const fetchWithRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
             } else throw error;
         }
     }
+};
+
+/**
+ * Helper to format custom budget display names with period timelines
+ * @param {object} budget - The budget object.
+ * @returns {string} Formatted display name (e.g. "Tuska (Jun-Jul, 24)").
+ */
+export const getBudgetDisplayName = (budget) => {
+    if (!budget) return "";
+    if (budget.isSystemBudget) return budget.name;
+    if (!budget.startDate || !budget.endDate) return budget.name;
+
+    const startMonth = formatDate(budget.startDate, 'MMM');
+    const startYear = formatDate(budget.startDate, 'yy');
+    const endMonth = formatDate(budget.endDate, 'MMM');
+    const endYear = formatDate(budget.endDate, 'yy');
+
+    if (startYear === endYear) {
+        if (startMonth === endMonth) return `${budget.name} (${startMonth}, ${startYear})`;
+        return `${budget.name} (${startMonth}-${endMonth}, ${startYear})`;
+    }
+    return `${budget.name} (${startMonth}-${endMonth}, ${startYear}-${endYear})`;
 };
