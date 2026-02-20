@@ -356,6 +356,7 @@ export default function TransactionList({
                                             <div className="flex flex-col gap-0.5 text-[9px] font-mono text-muted-foreground bg-muted/30 p-1.5 rounded-md break-all">
                                                 <div><span className="font-semibold text-purple-500">ID:</span> {transaction.id}</div>
                                                 {transaction.bankTransactionId && <div><span className="font-semibold text-blue-500">Bank:</span> {transaction.bankTransactionId}</div>}
+                                                {transaction.budgetId && <div><span className="font-semibold text-amber-500">Budget:</span> {transaction.budgetId}</div>}
                                                 {transaction.recurringTransactionId && <div><span className="font-semibold text-green-500">Recur:</span> {transaction.recurringTransactionId}</div>}
                                             </div>
                                         </td>
@@ -493,6 +494,7 @@ export default function TransactionList({
                                         <div className="flex items-center gap-1 mb-1 font-bold text-foreground uppercase tracking-wider"><Database className="w-3 h-3 text-purple-500" /> Debug Data</div>
                                         <div><span className="font-semibold text-purple-500">ID:</span> {transaction.id}</div>
                                         {transaction.bankTransactionId && <div><span className="font-semibold text-blue-500">Bank:</span> {transaction.bankTransactionId}</div>}
+                                        {transaction.budgetId && <div><span className="font-semibold text-amber-500">Budget:</span> {transaction.budgetId}</div>}
                                         {transaction.recurringTransactionId && <div><span className="font-semibold text-green-500">Recur:</span> {transaction.recurringTransactionId}</div>}
                                     </div>
                                 )}
