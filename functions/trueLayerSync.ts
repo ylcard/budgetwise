@@ -10,28 +10,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.18';
 // CONFIGURATION: Production Mode
 const BASE_API_URL = "https://api.truelayer.com";
 
-// --- SERVER-SIDE CATEGORIZATION & BUDGET LOGIC ---
-const HARDCODED_KEYWORDS = {
-    'AMAZON': { name: 'Shopping', priority: 'wants' },
-    'UBER': { name: 'Transport', priority: 'needs' },
-    'LYFT': { name: 'Transport', priority: 'needs' },
-    'NETFLIX': { name: 'Subscriptions', priority: 'wants' },
-    'SPOTIFY': { name: 'Subscriptions', priority: 'wants' },
-    'APPLE': { name: 'Subscriptions', priority: 'wants' },
-    'STARBUCKS': { name: 'Dining', priority: 'wants' },
-    'MCDONALD': { name: 'Dining', priority: 'wants' },
-    'BURGER KING': { name: 'Dining', priority: 'wants' },
-    'WALMART': { name: 'Groceries', priority: 'needs' },
-    'KROGER': { name: 'Groceries', priority: 'needs' },
-    'WHOLE FOODS': { name: 'Groceries', priority: 'needs' },
-    'SHELL': { name: 'Transport', priority: 'needs' },
-    'BP': { name: 'Transport', priority: 'needs' },
-    'EXXON': { name: 'Transport', priority: 'needs' },
-    'CHEVRON': { name: 'Transport', priority: 'needs' },
-    'AIRBNB': { name: 'Travel', priority: 'wants' },
-    'HOTEL': { name: 'Travel', priority: 'wants' },
-    'AIRLINES': { name: 'Travel', priority: 'wants' },
-};
+/**
+ * THE DICTIONARY
+ * Maintainable list of canonical names and their default classifications.
+ */
+const DICTIONARY = [
+    { key: 'AMAZON', clean: 'Amazon', category: 'Shopping', priority: 'wants' },
+    { key: 'UBER', clean: 'Uber', category: 'Transport', priority: 'needs' },
+    { key: 'STARBUCKS', clean: 'Starbucks', category: 'Dining Out', priority: 'wants' },
+    { key: 'MCDONALD', clean: 'McDonalds', category: 'Dining Out', priority: 'wants' },
+    { key: 'MERCADONA', clean: 'Mercadona', category: 'Groceries', priority: 'needs' },
+    { key: 'TESCO', clean: 'Tesco', category: 'Groceries', priority: 'needs' },
+];
 
 const FALLBACK_REGEX = [
     { pattern: /(VUELING|RYANAIR|EASYJET|WIZZAIR|ELAL|FINNAIR)/i, category: 'Travel', priority: 'wants' },
@@ -115,22 +105,26 @@ const categorizeTransaction = (searchString, userRules, userCategories, systemCa
         return { categoryId: null, categoryName: targetName, priority: defaultPriority, needsReview: true };
     };
 
-    // 2. Hardcoded Keywords
-    for (const [keyword, data] of Object.entries(HARDCODED_KEYWORDS)) {
-        if (searchString.includes(keyword)) {
-            return resolveCategory(data.name, data.priority);
+    // 2. Dictionary Pass (Fuzzy + Cleaning)
+    // This is where "AMZN" matches "AMAZON"
+    for (const entry of DICTIONARY) {
+        const score = calculateSimilarity(searchString, entry.key);
+        if (score > 0.75) {
+            const resolved = resolveCategory(entry.category, entry.priority);
+            return { ...resolved, renamedTitle: entry.clean, needsReview: false };
         }
     }
 
-    // 3. Fallback Regex
+    // 3. Regex Fallback
     for (const { pattern, category, priority } of FALLBACK_REGEX) {
         if (pattern.test(searchString)) {
             return resolveCategory(category, priority);
         }
     }
 
-    // 4. Uncategorized (Total Failure to Match)
-    return { categoryId: null, categoryName: 'Uncategorized', priority: 'wants', needsReview: true };
+    // 4. Default Budget Assignment (The "Safety Net")
+    // No category assigned, but priority is set so it appears in the budget.
+    return { categoryId: null, categoryName: null, priority: 'wants', needsReview: true };
 };
 
 // --- HELPER: FUZZY MATCHING STRATEGY ---
