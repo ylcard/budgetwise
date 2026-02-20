@@ -15,8 +15,8 @@ import { useTransactionActions } from "../components/hooks/useActions";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { chunkArray, fetchWithRetry } from "../components/utils/generalUtils";
-import ExpenseForm from "../components/transactions/dialogs/ExpenseFormDialog";
-import QuickAddIncome from "../components/transactions/QuickAddIncome";
+import ExpenseFormDialog from "../components/transactions/dialogs/ExpenseFormDialog";
+import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialog";
 import TransactionList from "../components/transactions/TransactionList";
 import TransactionFilters from "../components/transactions/TransactionFilters";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
@@ -102,7 +102,7 @@ export default function TransactionsLayout() {
             </div>
 
             {/* Global Modals Container */}
-            <QuickAddIncome
+            <IncomeForm
                 open={showAddIncome}
                 onOpenChange={(open) => { setShowAddIncome(open); if (!open) setEditingTransaction(null); }}
                 onSubmit={handleFormSubmit}
