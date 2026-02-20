@@ -14,6 +14,7 @@ import { isDateInRange } from "../utils/dateUtils";
 import { usePeriod } from "../hooks/usePeriod";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSettings } from "../utils/SettingsContext";
 
 // Move helpers OUTSIDE to prevent re-mounting on every state change
 const MobileSelectTrigger = ({ label, value, options, onSelect, placeholder }) => {
@@ -252,6 +253,8 @@ const FilterFields = ({ filters, setFilters, categories, filteredCustomBudgets, 
 
 export default function TransactionFilters({ filters, setFilters, categories, allCustomBudgets = [], sortConfig, onSort }) {
     const { monthStart, monthEnd } = usePeriod();
+    const { user } = useSettings();
+    const isAdmin = user?.role === 'admin';
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
     const handleCategoryChange = (newCategories) => {
@@ -279,7 +282,8 @@ export default function TransactionFilters({ filters, setFilters, categories, al
             startDate: monthStart,
             endDate: monthEnd,
             minAmount: null,
-            maxAmount: null
+            maxAmount: null,
+            idSearch: ''
         });
     };
 
@@ -321,6 +325,19 @@ export default function TransactionFilters({ filters, setFilters, categories, al
                             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                         />
                     </div>
+
+                    {/* Admin ID Search */}
+                    {isAdmin && (
+                        <div className="relative flex-1 md:max-w-[200px]">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-purple-500" />
+                            <Input
+                                placeholder="Admin ID Search..."
+                                className="pl-9 bg-purple-500/5 md:bg-purple-500/5 border-purple-200"
+                                value={filters.idSearch}
+                                onChange={(e) => setFilters({ ...filters, idSearch: e.target.value })}
+                            />
+                        </div>
+                    )}
 
                     {/* MOBILE: Filter & Date Buttons */}
                     <div className="flex md:hidden gap-2">
