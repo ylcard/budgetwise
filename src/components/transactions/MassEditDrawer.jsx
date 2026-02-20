@@ -171,8 +171,8 @@ export function MassEditDrawer({
     };
 
     // Shared Form Content
-    const MassEditForm = ({ className }) => (
-        <form id="mass-edit-form" onSubmit={handleSubmit(onSubmit)} className={cn("space-y-6", className)}>
+    const renderMassEditForm = () => (
+        <form id="mass-edit-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
             {/* 1. Field Selector - Only show buttons for inactive fields */}
             <div className="flex flex-wrap gap-2">
@@ -386,7 +386,7 @@ export function MassEditDrawer({
                     </DialogHeader>
 
                     <div className="py-2">
-                        <MassEditForm />
+                        {renderMassEditForm()}
                     </div>
 
                     <DialogFooter>
@@ -413,7 +413,7 @@ export function MassEditDrawer({
                 </DrawerHeader>
 
                 <div className="p-4 overflow-y-auto">
-                    <MassEditForm />
+                    {renderMassEditForm()}
                 </div>
 
                 <DrawerFooter>
