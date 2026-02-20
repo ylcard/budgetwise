@@ -1023,6 +1023,14 @@ export default function TransactionFormContent({
                                     className="h-8 text-xs font-mono"
                                 />
                             </div>
+                            <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase">Budget ID (Override)</Label>
+                                <Input
+                                    value={formData.budgetId}
+                                    onChange={(e) => setFormData({ ...formData, budgetId: e.target.value })}
+                                    className="h-8 text-xs font-mono"
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
