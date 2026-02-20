@@ -35,6 +35,67 @@ const FALLBACK_REGEX = [
     { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS)/i, category: 'Health', priority: 'needs' }
 ];
 
+// --- HELPER: NOISE CLEANER (Safer Version) ---
+const cleanMerchantName = (name) => {
+    if (!name) return "";
+    let clean = name.toUpperCase();
+
+    // 1. Metadata Removal (Only at start/end to protect the brand name)
+    const metadataPatterns = [
+        /^(PAGO (CON|DE) TARJETA|COMPRA EN|CARD (PURCHASE|PAYMENT)|POS PURCHASE|DEBIT|PAIEMENT PAR CARTE)/g,
+        /(LIQUIDACION|ACH DEBIT)$/g
+    ];
+    metadataPatterns.forEach(p => clean = clean.replace(p, ""));
+
+    // 2. Suffixes (Only at the very end with a preceding space)
+    const legalSuffixes = /\s\b(S\.?L\.?|S\.?A\.?|L\.?L\.?C\.?|INC|LTD|GMBH|CORP)\b$/g;
+    clean = clean.replace(legalSuffixes, "");
+
+    // 3. Sanitize separators but KEEP alphanumeric strings (like Amazon IDs)
+    clean = clean.replace(/[*#._-]/g, " ");
+
+    return clean.trim().replace(/\s+/g, " ");
+};
+
+// --- HELPER: FUZZY MATH ENGINE ---
+const getBigrams = (str) => {
+    const s = str.toLowerCase().replace(/\s+/g, '');
+    const bigrams = [];
+    for (let i = 0; i < s.length - 1; i++) bigrams.push(s.slice(i, i + 2));
+    return bigrams;
+};
+
+const scoreSubsequence = (sub, str) => {
+    let n = -1;
+    let matches = 0;
+    const s1 = sub.toLowerCase();
+    const s2 = str.toLowerCase();
+    for (let i = 0; i < s1.length; i++) {
+        n = s2.indexOf(s1[i], n + 1);
+        if (n !== -1) matches++;
+        else break;
+    }
+    if (matches === s1.length) {
+        return Math.min((s1.length / s2.length) + (s1[0] === s2[0] ? 0.2 : 0), 1);
+    }
+    return 0;
+};
+
+const calculateSimilarity = (str1, str2) => {
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+    if (s1 === s2) return 1;
+    const subScore = Math.max(scoreSubsequence(s1, s2), scoreSubsequence(s2, s1));
+    if (s1.length < 2 || s2.length < 2) return subScore;
+    const p1 = getBigrams(s1);
+    const p2 = getBigrams(s2);
+    let intersect = 0;
+    const map = new Map();
+    p1.forEach(p => map.set(p, (map.get(p) || 0) + 1));
+    p2.forEach(p => { if (map.has(p) && map.get(p) > 0) { intersect++; map.set(p, map.get(p) - 1); } });
+    return Math.max(subScore, (2.0 * intersect) / (p1.length + p2.length));
+};
+
 // --- HELPER: SMART CATEGORY MATCHING ---
 const findCategorySmart = (targetName, categoryList) => {
     if (!targetName || !categoryList) return null;
@@ -421,7 +482,8 @@ Deno.serve(async (req) => {
                 const rawDescription = String(tx.description || tx.transaction_category || 'Bank Transaction');
 
                 // Combine all available string data to maximize regex matching surface area
-                const searchString = `${rawDescription} ${tx.merchant_name || ''} ${tx.meta?.counter_party_preferred_name || ''}`.toUpperCase();
+                const combinedRaw = `${rawDescription} ${tx.merchant_name || ''} ${tx.meta?.counter_party_preferred_name || ''}`;
+                const searchString = cleanMerchantName(combinedRaw);
 
                 // const catResult = await categorizeTransaction(base44, user.email, searchString, rules, categories);
                 const txDate = tx.timestamp.split('T')[0];
