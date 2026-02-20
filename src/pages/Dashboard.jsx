@@ -235,6 +235,13 @@ export default function Dashboard() {
                 variant: 'success',
                 highlighted: isEmptyMonth,
                 onClick: () => setQuickAddIncomeState('new')
+            },
+            {
+                key: 'custom-budget',
+                label: 'Add Budget',
+                icon: 'Plus',
+                variant: 'primary',
+                onClick: () => setShowQuickAddBudget(true)
             }
         ];
     }, [currentMonthIncome, currentMonthExpenses]);
