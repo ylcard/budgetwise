@@ -21,11 +21,8 @@ import TransactionList from "../components/transactions/TransactionList";
 import TransactionFilters from "../components/transactions/TransactionFilters";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import RecurringTransactionList from "../components/recurring/RecurringTransactionList";
-import RecurringTransactionForm from "../components/recurring/RecurringTransactionForm";
+import RecurringFormDialog from "../components/recurring/dialogs/RecurringFormDialog";
 import { format } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom"; // Outlet/Context removed
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -346,7 +343,6 @@ export function TransactionHistory({
 export function RecurringTransactions() {
     const { user } = useSettings();
     const queryClient = useQueryClient();
-    const isMobile = useIsMobile();
     const { setFabButtons, clearFabButtons } = useFAB();
     const [showRecurringForm, setShowRecurringForm] = useState(false);
     const [editingRecurring, setEditingRecurring] = useState(null);
@@ -387,7 +383,6 @@ export function RecurringTransactions() {
         if (editingRecurring) handleUpdate(editingRecurring.id, data);
         else handleCreate(data);
         setShowRecurringForm(false);
-        setEditingRecurring(null);
     };
 
     const handleRefresh = async () => {
@@ -406,45 +401,15 @@ export function RecurringTransactions() {
                     isLoading={isLoading}
                 />
             </div>
-            {isMobile ? (
-                <Drawer open={showRecurringForm} onOpenChange={setShowRecurringForm}>
-                    <DrawerContent className="max-h-[92vh] z-[500] bg-background">
-                        <DrawerHeader className="text-left">
-                            <DrawerTitle className="text-xl font-bold px-4">
-                                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
-                            </DrawerTitle>
-                        </DrawerHeader>
-                        <div className="p-6 pt-0 overflow-y-auto pb-24">
-                            <RecurringTransactionForm
-                                initialData={editingRecurring}
-                                categories={categories}
-                                onSubmit={handleRecurringSubmit}
-                                onCancel={() => setShowRecurringForm(false)}
-                                isSubmitting={isSubmitting}
-                            />
-                        </div>
-                    </DrawerContent>
-                </Drawer>
-            ) : (
-                <Dialog open={showRecurringForm} onOpenChange={setShowRecurringForm}>
-                    <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
-                        <DialogHeader className="p-6 pb-0">
-                            <DialogTitle className="text-xl font-bold">
-                                {editingRecurring ? 'Edit Template' : 'New Recurring Transaction'}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="p-6 max-h-[85vh] overflow-y-auto pb-6">
-                            <RecurringTransactionForm
-                                initialData={editingRecurring}
-                                categories={categories}
-                                onSubmit={handleRecurringSubmit}
-                                onCancel={() => setShowRecurringForm(false)}
-                                isSubmitting={isSubmitting}
-                            />
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            )}
+
+            <RecurringFormDialog
+                open={showRecurringForm}
+                onOpenChange={(open) => { setShowRecurringForm(open); if (!open) setEditingRecurring(null); }}
+                onSubmit={handleRecurringSubmit}
+                isSubmitting={isSubmitting}
+                transaction={editingRecurring}
+                categories={categories}
+            />
         </PullToRefresh>
     );
 }
