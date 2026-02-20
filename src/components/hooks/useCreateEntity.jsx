@@ -1,22 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { showToast } from "@/components/ui/use-toast";
-
-// Utility for Rate Limit Mitigation with Exponential Backoff
-const fetchWithRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
-    let attempt = 0;
-    while (attempt < maxRetries) {
-        try {
-            return await fn();
-        } catch (error) {
-            if (error?.status === 429 || error?.response?.status === 429 || error?.message?.includes("429")) {
-                attempt++;
-                if (attempt >= maxRetries) throw error;
-                await new Promise(res => setTimeout(res, baseDelay * (2 ** (attempt - 1)))); // 1s, 2s, 4s
-            } else throw error;
-        }
-    }
-};
+import { fetchWithRetry } from "../utils/generalUtils";
 
 /**
  * Generic hook for entity creation with centralized mutation logic.
