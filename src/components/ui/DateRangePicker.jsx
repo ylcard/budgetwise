@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
-// import classNames from "react-day-picker/style.module.css";
+import { buttonVariants } from "@/components/ui/button";
 import "react-day-picker/style.css"; // Use global styles instead of modules
 import { cn } from "@/lib/utils";
 import {
@@ -16,12 +16,15 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useSettings } from "../utils/SettingsContext";
 import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
 
 export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
     const { settings } = useSettings();
     const [open, setOpen] = useState(false);
+    const isMobile = useIsMobile();
 
     // Internal state to handle the selection process independently of parent state
     const [internalRange, setInternalRange] = useState(undefined);
@@ -56,42 +59,92 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
             setOpen(false);
         }
     };
+    const CalendarContent = (
+        <DayPicker
+            mode="range"
+            selected={internalRange}
+            onSelect={handleSelect}
+            defaultMonth={internalRange?.from || (startDate ? parseDate(startDate) : new Date())}
+            className="p-3"
+            weekStartsOn={1}
+            showOutsideDays
+            classNames={{
+                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                month: "space-y-4",
+                caption: "flex justify-center pt-1 relative items-center",
+                caption_label: "text-sm font-medium",
+                nav: "space-x-1 flex items-center absolute right-1",
+                nav_button: cn(
+                    buttonVariants({ variant: "outline" }),
+                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                ),
+                nav_button_previous: "",
+                nav_button_next: "",
+                table: "w-full border-collapse space-y-1",
+                weekdays: "flex",
+                weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                week: "flex w-full mt-2",
+                cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-blue-50/50 [&:has([aria-selected])]:bg-blue-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: cn(
+                    buttonVariants({ variant: "ghost" }),
+                    "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
+                ),
+                range_end: "day-range-end",
+                selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-full",
+                today: "bg-accent text-accent-foreground",
+                outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-blue-50/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                disabled: "text-muted-foreground opacity-50",
+                range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-700 !rounded-none",
+                hidden: "invisible",
+            }}
+            components={{
+                IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
+                IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
+            }}
+        />
+    );
+
+    const TriggerButton = (
+        <CustomButton
+            variant="outline"
+            className={cn(
+                "w-full md:w-auto justify-center md:justify-start text-center md:text-left font-normal",
+                !startDate && "text-muted-foreground"
+            )}
+        >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {startDate && endDate ? (
+                <span>
+                    {formatDate(startDate, settings.dateFormat)} - {formatDate(endDate, settings.dateFormat)}
+                </span>
+            ) : (
+                <span>Pick date range</span>
+            )}
+        </CustomButton>
+    );
+
+    if (isMobile) {
+        return (
+            <Drawer open={open} onOpenChange={setOpen}>
+                <DrawerTrigger asChild>
+                    {TriggerButton}
+                </DrawerTrigger>
+                <DrawerContent className="z-[600]">
+                    <div className="p-4 pb-8 flex justify-center overflow-x-auto">
+                        {CalendarContent}
+                    </div>
+                </DrawerContent>
+            </Drawer>
+        );
+    }
 
     return (
         <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild>
-                <CustomButton
-                    variant="outline"
-                    className="w-full md:w-auto justify-center md:justify-start text-center md:text-left font-normal"
-                >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate && endDate ? (
-                        <span>
-                            {formatDate(startDate, settings.dateFormat)} - {formatDate(endDate, settings.dateFormat)}
-                        </span>
-                    ) : (
-                        <span className="text-muted-foreground">Pick date range</span>
-                    )}
-                </CustomButton>
+                {TriggerButton}
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 z-mobile-drawer" align="start" sideOffset={4}>
-                <DayPicker
-                    mode="range"
-                    selected={internalRange}
-                    onSelect={handleSelect}
-                    defaultMonth={internalRange?.from || (startDate ? parseDate(startDate) : new Date())}
-                    className="p-3"
-                    weekStartsOn={1}
-                    showOutsideDays
-                    captionLayout="dropdown"
-                    startMonth={new Date(1986, 0)}
-                    endMonth={new Date(2100, 11)}
-                    // classNames={classNames}
-                    components={{
-                        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
-                        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
-                    }}
-                />
+            <PopoverContent className="w-auto p-0 z-[600]" align="start" sideOffset={4}>
+                {CalendarContent}
             </PopoverContent>
         </Popover>
     );
