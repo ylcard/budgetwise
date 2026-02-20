@@ -30,6 +30,23 @@ import { useLocation } from "react-router-dom"; // Outlet/Context removed
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Utility for Rate Limit Mitigation with Exponential Backoff
+const fetchWithRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
+    let attempt = 0;
+    while (attempt < maxRetries) {
+        try {
+            return await fn();
+        } catch (error) {
+            // Check if it's a rate limit error (usually 429)
+            if (error?.status === 429 || error?.response?.status === 429 || error?.message?.includes("429")) {
+                attempt++;
+                if (attempt >= maxRetries) throw error;
+                await new Promise(res => setTimeout(res, baseDelay * (2 ** (attempt - 1)))); // 1s, 2s, 4s...
+            } else throw error;
+        }
+    }
+};
+
 export default function TransactionsLayout() {
     const { user } = useSettings();
     const location = useLocation();
@@ -205,36 +222,67 @@ export function TransactionHistory({
         if (selectedIds.size === 0) return;
         confirmAction("Delete Transactions", `Delete ${selectedIds.size} items?`, async () => {
             setIsBulkDeleting(true);
+
+            // 1. Optimistic UI Update
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+                old.filter(t => !selectedIds.has(t.id))
+            );
+
             try {
                 const idsToDelete = Array.from(selectedIds);
                 const chunks = chunkArray(idsToDelete, 50);
-                for (const chunk of chunks) await base44.entities.Transaction.deleteMany({ id: { $in: chunk } });
-                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+                for (const chunk of chunks) {
+                    // Wrap in retry logic just in case
+                    await fetchWithRetry(() => base44.entities.Transaction.deleteMany({ id: { $in: chunk } }));
+                }
                 showToast({ title: "Success", description: `Deleted ${selectedIds.size} transactions.` });
                 setSelectedIds(new Set());
-            } catch (e) { showToast({ title: "Error", variant: "destructive" }); }
-            finally { setIsBulkDeleting(false); }
+            } catch (e) {
+                // 2. Rollback on ultimate failure
+                previousQueries.forEach(([queryKey, oldData]) => queryClient.setQueryData(queryKey, oldData));
+                showToast({ title: "Error", description: "Failed to delete. Reverting.", variant: "destructive" });
+            } finally {
+                setIsBulkDeleting(false);
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] }); // Resync with truth
+            }
         }, { destructive: true });
     };
 
     // NEW: Handle Mass Update
     const handleMassUpdate = async (updates) => {
+        // 1. Optimistic UI Update
+        await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+            old.map(t => selectedIds.has(t.id) ? { ...t, ...updates } : t)
+        );
+
         try {
             const idsToUpdate = Array.from(selectedIds);
 
-            // Process in chunks to avoid overwhelming the API
-            const chunks = chunkArray(idsToUpdate, 50);
+            // 2. Process in smaller chunks (10 instead of 50) and stagger them
+            const chunks = chunkArray(idsToUpdate, 10);
             for (const chunk of chunks) {
-                // Using updateMany if available, or Promise.all loop
-                await Promise.all(chunk.map(id => base44.entities.Transaction.update(id, updates)));
+                await Promise.all(chunk.map((id, index) =>
+                    // Stagger individual requests by 50ms to prevent instant API spikes
+                    new Promise(resolve => setTimeout(resolve, index * 50))
+                        .then(() => fetchWithRetry(() => base44.entities.Transaction.update(id, updates)))
+                ));
+                // Add a small 200ms delay between chunks
+                await new Promise(r => setTimeout(r, 200));
             }
 
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
             showToast({ title: "Success", description: `Updated ${selectedIds.size} transactions.` });
             setSelectedIds(new Set()); // Clear selection
             setShowMassEdit(false);
         } catch (e) {
-            showToast({ title: "Update Failed", description: "Could not update some transactions.", variant: "destructive" });
+            // 3. Rollback on ultimate failure
+            previousQueries.forEach(([queryKey, oldData]) => queryClient.setQueryData(queryKey, oldData));
+            showToast({ title: "Update Failed", description: "Could not update some transactions. Reverting.", variant: "destructive" });
+        } finally {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] }); // Resync with truth
         }
     };
 
