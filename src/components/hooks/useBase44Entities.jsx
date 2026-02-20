@@ -116,7 +116,6 @@ export const useGoals = (user) => {
             if (!user) return [];
             return await base44.entities.BudgetGoal.filter({ created_by: user.email });
         },
-        // initialData: [],
         enabled: !!user,
         staleTime: 1000 * 60 * 60,
     });
@@ -148,7 +147,6 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
         },
         keepPreviousData: true,
         enabled: !!user,
-        // initialData: [],
         staleTime: 1000 * 60 * 5,
     });
 
@@ -169,7 +167,6 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = [], monthStart
         },
         keepPreviousData: true,
         enabled: customBudgetIds && customBudgetIds.length > 0,
-        // initialData: [],
         staleTime: 1000 * 60 * 5,
     });
 
@@ -226,7 +223,6 @@ export const useAllocations = (budgetId) => {
         queryFn: async () => {
             return await base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId });
         },
-        // initialData: [],
         enabled: !!budgetId,
         staleTime: 1000 * 60 * 5,
     });
@@ -248,7 +244,6 @@ export const useAllBudgets = (user) => {
             }));
             return [...formattedSystem, ...customBudgets];
         },
-        // initialData: [],
         enabled: !!user,
         staleTime: 1000 * 60 * 5,
     });
@@ -267,7 +262,6 @@ export const useCategoryRules = (user) => {
             return allRules
                 .sort((a, b) => (a.priority || 0) - (b.priority || 0));
         },
-        // initialData: [],
         enabled: !!user,
         staleTime: 1000 * 60 * 60,
     });
@@ -305,7 +299,6 @@ export const useSystemBudgetManagement = (
             if (isSyncing.current || lastSyncedKey.current === syncKey) return;
 
             const now = new Date();
-            const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
             const isPastMonth = selectedYear < now.getFullYear() ||
                 (selectedYear === now.getFullYear() && selectedMonth < now.getMonth());
 
