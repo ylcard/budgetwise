@@ -6,11 +6,11 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Calendar, StickyNote } from "lucide-react";
-import AmountInput from "../ui/AmountInput";
-import { CalendarView } from "../ui/DatePicker";
-import { formatDateString, getFirstDayOfMonth, formatDate } from "../utils/dateUtils";
-import { normalizeAmount } from "../utils/generalUtils";
-import { useSettings } from "../utils/SettingsContext";
+import AmountInput from "@/ui/AmountInput";
+import { CalendarView } from "@/ui/DatePicker";
+import { formatDateString, getFirstDayOfMonth, formatDate } from "@/utils/dateUtils";
+import { normalizeAmount } from "@/utils/generalUtils";
+import { useSettings } from "@/utils/SettingsContext";
 
 const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
     return (
