@@ -73,6 +73,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                 month: "space-y-4",
                 caption: "flex justify-center pt-1 relative items-center",
                 caption_label: "text-sm font-medium",
+                captionLayout: "dropdown",
                 nav: "space-x-1 flex items-center absolute right-1",
                 nav_button: cn(
                     buttonVariants({ variant: "outline" }),
