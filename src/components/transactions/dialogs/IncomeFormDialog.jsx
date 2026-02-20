@@ -55,7 +55,7 @@ export default function IncomeFormDialog({
     );
 
     const formContent = (
-        <IncomeFormContent
+        <IncomeForm
             initialTransaction={isEditMode ? transaction : transactionTemplate} // ADDED: Use template if not editing
             onSubmit={handleFormSubmit}
             onCancel={() => handleOpenChange(false)}
