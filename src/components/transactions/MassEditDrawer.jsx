@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
-import { Tag, Calendar, Wallet, CheckCircle2, Shield, Plus, X, Trash2, Search, Check, ChevronsUpDown } from 'lucide-react';
+import { Tag, Calendar, Wallet, CheckCircle2, Shield, Plus, X, Trash2, Search, Check, ChevronsUpDown, Hash } from 'lucide-react';
 import { getCategoryIcon } from '@/components/utils/iconMapConfig';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getBudgetDisplayName } from '../utils/generalUtils';
+import { useSettings } from '../utils/SettingsContext';
 
 const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchTerm, onSearchChange }) => {
     const selectedBudget = options.find(b => b.id === value);
@@ -104,6 +105,8 @@ export function MassEditDrawer({
     categories,
     customBudgets
 }) {
+    const { user } = useSettings();
+    const isAdmin = user?.role === 'admin';
     const isMobile = useIsMobile();
     const [activeFields, setActiveFields] = useState([]);
     const [isBudgetOpen, setIsBudgetOpen] = useState(false);
@@ -133,6 +136,11 @@ export function MassEditDrawer({
         { id: 'budgetId', label: 'Budget', icon: Wallet },
     ];
 
+    if (isAdmin) {
+        availableFields.push({ id: 'bankTransactionId', label: 'Bank Tx ID', icon: Hash });
+        availableFields.push({ id: 'recurringTransactionId', label: 'Recurring ID', icon: Hash });
+    }
+
     const handleAddField = (fieldId) => {
         if (!activeFields.includes(fieldId)) {
             setActiveFields([...activeFields, fieldId]);
@@ -153,6 +161,8 @@ export function MassEditDrawer({
         if (activeFields.includes('date')) updates.date = data.date;
         if (activeFields.includes('budgetId')) updates.budgetId = data.budgetId === "none" ? null : data.budgetId;
         if (activeFields.includes('financial_priority')) updates.financial_priority = data.financial_priority;
+        if (activeFields.includes('bankTransactionId')) updates.bankTransactionId = data.bankTransactionId;
+        if (activeFields.includes('recurringTransactionId')) updates.recurringTransactionId = data.recurringTransactionId;
 
         if (activeFields.includes('isPaid')) {
             updates.isPaid = data.isPaid === "true";
@@ -368,6 +378,15 @@ export function MassEditDrawer({
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Admin Overrides */}
+                                {fieldId === 'bankTransactionId' && (
+                                    <Input {...register('bankTransactionId')} placeholder="Bank Transaction ID" className="bg-background" />
+                                )}
+                                {fieldId === 'recurringTransactionId' && (
+                                    <Input {...register('recurringTransactionId')} placeholder="Recurring Transaction ID" className="bg-background" />
+                                )}
+
                             </motion.div>
                         );
                     })}
