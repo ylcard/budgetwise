@@ -511,7 +511,7 @@ export default function BudgetDetail() {
                                 </CardTitle>
                                 {budget.isSystemBudget && <p className="text-sm text-gray-500">Expenses not part of any custom budget</p>}
                             </div>
-                            ExpenseFormDialog
+                            <ExpenseFormDialog
                                 open={showQuickAdd}
                                 onOpenChange={setShowQuickAdd}
                                 categories={categories}
