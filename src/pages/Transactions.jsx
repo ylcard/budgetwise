@@ -102,7 +102,7 @@ export default function TransactionsLayout() {
             </div>
 
             {/* Global Modals Container */}
-            <IncomeForm
+            <IncomeFormDialog
                 open={showAddIncome}
                 onOpenChange={(open) => { setShowAddIncome(open); if (!open) setEditingTransaction(null); }}
                 onSubmit={handleFormSubmit}
@@ -110,7 +110,7 @@ export default function TransactionsLayout() {
                 renderTrigger={false}
                 transaction={editingTransaction}
             />
-            <ExpenseForm
+            <ExpenseFormDialog
                 open={showAddExpense}
                 onOpenChange={(open) => { setShowAddExpense(open); if (!open) setEditingTransaction(null); }}
                 categories={categories}
