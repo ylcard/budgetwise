@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { X, ExternalLink, CheckCircle, AlertTriangle, Info, AlertCircle, Zap, Sparkles } from 'lucide-react';
 import { CustomButton } from '../ui/CustomButton';
@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 /**
  * CREATED 14-Feb-2026: Individual notification item component
  */
-const NotificationItem = memo(({ notification, onMarkRead, onDismiss, onNavigate }) => {
+const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss, onNavigate }, ref) => {
     const navigate = useNavigate();
 
     const typeConfig = {
@@ -41,6 +41,7 @@ const NotificationItem = memo(({ notification, onMarkRead, onDismiss, onNavigate
 
     return (
         <motion.div
+            ref={ref}
             layout
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -101,7 +102,7 @@ const NotificationItem = memo(({ notification, onMarkRead, onDismiss, onNavigate
             </div>
         </motion.div>
     );
-});
+}));
 
 NotificationItem.displayName = 'NotificationItem';
 
