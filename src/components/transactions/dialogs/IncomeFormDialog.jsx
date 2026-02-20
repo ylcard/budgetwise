@@ -12,7 +12,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import IncomeFormContent from "./IncomeFormContent";
 
-export default function QuickAddIncome({
+export default function IncomeFormDialog({
     open,
     onOpenChange,
     onSubmit,
@@ -77,7 +77,7 @@ export default function QuickAddIncome({
                 )}
                 <DrawerContent className="max-h-[90vh]">
                     <DrawerHeader className="text-left">
-                        <DrawerTitle>{isEditMode ? 'Edit Income' : 'Quick Add Income'}</DrawerTitle>
+                        <DrawerTitle>{isEditMode ? 'Edit Income' : 'Add Income'}</DrawerTitle>
                     </DrawerHeader>
                     <div className="px-4 pb-4 overflow-y-auto">{formContent}</div>
                 </DrawerContent>
@@ -96,7 +96,7 @@ export default function QuickAddIncome({
             )}
             <DialogContent className="sm:max-w-[450px]">
                 <div className="p-6 pb-2">
-                    <DialogHeader><DialogTitle>{isEditMode ? 'Edit Income' : 'Quick Add Income'}</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{isEditMode ? 'Edit Income' : 'Add Income'}</DialogTitle></DialogHeader>
                     {formContent}
                 </div>
             </DialogContent>
