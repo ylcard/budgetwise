@@ -90,7 +90,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
                     "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
                 ),
                 range_end: "day-range-end",
-                selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
+                selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-md",
                 today: "bg-accent text-accent-foreground",
                 outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-blue-50/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
                 disabled: "text-muted-foreground opacity-50",
