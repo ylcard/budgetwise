@@ -179,11 +179,22 @@ const categorizeTransaction = (searchString, userRules, userCategories, systemCa
         return { categoryId: null, categoryName: targetName, priority: defaultPriority, needsReview: true };
     };
 
-    // 2. Dictionary Pass (Fuzzy + Cleaning)
-    // This is where "AMZN" matches "AMAZON"
+    // 2. Dictionary Pass (Tokenized + Fuzzy)
     for (const entry of DICTIONARY) {
-        const score = calculateSimilarity(searchString, entry.key);
-        if (score > 0.75) {
+        // A. Direct Substring Pass (Catches exact "AMAZON" inside "AMAZON V52DA5J05")
+        if (searchString.includes(entry.key)) {
+            const resolved = resolveCategory(entry.category, entry.priority);
+            return { ...resolved, renamedTitle: entry.clean, needsReview: false };
+        }
+
+        // B. Tokenized Fuzzy Pass (Catches typos like "AMZN" inside "AMZN V52DA5J05")
+        const tokens = searchString.split(/\s+/);
+        const tokenScores = tokens.map(token => calculateSimilarity(token, entry.key));
+
+        // We check the whole string AND the individual tokens to find the highest score
+        const bestScore = Math.max(calculateSimilarity(searchString, entry.key), ...tokenScores);
+
+        if (bestScore > 0.75) {
             const resolved = resolveCategory(entry.category, entry.priority);
             return { ...resolved, renamedTitle: entry.clean, needsReview: false };
         }
