@@ -10,7 +10,7 @@ import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertCircle, Check, ChevronsUpDown, Calendar, Banknote, StickyNote, Tag, Search, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, Calendar, Banknote, StickyNote, Tag, Search, CheckCircle2, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
@@ -220,6 +220,7 @@ export default function TransactionFormContent({
 }) {
     const queryClient = useQueryClient();
     const { settings, user } = useSettings();
+    const isAdmin = user?.role === 'admin';
     const { toast } = useToast();
     const { confirmAction } = useConfirm();
     const { exchangeRates, refreshRates, isRefreshing, refetch, isLoading } = useExchangeRates();
@@ -246,7 +247,11 @@ export default function TransactionFormContent({
         paidDate: '',
         budgetId: '',
         isCashExpense: false,
-        notes: ''
+        notes: '',
+        bankTransactionId: '',
+        recurringTransactionId: '',
+        normalisedProviderTransactionId: '',
+        providerTransactionId: ''
     });
 
     const [isBudgetOpen, setIsBudgetOpen] = useState(false);
@@ -333,7 +338,11 @@ export default function TransactionFormContent({
                 paidDate: initialTransaction.paidDate || '',
                 budgetId: initialTransaction.budgetId || '',
                 isCashExpense: initialTransaction.isCashTransaction || false,
-                notes: initialTransaction.notes || ''
+                notes: initialTransaction.notes || '',
+                bankTransactionId: initialTransaction.bankTransactionId || '',
+                recurringTransactionId: initialTransaction.recurringTransactionId || '',
+                normalisedProviderTransactionId: initialTransaction.normalisedProviderTransactionId || '',
+                providerTransactionId: initialTransaction.providerTransactionId || ''
             });
         }
     }, [initialTransaction]);
@@ -628,6 +637,13 @@ export default function TransactionFormContent({
             submitData.cashTransactionType = null;
             submitData.cashAmount = null;
             submitData.cashCurrency = null;
+        }
+
+        if (isAdmin) {
+            submitData.bankTransactionId = formData.bankTransactionId || null;
+            submitData.recurringTransactionId = formData.recurringTransactionId || null;
+            submitData.normalisedProviderTransactionId = formData.normalisedProviderTransactionId || null;
+            submitData.providerTransactionId = formData.providerTransactionId || null;
         }
 
         onSubmit(submitData);
@@ -966,6 +982,51 @@ export default function TransactionFormContent({
                         )}
                     </AnimatePresence>
                 </div>
+
+                {/* Admin Area */}
+                {isAdmin && (
+                    <div className="mt-6 pt-4 border-t border-border">
+                        <div className="flex items-center gap-2 mb-3 text-purple-600">
+                            <ShieldAlert className="w-4 h-4" />
+                            <h4 className="text-xs font-bold uppercase tracking-widest">Admin Overrides</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase">Bank Transaction ID</Label>
+                                <Input
+                                    value={formData.bankTransactionId}
+                                    onChange={(e) => setFormData({ ...formData, bankTransactionId: e.target.value })}
+                                    className="h-8 text-xs font-mono"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase">Recurring Tx ID</Label>
+                                <Input
+                                    value={formData.recurringTransactionId}
+                                    onChange={(e) => setFormData({ ...formData, recurringTransactionId: e.target.value })}
+                                    className="h-8 text-xs font-mono"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase">Normalised Prov ID</Label>
+                                <Input
+                                    value={formData.normalisedProviderTransactionId}
+                                    onChange={(e) => setFormData({ ...formData, normalisedProviderTransactionId: e.target.value })}
+                                    className="h-8 text-xs font-mono"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase">Provider ID</Label>
+                                <Input
+                                    value={formData.providerTransactionId}
+                                    onChange={(e) => setFormData({ ...formData, providerTransactionId: e.target.value })}
+                                    className="h-8 text-xs font-mono"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             {/* Action Buttons */}
