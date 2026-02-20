@@ -11,8 +11,7 @@ import {
     useCustomBudgetsForPeriod,
     useSystemBudgetsAll,
     useSystemBudgetsForPeriod,
-    useHistoricalIncomeTransactions,
-    useSystemBudgetManagement,
+    useHistoricalIncomeTransactions
 } from "../components/hooks/useBase44Entities";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import {
@@ -25,10 +24,7 @@ import {
     useTransactionActions,
     useCustomBudgetActions,
 } from "../components/hooks/useActions";
-import {
-    getCustomBudgetStats,
-    getSystemBudgetStats
-} from "../components/utils/financialCalculations";
+import { getSystemBudgetStats } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
 import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard";
@@ -41,12 +37,9 @@ import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-// import { BudgetAvatar } from "../components/ui/BudgetAvatar";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams } from "react-router-dom"; // Added for notification linking
-import { MonthlyRewind } from "../components/dashboard/MonthlyRewind";
 import { WrappedStory } from "../components/dashboard/WrappedStory";
-import { notifyMonthlyRewindReady } from "../components/utils/notificationHelpers"; // TEMP: For testing
 import { HealthProvider } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
@@ -103,15 +96,7 @@ export default function Dashboard() {
     const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
     const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
-    const activeCustomBudgetIds = useMemo(() =>
-        allCustomBudgets.map(cb => cb.id),
-        [allCustomBudgets]);
-
-    const { transactions: bridgedTransactions } = useTransactions(null, null, activeCustomBudgetIds);
-
-    // useSystemBudgetManagement(user, selectedMonth, selectedYear, goals, transactions, systemBudgets, monthStart, monthEnd);
-
-    // NEW: Fetch specific history for the projection engine
+    // Fetch specific history for the projection engine
     // This ensures we have the full 6-month context, not just the current view's buffer
     const { incomeTransactions: historicalIncome } = useHistoricalIncomeTransactions(user);
 
@@ -185,7 +170,7 @@ export default function Dashboard() {
     }, [selectedMonth, selectedYear]);
 
     // Centralized Projection Engine
-    const { chartData, totals: projectionTotals, historyTxns } = useProjections(transactions, selectedMonth, selectedYear);
+    const { chartData, totals: projectionTotals } = useProjections(transactions, selectedMonth, selectedYear);
     const isCurrentMonth = monthStatus === 'current';
 
     // --- FINANCIAL HEALTH SCORE ---
@@ -208,20 +193,6 @@ export default function Dashboard() {
             setQuickAddState(template);
         }
     };
-
-    const savingsTarget = useMemo(() => {
-        const savingsGoal = goals.find(g => g.priority === 'savings');
-        return savingsGoal ? (monthlyIncome * (savingsGoal.target_percentage / 100)) : 0;
-    }, [goals, monthlyIncome]);
-
-    const totalActualSavings = useMemo(() => {
-        return transactions
-            .filter(t => t.type === 'savings' || (categories.find(c => c.id === t.category_id)?.priority === 'savings'))
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-    }, [transactions, categories]);
-
-    // Seemingly unused
-    // const savingsShortfall = useMemo(() => Math.max(0, savingsTarget - totalActualSavings), [savingsTarget, totalActualSavings]);
 
     const transactionActions = useTransactionActions({
         onSuccess: () => {
@@ -272,26 +243,6 @@ export default function Dashboard() {
         setFabButtons(fabButtons);
         return () => clearFabButtons();
     }, [fabButtons, setFabButtons, clearFabButtons]);
-
-    // --- CASPER'S MOOD LOGIC (Monthly Context Only) ---
-    /*
-    const budgetHealth = useMemo(() => {
-        if (!currentMonthIncome || currentMonthIncome === 0) return 0.5; // Neutral if no data
-        const spendRatio = currentMonthExpenses / currentMonthIncome;
-
-        // 1. You spent more than you earned. Casper is dead.
-        if (spendRatio >= 1.0) return 0.1;
-
-        // 2. You saved less than 10%. Casper is panicking (Living on the edge).
-        if (spendRatio >= 0.90) return 0.3;
-
-        // 3. You saved decent money (10-30%). Casper is chilling.
-        if (spendRatio >= 0.70) return 0.6;
-
-        // 4. You saved > 30%. Casper Ascends.
-        return 1.0;
-    }, [currentMonthIncome, currentMonthExpenses]);
-    */
 
     // Combine loading states. The dashboard summary relies heavily on transactions and categories.
     const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
