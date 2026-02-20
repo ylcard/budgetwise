@@ -169,7 +169,7 @@ export default function ExpenseFormDialog({
     };
 
     const formContent = (
-        <TransactionFormContent
+        <ExpenseForm
             // PRIORITY: Edit Mode -> Template -> Defaults
             initialTransaction={isEditMode ? transaction : (transactionTemplate || (defaultCustomBudgetId ? {
                 amount: null, // Clear amount for blank add
