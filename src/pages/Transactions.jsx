@@ -144,7 +144,8 @@ export function TransactionHistory({
     const [filters, setFilters] = useState({
         search: '', type: 'all', category: [], paymentStatus: 'all',
         cashStatus: 'all', financialPriority: 'all', budgetId: 'all',
-        startDate: usePeriod().monthStart, endDate: usePeriod().monthEnd, minAmount: '', maxAmount: ''
+        startDate: usePeriod().monthStart, endDate: usePeriod().monthEnd, minAmount: '', maxAmount: '',
+        idSearch: '' // NEW: Admin ID Search
     });
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
