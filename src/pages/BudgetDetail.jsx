@@ -27,7 +27,7 @@ import {
 import { useTransactionActions, useCustomBudgetActions } from "../components/hooks/useActions";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useMonthlyIncome } from "../components/hooks/useDerivedData";
-import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
+import ExpenseFormDialog from "../components/transactions/dialogs/ExpenseFormDialog";
 import TransactionCard from "../components/transactions/TransactionCard";
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import BudgetCard from "../components/budgets/BudgetCard";
@@ -511,7 +511,7 @@ export default function BudgetDetail() {
                                 </CardTitle>
                                 {budget.isSystemBudget && <p className="text-sm text-gray-500">Expenses not part of any custom budget</p>}
                             </div>
-                            <QuickAddTransaction
+                            ExpenseFormDialog
                                 open={showQuickAdd}
                                 onOpenChange={setShowQuickAdd}
                                 categories={categories}
