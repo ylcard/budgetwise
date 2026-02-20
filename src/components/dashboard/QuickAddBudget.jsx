@@ -4,6 +4,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import BudgetCreationWizard from "../custombudgets/BudgetCreationWizard";
 import { useSettings } from "../utils/SettingsContext";
 import { useTransactions } from "../hooks/useBase44Entities";
@@ -19,11 +21,32 @@ export default function QuickAddBudget({
     const { settings } = useSettings();
     const { transactions } = useTransactions();
     const { categories } = useMergedCategories();
+    const isMobile = useIsMobile();
 
     const handleSubmitWrapper = (data) => {
         onSubmit(data);
         onOpenChange(false);
     };
+
+    if (isMobile) {
+        return (
+            <Drawer open={open} onOpenChange={onOpenChange}>
+                <DrawerContent className="max-h-[90dvh] flex flex-col z-[500] bg-background">
+                    <DrawerHeader className="text-left shrink-0">
+                        <DrawerTitle>Create Budget</DrawerTitle>
+                    </DrawerHeader>
+                    <BudgetCreationWizard
+                        transactions={transactions}
+                        categories={categories}
+                        settings={settings}
+                        onSubmit={handleSubmitWrapper}
+                        onCancel={() => onOpenChange(false)}
+                        isSubmitting={isSubmitting}
+                    />
+                </DrawerContent>
+            </Drawer>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
