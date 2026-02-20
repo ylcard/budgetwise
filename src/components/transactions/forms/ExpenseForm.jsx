@@ -13,23 +13,23 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { AlertCircle, Check, ChevronsUpDown, Calendar, Banknote, StickyNote, Tag, Search, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { useConfirm } from "@/ui/ConfirmDialogProvider";
-import AmountInput from "@/ui/AmountInput";
-import CategorySelect from "@/ui/CategorySelect";
-import { useSettings } from "@/utils/SettingsContext";
-import { useExchangeRates } from "@/hooks/useExchangeRates";
-import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "@/utils/currencyCalculations";
-import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "@/utils/dateUtils";
+import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
+import AmountInput from "@/components/ui/AmountInput";
+import CategorySelect from "@/components/ui/CategorySelect";
+import { useSettings } from "@/components/utils/SettingsContext";
+import { useExchangeRates } from "@/components/hooks/useExchangeRates";
+import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "@/components/utils/currencyCalculations";
+import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "@/components/utils/dateUtils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
-import { normalizeAmount, getBudgetDisplayName } from "@/utils/generalUtils";
+import { normalizeAmount, getBudgetDisplayName } from "@/components/utils/generalUtils";
 import { cn } from "@/lib/utils";
-import { useCategoryRules, useGoals, useSystemBudgetsForPeriod } from "@/hooks/useBase44Entities";
-import { categorizeTransaction } from "@/utils/transactionCategorization";
-import { getOrCreateSystemBudgetForTransaction } from "@/utils/budgetInitialization";
-import { FINANCIAL_PRIORITIES } from "@/utils/constants";
+import { useCategoryRules, useGoals, useSystemBudgetsForPeriod } from "@/components/hooks/useBase44Entities";
+import { categorizeTransaction } from "@/components/utils/transactionCategorization";
+import { getOrCreateSystemBudgetForTransaction } from "@/components/utils/budgetInitialization";
+import { FINANCIAL_PRIORITIES } from "@/components/utils/constants";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
-import { getCategoryIcon } from "@/utils/iconMapConfig";
-import DatePicker, { CalendarView } from "@/ui/DatePicker";
+import { getCategoryIcon } from "@/components/utils/iconMapConfig";
+import DatePicker, { CalendarView } from "@/components/ui/DatePicker";
 
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
     const [searchTerm, setSearchTerm] = useState("");
