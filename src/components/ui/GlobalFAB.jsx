@@ -11,7 +11,8 @@ const iconMap = {
     FileUp,
     MinusCircle,
     PlusCircle,
-    Play
+    Play,
+    Plus
 };
 
 export default function GlobalFAB() {
