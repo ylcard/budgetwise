@@ -8,6 +8,7 @@ import { useSettings } from "../utils/SettingsContext";
 import { DEFAULT_SYSTEM_GOALS } from "../utils/constants";
 import { subDays, format } from "date-fns";
 import { showToast } from "@/components/ui/use-toast";
+import { fetchWithRetry } from "../utils/generalUtils";
 
 // Hook for initial system setup
 export const useSystemActions = (user) => {
@@ -23,7 +24,7 @@ export const useSystemActions = (user) => {
             // 0. SERVER-SIDE SAFETY CHECK
             // We fetch specific data for THIS user to prevent duplicates regardless of UI state
             const [existingGoals] = await Promise.all([
-                base44.entities.BudgetGoal.filter({ created_by: user.email })
+                fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user.email }))
             ]);
 
             if (existingGoals.length > 0) {
@@ -35,10 +36,10 @@ export const useSystemActions = (user) => {
             const goalPromises = DEFAULT_SYSTEM_GOALS
                 .filter(def => !existingGoals.some(ex => ex.priority === def.priority))
                 .map(async (goal) => {
-                    const newGoal = await base44.entities.BudgetGoal.create({
+                    const newGoal = await fetchWithRetry(() => base44.entities.BudgetGoal.create({
                         ...goal,
                         created_by: user.email
-                    });
+                    }));
                     // This ensures SystemBudgets are generated for the current/future months
                     return snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
                 });
@@ -239,8 +240,8 @@ export const useAllBudgets = (user) => {
         queryKey: [QUERY_KEYS.ALL_BUDGETS],
         queryFn: async () => {
             if (!user) return [];
-            const customBudgets = await base44.entities.CustomBudget.filter({ created_by: user.email });
-            const systemBudgets = await base44.entities.SystemBudget.filter({ created_by: user.email });
+            const customBudgets = await fetchWithRetry(() => base44.entities.CustomBudget.filter({ created_by: user.email }));
+            const systemBudgets = await fetchWithRetry(() => base44.entities.SystemBudget.filter({ created_by: user.email }));
 
             const formattedSystem = systemBudgets.map(sb => ({
                 ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount
