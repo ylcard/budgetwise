@@ -18,9 +18,9 @@ const HARDCODED_KEYWORDS = {
     'NETFLIX': { name: 'Subscriptions', priority: 'wants' },
     'SPOTIFY': { name: 'Subscriptions', priority: 'wants' },
     'APPLE': { name: 'Subscriptions', priority: 'wants' },
-    'STARBUCKS': { name: 'Dining Out', priority: 'wants' },
-    'MCDONALD': { name: 'Dining Out', priority: 'wants' },
-    'BURGER KING': { name: 'Dining Out', priority: 'wants' },
+    'STARBUCKS': { name: 'Dining', priority: 'wants' },
+    'MCDONALD': { name: 'Dining', priority: 'wants' },
+    'BURGER KING': { name: 'Dining', priority: 'wants' },
     'WALMART': { name: 'Groceries', priority: 'needs' },
     'KROGER': { name: 'Groceries', priority: 'needs' },
     'WHOLE FOODS': { name: 'Groceries', priority: 'needs' },
@@ -34,16 +34,13 @@ const HARDCODED_KEYWORDS = {
 };
 
 const FALLBACK_REGEX = [
-    { pattern: /(POWER|GAS|ELECTRIC|ENERGIA|NUFRI)/i, category: 'Bills & Utilities', priority: 'needs' },
     { pattern: /(VUELING|RYANAIR|EASYJET|WIZZAIR|ELAL|FINNAIR)/i, category: 'Travel', priority: 'wants' },
-    { pattern: /(MOBILITAT|BEENETWORK|BEE NETWORK|BEE|TRANSPORTE)/i, category: 'Transport', priority: 'needs' },
-    { pattern: /(LA SIRENA|Mcdonalds)/i, category: 'Dining Out', priority: 'wants' },
+    { pattern: /(MOBILITAT|BEENETWORK|BEE NETWORK|BEE|TRANSPORTE|BVG|RIVERTY)/i, category: 'Transport', priority: 'needs' },
+    { pattern: /(LA SIRENA|Mcdonalds)/i, category: 'Dining', priority: 'wants' },
     { pattern: /(STEAM|STEAMGAMES)/i, category: 'Entertainment', priority: 'wants' },
-    { pattern: /(CAPRABO)/i, category: 'Groceries', priority: 'needs' },
-    { pattern: /(MERCADONA|Tesco)/i, category: 'Groceries', priority: 'needs' },
+    { pattern: /(MERCADONA|Tesco|CAPRABO)/i, category: 'Groceries', priority: 'needs' },
     { pattern: /(IMPULS|ADMINISTRACION)/i, category: 'Housing', priority: 'needs' },
-    { pattern: /(AIGUES|WATER)/i, category: 'Bills & Utilities', priority: 'needs' },
-    { pattern: /(INTERNET|WIFI|CABLE|COMCAST|AT&T|VERIZON|T-MOBILE|ORANGE|FINETWORK)/i, category: 'Bills & Utilities', priority: 'needs' },
+    { pattern: /(INTERNET|WIFI|CABLE|COMCAST|AT&T|VERIZON|T-MOBILE|ORANGE|FINETWORK|AIGUES|WATER|POWER|GAS|ELECTRIC|ENERGIA|NUFRI)/i, category: 'Utilities', priority: 'needs' },
     { pattern: /(HOSTEL|HOSTELS|HOTEL|HOTELS|HOSTELWORLD|TOC|UNITE)/i, category: 'Travel', priority: 'wants' },
     { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS)/i, category: 'Health', priority: 'needs' }
 ];
