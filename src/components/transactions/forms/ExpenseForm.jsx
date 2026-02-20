@@ -6,7 +6,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
-import { QUERY_KEYS } from "@/hooks/queryKeys";
+import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
