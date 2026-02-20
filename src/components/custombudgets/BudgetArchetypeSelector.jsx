@@ -45,14 +45,18 @@ export default function BudgetArchetypeSelector({
 }) {
     if (!archetypes || archetypes.length === 0) {
         return (
-            <div className="text-center py-8">
-                <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-gray-500 mb-4">
-                    Not enough historical data yet to generate smart templates.
-                </p>
-                <CustomButton variant="outline" onClick={onSkip}>
-                    Create Custom Budget
-                </CustomButton>
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-4 pb-4 md:px-0 md:pb-0 flex flex-col items-center justify-center text-center py-8">
+                    <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p className="text-gray-500 mb-4">
+                        Not enough historical data yet to generate smart templates.
+                    </p>
+                </div>
+                <div className="shrink-0 bg-background border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:border-none md:p-0 md:pt-4 z-10">
+                    <CustomButton variant="outline" onClick={onSkip} className="w-full">
+                        Create Custom Budget
+                    </CustomButton>
+                </div>
             </div>
         );
     }
