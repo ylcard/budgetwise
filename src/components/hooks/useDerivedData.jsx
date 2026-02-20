@@ -670,7 +670,7 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
                 const tDate = parseDate(t.paidDate || t.date);
                 return tDate && tDate >= startD && tDate <= endD;
             })
-            
+
             .reduce((acc, t) => {
                 const categoryId = t.category_id || 'uncategorized';
                 const amount = Number(t.amount) || 0;
@@ -805,7 +805,8 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
         startDate: currentMonthStart,
         endDate: currentMonthEnd,
         minAmount: '',
-        maxAmount: ''
+        maxAmount: '',
+        idSearch: ''
     });
 
     const filters = externalFilters || internalFilters;
@@ -824,8 +825,18 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
         }
 
         const searchTerm = filters.search.toLowerCase().trim();
+        const idSearchTerm = (filters.idSearch || '').toLowerCase().trim();
 
         return transactions.filter(t => {
+            // 0. Admin ID Search
+            if (idSearchTerm) {
+                const matchId = t.id?.toLowerCase().includes(idSearchTerm) ||
+                    t.bankTransactionId?.toLowerCase().includes(idSearchTerm) ||
+                    t.recurringTransactionId?.toLowerCase().includes(idSearchTerm) ||
+                    t.normalisedProviderTransactionId?.toLowerCase().includes(idSearchTerm) ||
+                    t.providerTransactionId?.toLowerCase().includes(idSearchTerm);
+                if (!matchId) return false;
+            }
             // 1. Search (Title)
             if (searchTerm && !t.title.toLowerCase().includes(searchTerm)) {
                 return false;
