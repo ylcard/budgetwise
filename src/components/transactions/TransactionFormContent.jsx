@@ -536,7 +536,16 @@ export default function TransactionFormContent({
             }
         });
 
-        return filtered;
+        // Sort: System budgets first, then most recent custom budgets (descending by startDate)
+        return filtered.sort((a, b) => {
+            if (a.isSystemBudget && !b.isSystemBudget) return -1;
+            if (!a.isSystemBudget && b.isSystemBudget) return 1;
+
+            const dateA = new Date(a.startDate || 0).getTime();
+            const dateB = new Date(b.startDate || 0).getTime();
+
+            return dateB - dateA;
+        });
     }, [mergedBudgets, budgetSearchTerm, formData.financial_priority, formData.date, formData.isPaid, formData.paidDate, formData.type, formData.budgetId]);
 
     const executeRefresh = async (force) => {
@@ -965,7 +974,7 @@ export default function TransactionFormContent({
                                                 {visibleOptions.map((budget) => (
                                                     <CommandItem
                                                         key={budget.id}
-                                                        value={budget.name}
+                                                        value={budget.id}
                                                         onSelect={() => {
                                                             setFormData({ ...formData, budgetId: budget.id });
                                                             setIsBudgetOpen(false);
