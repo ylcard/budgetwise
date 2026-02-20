@@ -14,8 +14,8 @@ import { useTransactions } from "../hooks/useBase44Entities";
 import { usePaidTransactions } from "../hooks/useDerivedData";
 import { detectCrossPeriodSettlement } from "../utils/calculationEngine";
 import { useState } from "react";
-import QuickAddTransaction from "../transactions/QuickAddTransaction";
-import QuickAddIncome from "../transactions/QuickAddIncome";
+import ExpenseFormDialog from "../transactions/dialogs/ExpenseFormDialog";
+import IncomeFormDialog from "../transactions/dialogs/IncomeFormDialog";
 
 export default function RecentTransactions({ categories, customBudgets, onEdit, onDelete }) {
     const { settings } = useSettings();
@@ -183,7 +183,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
             {/* Edit Transaction Dialog */}
             {editingTransaction && (
                 editingTransaction.type === 'income' ? (
-                    <QuickAddIncome
+                    <IncomeFormDialog
                         open={showEditDialog}
                         onOpenChange={setShowEditDialog}
                         transaction={editingTransaction}
@@ -191,7 +191,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                         renderTrigger={false}
                     />
                 ) : (
-                    <QuickAddTransaction
+                    <ExpenseFormDialog
                         open={showEditDialog}
                         onOpenChange={setShowEditDialog}
                         transaction={editingTransaction}
