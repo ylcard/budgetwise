@@ -113,44 +113,11 @@ export default function CustomBudgetForm({
 
                             <div className="flex flex-col space-y-2">
                                 <Label>Date Range</Label>
-                                <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-                                    <PopoverTrigger asChild>
-                                        <CustomButton
-                                            id="date"
-                                            variant="outline"
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !formData.startDate && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {formData.startDate ? (
-                                                formData.endDate ? (
-                                                    <>
-                                                        {format(new Date(formData.startDate), "LLL dd, y")} -{" "}
-                                                        {format(new Date(formData.endDate), "LLL dd, y")}
-                                                    </>
-                                                ) : (
-                                                    format(new Date(formData.startDate), "LLL dd, y")
-                                                )
-                                            ) : (
-                                                <span>Pick a date range</span>
-                                            )}
-                                        </CustomButton>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="end">
-                                        <DayPicker
-                                            mode="range"
-                                            defaultMonth={selectedRange.from}
-                                            selected={selectedRange}
-                                            onSelect={handleRangeSelect}
-                                            numberOfMonths={2}
-                                            showOutsideDays={false}
-                                            className="p-3"
-                                        // Classnames omitted from diff to save space, but kept intact
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                                <DateRangePicker
+                                    startDate={formData.startDate}
+                                    endDate={formData.endDate}
+                                    onRangeChange={handleDateRangeChange}
+                                />
                             </div>
                         </div>
 
