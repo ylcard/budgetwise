@@ -289,7 +289,7 @@ export default function RecurringTransactionForm({
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Next Due Date</Label>
-                        <DatePicker
+                        <ResponsiveDatePicker
                             value={formData.nextOccurrence}
                             onChange={(value) => setFormData({ ...formData, nextOccurrence: value })}
                             placeholder="Select date"
@@ -313,12 +313,22 @@ export default function RecurringTransactionForm({
                                 <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Category & Priority</Label>
                                 <div className="flex gap-3">
                                     <div className="flex-[3]">
-                                        <CategorySelect
-                                            value={formData.category_id}
-                                            onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                                            categories={categories}
-                                            placeholder="Category"
-                                        />
+                                        <div className="hidden md:block">
+                                            <CategorySelect
+                                                value={formData.category_id}
+                                                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                                                categories={categories}
+                                                placeholder="Category"
+                                            />
+                                        </div>
+                                        <div className="md:hidden">
+                                            <MobileCategoryFormSelect
+                                                value={formData.category_id}
+                                                onSelect={(value) => setFormData({ ...formData, category_id: value })}
+                                                categories={categories}
+                                                placeholder="Category"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="flex-[2]">
                                         <CustomButton
