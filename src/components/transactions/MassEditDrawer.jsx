@@ -8,27 +8,92 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
-import { Tag, Calendar, Wallet, CheckCircle2, Shield, Plus, X, Trash2 } from 'lucide-react';
+import { Tag, Calendar, Wallet, CheckCircle2, Shield, Plus, X, Trash2, Search, Check, ChevronsUpDown } from 'lucide-react';
 import { getCategoryIcon } from '@/components/utils/iconMapConfig';
 import { cn } from '@/lib/utils';
-import { formatDate } from '../utils/dateUtils';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getBudgetDisplayName } from '../utils/generalUtils';
 
-// Helper to format custom budget display names
-const getBudgetDisplayName = (budget) => {
-    if (!budget) return "";
-    if (budget.isSystemBudget) return budget.name;
-    if (!budget.startDate || !budget.endDate) return budget.name;
+const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchTerm, onSearchChange }) => {
+    const selectedBudget = options.find(b => b.id === value);
+    const label = value === 'none' ? 'Remove from Budget' : (selectedBudget ? getBudgetDisplayName(selectedBudget) : placeholder);
 
-    const startMonth = formatDate(budget.startDate, 'MMM');
-    const startYear = formatDate(budget.startDate, 'yy');
-    const endMonth = formatDate(budget.endDate, 'MMM');
-    const endYear = formatDate(budget.endDate, 'yy');
-
-    if (startYear === endYear) {
-        if (startMonth === endMonth) return `${budget.name} (${startMonth}, ${startYear})`;
-        return `${budget.name} (${startMonth}-${endMonth}, ${startYear})`;
-    }
-    return `${budget.name} (${startMonth}-${endMonth}, ${startYear}-${endYear})`;
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                <Button
+                    variant="outline"
+                    className="w-full justify-between h-10 px-3 font-normal text-sm bg-background"
+                >
+                    <span className={cn("truncate", (!selectedBudget && value !== 'none') && "text-muted-foreground")}>
+                        {label}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </DrawerTrigger>
+            <DrawerContent className="z-[200] flex flex-col max-h-[85dvh]">
+                <DrawerHeader>
+                    <DrawerTitle>Select Budget</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search budgets..."
+                            className="pl-9 h-10 bg-muted/30"
+                            value={searchTerm}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <div className="p-4 space-y-1 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    <DrawerClose asChild>
+                        <button
+                            onClick={() => onSelect('none')}
+                            className={cn(
+                                "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-medium transition-colors",
+                                value === 'none' ? "bg-red-50 text-red-600" : "active:bg-gray-100 text-muted-foreground"
+                            )}
+                        >
+                            <div className="flex items-center text-left">
+                                <X className="w-4 h-4 mr-3" />
+                                <div className="font-medium">Remove from Budget</div>
+                            </div>
+                            {value === 'none' && <Check className="w-5 h-5" />}
+                        </button>
+                    </DrawerClose>
+                    {options.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">No budgets found.</div>
+                    ) : (
+                        options.map((budget) => {
+                            const isSelected = value === budget.id;
+                            return (
+                                <DrawerClose key={budget.id} asChild>
+                                    <button
+                                        onClick={() => onSelect(budget.id)}
+                                        className={cn(
+                                            "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-medium transition-colors",
+                                            isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                        )}
+                                    >
+                                        <div className="flex items-center text-left">
+                                            <span className={cn(
+                                                "w-2.5 h-2.5 rounded-full mr-3 shrink-0",
+                                                budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
+                                            )} />
+                                            <div className="font-medium">{getBudgetDisplayName(budget)}</div>
+                                        </div>
+                                        {isSelected && <Check className="w-5 h-5" />}
+                                    </button>
+                                </DrawerClose>
+                            );
+                        })
+                    )}
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
 };
 
 export function MassEditDrawer({
@@ -41,8 +106,23 @@ export function MassEditDrawer({
 }) {
     const isMobile = useIsMobile();
     const [activeFields, setActiveFields] = useState([]);
+    const [isBudgetOpen, setIsBudgetOpen] = useState(false);
+    const [budgetSearchTerm, setBudgetSearchTerm] = useState("");
 
-    const { register, handleSubmit, setValue, reset, unregister, formState: { isSubmitting } } = useForm();
+    const { register, handleSubmit, setValue, watch, reset, unregister, formState: { isSubmitting } } = useForm();
+    const currentBudgetId = watch('budgetId');
+
+    const visibleBudgets = React.useMemo(() => {
+        let filtered = customBudgets;
+        if (budgetSearchTerm) {
+            filtered = filtered.filter(b => b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase()));
+        }
+        return [...filtered].sort((a, b) => {
+            const dateA = new Date(a.startDate || 0).getTime();
+            const dateB = new Date(b.startDate || 0).getTime();
+            return dateB - dateA;
+        });
+    }, [customBudgets, budgetSearchTerm]);
 
     // Configuration for available fields
     const availableFields = [
@@ -210,25 +290,83 @@ export function MassEditDrawer({
                                 )}
 
                                 {fieldId === 'budgetId' && (
-                                    <Select onValueChange={(val) => setValue('budgetId', val)}>
-                                        <SelectTrigger className="bg-background">
-                                            <SelectValue placeholder="Select Budget" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">Remove from Budget</SelectItem>
-                                            {[...customBudgets]
-                                                .sort((a, b) => {
-                                                    const dateA = new Date(a.startDate || 0).getTime();
-                                                    const dateB = new Date(b.startDate || 0).getTime();
-                                                    return dateB - dateA;
-                                                })
-                                                .map(b => (
-                                                    <SelectItem key={b.id} value={b.id}>
-                                                        {getBudgetDisplayName(b)}
-                                                    </SelectItem>
-                                                ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="w-full">
+                                        {/* Desktop Budget Select */}
+                                        <div className="hidden md:block">
+                                            <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen} modal={true}>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        aria-expanded={isBudgetOpen}
+                                                        className="w-full justify-between font-normal h-10 text-sm bg-background"
+                                                    >
+                                                        {currentBudgetId === 'none'
+                                                            ? 'Remove from Budget'
+                                                            : (currentBudgetId
+                                                                ? getBudgetDisplayName(customBudgets.find((b) => b.id === currentBudgetId))
+                                                                : "Select budget...")}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-0" align="start">
+                                                    <Command shouldFilter={false} className="h-auto overflow-hidden">
+                                                        <CommandInput
+                                                            placeholder="Search budgets..."
+                                                            onValueChange={setBudgetSearchTerm}
+                                                        />
+                                                        <CommandList>
+                                                            <CommandEmpty>No relevant budget found.</CommandEmpty>
+                                                            <CommandGroup heading={budgetSearchTerm ? "Search Results" : undefined}>
+                                                                <CommandItem
+                                                                    value="none"
+                                                                    onSelect={() => {
+                                                                        setValue('budgetId', 'none');
+                                                                        setIsBudgetOpen(false);
+                                                                    }}
+                                                                    className="text-muted-foreground"
+                                                                >
+                                                                    <Check className={`mr-2 h-4 w-4 ${currentBudgetId === 'none' ? "opacity-100" : "opacity-0"}`} />
+                                                                    <X className="w-4 h-4 mr-2" />
+                                                                    Remove from Budget
+                                                                </CommandItem>
+                                                                {visibleBudgets.map((budget) => (
+                                                                    <CommandItem
+                                                                        key={budget.id}
+                                                                        value={budget.id}
+                                                                        onSelect={() => {
+                                                                            setValue('budgetId', budget.id);
+                                                                            setIsBudgetOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        <Check
+                                                                            className={`mr-2 h-4 w-4 ${currentBudgetId === budget.id ? "opacity-100" : "opacity-0"}`}
+                                                                        />
+                                                                        <div className="flex items-center text-sm">
+                                                                            <span className={`w-2 h-2 rounded-full mr-2 ${budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                                            {getBudgetDisplayName(budget)}
+                                                                        </div>
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+
+                                        {/* Mobile Budget Drawer */}
+                                        <div className="md:hidden">
+                                            <MobileBudgetFormSelect
+                                                value={currentBudgetId}
+                                                onSelect={(val) => setValue('budgetId', val)}
+                                                options={visibleBudgets}
+                                                placeholder="Select budget..."
+                                                searchTerm={budgetSearchTerm}
+                                                onSearchChange={setBudgetSearchTerm}
+                                            />
+                                        </div>
+                                    </div>
                                 )}
                             </motion.div>
                         );
