@@ -13,9 +13,9 @@ import { ArrowLeft } from "lucide-react";
 import BudgetArchetypeSelector from "./BudgetArchetypeSelector";
 import CustomBudgetForm from "./CustomBudgetForm";
 import BudgetFeasibilityDisplay from "./BudgetFeasibilityDisplay";
-import { 
-    analyzeEventPatterns, 
-    generateBudgetArchetypes 
+import {
+    analyzeEventPatterns,
+    generateBudgetArchetypes
 } from "../utils/historicalAnalyzer";
 import { checkBudgetImpact } from "../utils/budgetFeasibilityEngine";
 import { parseISO } from "date-fns";
@@ -36,7 +36,7 @@ export default function BudgetCreationWizard({
     // Analyze patterns and generate archetypes
     const archetypes = useMemo(() => {
         if (!transactions || !categories) return [];
-        
+
         const events = analyzeEventPatterns(transactions, categories);
         return generateBudgetArchetypes(events);
     }, [transactions, categories]);
@@ -77,7 +77,7 @@ export default function BudgetCreationWizard({
     // Real-time feasibility calculation as form changes
     const handleFormChange = (updatedData) => {
         setFormData(updatedData);
-        
+
         // Calculate feasibility immediately on change
         if (updatedData.allocatedAmount && updatedData.startDate && updatedData.endDate) {
             const amount = parseFloat(updatedData.allocatedAmount);
@@ -112,7 +112,7 @@ export default function BudgetCreationWizard({
     }
 
     return (
-        <div className="space-y-4">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* Back button if came from archetype */}
             {archetypes.length > 0 && (
                 <CustomButton
@@ -120,27 +120,21 @@ export default function BudgetCreationWizard({
                     variant="ghost"
                     size="sm"
                     onClick={handleBackToArchetypes}
-                    className="mb-2"
+                    className="mx-4 md:mx-0 mb-2 shrink-0 self-start"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Templates
                 </CustomButton>
             )}
 
-            <div className="grid lg:grid-cols-2 gap-4">
-                {/* Left: Budget Form */}
-                <div>
-                    <CustomBudgetForm
-                        budget={formData}
-                        onSubmit={handleFormSubmit}
-                        onCancel={onCancel}
-                        isSubmitting={isSubmitting}
-                        onFormChange={handleFormChange}
-                    />
-                </div>
-
-                {/* Right: Feasibility Analysis */}
-                <div>
+            <CustomBudgetForm
+                budget={formData}
+                onSubmit={handleFormSubmit}
+                onCancel={onCancel}
+                isSubmitting={isSubmitting}
+                onFormChange={handleFormChange}
+            >
+                <div className="mt-6 lg:mt-0 pb-4">
                     <h4 className="font-semibold text-gray-900 mb-3">Financial Impact</h4>
                     {feasibility ? (
                         <BudgetFeasibilityDisplay
@@ -156,7 +150,7 @@ export default function BudgetCreationWizard({
                         </div>
                     )}
                 </div>
-            </div>
+            </CustomBudgetForm>
         </div>
     );
 }
