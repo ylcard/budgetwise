@@ -30,8 +30,8 @@ import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
 import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard";
 import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
-import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
-import QuickAddIncome from "../components/transactions/QuickAddIncome";
+import ExpenseFormDialog from "../components/transactions/dialogs/ExpenseFormDialog";
+import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialog";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { CustomButton } from "@/components/ui/CustomButton";
@@ -394,7 +394,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Hidden dialog components - opened by FAB button onClick handlers */}
-                    <QuickAddTransaction
+                    <ExpenseFormDialog
                         open={!!quickAddState}
                         selectedMonth={selectedMonth}
                         selectedYear={selectedYear}
@@ -409,7 +409,7 @@ export default function Dashboard() {
                         renderTrigger={false}
                     />
 
-                    <QuickAddIncome
+                    <IncomeFormDialog
                         open={!!quickAddIncomeState}
                         selectedMonth={selectedMonth}
                         selectedYear={selectedYear}
