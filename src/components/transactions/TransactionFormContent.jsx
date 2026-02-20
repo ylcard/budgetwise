@@ -714,315 +714,317 @@ export default function TransactionFormContent({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            {validationError && (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{validationError}</AlertDescription>
-                </Alert>
-            )}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-4 pb-4 pt-4 space-y-4 md:px-0 md:overflow-visible">
+                {validationError && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{validationError}</AlertDescription>
+                    </Alert>
+                )}
 
-            {/* DUPLICATE WARNING */}
-            {potentialDuplicate && (
-                <Alert variant="warning" className="bg-amber-50 border-amber-200">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                    <div className="ml-2">
-                        <AlertDescription className="text-amber-700 text-xs">
-                            <strong>Possible Duplicate:</strong> A transaction for {formatCurrency(potentialDuplicate.amount, settings)} on {potentialDuplicate.date} already exists ("{potentialDuplicate.title}").
-                        </AlertDescription>
-                        <div className="mt-2 flex gap-2">
-                            <button type="button" onClick={() => onCancel()} className="text-xs underline text-amber-800 font-bold">Cancel</button>
-                            <button type="button" onClick={() => setPotentialDuplicate(null)} className="text-xs underline text-amber-600">Ignore & Create Anyway</button>
+                {/* DUPLICATE WARNING */}
+                {potentialDuplicate && (
+                    <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <div className="ml-2">
+                            <AlertDescription className="text-amber-700 text-xs">
+                                <strong>Possible Duplicate:</strong> A transaction for {formatCurrency(potentialDuplicate.amount, settings)} on {potentialDuplicate.date} already exists ("{potentialDuplicate.title}").
+                            </AlertDescription>
+                            <div className="mt-2 flex gap-2">
+                                <button type="button" onClick={() => onCancel()} className="text-xs underline text-amber-800 font-bold">Cancel</button>
+                                <button type="button" onClick={() => setPotentialDuplicate(null)} className="text-xs underline text-amber-600">Ignore & Create Anyway</button>
+                            </div>
                         </div>
-                    </div>
-                </Alert>
-            )}
+                    </Alert>
+                )}
 
-            {/* Title */}
-            <div>
-                <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="What is this for?"
-                    className="text-lg font-medium border-0 border-b rounded-none px-0 h-10 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
-                    required
-                    autoComplete="off"
-                />
-            </div>
-
-            {/* Row: Amount + Status Button */}
-            <div className="flex items-end gap-3">
-                <div className="flex-1 relative">
-                    <div className="absolute top-[-20px] left-0">
-                        <AnimatePresence>
-                            {isForeignCurrency && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className="flex items-center gap-2"
-                                >
-                                    {(() => {
-                                        const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
-                                        if (rateDetails) {
-                                            const isOld = Math.abs(differenceInDays(startOfDay(parseISO(formData.date)), startOfDay(parseISO(rateDetails.date)))) > 14;
-                                            return (
-                                                <span className={`text-[10px] font-bold uppercase tracking-tight ${isOld ? 'text-amber-600' : 'text-gray-400'}`}>
-                                                    1 {formData.originalCurrency} = {rateDetails.rate} {settings?.baseCurrency}
-                                                </span>
-                                            );
-                                        }
-                                        return <span className="text-[10px] text-amber-600 font-bold uppercase">Rate Missing</span>;
-                                    })()}
-                                    <button type="button" onClick={handleRefreshRates} className="text-[10px] text-blue-600 font-bold hover:underline">SYNC</button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                    <AmountInput
-                        id="amount"
-                        value={formData.amount}
-                        onChange={(value) => setFormData({ ...formData, amount: value })}
-                        placeholder="0.00"
-                        currency={formData.originalCurrency}
-                        onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
+                {/* Title */}
+                <div>
+                    <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="What is this for?"
+                        className="text-lg font-medium border-0 border-b rounded-none px-0 h-10 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
                         required
-                        className="text-2xl h-12 font-semibold"
+                        autoComplete="off"
                     />
                 </div>
 
-                {/* Status Toggles - Integrated into Amount Row */}
-                {formData.type === 'expense' && (
-                    <div className="flex items-center gap-2">
-                        {/* 1. Paid (Bank/Card) Toggle */}
-                        <CustomButton
-                            type="button"
-                            variant={formData.isPaid && !formData.isCashExpense ? "default" : "outline"}
-                            onClick={togglePaid}
-                            className={cn(
-                                "h-12 w-12 md:w-auto px-0 md:px-3 border-dashed",
-                                formData.isPaid && !formData.isCashExpense ? "bg-blue-600 hover:bg-blue-700 text-white border-solid" : "text-muted-foreground hover:text-blue-600 hover:border-blue-400"
-                            )}
-                            title="Mark as Paid"
-                        >
-                            <CheckCircle2 className={cn("h-5 w-5", formData.isPaid && !formData.isCashExpense ? "text-white" : "text-blue-600")} />
-                            <span className="hidden md:inline ml-2 text-sm font-medium">Paid</span>
-                        </CustomButton>
+                {/* Row: Amount + Status Button */}
+                <div className="flex items-end gap-3">
+                    <div className="flex-1 relative">
+                        <div className="absolute top-[-20px] left-0">
+                            <AnimatePresence>
+                                {isForeignCurrency && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        className="flex items-center gap-2"
+                                    >
+                                        {(() => {
+                                            const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
+                                            if (rateDetails) {
+                                                const isOld = Math.abs(differenceInDays(startOfDay(parseISO(formData.date)), startOfDay(parseISO(rateDetails.date)))) > 14;
+                                                return (
+                                                    <span className={`text-[10px] font-bold uppercase tracking-tight ${isOld ? 'text-amber-600' : 'text-gray-400'}`}>
+                                                        1 {formData.originalCurrency} = {rateDetails.rate} {settings?.baseCurrency}
+                                                    </span>
+                                                );
+                                            }
+                                            return <span className="text-[10px] text-amber-600 font-bold uppercase">Rate Missing</span>;
+                                        })()}
+                                        <button type="button" onClick={handleRefreshRates} className="text-[10px] text-blue-600 font-bold hover:underline">SYNC</button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                        <AmountInput
+                            id="amount"
+                            value={formData.amount}
+                            onChange={(value) => setFormData({ ...formData, amount: value })}
+                            placeholder="0.00"
+                            currency={formData.originalCurrency}
+                            onCurrencyChange={(value) => setFormData({ ...formData, originalCurrency: value })}
+                            required
+                            className="text-2xl h-12 font-semibold"
+                        />
+                    </div>
 
-                        {/* 2. Cash Toggle */}
-                        <CustomButton
-                            type="button"
-                            variant={formData.isCashExpense ? "default" : "outline"}
-                            onClick={toggleCash}
-                            className={cn("h-12 w-12 md:w-auto px-0 md:px-3", formData.isCashExpense ? "bg-green-600 hover:bg-green-700 text-white" : "text-muted-foreground")}
-                            title="Paid in Cash"
-                        >
-                            <Banknote className={cn("h-5 w-5", formData.isCashExpense ? "text-white" : "text-green-600")} />
-                            <span className="hidden md:inline ml-2 text-sm font-medium">Cash</span>
-                        </CustomButton>
+                    {/* Status Toggles - Integrated into Amount Row */}
+                    {formData.type === 'expense' && (
+                        <div className="flex items-center gap-2">
+                            {/* 1. Paid (Bank/Card) Toggle */}
+                            <CustomButton
+                                type="button"
+                                variant={formData.isPaid && !formData.isCashExpense ? "default" : "outline"}
+                                onClick={togglePaid}
+                                className={cn(
+                                    "h-12 w-12 md:w-auto px-0 md:px-3 border-dashed",
+                                    formData.isPaid && !formData.isCashExpense ? "bg-blue-600 hover:bg-blue-700 text-white border-solid" : "text-muted-foreground hover:text-blue-600 hover:border-blue-400"
+                                )}
+                                title="Mark as Paid"
+                            >
+                                <CheckCircle2 className={cn("h-5 w-5", formData.isPaid && !formData.isCashExpense ? "text-white" : "text-blue-600")} />
+                                <span className="hidden md:inline ml-2 text-sm font-medium">Paid</span>
+                            </CustomButton>
+
+                            {/* 2. Cash Toggle */}
+                            <CustomButton
+                                type="button"
+                                variant={formData.isCashExpense ? "default" : "outline"}
+                                onClick={toggleCash}
+                                className={cn("h-12 w-12 md:w-auto px-0 md:px-3", formData.isCashExpense ? "bg-green-600 hover:bg-green-700 text-white" : "text-muted-foreground")}
+                                title="Paid in Cash"
+                            >
+                                <Banknote className={cn("h-5 w-5", formData.isCashExpense ? "text-white" : "text-green-600")} />
+                                <span className="hidden md:inline ml-2 text-sm font-medium">Cash</span>
+                            </CustomButton>
+                        </div>
+                    )}
+                </div>
+
+                {/* Date Row: Flexbox container for smooth animation */}
+                <div className="flex gap-4 overflow-hidden">
+                    {/* 1. Transaction Date (Always Visible) */}
+                    {/* "layout" prop makes it animate resizing automatically */}
+                    <motion.div
+                        layout
+                        className="flex-1 flex flex-col gap-1.5 min-w-0"
+                        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                    >
+                        <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Transaction Date</Label>
+                        <ResponsiveDatePicker
+                            value={formData.date}
+                            onChange={(d) => setFormData({ ...formData, date: d })}
+                            placeholder="Select date"
+                            className="h-11"
+                        />
+                    </motion.div>
+
+                    {/* 2. Paid Date (Only renders if Paid is active) */}
+                    <AnimatePresence mode="popLayout">
+                        {formData.type === 'expense' && formData.isPaid && (
+                            <motion.div
+                                layout
+                                initial={{ width: 0, opacity: 0 }}
+                                animate={{ width: "auto", opacity: 1 }} // "auto" lets flexbox decide (50%)
+                                exit={{ width: 0, opacity: 0 }}
+                                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                                className="flex-1 flex flex-col gap-1.5 min-w-0 overflow-hidden"
+                            >
+                                <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider whitespace-nowrap">Paid Date</Label>
+                                <ResponsiveDatePicker
+                                    value={formData.paidDate}
+                                    onChange={(d) => setFormData({ ...formData, paidDate: d })}
+                                    className="h-11 border-blue-200 bg-blue-50/30"
+                                    placeholder="Paid Date"
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Category, Budget Assignment, and Budget (grid layout) */}
+                {formData.type === 'expense' && (
+                    <div className="space-y-3">
+                        <div className="flex gap-3">
+                            {/* Category - Takes more space */}
+                            <div className="flex-[2]">
+                                {/* Desktop: Popover Select */}
+                                <div className="hidden md:block">
+                                    <CategorySelect
+                                        value={formData.category_id}
+                                        onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                                        categories={categories}
+                                        placeholder="Category"
+                                    />
+                                </div>
+                                {/* Mobile: Drawer Select */}
+                                <div className="md:hidden">
+                                    <MobileCategoryFormSelect
+                                        value={formData.category_id}
+                                        onSelect={(value) => setFormData({ ...formData, category_id: value })}
+                                        categories={categories}
+                                        placeholder="Category"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Financial Priority - Smaller */}
+                            <div className="flex-1">
+                                {/* Desktop: Standard Select */}
+                                <div className="hidden md:block">
+                                    <Select
+                                        value={formData.financial_priority || ''}
+                                        onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
+                                    >
+                                        <SelectTrigger className="h-12">
+                                            <SelectValue placeholder="Priority" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(FINANCIAL_PRIORITIES)
+                                                .filter(([key]) => key !== 'savings')
+                                                .map(([key, cfg]) => (
+                                                    <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {/* Mobile: Drawer Select */}
+                                <div className="md:hidden">
+                                    <MobilePriorityFormSelect
+                                        value={formData.financial_priority || ''}
+                                        onSelect={(value) => setFormData({ ...formData, financial_priority: value })}
+                                        placeholder="Priority"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Budget (REQUIRED for expenses) - Full width */}
+                        <div>
+                            {/* Desktop Budget Select */}
+                            <div className="hidden md:block">
+                                <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen} modal={true}>
+                                    <PopoverTrigger asChild>
+                                        <CustomButton
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={isBudgetOpen}
+                                            className="w-full justify-between font-normal h-12 text-sm"
+                                        >
+                                            {formData.budgetId
+                                                ? getBudgetDisplayName(mergedBudgets.find((b) => b.id === formData.budgetId))
+                                                : "Select budget..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </CustomButton>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[300px] p-0" align="start">
+                                        <Command shouldFilter={false} className="h-auto overflow-hidden">
+                                            <CommandInput
+                                                placeholder="Search budgets..."
+                                                onValueChange={setBudgetSearchTerm}
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>No relevant budget found.</CommandEmpty>
+                                                <CommandGroup heading={budgetSearchTerm ? "Search Results" : undefined}>
+                                                    {visibleOptions.map((budget) => (
+                                                        <CommandItem
+                                                            key={budget.id}
+                                                            value={budget.id}
+                                                            onSelect={() => {
+                                                                setFormData({ ...formData, budgetId: budget.id });
+                                                                setIsBudgetOpen(false);
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={`mr-2 h-4 w-4 ${formData.budgetId === budget.id ? "opacity-100" : "opacity-0"}`}
+                                                            />
+                                                            <div className="flex items-center text-sm">
+                                                                {budget.isSystemBudget ? (
+                                                                    <span className="text-blue-600 mr-2">★</span>
+                                                                ) : (
+                                                                    <span className={`w-2 h-2 rounded-full mr-2 ${budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                                )}
+                                                                {getBudgetDisplayName(budget)}
+                                                                {budget.isSystemBudget && <span className="ml-1 text-xs text-gray-400">({formatDate(budget.startDate, 'MMM')})</span>}
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            {/* Mobile Budget Drawer */}
+                            <div className="md:hidden">
+                                <MobileBudgetFormSelect
+                                    value={formData.budgetId}
+                                    onSelect={(val) => setFormData({ ...formData, budgetId: val })}
+                                    options={visibleOptions}
+                                    placeholder="Select budget..."
+                                    searchTerm={budgetSearchTerm}
+                                    onSearchChange={setBudgetSearchTerm}
+                                />
+                            </div>
+                        </div>
                     </div>
                 )}
-            </div>
 
-            {/* Date Row: Flexbox container for smooth animation */}
-            <div className="flex gap-4 overflow-hidden">
-                {/* 1. Transaction Date (Always Visible) */}
-                {/* "layout" prop makes it animate resizing automatically */}
-                <motion.div
-                    layout
-                    className="flex-1 flex flex-col gap-1.5 min-w-0"
-                    transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                >
-                    <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Transaction Date</Label>
-                    <ResponsiveDatePicker
-                        value={formData.date}
-                        onChange={(d) => setFormData({ ...formData, date: d })}
-                        placeholder="Select date"
-                        className="h-11"
-                    />
-                </motion.div>
-
-                {/* 2. Paid Date (Only renders if Paid is active) */}
-                <AnimatePresence mode="popLayout">
-                    {formData.type === 'expense' && formData.isPaid && (
-                        <motion.div
-                            layout
-                            initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: "auto", opacity: 1 }} // "auto" lets flexbox decide (50%)
-                            exit={{ width: 0, opacity: 0 }}
-                            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                            className="flex-1 flex flex-col gap-1.5 min-w-0 overflow-hidden"
-                        >
-                            <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider whitespace-nowrap">Paid Date</Label>
-                            <ResponsiveDatePicker
-                                value={formData.paidDate}
-                                onChange={(d) => setFormData({ ...formData, paidDate: d })}
-                                className="h-11 border-blue-200 bg-blue-50/30"
-                                placeholder="Paid Date"
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-
-            {/* Category, Budget Assignment, and Budget (grid layout) */}
-            {formData.type === 'expense' && (
-                <div className="space-y-3">
-                    <div className="flex gap-3">
-                        {/* Category - Takes more space */}
-                        <div className="flex-[2]">
-                            {/* Desktop: Popover Select */}
-                            <div className="hidden md:block">
-                                <CategorySelect
-                                    value={formData.category_id}
-                                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                                    categories={categories}
-                                    placeholder="Category"
+                {/* Notes */}
+                <div className="space-y-2 pt-2">
+                    <AnimatePresence mode="wait">
+                        {!showNotes && !formData.notes ? (
+                            <motion.div key="add-note-btn" exit={{ opacity: 0, scale: 0.95 }}>
+                                <CustomButton type="button" variant="ghost" size="sm" onClick={() => setShowNotes(true)} className="text-muted-foreground h-8 px-2">
+                                    <StickyNote className="w-3.5 h-3.5 mr-2" />
+                                    Add Note
+                                </CustomButton>
+                            </motion.div>
+                        ) : (
+                            <motion.div key="notes-area" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                <Textarea
+                                    id="notes"
+                                    value={formData.notes}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                    placeholder="Add details about this transaction..."
+                                    rows={3}
+                                    className="resize-none"
+                                    autoFocus
                                 />
-                            </div>
-                            {/* Mobile: Drawer Select */}
-                            <div className="md:hidden">
-                                <MobileCategoryFormSelect
-                                    value={formData.category_id}
-                                    onSelect={(value) => setFormData({ ...formData, category_id: value })}
-                                    categories={categories}
-                                    placeholder="Category"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Financial Priority - Smaller */}
-                        <div className="flex-1">
-                            {/* Desktop: Standard Select */}
-                            <div className="hidden md:block">
-                                <Select
-                                    value={formData.financial_priority || ''}
-                                    onValueChange={(value) => setFormData({ ...formData, financial_priority: value })}
-                                >
-                                    <SelectTrigger className="h-12">
-                                        <SelectValue placeholder="Priority" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(FINANCIAL_PRIORITIES)
-                                            .filter(([key]) => key !== 'savings')
-                                            .map(([key, cfg]) => (
-                                                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-                                            ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            {/* Mobile: Drawer Select */}
-                            <div className="md:hidden">
-                                <MobilePriorityFormSelect
-                                    value={formData.financial_priority || ''}
-                                    onSelect={(value) => setFormData({ ...formData, financial_priority: value })}
-                                    placeholder="Priority"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Budget (REQUIRED for expenses) - Full width */}
-                    <div>
-                        {/* Desktop Budget Select */}
-                        <div className="hidden md:block">
-                            <Popover open={isBudgetOpen} onOpenChange={setIsBudgetOpen} modal={true}>
-                                <PopoverTrigger asChild>
-                                    <CustomButton
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={isBudgetOpen}
-                                        className="w-full justify-between font-normal h-12 text-sm"
-                                    >
-                                        {formData.budgetId
-                                            ? getBudgetDisplayName(mergedBudgets.find((b) => b.id === formData.budgetId))
-                                            : "Select budget..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </CustomButton>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-0" align="start">
-                                    <Command shouldFilter={false} className="h-auto overflow-hidden">
-                                        <CommandInput
-                                            placeholder="Search budgets..."
-                                            onValueChange={setBudgetSearchTerm}
-                                        />
-                                        <CommandList>
-                                            <CommandEmpty>No relevant budget found.</CommandEmpty>
-                                            <CommandGroup heading={budgetSearchTerm ? "Search Results" : undefined}>
-                                                {visibleOptions.map((budget) => (
-                                                    <CommandItem
-                                                        key={budget.id}
-                                                        value={budget.id}
-                                                        onSelect={() => {
-                                                            setFormData({ ...formData, budgetId: budget.id });
-                                                            setIsBudgetOpen(false);
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={`mr-2 h-4 w-4 ${formData.budgetId === budget.id ? "opacity-100" : "opacity-0"}`}
-                                                        />
-                                                        <div className="flex items-center text-sm">
-                                                            {budget.isSystemBudget ? (
-                                                                <span className="text-blue-600 mr-2">★</span>
-                                                            ) : (
-                                                                <span className={`w-2 h-2 rounded-full mr-2 ${budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                            )}
-                                                            {getBudgetDisplayName(budget)}
-                                                            {budget.isSystemBudget && <span className="ml-1 text-xs text-gray-400">({formatDate(budget.startDate, 'MMM')})</span>}
-                                                        </div>
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        {/* Mobile Budget Drawer */}
-                        <div className="md:hidden">
-                            <MobileBudgetFormSelect
-                                value={formData.budgetId}
-                                onSelect={(val) => setFormData({ ...formData, budgetId: val })}
-                                options={visibleOptions}
-                                placeholder="Select budget..."
-                                searchTerm={budgetSearchTerm}
-                                onSearchChange={setBudgetSearchTerm}
-                            />
-                        </div>
-                    </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-            )}
-
-            {/* Notes */}
-            <div className="space-y-2 pt-2">
-                <AnimatePresence mode="wait">
-                    {!showNotes && !formData.notes ? (
-                        <motion.div key="add-note-btn" exit={{ opacity: 0, scale: 0.95 }}>
-                            <CustomButton type="button" variant="ghost" size="sm" onClick={() => setShowNotes(true)} className="text-muted-foreground h-8 px-2">
-                                <StickyNote className="w-3.5 h-3.5 mr-2" />
-                                Add Note
-                            </CustomButton>
-                        </motion.div>
-                    ) : (
-                        <motion.div key="notes-area" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                            <Textarea
-                                id="notes"
-                                value={formData.notes}
-                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                placeholder="Add details about this transaction..."
-                                rows={3}
-                                className="resize-none"
-                                autoFocus
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="shrink-0 bg-background border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:border-none md:p-0 md:pt-4 flex justify-end gap-3 z-10">
                 <CustomButton type="button" variant="outline" onClick={onCancel}>
                     Cancel
                 </CustomButton>
