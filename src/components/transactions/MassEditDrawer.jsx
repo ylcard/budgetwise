@@ -139,6 +139,7 @@ export function MassEditDrawer({
     if (isAdmin) {
         availableFields.push({ id: 'bankTransactionId', label: 'Bank Tx ID', icon: Hash });
         availableFields.push({ id: 'recurringTransactionId', label: 'Recurring ID', icon: Hash });
+        availableFields.push({ id: 'budgetIdRaw', label: 'Budget ID (Raw Override)', icon: Hash });
     }
 
     const handleAddField = (fieldId) => {
@@ -163,6 +164,7 @@ export function MassEditDrawer({
         if (activeFields.includes('financial_priority')) updates.financial_priority = data.financial_priority;
         if (activeFields.includes('bankTransactionId')) updates.bankTransactionId = data.bankTransactionId;
         if (activeFields.includes('recurringTransactionId')) updates.recurringTransactionId = data.recurringTransactionId;
+        if (activeFields.includes('budgetIdRaw')) updates.budgetId = data.budgetIdRaw;
 
         if (activeFields.includes('isPaid')) {
             updates.isPaid = data.isPaid === "true";
@@ -385,6 +387,9 @@ export function MassEditDrawer({
                                 )}
                                 {fieldId === 'recurringTransactionId' && (
                                     <Input {...register('recurringTransactionId')} placeholder="Recurring Transaction ID" className="bg-background" />
+                                )}
+                                {fieldId === 'budgetIdRaw' && (
+                                    <Input {...register('budgetIdRaw')} placeholder="Paste Budget UUID here" className="bg-background font-mono" />
                                 )}
 
                             </motion.div>
