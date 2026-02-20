@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"; // ADDED 03-Feb-2026: L
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
-import ExpenseFormDialog from "../dialogs/ExpenseFormDialog";
+import ExpenseFormDialog from "./dialogs/ExpenseFormDialog";
 import { useTransactions } from "../hooks/useBase44Entities";
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { CustomButton } from "@/components/ui/CustomButton";
