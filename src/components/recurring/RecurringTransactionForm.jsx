@@ -6,7 +6,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, StickyNote } from "lucide-react";
+import { AlertCircle, StickyNote, Tag } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AmountInput from "../ui/AmountInput";
 import DatePicker from "../ui/DatePicker";
@@ -15,6 +15,7 @@ import { useSettings } from "../utils/SettingsContext";
 import { formatDateString } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 import { cn } from "@/lib/utils";
+import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
 const FREQUENCY_OPTIONS = [
     { value: "daily", label: "Daily" },
@@ -218,29 +219,32 @@ export default function RecurringTransactionForm({
                                         />
                                     </div>
                                     <div className="flex-[2]">
-                                        <div className="flex h-10 bg-slate-100 rounded-md p-1 items-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, financial_priority: 'needs' })}
-                                                className={cn(
-                                                    "flex-1 text-[10px] font-medium h-full rounded-sm transition-all",
-                                                    formData.financial_priority === 'needs' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                                )}
-                                            >
-                                                Essentials
-                                            </button>
-                                            <div className="w-px h-4 bg-slate-200 mx-1" />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, financial_priority: 'wants' })}
-                                                className={cn(
-                                                    "flex-1 text-[10px] font-medium h-full rounded-sm transition-all",
-                                                    formData.financial_priority === 'wants' ? "bg-white text-purple-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                                )}
-                                            >
-                                                Lifestyle
-                                            </button>
-                                        </div>
+                                        <CustomButton
+                                            type="button"
+                                            variant="outline"
+                                            className={cn(
+                                                "w-full h-10 justify-center px-3 text-sm font-medium transition-colors border-dashed",
+                                                formData.financial_priority ? "bg-blue-50/50 border-blue-200 border-solid" : "text-muted-foreground hover:bg-gray-50"
+                                            )}
+                                            onClick={() => {
+                                                const opts = Object.keys(FINANCIAL_PRIORITIES).filter(k => k !== 'savings');
+                                                if (opts.length === 0) return;
+                                                const next = (!formData.financial_priority || formData.financial_priority === opts[1]) ? opts[0] : opts[1];
+                                                setFormData({ ...formData, financial_priority: next });
+                                            }}
+                                        >
+                                            {formData.financial_priority ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: FINANCIAL_PRIORITIES[formData.financial_priority].color }} />
+                                                    <span className="text-gray-900">{FINANCIAL_PRIORITIES[formData.financial_priority].label}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <Tag className="w-4 h-4 opacity-50" />
+                                                    <span>Priority</span>
+                                                </div>
+                                            )}
+                                        </CustomButton>
                                     </div>
                                 </div>
                             </div>
