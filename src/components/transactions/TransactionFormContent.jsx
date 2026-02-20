@@ -4,18 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
-//import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RefreshCw, AlertCircle, Check, ChevronsUpDown, Calendar, CreditCard, Banknote, Clock, StickyNote, Tag, ChevronRight, Search, CheckCircle2, X } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, Calendar, Banknote, StickyNote, Tag, Search, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { Switch } from "@/components/ui/switch";
-//import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useConfirm } from "../ui/ConfirmDialogProvider";
 import AmountInput from "../ui/AmountInput";
 import CategorySelect from "../ui/CategorySelect";
@@ -24,7 +21,7 @@ import { useExchangeRates } from "../hooks/useExchangeRates";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "../utils/currencyCalculations";
 import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "../utils/dateUtils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
-import { normalizeAmount } from "../utils/generalUtils";
+import { normalizeAmount, getBudgetDisplayName } from "../utils/generalUtils";
 import { cn } from "@/lib/utils";
 import { useCategoryRules, useGoals, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { categorizeTransaction } from "../utils/transactionCategorization";
@@ -33,24 +30,6 @@ import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import DatePicker, { CalendarView } from "../ui/DatePicker";
-
-// Helper to format custom budget display names
-const getBudgetDisplayName = (budget) => {
-    if (!budget) return "";
-    if (budget.isSystemBudget) return budget.name;
-    if (!budget.startDate || !budget.endDate) return budget.name;
-
-    const startMonth = formatDate(budget.startDate, 'MMM');
-    const startYear = formatDate(budget.startDate, 'yy');
-    const endMonth = formatDate(budget.endDate, 'MMM');
-    const endYear = formatDate(budget.endDate, 'yy');
-
-    if (startYear === endYear) {
-        if (startMonth === endMonth) return `${budget.name} (${startMonth}, ${startYear})`;
-        return `${budget.name} (${startMonth}-${endMonth}, ${startYear})`;
-    }
-    return `${budget.name} (${startMonth}-${endMonth}, ${startYear}-${endYear})`;
-};
 
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
     const [searchTerm, setSearchTerm] = useState("");
