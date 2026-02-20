@@ -331,7 +331,7 @@ export default function Reports() {
                 <div className="grid lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <MonthlyBreakdown
-                            transactions={monthlyTransactions}
+                            transactions={transactions}
                             categories={categories}
                             monthlyIncome={monthlyIncome}
                             isLoading={isLoading}
@@ -445,7 +445,7 @@ export default function Reports() {
                     {mobileTab === 'breakdown' && (
                         <div className="h-full pb-20 overflow-y-auto">
                             <MonthlyBreakdown
-                                transactions={monthlyTransactions}
+                                transactions={transactions}
                                 categories={categories}
                                 monthlyIncome={monthlyIncome}
                                 isLoading={isLoading}
