@@ -66,13 +66,26 @@ const categorizeTransaction = (searchString, userRules, userCategories, systemCa
     // 1. User Rules (Highest Priority)
     for (const rule of userRules) {
         let matched = false;
+        let fuzzyScore = 0;
+
         if (rule.regexPattern) {
             try { if (new RegExp(rule.regexPattern, 'i').test(searchString)) matched = true; } catch (e) { }
         } else if (rule.keyword) {
             // Split comma-separated variations into an array and check if any match
             const variations = rule.keyword.split(',').map(k => k.trim().toUpperCase());
-            if (variations.some(k => searchString.includes(k))) {
-                matched = true;
+
+            for (const k of variations) {
+                // Direct match first (Fast)
+                if (searchString.includes(k)) {
+                    matched = true;
+                    break;
+                }
+                // Fuzzy match second (The "amzn" -> "amazon" logic)
+                fuzzyScore = calculateSimilarity(searchString, k);
+                if (fuzzyScore > 0.8) { // High confidence threshold
+                    matched = true;
+                    break;
+                }
             }
         }
         if (matched && rule.categoryId) {
@@ -80,7 +93,7 @@ const categorizeTransaction = (searchString, userRules, userCategories, systemCa
             if (cat) return {
                 categoryId: cat.id,
                 categoryName: cat.name,
-                priority: cat.priority || 'wants',
+                priority: rule.financial_priority || cat.priority || 'wants',
                 needsReview: false,
                 renamedTitle: rule.renamedTitle || null // Pass the clean name back!
             };
