@@ -34,6 +34,24 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Drawer
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import DatePicker, { CalendarView } from "../ui/DatePicker";
 
+// Helper to format custom budget display names
+const getBudgetDisplayName = (budget) => {
+    if (!budget) return "";
+    if (budget.isSystemBudget) return budget.name;
+    if (!budget.startDate || !budget.endDate) return budget.name;
+
+    const startMonth = formatDate(budget.startDate, 'MMM');
+    const startYear = formatDate(budget.startDate, 'yy');
+    const endMonth = formatDate(budget.endDate, 'MMM');
+    const endYear = formatDate(budget.endDate, 'yy');
+
+    if (startYear === endYear) {
+        if (startMonth === endMonth) return `${budget.name} (${startMonth}, ${startYear})`;
+        return `${budget.name} (${startMonth}-${endMonth}, ${startYear})`;
+    }
+    return `${budget.name} (${startMonth}-${endMonth}, ${startYear}-${endYear})`;
+};
+
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const selectedCategory = categories.find(c => c.id === value);
@@ -161,7 +179,7 @@ const MobilePriorityFormSelect = ({ value, onSelect, placeholder }) => {
 
 const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchTerm, onSearchChange }) => {
     const selectedBudget = options.find(b => b.id === value);
-    const label = selectedBudget ? selectedBudget.name : placeholder;
+    const label = selectedBudget ? getBudgetDisplayName(selectedBudget) : placeholder;
 
     return (
         <Drawer>
@@ -216,7 +234,7 @@ const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchT
                                                 )} />
                                             )}
                                             <div>
-                                                <div className="font-medium">{budget.name}</div>
+                                                <div className="font-medium">{getBudgetDisplayName(budget)}</div>
                                                 {budget.isSystemBudget && (
                                                     <div className="text-xs text-muted-foreground font-normal">
                                                         {formatDate(budget.startDate, 'MMM yyyy')}
@@ -930,7 +948,7 @@ export default function TransactionFormContent({
                                         className="w-full justify-between font-normal h-12 text-sm"
                                     >
                                         {formData.budgetId
-                                            ? mergedBudgets.find((b) => b.id === formData.budgetId)?.name
+                                            ? getBudgetDisplayName(mergedBudgets.find((b) => b.id === formData.budgetId))
                                             : "Select budget..."}
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </CustomButton>
@@ -962,7 +980,7 @@ export default function TransactionFormContent({
                                                             ) : (
                                                                 <span className={`w-2 h-2 rounded-full mr-2 ${budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
                                                             )}
-                                                            {budget.name}
+                                                            {getBudgetDisplayName(budget)}
                                                             {budget.isSystemBudget && <span className="ml-1 text-xs text-gray-400">({formatDate(budget.startDate, 'MMM')})</span>}
                                                         </div>
                                                     </CommandItem>
