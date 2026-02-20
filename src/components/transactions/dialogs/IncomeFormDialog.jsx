@@ -75,11 +75,11 @@ export default function IncomeFormDialog({
                         </span>
                     </DrawerTrigger>
                 )}
-                <DrawerContent className="max-h-[90vh]">
-                    <DrawerHeader className="text-left">
+                <DrawerContent className="max-h-[90dvh] flex flex-col">
+                    <DrawerHeader className="text-left shrink-0">
                         <DrawerTitle>{isEditMode ? 'Edit Income' : 'Add Income'}</DrawerTitle>
                     </DrawerHeader>
-                    <div className="px-4 pb-4 overflow-y-auto">{formContent}</div>
+                    {formContent}
                 </DrawerContent>
             </Drawer>
         );
