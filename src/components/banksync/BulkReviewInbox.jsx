@@ -38,15 +38,28 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
     const groupedTransactions = useMemo(() => {
         if (!transactions || transactions.length === 0) return [];
 
+        // Replicate backend cleaning logic to ensure rules match future syncs
+        const cleanForGrouping = (name) => {
+            if (!name) return "UNKNOWN";
+            let clean = name.toUpperCase();
+            const metadataPatterns = [
+                /^(PAGO (CON|DE) TARJETA|COMPRA EN|CARD (PURCHASE|PAYMENT)|POS PURCHASE|DEBIT|PAIEMENT PAR CARTE|SQ \*|PAYPAL \*)/g,
+                /(LIQUIDACION|ACH DEBIT)$/g
+            ];
+            metadataPatterns.forEach(p => clean = clean.replace(p, ""));
+            const legalSuffixes = /\s\b(S\.?L\.?|S\.?A\.?|L\.?L\.?C\.?|INC|LTD|GMBH|CORP)\b$/g;
+            clean = clean.replace(legalSuffixes, "");
+            clean = clean.replace(/[*#._-]/g, " ");
+            return clean.trim().replace(/\s+/g, " ");
+        };
+
         const groups = {};
         transactions.forEach(tx => {
             // Prefer merchantName. Fallback to title. Uppercase to normalize.
             let rawKey = tx.merchantName || tx.title || 'Unknown';
 
-            // SMART GROUPING:
-            // 1. Remove common payment prefixes (SQ *, PAYPAL *, etc) but KEEP numbers/special chars
-            // 2. Collapse whitespace
-            const key = rawKey.replace(/^[A-Z]{3,6}\*|^\d{4,}\s\*/i, '').replace(/\s+/g, ' ').trim().toUpperCase();
+            // Use the shared cleaning logic as the default keyword
+            const key = cleanForGrouping(rawKey);
 
             if (!groups[key]) {
                 groups[key] = {
@@ -64,6 +77,24 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
         // Sort by largest group first (most impact)
         return Object.values(groups).sort((a, b) => b.transactions.length - a.transactions.length);
     }, [transactions]);
+
+    // --- HELPER: Exponential Backoff Retry ---
+    const withRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                return await fn();
+            } catch (error) {
+                attempt++;
+                const isRateLimit = error?.status === 429 || error?.message?.includes('429');
+                if (attempt >= maxRetries || (!isRateLimit && attempt >= maxRetries)) throw error;
+
+                const delay = baseDelay * Math.pow(2, attempt - 1) + (Math.random() * 500); // Backoff + Jitter
+                console.warn(`⏳ [BulkReview] API limit hit. Retrying in ${Math.round(delay)}ms (Attempt ${attempt}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    };
 
     // 2. The Save Mutation
     const { mutate: saveBulkRules, isPending: isSaving } = useMutation({
@@ -125,29 +156,33 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             }
 
             if (rulesToUpdate.length > 0) {
-                // Replaced singular updates loop with one bulk request
                 await Promise.all(rulesToUpdate.map(rule =>
-                    base44.entities.CategoryRule.update(rule.id, {
+                    withRetry(() => base44.entities.CategoryRule.update(rule.id, {
                         categoryId: rule.categoryId,
                         renamedTitle: rule.renamedTitle
-                    })
+                    }))
                 ));
             }
 
             // B. Execute Transaction Operations (Bulk Only)
             if (transactionsToUpdate.length > 0) {
-                // We chunk this to avoid hitting API rate limits or payload size limits if many txs
-                const chunkSize = 50;
+                // Smaller chunk size to stay under concurrency limits
+                const chunkSize = 20;
                 for (let i = 0; i < transactionsToUpdate.length; i += chunkSize) {
                     const chunk = transactionsToUpdate.slice(i, i + chunkSize);
                     await Promise.all(chunk.map(tx =>
-                        base44.entities.Transaction.update(tx.id, {
+                        withRetry(() => base44.entities.Transaction.update(tx.id, {
                             category_id: tx.category_id,
                             financial_priority: tx.financial_priority,
                             needsReview: tx.needsReview,
                             title: tx.title
-                        })
+                        }))
                     ));
+
+                    // Micro-delay between chunks to allow token buckets to refill
+                    if (i + chunkSize < transactionsToUpdate.length) {
+                        await new Promise(resolve => setTimeout(resolve, 600));
+                    }
                 }
             }
 
