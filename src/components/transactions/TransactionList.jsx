@@ -14,9 +14,11 @@ import {
     Trash2,
     Banknote,
     StickyNote,
+    Database,
     CheckCircle2,
     BrainCircuit,
-    MoreHorizontal } from "lucide-react";
+    MoreHorizontal
+} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,7 +58,8 @@ export default function TransactionList({
     onSort
 }) {
 
-    const { settings } = useSettings();
+    const { settings, user } = useSettings();
+    const isAdmin = user?.role === 'admin';
 
     // Reset pagination if current page exceeds total pages (e.g. changing period reduces page count)
     useEffect(() => {
@@ -288,6 +291,7 @@ export default function TransactionList({
                             <th className="px-4 py-3 text-right cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('amount')}>
                                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
                             </th>
+                            {isAdmin && <th className="px-4 py-3 text-center w-40">Admin Info</th>}
                             <th className="px-4 py-3 w-1/4 text-center">Note</th>
                             <th className="px-4 py-3 w-20 text-center">Actions</th>
                         </tr>
@@ -346,6 +350,17 @@ export default function TransactionList({
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </span>
                                     </td>
+
+                                    {isAdmin && (
+                                        <td className="px-4 py-2">
+                                            <div className="flex flex-col gap-0.5 text-[9px] font-mono text-muted-foreground bg-muted/30 p-1.5 rounded-md break-all">
+                                                <div><span className="font-semibold text-purple-500">ID:</span> {transaction.id}</div>
+                                                {transaction.bankTransactionId && <div><span className="font-semibold text-blue-500">Bank:</span> {transaction.bankTransactionId}</div>}
+                                                {transaction.recurringTransactionId && <div><span className="font-semibold text-green-500">Recur:</span> {transaction.recurringTransactionId}</div>}
+                                            </div>
+                                        </td>
+                                    )}
+
                                     <td className="px-4 py-2 text-muted-foreground text-xs truncate max-w-[200px]" title={transaction.notes}>
                                         {transaction.notes}
                                     </td>
@@ -392,84 +407,95 @@ export default function TransactionList({
                         return (
                             <li
                                 key={transaction.id}
-                                className={`flex items-center p-3 gap-3 transition-colors ${isSelected ? 'bg-primary/10' : 'bg-card active:bg-accent'}`}
+                                className={`flex flex-col p-3 gap-3 transition-colors ${isSelected ? 'bg-primary/10' : 'bg-card active:bg-accent'}`}
                                 onClick={() => handleMobileRowClick(transaction)}
                             >
-                                {/* Selection Checkbox */}
-                                <div onClick={(e) => e.stopPropagation()}>
-                                    <Checkbox
-                                        checked={isSelected}
-                                        onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
-                                        className="h-5 w-5 rounded-md border-gray-300"
-                                    />
-                                </div>
-
-                                {/* Icon */}
-                                <div className="shrink-0">
-                                    {isIncome ? (
-                                        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-100">
-                                            <Banknote className="w-4 h-4 text-emerald-600" />
-                                        </div>
-                                    ) : (
-                                        <div
-                                            className="w-9 h-9 rounded-full flex items-center justify-center"
-                                            style={{ backgroundColor: category ? `${category.color}20` : '#f3f4f6' }}
-                                        >
-                                            {category ? (
-                                                <Icon className="w-4 h-4" style={{ color: category.color }} />
-                                            ) : (
-                                                <span className="text-muted-foreground/60 text-xs">?</span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Main Content - 2 Column Layout */}
-                                <div className="flex flex-1 items-center justify-between min-w-0 gap-3">
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-1.5">
-                                            <p className="text-sm font-semibold text-foreground truncate max-w-[18ch]">
-                                                {transaction.title}
-                                            </p>
-                                            {transaction.notes && <StickyNote className="w-3 h-3 text-muted-foreground/40 shrink-0" />}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
-                                            <span>{format(new Date(transaction.date), "MMM d")}</span>
-                                            {!isIncome && transaction.paidDate && (
-                                                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                                            )}
-                                        </div>
+                                <div className="flex items-center gap-3 w-full">
+                                    {/* Selection Checkbox */}
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <Checkbox
+                                            checked={isSelected}
+                                            onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
+                                            className="h-5 w-5 rounded-md border-gray-300"
+                                        />
                                     </div>
 
-                                    <div className="shrink-0 text-right">
+                                    {/* Icon */}
+                                    <div className="shrink-0">
+                                        {isIncome ? (
+                                            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-100">
+                                                <Banknote className="w-4 h-4 text-emerald-600" />
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="w-9 h-9 rounded-full flex items-center justify-center"
+                                                style={{ backgroundColor: category ? `${category.color}20` : '#f3f4f6' }}
+                                            >
+                                                {category ? (
+                                                    <Icon className="w-4 h-4" style={{ color: category.color }} />
+                                                ) : (
+                                                    <span className="text-muted-foreground/60 text-xs">?</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
 
-                                        {/* Mobile Actions Menu */}
-                                        <div className="flex justify-end mb-1" onClick={(e) => e.stopPropagation()}>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <button className="p-1 -mr-2 text-gray-400">
-                                                        <MoreHorizontal className="w-4 h-4" />
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48">
-                                                    <DropdownMenuItem onClick={() => onEdit(transaction)}>
-                                                        <Edit2 className="w-4 h-4 mr-2" /> Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => openCreateRuleFromTransaction(transaction)}>
-                                                        <BrainCircuit className="w-4 h-4 mr-2" /> Create Rule
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => onDelete(transaction)} className="text-red-600 focus:text-red-600">
-                                                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                    {/* Main Content - 2 Column Layout */}
+                                    <div className="flex flex-1 items-center justify-between min-w-0 gap-3">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-sm font-semibold text-foreground truncate max-w-[18ch]">
+                                                    {transaction.title}
+                                                </p>
+                                                {transaction.notes && <StickyNote className="w-3 h-3 text-muted-foreground/40 shrink-0" />}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+                                                <span>{format(new Date(transaction.date), "MMM d")}</span>
+                                                {!isIncome && transaction.paidDate && (
+                                                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                                )}
+                                            </div>
                                         </div>
 
-                                        <span className={`text-sm font-mono font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
-                                            {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
-                                        </span>
+                                        <div className="shrink-0 text-right">
+
+                                            {/* Mobile Actions Menu */}
+                                            <div className="flex justify-end mb-1" onClick={(e) => e.stopPropagation()}>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button className="p-1 -mr-2 text-gray-400">
+                                                            <MoreHorizontal className="w-4 h-4" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-48">
+                                                        <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                                                            <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => openCreateRuleFromTransaction(transaction)}>
+                                                            <BrainCircuit className="w-4 h-4 mr-2" /> Create Rule
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => onDelete(transaction)} className="text-red-600 focus:text-red-600">
+                                                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                            <span className={`text-sm font-mono font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                                                {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Admin Mobile Info */}
+                                {isAdmin && (
+                                    <div className="w-full flex flex-col gap-1 text-[9px] font-mono text-muted-foreground bg-muted/40 p-2 rounded border border-border mt-1 break-all" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center gap-1 mb-1 font-bold text-foreground uppercase tracking-wider"><Database className="w-3 h-3 text-purple-500" /> Debug Data</div>
+                                        <div><span className="font-semibold text-purple-500">ID:</span> {transaction.id}</div>
+                                        {transaction.bankTransactionId && <div><span className="font-semibold text-blue-500">Bank:</span> {transaction.bankTransactionId}</div>}
+                                        {transaction.recurringTransactionId && <div><span className="font-semibold text-green-500">Recur:</span> {transaction.recurringTransactionId}</div>}
+                                    </div>
+                                )}
                             </li>
                         );
                     })}
