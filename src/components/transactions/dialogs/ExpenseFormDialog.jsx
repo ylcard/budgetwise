@@ -13,9 +13,9 @@ import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "../utils/SettingsContext";
 import { useCustomBudgetsForPeriod, useSystemBudgetsForPeriod } from "../hooks/useBase44Entities";
 import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "../utils/dateUtils";
-import TransactionFormContent from "./TransactionFormContent";
+import ExpenseForm from "../forms/ExpenseForm";
 
-export default function QuickAddTransaction({
+export default function ExpenseFormDialog({
     open,
     onOpenChange,
     transaction = null, // If provided, edit mode; if null, add mode
@@ -199,7 +199,7 @@ export default function QuickAddTransaction({
                 <DrawerContent className="max-h-[90dvh] flex flex-col">
                     <DrawerHeader className="text-left shrink-0">
                         <DrawerTitle>
-                            {isEditMode ? 'Edit Transaction' : 'Quick Add Expense'}
+                            {isEditMode ? 'Edit Expense' : 'Add Expense'}
                         </DrawerTitle>
                     </DrawerHeader>
                     {formContent}
@@ -224,7 +224,7 @@ export default function QuickAddTransaction({
                 <div className="p-6 pb-2">
                     <DialogHeader>
                         <DialogTitle>
-                            {isEditMode ? 'Edit Transaction' : 'Quick Add Expense'}
+                            {isEditMode ? 'Edit Expense' : 'Add Expense'}
                         </DialogTitle>
                     </DialogHeader>
                     {formContent}
