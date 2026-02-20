@@ -393,6 +393,40 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 };
 
 /**
+ * Calculates historical averages for all categories in one pass.
+ */
+export const getAllHistoricalCategoryAverages = (transactions, selectedMonth, selectedYear, lookbackMonths = 3) => {
+    if (!transactions || transactions.length === 0) return {};
+
+    const categoryTotals = {};
+
+    // Look back at the last X months
+    for (let i = 1; i <= lookbackMonths; i++) {
+        const date = new Date(selectedYear, selectedMonth - i, 1);
+        const m = date.getMonth();
+        const y = date.getFullYear();
+        const { monthStart, monthEnd } = getMonthBoundaries(m, y);
+
+        transactions.forEach(t => {
+            if (t.type === 'expense' && t.category_id && isTransactionInDateRange(t, monthStart, monthEnd)) {
+                if (!categoryTotals[t.category_id]) {
+                    categoryTotals[t.category_id] = 0;
+                }
+                categoryTotals[t.category_id] += t.amount;
+            }
+        });
+    }
+
+    // Calculate average per month
+    const averages = {};
+    Object.keys(categoryTotals).forEach(catId => {
+        averages[catId] = categoryTotals[catId] / lookbackMonths;
+    });
+
+    return averages;
+};
+
+/**
  * HELPER: Math Utils for Projection
  */
 const calculateMedian = (values) => {
