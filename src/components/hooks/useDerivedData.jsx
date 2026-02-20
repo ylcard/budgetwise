@@ -832,6 +832,7 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
             if (idSearchTerm) {
                 const matchId = t.id?.toLowerCase().includes(idSearchTerm) ||
                     t.bankTransactionId?.toLowerCase().includes(idSearchTerm) ||
+                    t.budgetId?.toLowerCase().includes(idSearchTerm) ||
                     t.recurringTransactionId?.toLowerCase().includes(idSearchTerm) ||
                     t.normalisedProviderTransactionId?.toLowerCase().includes(idSearchTerm) ||
                     t.providerTransactionId?.toLowerCase().includes(idSearchTerm);
