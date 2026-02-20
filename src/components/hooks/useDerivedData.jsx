@@ -660,8 +660,17 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
         // NEW: Get historical baselines
         const historicalAverages = getAllHistoricalCategoryAverages(transactions, safeMonth, safeYear, 3);
 
+        // Parse the boundaries using your app's date utility to avoid timezone shifts
+        const startD = parseDate(monthStart);
+        const endD = parseDate(monthEnd);
+
         const expensesByCategory = transactions
-            .filter(t => t.type === 'expense')
+            .filter(t => {
+                if (t.type !== 'expense') return false;
+                const tDate = parseDate(t.paidDate || t.date);
+                return tDate && tDate >= startD && tDate <= endD;
+            })
+            
             .reduce((acc, t) => {
                 const categoryId = t.category_id || 'uncategorized';
                 const amount = Number(t.amount) || 0;
