@@ -11,6 +11,25 @@ import { Input } from '@/components/ui/input';
 import { Tag, Calendar, Wallet, CheckCircle2, Shield, Plus, X, Trash2 } from 'lucide-react';
 import { getCategoryIcon } from '@/components/utils/iconMapConfig';
 import { cn } from '@/lib/utils';
+import { formatDate } from '../utils/dateUtils';
+
+// Helper to format custom budget display names
+const getBudgetDisplayName = (budget) => {
+    if (!budget) return "";
+    if (budget.isSystemBudget) return budget.name;
+    if (!budget.startDate || !budget.endDate) return budget.name;
+
+    const startMonth = formatDate(budget.startDate, 'MMM');
+    const startYear = formatDate(budget.startDate, 'yy');
+    const endMonth = formatDate(budget.endDate, 'MMM');
+    const endYear = formatDate(budget.endDate, 'yy');
+
+    if (startYear === endYear) {
+        if (startMonth === endMonth) return `${budget.name} (${startMonth}, ${startYear})`;
+        return `${budget.name} (${startMonth}-${endMonth}, ${startYear})`;
+    }
+    return `${budget.name} (${startMonth}-${endMonth}, ${startYear}-${endYear})`;
+};
 
 export function MassEditDrawer({
     open,
@@ -197,9 +216,17 @@ export function MassEditDrawer({
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">Remove from Budget</SelectItem>
-                                            {customBudgets.map(b => (
-                                                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                                            ))}
+                                            {[...customBudgets]
+                                                .sort((a, b) => {
+                                                    const dateA = new Date(a.startDate || 0).getTime();
+                                                    const dateB = new Date(b.startDate || 0).getTime();
+                                                    return dateB - dateA;
+                                                })
+                                                .map(b => (
+                                                    <SelectItem key={b.id} value={b.id}>
+                                                        {getBudgetDisplayName(b)}
+                                                    </SelectItem>
+                                                ))}
                                         </SelectContent>
                                     </Select>
                                 )}
