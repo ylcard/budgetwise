@@ -14,7 +14,7 @@ import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedD
 import { useTransactionActions } from "../components/hooks/useActions";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
-import { chunkArray } from "../components/utils/generalUtils";
+import { chunkArray, fetchWithRetry } from "../components/utils/generalUtils";
 import QuickAddTransaction from "../components/transactions/QuickAddTransaction";
 import QuickAddIncome from "../components/transactions/QuickAddIncome";
 import TransactionList from "../components/transactions/TransactionList";
@@ -29,23 +29,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom"; // Outlet/Context removed
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Utility for Rate Limit Mitigation with Exponential Backoff
-const fetchWithRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
-    let attempt = 0;
-    while (attempt < maxRetries) {
-        try {
-            return await fn();
-        } catch (error) {
-            // Check if it's a rate limit error (usually 429)
-            if (error?.status === 429 || error?.response?.status === 429 || error?.message?.includes("429")) {
-                attempt++;
-                if (attempt >= maxRetries) throw error;
-                await new Promise(res => setTimeout(res, baseDelay * (2 ** (attempt - 1)))); // 1s, 2s, 4s...
-            } else throw error;
-        }
-    }
-};
 
 export default function TransactionsLayout() {
     const { user } = useSettings();
