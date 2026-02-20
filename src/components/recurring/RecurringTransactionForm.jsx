@@ -6,16 +6,19 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
 import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect"; // ADDED 03-Feb-2026: iOS-native action sheets on mobile
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, StickyNote, Tag } from "lucide-react";
+import { AlertCircle, StickyNote, Tag, Search, Check, Calendar } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import AmountInput from "../ui/AmountInput";
-import DatePicker from "../ui/DatePicker";
+import DatePicker, { CalendarView } from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
 import { useSettings } from "../utils/SettingsContext";
-import { formatDateString } from "../utils/dateUtils";
+import { formatDateString, formatDate } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 import { cn } from "@/lib/utils";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
+import { getCategoryIcon } from "../utils/iconMapConfig";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const FREQUENCY_OPTIONS = [
     { value: "daily", label: "Daily" },
@@ -25,6 +28,105 @@ const FREQUENCY_OPTIONS = [
     { value: "quarterly", label: "Quarterly" },
     { value: "yearly", label: "Yearly" },
 ];
+
+const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
+    const [searchTerm, setSearchTerm] = useState("");
+    const selectedCategory = categories.find(c => c.id === value);
+    const label = selectedCategory ? selectedCategory.name : placeholder;
+
+    const filteredCategories = categories.filter(cat =>
+        cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <Drawer>
+            <DrawerTrigger asChild>
+                <CustomButton
+                    variant="outline"
+                    className="w-full justify-between h-12 px-3 font-normal text-sm"
+                >
+                    <span className={cn("truncate", !selectedCategory && "text-muted-foreground")}>
+                        {label}
+                    </span>
+                    <Tag className="h-4 w-4 opacity-50" />
+                </CustomButton>
+            </DrawerTrigger>
+            <DrawerContent className="z-[200] flex flex-col max-h-[90dvh]">
+                <DrawerHeader>
+                    <DrawerTitle>Select Category</DrawerTitle>
+                </DrawerHeader>
+
+                <div className="px-4 pb-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search categories..."
+                            className="pl-9 h-10 bg-muted/30"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div className="p-4 space-y-1 overflow-y-auto flex-1 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    {filteredCategories.map((cat) => {
+                        const isSelected = value === cat.id;
+                        const Icon = getCategoryIcon(cat.icon);
+                        return (
+                            <DrawerClose key={cat.id} asChild>
+                                <button
+                                    onClick={() => onSelect(cat.id)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between px-4 py-4 rounded-xl text-base font-medium transition-colors",
+                                        isSelected ? "bg-blue-50 text-blue-600" : "active:bg-gray-100"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${cat.color}20` }}>
+                                            <Icon className="w-4 h-4" style={{ color: cat.color }} />
+                                        </div>
+                                        <span>{cat.name}</span>
+                                    </div>
+                                    {isSelected && <Check className="w-5 h-5" />}
+                                </button>
+                            </DrawerClose>
+                        );
+                    })}
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+};
+
+const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
+    const isMobile = useIsMobile();
+    const dateValue = value ? new Date(value) : undefined;
+
+    if (isMobile) {
+        return (
+            <Drawer>
+                <DrawerTrigger asChild>
+                    <CustomButton
+                        variant="outline"
+                        className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground", className)}
+                    >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {value ? formatDate(dateValue, 'MMM dd, yyyy') : <span>{placeholder}</span>}
+                    </CustomButton>
+                </DrawerTrigger>
+                <DrawerContent className="z-[200]">
+                    <div className="p-4 pb-8 flex justify-center">
+                        <CalendarView selected={dateValue} onSelect={(d) => onChange(d ? formatDateString(d) : '')} />
+                    </div>
+                </DrawerContent>
+            </Drawer>
+        );
+    }
+
+    return (
+        <DatePicker value={value} onChange={onChange} placeholder={placeholder} className={className} />
+    );
+};
 
 export default function RecurringTransactionForm({
     initialData = null,
