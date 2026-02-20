@@ -10,7 +10,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
-import IncomeFormContent from "./IncomeFormContent";
+import IncomeForm from "../forms/IncomeForm";
 
 export default function IncomeFormDialog({
     open,
