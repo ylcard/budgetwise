@@ -12,7 +12,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCustomBudgetsForPeriod, useSystemBudgetsForPeriod } from "@/components/hooks/useBase44Entities";
-import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "@/utils/dateUtils";
+import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "@/components/utils/dateUtils";
 import ExpenseForm from "../forms/ExpenseForm";
 
 export default function ExpenseFormDialog({
