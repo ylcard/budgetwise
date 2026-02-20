@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"; // ADDED 03-Feb-2026: L
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
-import QuickAddTransaction from "./QuickAddTransaction";
+import ExpenseFormDialog from "../dialogs/ExpenseFormDialog";
 import { useTransactions } from "../hooks/useBase44Entities";
 import { useMergedCategories } from "../hooks/useMergedCategories";
 import { CustomButton } from "@/components/ui/CustomButton";
@@ -157,7 +157,7 @@ export default function TransactionCard({ transaction, category, onEdit, onDelet
 
                             {/* Action buttons - only visible on hover */}
                             <div className="absolute top-2 right-2 flex gap-1">
-                                <QuickAddTransaction
+                                <ExpenseFormDialog
                                     transaction={transaction}
                                     categories={categories}
                                     customBudgets={[]}
