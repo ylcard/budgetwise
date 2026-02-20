@@ -2,7 +2,21 @@ import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { ChevronLeft, ChevronRight, X, Trash, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Edit2, Trash2, Banknote, StickyNote, CheckCircle2, BrainCircuit, MoreHorizontal, Copy } from "lucide-react";
+import {
+    ChevronLeft,
+    ChevronRight,
+    X,
+    Trash,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    Edit2,
+    Trash2,
+    Banknote,
+    StickyNote,
+    CheckCircle2,
+    BrainCircuit,
+    MoreHorizontal } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +24,6 @@ import { format } from "date-fns";
 import { formatCurrency } from "../utils/currencyUtils";
 import { useSettings } from "../utils/SettingsContext";
 import { getCategoryIcon } from "../utils/iconMapConfig";
-import QuickAddTransaction from "./QuickAddTransaction";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
