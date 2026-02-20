@@ -11,6 +11,7 @@ import {
     calculateBonusSavingsPotential,
     resolveBudgetLimit,
     getHistoricalAverageIncome,
+    getAllHistoricalCategoryAverages,
     calculateIncomeProjection
 } from "../utils/financialCalculations";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
@@ -656,6 +657,9 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
         // 2. Calculate Category Breakdown (Existing Logic)
         const categoryMap = createEntityMap(categories);
 
+        // NEW: Get historical baselines
+        const historicalAverages = getAllHistoricalCategoryAverages(transactions, safeMonth, safeYear, 3);
+
         const expensesByCategory = transactions
             .filter(t => t.type === 'expense')
             .reduce((acc, t) => {
@@ -671,12 +675,30 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
             .filter(([_, amount]) => amount > 0)
             .map(([categoryId, amount]) => {
                 const category = categoryMap[categoryId];
+                const avgSpend = historicalAverages[categoryId] || 0;
+
+                // Granular Status Logic
+                let alertStatus = 'normal';
+                let diffPercentage = 0;
+
+                if (avgSpend > 0) {
+                    diffPercentage = ((amount - avgSpend) / avgSpend) * 100;
+
+                    if (diffPercentage > 50) alertStatus = 'critical'; // > 50% over avg
+                    else if (diffPercentage > 20) alertStatus = 'warning'; // > 20% over avg
+                    else if (diffPercentage > 5) alertStatus = 'elevated'; // > 5% over avg
+                    else if (diffPercentage < -15) alertStatus = 'saving'; // > 15% under avg
+                }
+
                 return {
                     id: categoryId,
                     name: category?.name || 'Uncategorized',
                     icon: category?.icon,
                     color: category?.color || '#94A3B8',
                     amount,
+                    averageSpend: avgSpend,
+                    alertStatus,
+                    diffPercentage,
                     percentage: monthlyIncome > 0 ? (amount / monthlyIncome) * 100 : 0,
                     expensePercentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
                 };
