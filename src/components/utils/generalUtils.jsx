@@ -47,3 +47,26 @@ export const chunkArray = (array, chunkSize) => {
     }
     return chunks;
 };
+
+/**
+ * Utility for Rate Limit Mitigation with Exponential Backoff
+ * Catches 429 errors and retries the request with increasing delays.
+ * @param {Function} fn - The async function to execute.
+ * @param {number} maxRetries - Maximum number of retry attempts.
+ * @param {number} baseDelay - Base delay in milliseconds.
+ * @returns {Promise<any>} The result of the function.
+ */
+export const fetchWithRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
+    let attempt = 0;
+    while (attempt < maxRetries) {
+        try {
+            return await fn();
+        } catch (error) {
+            if (error?.status === 429 || error?.response?.status === 429 || error?.message?.includes("429")) {
+                attempt++;
+                if (attempt >= maxRetries) throw error;
+                await new Promise(res => setTimeout(res, baseDelay * (2 ** (attempt - 1)))); // 1s, 2s, 4s
+            } else throw error;
+        }
+    }
+};
