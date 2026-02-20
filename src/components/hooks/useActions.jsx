@@ -67,7 +67,7 @@ export const useTransactionActions = (config = {}) => {
 
             return { previousQueries };
         },
-        onError: (err, newTransaction, context) => {
+        onError: (_, __, context) => {
             // Rollback on error
             context.previousQueries.forEach(([queryKey, oldData]) => {
                 queryClient.setQueryData(queryKey, oldData);
@@ -104,7 +104,7 @@ export const useTransactionActions = (config = {}) => {
 
             return { previousQueries };
         },
-        onError: (err, variables, context) => {
+        onError: (_, __, context) => {
             context.previousQueries.forEach(([queryKey, oldData]) => {
                 queryClient.setQueryData(queryKey, oldData);
             });
@@ -141,7 +141,7 @@ export const useTransactionActions = (config = {}) => {
 
             return { previousQueries };
         },
-        onError: (err, id, context) => {
+        onError: (_, __, context) => {
             context.previousQueries.forEach(([queryKey, oldData]) => {
                 queryClient.setQueryData(queryKey, oldData);
             });
@@ -266,7 +266,7 @@ export const useGoalActions = (user, goals) => {
 
     const updateGoalMutation = useMutation({
         mutationFn: ({ id, data }) => base44.entities.BudgetGoal.update(id, data),
-        onSuccess: async (data, variables) => {
+        onSuccess: async (_, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
 
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
@@ -286,7 +286,7 @@ export const useGoalActions = (user, goals) => {
 
     const createGoalMutation = useMutation({
         mutationFn: (data) => base44.entities.BudgetGoal.create(data),
-        onSuccess: async (data, variables) => {
+        onSuccess: async (_, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
             const allGoals = await base44.entities.BudgetGoal.filter({ created_by: user?.email });
@@ -339,7 +339,6 @@ export const useGoalActions = (user, goals) => {
 };
 
 // Hook for custom budget actions (CRUD operations)
-// export const useCustomBudgetActions = (user, transactions, options = {}) => {
 export const useCustomBudgetActions = (config = {}) => {
     const { user } = useSettings();
     const { transactions, ...options } = config;
