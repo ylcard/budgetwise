@@ -3,13 +3,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import AmountInput from "../ui/AmountInput";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { DayPicker } from "react-day-picker";
+import DateRangePicker from "../ui/DateRangePicker";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
-import { format } from "date-fns";
 import { PRESET_COLORS } from "../utils/constants";
 import { normalizeAmount } from "../utils/generalUtils";
 import { usePeriod } from "../hooks/usePeriod";
@@ -36,7 +33,6 @@ export default function CustomBudgetForm({
         color: '#3B82F6'
     });
 
-    const [isPickerOpen, setIsPickerOpen] = useState(false);
     const [validationError, setValidationError] = useState(null);
 
     useEffect(() => {
@@ -67,19 +63,6 @@ export default function CustomBudgetForm({
         setFormData(updated);
         // ADDED: 16-Jan-2026 - Notify parent of changes for real-time feasibility
         if (onFormChange) onFormChange(updated);
-    };
-
-    const handleRangeSelect = (range) => {
-        handleDateRangeChange(
-            range?.from ? format(range.from, 'yyyy-MM-dd') : '',
-            range?.to ? format(range.to, 'yyyy-MM-dd') : ''
-        );
-    };
-
-    // Prepare the selected range object for DayPicker
-    const selectedRange = {
-        from: formData.startDate ? new Date(formData.startDate) : undefined,
-        to: formData.endDate ? new Date(formData.endDate) : undefined
     };
 
     const handleFieldChange = (field, value) => {
