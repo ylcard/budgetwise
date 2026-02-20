@@ -4,6 +4,7 @@ import { useSettings } from "../utils/SettingsContext";
 import { useMonthlyBreakdown } from "../hooks/useDerivedData";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
+import { AlertCircle, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
 
 export default function MonthlyBreakdown({
     transactions,
@@ -23,6 +24,16 @@ export default function MonthlyBreakdown({
 
     // SORTING: Ensure highest expenses are first (Top Left)
     const sortedBreakdown = [...categoryBreakdown].sort((a, b) => b.amount - a.amount);
+
+    // Helper for Alert Icon
+    const StatusIndicator = ({ status, diff }) => {
+        if (!status || status === 'normal') return null;
+        if (status === 'critical') return <AlertCircle size={14} className="text-red-500 animate-pulse" title={`${diff?.toFixed(0)}% above average!`} />;
+        if (status === 'warning') return <TrendingUp size={14} className="text-amber-500" title={`${diff?.toFixed(0)}% above average`} />;
+        if (status === 'elevated') return <ArrowUpRight size={14} className="text-blue-400" title="Slightly above average" />;
+        if (status === 'saving') return <TrendingDown size={14} className="text-emerald-500" title="Below average spending" />;
+        return null;
+    };
 
     // Helper for header styling
     const SummaryItem = ({ label, amount, className }) => (
@@ -98,9 +109,12 @@ export default function MonthlyBreakdown({
                                                 >
                                                     <IconComponent size={18} strokeWidth={2.5} style={{ color: item.color }} />
                                                 </div>
-                                                <span className="font-bold text-gray-900 text-sm">
-                                                    {formatCurrency(item.amount, settings)}
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <StatusIndicator status={item?.alertStatus} diff={item?.diffPercentage} />
+                                                    <span className="font-bold text-gray-900 text-sm">
+                                                        {formatCurrency(item.amount, settings)}
+                                                    </span>
+                                                </div>
                                             </div>
                                             {/* Bottom Row: Label & Stats */}
                                             <div>
