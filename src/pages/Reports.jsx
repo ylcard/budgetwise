@@ -426,6 +426,7 @@ export default function Reports() {
                                     </CarouselItem>
 
                                     {/* Slide 4: Priority */}
+                                    {/*
                                     <CarouselItem className="pl-2 overflow-y-auto">
                                         <div className="pb-12">
                                             <MobileChartCard title="Priority Allocations" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Allocations", content: priorityComponent })}>
@@ -433,6 +434,7 @@ export default function Reports() {
                                             </MobileChartCard>
                                         </div>
                                     </CarouselItem>
+                                    */}
 
                                 </CarouselContent>
                             </Carousel>
