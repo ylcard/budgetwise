@@ -26,6 +26,7 @@ import { base44 } from "@/api/base44Client";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useMergedCategories } from "../hooks/useMergedCategories"; // ADDED 14-Feb-2026
+import { fetchWithRetry } from "../utils/generalUtils";
 
 export default function CategorySelect({ value, onValueChange, categories: providedCategories, placeholder = "Select category", multiple = false }) {
     const [open, setOpen] = useState(false);
@@ -35,7 +36,7 @@ export default function CategorySelect({ value, onValueChange, categories: provi
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { user } = useSettings();
-    
+
     // ADDED 14-Feb-2026: Use merged categories if not provided externally
     const { categories: mergedCategories } = useMergedCategories();
     const categories = providedCategories || mergedCategories;
@@ -70,7 +71,7 @@ export default function CategorySelect({ value, onValueChange, categories: provi
         if (!searchTerm) return true; // Don't show create if empty
         return categories.some(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase());
     }, [categories, searchTerm]);
-    
+
     // ADDED 14-Feb-2026: Prevent creation if name matches system category
     const canCreate = useMemo(() => {
         if (!searchTerm.trim()) return false;
@@ -111,14 +112,14 @@ export default function CategorySelect({ value, onValueChange, categories: provi
             const icon = suggestIconForCategory(name);
 
             // 3. Create
-            const newCat = await base44.entities.Category.create({
+            const newCat = await fetchWithRetry(() => base44.entities.Category.create({
                 name: name,
                 icon: icon,
                 color: color,
                 type: 'expense',
                 priority: 'wants', // Default safety
                 user_email: user.email
-            });
+            }));
 
             // 4. Refresh & Select
             await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
@@ -251,17 +252,17 @@ export default function CategorySelect({ value, onValueChange, categories: provi
                                             className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
                                         />
                                         <div
-                                           className="w-5 h-5 rounded flex items-center justify-center mr-2"
-                                           style={{ backgroundColor: `${category.color}20` }}
+                                            className="w-5 h-5 rounded flex items-center justify-center mr-2"
+                                            style={{ backgroundColor: `${category.color}20` }}
                                         >
-                                           <Icon className="w-3 h-3" style={{ color: category.color }} />
+                                            <Icon className="w-3 h-3" style={{ color: category.color }} />
                                         </div>
                                         <span>{category.name}</span>
                                         {/* ADDED 14-Feb-2026: Show badge for system categories */}
                                         {category.isSystemCategory && (
-                                           <span className="ml-auto text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">System</span>
+                                            <span className="ml-auto text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">System</span>
                                         )}
-                                        </CommandItem>
+                                    </CommandItem>
                                 );
                             })}
                         </CommandGroup>
