@@ -210,7 +210,8 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
     });
 
     // DELETE: Use generic hook (no dependencies to handle)
-    const { handleDelete: deleteCustomCategory } = useDeleteEntity({
+    // We map deleteDirect to handleBulkDelete to bypass the single-item dialog
+    const { handleDelete: deleteCustomCategory, deleteDirect: bulkDeleteCustomCategories } = useDeleteEntity({
         entityName: 'Category',
         queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
         confirmTitle: "Delete Category",
@@ -255,6 +256,7 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
         handleSubmit,
         handleEdit,
         handleDelete: handleDeleteWrapper,
+        handleBulkDelete: bulkDeleteCustomCategories,
         isSubmitting: createMutation.isPending || updateMutation.isPending || updateSystemMutation.isPending,
     };
 };
