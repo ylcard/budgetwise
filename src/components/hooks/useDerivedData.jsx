@@ -11,9 +11,9 @@ import {
     calculateBonusSavingsPotential,
     resolveBudgetLimit,
     getHistoricalAverageIncome,
-    getAllHistoricalCategoryAverages,
     calculateIncomeProjection
 } from "../utils/financialCalculations";
+import { calculateProjection } from "../utils/projectionUtils";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { Banknote } from "lucide-react";
@@ -657,8 +657,12 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
         // 2. Calculate Category Breakdown (Existing Logic)
         const categoryMap = createEntityMap(categories);
 
-        // NEW: Get historical baselines
-        const historicalAverages = getAllHistoricalCategoryAverages(transactions, safeMonth, safeYear, 3);
+        // REFINED: Use existing projection engine for mathematically sound baselines (outliers removed)
+        const projectionData = calculateProjection(transactions, categories, 6);
+        const historicalAverages = {};
+        projectionData.categoryProjections.forEach(cp => {
+            historicalAverages[cp.categoryId] = cp.averageSpend;
+        });
 
         // Parse the boundaries using your app's date utility to avoid timezone shifts
         const startD = parseDate(monthStart);
@@ -690,13 +694,15 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
                 let alertStatus = 'normal';
                 let diffPercentage = 0;
 
+                // NOISE REDUCTION: Must meet BOTH percentage and absolute thresholds to avoid UI clutter
                 if (avgSpend > 0) {
-                    diffPercentage = ((amount - avgSpend) / avgSpend) * 100;
+                    const absoluteDiff = amount - avgSpend;
+                    diffPercentage = (absoluteDiff / avgSpend) * 100;
 
-                    if (diffPercentage > 50) alertStatus = 'critical'; // > 50% over avg
-                    else if (diffPercentage > 20) alertStatus = 'warning'; // > 20% over avg
-                    else if (diffPercentage > 5) alertStatus = 'elevated'; // > 5% over avg
-                    else if (diffPercentage < -15) alertStatus = 'saving'; // > 15% under avg
+                    // e.g., Must be > $30 off AND > 25% off
+                    if (absoluteDiff > 50 && diffPercentage > 25) alertStatus = 'critical';
+                    else if (absoluteDiff > 25 && diffPercentage > 15) alertStatus = 'warning';
+                    else if (absoluteDiff < -25 && diffPercentage < -15) alertStatus = 'saving';
                 }
 
                 return {
