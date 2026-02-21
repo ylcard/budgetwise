@@ -799,29 +799,6 @@ export function AccountSection() {
                 </CardContent>
             </Card>
 
-            {/* System Maintenance Card */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Wrench className="w-5 h-5" /> System Maintenance
-                    </CardTitle>
-                    <CardDescription>Fix broken budget links or restore accidentally deleted system budgets for past months.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <CustomButton
-                        variant="outline"
-                        onClick={handleRepairBudgets}
-                        disabled={isRepairing}
-                    >
-                        {isRepairing ? (
-                            <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Repairing...</>
-                        ) : (
-                            "Run Budget Repair"
-                        )}
-                    </CustomButton>
-                </CardContent>
-            </Card>
-
             {/* Export Dialog */}
             <ExportDialog
                 open={showExportDialog}
