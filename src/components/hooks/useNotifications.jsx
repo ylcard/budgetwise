@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { QUERY_KEYS } from './queryKeys';
 import { useSettings } from '../utils/SettingsContext';
+import { fetchWithRetry } from '../utils/generalUtils';
 
 /**
  * CREATED 14-Feb-2026: Hook for managing notifications
@@ -15,11 +16,11 @@ export const useNotifications = () => {
     const { data: notifications = [], isLoading } = useQuery({
         queryKey: [QUERY_KEYS.NOTIFICATIONS],
         queryFn: async () => {
-            const all = await base44.entities.Notification.filter(
+            const all = await fetchWithRetry(() => base44.entities.Notification.filter(
                 { created_by: user?.email },
                 '-created_date'
-            );
-            
+            ));
+
             // Sort by priority (urgent > high > medium > low) then by date
             const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
             return all.sort((a, b) => {
@@ -34,8 +35,8 @@ export const useNotifications = () => {
 
     // Mark notification as read
     const markAsReadMutation = useMutation({
-        mutationFn: (notificationId) => 
-            base44.entities.Notification.update(notificationId, { isRead: true }),
+        mutationFn: (notificationId) =>
+            fetchWithRetry(() => base44.entities.Notification.update(notificationId, { isRead: true })),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
         },
@@ -43,8 +44,8 @@ export const useNotifications = () => {
 
     // Dismiss notification
     const dismissMutation = useMutation({
-        mutationFn: (notificationId) => 
-            base44.entities.Notification.update(notificationId, { isDismissed: true }),
+        mutationFn: (notificationId) =>
+            fetchWithRetry(() => base44.entities.Notification.update(notificationId, { isDismissed: true })),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
         },
@@ -52,8 +53,8 @@ export const useNotifications = () => {
 
     // Delete notification
     const deleteMutation = useMutation({
-        mutationFn: (notificationId) => 
-            base44.entities.Notification.delete(notificationId),
+        mutationFn: (notificationId) =>
+            fetchWithRetry(() => base44.entities.Notification.delete(notificationId)),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
         },
@@ -63,9 +64,13 @@ export const useNotifications = () => {
     const markAllAsReadMutation = useMutation({
         mutationFn: async () => {
             const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
-            await Promise.all(unreadIds.map(id => 
-                base44.entities.Notification.update(id, { isRead: true })
-            ));
+            // Chunking to prevent 429s on 'Mark All Read'
+            const chunkSize = 20;
+            for (let i = 0; i < unreadIds.length; i += chunkSize) {
+                const chunk = unreadIds.slice(i, i + chunkSize);
+                await Promise.all(chunk.map(id => fetchWithRetry(() => base44.entities.Notification.update(id, { isRead: true }))));
+                if (i + chunkSize < unreadIds.length) await new Promise(res => setTimeout(res, 250));
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
@@ -76,9 +81,9 @@ export const useNotifications = () => {
     const clearDismissedMutation = useMutation({
         mutationFn: async () => {
             const dismissedIds = notifications.filter(n => n.isDismissed).map(n => n.id);
-            await Promise.all(dismissedIds.map(id => 
-                base44.entities.Notification.delete(id)
-            ));
+            if (dismissedIds.length > 0) {
+                await fetchWithRetry(() => base44.entities.Notification.deleteMany({ id: { $in: dismissedIds } }));
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
