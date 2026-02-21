@@ -18,7 +18,8 @@ import ManagePage, { PreferencesSection, AccountSection } from './pages/Manage';
 import Categories from './pages/Categories';
 import Automation from './pages/Automation';
 import BankSync from './pages/BankSync';
-import TransactionsPage from './pages/Transactions';
+import TransactionsPage, { TransactionHistory } from './pages/Transactions';
+import RecurringTransactions from './pages/RecurringTransactions';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -60,8 +61,12 @@ const AuthenticatedApp = () => {
             <Routes>
                 <Route path="/" element={<MainPage />} />
 
-                {/* Transactions Route */}
-                <Route path="/transactions" element={<TransactionsPage />} />
+                {/* Transactions Nested Routes */}
+                <Route path="/transactions" element={<TransactionsPage />}>
+                    <Route index element={<Navigate to="history" replace />} />
+                    <Route path="history" element={<TransactionHistory />} />
+                    <Route path="recurring" element={<RecurringTransactions />} />
+                </Route>
 
                 {/* Manage Nested Routes */}
                 <Route path="/manage" element={<ManagePage />}>
@@ -89,7 +94,7 @@ const AuthenticatedApp = () => {
 function App() {
 
     return (
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <AuthProvider>
                 <SettingsProvider>
                     <QueryClientProvider client={queryClientInstance}>

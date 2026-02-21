@@ -28,8 +28,15 @@ import { SETTINGS_KEYS } from "../components/utils/constants";
 import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
+import { Checkbox } from "@/components/ui/checkbox";
 import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
+import { format } from "date-fns";
+import { BudgetRepairCard } from "../components/utils/BudgetRepairCard";
+import { 
+    ensureBudgetsForActiveMonths, 
+    reconcileTransactionBudgets 
+} from "@/components/utils/budgetInitialization";
 
 export default function ManageLayout() {
     return (
@@ -584,6 +591,32 @@ export function AccountSection() {
         }
     };
 
+    const handleRepairBudgets = async () => {
+        if (!user?.email) return;
+
+        setIsRepairing(true);
+        try {
+            showToast({ title: "Maintenance Started", description: "Restoring budgets and re-linking transactions..." });
+
+            // 1. Fetch current goals to ensure budgets are created with correct targets
+            const goals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
+
+            // 2. Run the repair sequence
+            await ensureBudgetsForActiveMonths(user.email, goals, settings);
+            const updatedCount = await reconcileTransactionBudgets(user.email);
+
+            showToast({
+                title: "Maintenance Complete",
+                description: `System budgets restored and ${updatedCount} transactions re-linked.`
+            });
+        } catch (error) {
+            console.error("Repair failed:", error);
+            showToast({ title: "Error", description: "Failed to repair budget data.", variant: "destructive" });
+        } finally {
+            setIsRepairing(false);
+        }
+    };
+
     const handleLogout = () => {
         showToast({ title: "Logging out", description: "Securely ending your session..." });
         logout();
@@ -795,6 +828,29 @@ export function AccountSection() {
                     >
                         <Download className="w-4 h-4 mr-2" />
                         Export Data
+                    </CustomButton>
+                </CardContent>
+            </Card>
+
+            {/* System Maintenance Card */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wrench className="w-5 h-5" /> System Maintenance
+                    </CardTitle>
+                    <CardDescription>Fix broken budget links or restore accidentally deleted system budgets for past months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <CustomButton
+                        variant="outline"
+                        onClick={handleRepairBudgets}
+                        disabled={isRepairing}
+                    >
+                        {isRepairing ? (
+                            <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Repairing...</>
+                        ) : (
+                            "Run Budget Repair"
+                        )}
                     </CustomButton>
                 </CardContent>
             </Card>

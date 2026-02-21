@@ -33,29 +33,25 @@ export const useSystemActions = (user) => {
 
             // 1. Create Goals and trigger snapshots
             // Only create if specific priority doesn't exist
-            const goalsToCreate = DEFAULT_SYSTEM_GOALS
-                .filter(def => !existingGoals.some(ex => ex.priority === def.priority));
+            const goalPromises = DEFAULT_SYSTEM_GOALS
+                .filter(def => !existingGoals.some(ex => ex.priority === def.priority))
+                .map(async (goal) => {
+                    const newGoal = await fetchWithRetry(() => base44.entities.BudgetGoal.create({
+                        ...goal,
+                        created_by: user.email
+                    }));
+                    // This ensures SystemBudgets are generated for the current/future months
+                    return snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
+                });
 
-            // Use sequential execution with a delay instead of Promise.all to prevent 429s
-            for (const goal of goalsToCreate) {
-                const newGoal = await fetchWithRetry(() => base44.entities.BudgetGoal.create({
-                    ...goal,
-                    created_by: user.email
-                }));
-
-                // Assuming this fires API calls, wrapping it in retry as well
-                await fetchWithRetry(() => snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]));
-
-                // Introduce a 250ms buffer to slow down the request rate
-                await new Promise(resolve => setTimeout(resolve, 250));
-            }
+            await Promise.all([...goalPromises]);
 
             // 2. Refresh everything
             await queryClient.invalidateQueries();
 
             showToast({
                 title: "Defaults Created",
-                description: `Created ${goalsToCreate.length} goals.`,
+                description: `Created ${goalPromises.length} goals.`,
             });
         } catch (error) {
             console.error("Initialization Failed:", error);
@@ -80,11 +76,11 @@ export const useTransactions = (startDate = null, endDate = null) => {
                 // e.g. Transaction on Jan 31, Paid on Feb 2.
                 const bufferStartDate = format(subDays(new Date(startDate), 30), 'yyyy-MM-dd');
 
-                return await fetchWithRetry(() => base44.entities.Transaction.filter({
+                return await base44.entities.Transaction.filter({
                     date: { $gte: bufferStartDate, $lte: endDate }
-                }, '-date', 5000));
+                }, '-date', 5000);
             }
-            return await fetchWithRetry(() => base44.entities.Transaction.list('-date', 500));
+            return await base44.entities.Transaction.list('-date', 500);
         },
         keepPreviousData: true,
         staleTime: 1000 * 60 * 5,
@@ -101,10 +97,10 @@ export const useHistoricalIncomeTransactions = (user) => {
             if (!user) return [];
             // Fetch last 180 days (approx 6 months)
             const startDate = format(subDays(new Date(), 180), 'yyyy-MM-dd');
-            return await fetchWithRetry(() => base44.entities.Transaction.filter({
+            return await base44.entities.Transaction.filter({
                 type: 'income',
                 date: { $gte: startDate }
-            }));
+            });
         },
         enabled: !!user,
         staleTime: 1000 * 60 * 60 * 24,
@@ -118,7 +114,7 @@ export const useGoals = (user) => {
         queryKey: [QUERY_KEYS.GOALS],
         queryFn: async () => {
             if (!user) return [];
-            return await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user.email }));
+            return await base44.entities.BudgetGoal.filter({ created_by: user.email });
         },
         enabled: !!user,
         staleTime: 1000 * 60 * 60,
@@ -136,18 +132,18 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
 
             if (monthStart && monthEnd) {
                 // Overlap Logic: Start <= EndSelected AND End >= StartSelected
-                return await fetchWithRetry(() => base44.entities.CustomBudget.filter({
+                return await base44.entities.CustomBudget.filter({
                     created_by: user.email,
                     startDate: { $lte: monthEnd },
                     endDate: { $gte: monthStart }
-                }));
+                });
             }
 
-            return await fetchWithRetry(() => base44.entities.CustomBudget.filter(
+            return await base44.entities.CustomBudget.filter(
                 { created_by: user.email },
                 '-startDate',
                 100
-            ));
+            );
         },
         keepPreviousData: true,
         enabled: !!user,
@@ -167,7 +163,7 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = [], monthStart
             if (monthStart && monthEnd) {
                 filter.date = { $gte: monthStart, $lte: monthEnd };
             }
-            return await fetchWithRetry(() => base44.entities.Transaction.filter(filter));
+            return await base44.entities.Transaction.filter(filter);
         },
         keepPreviousData: true,
         enabled: customBudgetIds && customBudgetIds.length > 0,
@@ -184,13 +180,13 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
         queryFn: async () => {
             if (!user) return [];
             if (monthStart && monthEnd) {
-                return await fetchWithRetry(() => base44.entities.SystemBudget.filter({
+                return await base44.entities.SystemBudget.filter({
                     created_by: user.email,
                     startDate: { $lte: monthEnd },
                     endDate: { $gte: monthStart }
-                }));
+                });
             }
-            return await fetchWithRetry(() => base44.entities.SystemBudget.filter({ created_by: user.email }));
+            return await base44.entities.SystemBudget.filter({ created_by: user.email });
         },
         keepPreviousData: true,
         enabled: !!user,
@@ -206,11 +202,11 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
         queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, monthStart, monthEnd],
         queryFn: async () => {
             if (!user) return [];
-            return await fetchWithRetry(() => base44.entities.SystemBudget.filter({
+            return await base44.entities.SystemBudget.filter({
                 created_by: user.email,
                 startDate: monthStart,
                 endDate: monthEnd
-            }));
+            });
         },
         keepPreviousData: true,
         enabled: !!user && !!monthStart && !!monthEnd,
@@ -225,7 +221,7 @@ export const useAllocations = (budgetId) => {
     const { data: allocations = [], isLoading } = useQuery({
         queryKey: [QUERY_KEYS.ALLOCATIONS, budgetId],
         queryFn: async () => {
-            return await fetchWithRetry(() => base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId }));
+            return await base44.entities.CustomBudgetAllocation.filter({ customBudgetId: budgetId });
         },
         enabled: !!budgetId,
         staleTime: 1000 * 60 * 5,
@@ -261,7 +257,7 @@ export const useCategoryRules = (user) => {
         queryKey: ['CATEGORY_RULES'],
         queryFn: async () => {
             if (!user) return [];
-            const allRules = await fetchWithRetry(() => base44.entities.CategoryRule.filter({ created_by: user.email }));
+            const allRules = await base44.entities.CategoryRule.filter({ created_by: user.email })
 
             return allRules
                 .sort((a, b) => (a.priority || 0) - (b.priority || 0));

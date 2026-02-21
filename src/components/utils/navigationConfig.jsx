@@ -13,6 +13,10 @@ export const navigationItems = [
     title: "Transactions",
     url: createPageUrl("Transactions"),
     icon: Receipt,
+    items: [
+      { title: "History", url: "/transactions/history" },
+      { title: "Recurring", url: "/transactions/recurring" },
+    ]
   },
   {
     title: "Reports",

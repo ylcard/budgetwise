@@ -105,28 +105,6 @@ export const notifyBankTokenExpiring = (userEmail, bankName, daysLeft) => {
     });
 };
 
-export const notifyCategorySpendingAlert = (userEmail, categoryNames, monthYear) => {
-    // Format the list gracefully depending on how many categories triggered the alert
-    let categoryString = categoryNames[0];
-    if (categoryNames.length === 2) {
-        categoryString = `${categoryNames[0]} and ${categoryNames[1]}`;
-    } else if (categoryNames.length > 2) {
-        categoryString = `${categoryNames[0]}, ${categoryNames[1]}, and ${categoryNames.length - 2} other${categoryNames.length > 3 ? 's' : ''}`;
-    }
-
-    return createNotification({
-        title: 'Spending Alert',
-        message: `Your spending in ${categoryString} is higher than your 6-month average. Check your breakdown for details.`,
-        type: 'warning',
-        category: 'budgets',
-        priority: 'high',
-        actionUrl: '/reports',
-        actionLabel: 'View Breakdown',
-        metadata: { categoryNames, monthYear, alertType: 'critical_spend' },
-        userEmail
-    });
-};
-
 /**
  * Budget Notifications
  */
