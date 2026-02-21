@@ -29,6 +29,8 @@ export function AdminConsistencyChecker({ transactions }) {
         try {
             // Fetch ONLY system budgets directly from DB
             const sysBudgets = await fetchWithRetry(() => base44.entities.SystemBudget.filter({ user_email: user.email }));
+            // Fetch Custom Budgets purely as an exclusion list
+            const custBudgets = await fetchWithRetry(() => base44.entities.CustomBudget.filter({ user_email: user.email }));
 
             const found = [];
             for (const t of transactions) {
@@ -40,33 +42,52 @@ export function AdminConsistencyChecker({ transactions }) {
                 let issue = null;
                 let isFixable = false;
                 let correctBudgetId = null;
+                let currentBudgetName = "Unknown/Deleted";
 
-                // Find matching system budgets for this date and priority
-                const matchingBudgets = sysBudgets.filter(b =>
-                    relevantDate >= b.startDate &&
-                    relevantDate <= b.endDate &&
-                    b.systemBudgetType === priority
-                );
-
-                if (matchingBudgets.length > 1) {
-                    issue = `CRITICAL: Multiple system budgets found for ${priority} around ${relevantDate}. Delete duplicates manually!`;
-                    isFixable = false;
-                } else if (matchingBudgets.length === 0) {
-                    issue = `No system budget found for ${priority} around ${relevantDate}.`;
-                    isFixable = false; // We no longer auto-create. Admin must handle it.
+                if (!t.budgetId) {
+                    issue = 'Missing Budget ID entirely.';
                 } else {
-                    // Exactly ONE correct budget exists
-                    correctBudgetId = matchingBudgets[0].id;
-                    if (t.budgetId !== correctBudgetId) {
-                        issue = !t.budgetId
-                            ? 'Missing Budget ID entirely.'
-                            : `Linked to incorrect budget. Expected System Budget: ${correctBudgetId}`;
-                        isFixable = true;
+                    // 1. Is it a valid Custom Budget? If so, completely ignore it.
+                    const isCustom = custBudgets.some(b => b.id === t.budgetId);
+                    if (isCustom) continue;
+
+                    // 2. Is it a System Budget?
+                    const currentSysBudget = sysBudgets.find(b => b.id === t.budgetId);
+
+                    if (!currentSysBudget) {
+                        // Not in Custom, Not in System -> It's a dead/deleted ID!
+                        issue = 'Linked to a deleted or non-existent budget ID.';
+                    } else {
+                        // It IS a System Budget. Let's verify if it's the CORRECT one for this date and priority.
+                        currentBudgetName = currentSysBudget.name;
+                        if (relevantDate < currentSysBudget.startDate || relevantDate > currentSysBudget.endDate) {
+                            issue = `Date mismatch (${relevantDate} is outside System Budget ${currentSysBudget.startDate} to ${currentSysBudget.endDate}).`;
+                        } else if (currentSysBudget.systemBudgetType !== priority) {
+                            issue = `Priority mismatch (Expense is ${priority}, but System Budget is ${currentSysBudget.systemBudgetType}).`;
+                        }
                     }
                 }
 
                 if (issue) {
-                    found.push({ transaction: t, issue, relevantDate, isFixable, correctBudgetId });
+                    // Find what it SHOULD be linked to
+                    const matchingBudgets = sysBudgets.filter(b =>
+                        relevantDate >= b.startDate &&
+                        relevantDate <= b.endDate &&
+                        b.systemBudgetType === priority
+                    );
+
+                    if (matchingBudgets.length > 1) {
+                        issue += ` | CRITICAL: Multiple system budgets found for ${priority} around ${relevantDate}.`;
+                        isFixable = false;
+                    } else if (matchingBudgets.length === 0) {
+                        issue += ` | No system budget found for ${priority} around ${relevantDate}.`;
+                        isFixable = false;
+                    } else {
+                        correctBudgetId = matchingBudgets[0].id;
+                        isFixable = true;
+                    }
+
+                    found.push({ transaction: t, issue, relevantDate, isFixable, correctBudgetId, currentBudgetId: t.budgetId, currentBudgetName });
                 }
             }
             setAnomalies(found);
@@ -114,8 +135,7 @@ export function AdminConsistencyChecker({ transactions }) {
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        toast.success("Transaction ID copied! Use the Admin ID Search to manually edit.");
-        setIsOpen(false); // Close drawer to let them search
+        toast.success("Transaction ID copied!");
     };
 
     const TriggerBtn = (
@@ -152,9 +172,26 @@ export function AdminConsistencyChecker({ transactions }) {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h4 className="font-semibold text-sm text-gray-900">{anomaly.transaction.title}</h4>
-                                    <p className="text-xs text-red-600 flex items-center mt-1">
-                                        <AlertTriangle className="w-3 h-3 mr-1" />
-                                        {anomaly.issue}
+
+                                    <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                                        <span className="font-semibold text-purple-600">ID:</span>
+                                        <button
+                                            onClick={() => copyToClipboard(anomaly.transaction.id)}
+                                            className="font-mono hover:text-purple-600 hover:bg-purple-100 transition-all bg-purple-50 border border-purple-100 px-1.5 py-0.5 rounded cursor-pointer"
+                                            title="Click to copy ID"
+                                        >
+                                            {anomaly.transaction.id}
+                                        </button>
+                                    </div>
+
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                        Current Budget: <span className="font-semibold text-amber-600">{anomaly.currentBudgetName}</span>
+                                        {anomaly.currentBudgetId && <span className="font-mono ml-1">({anomaly.currentBudgetId})</span>}
+                                    </div>
+
+                                    <p className="text-xs text-red-600 flex items-center mt-2">
+                                        <AlertTriangle className="w-3 h-3 mr-1 shrink-0" />
+                                        <span className="leading-tight">{anomaly.issue}</span>
                                     </p>
                                 </div>
                                 <span className="font-mono font-semibold text-sm">{formatCurrency(anomaly.transaction.amount, settings)}</span>
@@ -176,15 +213,6 @@ export function AdminConsistencyChecker({ transactions }) {
                                         <ShieldAlert className="w-3 h-3 mr-1" /> Manual Fix Req.
                                     </CustomButton>
                                 )}
-
-                                <CustomButton
-                                    size="sm"
-                                    variant="outline"
-                                    className="flex-1 text-xs h-8"
-                                    onClick={() => copyToClipboard(anomaly.transaction.id)}
-                                >
-                                    <Copy className="w-3 h-3 mr-1" /> Copy ID for Manual Edit
-                                </CustomButton>
                             </div>
                         </div>
                     ))
