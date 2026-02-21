@@ -14,6 +14,7 @@ import { getMonthBoundaries } from "./dateUtils";
 import { FINANCIAL_PRIORITIES } from "./constants";
 import { resolveBudgetLimit } from "./financialCalculations";
 import { format, parseISO, isValid, addMonths, startOfMonth, endOfMonth } from "date-fns";
+import { fetchWithRetry } from "./generalUtils";
 
 // In-memory lock to prevent race conditions during concurrent budget creation
 const inFlightRequests = new Map();
@@ -137,10 +138,10 @@ export const ensureSystemBudgetsExist = async (
             const toUpdate = [];
 
             // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
-            const existingBudgetsForMonth = await base44.entities.SystemBudget.filter({
+            const existingBudgetsForMonth = await fetchWithRetry(() => base44.entities.SystemBudget.filter({
                 user_email: userEmail,
                 startDate: startDate
-            });
+            }));
 
             // Map for O(1) lookup
             const budgetMap = new Map();
@@ -192,7 +193,7 @@ export const ensureSystemBudgetsExist = async (
             // A. Bulk Create (Atomic-ish)
             if (toCreate.length > 0) {
                 promises.push(
-                    base44.entities.SystemBudget.bulkCreate(toCreate).then(created => {
+                    fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate)).then(created => {
                         created.forEach(b => results[b.systemBudgetType] = b);
                     })
                 );
@@ -202,7 +203,7 @@ export const ensureSystemBudgetsExist = async (
             if (toUpdate.length > 0) {
                 // Batch update if API supports it, otherwise Promise.all
                 const updatePromises = toUpdate.map(({ id, data }) =>
-                    base44.entities.SystemBudget.update(id, data).then(updated => {
+                    fetchWithRetry(() => base44.entities.SystemBudget.update(id, data)).then(updated => {
                         results[updated.systemBudgetType] = updated;
                     })
                 );
@@ -243,10 +244,10 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, al
     }
 
     const startOfRange = requiredBudgets[0].start;
-    const existingBudgets = await base44.entities.SystemBudget.filter({
+    const existingBudgets = await fetchWithRetry(() => base44.entities.SystemBudget.filter({
         user_email: userEmail,
         startDate: { $gte: startOfRange }
-    });
+    }));
 
     const budgetMap = new Map();
     existingBudgets.forEach(b => budgetMap.set(`${b.startDate}|${b.systemBudgetType}`, b));
@@ -294,15 +295,16 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, al
         }
     });
 
-    if (toCreate.length > 0) await base44.entities.SystemBudget.bulkCreate(toCreate);
+    if (toCreate.length > 0) await fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate));
 
     if (toUpdate.length > 0) {
         // Simple chunking for updates to avoid overwhelming connection pool if needed
         const chunkSize = 20;
         for (let i = 0; i < toUpdate.length; i += chunkSize) {
             await Promise.all(toUpdate.slice(i, i + chunkSize).map(u =>
-                base44.entities.SystemBudget.update(u.id, u.data)
+                fetchWithRetry(() => base44.entities.SystemBudget.update(u.id, u.data))
             ));
+            await new Promise(res => setTimeout(res, 250));
         }
     }
 };
@@ -320,8 +322,8 @@ export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], 
 
     // 1. Fetch ALL transactions and ALL existing budgets for this user in parallel
     const [transactions, existingBudgets] = await Promise.all([
-        base44.entities.Transaction.filter({ created_by: userEmail }),
-        base44.entities.SystemBudget.filter({ user_email: userEmail })
+        fetchWithRetry(() => base44.entities.Transaction.filter({ created_by: userEmail })),
+        fetchWithRetry(() => base44.entities.SystemBudget.filter({ user_email: userEmail }))
     ]);
 
     // 2. Identify unique months from transactions
@@ -376,58 +378,6 @@ export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], 
 
     // 5. Single Bulk Write
     if (toCreate.length > 0) {
-        await base44.entities.SystemBudget.bulkCreate(toCreate);
+        await fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate));
     }
-};
-
-/**
- * REPAIR UTILITY: Links orphaned transactions to their correct SystemBudget.
- * Should be run AFTER ensureBudgetsForActiveMonths to ensure targets exist.
- * @param {string} userEmail 
- * @returns {Promise<number>} Number of transactions updated
- */
-export const reconcileTransactionBudgets = async (userEmail) => {
-    if (!userEmail) return 0;
-
-    const [transactions, budgets] = await Promise.all([
-        base44.entities.Transaction.filter({ created_by: userEmail }),
-        base44.entities.SystemBudget.filter({ user_email: userEmail })
-    ]);
-
-    // Create a Lookup Map: "YYYY-MM-priority" -> budgetId
-    const budgetMap = new Map();
-    budgets.forEach(b => {
-        const key = `${b.startDate.substring(0, 7)}-${b.systemBudgetType}`;
-        budgetMap.set(key, b.id);
-    });
-
-    const updates = [];
-    for (const t of transactions) {
-        // Check if budget is missing OR if the linked budget ID no longer exists in our fetch
-        const isOrphaned = !t.budgetId || (t.budgetId && !budgets.some(b => b.id === t.budgetId));
-
-        if (isOrphaned) {
-            const d = t.date || t.paidDate;
-            const priority = t.financialPriority; // 'needs' or 'wants'
-
-            if (d && priority) {
-                const dateObj = typeof d === 'string' ? parseISO(d) : d;
-                const dateKey = format(dateObj, 'yyyy-MM');
-                const targetKey = `${dateKey}-${priority}`;
-                const correctBudgetId = budgetMap.get(targetKey);
-
-                // Only update if we found a valid destination budget
-                if (correctBudgetId) {
-                    updates.push(base44.entities.Transaction.update(t.id, { budgetId: correctBudgetId }));
-                }
-            }
-        }
-    }
-
-    if (updates.length > 0) {
-        // Process in parallel
-        await Promise.all(updates);
-    }
-
-    return updates.length;
 };
