@@ -5,9 +5,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ShieldAlert, Search, CheckCircle, Wrench, AlertTriangle, Copy, RefreshCw } from 'lucide-react';
 import { useSettings } from '../utils/SettingsContext';
-import { useGoals } from '../hooks/useBase44Entities';
 import { base44 } from '@/api/base44Client';
-import { getOrCreateSystemBudgetForTransaction } from '../utils/budgetInitialization';
 import { useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '../hooks/queryKeys';
 import { toast } from 'sonner';
@@ -16,7 +14,6 @@ import { fetchWithRetry } from '../utils/generalUtils';
 
 export function AdminConsistencyChecker({ transactions }) {
     const { user, settings } = useSettings();
-    const { goals } = useGoals(user);
     const isMobile = useIsMobile();
     const queryClient = useQueryClient();
 
@@ -30,32 +27,46 @@ export function AdminConsistencyChecker({ transactions }) {
         setIsAnalyzing(true);
         setHasAnalyzed(false);
         try {
-            // Fetch ALL budgets directly from DB to ensure we check against truth
+            // Fetch ONLY system budgets directly from DB
             const sysBudgets = await fetchWithRetry(() => base44.entities.SystemBudget.filter({ user_email: user.email }));
-            const custBudgets = await fetchWithRetry(() => base44.entities.CustomBudget.filter({ user_email: user.email }));
-            const allBudgets = [...sysBudgets, ...custBudgets];
 
             const found = [];
             for (const t of transactions) {
                 if (t.type !== 'expense') continue;
 
                 const relevantDate = (t.isPaid && t.paidDate) ? t.paidDate : t.date;
-                const budget = allBudgets.find(b => b.id === t.budgetId);
+                const priority = t.financial_priority || 'needs';
 
                 let issue = null;
-                if (!t.budgetId) {
-                    issue = 'Missing Budget ID entirely';
-                } else if (!budget) {
-                    issue = 'Budget no longer exists in DB';
+                let isFixable = false;
+                let correctBudgetId = null;
+
+                // Find matching system budgets for this date and priority
+                const matchingBudgets = sysBudgets.filter(b =>
+                    relevantDate >= b.startDate &&
+                    relevantDate <= b.endDate &&
+                    b.systemBudgetType === priority
+                );
+
+                if (matchingBudgets.length > 1) {
+                    issue = `CRITICAL: Multiple system budgets found for ${priority} around ${relevantDate}. Delete duplicates manually!`;
+                    isFixable = false;
+                } else if (matchingBudgets.length === 0) {
+                    issue = `No system budget found for ${priority} around ${relevantDate}.`;
+                    isFixable = false; // We no longer auto-create. Admin must handle it.
                 } else {
-                    // String comparison works flawlessly for YYYY-MM-DD
-                    if (relevantDate < budget.startDate || relevantDate > budget.endDate) {
-                        issue = `Date mismatch (${relevantDate} is outside ${budget.startDate} to ${budget.endDate})`;
+                    // Exactly ONE correct budget exists
+                    correctBudgetId = matchingBudgets[0].id;
+                    if (t.budgetId !== correctBudgetId) {
+                        issue = !t.budgetId
+                            ? 'Missing Budget ID entirely.'
+                            : `Linked to incorrect budget. Expected System Budget: ${correctBudgetId}`;
+                        isFixable = true;
                     }
                 }
 
                 if (issue) {
-                    found.push({ transaction: t, issue, relevantDate, currentBudget: budget });
+                    found.push({ transaction: t, issue, relevantDate, isFixable, correctBudgetId });
                 }
             }
             setAnomalies(found);
@@ -69,26 +80,16 @@ export function AdminConsistencyChecker({ transactions }) {
     };
 
     const fixAnomaly = async (anomaly) => {
-        const { transaction: t, relevantDate } = anomaly;
-        const priority = t.financial_priority || 'needs';
+        if (!anomaly.isFixable || !anomaly.correctBudgetId) return false;
 
         try {
-            // The atomic function handles finding the 1 correct system budget or creating it
-            const correctBudgetId = await fetchWithRetry(() => getOrCreateSystemBudgetForTransaction(
-                user.email,
-                relevantDate,
-                priority,
-                goals,
-                settings
-            ));
-
-            await fetchWithRetry(() => base44.entities.Transaction.update(t.id, { budgetId: correctBudgetId }));
+            await fetchWithRetry(() => base44.entities.Transaction.update(anomaly.transaction.id, { budgetId: anomaly.correctBudgetId }));
 
             // Remove from list upon success
-            setAnomalies(prev => prev.filter(a => a.transaction.id !== t.id));
+            setAnomalies(prev => prev.filter(a => a.transaction.id !== anomaly.transaction.id));
             return true;
         } catch (err) {
-            console.error("Failed to fix", t.id, err);
+            console.error("Failed to fix", anomaly.transaction.id, err);
             return false;
         }
     };
@@ -96,7 +97,9 @@ export function AdminConsistencyChecker({ transactions }) {
     const fixAll = async () => {
         setIsFixing(true);
         let successCount = 0;
-        for (const anomaly of anomalies) {
+        const fixableAnomalies = anomalies.filter(a => a.isFixable);
+
+        for (const anomaly of fixableAnomalies) {
             const success = await fixAnomaly(anomaly);
             if (success) successCount++;
         }
@@ -104,6 +107,8 @@ export function AdminConsistencyChecker({ transactions }) {
         if (successCount > 0) {
             toast.success(`Automatically fixed ${successCount} transactions`);
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        } else if (fixableAnomalies.length === 0) {
+            toast.info("No auto-fixable anomalies found.");
         }
     };
 
@@ -156,15 +161,22 @@ export function AdminConsistencyChecker({ transactions }) {
                             </div>
 
                             <div className="flex gap-2 mt-2">
-                                <CustomButton
-                                    size="sm"
-                                    variant="primary"
-                                    className="flex-1 text-xs h-8"
-                                    disabled={isFixing}
-                                    onClick={() => fixAnomaly(anomaly).then(s => s && queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] }))}
-                                >
-                                    <Wrench className="w-3 h-3 mr-1" /> Auto-Fix
-                                </CustomButton>
+                                {anomaly.isFixable ? (
+                                    <CustomButton
+                                        size="sm"
+                                        variant="primary"
+                                        className="flex-1 text-xs h-8"
+                                        disabled={isFixing}
+                                        onClick={() => fixAnomaly(anomaly).then(s => s && queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] }))}
+                                    >
+                                        <Wrench className="w-3 h-3 mr-1" /> Auto-Fix
+                                    </CustomButton>
+                                ) : (
+                                    <CustomButton size="sm" variant="outline" className="flex-1 text-xs h-8 opacity-60 cursor-not-allowed" disabled>
+                                        <ShieldAlert className="w-3 h-3 mr-1" /> Manual Fix Req.
+                                    </CustomButton>
+                                )}
+
                                 <CustomButton
                                     size="sm"
                                     variant="outline"
@@ -179,11 +191,11 @@ export function AdminConsistencyChecker({ transactions }) {
                 )}
             </div>
 
-            {anomalies.length > 0 && (
+            {anomalies.some(a => a.isFixable) && (
                 <div className="pt-4 border-t shrink-0">
                     <CustomButton onClick={fixAll} disabled={isFixing} variant="destructive" className="w-full">
                         {isFixing ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Wrench className="w-4 h-4 mr-2" />}
-                        Auto-Fix All ({anomalies.length})
+                        Auto-Fix All ({anomalies.filter(a => a.isFixable).length})
                     </CustomButton>
                 </div>
             )}
