@@ -394,7 +394,9 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 
 /**
  * Calculates historical averages for all categories in one pass.
+ * DEPRECATED on 21-FEB-2026 Was used by MonthlyBreakdown before
  */
+/*
 export const getAllHistoricalCategoryAverages = (transactions, selectedMonth, selectedYear, lookbackMonths = 3) => {
     if (!transactions || transactions.length === 0) return {};
 
@@ -425,6 +427,7 @@ export const getAllHistoricalCategoryAverages = (transactions, selectedMonth, se
 
     return averages;
 };
+*/
 
 /**
  * HELPER: Math Utils for Projection
