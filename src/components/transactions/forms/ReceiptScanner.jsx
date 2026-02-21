@@ -33,8 +33,9 @@ export default function ReceiptScanner({ onScanComplete, open, onOpenChange }) {
                 reader.readAsDataURL(compressedFile);
             });
 
-            // 3. Use the Base44 Client to call the function securely
-            const result = await base44.functions.run('parseReceipt', { base64Image });
+            // 3. Call the function using invoke() and unwrap the data
+            const response = await base44.functions.invoke('parseReceipt', { base64Image });
+            const result = response.data;
 
             onScanComplete({
                 title: result.merchant || "",
