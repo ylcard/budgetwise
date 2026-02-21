@@ -45,15 +45,15 @@ const LayoutContent = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-    const { theme, setTheme } = useTheme();
+    const { theme, setTheme, resolvedTheme } = useTheme();
     const { logout } = useAuth();
     const { budgetHealth } = useHealth();
     const { settings, updateSettings } = useSettings();
-    
+
     // Cookie Consent
     const { showBanner, consent, acceptAll, acceptNecessary, updateConsent } = useCookieConsent();
     const [showCookieSettings, setShowCookieSettings] = useState(false);
-    
+
     const handleUpdateConsent = (newConsent) => {
         Object.keys(newConsent).forEach(key => {
             if (key !== 'essential') {
@@ -69,7 +69,7 @@ const LayoutContent = ({ children }) => {
 
     // Helper to toggle theme
     const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
+        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
     };
 
     // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
@@ -253,8 +253,8 @@ const LayoutContent = ({ children }) => {
                             className="w-full justify-start text-muted-foreground hover:text-foreground mb-1"
                             onClick={toggleTheme}
                         >
-                            {theme === 'dark' ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
-                            <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                            {resolvedTheme === 'dark' ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
+                            <span className="font-medium">{resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                         </CustomButton>
 
                         <CustomButton
@@ -351,7 +351,7 @@ const LayoutContent = ({ children }) => {
                                                     <Moon className="w-5 h-5 text-gray-500" />
                                                     <span className="font-medium text-gray-900 dark:text-gray-100">Dark Mode</span>
                                                 </div>
-                                                <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                                                <Switch checked={resolvedTheme === 'dark'} onCheckedChange={toggleTheme} />
                                             </div>
                                             <button
                                                 onClick={() => logout()}
