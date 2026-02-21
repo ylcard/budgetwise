@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings } from "../utils/SettingsContext";
@@ -26,6 +26,7 @@ export default function MonthlyBreakdown({
 	// State for Modal/Drawer
 	const [selectedCategory, setSelectedCategory] = useState(null);
 	const [isDesktop, setIsDesktop] = useState(true);
+	const notifiedTracker = useRef(new Set()); // Instant memory lock for notifications
 
 	useEffect(() => {
 		const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
@@ -51,8 +52,10 @@ export default function MonthlyBreakdown({
 		const criticalItems = categoryBreakdown.filter(item => item.alertStatus === 'critical');
 
 		criticalItems.forEach(item => {
-			// 2. Anti-Spam Check: Did we already notify the user about this category this month?
-			const alreadyNotified = notifications.some(n =>
+			const uniqueLockKey = `${currentMonthYear}-${item.name}`;
+
+			// 2. Anti-Spam Check: Check BOTH immediate local memory AND the backend array
+			const alreadyNotified = notifiedTracker.current.has(uniqueKey) || notifications.some(n =>
 				n.category === 'budgets' &&
 				n.metadata?.alertType === 'critical_spend' &&
 				n.metadata?.categoryName === item.name &&
@@ -60,6 +63,9 @@ export default function MonthlyBreakdown({
 			);
 
 			if (!alreadyNotified) {
+				// Instantly lock this category so subsequent renders in the next 500ms don't duplicate it
+				notifiedTracker.current.add(uniqueLockKey);
+
 				const diffAbs = Math.abs(item.amount - item.averageSpend);
 				const diffFormatted = formatCurrency(diffAbs, settings);
 
