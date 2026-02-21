@@ -5,6 +5,7 @@ import { showToast } from "@/components/ui/use-toast";
 import { useConfirm } from "../ui/ConfirmDialogProvider";
 import { QUERY_KEYS } from "./queryKeys";
 import { calculateNextOccurrence } from "../utils/recurringUtils";
+import { fetchWithRetry } from "../utils/generalUtils";
 
 // Query key for recurring transactions
 export const RECURRING_QUERY_KEY = 'RECURRING_TRANSACTIONS';
@@ -15,7 +16,7 @@ export const useRecurringTransactions = (user) => {
         queryKey: [RECURRING_QUERY_KEY],
         queryFn: async () => {
             if (!user) return [];
-            const all = await base44.entities.RecurringTransaction.list('-created_date');
+            const all = await fetchWithRetry(() => base44.entities.RecurringTransaction.list('-created_date'));
             return all.filter(rt => rt.user_email === user.email);
         },
         // initialData: [],
@@ -36,11 +37,11 @@ export const useRecurringTransactionActions = (user) => {
         mutationFn: async (data) => {
             // Calculate initial nextOccurrence
             const nextOccurrence = calculateNextOccurrence(data);
-            return base44.entities.RecurringTransaction.create({
+            return fetchWithRetry(() => base44.entities.RecurringTransaction.create({
                 ...data,
                 nextOccurrence,
                 user_email: user.email,
-            });
+            }));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
@@ -57,10 +58,10 @@ export const useRecurringTransactionActions = (user) => {
         mutationFn: async ({ id, data }) => {
             // Recalculate nextOccurrence if schedule changed
             const nextOccurrence = calculateNextOccurrence(data);
-            return base44.entities.RecurringTransaction.update(id, {
+            return fetchWithRetry(() => base44.entities.RecurringTransaction.update(id, {
                 ...data,
                 nextOccurrence,
-            });
+            }));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
@@ -74,7 +75,7 @@ export const useRecurringTransactionActions = (user) => {
 
     // DELETE
     const deleteMutation = useMutation({
-        mutationFn: (id) => base44.entities.RecurringTransaction.delete(id),
+        mutationFn: (id) => fetchWithRetry(() => base44.entities.RecurringTransaction.delete(id)),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
             showToast({ title: "Success", description: "Recurring transaction deleted." });
@@ -91,10 +92,10 @@ export const useRecurringTransactionActions = (user) => {
             const updates = { isActive: !isActive };
             // If reactivating, recalculate nextOccurrence
             if (!isActive) {
-                const existing = await base44.entities.RecurringTransaction.get(id);
+                const existing = await fetchWithRetry(() => base44.entities.RecurringTransaction.get(id));
                 updates.nextOccurrence = calculateNextOccurrence(existing);
             }
-            return base44.entities.RecurringTransaction.update(id, updates);
+            return fetchWithRetry(() => base44.entities.RecurringTransaction.update(id, updates));
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
