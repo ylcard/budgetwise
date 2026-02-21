@@ -343,9 +343,11 @@ export default function Reports() {
                             allCustomBudgets={allCustomBudgets}
                         />
                     </div>
+                    {/*
                     <div className="lg:col-span-1">
                         {priorityComponent}
                     </div>
+                    */}
                 </div>
             </div>
 
