@@ -12,6 +12,7 @@ import { getMonthBoundaries } from "../utils/dateUtils";
 import { getHistoricalAverageIncome } from "../utils/financialCalculations";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../utils/SettingsContext";
+import { fetchWithRetry } from "../utils/generalUtils";
 
 // Hook for transaction actions (CRUD operations - Transactions page)
 // UPDATED 03-Feb-2026: Added optimistic UI updates for immediate feedback
@@ -27,15 +28,15 @@ export const useTransactionActions = (config = {}) => {
         const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
         // 1. Get all transactions for this month to sum actual income
-        const allTransactions = await base44.entities.Transaction.filter({
+        const allTransactions = await fetchWithRetry(() => base44.entities.Transaction.filter({
             created_by: user.email,
             type: 'income',
             date: { $gte: monthStart, $lte: monthEnd }
-        });
+        }));
 
         const monthlyIncome = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-        const budgetGoals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
+        const budgetGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ user_email: user.email }));
         const histAvg = getHistoricalAverageIncome(allTransactions, date.getMonth(), date.getFullYear());
 
         // 2. Force the budget engine to update allocations
@@ -267,12 +268,12 @@ export const useGoalActions = (user, goals) => {
     const { settings } = useSettings();
 
     const updateGoalMutation = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.BudgetGoal.update(id, data),
+        mutationFn: ({ id, data }) => fetchWithRetry(() => base44.entities.BudgetGoal.update(id, data)),
         onSuccess: async (_, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
 
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
-            const allGoals = await base44.entities.BudgetGoal.filter({ created_by: user?.email });
+            const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
             await snapshotFutureBudgets(
                 { ...variables.data, priority: variables.priority },
                 settings,
@@ -287,11 +288,11 @@ export const useGoalActions = (user, goals) => {
     });
 
     const createGoalMutation = useMutation({
-        mutationFn: (data) => base44.entities.BudgetGoal.create(data),
+        mutationFn: (data) => fetchWithRetry(() => base44.entities.BudgetGoal.create(data)),
         onSuccess: async (_, variables) => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
             // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
-            const allGoals = await base44.entities.BudgetGoal.filter({ created_by: user?.email });
+            const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
             await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
         },
@@ -380,7 +381,7 @@ export const useCustomBudgetActions = (config = {}) => {
         queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, ['budget'], ['allBudgets']],
         onBeforeUpdate: async ({ id, data }) => {
             // CRITICAL: Use get() instead of list().find() for efficiency
-            const existingBudget = await base44.entities.CustomBudget.get(id);
+            const existingBudget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
 
             if (!existingBudget) {
                 throw new Error('Budget not found');
@@ -401,7 +402,7 @@ export const useCustomBudgetActions = (config = {}) => {
         confirmMessage: "Are you sure you want to delete this budget? This will also delete all associated transactions and return cash allocations to your wallet.",
         onBeforeDelete: async (budgetId) => {
             // CRITICAL5: Use efficient get() instead of list().find()
-            const budget = await base44.entities.CustomBudget.get(budgetId);
+            const budget = await fetchWithRetry(() => base44.entities.CustomBudget.get(budgetId));
 
             if (!budget) {
                 throw new Error('Budget not found for deletion');
@@ -410,8 +411,10 @@ export const useCustomBudgetActions = (config = {}) => {
             // Delete all associated transactions
             const budgetTransactions = transactions.filter(t => t.budgetId === budgetId);
 
-            for (const transaction of budgetTransactions) {
-                await base44.entities.Transaction.delete(transaction.id);
+            if (budgetTransactions.length > 0) {
+                // Replaced iteration with highly-efficient bulk deletion
+                const transactionIds = budgetTransactions.map(t => t.id);
+                await fetchWithRetry(() => base44.entities.Transaction.deleteMany({ id: { $in: transactionIds } }));
             }
         },
         onAfterSuccess: () => {
@@ -427,7 +430,7 @@ export const useCustomBudgetActions = (config = {}) => {
         queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS],
         onBeforeUpdate: async ({ id, data }) => {
             // CRITICAL: Use get() instead of list().find()
-            const budget = await base44.entities.CustomBudget.get(id);
+            const budget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
 
             if (!budget) {
                 throw new Error('Budget not found');
