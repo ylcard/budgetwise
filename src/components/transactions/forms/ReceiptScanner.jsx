@@ -4,6 +4,7 @@ import imageCompression from 'browser-image-compression';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { cn } from "@/lib/utils";
+import { base44 } from "@/api/base44Client";
 
 export default function ReceiptScanner({ onScanComplete, open, onOpenChange }) {
     const fileInputRef = useRef(null);
@@ -32,14 +33,8 @@ export default function ReceiptScanner({ onScanComplete, open, onOpenChange }) {
                 reader.readAsDataURL(compressedFile);
             });
 
-            // 3. Call your Deno Serverless Function
-            const response = await fetch('/functions/parseReceipt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ base64Image })
-            });
-
-            const result = await response.json();
+            // 3. Use the Base44 Client to call the function securely
+            const result = await base44.functions.run('parseReceipt', { base64Image });
 
             onScanComplete({
                 title: result.merchant || "",
