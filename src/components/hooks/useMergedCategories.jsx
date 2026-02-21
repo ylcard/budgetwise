@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { QUERY_KEYS } from './queryKeys';
 import { useAuth } from '@/lib/AuthContext';
 import { useMemo } from 'react';
+import { fetchWithRetry } from '../utils/generalUtils';
 
 /**
  * CREATED 14-Feb-2026: Hook to merge system categories and user custom categories
@@ -15,14 +16,14 @@ export const useMergedCategories = () => {
     // Fetch system categories (available to all users)
     const { data: systemCategories = [], isLoading: isLoadingSystem } = useQuery({
         queryKey: [QUERY_KEYS.SYSTEM_CATEGORIES],
-        queryFn: () => base44.entities.SystemCategory.list(),
+        queryFn: () => fetchWithRetry(() => base44.entities.SystemCategory.list()),
         staleTime: 1000 * 60 * 60, // Cache for 1 hour (rarely changes)
     });
 
     // Fetch user's custom categories
     const { data: customCategories = [], isLoading: isLoadingCustom } = useQuery({
         queryKey: [QUERY_KEYS.CATEGORIES, user?.email],
-        queryFn: () => base44.entities.Category.filter({ created_by: user?.email }),
+        queryFn: () => fetchWithRetry(() => base44.entities.Category.filter({ created_by: user?.email })),
         enabled: !!user,
         staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     });
