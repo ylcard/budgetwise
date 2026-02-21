@@ -38,6 +38,41 @@ export default function ReceiptScanner({ onScanComplete, open, onOpenChange }) {
         };
     };
 
+    // --- NEW: Image Preprocessing Engine ---
+    const preprocessImage = (file) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // Draw original image
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Get pixels
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                // Convert to Grayscale & Apply High Contrast Threshold
+                for (let i = 0; i < data.length; i += 4) {
+                    // Standard grayscale conversion
+                    const brightness = 0.34 * data[i] + 0.5 * data[i + 1] + 0.16 * data[i + 2];
+                    // Threshold: If it's darkish, make it pure black. If light, pure white.
+                    const threshold = 120; // Adjust this if receipts are too washed out or too dark
+                    const color = brightness > threshold ? 255 : 0;
+
+                    data[i] = data[i + 1] = data[i + 2] = color; // R, G, B
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                canvas.toBlob(resolve, 'image/jpeg', 0.9);
+            };
+        });
+    };
+
     const handleFileSelect = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -49,23 +84,31 @@ export default function ReceiptScanner({ onScanComplete, open, onOpenChange }) {
         try {
             // 1. Compress Image (Tesseract is faster with smaller files)
             const compressedFile = await imageCompression(file, {
-                maxSizeMB: 0.5,
+                maxSizeMB: 1,
                 maxWidthOrHeight: 1024,
                 useWebWorker: true
             });
 
-            // 2. Run OCR
+            // 2. Preprocess (Grayscale + Contrast)
+            const processedBlob = await preprocessImage(compressedFile);
+
+            // Update UI to show the processed (black and white) image to the user
+            setImage(URL.createObjectURL(processedBlob));
+
+            // 3. Run OCR with Character Whitelisting
             const { data: { text } } = await Tesseract.recognize(
-                compressedFile,
+                processedBlob,
                 'eng',
                 {
                     logger: m => {
                         if (m.status === 'recognizing text') setProgress(parseInt(m.progress * 100));
-                    }
+                    },
+                    // Whitelist: Only look for standard letters, numbers, and receipt punctuation
+                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/-:$£€ '
                 }
             );
 
-            // 3. Parse and Return
+            // 4. Parse and Return
             const result = parseReceiptText(text);
             onScanComplete(result);
             onOpenChange(false);
