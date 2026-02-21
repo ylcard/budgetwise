@@ -14,7 +14,6 @@ import {
     Trash2,
     Banknote,
     StickyNote,
-    Database,
     CheckCircle2,
     BrainCircuit,
     MoreHorizontal
@@ -58,8 +57,7 @@ export default function TransactionList({
     onSort
 }) {
 
-    const { settings, user } = useSettings();
-    const isAdmin = user?.role === 'admin';
+    const { settings } = useSettings();
 
     // Reset pagination if current page exceeds total pages (e.g. changing period reduces page count)
     useEffect(() => {
@@ -291,7 +289,6 @@ export default function TransactionList({
                             <th className="px-4 py-3 text-right cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('amount')}>
                                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
                             </th>
-                            {isAdmin && <th className="px-4 py-3 text-center w-40">Admin Info</th>}
                             <th className="px-4 py-3 w-1/4 text-center">Note</th>
                             <th className="px-4 py-3 w-20 text-center">Actions</th>
                         </tr>
@@ -350,17 +347,6 @@ export default function TransactionList({
                                             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
                                         </span>
                                     </td>
-
-                                    {isAdmin && (
-                                        <td className="px-4 py-2">
-                                            <div className="flex flex-col gap-0.5 text-[9px] font-mono text-muted-foreground bg-muted/30 p-1.5 rounded-md break-all">
-                                                <div><span className="font-semibold text-purple-500">ID:</span> {transaction.id}</div>
-                                                {transaction.bankTransactionId && <div><span className="font-semibold text-blue-500">Bank:</span> {transaction.bankTransactionId}</div>}
-                                                {transaction.budgetId && <div><span className="font-semibold text-amber-500">Budget:</span> {transaction.budgetId}</div>}
-                                                {transaction.recurringTransactionId && <div><span className="font-semibold text-green-500">Recur:</span> {transaction.recurringTransactionId}</div>}
-                                            </div>
-                                        </td>
-                                    )}
 
                                     <td className="px-4 py-2 text-muted-foreground text-xs truncate max-w-[200px]" title={transaction.notes}>
                                         {transaction.notes}
@@ -488,16 +474,6 @@ export default function TransactionList({
                                     </div>
                                 </div>
 
-                                {/* Admin Mobile Info */}
-                                {isAdmin && (
-                                    <div className="w-full flex flex-col gap-1 text-[9px] font-mono text-muted-foreground bg-muted/40 p-2 rounded border border-border mt-1 break-all" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center gap-1 mb-1 font-bold text-foreground uppercase tracking-wider"><Database className="w-3 h-3 text-purple-500" /> Debug Data</div>
-                                        <div><span className="font-semibold text-purple-500">ID:</span> {transaction.id}</div>
-                                        {transaction.bankTransactionId && <div><span className="font-semibold text-blue-500">Bank:</span> {transaction.bankTransactionId}</div>}
-                                        {transaction.budgetId && <div><span className="font-semibold text-amber-500">Budget:</span> {transaction.budgetId}</div>}
-                                        {transaction.recurringTransactionId && <div><span className="font-semibold text-green-500">Recur:</span> {transaction.recurringTransactionId}</div>}
-                                    </div>
-                                )}
                             </li>
                         );
                     })}
