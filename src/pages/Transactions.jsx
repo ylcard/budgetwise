@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { useLocation } from "react-router-dom"; // Outlet/Context removed
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminConsistencyChecker } from "../components/transactions/AdminConsistencyChecker";
 
 export default function TransactionsLayout() {
     const { user } = useSettings();
@@ -153,6 +154,7 @@ export function TransactionHistory({
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [showMassEdit, setShowMassEdit] = useState(false); // NEW STATE
+    const isAdmin = user?.role === 'admin';
 
     // Hooks
     const { transactions, isLoading } = useTransactions(filters.startDate, filters.endDate);
@@ -300,6 +302,10 @@ export function TransactionHistory({
     return (
         <PullToRefresh onRefresh={handleRefresh}>
             <div className="space-y-4 mt-0">
+                {isAdmin && (
+                    <AdminConsistencyChecker transactions={transactions} />
+                )}
+
                 <TransactionFilters
                     filters={filters} setFilters={setFilters}
                     categories={categories} allCustomBudgets={allCustomBudgets}
