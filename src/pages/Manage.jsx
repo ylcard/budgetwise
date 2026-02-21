@@ -33,10 +33,7 @@ import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import { format } from "date-fns";
 import { BudgetRepairCard } from "../components/utils/BudgetRepairCard";
-import { 
-    ensureBudgetsForActiveMonths, 
-    reconcileTransactionBudgets 
-} from "@/components/utils/budgetInitialization";
+import { ensureBudgetsForActiveMonths } from "@/components/utils/budgetInitialization";
 
 export default function ManageLayout() {
     return (
@@ -588,32 +585,6 @@ export function AccountSection() {
             showToast({ title: "Error", description: "Failed to export data.", variant: "destructive" });
         } finally {
             setIsExporting(false);
-        }
-    };
-
-    const handleRepairBudgets = async () => {
-        if (!user?.email) return;
-
-        setIsRepairing(true);
-        try {
-            showToast({ title: "Maintenance Started", description: "Restoring budgets and re-linking transactions..." });
-
-            // 1. Fetch current goals to ensure budgets are created with correct targets
-            const goals = await base44.entities.BudgetGoal.filter({ user_email: user.email });
-
-            // 2. Run the repair sequence
-            await ensureBudgetsForActiveMonths(user.email, goals, settings);
-            const updatedCount = await reconcileTransactionBudgets(user.email);
-
-            showToast({
-                title: "Maintenance Complete",
-                description: `System budgets restored and ${updatedCount} transactions re-linked.`
-            });
-        } catch (error) {
-            console.error("Repair failed:", error);
-            showToast({ title: "Error", description: "Failed to repair budget data.", variant: "destructive" });
-        } finally {
-            setIsRepairing(false);
         }
     };
 
