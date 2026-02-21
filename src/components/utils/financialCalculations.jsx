@@ -5,8 +5,7 @@
  * @updated 17-Jan-2026 - OPTIMIZED: snapshotFutureBudgets now creates budgets proactively for the next 12 months
  */
 
-import { base44 } from "@/api/base44Client";
-import { parseDate, getFirstDayOfMonth, isDateInRange, getMonthBoundaries, getLastDayOfMonth } from "./dateUtils";
+import { parseDate, isDateInRange, getMonthBoundaries } from "./dateUtils";
 
 /**
  * Helper to check if a transaction falls within a date range.
