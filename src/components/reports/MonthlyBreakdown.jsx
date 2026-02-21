@@ -52,28 +52,31 @@ export default function MonthlyBreakdown({
         const currentMonthYear = `${selectedYear}-${selectedMonth}`;
         const criticalItems = categoryBreakdown.filter(item => item.alertStatus === 'critical');
 
-        criticalItems.forEach(item => {
-            const uniqueKey = `${currentMonthYear}-${item.name}`;
+        if (criticalItems.length > 0) {
+            // 2. Build a set of all categories we've ALREADY notified about this month
+            const alreadyNotifiedSet = new Set(notifiedTracker.current); // Start with local memory lock
 
-            // 2. Anti-Spam Check: Check BOTH immediate local memory AND the backend array
-            const alreadyNotified = notifiedTracker.current.has(uniqueKey) || notifications.some(n =>
-                n.category === 'budgets' &&
-                n.metadata?.alertType === 'critical_spend' &&
-                n.metadata?.categoryName === item.name &&
-                n.metadata?.monthYear === currentMonthYear
-            );
+            notifications.forEach(n => {
+                if (n.category === 'budgets' && n.metadata?.alertType === 'critical_spend' && n.metadata?.monthYear === currentMonthYear) {
+                    if (Array.isArray(n.metadata.categoryNames)) {
+                        n.metadata.categoryNames.forEach(name => alreadyNotifiedSet.add(`${currentMonthYear}-${name}`));
+                    }
+                }
+            });
 
-            if (!alreadyNotified) {
-                // Instantly lock this category so subsequent renders in the next 500ms don't duplicate it
-                notifiedTracker.current.add(uniqueKey);
+            // 3. Filter down to ONLY the categories we haven't warned the user about yet
+            const newCriticalItems = criticalItems.filter(item => !alreadyNotifiedSet.has(`${currentMonthYear}-${item.name}`));
 
-                const diffAbs = Math.abs(item.amount - item.averageSpend);
-                const diffFormatted = formatCurrency(diffAbs, settings);
+            if (newCriticalItems.length > 0) {
+                const newNames = newCriticalItems.map(item => item.name);
 
-                // 3. Fire and forget!
-                notifyCategorySpendingAlert(user.email, item.name, diffFormatted, item.diffPercentage, currentMonthYear);
+                // Lock them all instantly
+                newNames.forEach(name => notifiedTracker.current.add(`${currentMonthYear}-${name}`));
+
+                // 4. Fire ONE single, consolidated notification
+                notifyCategorySpendingAlert(user.email, newNames, currentMonthYear);
             }
-        });
+        }
     }, [categoryBreakdown, notifications, selectedMonth, selectedYear, user?.email, settings]);
 
     // SORTING: Ensure highest expenses are first (Top Left)
