@@ -10,7 +10,7 @@ import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertCircle, Check, ChevronsUpDown, Calendar, Banknote, StickyNote, Tag, Search, CheckCircle2, ShieldAlert } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, Calendar, Banknote, StickyNote, Tag, Search, CheckCircle2, ShieldAlert, Camera } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
@@ -30,6 +30,7 @@ import { FINANCIAL_PRIORITIES } from "@/components/utils/constants";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { getCategoryIcon } from "@/components/utils/iconMapConfig";
 import DatePicker, { CalendarView } from "@/components/ui/DatePicker";
+import ReceiptScanner from "./ReceiptScanner";
 
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -256,6 +257,7 @@ export default function TransactionFormContent({
     });
 
     const [isBudgetOpen, setIsBudgetOpen] = useState(false);
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [budgetSearchTerm, setBudgetSearchTerm] = useState("");
     const [validationError, setValidationError] = useState(null);
     const [potentialDuplicate, setPotentialDuplicate] = useState(null);
@@ -676,8 +678,27 @@ export default function TransactionFormContent({
         });
     };
 
+    const handleScanResult = (result) => {
+        setFormData(prev => ({
+            ...prev,
+            title: result.title || prev.title,
+            amount: result.amount ? result.amount.toString() : prev.amount,
+            // Optionally parse date if it's high confidence
+        }));
+        toast({
+            title: "Receipt Scanned",
+            description: `Found ${result.title} for ${result.amount}`,
+        });
+    };
+
     return (
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <ReceiptScanner
+                open={isScannerOpen}
+                onOpenChange={setIsScannerOpen}
+                onScanComplete={handleScanResult}
+            />
+
             <div className="flex-1 overflow-y-auto px-4 pb-4 pt-4 space-y-4 md:px-0 md:overflow-visible">
                 {validationError && (
                     <Alert variant="destructive">
@@ -703,16 +724,26 @@ export default function TransactionFormContent({
                 )}
 
                 {/* Title */}
-                <div>
+                <div className="flex gap-2 items-end">
                     <Input
                         id="title"
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         placeholder="What is this for?"
-                        className="text-lg font-medium border-0 border-b rounded-none px-0 h-10 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
+                        className="flex-1 text-lg font-medium border-0 border-b rounded-none px-0 h-10 focus-visible:ring-0 shadow-none placeholder:text-gray-400"
                         required
                         autoComplete="off"
                     />
+
+                    <CustomButton
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsScannerOpen(true)}
+                        className="text-blue-600 h-10 w-10 shrink-0"
+                    >
+                        <Camera className="w-5 h-5" />
+                    </CustomButton>
                 </div>
 
                 {/* Row: Amount + Status Button */}
