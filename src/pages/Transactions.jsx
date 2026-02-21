@@ -46,11 +46,14 @@ export default function TransactionsLayout() {
     const { categories } = useMergedCategories();
     const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
+    const queryClient = useQueryClient();
+
     const { handleSubmit, isSubmitting } = useTransactionActions({
         onSuccess: () => {
             setShowAddIncome(false);
             setShowAddExpense(false);
             setEditingTransaction(null);
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
         }
     });
 
