@@ -364,7 +364,7 @@ export function RecurringTransactions() {
         const toastId = toast.loading('Processing...');
         try {
             const userLocalDate = format(new Date(), 'yyyy-MM-dd');
-            const response = await base44.functions.invoke('processRecurringTransactions', { userLocalDate });
+            const response = await fetchWithRetry(() => base44.functions.invoke('processRecurringTransactions', { userLocalDate }));
             if (response.data.success) {
                 toast.success(`Processed ${response.data.processed}`, { id: toastId });
                 queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
