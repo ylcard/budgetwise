@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "./queryKeys";
+import { fetchWithRetry } from "../utils/generalUtils";
 
 export function useRuleActions() {
     const { user } = useSettings();
@@ -18,7 +19,7 @@ export function useRuleActions() {
     // Fetch Rules
     const { data: rules = [], isLoading, isFetching } = useQuery({
         queryKey: [QUERY_KEYS.CATEGORY_RULES, user?.email],
-        queryFn: () => base44.entities.CategoryRule.filter({ created_by: user?.email }),
+        queryFn: () => fetchWithRetry(() => base44.entities.CategoryRule.filter({ created_by: user?.email })),
         enabled: !!user?.email,
         staleTime: 1000 * 60 * 60,
     });
@@ -36,7 +37,7 @@ export function useRuleActions() {
     const invalidate = () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORY_RULES, user?.email] });
 
     const createRule = useMutation({
-        mutationFn: () => base44.entities.CategoryRule.create({
+        mutationFn: () => fetchWithRetry(() => base44.entities.CategoryRule.create({
             created_by: user.email,
             user_email: user.email,
             categoryId: formData.categoryId,
@@ -50,7 +51,7 @@ export function useRuleActions() {
             renamedTitle: formData.renamedTitle || null,
             priority: 10,
             financial_priority: formData.financial_priority
-        }),
+        })),
         onSuccess: () => {
             invalidate();
             handleCloseDialog();
@@ -59,15 +60,15 @@ export function useRuleActions() {
     });
 
     const deleteRule = useMutation({
-        mutationFn: (id) => base44.entities.CategoryRule.delete(id),
+        mutationFn: (id) => fetchWithRetry(() => base44.entities.CategoryRule.delete(id)),
         onSuccess: invalidate
     });
 
     const updateRule = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.CategoryRule.update(id, {
+        mutationFn: ({ id, data }) => fetchWithRetry(() => base44.entities.CategoryRule.update(id, {
             ...data,
             user_email: user.email
-        }),
+        })),
         onSuccess: () => {
             invalidate();
             if (isDialogOpen) handleCloseDialog();
@@ -79,7 +80,7 @@ export function useRuleActions() {
         mutationFn: async (ids) => {
             const idArray = Array.from(ids);
             // Batch deletions if needed, simplistic approach for now
-            await base44.entities.CategoryRule.deleteMany({ id: { $in: idArray } });
+            await fetchWithRetry(() => base44.entities.CategoryRule.deleteMany({ id: { $in: idArray } }));
         },
         onSuccess: () => {
             invalidate();
