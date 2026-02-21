@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '../hooks/queryKeys';
 import { toast } from 'sonner';
 import { formatCurrency } from '../utils/currencyUtils';
+import { fetchWithRetry } from '../utils/generalUtils';
 
 export function AdminConsistencyChecker({ transactions }) {
     const { user, settings } = useSettings();
@@ -30,8 +31,8 @@ export function AdminConsistencyChecker({ transactions }) {
         setHasAnalyzed(false);
         try {
             // Fetch ALL budgets directly from DB to ensure we check against truth
-            const sysBudgets = await base44.entities.SystemBudget.filter({ user_email: user.email });
-            const custBudgets = await base44.entities.CustomBudget.filter({ user_email: user.email });
+            const sysBudgets = await fetchWithRetry(() => base44.entities.SystemBudget.filter({ user_email: user.email }));
+            const custBudgets = await fetchWithRetry(() => base44.entities.CustomBudget.filter({ user_email: user.email }));
             const allBudgets = [...sysBudgets, ...custBudgets];
 
             const found = [];
@@ -73,16 +74,16 @@ export function AdminConsistencyChecker({ transactions }) {
 
         try {
             // The atomic function handles finding the 1 correct system budget or creating it
-            const correctBudgetId = await getOrCreateSystemBudgetForTransaction(
+            const correctBudgetId = await fetchWithRetry(() => getOrCreateSystemBudgetForTransaction(
                 user.email,
                 relevantDate,
                 priority,
                 goals,
                 settings
-            );
+            ));
 
-            await base44.entities.Transaction.update(t.id, { budgetId: correctBudgetId });
-            
+            await fetchWithRetry(() => base44.entities.Transaction.update(t.id, { budgetId: correctBudgetId }));
+
             // Remove from list upon success
             setAnomalies(prev => prev.filter(a => a.transaction.id !== t.id));
             return true;
@@ -153,20 +154,20 @@ export function AdminConsistencyChecker({ transactions }) {
                                 </div>
                                 <span className="font-mono font-semibold text-sm">{formatCurrency(anomaly.transaction.amount, settings)}</span>
                             </div>
-                            
+
                             <div className="flex gap-2 mt-2">
-                                <CustomButton 
-                                    size="sm" 
-                                    variant="primary" 
+                                <CustomButton
+                                    size="sm"
+                                    variant="primary"
                                     className="flex-1 text-xs h-8"
                                     disabled={isFixing}
                                     onClick={() => fixAnomaly(anomaly).then(s => s && queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] }))}
                                 >
                                     <Wrench className="w-3 h-3 mr-1" /> Auto-Fix
                                 </CustomButton>
-                                <CustomButton 
-                                    size="sm" 
-                                    variant="outline" 
+                                <CustomButton
+                                    size="sm"
+                                    variant="outline"
                                     className="flex-1 text-xs h-8"
                                     onClick={() => copyToClipboard(anomaly.transaction.id)}
                                 >
