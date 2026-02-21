@@ -87,20 +87,33 @@ export default function MonthlyBreakdown({
 									{selectedCategory.alertStatus === 'saving' ? 'Great job saving!' : 'Spending Alert'}
 								</p>
 								<p className="text-sm mt-1 text-gray-600 leading-snug">
-									You spent <strong>{formatCurrency(diffAbs, settings)}</strong> {selectedCategory.alertStatus === 'saving' ? 'less' : 'more'} than your average of <strong>{formatCurrency(selectedCategory.averageSpend, settings)}</strong>.
+									You spent <strong>{formatCurrency(diffAbs, settings)}</strong> {selectedCategory.alertStatus === 'saving' ? 'less' : 'more'} than your 6-month average of <strong>{formatCurrency(selectedCategory.averageSpend, settings)}</strong>.
 								</p>
 							</div>
 						</div>
 					</div>
 				)}
 
+				{!isAlert && selectedCategory.averageSpend > 0 && (
+					<div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100 flex items-center justify-between px-4">
+						<span className="text-sm text-gray-500 font-medium">6-Month Average</span>
+						<span className="text-sm font-bold text-gray-900">{formatCurrency(selectedCategory.averageSpend, settings)}</span>
+					</div>
+				)}
+
+				{selectedCategory.averageSpend === 0 && (
+					<div className="bg-blue-50/30 p-3 rounded-xl border border-blue-100 text-center">
+						<span className="text-xs text-blue-600 font-medium">First expense in this category in 6 months.</span>
+					</div>
+				)}
+
 				<div className="grid grid-cols-2 gap-4">
-					<div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
-						<p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Expenses</p>
+					<div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-center">
+						<p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Share of Expenses</p>
 						<p className="text-xl font-bold text-gray-900">{selectedCategory.expensePercentage.toFixed(1)}%</p>
 					</div>
-					<div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
-						<p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Income</p>
+					<div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-center">
+						<p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Share of Income</p>
 						<p className="text-xl font-bold text-gray-900">{selectedCategory.percentage.toFixed(1)}%</p>
 					</div>
 				</div>
