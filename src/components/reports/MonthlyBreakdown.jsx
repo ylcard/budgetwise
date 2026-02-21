@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings } from "../utils/SettingsContext";
@@ -5,6 +6,8 @@ import { useMonthlyBreakdown } from "../hooks/useDerivedData";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { AlertCircle, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 
 export default function MonthlyBreakdown({
 	transactions,
@@ -16,6 +19,17 @@ export default function MonthlyBreakdown({
 	selectedYear
 }) {
 	const { settings } = useSettings();
+
+	// State for Modal/Drawer
+	const [selectedCategory, setSelectedCategory] = useState(null);
+	const [isDesktop, setIsDesktop] = useState(true);
+
+	useEffect(() => {
+		const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+		checkDesktop(); // Check initially
+		window.addEventListener('resize', checkDesktop);
+		return () => window.removeEventListener('resize', checkDesktop);
+	}, []);
 
 	// Use the extracted hook which now calculates needs/wants internally using financialCalculations
 	const { categoryBreakdown, totalExpenses, needsTotal, wantsTotal } = useMonthlyBreakdown(
@@ -41,6 +55,57 @@ export default function MonthlyBreakdown({
 		if (status === 'warning') return "bg-amber-50/30 border-amber-200 hover:border-amber-300 hover:shadow-amber-100/50";
 		if (status === 'saving') return "bg-emerald-50/30 border-emerald-200 hover:border-emerald-300 hover:shadow-emerald-100/50";
 		return "bg-white border-gray-100 hover:border-gray-200"; // Normal
+	};
+
+	// Helper to render the content inside the Modal/Drawer
+	const renderCategoryDetails = () => {
+		if (!selectedCategory) return null;
+		const IconComponent = getCategoryIcon(selectedCategory.icon);
+		const diffAbs = Math.abs(selectedCategory.amount - selectedCategory.averageSpend);
+		const isAlert = selectedCategory.alertStatus && selectedCategory.alertStatus !== 'normal';
+
+		return (
+			<div className="space-y-6 pt-2">
+				<div className="flex items-center gap-4">
+					<div className="p-4 rounded-2xl" style={{ backgroundColor: `${selectedCategory.color}20` }}>
+						<IconComponent size={32} style={{ color: selectedCategory.color }} />
+					</div>
+					<div>
+						<h3 className="text-xl font-bold text-gray-900">{selectedCategory.name}</h3>
+						<p className="text-2xl font-bold" style={{ color: selectedCategory.color }}>
+							{formatCurrency(selectedCategory.amount, settings)}
+						</p>
+					</div>
+				</div>
+
+				{isAlert && selectedCategory.averageSpend > 0 && (
+					<div className={`p-4 rounded-xl border ${getAlertCardStyles(selectedCategory.alertStatus)}`}>
+						<div className="flex items-start gap-3">
+							<StatusIndicator status={selectedCategory.alertStatus} diff={selectedCategory.diffPercentage} />
+							<div>
+								<p className="font-bold text-sm text-gray-900">
+									{selectedCategory.alertStatus === 'saving' ? 'Great job saving!' : 'Spending Alert'}
+								</p>
+								<p className="text-sm mt-1 text-gray-600 leading-snug">
+									You spent <strong>{formatCurrency(diffAbs, settings)}</strong> {selectedCategory.alertStatus === 'saving' ? 'less' : 'more'} than your average of <strong>{formatCurrency(selectedCategory.averageSpend, settings)}</strong>.
+								</p>
+							</div>
+						</div>
+					</div>
+				)}
+
+				<div className="grid grid-cols-2 gap-4">
+					<div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
+						<p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Expenses</p>
+						<p className="text-xl font-bold text-gray-900">{selectedCategory.expensePercentage.toFixed(1)}%</p>
+					</div>
+					<div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
+						<p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Income</p>
+						<p className="text-xl font-bold text-gray-900">{selectedCategory.percentage.toFixed(1)}%</p>
+					</div>
+				</div>
+			</div>
+		);
 	};
 
 	// Helper for header styling
@@ -109,7 +174,8 @@ export default function MonthlyBreakdown({
 									return (
 										<div
 											key={item.id || item.name}
-											className={`group relative p-3 rounded-2xl border hover:shadow-md transition-all duration-200 flex flex-col justify-between h-28 overflow-hidden ${alertStyles}`}
+											onClick={() => setSelectedCategory(item)}
+											className={`group relative p-3 rounded-2xl border hover:shadow-md transition-all duration-200 flex flex-col justify-between h-28 overflow-hidden cursor-pointer hover:scale-[1.03] active:scale-[0.98] ${alertStyles}`}
 										>
 											{/* Top Row: Icon & Amount */}
 											<div className="flex justify-between items-start mb-2">
@@ -142,15 +208,6 @@ export default function MonthlyBreakdown({
 														}}
 													/>
 												</div>
-
-												<div className="flex justify-between items-center">
-													<p className="text-[10px] text-gray-500 font-medium" title="% of Total Expenses">
-														{item.expensePercentage.toFixed(1)}% <span className="text-gray-400 font-normal">of Exp</span>
-													</p>
-													<p className="text-[10px] text-gray-400" title="% of Total Income">
-														{item.percentage.toFixed(1)}% <span className="text-gray-300">of Inc</span>
-													</p>
-												</div>
 											</div>
 										</div>
 									);
@@ -159,6 +216,30 @@ export default function MonthlyBreakdown({
 						)}
 					</CardContent>
 				</>
+			)}
+			{/* Detail Overlay (Desktop vs Mobile) */}
+			{isDesktop ? (
+				<Dialog open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
+					<DialogContent className="sm:max-w-[400px]">
+						<DialogHeader>
+							<DialogTitle className="sr-only">Category Details</DialogTitle>
+							<DialogDescription className="sr-only">Detailed breakdown and insights for {selectedCategory?.name}</DialogDescription>
+						</DialogHeader>
+						{renderCategoryDetails()}
+					</DialogContent>
+				</Dialog>
+			) : (
+				<Drawer open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
+					<DrawerContent>
+						<DrawerHeader className="text-left hidden">
+							<DrawerTitle className="sr-only">Category Details</DrawerTitle>
+							<DrawerDescription className="sr-only">Detailed breakdown and insights for {selectedCategory?.name}</DrawerDescription>
+						</DrawerHeader>
+						<div className="px-5 pb-8">
+							{renderCategoryDetails()}
+						</div>
+					</DrawerContent>
+				</Drawer>
 			)}
 		</Card >
 	);
