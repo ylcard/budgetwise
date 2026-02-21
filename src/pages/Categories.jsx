@@ -47,7 +47,7 @@ export default function Categories() {
     }, [categories]);
 
     // Actions (mutations and handlers)
-    const { handleSubmit: performMutation, handleEdit, isSubmitting } = useCategoryActions(
+    const { handleSubmit: performMutation, handleEdit, handleDelete, handleBulkDelete: executeBulkDelete, isSubmitting } = useCategoryActions(
         setShowForm,
         setEditingCategory
     );
@@ -77,7 +77,7 @@ export default function Categories() {
     };
 
     // UPDATED 14-Feb-2026: Prevent deletion of system categories
-    const onSafeDelete = async (category) => {
+    const onSafeDelete = (category) => {
         // ADDED 14-Feb-2026: Block deletion of system categories
         if (category.isSystemCategory) {
             showToast({
@@ -88,20 +88,8 @@ export default function Categories() {
             return;
         }
 
-        if (!window.confirm(`Delete category "${category.name}"?`)) return;
-
-        try {
-            await base44.entities.Category.delete(category.id);
-            await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-            showToast({ title: "Deleted", description: `${category.name} has been removed.` });
-        } catch (error) {
-            console.error("Delete failed:", error);
-            showToast({
-                title: "Error",
-                description: `Could not delete ${category.name}. It might be in use.`,
-                variant: "destructive"
-            });
-        }
+        // The hook handles the confirmation dialog, db call, invalidation, and toast!
+        handleDelete(category);
     };
 
     // SELECTION LOGIC
@@ -138,7 +126,7 @@ export default function Categories() {
     };
 
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = () => {
         if (selectedIds.size === 0) return;
 
         // ADDED 14-Feb-2026: Filter out system categories from deletion
@@ -166,39 +154,10 @@ export default function Categories() {
         }
 
         if (window.confirm(`Delete ${customCategoriesIds.length} custom categories? This cannot be undone.`)) {
-            setIsBulkDeleting(true);
-            try {
-                const results = await Promise.allSettled(
-                    customCategoriesIds.map(id => base44.entities.Category.delete(id))
-                );
-
-                const successCount = results.filter(r => r.status === 'fulfilled').length;
-                const failCount = results.filter(r => r.status === 'rejected').length;
-
-                await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-
-                if (failCount > 0) {
-                    showToast({
-                        title: "Partial Success",
-                        description: `Deleted ${successCount} categories. ${failCount} could not be deleted (likely in use).`,
-                        variant: "warning"
-                    });
-                } else {
-                    showToast({ title: "Success", description: `Deleted ${successCount} categories.` });
-                }
-
-                setSelectedIds(new Set());
-                setIsSelectionMode(false);
-            } catch (error) {
-                console.error("Bulk delete error:", error);
-                showToast({
-                    title: "Error",
-                    description: "Failed to delete some categories.",
-                    variant: "destructive"
-                });
-            } finally {
-                setIsBulkDeleting(false);
-            }
+            // The hook handles the deleteMany call, invalidation, and toasts
+            executeBulkDelete(customCategoriesIds);
+            setSelectedIds(new Set());
+            setIsSelectionMode(false);
         }
     };
 
