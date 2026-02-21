@@ -23,8 +23,7 @@ export default function TransactionItem({
     isSelected = false,
     onSelect
 }) {
-    const { settings, user } = useSettings();
-    const isAdmin = user?.role === 'admin';
+    const { settings } = useSettings();
 
     const isIncome = transaction.type === 'income';
     const isPaid = transaction.isPaid;
@@ -193,21 +192,6 @@ export default function TransactionItem({
 
                 </div>
             </div>
-
-            {/* Admin Info */}
-            {isAdmin && (
-                <div className="mt-3 bg-muted/30 border border-border p-3 rounded-md text-[10px] font-mono text-muted-foreground w-full">
-                    <div className="font-bold text-foreground mb-1">Admin Info</div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-                        <div><span className="text-purple-500 font-semibold">ID:</span> {transaction.id}</div>
-                        {transaction.bankTransactionId && <div><span className="text-blue-500 font-semibold">Bank ID:</span> {transaction.bankTransactionId}</div>}
-                        {transaction.budgetId && <div><span className="text-amber-500 font-semibold">Budget ID:</span> {transaction.budgetId}</div>}
-                        {transaction.recurringTransactionId && <div><span className="text-green-500 font-semibold">Recurring ID:</span> {transaction.recurringTransactionId}</div>}
-                        {transaction.normalisedProviderTransactionId && <div><span className="text-orange-500 font-semibold">Norm Prov ID:</span> {transaction.normalisedProviderTransactionId}</div>}
-                    </div>
-                </div>
-            )}
-
         </motion.div>
     );
 }
