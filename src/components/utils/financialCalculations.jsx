@@ -5,8 +5,7 @@
  * @updated 17-Jan-2026 - OPTIMIZED: snapshotFutureBudgets now creates budgets proactively for the next 12 months
  */
 
-import { base44 } from "@/api/base44Client";
-import { parseDate, getFirstDayOfMonth, isDateInRange, getMonthBoundaries, getLastDayOfMonth } from "./dateUtils";
+import { parseDate, isDateInRange, getMonthBoundaries } from "./dateUtils";
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -394,7 +393,9 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 
 /**
  * Calculates historical averages for all categories in one pass.
+ * DEPRECATED on 21-FEB-2026 Was used by MonthlyBreakdown before
  */
+/*
 export const getAllHistoricalCategoryAverages = (transactions, selectedMonth, selectedYear, lookbackMonths = 3) => {
     if (!transactions || transactions.length === 0) return {};
 
@@ -425,6 +426,7 @@ export const getAllHistoricalCategoryAverages = (transactions, selectedMonth, se
 
     return averages;
 };
+*/
 
 /**
  * HELPER: Math Utils for Projection
