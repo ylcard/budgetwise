@@ -28,12 +28,8 @@ import { SETTINGS_KEYS } from "../components/utils/constants";
 import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
-import { Checkbox } from "@/components/ui/checkbox";
 import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
-import { format } from "date-fns";
-import { BudgetRepairCard } from "../components/utils/BudgetRepairCard";
-import { ensureBudgetsForActiveMonths } from "@/components/utils/budgetInitialization";
 
 export default function ManageLayout() {
     return (
