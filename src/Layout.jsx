@@ -37,6 +37,9 @@ import { Switch } from "@/components/ui/switch"; // Assuming you have this shadc
 import { useTheme } from "next-themes";
 import { BudgetAvatar } from "./components/ui/BudgetAvatar";
 import { HealthProvider, useHealth } from "./components/utils/HealthContext";
+import CookieBanner from "./components/cookies/CookieBanner";
+import CookieSettings from "./components/cookies/CookieSettings";
+import { useCookieConsent } from "./components/cookies/useCookieConsent";
 
 const LayoutContent = ({ children }) => {
     const location = useLocation();
@@ -46,6 +49,18 @@ const LayoutContent = ({ children }) => {
     const { logout } = useAuth();
     const { budgetHealth } = useHealth();
     const { settings, updateSettings } = useSettings();
+    
+    // Cookie Consent
+    const { showBanner, consent, acceptAll, acceptNecessary, updateConsent } = useCookieConsent();
+    const [showCookieSettings, setShowCookieSettings] = useState(false);
+    
+    const handleUpdateConsent = (newConsent) => {
+        Object.keys(newConsent).forEach(key => {
+            if (key !== 'essential') {
+                updateConsent(key, newConsent[key]);
+            }
+        });
+    };
 
     // ADDED 14-Feb-2026: Initialize privacy signal enforcement on mount
     useEffect(() => {
@@ -355,6 +370,20 @@ const LayoutContent = ({ children }) => {
                     <GlobalFAB />
                 </main>
             </div>
+
+            {/* Cookie Consent System */}
+            <CookieBanner
+                show={showBanner}
+                onAcceptAll={acceptAll}
+                onAcceptNecessary={acceptNecessary}
+                onOpenSettings={() => setShowCookieSettings(true)}
+            />
+            <CookieSettings
+                open={showCookieSettings}
+                onOpenChange={setShowCookieSettings}
+                consent={consent}
+                onUpdateConsent={handleUpdateConsent}
+            />
         </SidebarProvider>
     );
 };
