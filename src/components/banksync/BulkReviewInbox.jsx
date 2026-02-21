@@ -18,6 +18,7 @@ import { Loader2, BrainCircuit, Receipt, Sparkles, ShieldCheck, CheckCircle2 } f
 import { useToast } from "@/components/ui/use-toast";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { Input } from "@/components/ui/input"
+import { fetchWithRetry } from "@/components/utils/generalUtils";
 
 /**
  * Bulk Review Inbox
@@ -78,24 +79,6 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
         return Object.values(groups).sort((a, b) => b.transactions.length - a.transactions.length);
     }, [transactions]);
 
-    // --- HELPER: Exponential Backoff Retry ---
-    const withRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
-        let attempt = 0;
-        while (attempt < maxRetries) {
-            try {
-                return await fn();
-            } catch (error) {
-                attempt++;
-                const isRateLimit = error?.status === 429 || error?.message?.includes('429');
-                if (attempt >= maxRetries || (!isRateLimit && attempt >= maxRetries)) throw error;
-
-                const delay = baseDelay * Math.pow(2, attempt - 1) + (Math.random() * 500); // Backoff + Jitter
-                console.warn(`⏳ [BulkReview] API limit hit. Retrying in ${Math.round(delay)}ms (Attempt ${attempt}/${maxRetries})`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    };
-
     // 2. The Save Mutation
     const { mutate: saveBulkRules, isPending: isSaving } = useMutation({
         mutationFn: async (saveableGroups) => {
@@ -106,7 +89,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
             const transactionsToUpdate = [];
 
             // 1. Fetch current rules to check for keyword collisions
-            const existingRules = await base44.entities.CategoryRule.filter({ created_by: user.email }) || [];
+            const existingRules = await fetchWithRetry(() => base44.entities.CategoryRule.filter({ created_by: user.email })) || [];
 
             // Track keywords processed in this batch to prevent internal duplicates
             const keywordsProcessedInBatch = new Set();
@@ -152,16 +135,24 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
 
             // A. Execute Rule Operations
             if (rulesToCreate.length > 0) {
-                await base44.entities.CategoryRule.bulkCreate(rulesToCreate);
+                await fetchWithRetry(() => base44.entities.CategoryRule.bulkCreate(rulesToCreate));
             }
 
             if (rulesToUpdate.length > 0) {
-                await Promise.all(rulesToUpdate.map(rule =>
-                    withRetry(() => base44.entities.CategoryRule.update(rule.id, {
-                        categoryId: rule.categoryId,
-                        renamedTitle: rule.renamedTitle
-                    }))
-                ));
+                // Chunk rule updates just like transactions to prevent 429s on massive edits
+                const ruleChunkSize = 20;
+                for (let i = 0; i < rulesToUpdate.length; i += ruleChunkSize) {
+                    const chunk = rulesToUpdate.slice(i, i + ruleChunkSize);
+                    await Promise.all(chunk.map(rule =>
+                        fetchWithRetry(() => base44.entities.CategoryRule.update(rule.id, {
+                            categoryId: rule.categoryId,
+                            renamedTitle: rule.renamedTitle
+                        }))
+                    ));
+                    if (i + ruleChunkSize < rulesToUpdate.length) {
+                        await new Promise(resolve => setTimeout(resolve, 250));
+                    }
+                }
             }
 
             // B. Execute Transaction Operations (Bulk Only)
@@ -171,7 +162,7 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                 for (let i = 0; i < transactionsToUpdate.length; i += chunkSize) {
                     const chunk = transactionsToUpdate.slice(i, i + chunkSize);
                     await Promise.all(chunk.map(tx =>
-                        withRetry(() => base44.entities.Transaction.update(tx.id, {
+                        fetchWithRetry(() => base44.entities.Transaction.update(tx.id, {
                             category_id: tx.category_id,
                             financial_priority: tx.financial_priority,
                             needsReview: tx.needsReview,
