@@ -43,8 +43,8 @@ export const useSystemActions = (user) => {
                     created_by: user.email
                 }));
 
-                // Assuming this fires API calls, wrapping it in retry as well
-                await fetchWithRetry(() => snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]));
+                // Internal DB calls are already protected, so we can just await it directly
+                await snapshotFutureBudgets(newGoal, settings, user.email, [newGoal]);
 
                 // Introduce a 250ms buffer to slow down the request rate
                 await new Promise(resolve => setTimeout(resolve, 250));
