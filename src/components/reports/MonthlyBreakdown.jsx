@@ -8,6 +8,8 @@ import { getCategoryIcon } from "../utils/iconMapConfig";
 import { AlertCircle, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { useNotifications } from "../hooks/useNotifications";
+import { notifyCategorySpendingAlert } from "../utils/notificationHelpers";
 
 export default function MonthlyBreakdown({
 	transactions,
@@ -18,7 +20,8 @@ export default function MonthlyBreakdown({
 	selectedMonth,
 	selectedYear
 }) {
-	const { settings } = useSettings();
+	const { settings, user } = useSettings();
+	const { notifications } = useNotifications();
 
 	// State for Modal/Drawer
 	const [selectedCategory, setSelectedCategory] = useState(null);
@@ -35,6 +38,36 @@ export default function MonthlyBreakdown({
 	const { categoryBreakdown, totalExpenses, needsTotal, wantsTotal } = useMonthlyBreakdown(
 		transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear
 	);
+
+	// --- NEW: Proactive Notification Engine ---
+	useEffect(() => {
+		// 1. Only trigger alerts for the CURRENT real-world month
+		const now = new Date();
+		const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
+
+		if (!isCurrentMonth || !notifications || categoryBreakdown.length === 0) return;
+
+		const currentMonthYear = `${selectedYear}-${selectedMonth}`;
+		const criticalItems = categoryBreakdown.filter(item => item.alertStatus === 'critical');
+
+		criticalItems.forEach(item => {
+			// 2. Anti-Spam Check: Did we already notify the user about this category this month?
+			const alreadyNotified = notifications.some(n =>
+				n.category === 'budgets' &&
+				n.metadata?.alertType === 'critical_spend' &&
+				n.metadata?.categoryName === item.name &&
+				n.metadata?.monthYear === currentMonthYear
+			);
+
+			if (!alreadyNotified) {
+				const diffAbs = Math.abs(item.amount - item.averageSpend);
+				const diffFormatted = formatCurrency(diffAbs, settings);
+
+				// 3. Fire and forget!
+				notifyCategorySpendingAlert(user.email, item.name, diffFormatted, item.diffPercentage, currentMonthYear);
+			}
+		});
+	}, [categoryBreakdown, notifications, selectedMonth, selectedYear, user?.email, settings]);
 
 	// SORTING: Ensure highest expenses are first (Top Left)
 	const sortedBreakdown = [...categoryBreakdown].sort((a, b) => b.amount - a.amount);
