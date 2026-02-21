@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { formatDateString } from "../utils/dateUtils";
 import { getOrCreateSystemBudgetForTransaction } from "../utils/budgetInitialization";
+import { fetchWithRetry } from "../utils/generalUtils";
 
 const STEPS = [
     { id: 1, label: "Upload" },
@@ -122,12 +123,12 @@ export default function ImportWizard({ onSuccess }) {
             showToast({ title: "Uploading...", description: "Uploading file for analysis." });
 
             // 1. Upload File
-            const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
+            const { file_url } = await fetchWithRetry(() => base44.integrations.Core.UploadFile({ file: file }));
 
             showToast({ title: "Analyzing...", description: "Extracting data from PDF. This may take a moment." });
 
             // 2. Extract Data (Strict Schema)
-            const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+            const result = await fetchWithRetry(() => base44.integrations.Core.ExtractDataFromUploadedFile({
                 file_url: file_url,
                 json_schema: {
                     "type": "object",
@@ -148,7 +149,7 @@ export default function ImportWizard({ onSuccess }) {
                     },
                     "required": ["transactions"]
                 }
-            });
+            }));
 
             if (result.status === 'error') throw new Error(result.details);
             const extractedData = result.output?.transactions || [];
@@ -213,11 +214,11 @@ export default function ImportWizard({ onSuccess }) {
             // 2. Call Backend Engine (Waterfall Mode)
             showToast({ title: "Categorizing...", description: "AI is cleaning and organizing..." });
 
-            const engineResponse = await base44.functions.invoke('CategorizationEngine', {
+            const engineResponse = await fetchWithRetry(() => base44.functions.invoke('CategorizationEngine', {
                 transactions: preProcessed,
                 rules: rules,
                 categories: categories
-            });
+            }));
 
             // Safety Unwrap (Fixes "map is not a function")
             const aiResults = Array.isArray(engineResponse) ? engineResponse
@@ -433,7 +434,7 @@ export default function ImportWizard({ onSuccess }) {
                 };
             });
 
-            await base44.entities.Transaction.bulkCreate(transactionsToCreate);
+            await fetchWithRetry(() => base44.entities.Transaction.bulkCreate(transactionsToCreate));
 
             // Force a hard refresh of the cache to ensure $0 budgets recalculate
             await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
