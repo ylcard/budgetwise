@@ -227,6 +227,7 @@ export default function TransactionFormContent({
     const { rules } = useCategoryRules(user);
     const { goals } = useGoals(user);
     const [showNotes, setShowNotes] = useState(!!initialTransaction?.notes);
+    const [showAdminOverrides, setShowAdminOverrides] = useState(false);
 
     // Force fetch rates on mount if empty
     useEffect(() => {
@@ -985,53 +986,69 @@ export default function TransactionFormContent({
 
                 {/* Admin Area */}
                 {isAdmin && (
-                    <div className="mt-6 pt-4 border-t border-border">
-                        <div className="flex items-center gap-2 mb-3 text-purple-600">
-                            <ShieldAlert className="w-4 h-4" />
-                            <h4 className="text-xs font-bold uppercase tracking-widest">Admin Overrides</h4>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-muted-foreground uppercase">Bank Transaction ID</Label>
-                                <Input
-                                    value={formData.bankTransactionId}
-                                    onChange={(e) => setFormData({ ...formData, bankTransactionId: e.target.value })}
-                                    className="h-8 text-xs font-mono"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-muted-foreground uppercase">Recurring Tx ID</Label>
-                                <Input
-                                    value={formData.recurringTransactionId}
-                                    onChange={(e) => setFormData({ ...formData, recurringTransactionId: e.target.value })}
-                                    className="h-8 text-xs font-mono"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-muted-foreground uppercase">Normalised Prov ID</Label>
-                                <Input
-                                    value={formData.normalisedProviderTransactionId}
-                                    onChange={(e) => setFormData({ ...formData, normalisedProviderTransactionId: e.target.value })}
-                                    className="h-8 text-xs font-mono"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-muted-foreground uppercase">Provider ID</Label>
-                                <Input
-                                    value={formData.providerTransactionId}
-                                    onChange={(e) => setFormData({ ...formData, providerTransactionId: e.target.value })}
-                                    className="h-8 text-xs font-mono"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-muted-foreground uppercase">Budget ID (Override)</Label>
-                                <Input
-                                    value={formData.budgetId}
-                                    onChange={(e) => setFormData({ ...formData, budgetId: e.target.value })}
-                                    className="h-8 text-xs font-mono"
-                                />
-                            </div>
-                        </div>
+                    <div className="mt-6 pt-4 border-t border-border flex flex-col items-center">
+                        <button
+                            type="button"
+                            onClick={() => setShowAdminOverrides(!showAdminOverrides)}
+                            className="text-[10px] uppercase tracking-widest text-muted-foreground/40 hover:text-purple-600 transition-colors flex items-center gap-1"
+                        >
+                            <ShieldAlert className="w-3 h-3" />
+                            {showAdminOverrides ? "Hide Admin Overrides" : "Show Admin Overrides"}
+                        </button>
+
+                        <AnimatePresence>
+                            {showAdminOverrides && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="w-full mt-4 overflow-hidden"
+                                >
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground uppercase">Bank Transaction ID</Label>
+                                            <Input
+                                                value={formData.bankTransactionId}
+                                                onChange={(e) => setFormData({ ...formData, bankTransactionId: e.target.value })}
+                                                className="h-8 text-xs font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground uppercase">Recurring Tx ID</Label>
+                                            <Input
+                                                value={formData.recurringTransactionId}
+                                                onChange={(e) => setFormData({ ...formData, recurringTransactionId: e.target.value })}
+                                                className="h-8 text-xs font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground uppercase">Normalised Prov ID</Label>
+                                            <Input
+                                                value={formData.normalisedProviderTransactionId}
+                                                onChange={(e) => setFormData({ ...formData, normalisedProviderTransactionId: e.target.value })}
+                                                className="h-8 text-xs font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground uppercase">Provider ID</Label>
+                                            <Input
+                                                value={formData.providerTransactionId}
+                                                onChange={(e) => setFormData({ ...formData, providerTransactionId: e.target.value })}
+                                                className="h-8 text-xs font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground uppercase">Budget ID (Override)</Label>
+                                            <Input
+                                                value={formData.budgetId}
+                                                onChange={(e) => setFormData({ ...formData, budgetId: e.target.value })}
+                                                className="h-8 text-xs font-mono"
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 )}
 
