@@ -108,6 +108,14 @@ export const useDeleteEntity = ({
 
     const deleteMutation = useMutation({
         mutationFn: async (idOrEntity) => {
+            // 1. Bulk Deletion Check (Array of IDs)
+            if (Array.isArray(idOrEntity)) {
+                if (onBeforeDelete) await onBeforeDelete(idOrEntity);
+                // Assuming the generic fetchWithRetry is applied inside base44 or imported here
+                return await fetchWithRetry(() => base44.entities[entityName].deleteMany({ id: { $in: idOrEntity } }));
+            }
+
+            // 2. Single Deletion Check
             // Determine if we received an ID or a full entity object
             const id = typeof idOrEntity === 'object' ? idOrEntity.id : idOrEntity;
 
@@ -121,7 +129,7 @@ export const useDeleteEntity = ({
             // This line is only reached if onBeforeDelete completes successfully
             await fetchWithRetry(() => base44.entities[entityName].delete(id));
         },
-        onSuccess: () => {
+        onSuccess: (_, idOrEntity) => {
             // Invalidate all specified query keys to trigger refetches
             queryKeysToInvalidate.forEach(key => {
                 queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
@@ -132,10 +140,13 @@ export const useDeleteEntity = ({
                 onAfterSuccess();
             }
 
+            // Plural-aware toast notification
+            const count = Array.isArray(idOrEntity) ? idOrEntity.length : 1;
+
             // Show success toast notification
             showToast({
                 title: "Success",
-                description: `${entityName} deleted successfully`,
+                description: count > 1 ? `${count} ${entityName}s deleted successfully` : `${entityName} deleted successfully`,
             });
         },
         onError: (error) => {
