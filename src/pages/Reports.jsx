@@ -326,8 +326,12 @@ export default function Reports() {
 
                 {/* 2. Historical Context & Future Projection */}
                 <div className="w-full space-y-8">
-                    {waveComponent}
-                    {projectionComponent}
+                    <div className="h-[400px] md:h-[450px]">
+                        {waveComponent}
+                    </div>
+                    <div className="h-[400px] md:h-[450px]">
+                        {projectionComponent}
+                    </div>
                 </div>
 
                 {/* 3. Bottom Row: Monthly Breakdown + Priority Chart */}
