@@ -18,8 +18,7 @@ import ManagePage, { PreferencesSection, AccountSection } from './pages/Manage';
 import Categories from './pages/Categories';
 import Automation from './pages/Automation';
 import BankSync from './pages/BankSync';
-import TransactionsPage, { TransactionHistory } from './pages/Transactions';
-import RecurringTransactions from './pages/RecurringTransactions';
+import TransactionsPage from './pages/Transactions';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -61,12 +60,8 @@ const AuthenticatedApp = () => {
             <Routes>
                 <Route path="/" element={<MainPage />} />
 
-                {/* Transactions Nested Routes */}
-                <Route path="/transactions" element={<TransactionsPage />}>
-                    <Route index element={<Navigate to="history" replace />} />
-                    <Route path="history" element={<TransactionHistory />} />
-                    <Route path="recurring" element={<RecurringTransactions />} />
-                </Route>
+                {/* Transactions Route */}
+                <Route path="/transactions" element={<TransactionsPage />} />
 
                 {/* Manage Nested Routes */}
                 <Route path="/manage" element={<ManagePage />}>
