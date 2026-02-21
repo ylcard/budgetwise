@@ -37,6 +37,7 @@ import BudgetPostMortem from "../components/budgetdetail/BudgetPostMortem"; // A
 import ExpenseFilters from "../components/budgetdetail/ExpenseFilters"; // ADDED: 16-Jan-2026
 import BudgetFeasibilityDisplay from "../components/custombudgets/BudgetFeasibilityDisplay"; // ADDED: 18-Jan-2026
 import { useBudgetAnalysis } from "../components/hooks/useBudgetAnalysis"; // ADDED: 03-Feb-2026
+import { fetchWithRetry } from "../components/utils/generalUtils";
 
 export default function BudgetDetail() {
     const { settings, user } = useSettings();
@@ -71,14 +72,14 @@ export default function BudgetDetail() {
         queryFn: async () => {
             if (!budgetId) return null;
             try {
-                const customBudget = await base44.entities.CustomBudget.get(budgetId);
+                const customBudget = await fetchWithRetry(() => base44.entities.CustomBudget.get(budgetId));
                 if (customBudget) return { ...customBudget, isSystemBudget: false };
             } catch (error) { }
 
             try {
-                const systemBudget = await base44.entities.SystemBudget.get(budgetId);
+                const systemBudget = await fetchWithRetry(() => base44.entities.SystemBudget.get(budgetId));
                 if (systemBudget) {
-                    const goals = await base44.entities.BudgetGoal.filter({ priority: systemBudget.systemBudgetType });
+                    const goals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ priority: systemBudget.systemBudgetType }));
                     const relatedGoal = goals[0];
                     return {
                         ...systemBudget,
@@ -101,7 +102,7 @@ export default function BudgetDetail() {
     // 2. Fetch Categories (Defined ONCE)
     const { data: categories = [] } = useQuery({
         queryKey: ['categories'],
-        queryFn: () => base44.entities.Category.list(),
+        queryFn: () => fetchWithRetry(() => base44.entities.Category.list()),
         // initialData: [],
         staleTime: 1000 * 60 * 60,
     });
@@ -111,11 +112,11 @@ export default function BudgetDetail() {
         queryKey: ['allCustomBudgets', monthStart, monthEnd, user?.email],
         queryFn: async () => {
             if (!user?.email) return [];
-            return await base44.entities.CustomBudget.filter({
+            return await fetchWithRetry(() => base44.entities.CustomBudget.filter({
                 created_by: user.email,
                 startDate: { $lte: monthEnd },
                 endDate: { $gte: monthStart }
-            });
+            }));
         },
         // initialData: [],
         enabled: !!budget && !!user?.email && budget.isSystemBudget === true,
@@ -135,15 +136,15 @@ export default function BudgetDetail() {
         queryKey: ['transactions', budget?.id, relatedCustomBudgetIds],
         queryFn: async () => {
             if (!budget.isSystemBudget) {
-                return await base44.entities.Transaction.filter({ budgetId: budgetId });
+                return await fetchWithRetry(() => base44.entities.Transaction.filter({ budgetId: budgetId }));
             }
-            return await base44.entities.Transaction.filter({
+            return await fetchWithRetry(() => base44.entities.Transaction.filter({
                 $or: [
                     { date: { $gte: budget.startDate, $lte: budget.endDate } },
                     { budgetId: budgetId },
                     { budgetId: { $in: relatedCustomBudgetIds } }
                 ]
-            });
+            }));
         },
         // initialData: [],
         enabled: !!budget,
@@ -161,9 +162,9 @@ export default function BudgetDetail() {
         queryFn: async () => {
             if (!user?.email) return [];
             // Fetch ALL custom budgets for this user
-            const customB = await base44.entities.CustomBudget.filter({ created_by: user.email });
+            const customB = await fetchWithRetry(() => base44.entities.CustomBudget.filter({ created_by: user.email }));
             // Fetch ALL system budgets for this user
-            const sysB = await base44.entities.SystemBudget.filter({ created_by: user.email });
+            const sysB = await fetchWithRetry(() => base44.entities.SystemBudget.filter({ created_by: user.email }));
             return [...customB, ...sysB.map(sb => ({ ...sb, isSystemBudget: true, allocatedAmount: sb.budgetAmount }))];
         },
         // initialData: [],
@@ -175,7 +176,7 @@ export default function BudgetDetail() {
     const { data: allocations = [] } = useQuery({
         queryKey: ['allocations', budgetId],
         queryFn: async () => {
-            return await base44.entities.CustomBudgetAllocation.filter({ budgetId: budgetId });
+            return await fetchWithRetry(() => base44.entities.CustomBudgetAllocation.filter({ budgetId: budgetId }));
         },
         // initialData: [],
         enabled: !!budgetId && !!budget && !budget.isSystemBudget,
@@ -187,22 +188,22 @@ export default function BudgetDetail() {
     const transactionActions = useTransactionActions();
 
     const createAllocationMutation = useMutation({
-        mutationFn: (data) => base44.entities.CustomBudgetAllocation.create(data),
+        mutationFn: (data) => fetchWithRetry(() => base44.entities.CustomBudgetAllocation.create(data)),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] }),
     });
 
     const updateAllocationMutation = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.CustomBudgetAllocation.update(id, data),
+        mutationFn: ({ id, data }) => fetchWithRetry(() => base44.entities.CustomBudgetAllocation.update(id, data)),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] }),
     });
 
     const deleteAllocationMutation = useMutation({
-        mutationFn: (id) => base44.entities.CustomBudgetAllocation.delete(id),
+        mutationFn: (id) => fetchWithRetry(() => base44.entities.CustomBudgetAllocation.delete(id)),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['allocations', budgetId] }),
     });
 
     const completeBudgetMutation = useMutation({
-        mutationFn: (id) => base44.entities.CustomBudget.update(id, { status: 'completed' }),
+        mutationFn: (id) => fetchWithRetry(() => base44.entities.CustomBudget.update(id, { status: 'completed' })),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
             queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
@@ -211,7 +212,7 @@ export default function BudgetDetail() {
     });
 
     const reactivateBudgetMutation = useMutation({
-        mutationFn: (id) => base44.entities.CustomBudget.update(id, { status: 'active' }),
+        mutationFn: (id) => fetchWithRetry(() => base44.entities.CustomBudget.update(id, { status: 'active' })),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
             queryClient.invalidateQueries({ queryKey: ['customBudgets'] });
