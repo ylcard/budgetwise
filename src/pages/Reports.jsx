@@ -256,6 +256,8 @@ export default function Reports() {
 
     const waveComponent = <CashFlowWave data={cashFlowData} settings={settings} />;
     const projectionComponent = <ProjectionChart settings={settings} projectionData={projectionData} />;
+    
+    /*
     const priorityComponent = (
         <PriorityChart
             transactions={monthlyTransactions}
@@ -266,6 +268,7 @@ export default function Reports() {
             settings={settings}
         />
     );
+    */
 
     const goalSettingsComponent = (
         <GoalSettings
