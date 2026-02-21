@@ -44,6 +44,8 @@ import { HealthProvider } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
 import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "../components/hooks/queryKeys";
 
 export default function Dashboard() {
     const { user, settings } = useSettings();
@@ -55,6 +57,7 @@ export default function Dashboard() {
     const { setFabButtons, clearFabButtons } = useFAB();
     const [searchParams, setSearchParams] = useSearchParams();
     const [showStory, setShowStory] = useState(false);
+    const queryClient = useQueryClient();
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -198,6 +201,7 @@ export default function Dashboard() {
         onSuccess: () => {
             setQuickAddState(null);
             setQuickAddIncomeState(null);
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
         }
     });
 
