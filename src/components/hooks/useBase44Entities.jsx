@@ -313,8 +313,7 @@ export const useSystemBudgetManagement = (
                 const history = getHistoricalAverageIncome(transactions, selectedMonth, selectedYear);
 
                 // Orchestrate the call to the Engine (Single Source of Truth)
-                // Wrapping this heavy orchestration in fetchWithRetry as well
-                await fetchWithRetry(() => ensureSystemBudgetsExist(
+                await ensureSystemBudgetsExist(
                     user.email,
                     monthStart,
                     monthEnd,
@@ -322,7 +321,7 @@ export const useSystemBudgetManagement = (
                     settings,
                     income,
                     { allowUpdates: !isPastMonth, historicalAverage: history }
-                ));
+                );
 
                 lastSyncedKey.current = syncKey;
 
