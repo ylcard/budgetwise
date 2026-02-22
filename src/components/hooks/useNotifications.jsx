@@ -37,9 +37,31 @@ export const useNotifications = () => {
     const markAsReadMutation = useMutation({
         mutationFn: (notificationId) =>
             fetchWithRetry(() => base44.entities.Notification.update(notificationId, { isRead: true })),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        onMutate: async (notificationId) => {
+            // Cancel outgoing refetches so they don't overwrite our optimistic update
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+
+            // Snapshot the previous data
+            const previousNotifications = queryClient.getQueryData([QUERY_KEYS.NOTIFICATIONS]);
+
+            // Optimistically update the cache to instantly mark it as read
+            if (previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], old =>
+                    old.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+                );
+            }
+            return { previousNotifications };
         },
+        onError: (err, notificationId, context) => {
+            // Rollback if the mutation fails
+            if (context?.previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
+            }
+        },
+        onSettled: () => {
+            // Sync with server in the background
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        }
     });
 
     // Dismiss notification
