@@ -40,6 +40,7 @@ import { HealthProvider, useHealth } from "./components/utils/HealthContext";
 import CookieBanner from "./components/cookies/CookieBanner";
 import CookieSettings from "./components/cookies/CookieSettings";
 import { useCookieConsent } from "./components/cookies/useCookieConsent";
+import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
 
 const LayoutContent = ({ children }) => {
   const location = useLocation();
@@ -248,14 +249,10 @@ const LayoutContent = ({ children }) => {
             </div>
 
             {/* Desktop Theme Toggle */}
-            <CustomButton
-              variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:text-foreground mb-1"
-              onClick={toggleTheme}
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
-              <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-            </CustomButton>
+            <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-accent/50 rounded-md mb-1 transition-colors select-none">
+              <span className="font-medium text-muted-foreground">Theme</span>
+              <ThemeSwitcher theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
+            </div>
 
             <CustomButton
               variant="ghost"
@@ -348,10 +345,10 @@ const LayoutContent = ({ children }) => {
                       {/* Mobile Theme Toggle */}
                       <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-4">
-                          <Moon className="w-5 h-5 text-muted-foreground" />
-                          <span className="font-medium text-foreground">Dark Mode</span>
+                          {theme === 'dark' ? <Moon className="w-5 h-5 text-muted-foreground" /> : <Sun className="w-5 h-5 text-muted-foreground" />}
+                          <span className="font-medium text-foreground">Theme</span>
                         </div>
-                        <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                        <ThemeSwitcher theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
                       </div>
                       <button
                         onClick={() => logout()}
