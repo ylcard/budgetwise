@@ -92,9 +92,24 @@ export const useNotifications = () => {
     const deleteMutation = useMutation({
         mutationFn: (notificationId) =>
             fetchWithRetry(() => base44.entities.Notification.delete(notificationId)),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        onMutate: async (notificationId) => {
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+            const previousNotifications = queryClient.getQueryData([QUERY_KEYS.NOTIFICATIONS]);
+            if (previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], old =>
+                    old.filter(n => n.id !== notificationId)
+                );
+            }
+            return { previousNotifications };
         },
+        onError: (err, notificationId, context) => {
+            if (context?.previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        }
     });
 
     // Mark all as read
@@ -109,9 +124,24 @@ export const useNotifications = () => {
                 if (i + chunkSize < unreadIds.length) await new Promise(res => setTimeout(res, 250));
             }
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+            const previousNotifications = queryClient.getQueryData([QUERY_KEYS.NOTIFICATIONS]);
+            if (previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], old =>
+                    old.map(n => ({ ...n, isRead: true }))
+                );
+            }
+            return { previousNotifications };
         },
+        onError: (err, variables, context) => {
+            if (context?.previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        }
     });
 
     // Clear all dismissed
@@ -122,9 +152,24 @@ export const useNotifications = () => {
                 await fetchWithRetry(() => base44.entities.Notification.deleteMany({ id: { $in: dismissedIds } }));
             }
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+            const previousNotifications = queryClient.getQueryData([QUERY_KEYS.NOTIFICATIONS]);
+            if (previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], old =>
+                    old.filter(n => !n.isDismissed)
+                );
+            }
+            return { previousNotifications };
         },
+        onError: (err, variables, context) => {
+            if (context?.previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        }
     });
 
     // Computed values
