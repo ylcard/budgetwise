@@ -4,13 +4,12 @@ import { X, ExternalLink, CheckCircle, AlertTriangle, Info, AlertCircle, Zap, Sp
 import { CustomButton } from '../ui/CustomButton';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 /**
  * CREATED 14-Feb-2026: Individual notification item component
  */
 const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss, onNavigate }, ref) => {
-    const navigate = useNavigate();
 
     const typeConfig = {
         success: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
@@ -24,25 +23,26 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
     const config = typeConfig[notification.type] || typeConfig.info;
     const Icon = config.icon;
 
-    const handleClick = () => {
-        // 1. Trigger navigation and close the drawer first
-        if (notification.actionUrl) {
-            navigate(notification.actionUrl);
-            if (onNavigate) onNavigate();
-        }
-
-        // 2. Defer marking as read so it doesn't unmount the component mid-navigation
+    const handleClick = (e) => {
         if (!notification.isRead) {
-            setTimeout(() => {
-                onMarkRead(notification.id);
-            }, 150); // Small delay lets the Sheet start closing and Router start transitioning
+            onMarkRead(notification.id);
+        }
+        if (notification.actionUrl && onNavigate) {
+            onNavigate();
         }
     };
 
     const handleDismiss = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         onDismiss(notification.id);
     };
+
+    // Dynamically wrap the content in a Link if it has an actionUrl
+    const ContentWrapper = notification.actionUrl ? Link : 'div';
+    const wrapperProps = notification.actionUrl
+        ? { to: notification.actionUrl, onClick: handleClick, className: "flex gap-3 w-full" }
+        : { onClick: handleClick, className: "flex gap-3 w-full" };
 
     return (
         <motion.div
@@ -52,14 +52,12 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -100 }}
             className={cn(
-                "group relative p-4 rounded-lg border transition-all cursor-pointer",
+                "group relative p-4 rounded-lg border transition-all cursor-pointer block hover:shadow-md",
                 notification.isRead ? 'bg-white' : config.bg,
                 notification.isRead ? 'border-gray-200' : config.border,
-                "hover:shadow-md"
             )}
-            onClick={handleClick}
         >
-            <div className="flex gap-3">
+            <ContentWrapper {...wrapperProps}>
                 {/* Icon */}
                 <div className={cn("shrink-0 w-8 h-8 rounded-full flex items-center justify-center", config.bg)}>
                     <Icon className={cn("w-4 h-4", config.color)} />
@@ -99,12 +97,12 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
                 <CustomButton
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute right-4 top-4 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     onClick={handleDismiss}
                 >
                     <X className="w-4 h-4" />
                 </CustomButton>
-            </div>
+            </ContentWrapper>
         </motion.div>
     );
 }));
