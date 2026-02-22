@@ -68,9 +68,24 @@ export const useNotifications = () => {
     const dismissMutation = useMutation({
         mutationFn: (notificationId) =>
             fetchWithRetry(() => base44.entities.Notification.update(notificationId, { isDismissed: true })),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        onMutate: async (notificationId) => {
+            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+            const previousNotifications = queryClient.getQueryData([QUERY_KEYS.NOTIFICATIONS]);
+            if (previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], old =>
+                    old.map(n => n.id === notificationId ? { ...n, isDismissed: true } : n)
+                );
+            }
+            return { previousNotifications };
         },
+        onError: (err, notificationId, context) => {
+            if (context?.previousNotifications) {
+                queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        }
     });
 
     // Delete notification
