@@ -78,7 +78,7 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
 
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-xs text-gray-400">
-                            {formatDistanceToNow(new Date(notification.created_date), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(notification.created_date), { addSuffix: true, includeSeconds: true })}
                         </span>
 
                         {notification.actionUrl && (
