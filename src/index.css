@@ -4,6 +4,15 @@
 
 @layer base {
     :root {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+}
+
+@layer base {
+    :root {
         --background: 0 0% 100%;
         --foreground: 222.2 84% 4.9%;
         --card: 0 0% 100%;
@@ -81,5 +90,15 @@
         min-height: 44px;
         min-width: 44px;
         -webkit-tap-highlight-color: transparent;
+        @apply transition-colors duration-200;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply tracking-tight;
     }
 }
