@@ -195,7 +195,7 @@ const LayoutContent = ({ children }) => {
                         </div>
                     </SidebarHeader>
 
-                    <SidebarContent className="p-3">
+                    <SidebarContent className="p-4 space-y-2">
                         <SidebarGroup>
                             <SidebarGroupContent>
                                 <SidebarMenu>
