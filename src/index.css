@@ -248,6 +248,7 @@ button:focus-visible {
     }
 
     /* ADDED 03-Feb-2026: Minimum touch target size for mobile ergonomics (44px iOS standard) */
+    /*
     button,
     a[role="button"],
     [role="tab"],
@@ -255,13 +256,14 @@ button:focus-visible {
     input[type="radio"] {
         min-height: 44px;
         min-width: 44px;
-    }
+    } */
 
     /* Exception for icon-only buttons - add padding to reach 44px */
+    /*
     button.icon-only,
     [data-icon-button] {
         padding: 10px;
-    }
+    } */
 
     /* Exception for inline text links */
     a:not([role="button"]):not([role="tab"]) {
