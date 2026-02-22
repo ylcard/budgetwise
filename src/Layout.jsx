@@ -49,11 +49,11 @@ const LayoutContent = ({ children }) => {
     const { logout } = useAuth();
     const { budgetHealth } = useHealth();
     const { settings, updateSettings } = useSettings();
-    
+
     // Cookie Consent
     const { showBanner, consent, acceptAll, acceptNecessary, updateConsent } = useCookieConsent();
     const [showCookieSettings, setShowCookieSettings] = useState(false);
-    
+
     const handleUpdateConsent = (newConsent) => {
         Object.keys(newConsent).forEach(key => {
             if (key !== 'essential') {
@@ -323,24 +323,24 @@ const LayoutContent = ({ children }) => {
                                         <SheetHeader className="px-6 pb-4 border-b">
                                             <SheetTitle>More Options</SheetTitle>
                                         </SheetHeader>
-                                        <div className="grid grid-cols-1 divide-y divide-gray-100">
+                                        <div className="grid grid-cols-1 divide-y divide-border">
                                             {secondaryNav.map((item) => (
                                                 <Link
                                                     key={item.title}
                                                     to={item.url}
                                                     onClick={() => setIsMoreMenuOpen(false)}
-                                                    className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                                                    className="flex items-center gap-4 px-6 py-4 hover:bg-accent active:bg-accent/80 transition-colors"
                                                 >
-                                                    <item.icon className="w-5 h-5 text-gray-500" />
-                                                    <span className="font-medium text-gray-900">{item.title}</span>
+                                                    <item.icon className="w-5 h-5 text-muted-foreground" />
+                                                    <span className="font-medium text-foreground">{item.title}</span>
                                                 </Link>
                                             ))}
 
                                             {/* Mobile Mascot Toggle */}
                                             <div className="flex items-center justify-between px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    <Ghost className="w-5 h-5 text-gray-500" />
-                                                    <span className="font-medium text-gray-900 dark:text-gray-100">Show Casper</span>
+                                                    <Ghost className="w-5 h-5 text-muted-foreground" />
+                                                    <span className="font-medium text-foreground">Show Casper</span>
                                                 </div>
                                                 <Switch checked={settings.showMascot} onCheckedChange={() => updateSettings({ showMascot: !settings.showMascot })} />
                                             </div>
@@ -348,8 +348,8 @@ const LayoutContent = ({ children }) => {
                                             {/* Mobile Theme Toggle */}
                                             <div className="flex items-center justify-between px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    <Moon className="w-5 h-5 text-gray-500" />
-                                                    <span className="font-medium text-gray-900 dark:text-gray-100">Dark Mode</span>
+                                                    <Moon className="w-5 h-5 text-muted-foreground" />
+                                                    <span className="font-medium text-foreground">Dark Mode</span>
                                                 </div>
                                                 <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                                             </div>
