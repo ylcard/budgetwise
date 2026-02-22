@@ -25,12 +25,17 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
     const Icon = config.icon;
 
     const handleClick = () => {
-        if (!notification.isRead) {
-            onMarkRead(notification.id);
-        }
+        // 1. Trigger navigation and close the drawer first
         if (notification.actionUrl) {
             navigate(notification.actionUrl);
             if (onNavigate) onNavigate();
+        }
+
+        // 2. Defer marking as read so it doesn't unmount the component mid-navigation
+        if (!notification.isRead) {
+            setTimeout(() => {
+                onMarkRead(notification.id);
+            }, 150); // Small delay lets the Sheet start closing and Router start transitioning
         }
     };
 
