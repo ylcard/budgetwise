@@ -11,7 +11,7 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
       onClick={toggleTheme}
       className={twMerge(
         clsx(
-          "relative w-28 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50",
+          "relative w-28 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer",
           className
         )
       )}
