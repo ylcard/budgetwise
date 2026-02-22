@@ -25,19 +25,19 @@ const buttonVariants = cva(
 
                 // Purpose-based custom variants
                 create:
-                    "bg-primary text-primary-foreground shadow-lg hover:opacity-90",
+                    "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg focus-visible:ring-blue-600",
                 modify:
-                    "bg-blue-600 dark:bg-blue-500 text-white shadow-sm hover:opacity-90",
+                    "bg-blue-600 text-white shadow-sm hover:bg-blue-700 focus-visible:ring-blue-600",
                 delete:
-                    "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+                    "bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:ring-red-600",
                 success:
-                    "bg-success text-white shadow-sm hover:opacity-90",
+                    "bg-green-600 text-white shadow-sm hover:bg-green-700 focus-visible:ring-green-600",
                 warning:
-                    "bg-warning text-white shadow-sm hover:opacity-90",
+                    "bg-orange-600 text-white shadow-sm hover:bg-orange-700 focus-visible:ring-orange-600",
                 info:
-                    "bg-sky-600 dark:bg-sky-500 text-white shadow-sm hover:opacity-90",
+                    "bg-sky-600 text-white shadow-sm hover:bg-sky-700 focus-visible:ring-sky-600",
                 primary:
-                    "bg-primary text-primary-foreground shadow-lg hover:opacity-90",
+                    "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg focus-visible:ring-blue-600",
                 glass:
                     "border border-white/30 bg-transparent text-white shadow-sm hover:bg-white/20 hover:border-white/50 hover:text-white",
                 seamless:
