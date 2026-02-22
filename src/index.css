@@ -30,9 +30,13 @@
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
         --border: 0 0% 89.8%;
-        --input: 0 0% 89.8%;
+        --input: 240 5.9% 90%;
         --ring: 221.2 83.2% 53.3%;
         --radius: 0.5rem;
+
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-border: 220 13% 91%;
 
         /* Mobile Layout Constants */
         --mobile-header-height: 3.5rem;
@@ -65,8 +69,12 @@
         --destructive: 0 62.8% 30.6%;
         --destructive-foreground: 0 0% 98%;
         --border: 0 0% 14.9%;
-        --input: 0 0% 14.9%;
+        --input: 240 3.7% 15.9%;
         --ring: 0 0% 83.1%;
+
+        --sidebar-background: 240 5.9% 10%;
+        --sidebar-foreground: 240 4.8% 95.9%;
+        --sidebar-border: 240 3.7% 15.9%;
 
         --bg-subtle: 240 10% 4%;
     }
