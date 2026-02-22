@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { QUERY_KEYS } from './queryKeys';
 import { useSettings } from '../utils/SettingsContext';
 import { fetchWithRetry } from '../utils/generalUtils';
+import { toast } from 'sonner';
 
 /**
  * CREATED 14-Feb-2026: Hook for managing notifications
@@ -57,6 +58,7 @@ export const useNotifications = () => {
             if (context?.previousNotifications) {
                 queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
             }
+            toast.error(`Failed to mark as read: ${err.message}`);
         },
         onSettled: () => {
             // Sync with server in the background
@@ -82,6 +84,7 @@ export const useNotifications = () => {
             if (context?.previousNotifications) {
                 queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
             }
+            toast.error(`Failed to dismiss notification: ${err.message}`);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
@@ -106,6 +109,7 @@ export const useNotifications = () => {
             if (context?.previousNotifications) {
                 queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
             }
+            toast.error(`Failed to delete notification: ${err.message}`);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
@@ -138,6 +142,7 @@ export const useNotifications = () => {
             if (context?.previousNotifications) {
                 queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
             }
+            toast.error(`Failed to mark all as read: ${err.message}`);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
@@ -166,6 +171,7 @@ export const useNotifications = () => {
             if (context?.previousNotifications) {
                 queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS], context.previousNotifications);
             }
+            toast.error(`Failed to clear dismissed: ${err.message}`);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
