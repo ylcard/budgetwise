@@ -41,6 +41,7 @@ import CookieBanner from "./components/cookies/CookieBanner";
 import CookieSettings from "./components/cookies/CookieSettings";
 import { useCookieConsent } from "./components/cookies/useCookieConsent";
 import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
+import { flushSync } from "react-dom";
 
 const LayoutContent = ({ children }) => {
   const location = useLocation();
@@ -72,7 +73,19 @@ const LayoutContent = ({ children }) => {
   const toggleTheme = () => {
     // Flag temporary override so the sync engine doesn't immediately revert it
     sessionStorage.setItem('budgetwise_temp_theme', 'true');
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    const targetTheme = theme === 'dark' ? 'light' : 'dark';
+    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!document.startViewTransition || isReducedMotion) {
+      setTheme(targetTheme);
+      return;
+    }
+
+    document.startViewTransition(() => {
+      flushSync(() => {
+        setTheme(targetTheme);
+      });
+    });
   };
 
   // ADDED 03-Feb-2026: Per-tab navigation history stacks for iOS-style tab navigation
