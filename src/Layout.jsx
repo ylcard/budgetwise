@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Wallet, LogOut, ChevronLeft, MoreHorizontal, Moon, Sun, Ghost } from "lucide-react";
+import { Wallet, LogOut, ChevronLeft, MoreHorizontal, Moon, Sun, Ghost, ChevronRight } from "lucide-react";
 import { useMemo, useRef, useEffect, useState } from "react";
 import { SettingsProvider, useSettings } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
@@ -249,8 +249,10 @@ const LayoutContent = ({ children }) => {
             </div>
 
             {/* Desktop Theme Toggle */}
-            <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-accent/50 rounded-md mb-1 transition-colors select-none">
-              <span className="font-medium text-muted-foreground">Theme</span>
+            <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-accent/50 rounded-md mb-1 transition-colors select-none group">
+              <Link to="/manage/preferences" className="font-medium text-sm text-muted-foreground group-hover:text-foreground transition-colors flex items-center gap-1">
+                More Themes <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+              </Link>
               <ThemeSwitcher theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
             </div>
 
@@ -343,11 +345,11 @@ const LayoutContent = ({ children }) => {
                       </div>
 
                       {/* Mobile Theme Toggle */}
-                      <div className="flex items-center justify-between px-6 py-4">
-                        <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-between px-6 py-4 hover:bg-accent transition-colors">
+                        <Link to="/manage/preferences" onClick={() => setIsMoreMenuOpen(false)} className="flex items-center gap-4 flex-1">
                           {theme === 'dark' ? <Moon className="w-5 h-5 text-muted-foreground" /> : <Sun className="w-5 h-5 text-muted-foreground" />}
-                          <span className="font-medium text-foreground">Theme</span>
-                        </div>
+                          <span className="font-medium text-foreground">More Themes</span>
+                        </Link>
                         <ThemeSwitcher theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
                       </div>
                       <button
