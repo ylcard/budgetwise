@@ -404,12 +404,12 @@ export default function Reports() {
 
           {/* TAB: ANALYSIS (Carousel) */}
           {mobileTab === 'analysis' && (
-            <div className="h-full flex flex-col min-w-0 relative">
-              <div ref={sliderRef} className="keen-slider flex-1 w-full h-full">
+            <div className="flex-1 min-h-0 relative">
+              <div ref={sliderRef} className="keen-slider h-full w-full overflow-hidden">
 
                 {/* Slide 1: Summary Stats */}
-                <div className="keen-slider__slide overflow-y-auto px-1">
-                  <div className="space-y-4 pb-12">
+                <div className="keen-slider__slide min-w-full h-full overflow-y-auto px-1 pb-16">
+                  <div className="space-y-6">
                     {statsComponent}
                     <MobileChartCard title="Financial Health" className="h-[500px]" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
                       {healthComponent}
@@ -418,8 +418,8 @@ export default function Reports() {
                 </div>
 
                 {/* Slide 2: Wave */}
-                <div className="keen-slider__slide overflow-y-auto px-1">
-                  <div className="pb-12">
+                <div className="keen-slider__slide min-w-full h-full overflow-y-auto px-1 pb-16 flex flex-col justify-center">
+                  <div className="w-full">
                     <MobileChartCard title="Cash Flow Wave" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                       {waveComponent}
                     </MobileChartCard>
@@ -427,8 +427,8 @@ export default function Reports() {
                 </div>
 
                 {/* Slide 3: Projection */}
-                <div className="keen-slider__slide overflow-y-auto px-1">
-                  <div className="pb-12">
+                <div className="keen-slider__slide min-w-full h-full overflow-y-auto px-1 pb-16 flex flex-col justify-center">
+                  <div className="w-full">
                     <MobileChartCard title="Financial Horizon" className="h-[450px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
                       {projectionComponent}
                     </MobileChartCard>
