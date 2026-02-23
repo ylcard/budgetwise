@@ -8,7 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
  * Segmented Control - Tab-like styled component for view switching
  */
 
-const SegmentedControl = ({ options, value, onChange, className }) => {
+export const SegmentedControl = ({ options, value, onChange, className }) => {
     // Syncing parent and child transitions prevents the 2-step stutter
     const sharedTransition = { type: "spring", bounce: 0, duration: 0.35 };
 
@@ -69,5 +69,3 @@ const SegmentedControl = ({ options, value, onChange, className }) => {
         </div>
     );
 };
-
-export default SegmentedControl;
