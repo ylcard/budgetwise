@@ -26,7 +26,8 @@ const FUNDING_TYPE_OPTIONS = [
  * GoalForm - Form for creating/editing goals
  */
 export const GoalForm = ({ goal, onSubmit, onCancel }) => {
-  const { baseCurrency, currencySymbol } = useSettings();
+  const { settings } = useSettings();
+  const baseCurrency = settings?.baseCurrency || 'EUR';
   const [fundingType, setFundingType] = useState(goal?.funding_rule?.type || 'fixed');
 
   const {
