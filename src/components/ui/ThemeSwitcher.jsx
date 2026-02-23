@@ -73,11 +73,11 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
       <motion.div
         className="absolute z-[5] top-1 left-[60px] w-9 h-9 flex items-center justify-center bg-gradient-to-br from-yellow-100 via-yellow-400 to-orange-500 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.8)] pointer-events-none"
         animate={{
-          x: isDark ? -40 : 0, // Moves left
-          y: isDark ? 40 : 0,  // Moves down (beneath horizon)
-          scale: isDark ? 0.5 : 1,
+          x: isDark ? [0, -30, -60] : [-60, -30, 0],
+          y: isDark ? [0, -15, 40] : [40, -15, 0],
+          scale: isDark ? [1, 0.8, 0.5] : [0.5, 0.8, 1],
         }}
-        transition={{ type: "spring", stiffness: 60, damping: 15 }}
+        transition={{ duration: 0.7, ease: "easeInOut" }}
       >
         {/* Inner bright core to give a 3D hot appearance */}
         <div className="w-5 h-5 bg-white/40 rounded-full blur-[2px] shadow-inner" />
@@ -90,11 +90,11 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
         className="absolute z-[5] top-1 left-2 w-9 h-9 bg-slate-200 rounded-full shadow-[0_0_10px_rgba(226,232,240,0.4)] pointer-events-none overflow-hidden"
         initial={false}
         animate={{
-          x: isDark ? 0 : 80, // Starts far right in light mode, ends up at 0 in dark mode
-          y: isDark ? 0 : 40, // Starts below horizon, ends up at 0
-          scale: isDark ? 1 : 0.5,
+          x: isDark ? [80, 40, 0] : [0, 40, 80],
+          y: isDark ? [40, -15, 0] : [0, -15, 40],
+          scale: isDark ? [0.5, 0.8, 1] : [1, 0.8, 0.5],
         }}
-        transition={{ type: "spring", stiffness: 60, damping: 15 }}
+        transition={{ duration: 0.7, ease: "easeInOut" }}
       >
         {/* Subtle craters on the moon */}
         <div className="absolute top-2 left-5 w-2 h-2 bg-slate-300 rounded-full" />
