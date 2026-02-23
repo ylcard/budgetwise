@@ -22,7 +22,8 @@ const defaultSettings = {
     // absoluteGoals: { needs: 0, wants: 0, savings: 0 }, // Store absolute amounts
     goalMode: true, // true = percentage, false = absolute
     displayName: '',
-    showMascot: true
+    showMascot: true,
+    themeConfig: { mode: 'system', lightStart: '08:00', darkStart: '20:00' }
 };
 
 export const useSettings = () => {
@@ -82,7 +83,8 @@ export const SettingsProvider = ({ children }) => {
                     // absoluteGoals: userSettings.absoluteGoals || { needs: 0, wants: 0, savings: 0 }
                     goalMode: userSettings.goalMode ?? true,
                     displayName: userSettings.displayName || '',
-                    showMascot: userSettings.showMascot ?? settings.showMascot ?? true
+                    showMascot: userSettings.showMascot ?? settings.showMascot ?? true,
+                    themeConfig: userSettings.themeConfig || { mode: 'system', lightStart: '08:00', darkStart: '20:00' }
                 };
 
                 // Update state and localStorage
