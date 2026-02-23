@@ -90,7 +90,7 @@ export const SettingsProvider = ({ children }) => {
                     goalMode: userSettings.goalMode ?? true,
                     displayName: userSettings.displayName || '',
                     showMascot: userSettings.showMascot ?? settings.showMascot ?? true,
-                    themeConfig: userSettings.themeConfig || { mode: 'system', lightStart: '08:00', darkStart: '20:00' }
+                    themeConfig: userSettings.themeConfig || defaultSettings.themeConfig
                 };
 
                 // Update state and localStorage
