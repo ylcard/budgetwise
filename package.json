@@ -79,7 +79,13 @@
     "react-camera-pro": "^1.4.0",
     "browser-image-compression": "^2.0.2",
     "tesseract.js": "^7.0.0",
-    "keen-slider": "^6.8.6"
+    "keen-slider": "^6.8.6",
+    "fuzzysort": "^3.1.0",
+    "decimal.js": "^10.6.0",
+    "big.js": "^7.0.1",
+    "react-use-measure": "^2.1.7",
+    "@formkit/auto-animate": "^0.9.0",
+    "date-fns-tz": "^3.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
