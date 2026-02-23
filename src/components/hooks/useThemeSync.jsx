@@ -20,8 +20,9 @@ export function useThemeSync(userSettings) {
       if (currentTheme === newTheme) return;
 
       const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const isHidden = document.visibilityState === 'hidden';
 
-      if (!document.startViewTransition || isReducedMotion) {
+      if (!document.startViewTransition || isReducedMotion || isHidden) {
         setTheme(newTheme);
         return;
       }
