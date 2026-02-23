@@ -71,14 +71,19 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
 
       {/* 1. Sun curves to the left and beneath the horizon */}
       <motion.div
-        className="absolute top-1 left-2 w-9 h-9 bg-yellow-400 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.6)] pointer-events-none"
+        className="absolute top-1 left-[60px] w-9 h-9 flex items-center justify-center bg-gradient-to-br from-yellow-100 via-yellow-400 to-orange-500 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.8)] pointer-events-none"
         animate={{
           x: isDark ? -40 : 0, // Moves left
           y: isDark ? 40 : 0,  // Moves down (beneath horizon)
           scale: isDark ? 0.5 : 1,
         }}
         transition={{ type: "spring", stiffness: 60, damping: 15 }}
-      />
+      >
+        {/* Inner bright core to give a 3D hot appearance */}
+        <div className="w-5 h-5 bg-white/40 rounded-full blur-[2px] shadow-inner" />
+        {/* Subtle sunspot/texture */}
+        <div className="absolute bottom-1 right-2 w-3 h-2 bg-orange-600/30 rounded-full blur-[2px]" />
+      </motion.div>
 
       {/* 1. Moon comes up from the other side to the Sun's position */}
       <motion.div
