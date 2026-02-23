@@ -610,13 +610,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const projectedExpenseOuterPct = !isSimpleView ? Math.max((projectedRemainingExpense / calculationBase) * 100, 0) : 0;
 
     return (
-      <div className="relative h-10 w-full bg-muted rounded-xl overflow-hidden flex shadow-inner border border-border">
+      <>
 
         {/* NEEDS SEGMENT */}
         <motion.div
           layout
           initial={false}
-          animate={{ flex: `${needsOuterPct} 1 auto` }}
+          animate={{ flex: `${needsOuterPct} 1 0%` }}
           transition={{ ...fluidSpring, layout: fluidSpring }}
           className="h-full relative flex"
         >
@@ -709,7 +709,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
         <motion.div
           layout
           initial={false}
-          animate={{ flex: `${wantsOuterPct} 1 auto` }}
+          animate={{ flex: `${wantsOuterPct} 1 0%` }}
           transition={{ ...fluidSpring, layout: fluidSpring }}
           className="h-full relative flex"
         >
@@ -793,7 +793,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
           <motion.div
             layout
             initial={false}
-            animate={{ flex: `${projectedExpenseOuterPct} 1 auto` }}
+            animate={{ flex: `${projectedExpenseOuterPct} 1 0%` }}
             transition={{ ...fluidSpring, layout: fluidSpring }}
             className="h-full relative flex group border-l border-white/20"
           >
@@ -817,7 +817,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
           <motion.div
             layout
             initial={false}
-            animate={{ flex: `${savingsOuterPct} 1 auto` }}
+            animate={{ flex: `${savingsOuterPct} 1 0%` }}
             transition={{ ...fluidSpring, layout: fluidSpring }}
             className="h-full relative flex"
           >
@@ -886,7 +886,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             </div>
           </motion.div>
         )}
-      </div>
+      </>
     );
   };
 
