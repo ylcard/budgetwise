@@ -43,7 +43,7 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
       {/* 2. Clouds moving, simulating time passing, fewer clouds at night */}
       {/* Cloud 1 (Fades out at night) */}
       <motion.div
-        className="absolute top-2 left-10 w-6 h-2 bg-white rounded-full blur-[0.5px] pointer-events-none"
+        className="absolute z-0 top-2 left-10 w-6 h-2 bg-white rounded-full blur-[0.5px] pointer-events-none"
         animate={{
           x: isDark ? -40 : 0,
           opacity: isDark ? 0 : 0.9,
@@ -52,7 +52,7 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
       />
       {/* Cloud 2 (Stays but moves and dims at night) */}
       <motion.div
-        className="absolute top-6 left-16 w-8 h-3 bg-white rounded-full blur-[0.5px] pointer-events-none"
+        className="absolute z-10 top-6 left-16 w-8 h-3 bg-white/90 rounded-full blur-[0.5px] pointer-events-none"
         animate={{
           x: isDark ? -20 : 0,
           opacity: isDark ? 0.2 : 0.8,
@@ -61,7 +61,7 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
       />
       {/* Cloud 3 (Fades out quickly) */}
       <motion.div
-        className="absolute top-4 left-4 w-5 h-2 bg-white rounded-full blur-[0.5px] pointer-events-none"
+        className="absolute z-0 top-4 left-4 w-5 h-2 bg-white rounded-full blur-[0.5px] pointer-events-none"
         animate={{
           x: isDark ? -30 : 0,
           opacity: isDark ? 0 : 0.7,
@@ -71,7 +71,7 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
 
       {/* 1. Sun curves to the left and beneath the horizon */}
       <motion.div
-        className="absolute top-1 left-[60px] w-9 h-9 flex items-center justify-center bg-gradient-to-br from-yellow-100 via-yellow-400 to-orange-500 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.8)] pointer-events-none"
+        className="absolute z-[5] top-1 left-[60px] w-9 h-9 flex items-center justify-center bg-gradient-to-br from-yellow-100 via-yellow-400 to-orange-500 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.8)] pointer-events-none"
         animate={{
           x: isDark ? -40 : 0, // Moves left
           y: isDark ? 40 : 0,  // Moves down (beneath horizon)
@@ -87,7 +87,7 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
 
       {/* 1. Moon comes up from the other side to the Sun's position */}
       <motion.div
-        className="absolute top-1 left-2 w-9 h-9 bg-slate-200 rounded-full shadow-[0_0_10px_rgba(226,232,240,0.4)] pointer-events-none overflow-hidden"
+        className="absolute z-[5] top-1 left-2 w-9 h-9 bg-slate-200 rounded-full shadow-[0_0_10px_rgba(226,232,240,0.4)] pointer-events-none overflow-hidden"
         initial={false}
         animate={{
           x: isDark ? 0 : 80, // Starts far right in light mode, ends up at 0 in dark mode
