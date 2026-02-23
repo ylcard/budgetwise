@@ -31,15 +31,16 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Drawer
 import { getCategoryIcon } from "@/components/utils/iconMapConfig";
 import DatePicker, { CalendarView } from "@/components/ui/DatePicker";
 import ReceiptScanner from "./ReceiptScanner";
+import fuzzysort from "fuzzysort";
 
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const selectedCategory = categories.find(c => c.id === value);
   const label = selectedCategory ? selectedCategory.name : placeholder;
 
-  const filteredCategories = categories.filter(cat =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCategories = searchTerm.trim()
+    ? fuzzysort.go(searchTerm, categories, { key: "name" }).map(res => res.obj)
+    : categories;
 
   return (
     <Drawer>
@@ -456,22 +457,24 @@ export default function TransactionFormContent({
     // C. Status & Search Filter (Smart Defaults)
     const hasSearch = budgetSearchTerm && budgetSearchTerm.trim().length > 0;
 
-    filtered = filtered.filter(b => {
-      // Always keep System Budgets (they are already filtered by date/priority above)
-      if (b.isSystemBudget) return true;
+    if (hasSearch) {
+      const systemBudgets = filtered.filter(b => b.isSystemBudget);
+      const customBudgets = filtered.filter(b => !b.isSystemBudget);
 
-      // CRITICAL: Always keep the currently selected budget visible in the list, 
-      // even if it's "completed" or "planned", so it displays correctly when editing.
-      if (formData.budgetId === b.id) return true;
+      const fuzzyResults = fuzzysort.go(budgetSearchTerm, customBudgets, { key: 'name' });
+      const matchedCustomBudgets = fuzzyResults.map(res => res.obj);
 
-      if (hasSearch) {
-        // If searching, allow finding ANY custom budget
-        return b.name.toLowerCase().includes(budgetSearchTerm.toLowerCase());
-      } else {
-        // By default, only show 'active' custom budgets to prevent clutter
-        return b.status === 'active';
+      const combined = [...systemBudgets, ...matchedCustomBudgets];
+
+      // Ensure currently selected budget remains visible
+      if (formData.budgetId && !combined.some(b => b.id === formData.budgetId)) {
+        const selected = mergedBudgets.find(b => b.id === formData.budgetId);
+        if (selected) combined.push(selected);
       }
-    });
+      filtered = combined;
+    } else {
+      filtered = filtered.filter(b => b.isSystemBudget || b.id === formData.budgetId || b.status === 'active');
+    }
 
     // Sort: System budgets first, then most recent custom budgets (descending by startDate)
     return filtered.sort((a, b) => {
