@@ -38,6 +38,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
 import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
+import AppearanceSettings from "../components/AppearanceSettings";
 
 export default function ManageLayout() {
     return (
@@ -195,6 +196,13 @@ export function PreferencesSection() {
                             {formatCurrency(1234567.89, formData)}
                         </span>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Appearance Settings */}
+            <Card>
+                <CardContent className="pt-6">
+                    <AppearanceSettings />
                 </CardContent>
             </Card>
 
