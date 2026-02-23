@@ -2,68 +2,63 @@ import { useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 
 export function useThemeSync(userSettings) {
-    const { setTheme, theme: currentTheme } = useTheme();
+  const { setTheme, theme: currentTheme } = useTheme();
 
-    const validateAndApplyTheme = useCallback(() => {
-        // Defensive check: abort if settings aren't loaded yet
-        if (!userSettings || !userSettings.themeConfig) return;
+  const validateAndApplyTheme = useCallback(() => {
+    // Defensive check: abort if settings aren't loaded yet
+    if (!userSettings || !userSettings.themeConfig) return;
 
-        const { mode, lightStart, darkStart } = userSettings.themeConfig;
+    const { mode, schedules } = userSettings.themeConfig;
 
-        // Pass-through for standard modes
-        if (mode === 'light' || mode === 'dark' || mode === 'system') {
-            if (currentTheme !== mode) setTheme(mode);
-            return;
+    // 1. System or Specific Theme (All the time)
+    if (mode !== 'scheduled') {
+      if (currentTheme !== mode) setTheme(mode);
+      return;
+    }
+
+    // 2. Scheduled Configuration
+    if (mode === 'scheduled' && Array.isArray(schedules) && schedules.length > 0) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      // Sort schedules by absolute minutes
+      const sortedSchedules = [...schedules].map(s => {
+        const [h, m] = s.time.split(':').map(Number);
+        return { ...s, mins: h * 60 + m };
+      }).sort((a, b) => a.mins - b.mins);
+
+      // Find the active theme. Default to the LAST schedule of the day (wrap-around from previous night)
+      let targetTheme = sortedSchedules[sortedSchedules.length - 1].theme;
+
+      for (const schedule of sortedSchedules) {
+        if (currentMinutes >= schedule.mins) {
+          targetTheme = schedule.theme;
+        } else {
+          break; // Future schedule, stop checking
         }
+      }
 
-        // Logic for 'scheduled' mode
-        if (mode === 'scheduled' && lightStart && darkStart) {
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      if (currentTheme !== targetTheme) {
+        setTheme(targetTheme);
+      }
+    }
+  }, [userSettings, currentTheme, setTheme]);
 
-            const parseTime = (timeStr) => {
-                const [hours, minutes] = timeStr.split(':').map(Number);
-                return hours * 60 + minutes;
-            };
+  useEffect(() => {
+    // 1. Run validation on mount or when settings update
+    validateAndApplyTheme();
 
-            const lightMins = parseTime(lightStart);
-            const darkMins = parseTime(darkStart);
-
-            let targetTheme = 'dark'; // Default to dark
-
-            if (lightMins < darkMins) {
-                // Standard day schedule (e.g., 08:00 to 20:00)
-                if (currentMinutes >= lightMins && currentMinutes < darkMins) {
-                    targetTheme = 'light';
-                }
-            } else {
-                // Night shift schedule (e.g., light at 10:00, dark at 02:00)
-                if (currentMinutes >= lightMins || currentMinutes < darkMins) {
-                    targetTheme = 'light';
-                }
-            }
-
-            if (currentTheme !== targetTheme) {
-                setTheme(targetTheme);
-            }
-        }
-    }, [userSettings, currentTheme, setTheme]);
-
-    useEffect(() => {
-        // 1. Run validation on mount or when settings update
+    // 2. Run validation when user switches back to the app
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
         validateAndApplyTheme();
+      }
+    };
 
-        // 2. Run validation when user switches back to the app
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                validateAndApplyTheme();
-            }
-        };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [validateAndApplyTheme]);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [validateAndApplyTheme]);
 }
