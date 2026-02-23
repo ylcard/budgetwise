@@ -14,7 +14,11 @@ import { Calendar, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
  * Used in the goal carousel/grid
  */
 export const GoalCard = ({ goal, onClick, feasibilityData }) => {
-  const { formatCurrency } = useSettings();
+  const { settings } = useSettings();
+  const formatCurrency = (value) => new Intl.NumberFormat(undefined, { 
+    style: 'currency', 
+    currency: settings?.baseCurrency || 'USD' 
+  }).format(value);
   const Icon = getCategoryIcon(goal.icon);
 
   const progress = calculateGoalProgress(goal.virtual_balance || 0, goal.target_amount);
