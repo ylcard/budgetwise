@@ -27,6 +27,7 @@ import { QUERY_KEYS } from "../hooks/queryKeys";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useMergedCategories } from "../hooks/useMergedCategories"; // ADDED 14-Feb-2026
 import { fetchWithRetry } from "../utils/generalUtils";
+import fuzzysort from "fuzzysort";
 
 export default function CategorySelect({ value, onValueChange, categories: providedCategories, placeholder = "Select category", multiple = false }) {
   const [open, setOpen] = useState(false);
@@ -64,6 +65,12 @@ export default function CategorySelect({ value, onValueChange, categories: provi
     if (!multiple || !Array.isArray(value)) return [];
     return sortedCategories.filter(c => value.includes(c.id));
   }, [sortedCategories, value, multiple]);
+
+  // ADDED: Fuzzy search application for rendering
+  const filteredCategories = useMemo(() => {
+    if (!searchTerm.trim()) return sortedCategories;
+    return fuzzysort.go(searchTerm, sortedCategories, { key: "name" }).map(res => res.obj);
+  }, [sortedCategories, searchTerm]);
 
   // UPDATED 14-Feb-2026: Check if the current search term matches an existing category
   // Also check if category is a system category to prevent duplicate creation
@@ -195,7 +202,7 @@ export default function CategorySelect({ value, onValueChange, categories: provi
   );
 
   const ListContent = (
-    <Command shouldFilter={true} className={isMobile ? "flex flex-col h-full max-h-[80vh]" : "h-auto w-full overflow-visible"}>
+    <Command shouldFilter={false} className={isMobile ? "flex flex-col h-full max-h-[80vh]" : "h-auto w-full overflow-visible"}>
       <CommandInput
         placeholder="Search or create..."
         value={searchTerm}
@@ -222,7 +229,7 @@ export default function CategorySelect({ value, onValueChange, categories: provi
         </CommandEmpty>
         {/* Group by Priority for better scannability */}
         {['needs', 'wants', 'other'].map((priority) => {
-          const groupCategories = sortedCategories.filter(c =>
+          const groupCategories = filteredCategories.filter(c =>
             priority === 'other'
               ? !['needs', 'wants'].includes((c.priority || '').toLowerCase())
               : (c.priority || '').toLowerCase() === priority
