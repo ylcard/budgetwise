@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, BarChart2, LayoutGrid, CircleDot, StretchHorizontal } from "lucide-react";
-import SegmentedControl from "@/components/ui/SegmentedControl";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import VerticalBar from "../custombudgets/VerticalBar";
 import BudgetCard from "../budgets/BudgetCard";
 import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
