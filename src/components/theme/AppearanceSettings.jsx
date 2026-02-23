@@ -49,14 +49,14 @@ export default function AppearanceSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-foreground mb-1">Appearance</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Customize how BudgetWise looks on this device.
-        </p>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Appearance</h3>
+        </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {/* Segmented Control */}
+        <div className="flex p-1 bg-muted/40 rounded-lg border border-border sm:max-w-md w-full">
           {MODES.map(({ id, label, icon: Icon }) => {
             const isActive = themeConfig.mode === id;
 
@@ -66,24 +66,15 @@ export default function AppearanceSettings() {
                 onClick={() => handleModeChange(id)}
                 className={twMerge(
                   clsx(
-                    "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors",
+                    "relative flex flex-1 items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all z-10",
                     isActive
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      ? "bg-background text-foreground shadow-sm border border-border/50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent"
                   )
                 )}
               >
-                <Icon className="w-6 h-6 mb-2" />
-                <span className="text-sm font-medium">{label}</span>
-
-                {isActive && (
-                  <motion.div
-                    layoutId="active-mode-indicator"
-                    className="absolute inset-0 border-2 border-primary rounded-xl pointer-events-none"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  />
-                )}
+                <Icon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline-block truncate">{label}</span>
               </button>
             );
           })}
@@ -98,36 +89,32 @@ export default function AppearanceSettings() {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="space-y-3 pt-2">
+            <div className="space-y-2 pt-2 border-t border-border mt-2">
               {(themeConfig.schedules || defaultSchedules).map((schedule, idx) => (
-                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="p-2 rounded-full bg-primary/10 text-primary">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1">
-                      <Select
-                        value={schedule.theme}
-                        onValueChange={(val) => handleScheduleChange(idx, 'theme', val)}
-                      >
-                        <SelectTrigger className="h-8 border-transparent bg-transparent shadow-none hover:bg-muted focus:ring-0 px-2 font-medium">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AVAILABLE_THEMES.map(t => (
-                            <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <div key={idx} className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg bg-muted/20 border border-border">
+                  <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <Select
+                      value={schedule.theme}
+                      onValueChange={(val) => handleScheduleChange(idx, 'theme', val)}
+                    >
+                      <SelectTrigger className="h-8 text-sm bg-background border-border shadow-none focus:ring-1 focus:ring-primary w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AVAILABLE_THEMES.map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="flex items-center gap-2 pl-11 sm:pl-0">
-                    <span className="text-xs text-muted-foreground">Starts at</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">At</span>
                     <input
                       type="time"
                       value={schedule.time}
                       onChange={(e) => handleScheduleChange(idx, 'time', e.target.value)}
-                      className="bg-background border border-border rounded-md px-2 py-1 text-sm outline-none text-foreground font-medium focus:ring-2 focus:ring-ring"
+                      className="h-8 px-2 bg-background border border-border rounded-md text-sm outline-none text-foreground focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                     />
                   </div>
                 </div>
