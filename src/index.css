@@ -349,10 +349,10 @@ button:focus-visible {
     } */
 
   /* Exception for inline text links */
-  a:not([role="button"]):not([role="tab"]) {
+  /* a:not([role="button"]):not([role="tab"]) {
     min-height: auto;
     min-width: auto;
-  }
+  } */
 }
 
 /* ADDED: 17-Jan-2026 - react-day-picker v9 custom styling */
