@@ -43,12 +43,24 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
       <motion.div
         className="absolute inset-0 pointer-events-none"
         initial={false}
-        animate={{ opacity: isDark ? 1 : 0, y: isDark ? 0 : 10 }}
+        animate={{ opacity: isDark ? 1 : 0, y: isDark ? 0 : 15, x: isDark ? 0 : -10 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        <div className="absolute top-2 right-4 w-[2px] h-[2px] bg-white rounded-full shadow-[0_0_2px_white]" />
-        <div className="absolute top-5 right-10 w-[3px] h-[3px] bg-white rounded-full shadow-[0_0_3px_white]" />
-        <div className="absolute top-8 right-5 w-[1px] h-[1px] bg-white rounded-full shadow-[0_0_2px_white]" />
+        <motion.div
+          className="absolute top-2 right-4 w-[2px] h-[2px] bg-white rounded-full shadow-[0_0_2px_white]"
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute top-5 right-10 w-[3px] h-[3px] bg-white rounded-full shadow-[0_0_3px_white]"
+          animate={{ opacity: [0.2, 0.9, 0.2] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        />
+        <motion.div
+          className="absolute top-8 right-5 w-[1px] h-[1px] bg-white rounded-full shadow-[0_0_2px_white]"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
       </motion.div>
 
       {/* 2. Clouds moving, simulating time passing, fewer clouds at night */}
