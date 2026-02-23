@@ -2,22 +2,23 @@ import { useMemo, useState } from "react";
 import { parseDate, getFirstDayOfMonth, getLastDayOfMonth, getMonthBoundaries } from "../utils/dateUtils";
 import { createEntityMap } from "../utils/generalUtils";
 import {
-    getTotalMonthExpenses,
-    getFinancialBreakdown,
-    getMonthlyIncome,
-    getMonthlyPaidExpenses,
-    getSystemBudgetStats,
-    getCustomBudgetStats,
-    calculateBonusSavingsPotential,
-    resolveBudgetLimit,
-    getHistoricalAverageIncome,
-    calculateIncomeProjection
+  getTotalMonthExpenses,
+  getFinancialBreakdown,
+  getMonthlyIncome,
+  getMonthlyPaidExpenses,
+  getSystemBudgetStats,
+  getCustomBudgetStats,
+  calculateBonusSavingsPotential,
+  resolveBudgetLimit,
+  getHistoricalAverageIncome,
+  calculateIncomeProjection
 } from "../utils/financialCalculations";
 import { calculateProjection } from "../utils/projectionUtils";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { Banknote } from "lucide-react";
 import { useCustomBudgetsForPeriod, useTransactionsForCustomBudgets } from "./useBase44Entities";
+import fuzzysort from "fuzzysort";
 
 /**
  * Hook for filtering and limiting paid transactions.
@@ -29,15 +30,15 @@ import { useCustomBudgetsForPeriod, useTransactionsForCustomBudgets } from "./us
  * @returns {Array<Object>} A limited and sorted array of paid transactions.
  */
 export const usePaidTransactions = (transactions, limit = 10) => {
-    return useMemo(() => {
-        if (!Array.isArray(transactions)) {
-            return [];
-        }
-        return transactions.filter(t => {
-            return t.type === 'income' || t.isPaid === true;
-        }).sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, limit);
-    }, [transactions, limit]);
+  return useMemo(() => {
+    if (!Array.isArray(transactions)) {
+      return [];
+    }
+    return transactions.filter(t => {
+      return t.type === 'income' || t.isPaid === true;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, limit);
+  }, [transactions, limit]);
 };
 
 /**
@@ -54,25 +55,25 @@ export const usePaidTransactions = (transactions, limit = 10) => {
  * }} Display configuration object.
  */
 export const useTransactionDisplay = (transaction, category) => {
-    return useMemo(() => {
-        const isIncome = transaction.type === 'income';
-        const isPaid = transaction.isPaid;
+  return useMemo(() => {
+    const isIncome = transaction.type === 'income';
+    const isPaid = transaction.isPaid;
 
-        const IconComponent = isIncome
-            ? Banknote
-            : getCategoryIcon(category?.icon);
+    const IconComponent = isIncome
+      ? Banknote
+      : getCategoryIcon(category?.icon);
 
-        const iconColor = isIncome ? '#10B981' : (category?.color || '#94A3B8');
-        const iconBgColor = `${iconColor}20`;
+    const iconColor = isIncome ? '#10B981' : (category?.color || '#94A3B8');
+    const iconBgColor = `${iconColor}20`;
 
-        return {
-            isIncome,
-            isPaid,
-            IconComponent,
-            iconColor,
-            iconBgColor,
-        };
-    }, [transaction, category]);
+    return {
+      isIncome,
+      isPaid,
+      IconComponent,
+      iconColor,
+      iconBgColor,
+    };
+  }, [transaction, category]);
 };
 
 /**
@@ -85,33 +86,33 @@ export const useTransactionDisplay = (transaction, category) => {
  * @returns {Array<Object>} An array of transactions relevant to the selected period.
  */
 export const useMonthlyTransactions = (transactions, selectedMonth, selectedYear) => {
-    return useMemo(() => {
-        if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
-            return [];
-        }
+  return useMemo(() => {
+    if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
+      return [];
+    }
 
-        const { monthStart: monthStartStr, monthEnd: monthEndStr } = getMonthBoundaries(selectedMonth, selectedYear);
-        const start = parseDate(monthStartStr);
-        const end = parseDate(monthEndStr);
+    const { monthStart: monthStartStr, monthEnd: monthEndStr } = getMonthBoundaries(selectedMonth, selectedYear);
+    const start = parseDate(monthStartStr);
+    const end = parseDate(monthEndStr);
 
-        // Ensure start and end dates are valid before filtering
-        if (!start || !end) return [];
+    // Ensure start and end dates are valid before filtering
+    if (!start || !end) return [];
 
-        return transactions.filter((t) => {
-            // For income, just check the date
-            if (t.type === 'income') {
-                const transactionDate = parseDate(t.date);
+    return transactions.filter((t) => {
+      // For income, just check the date
+      if (t.type === 'income') {
+        const transactionDate = parseDate(t.date);
 
-                return transactionDate >= start && transactionDate <= end;
-            }
+        return transactionDate >= start && transactionDate <= end;
+      }
 
-            // For expenses, check if paid in this month
-            if (!t.isPaid || !t.paidDate) return false;
-            const paidDate = parseDate(t.paidDate);
+      // For expenses, check if paid in this month
+      if (!t.isPaid || !t.paidDate) return false;
+      const paidDate = parseDate(t.paidDate);
 
-            return paidDate >= start && paidDate <= end;
-        });
-    }, [transactions, selectedMonth, selectedYear, getMonthBoundaries, parseDate]);
+      return paidDate >= start && paidDate <= end;
+    });
+  }, [transactions, selectedMonth, selectedYear, getMonthBoundaries, parseDate]);
 };
 
 /**
@@ -123,23 +124,23 @@ export const useMonthlyTransactions = (transactions, selectedMonth, selectedYear
  * @returns {number} The total sum of income transactions for the period.
  */
 export const useMonthlyIncome = (transactions, selectedMonth, selectedYear) => {
-    return useMemo(() => {
-        if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
-            return 0;
-        }
-        const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
-        return getMonthlyIncome(transactions, monthStart, monthEnd);
-    }, [transactions, selectedMonth, selectedYear, getMonthBoundaries, getMonthlyIncome]);
+  return useMemo(() => {
+    if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
+      return 0;
+    }
+    const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
+    return getMonthlyIncome(transactions, monthStart, monthEnd);
+  }, [transactions, selectedMonth, selectedYear, getMonthBoundaries, getMonthlyIncome]);
 };
 
 /**
  * NEW HOOK: Calculates historical average for Inflation Protection
  */
 export const useHistoricalIncome = (transactions, selectedMonth, selectedYear) => {
-    return useMemo(() => {
-        if (selectedMonth === undefined || selectedYear === undefined) return 0;
-        return getHistoricalAverageIncome(transactions, selectedMonth, selectedYear, 3);
-    }, [transactions, selectedMonth, selectedYear]);
+  return useMemo(() => {
+    if (selectedMonth === undefined || selectedYear === undefined) return 0;
+    return getHistoricalAverageIncome(transactions, selectedMonth, selectedYear, 3);
+  }, [transactions, selectedMonth, selectedYear]);
 };
 
 /**
@@ -159,139 +160,139 @@ export const useHistoricalIncome = (transactions, selectedMonth, selectedYear) =
  */
 
 export const useDashboardSummary = (transactions, selectedMonth, selectedYear, allCustomBudgets, systemBudgets, categories, settings, historicalTransactions = []) => {
-    // Centralized hook call for Income (must remain at top level)
-    const currentMonthIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
+  // Centralized hook call for Income (must remain at top level)
+  const currentMonthIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
-    // 1. Calculate Historical Average
-    const historicalAverage = useHistoricalIncome(transactions, selectedMonth, selectedYear);
+  // 1. Calculate Historical Average
+  const historicalAverage = useHistoricalIncome(transactions, selectedMonth, selectedYear);
 
-    // 2. LOGIC: Smart Projection for Current Month
-    // Only runs if we are viewing the *Actual* current calendar month
-    const { projectedIncome, isUsingProjection } = useMemo(() => {
-        const now = new Date();
-        const isCurrentRealMonth = (
-            selectedMonth === now.getMonth() &&
-            selectedYear === now.getFullYear()
-        );
+  // 2. LOGIC: Smart Projection for Current Month
+  // Only runs if we are viewing the *Actual* current calendar month
+  const { projectedIncome, isUsingProjection } = useMemo(() => {
+    const now = new Date();
+    const isCurrentRealMonth = (
+      selectedMonth === now.getMonth() &&
+      selectedYear === now.getFullYear()
+    );
 
-        // If it's past or future, or we have no transactions, skip logic
-        if (!isCurrentRealMonth || !transactions || transactions.length === 0) {
-            return { projectedIncome: 0, isUsingProjection: false };
-        }
+    // If it's past or future, or we have no transactions, skip logic
+    if (!isCurrentRealMonth || !transactions || transactions.length === 0) {
+      return { projectedIncome: 0, isUsingProjection: false };
+    }
 
-        // SLICE: Filter ONLY the past 6 months of data from the HISTORICAL source
-        // Use historicalTransactions if available, otherwise fall back to main list (which usually fails due to limited scope)
-        const sourceData = historicalTransactions.length > 0 ? historicalTransactions : transactions;
-        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of previous month
+    // SLICE: Filter ONLY the past 6 months of data from the HISTORICAL source
+    // Use historicalTransactions if available, otherwise fall back to main list (which usually fails due to limited scope)
+    const sourceData = historicalTransactions.length > 0 ? historicalTransactions : transactions;
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of previous month
 
-        const historicalSlice = sourceData.filter(t => {
-            if (t.type !== 'income') return false;
-            const tDate = new Date(t.date);
-            return tDate >= sixMonthsAgo && tDate <= lastMonthEnd;
-        });
+    const historicalSlice = sourceData.filter(t => {
+      if (t.type !== 'income') return false;
+      const tDate = new Date(t.date);
+      return tDate >= sixMonthsAgo && tDate <= lastMonthEnd;
+    });
 
-        const stats = calculateIncomeProjection(historicalSlice, now);
+    const stats = calculateIncomeProjection(historicalSlice, now);
 
-        // Decide: Use Projection OR Actual?
-        // We calculate 'actual' income so far this month
-        const { monthStart: startStr, monthEnd: endStr } = getMonthBoundaries(selectedMonth, selectedYear);
-        const currentActualIncome = getMonthlyIncome(transactions, startStr, endStr);
+    // Decide: Use Projection OR Actual?
+    // We calculate 'actual' income so far this month
+    const { monthStart: startStr, monthEnd: endStr } = getMonthBoundaries(selectedMonth, selectedYear);
+    const currentActualIncome = getMonthlyIncome(transactions, startStr, endStr);
 
-        // THRESHOLD LOGIC:
-        // If actual income is significantly lower (< 85%) of projection, we assume 
-        // the main salary hasn't hit yet. Use Projection.
-        // If actual income is close to or higher than projection, use Actual.
+    // THRESHOLD LOGIC:
+    // If actual income is significantly lower (< 85%) of projection, we assume 
+    // the main salary hasn't hit yet. Use Projection.
+    // If actual income is close to or higher than projection, use Actual.
 
-        // Safety: If projection is 0, never use it.
-        if (stats.projectedIncome > 0 && currentActualIncome < (stats.projectedIncome * 0.85)) {
-            return {
-                projectedIncome: stats.projectedIncome,
-                isUsingProjection: true
-            };
-        }
-
-        return {
-            projectedIncome: stats.projectedIncome,
-            isUsingProjection: false
-        };
-    }, [transactions, historicalTransactions, selectedMonth, selectedYear]);
-
-    // Memoize the month boundaries (used by all calculations)
-    const { monthStartStr, monthEndStr, monthStartDate, monthEndDate } = useMemo(() => {
-        if (selectedMonth === undefined || selectedYear === undefined) {
-            return { monthStartStr: null, monthEndStr: null, monthStartDate: null, monthEndDate: null };
-        }
-        const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
-
-        return {
-            monthStartStr: monthStart,
-            monthEndStr: monthEnd,
-            monthStartDate: parseDate(monthStart),
-            monthEndDate: parseDate(monthEnd)
-        };
-    }, [selectedMonth, selectedYear, getMonthBoundaries, parseDate]);
-
-    const remainingBudget = useMemo(() => {
-        if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
-            return 0;
-        }
-
-        if (!monthStartStr || !monthEndStr || !monthStartDate || !monthEndDate) return 0;
-
-        // SMART BALANCE FIX:
-        // If we determined we are "Waiting for Income" (isUsingProjection), 
-        // calculate remaining budget based on the Projection, not the current low balance.
-        const income = isUsingProjection ? projectedIncome : currentMonthIncome;
-
-        const paidExpenses = getMonthlyPaidExpenses(transactions, monthStartStr, monthEndStr);
-
-        const unpaidExpenses = transactions
-            .filter(t => {
-                if (t.type !== 'expense') return false;
-                if (t.isPaid) return false;
-
-                const transactionDate = parseDate(t.date);
-                return transactionDate >= monthStartDate && transactionDate <= monthEndDate;
-            })
-            .reduce((sum, t) => sum + t.amount, 0);
-
-        return income - paidExpenses - unpaidExpenses;
-    }, [transactions, currentMonthIncome, projectedIncome, isUsingProjection, monthStartStr, monthEndStr, monthStartDate, monthEndDate, getMonthlyPaidExpenses, parseDate]);
-
-    const currentMonthExpenses = useMemo(() => {
-        if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
-            return 0;
-        }
-
-        if (!monthStartStr || !monthEndStr) return 0;
-
-        return getTotalMonthExpenses(transactions, monthStartStr, monthEndStr);
-    }, [transactions, allCustomBudgets, categories, monthStartStr, monthEndStr, getTotalMonthExpenses]);
-
-    // POSSIBLE DEADCODE
-    // const goalMode = settings?.goalMode ?? true;
-
-    // NEW: Calculate the behavioral "Bonus Savings" (Unspent Needs + Unspent Wants)
-    // This is distinct from actual bank account remaining; it's the amount "saved by budgeting".
-    const bonusSavingsPotential = useMemo(() => {
-        if (!monthStartStr || !monthEndStr || !systemBudgets) return 0;
-        //     return calculateBonusSavingsPotential(systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, goalMode);
-        // }, [systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, goalMode]);
-
-        // 2. Pass settings and historicalAverage
-        return calculateBonusSavingsPotential(systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, settings, historicalAverage);
-    }, [systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, settings, historicalAverage]);
+    // Safety: If projection is 0, never use it.
+    if (stats.projectedIncome > 0 && currentActualIncome < (stats.projectedIncome * 0.85)) {
+      return {
+        projectedIncome: stats.projectedIncome,
+        isUsingProjection: true
+      };
+    }
 
     return {
-        remainingBudget,
-        currentMonthIncome,
-        currentMonthExpenses,
-        bonusSavingsPotential,
-        // Expose these so UI can show a "Projected" badge if needed
-        projectedIncome,
-        isUsingProjection
+      projectedIncome: stats.projectedIncome,
+      isUsingProjection: false
     };
+  }, [transactions, historicalTransactions, selectedMonth, selectedYear]);
+
+  // Memoize the month boundaries (used by all calculations)
+  const { monthStartStr, monthEndStr, monthStartDate, monthEndDate } = useMemo(() => {
+    if (selectedMonth === undefined || selectedYear === undefined) {
+      return { monthStartStr: null, monthEndStr: null, monthStartDate: null, monthEndDate: null };
+    }
+    const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
+
+    return {
+      monthStartStr: monthStart,
+      monthEndStr: monthEnd,
+      monthStartDate: parseDate(monthStart),
+      monthEndDate: parseDate(monthEnd)
+    };
+  }, [selectedMonth, selectedYear, getMonthBoundaries, parseDate]);
+
+  const remainingBudget = useMemo(() => {
+    if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
+      return 0;
+    }
+
+    if (!monthStartStr || !monthEndStr || !monthStartDate || !monthEndDate) return 0;
+
+    // SMART BALANCE FIX:
+    // If we determined we are "Waiting for Income" (isUsingProjection), 
+    // calculate remaining budget based on the Projection, not the current low balance.
+    const income = isUsingProjection ? projectedIncome : currentMonthIncome;
+
+    const paidExpenses = getMonthlyPaidExpenses(transactions, monthStartStr, monthEndStr);
+
+    const unpaidExpenses = transactions
+      .filter(t => {
+        if (t.type !== 'expense') return false;
+        if (t.isPaid) return false;
+
+        const transactionDate = parseDate(t.date);
+        return transactionDate >= monthStartDate && transactionDate <= monthEndDate;
+      })
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return income - paidExpenses - unpaidExpenses;
+  }, [transactions, currentMonthIncome, projectedIncome, isUsingProjection, monthStartStr, monthEndStr, monthStartDate, monthEndDate, getMonthlyPaidExpenses, parseDate]);
+
+  const currentMonthExpenses = useMemo(() => {
+    if (!Array.isArray(transactions) || selectedMonth === undefined || selectedYear === undefined) {
+      return 0;
+    }
+
+    if (!monthStartStr || !monthEndStr) return 0;
+
+    return getTotalMonthExpenses(transactions, monthStartStr, monthEndStr);
+  }, [transactions, allCustomBudgets, categories, monthStartStr, monthEndStr, getTotalMonthExpenses]);
+
+  // POSSIBLE DEADCODE
+  // const goalMode = settings?.goalMode ?? true;
+
+  // NEW: Calculate the behavioral "Bonus Savings" (Unspent Needs + Unspent Wants)
+  // This is distinct from actual bank account remaining; it's the amount "saved by budgeting".
+  const bonusSavingsPotential = useMemo(() => {
+    if (!monthStartStr || !monthEndStr || !systemBudgets) return 0;
+    //     return calculateBonusSavingsPotential(systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, goalMode);
+    // }, [systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, goalMode]);
+
+    // 2. Pass settings and historicalAverage
+    return calculateBonusSavingsPotential(systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, settings, historicalAverage);
+  }, [systemBudgets, transactions, categories, allCustomBudgets, monthStartStr, monthEndStr, currentMonthIncome, settings, historicalAverage]);
+
+  return {
+    remainingBudget,
+    currentMonthIncome,
+    currentMonthExpenses,
+    bonusSavingsPotential,
+    // Expose these so UI can show a "Projected" badge if needed
+    projectedIncome,
+    isUsingProjection
+  };
 };
 
 /**
@@ -307,484 +308,484 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
  * }} Object containing filtered custom budgets and a combined list of all active budgets.
  */
 export const useActiveBudgets = (allCustomBudgets, allSystemBudgets, selectedMonth, selectedYear) => {
-    // 1. Memoize Month Boundaries (string and Date objects)
-    const { monthStartDate, monthEndDate } = useMemo(() => {
-        if (selectedMonth === undefined || selectedYear === undefined) {
-            return { monthStartStr: null, monthEndStr: null, monthStartDate: null, monthEndDate: null };
-        }
-        const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
-        return {
-            monthStartStr: monthStart,
-            monthEndStr: monthEnd,
-            monthStartDate: parseDate(monthStart),
-            monthEndDate: parseDate(monthEnd)
-        };
-    }, [selectedMonth, selectedYear, getMonthBoundaries, parseDate]);
+  // 1. Memoize Month Boundaries (string and Date objects)
+  const { monthStartDate, monthEndDate } = useMemo(() => {
+    if (selectedMonth === undefined || selectedYear === undefined) {
+      return { monthStartStr: null, monthEndStr: null, monthStartDate: null, monthEndDate: null };
+    }
+    const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
+    return {
+      monthStartStr: monthStart,
+      monthEndStr: monthEnd,
+      monthStartDate: parseDate(monthStart),
+      monthEndDate: parseDate(monthEnd)
+    };
+  }, [selectedMonth, selectedYear, getMonthBoundaries, parseDate]);
 
-    const activeCustomBudgets = useMemo(() => {
-        if (!Array.isArray(allCustomBudgets) || !monthStartDate || !monthEndDate) return [];
+  const activeCustomBudgets = useMemo(() => {
+    if (!Array.isArray(allCustomBudgets) || !monthStartDate || !monthEndDate) return [];
 
-        return allCustomBudgets.filter(cb => {
-            // Include active, completed, AND planned budgets that overlap with the month
-            if (cb.status !== 'active' && cb.status !== 'completed' && cb.status !== 'planned') return false;
+    return allCustomBudgets.filter(cb => {
+      // Include active, completed, AND planned budgets that overlap with the month
+      if (cb.status !== 'active' && cb.status !== 'completed' && cb.status !== 'planned') return false;
 
-            const cbStart = parseDate(cb.startDate);
-            const cbEnd = parseDate(cb.endDate);
+      const cbStart = parseDate(cb.startDate);
+      const cbEnd = parseDate(cb.endDate);
 
-            // Check if budget period overlaps with the selected month
-            return cbStart <= monthEndDate && cbEnd >= monthStartDate;
-        });
-    }, [allCustomBudgets, monthStartDate, monthEndDate, parseDate]);
+      // Check if budget period overlaps with the selected month
+      return cbStart <= monthEndDate && cbEnd >= monthStartDate;
+    });
+  }, [allCustomBudgets, monthStartDate, monthEndDate, parseDate]);
 
-    const allActiveBudgets = useMemo(() => {
-        if (!Array.isArray(allSystemBudgets) || !monthStartDate || !monthEndDate) {
-            return activeCustomBudgets; // Return only customs if system array is invalid
-        }
+  const allActiveBudgets = useMemo(() => {
+    if (!Array.isArray(allSystemBudgets) || !monthStartDate || !monthEndDate) {
+      return activeCustomBudgets; // Return only customs if system array is invalid
+    }
 
-        const activeCustom = activeCustomBudgets;
+    const activeCustom = activeCustomBudgets;
 
-        const activeSystem = allSystemBudgets
-            .filter(sb => {
-                // Ensure system budget dates are within the selected month's boundaries
-                const sbStart = parseDate(sb.startDate);
-                const sbEnd = parseDate(sb.endDate);
-                // System budgets must be fully contained within the selected month
-                return sbStart >= monthStartDate && sbEnd <= monthEndDate;
-            })
-            .map(sb => ({
-                ...sb,
-                allocatedAmount: sb.budgetAmount,
-                isSystemBudget: true,
-                status: 'active'
-            }));
+    const activeSystem = allSystemBudgets
+      .filter(sb => {
+        // Ensure system budget dates are within the selected month's boundaries
+        const sbStart = parseDate(sb.startDate);
+        const sbEnd = parseDate(sb.endDate);
+        // System budgets must be fully contained within the selected month
+        return sbStart >= monthStartDate && sbEnd <= monthEndDate;
+      })
+      .map(sb => ({
+        ...sb,
+        allocatedAmount: sb.budgetAmount,
+        isSystemBudget: true,
+        status: 'active'
+      }));
 
-        return [...activeSystem, ...activeCustom];
-    }, [activeCustomBudgets, allSystemBudgets, monthStartDate, monthEndDate, parseDate]);
+    return [...activeSystem, ...activeCustom];
+  }, [activeCustomBudgets, allSystemBudgets, monthStartDate, monthEndDate, parseDate]);
 
-    return { activeCustomBudgets, allActiveBudgets };
+  return { activeCustomBudgets, allActiveBudgets };
 };
 
 // Hook for filtering custom budgets by period
 export const useCustomBudgetsFiltered = (allCustomBudgets, selectedMonth, selectedYear) => {
-    return useMemo(() => {
-        const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
-        const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+  return useMemo(() => {
+    const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
+    const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
-        return allCustomBudgets.filter(cb => {
-            const cbStart = parseDate(cb.startDate);
-            const cbEnd = parseDate(cb.endDate);
-            const monthStartDate = parseDate(monthStart);
-            const monthEndDate = parseDate(monthEnd);
+    return allCustomBudgets.filter(cb => {
+      const cbStart = parseDate(cb.startDate);
+      const cbEnd = parseDate(cb.endDate);
+      const monthStartDate = parseDate(monthStart);
+      const monthEndDate = parseDate(monthEnd);
 
-            return cbStart <= monthEndDate && cbEnd >= monthStartDate;
-        });
-    }, [allCustomBudgets, selectedMonth, selectedYear]);
+      return cbStart <= monthEndDate && cbEnd >= monthStartDate;
+    });
+  }, [allCustomBudgets, selectedMonth, selectedYear]);
 };
 
 export const useBudgetsAggregates = (
-    transactions,
-    categories,
-    allCustomBudgets,
-    systemBudgets,
-    selectedMonth,
-    selectedYear,
-    settings
+  transactions,
+  categories,
+  allCustomBudgets,
+  systemBudgets,
+  selectedMonth,
+  selectedYear,
+  settings
 ) => {
 
-    // POSSIBLE DEADCODE
-    // const goalMode = settings?.goalMode ?? true;
+  // POSSIBLE DEADCODE
+  // const goalMode = settings?.goalMode ?? true;
 
-    // Filter custom budgets based on date overlap
-    const customBudgets = useMemo(() => {
-        const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
-        const monthStartDate = parseDate(monthStart);
-        const monthEndDate = parseDate(monthEnd);
+  // Filter custom budgets based on date overlap
+  const customBudgets = useMemo(() => {
+    const { monthStart, monthEnd } = getMonthBoundaries(selectedMonth, selectedYear);
+    const monthStartDate = parseDate(monthStart);
+    const monthEndDate = parseDate(monthEnd);
 
-        return allCustomBudgets.filter(cb => {
-            const start = parseDate(cb.startDate);
-            const end = parseDate(cb.endDate);
+    return allCustomBudgets.filter(cb => {
+      const start = parseDate(cb.startDate);
+      const end = parseDate(cb.endDate);
 
-            // Comparing Date objects with Date objects (reliable comparison)
-            return start <= monthEndDate && end >= monthStartDate;
-        });
-    }, [allCustomBudgets, selectedMonth, selectedYear]);
+      // Comparing Date objects with Date objects (reliable comparison)
+      return start <= monthEndDate && end >= monthStartDate;
+    });
+  }, [allCustomBudgets, selectedMonth, selectedYear]);
 
-    // Get monthly income for savings calculation
-    const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
+  // Get monthly income for savings calculation
+  const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
-    // Get Historical Average
-    const historicalAverage = useHistoricalIncome(transactions, selectedMonth, selectedYear);
+  // Get Historical Average
+  const historicalAverage = useHistoricalIncome(transactions, selectedMonth, selectedYear);
 
-    const systemBudgetsWithStats = useMemo(() => {
-        const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
-        const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
+  const systemBudgetsWithStats = useMemo(() => {
+    const monthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
+    const monthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
-        return systemBudgets.map(sb => {
-            // Use centralized calculation
-            // const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, goalMode);
+    return systemBudgets.map(sb => {
+      // Use centralized calculation
+      // const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, goalMode);
 
-            // Pass settings and historicalAverage
-            const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings, historicalAverage);
+      // Pass settings and historicalAverage
+      const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings, historicalAverage);
 
-            return {
-                ...sb,
-                allocatedAmount: sb.budgetAmount,
-                preCalculatedStats: stats
-            };
-        });
-        // }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear, monthlyIncome, goalMode]);
-    }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear, monthlyIncome, settings, historicalAverage]);
+      return {
+        ...sb,
+        allocatedAmount: sb.budgetAmount,
+        preCalculatedStats: stats
+      };
+    });
+    // }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear, monthlyIncome, goalMode]);
+  }, [systemBudgets, transactions, categories, allCustomBudgets, selectedMonth, selectedYear, monthlyIncome, settings, historicalAverage]);
 
-    // Group custom budgets by status
-    const groupedCustomBudgets = useMemo(() => {
-        return customBudgets.reduce((acc, budget) => {
-            const status = budget.status || 'active';
-            if (status === 'archived') return acc;
-            if (!acc[status]) acc[status] = [];
-            acc[status].push(budget);
-            return acc;
-        }, {});
-    }, [customBudgets]);
+  // Group custom budgets by status
+  const groupedCustomBudgets = useMemo(() => {
+    return customBudgets.reduce((acc, budget) => {
+      const status = budget.status || 'active';
+      if (status === 'archived') return acc;
+      if (!acc[status]) acc[status] = [];
+      acc[status].push(budget);
+      return acc;
+    }, {});
+  }, [customBudgets]);
 
-    return {
-        customBudgets,
-        systemBudgetsWithStats,
-        groupedCustomBudgets,
-    };
+  return {
+    customBudgets,
+    systemBudgetsWithStats,
+    groupedCustomBudgets,
+  };
 };
 
 // Hook for transaction filtering
 export const useTransactionFiltering = (transactions) => {
-    const now = new Date();
-    const { monthStart: currentMonthStart, monthEnd: currentMonthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
+  const now = new Date();
+  const { monthStart: currentMonthStart, monthEnd: currentMonthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
 
-    const [filters, setFilters] = useState({
-        type: 'all',
-        category: [],
-        paymentStatus: 'all',
-        startDate: currentMonthStart,
-        endDate: currentMonthEnd
+  const [filters, setFilters] = useState({
+    type: 'all',
+    category: [],
+    paymentStatus: 'all',
+    startDate: currentMonthStart,
+    endDate: currentMonthEnd
+  });
+
+  const filteredTransactions = useMemo(() => {
+    // Performance: Create Date objects once outside the loop
+    let startFilterDate = null;
+    let endFilterDate = null;
+
+    if (filters.startDate && filters.endDate) {
+      startFilterDate = new Date(filters.startDate);
+      startFilterDate.setHours(0, 0, 0, 0);
+
+      endFilterDate = new Date(filters.endDate);
+      endFilterDate.setHours(0, 0, 0, 0);
+    }
+    return transactions.filter(t => {
+      const typeMatch = filters.type === 'all' || t.type === filters.type;
+
+      const categoryMatch = !filters.category || filters.category.length === 0 || filters.category.includes(t.category_id);
+
+      const paymentStatusMatch = filters.paymentStatus === 'all' ||
+        (filters.paymentStatus === 'paid' && t.isPaid) ||
+        (filters.paymentStatus === 'unpaid' && !t.isPaid);
+
+      let dateMatch = true;
+      if (startFilterDate && endFilterDate) {
+        const transactionDate = new Date(t.date);
+
+        transactionDate.setHours(0, 0, 0, 0);
+
+        dateMatch = transactionDate >= startFilterDate && transactionDate <= endFilterDate;
+      }
+
+      return typeMatch && categoryMatch && paymentStatusMatch && dateMatch;
     });
+  }, [transactions, filters]);
 
-    const filteredTransactions = useMemo(() => {
-        // Performance: Create Date objects once outside the loop
-        let startFilterDate = null;
-        let endFilterDate = null;
-
-        if (filters.startDate && filters.endDate) {
-            startFilterDate = new Date(filters.startDate);
-            startFilterDate.setHours(0, 0, 0, 0);
-
-            endFilterDate = new Date(filters.endDate);
-            endFilterDate.setHours(0, 0, 0, 0);
-        }
-        return transactions.filter(t => {
-            const typeMatch = filters.type === 'all' || t.type === filters.type;
-
-            const categoryMatch = !filters.category || filters.category.length === 0 || filters.category.includes(t.category_id);
-
-            const paymentStatusMatch = filters.paymentStatus === 'all' ||
-                (filters.paymentStatus === 'paid' && t.isPaid) ||
-                (filters.paymentStatus === 'unpaid' && !t.isPaid);
-
-            let dateMatch = true;
-            if (startFilterDate && endFilterDate) {
-                const transactionDate = new Date(t.date);
-
-                transactionDate.setHours(0, 0, 0, 0);
-
-                dateMatch = transactionDate >= startFilterDate && transactionDate <= endFilterDate;
-            }
-
-            return typeMatch && categoryMatch && paymentStatusMatch && dateMatch;
-        });
-    }, [transactions, filters]);
-
-    return {
-        filters,
-        setFilters,
-        filteredTransactions,
-    };
+  return {
+    filters,
+    setFilters,
+    filteredTransactions,
+  };
 };
 
 // UPDATED 15-Jan-2026: Simplified to use latest getCustomBudgetStats logic
 // Custom budgets now aggregate ALL linked transactions (no date filtering)
 export const useBudgetBarsData = (
-    systemBudgets,
-    customBudgets,
-    allCustomBudgets,
-    transactions,
-    categories,
-    goals,
-    monthlyIncome,
-    baseCurrency,
-    settings
+  systemBudgets,
+  customBudgets,
+  allCustomBudgets,
+  transactions,
+  categories,
+  goals,
+  monthlyIncome,
+  baseCurrency,
+  settings
 ) => {
-    return useMemo(() => {
-        const goalMode = settings?.goalMode ?? true;
+  return useMemo(() => {
+    const goalMode = settings?.goalMode ?? true;
 
-        const historicalAverage = getHistoricalAverageIncome(transactions, (new Date().getMonth()), (new Date().getFullYear()));
+    const historicalAverage = getHistoricalAverageIncome(transactions, (new Date().getMonth()), (new Date().getFullYear()));
 
-        const system = systemBudgets.sort((a, b) => {
-            const orderA = FINANCIAL_PRIORITIES[a.systemBudgetType]?.order ?? 99;
-            const orderB = FINANCIAL_PRIORITIES[b.systemBudgetType]?.order ?? 99;
-            return orderA - orderB;
-        });
+    const system = systemBudgets.sort((a, b) => {
+      const orderA = FINANCIAL_PRIORITIES[a.systemBudgetType]?.order ?? 99;
+      const orderB = FINANCIAL_PRIORITIES[b.systemBudgetType]?.order ?? 99;
+      return orderA - orderB;
+    });
 
-        const custom = customBudgets;
+    const custom = customBudgets;
 
-        const goalMap = createEntityMap(goals, 'priority', (goal) => goal);
+    const goalMap = createEntityMap(goals, 'priority', (goal) => goal);
 
-        const startDate = system.length > 0 ? system[0].startDate : null;
-        const endDate = system.length > 0 ? system[0].endDate : null;
+    const startDate = system.length > 0 ? system[0].startDate : null;
+    const endDate = system.length > 0 ? system[0].endDate : null;
 
-        const systemBudgetsData = system.map(sb => {
-            const goal = goalMap[sb.systemBudgetType];
-            const targetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+    const systemBudgetsData = system.map(sb => {
+      const goal = goalMap[sb.systemBudgetType];
+      const targetAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
 
-            let targetPercentage = 0;
-            if (goalMode === false) {
-                targetPercentage = monthlyIncome > 0 ? (targetAmount / monthlyIncome) * 100 : 0;
-            } else {
-                targetPercentage = goal?.target_percentage || 0;
-            }
+      let targetPercentage = 0;
+      if (goalMode === false) {
+        targetPercentage = monthlyIncome > 0 ? (targetAmount / monthlyIncome) * 100 : 0;
+      } else {
+        targetPercentage = goal?.target_percentage || 0;
+      }
 
-            const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome, settings, historicalAverage);
+      const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome, settings, historicalAverage);
 
-            const maxHeight = Math.max(targetAmount, stats.totalSpent);
-            const isOverBudget = stats.totalSpent > targetAmount;
-            const overBudgetAmount = isOverBudget ? stats.totalSpent - targetAmount : 0;
+      const maxHeight = Math.max(targetAmount, stats.totalSpent);
+      const isOverBudget = stats.totalSpent > targetAmount;
+      const overBudgetAmount = isOverBudget ? stats.totalSpent - targetAmount : 0;
 
-            return {
-                ...sb,
-                stats: {
-                    totalAllocatedUnits: targetAmount,
-                    paid: {
-                        totalBaseCurrencyAmount: stats.paidAmount
-                    },
-                    unpaid: {
-                        totalBaseCurrencyAmount: stats.unpaidAmount
-                    },
-                    totalSpent: stats.totalSpent,
-                    paidAmount: stats.paidAmount,
-                    unpaidAmount: stats.unpaidAmount
-                },
-                targetAmount,
-                targetPercentage,
-                expectedAmount: stats.unpaidAmount,
-                expectedSeparateCash: [],
-                maxHeight,
-                isOverBudget,
-                overBudgetAmount
-            };
-        });
+      return {
+        ...sb,
+        stats: {
+          totalAllocatedUnits: targetAmount,
+          paid: {
+            totalBaseCurrencyAmount: stats.paidAmount
+          },
+          unpaid: {
+            totalBaseCurrencyAmount: stats.unpaidAmount
+          },
+          totalSpent: stats.totalSpent,
+          paidAmount: stats.paidAmount,
+          unpaidAmount: stats.unpaidAmount
+        },
+        targetAmount,
+        targetPercentage,
+        expectedAmount: stats.unpaidAmount,
+        expectedSeparateCash: [],
+        maxHeight,
+        isOverBudget,
+        overBudgetAmount
+      };
+    });
 
-        // UPDATED 15-Jan-2026: Uses latest getCustomBudgetStats (no date params)
-        const customBudgetsData = custom.map(cb => {
-            const stats = getCustomBudgetStats(cb, transactions);
+    // UPDATED 15-Jan-2026: Uses latest getCustomBudgetStats (no date params)
+    const customBudgetsData = custom.map(cb => {
+      const stats = getCustomBudgetStats(cb, transactions);
 
-            const totalBudget = stats.allocated;
-            const paidAmount = stats.paid.totalBaseCurrencyAmount;
-            const unpaidAmount = stats.unpaid.totalBaseCurrencyAmount;
+      const totalBudget = stats.allocated;
+      const paidAmount = stats.paid.totalBaseCurrencyAmount;
+      const unpaidAmount = stats.unpaid.totalBaseCurrencyAmount;
 
-            const totalSpent = paidAmount + unpaidAmount;
+      const totalSpent = paidAmount + unpaidAmount;
 
-            const maxHeight = Math.max(totalBudget, totalSpent);
-            const isOverBudget = totalSpent > totalBudget;
-            const overBudgetAmount = isOverBudget ? totalSpent - totalBudget : 0;
+      const maxHeight = Math.max(totalBudget, totalSpent);
+      const isOverBudget = totalSpent > totalBudget;
+      const overBudgetAmount = isOverBudget ? totalSpent - totalBudget : 0;
 
-            return {
-                ...cb,
-                originalAllocatedAmount: cb.originalAllocatedAmount || cb.allocatedAmount,
-                stats: {
-                    paidAmount,
-                    totalBudget,
-                    totalAllocatedUnits: stats.allocated,
-                    paid: {
-                        totalBaseCurrencyAmount: paidAmount
-                    },
-                    unpaid: {
-                        totalBaseCurrencyAmount: unpaidAmount
-                    },
-                    totalSpentUnits: stats.spent,
-                    totalUnpaidUnits: unpaidAmount
-                },
-                targetAmount: totalBudget,
-                expectedAmount: unpaidAmount,
-                maxHeight,
-                isOverBudget,
-                overBudgetAmount
-            };
-        }).sort((a, b) => {
-            const now = new Date();
-            const aStart = new Date(a.startDate);
-            const bStart = new Date(b.startDate);
-            const aDistance = Math.abs(aStart - now);
-            const bDistance = Math.abs(bStart - now);
-            return aDistance - bDistance;
-        });
+      return {
+        ...cb,
+        originalAllocatedAmount: cb.originalAllocatedAmount || cb.allocatedAmount,
+        stats: {
+          paidAmount,
+          totalBudget,
+          totalAllocatedUnits: stats.allocated,
+          paid: {
+            totalBaseCurrencyAmount: paidAmount
+          },
+          unpaid: {
+            totalBaseCurrencyAmount: unpaidAmount
+          },
+          totalSpentUnits: stats.spent,
+          totalUnpaidUnits: unpaidAmount
+        },
+        targetAmount: totalBudget,
+        expectedAmount: unpaidAmount,
+        maxHeight,
+        isOverBudget,
+        overBudgetAmount
+      };
+    }).sort((a, b) => {
+      const now = new Date();
+      const aStart = new Date(a.startDate);
+      const bStart = new Date(b.startDate);
+      const aDistance = Math.abs(aStart - now);
+      const bDistance = Math.abs(bStart - now);
+      return aDistance - bDistance;
+    });
 
-        const savingsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'savings');
-        const savingsTargetAmount = savingsBudget ? savingsBudget.targetAmount : 0;
-        const totalActualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
-        const savingsShortfall = Math.max(0, savingsTargetAmount - totalActualSavings);
+    const savingsBudget = systemBudgetsData.find(sb => sb.systemBudgetType === 'savings');
+    const savingsTargetAmount = savingsBudget ? savingsBudget.targetAmount : 0;
+    const totalActualSavings = savingsBudget ? savingsBudget.stats.paidAmount : 0;
+    const savingsShortfall = Math.max(0, savingsTargetAmount - totalActualSavings);
 
-        if (savingsBudget) {
-            savingsBudget.actualSavings = totalActualSavings;
-            savingsBudget.savingsTarget = savingsTargetAmount;
-            savingsBudget.maxHeight = Math.max(savingsTargetAmount, totalActualSavings);
-        }
+    if (savingsBudget) {
+      savingsBudget.actualSavings = totalActualSavings;
+      savingsBudget.savingsTarget = savingsTargetAmount;
+      savingsBudget.maxHeight = Math.max(savingsTargetAmount, totalActualSavings);
+    }
 
-        return {
-            systemBudgetsData,
-            customBudgetsData,
-            totalActualSavings,
-            savingsTarget: savingsTargetAmount,
-            savingsShortfall
-        };
-    }, [systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings]);
+    return {
+      systemBudgetsData,
+      customBudgetsData,
+      totalActualSavings,
+      savingsTarget: savingsTargetAmount,
+      savingsShortfall
+    };
+  }, [systemBudgets, customBudgets, allCustomBudgets, transactions, categories, goals, monthlyIncome, baseCurrency, settings]);
 };
 
 // Hook for monthly breakdown calculations
 export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, allCustomBudgets = [], selectedMonth, selectedYear) => {
-    return useMemo(() => {
-        // 1. Get Date Boundaries for financial calculations
-        // Default to current month if not provided (safeguard)
-        const safeMonth = selectedMonth ?? new Date().getMonth();
-        const safeYear = selectedYear ?? new Date().getFullYear();
-        const { monthStart, monthEnd } = getMonthBoundaries(safeMonth, safeYear);
+  return useMemo(() => {
+    // 1. Get Date Boundaries for financial calculations
+    // Default to current month if not provided (safeguard)
+    const safeMonth = selectedMonth ?? new Date().getMonth();
+    const safeYear = selectedYear ?? new Date().getFullYear();
+    const { monthStart, monthEnd } = getMonthBoundaries(safeMonth, safeYear);
 
-        // 2. Calculate Category Breakdown (Existing Logic)
-        const categoryMap = createEntityMap(categories);
+    // 2. Calculate Category Breakdown (Existing Logic)
+    const categoryMap = createEntityMap(categories);
 
-        // REFINED: Use existing projection engine for mathematically sound baselines (outliers removed)
-        const projectionData = calculateProjection(transactions, categories, 6);
-        const historicalAverages = {};
-        projectionData.categoryProjections.forEach(cp => {
-            historicalAverages[cp.categoryId] = cp.averageSpend;
-        });
+    // REFINED: Use existing projection engine for mathematically sound baselines (outliers removed)
+    const projectionData = calculateProjection(transactions, categories, 6);
+    const historicalAverages = {};
+    projectionData.categoryProjections.forEach(cp => {
+      historicalAverages[cp.categoryId] = cp.averageSpend;
+    });
 
-        // Parse the boundaries using your app's date utility to avoid timezone shifts
-        const startD = parseDate(monthStart);
-        const endD = parseDate(monthEnd);
+    // Parse the boundaries using your app's date utility to avoid timezone shifts
+    const startD = parseDate(monthStart);
+    const endD = parseDate(monthEnd);
 
-        const expensesByCategory = transactions
-            .filter(t => {
-                if (t.type !== 'expense') return false;
-                const tDate = parseDate(t.paidDate || t.date);
-                return tDate && tDate >= startD && tDate <= endD;
-            })
+    const expensesByCategory = transactions
+      .filter(t => {
+        if (t.type !== 'expense') return false;
+        const tDate = parseDate(t.paidDate || t.date);
+        return tDate && tDate >= startD && tDate <= endD;
+      })
 
-            .reduce((acc, t) => {
-                const categoryId = t.category_id || 'uncategorized';
-                const amount = Number(t.amount) || 0;
-                acc[categoryId] = (acc[categoryId] || 0) + amount;
-                return acc;
-            }, {});
+      .reduce((acc, t) => {
+        const categoryId = t.category_id || 'uncategorized';
+        const amount = Number(t.amount) || 0;
+        acc[categoryId] = (acc[categoryId] || 0) + amount;
+        return acc;
+      }, {});
 
-        const totalExpenses = Object.values(expensesByCategory).reduce((sum, val) => sum + val, 0);
+    const totalExpenses = Object.values(expensesByCategory).reduce((sum, val) => sum + val, 0);
 
-        const categoryBreakdown = Object.entries(expensesByCategory)
-            .filter(([_, amount]) => amount > 0)
-            .map(([categoryId, amount]) => {
-                const category = categoryMap[categoryId];
-                const avgSpend = historicalAverages[categoryId] || 0;
+    const categoryBreakdown = Object.entries(expensesByCategory)
+      .filter(([_, amount]) => amount > 0)
+      .map(([categoryId, amount]) => {
+        const category = categoryMap[categoryId];
+        const avgSpend = historicalAverages[categoryId] || 0;
 
-                // Granular Status Logic
-                let alertStatus = 'normal';
-                let diffPercentage = 0;
+        // Granular Status Logic
+        let alertStatus = 'normal';
+        let diffPercentage = 0;
 
-                // NOISE REDUCTION: Must meet BOTH percentage and absolute thresholds to avoid UI clutter
-                if (avgSpend > 0) {
-                    const absoluteDiff = amount - avgSpend;
-                    diffPercentage = (absoluteDiff / avgSpend) * 100;
+        // NOISE REDUCTION: Must meet BOTH percentage and absolute thresholds to avoid UI clutter
+        if (avgSpend > 0) {
+          const absoluteDiff = amount - avgSpend;
+          diffPercentage = (absoluteDiff / avgSpend) * 100;
 
-                    // e.g., Must be > $30 off AND > 25% off
-                    if (absoluteDiff > 50 && diffPercentage > 25) alertStatus = 'critical';
-                    else if (absoluteDiff > 25 && diffPercentage > 15) alertStatus = 'warning';
-                    else if (absoluteDiff < -25 && diffPercentage < -15) alertStatus = 'saving';
-                }
-
-                return {
-                    id: categoryId,
-                    name: category?.name || 'Uncategorized',
-                    icon: category?.icon,
-                    color: category?.color || '#94A3B8',
-                    amount,
-                    averageSpend: avgSpend,
-                    alertStatus,
-                    diffPercentage,
-                    percentage: monthlyIncome > 0 ? (amount / monthlyIncome) * 100 : 0,
-                    expensePercentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
-                };
-            })
-            .sort((a, b) => b.amount - a.amount);
-
-        // 3. Calculate Aggregates in ONE PASS using the new optimizer
-        const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd);
+          // e.g., Must be > $30 off AND > 25% off
+          if (absoluteDiff > 50 && diffPercentage > 25) alertStatus = 'critical';
+          else if (absoluteDiff > 25 && diffPercentage > 15) alertStatus = 'warning';
+          else if (absoluteDiff < -25 && diffPercentage < -15) alertStatus = 'saving';
+        }
 
         return {
-            categoryBreakdown,
-            totalExpenses,
-            needsTotal: breakdown.needs.total,
-            wantsTotal: breakdown.wants.total,
-            // The aggregate totals are now identical to the breakdown totals
-            aggregateNeedsTotal: breakdown.needs.total,
-            aggregateWantsTotal: breakdown.wants.total,
-            // We can also return the detailed breakdown if the UI needs it later
-            detailedBreakdown: breakdown
+          id: categoryId,
+          name: category?.name || 'Uncategorized',
+          icon: category?.icon,
+          color: category?.color || '#94A3B8',
+          amount,
+          averageSpend: avgSpend,
+          alertStatus,
+          diffPercentage,
+          percentage: monthlyIncome > 0 ? (amount / monthlyIncome) * 100 : 0,
+          expensePercentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
         };
-    }, [transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear]);
+      })
+      .sort((a, b) => b.amount - a.amount);
+
+    // 3. Calculate Aggregates in ONE PASS using the new optimizer
+    const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd);
+
+    return {
+      categoryBreakdown,
+      totalExpenses,
+      needsTotal: breakdown.needs.total,
+      wantsTotal: breakdown.wants.total,
+      // The aggregate totals are now identical to the breakdown totals
+      aggregateNeedsTotal: breakdown.needs.total,
+      aggregateWantsTotal: breakdown.wants.total,
+      // We can also return the detailed breakdown if the UI needs it later
+      detailedBreakdown: breakdown
+    };
+  }, [transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear]);
 };
 
 // Hook for priority chart data calculations
 export const usePriorityChartData = (transactions, categories, goals, monthlyIncome, settings) => {
-    return useMemo(() => {
-        const goalMode = settings?.goalMode ?? true;
-        const categoryMap = createEntityMap(categories);
-        // Map to full object
-        const goalMap = createEntityMap(goals, 'priority', (goal) => goal);
+  return useMemo(() => {
+    const goalMode = settings?.goalMode ?? true;
+    const categoryMap = createEntityMap(categories);
+    // Map to full object
+    const goalMap = createEntityMap(goals, 'priority', (goal) => goal);
 
-        const expensesByPriority = transactions
-            .filter(t => t.type === 'expense' && t.category_id)
-            .reduce((acc, t) => {
-                const category = categoryMap[t.category_id];
-                if (category) {
-                    // Use transaction priority override if available, otherwise category default
-                    const priority = t.financial_priority || category.priority;
-                    const amount = Number(t.amount) || 0;
-                    acc[priority] = (acc[priority] || 0) + amount;
-                }
-                return acc;
-            }, {});
+    const expensesByPriority = transactions
+      .filter(t => t.type === 'expense' && t.category_id)
+      .reduce((acc, t) => {
+        const category = categoryMap[t.category_id];
+        if (category) {
+          // Use transaction priority override if available, otherwise category default
+          const priority = t.financial_priority || category.priority;
+          const amount = Number(t.amount) || 0;
+          acc[priority] = (acc[priority] || 0) + amount;
+        }
+        return acc;
+      }, {});
 
-        const chartData = Object.entries(FINANCIAL_PRIORITIES)
-            .map(([key, config]) => {
-                const amount = expensesByPriority[key] || 0;
-                const actual = monthlyIncome > 0 ? (amount / monthlyIncome) * 100 : 0;
+    const chartData = Object.entries(FINANCIAL_PRIORITIES)
+      .map(([key, config]) => {
+        const amount = expensesByPriority[key] || 0;
+        const actual = monthlyIncome > 0 ? (amount / monthlyIncome) * 100 : 0;
 
-                const goal = goalMap[key];
-                let target = 0;
+        const goal = goalMap[key];
+        let target = 0;
 
-                // Normalize target to percentage for the chart
-                if (goalMode === false && goal?.target_amount) {
-                    // Absolute Mode: Convert Amount to %
-                    target = monthlyIncome > 0 ? (goal.target_amount / monthlyIncome) * 100 : 0;
-                } else {
-                    target = goal?.target_percentage || 0;
-                }
+        // Normalize target to percentage for the chart
+        if (goalMode === false && goal?.target_amount) {
+          // Absolute Mode: Convert Amount to %
+          target = monthlyIncome > 0 ? (goal.target_amount / monthlyIncome) * 100 : 0;
+        } else {
+          target = goal?.target_percentage || 0;
+        }
 
-                return {
-                    name: config.label,
-                    actual,
-                    target,
-                    color: config.color
-                };
-            })
-            .filter(item => item.actual > 0 || item.target > 0);
+        return {
+          name: config.label,
+          actual,
+          target,
+          color: config.color
+        };
+      })
+      .filter(item => item.actual > 0 || item.target > 0);
 
-        return chartData;
-    }, [transactions, categories, goals, monthlyIncome, settings]);
+    return chartData;
+  }, [transactions, categories, goals, monthlyIncome, settings]);
 };
 
 /**
@@ -797,125 +798,126 @@ export const usePriorityChartData = (transactions, categories, goals, monthlyInc
  * }}
  */
 export const useAdvancedTransactionFiltering = (transactions, externalFilters = null, setExternalFilters = null) => {
-    const now = new Date();
-    const { monthStart: currentMonthStart, monthEnd: currentMonthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
+  const now = new Date();
+  const { monthStart: currentMonthStart, monthEnd: currentMonthEnd } = getMonthBoundaries(now.getMonth(), now.getFullYear());
 
-    const [internalFilters, setInternalFilters] = useState({
-        search: '',
-        type: 'all',
-        category: [], // Array for multi-select
-        paymentStatus: 'all',
-        cashStatus: 'all', // 'all', 'cash_only', 'exclude_cash'
-        financialPriority: 'all', // 'all', 'needs', 'wants', 'savings'
-        budgetId: 'all',
-        startDate: currentMonthStart,
-        endDate: currentMonthEnd,
-        minAmount: '',
-        maxAmount: '',
-        idSearch: ''
-    });
+  const [internalFilters, setInternalFilters] = useState({
+    search: '',
+    type: 'all',
+    category: [], // Array for multi-select
+    paymentStatus: 'all',
+    cashStatus: 'all', // 'all', 'cash_only', 'exclude_cash'
+    financialPriority: 'all', // 'all', 'needs', 'wants', 'savings'
+    budgetId: 'all',
+    startDate: currentMonthStart,
+    endDate: currentMonthEnd,
+    minAmount: '',
+    maxAmount: '',
+    idSearch: ''
+  });
 
-    const filters = externalFilters || internalFilters;
-    const setFilters = setExternalFilters || setInternalFilters;
+  const filters = externalFilters || internalFilters;
+  const setFilters = setExternalFilters || setInternalFilters;
 
-    const filteredTransactions = useMemo(() => {
-        let startFilterDate = null;
-        let endFilterDate = null;
+  const filteredTransactions = useMemo(() => {
+    let startFilterDate = null;
+    let endFilterDate = null;
 
-        if (filters.startDate && filters.endDate) {
-            startFilterDate = new Date(filters.startDate);
-            startFilterDate.setHours(0, 0, 0, 0);
+    if (filters.startDate && filters.endDate) {
+      startFilterDate = new Date(filters.startDate);
+      startFilterDate.setHours(0, 0, 0, 0);
 
-            endFilterDate = new Date(filters.endDate);
-            endFilterDate.setHours(0, 0, 0, 0);
+      endFilterDate = new Date(filters.endDate);
+      endFilterDate.setHours(0, 0, 0, 0);
+    }
+
+    const searchTerm = filters.search.trim();
+    const idSearchTerm = (filters.idSearch || '').toLowerCase().trim();
+
+    return transactions.filter(t => {
+      // 0. Admin ID Search
+      if (idSearchTerm) {
+        const matchId = t.id?.toLowerCase().includes(idSearchTerm) ||
+          t.bankTransactionId?.toLowerCase().includes(idSearchTerm) ||
+          t.budgetId?.toLowerCase().includes(idSearchTerm) ||
+          t.recurringTransactionId?.toLowerCase().includes(idSearchTerm) ||
+          t.normalisedProviderTransactionId?.toLowerCase().includes(idSearchTerm) ||
+          t.providerTransactionId?.toLowerCase().includes(idSearchTerm);
+        if (!matchId) return false;
+      }
+      // 1. Search (Title)
+      if (searchTerm) {
+        const titleMatch = fuzzysort.single(searchTerm, t.title || '');
+        if (!titleMatch) return false;
+      }
+
+      // 2. Type
+      if (filters.type !== 'all' && t.type !== filters.type) {
+        return false;
+      }
+
+      // 3. Category (Multi-select)
+      if (filters.category && filters.category.length > 0) {
+        if (!filters.category.includes(t.category_id)) {
+          return false;
         }
+      }
 
-        const searchTerm = filters.search.toLowerCase().trim();
-        const idSearchTerm = (filters.idSearch || '').toLowerCase().trim();
+      // 4. Payment Status
+      if (filters.paymentStatus !== 'all') {
+        const isPaid = t.isPaid;
+        if (filters.paymentStatus === 'paid' && !isPaid) return false;
+        if (filters.paymentStatus === 'unpaid' && isPaid) return false;
+      }
 
-        return transactions.filter(t => {
-            // 0. Admin ID Search
-            if (idSearchTerm) {
-                const matchId = t.id?.toLowerCase().includes(idSearchTerm) ||
-                    t.bankTransactionId?.toLowerCase().includes(idSearchTerm) ||
-                    t.budgetId?.toLowerCase().includes(idSearchTerm) ||
-                    t.recurringTransactionId?.toLowerCase().includes(idSearchTerm) ||
-                    t.normalisedProviderTransactionId?.toLowerCase().includes(idSearchTerm) ||
-                    t.providerTransactionId?.toLowerCase().includes(idSearchTerm);
-                if (!matchId) return false;
-            }
-            // 1. Search (Title)
-            if (searchTerm && !t.title.toLowerCase().includes(searchTerm)) {
-                return false;
-            }
+      // 5. Cash Status
+      if (filters.cashStatus !== 'all') {
+        const isCash = t.isCashTransaction;
+        if (filters.cashStatus === 'cash_only' && !isCash) return false;
+        if (filters.cashStatus === 'exclude_cash' && isCash) return false;
+      }
 
-            // 2. Type
-            if (filters.type !== 'all' && t.type !== filters.type) {
-                return false;
-            }
+      // 6. Financial Priority
+      if (filters.financialPriority !== 'all') {
+        if (t.financial_priority !== filters.financialPriority) return false;
+      }
 
-            // 3. Category (Multi-select)
-            if (filters.category && filters.category.length > 0) {
-                if (!filters.category.includes(t.category_id)) {
-                    return false;
-                }
-            }
+      // 7. Custom Budget
+      if (filters.budgetId !== 'all') {
+        if (t.budgetId !== filters.budgetId) return false;
+      }
 
-            // 4. Payment Status
-            if (filters.paymentStatus !== 'all') {
-                const isPaid = t.isPaid;
-                if (filters.paymentStatus === 'paid' && !isPaid) return false;
-                if (filters.paymentStatus === 'unpaid' && isPaid) return false;
-            }
+      // Amount Range Filtering
+      if (filters.minAmount !== '' && filters.minAmount !== null) {
+        if (t.amount < Number(filters.minAmount)) return false;
+      }
 
-            // 5. Cash Status
-            if (filters.cashStatus !== 'all') {
-                const isCash = t.isCashTransaction;
-                if (filters.cashStatus === 'cash_only' && !isCash) return false;
-                if (filters.cashStatus === 'exclude_cash' && isCash) return false;
-            }
+      if (filters.maxAmount !== '' && filters.maxAmount !== null) {
+        if (t.amount > Number(filters.maxAmount)) return false;
+      }
 
-            // 6. Financial Priority
-            if (filters.financialPriority !== 'all') {
-                if (t.financial_priority !== filters.financialPriority) return false;
-            }
+      // 8. Date Range
+      if (startFilterDate && endFilterDate) {
+        // SETTLEMENT VIEW FIX: Use paidDate if available (for expenses), otherwise date
+        const effectiveDate = (t.type === 'expense' && t.paidDate)
+          ? new Date(t.paidDate)
+          : new Date(t.date);
 
-            // 7. Custom Budget
-            if (filters.budgetId !== 'all') {
-                if (t.budgetId !== filters.budgetId) return false;
-            }
+        effectiveDate.setHours(0, 0, 0, 0);
+        if (effectiveDate < startFilterDate || effectiveDate > endFilterDate) {
+          return false;
+        }
+      }
 
-            // Amount Range Filtering
-            if (filters.minAmount !== '' && filters.minAmount !== null) {
-                if (t.amount < Number(filters.minAmount)) return false;
-            }
+      return true;
+    });
+  }, [transactions, filters]);
 
-            if (filters.maxAmount !== '' && filters.maxAmount !== null) {
-                if (t.amount > Number(filters.maxAmount)) return false;
-            }
-
-            // 8. Date Range
-            if (startFilterDate && endFilterDate) {
-                // SETTLEMENT VIEW FIX: Use paidDate if available (for expenses), otherwise date
-                const effectiveDate = (t.type === 'expense' && t.paidDate)
-                    ? new Date(t.paidDate)
-                    : new Date(t.date);
-
-                effectiveDate.setHours(0, 0, 0, 0);
-                if (effectiveDate < startFilterDate || effectiveDate > endFilterDate) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-    }, [transactions, filters]);
-
-    return {
-        filters,
-        setFilters,
-        filteredTransactions,
-    };
+  return {
+    filters,
+    setFilters,
+    filteredTransactions,
+  };
 };
 
 /**
@@ -928,29 +930,29 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
  * @returns {{ enrichedBudgets: Array<Object>, isLoading: boolean }}
  */
 export const useEnrichedCustomBudgets = (user, monthStart, monthEnd) => {
-    // 1. Fetch raw budget definitions
-    const { customBudgets = [], isLoading: loadingBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
+  // 1. Fetch raw budget definitions
+  const { customBudgets = [], isLoading: loadingBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
 
-    // 2. Fetch raw transactions for those specific budgets
-    const budgetIds = useMemo(() => customBudgets.map(b => b.id), [customBudgets]);
-    const { transactions = [], isLoading: loadingTx } = useTransactionsForCustomBudgets(budgetIds);
+  // 2. Fetch raw transactions for those specific budgets
+  const budgetIds = useMemo(() => customBudgets.map(b => b.id), [customBudgets]);
+  const { transactions = [], isLoading: loadingTx } = useTransactionsForCustomBudgets(budgetIds);
 
-    // 3. Transformation Layer: Calculate stats once and standardize keys
-    const enrichedBudgets = useMemo(() => {
-        return customBudgets.map(budget => {
-            const stats = getCustomBudgetStats(budget, transactions);
-            return {
-                ...budget,
-                calculatedPaid: stats?.paid?.totalBaseCurrencyAmount ?? stats?.paidAmount ?? stats?.spent ?? 0,
-                calculatedUnpaid: stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaidAmount ?? 0,
-                calculatedTotal: budget.allocatedAmount || budget.budgetAmount || 0,
-                rawStats: stats // Kept just in case a complex view needs granular details
-            };
-        });
-    }, [customBudgets, transactions]);
+  // 3. Transformation Layer: Calculate stats once and standardize keys
+  const enrichedBudgets = useMemo(() => {
+    return customBudgets.map(budget => {
+      const stats = getCustomBudgetStats(budget, transactions);
+      return {
+        ...budget,
+        calculatedPaid: stats?.paid?.totalBaseCurrencyAmount ?? stats?.paidAmount ?? stats?.spent ?? 0,
+        calculatedUnpaid: stats?.unpaid?.totalBaseCurrencyAmount ?? stats?.unpaidAmount ?? 0,
+        calculatedTotal: budget.allocatedAmount || budget.budgetAmount || 0,
+        rawStats: stats // Kept just in case a complex view needs granular details
+      };
+    });
+  }, [customBudgets, transactions]);
 
-    return {
-        enrichedBudgets,
-        isLoading: loadingBudgets || loadingTx
-    };
+  return {
+    enrichedBudgets,
+    isLoading: loadingBudgets || loadingTx
+  };
 };
