@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
+import { flushSync } from 'react-dom';
 
 export function useThemeSync(userSettings) {
   const { setTheme, theme: currentTheme } = useTheme();
@@ -15,9 +16,26 @@ export function useThemeSync(userSettings) {
 
     const { mode, schedules } = userSettings.themeConfig;
 
+    const applyTheme = (newTheme) => {
+      if (currentTheme === newTheme) return;
+
+      const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (!document.startViewTransition || isReducedMotion) {
+        setTheme(newTheme);
+        return;
+      }
+
+      document.startViewTransition(() => {
+        flushSync(() => {
+          setTheme(newTheme);
+        });
+      });
+    };
+
     // 1. System or Specific Theme (All the time)
     if (mode !== 'scheduled') {
-      if (currentTheme !== mode) setTheme(mode);
+      applyTheme(mode);
       return;
     }
 
@@ -43,9 +61,7 @@ export function useThemeSync(userSettings) {
         }
       }
 
-      if (currentTheme !== targetTheme) {
-        setTheme(targetTheme);
-      }
+      applyTheme(targetTheme);
     }
   }, [userSettings, currentTheme, setTheme]);
 
