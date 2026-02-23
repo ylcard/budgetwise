@@ -70,6 +70,8 @@ const LayoutContent = ({ children }) => {
 
   // Helper to toggle theme
   const toggleTheme = () => {
+    // Flag temporary override so the sync engine doesn't immediately revert it
+    sessionStorage.setItem('budgetwise_temp_theme', 'true');
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
