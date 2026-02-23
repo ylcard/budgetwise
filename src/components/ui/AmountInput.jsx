@@ -44,7 +44,8 @@ import { Loader2 } from "lucide-react";
  * @param {object} props.... - Remaining props passed directly to the underlying Input component.
  * @returns {JSX.Element} The styled amount input with currency symbol or selector.
  */
-export default function AmountInput({
+// ADDED 23-Feb-2026: Named export for consistency with other components
+export function AmountInput({
   value,
   onChange,
   placeholder = "0.00",
@@ -260,3 +261,6 @@ export default function AmountInput({
     </div>
   );
 }
+
+// Keep default export for backward compatibility
+export default AmountInput;
