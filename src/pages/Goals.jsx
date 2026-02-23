@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useAddGoalDeposit } from '../components/hooks/useGoals';
 import { useFeasibilityAudit } from '../components/hooks/useFeasibilityAudit';
 import { useMonthlyIncome } from '../components/hooks/useDerivedData';
-import { useAllTransactions } from '../components/hooks/useBase44Entities';
 import { usePeriod } from '../components/hooks/usePeriod';
 import { GoalCard } from '../components/goals/GoalCard';
 import { GoalForm } from '../components/goals/GoalForm';
