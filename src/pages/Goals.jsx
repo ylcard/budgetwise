@@ -4,6 +4,7 @@ import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useAddGoalDeposi
 import { useFeasibilityAudit } from '../components/hooks/useFeasibilityAudit';
 import { useMonthlyIncome } from '../components/hooks/useDerivedData';
 import { usePeriod } from '../components/hooks/usePeriod';
+import { useTransactions } from '../components/hooks/useBase44Entities';
 import { GoalCard } from '../components/goals/GoalCard';
 import { GoalForm } from '../components/goals/GoalForm';
 import { GoalDetailDrawer } from '../components/goals/GoalDetailDrawer';
