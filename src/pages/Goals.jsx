@@ -26,8 +26,8 @@ const STATUS_FILTERS = [
 
 export default function GoalsPage() {
   const { user } = useAuth();
-  const { selectedMonth, selectedYear } = usePeriod();
-  const { data: transactions = [] } = useAllTransactions(user);
+  const { selectedMonth, selectedYear, monthStart, monthEnd } = usePeriod();
+  const { transactions = [] } = useTransactions(monthStart, monthEnd);
 
   const { data: goals = [], isLoading } = useGoals();
   const createGoal = useCreateGoal();
