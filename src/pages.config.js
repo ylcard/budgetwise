@@ -64,6 +64,7 @@ import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import TermsOfService from './pages/TermsOfService';
 import Transactions from './pages/Transactions';
+import Goals from './pages/Goals';
 import __Layout from './Layout.jsx';
 
 
@@ -85,6 +86,7 @@ export const PAGES = {
     "Reports": Reports,
     "TermsOfService": TermsOfService,
     "Transactions": Transactions,
+    "Goals": Goals,
 }
 
 export const pagesConfig = {
