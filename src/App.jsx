@@ -8,10 +8,11 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import { SettingsProvider } from '@/components/utils/SettingsContext';
+import { SettingsProvider, useSettings } from '@/components/utils/SettingsContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import "react-day-picker/style.css";
 import { ThemeProvider } from "next-themes";
+import { useThemeSync } from '@/components/hooks/useThemeSync';
 
 // Page Imports for Nested Routing
 import ManagePage, { PreferencesSection, AccountSection } from './pages/Manage';
@@ -19,7 +20,6 @@ import Categories from './pages/Categories';
 import Automation from './pages/Automation';
 import BankSync from './pages/BankSync';
 import TransactionsPage from './pages/Transactions';
-import { useThemeSync } from '@/components/hooks/useThemeSync';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -35,12 +35,10 @@ const AuthenticatedApp = () => {
     // Destructure 'user' so we can pass it to the setup hook
     const { user, isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
 
-    // Assuming SettingsContext provides a hook to access the parsed user settings
-    // import { useSettings } from '@/components/utils/SettingsContext';
-    // const { settings } = useSettings();
+    const { settings } = useSettings();
     
-    // Initialize the sync engine (replace {} with actual settings object when available)
-    useThemeSync({});
+    // Mount the Just-In-Time Theme Validation Engine
+    useThemeSync(settings);
 
     // Show loading spinner while checking app public settings or auth
     if (isLoadingPublicSettings || isLoadingAuth) {
