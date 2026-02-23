@@ -8,6 +8,11 @@ export function useThemeSync(userSettings) {
     // Defensive check: abort if settings aren't loaded yet
     if (!userSettings || !userSettings.themeConfig) return;
 
+    // If user manually toggled the theme this session, pause enforcement
+    if (sessionStorage.getItem('budgetwise_temp_theme') === 'true') {
+      return;
+    }
+
     const { mode, schedules } = userSettings.themeConfig;
 
     // 1. System or Specific Theme (All the time)
@@ -51,6 +56,8 @@ export function useThemeSync(userSettings) {
     // 2. Run validation when user switches back to the app
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        // Clear temporary manual override when app wakes up/is reopened
+        sessionStorage.removeItem('budgetwise_temp_theme');
         validateAndApplyTheme();
       }
     };
