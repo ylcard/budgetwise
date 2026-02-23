@@ -38,7 +38,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
 import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
-import AppearanceSettings from "../components/AppearanceSettings";
+import AppearanceSettings from "../components/theme/AppearanceSettings";
 
 export default function ManageLayout() {
     return (
