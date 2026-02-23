@@ -23,7 +23,13 @@ const defaultSettings = {
     goalMode: true, // true = percentage, false = absolute
     displayName: '',
     showMascot: true,
-    themeConfig: { mode: 'system', lightStart: '08:00', darkStart: '20:00' }
+    themeConfig: { 
+        mode: 'system', 
+        schedules: [
+            { time: '08:00', theme: 'light' },
+            { time: '20:00', theme: 'dark' }
+        ] 
+    }
 };
 
 export const useSettings = () => {
