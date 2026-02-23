@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useAddGoalDeposit } from '../components/hooks/useGoals';
-import { useFeasibilityAudit } from '../components/hooks/useFeasibilityAudit';
+import { useGoalsFeasibility } from '../components/hooks/useFeasibilityAudit';
 import { useMonthlyIncome } from '../components/hooks/useDerivedData';
 import { usePeriod } from '../components/hooks/usePeriod';
 import { useTransactions } from '../components/hooks/useBase44Entities';
@@ -54,27 +54,13 @@ export default function GoalsPage() {
   }, [goals, statusFilter]);
 
   // Calculate feasibility for active goals
-  const goalsWithFeasibility = useMemo(() => {
-    return filteredGoals.map(goal => {
-      if (goal.status !== 'active') {
-        return { goal, feasibility: null };
-      }
-
-      const otherActiveGoals = goals.filter(g => 
-        g.id !== goal.id && g.status === 'active'
-      );
-
-      const feasibility = useFeasibilityAudit(
-        goal,
-        transactions,
-        selectedMonth,
-        selectedYear,
-        otherActiveGoals
-      );
-
-      return { goal, feasibility };
-    });
-  }, [filteredGoals, goals, transactions, selectedMonth, selectedYear]);
+  const goalsWithFeasibility = useGoalsFeasibility(
+    filteredGoals,
+    goals, // Pass all goals for accurate commitment math across filters
+    transactions,
+    selectedMonth,
+    selectedYear
+  );
 
   // Check for goals that need settlement
   const goalsNeedingSettlement = useMemo(() => {
@@ -87,9 +73,9 @@ export default function GoalsPage() {
   };
 
   const handleEditGoal = async (goalData) => {
-    await updateGoal.mutateAsync({ 
-      id: selectedGoal.id, 
-      data: goalData 
+    await updateGoal.mutateAsync({
+      id: selectedGoal.id,
+      data: goalData
     });
     setEditDrawerOpen(false);
     setSelectedGoal(null);
@@ -219,7 +205,7 @@ export default function GoalsPage() {
               <Target className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="text-lg font-medium text-foreground mb-2">No goals yet</h3>
               <p className="text-muted-foreground mb-4">
-                {statusFilter === 'active' 
+                {statusFilter === 'active'
                   ? 'Create your first financial goal to get started'
                   : `No ${statusFilter} goals`}
               </p>
@@ -311,8 +297,8 @@ export default function GoalsPage() {
         onOpenChange={setDetailDrawerOpen}
         goal={selectedGoal}
         feasibilityData={
-          selectedGoal 
-            ? goalsWithFeasibility.find(gf => gf.goal.id === selectedGoal.id)?.feasibility 
+          selectedGoal
+            ? goalsWithFeasibility.find(gf => gf.goal.id === selectedGoal.id)?.feasibility
             : null
         }
         onEdit={handleEditFromDetail}
