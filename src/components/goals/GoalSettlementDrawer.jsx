@@ -22,7 +22,12 @@ export const GoalSettlementDrawer = ({
   selectedMonth,
   selectedYear
 }) => {
-  const { formatCurrency, baseCurrency } = useSettings();
+  const { settings } = useSettings();
+  const baseCurrency = settings?.baseCurrency || 'USD';
+  const formatCurrency = (value) => new Intl.NumberFormat(undefined, { 
+    style: 'currency', 
+    currency: baseCurrency 
+  }).format(value);
   const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
   
   const suggestedAmount = goal?.funding_rule 
