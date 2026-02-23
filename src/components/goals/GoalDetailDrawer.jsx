@@ -35,7 +35,11 @@ export const GoalDetailDrawer = ({
   onComplete,
   monthlyIncome
 }) => {
-  const { formatCurrency } = useSettings();
+  const { settings } = useSettings();
+  const formatCurrency = (value) => new Intl.NumberFormat(undefined, { 
+    style: 'currency', 
+    currency: settings?.baseCurrency || 'USD' 
+  }).format(value);
   const [activeTab, setActiveTab] = useState('overview');
 
   if (!goal) return null;
