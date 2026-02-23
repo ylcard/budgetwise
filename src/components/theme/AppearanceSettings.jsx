@@ -28,6 +28,9 @@ export default function AppearanceSettings() {
   const handleModeChange = async (newMode) => {
     if (themeConfig.mode === newMode) return;
 
+    // Clear any manual quick-toggles so the user sees their new setting applied immediately
+    sessionStorage.removeItem('budgetwise_temp_theme');
+
     await updateSettings({
       themeConfig: {
         ...themeConfig,
@@ -39,6 +42,9 @@ export default function AppearanceSettings() {
   const handleScheduleChange = async (index, field, value) => {
     const newSchedules = [...(themeConfig.schedules || defaultSchedules)];
     newSchedules[index] = { ...newSchedules[index], [field]: value };
+
+    // Clear any manual quick-toggles so scheduled changes take effect immediately
+    sessionStorage.removeItem('budgetwise_temp_theme');
 
     await updateSettings({
       themeConfig: {
