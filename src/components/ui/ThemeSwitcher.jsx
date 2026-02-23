@@ -23,7 +23,7 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
     >
       {/* Ambient Moon Glow (Only visible at night) */}
       <motion.div
-        className="absolute top-1 left-2 w-9 h-9 rounded-full bg-slate-400/30 blur-md pointer-events-none"
+        className="absolute top-1 left-[60px] w-9 h-9 rounded-full bg-slate-400/30 blur-md pointer-events-none"
         animate={{ opacity: isDark ? 1 : 0 }}
         transition={{ duration: 0.8 }}
       />
@@ -69,37 +69,28 @@ export default function ThemeSwitcher({ theme = "light", toggleTheme, className 
         transition={{ duration: 0.7, ease: "easeInOut" }}
       />
 
-      {/* 1. Sun curves to the left and beneath the horizon */}
+      {/* Celestial Disk containing both Sun and Moon */}
       <motion.div
-        className="absolute z-[5] top-1 left-[60px] w-9 h-9 flex items-center justify-center bg-gradient-to-br from-yellow-100 via-yellow-400 to-orange-500 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.8)] pointer-events-none"
-        animate={{
-          x: isDark ? [0, -30, -60] : [-60, -30, 0],
-          y: isDark ? [0, -15, 40] : [40, -15, 0],
-          scale: isDark ? [1, 0.8, 0.5] : [0.5, 0.8, 1],
-        }}
-        transition={{ duration: 0.7, ease: "easeInOut" }}
+        className="absolute inset-0 z-[5] pointer-events-none"
+        animate={{ rotate: isDark ? -180 : 0 }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
+        style={{ transformOrigin: "50% 150%" }} // Pivot point pushed below the switch for a high arc
       >
-        {/* Inner bright core to give a 3D hot appearance */}
-        <div className="w-5 h-5 bg-white/40 rounded-full blur-[2px] shadow-inner" />
-        {/* Subtle sunspot/texture */}
-        <div className="absolute bottom-1 right-2 w-3 h-2 bg-orange-600/30 rounded-full blur-[2px]" />
-      </motion.div>
+        {/* Sun (Day position) */}
+        <div className="absolute top-1 left-[60px] w-9 h-9 flex items-center justify-center bg-gradient-to-br from-yellow-100 via-yellow-400 to-orange-500 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.8)]">
+          {/* Inner bright core to give a 3D hot appearance */}
+          <div className="w-5 h-5 bg-white/40 rounded-full blur-[2px] shadow-inner" />
+          {/* Subtle sunspot/texture */}
+          <div className="absolute bottom-1 right-2 w-3 h-2 bg-orange-600/30 rounded-full blur-[2px]" />
+        </div>
 
-      {/* 1. Moon comes up from the other side to the Sun's position */}
-      <motion.div
-        className="absolute z-[5] top-1 left-2 w-9 h-9 bg-slate-200 rounded-full shadow-[0_0_10px_rgba(226,232,240,0.4)] pointer-events-none overflow-hidden"
-        initial={false}
-        animate={{
-          x: isDark ? [80, 40, 0] : [0, 40, 80],
-          y: isDark ? [40, -15, 0] : [0, -15, 40],
-          scale: isDark ? [0.5, 0.8, 1] : [1, 0.8, 0.5],
-        }}
-        transition={{ duration: 0.7, ease: "easeInOut" }}
-      >
-        {/* Subtle craters on the moon */}
-        <div className="absolute top-2 left-5 w-2 h-2 bg-slate-300 rounded-full" />
-        <div className="absolute top-5 left-2 w-[10px] h-[10px] bg-slate-300 rounded-full" />
-        <div className="absolute top-6 left-6 w-1.5 h-1.5 bg-slate-300 rounded-full" />
+        {/* Moon (Hidden Day position, perfectly opposite to Sun around the pivot) */}
+        <div className="absolute top-[104px] left-[16px] w-9 h-9 bg-slate-200 rounded-full shadow-[0_0_10px_rgba(226,232,240,0.4)] overflow-hidden">
+          {/* Subtle craters on the moon */}
+          <div className="absolute top-2 left-5 w-2 h-2 bg-slate-300 rounded-full" />
+          <div className="absolute top-5 left-2 w-[10px] h-[10px] bg-slate-300 rounded-full" />
+          <div className="absolute top-6 left-6 w-1.5 h-1.5 bg-slate-300 rounded-full" />
+        </div>
       </motion.div>
     </motion.button>
   );
