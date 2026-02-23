@@ -78,7 +78,8 @@
     "@yusifaliyevpro/countries": "2.2.2",
     "react-camera-pro": "^1.4.0",
     "browser-image-compression": "^2.0.2",
-    "tesseract.js": "^7.0.0"
+    "tesseract.js": "^7.0.0",
+    "keen-slider": "^6.8.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
