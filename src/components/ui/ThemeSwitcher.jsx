@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -6,15 +6,17 @@ import { twMerge } from "tailwind-merge";
 export default function ThemeSwitcher({ theme = "light", toggleTheme, className }) {
   const isDark = theme === "dark";
 
-  const isFirstRender = useRef(true);
   const [rotation, setRotation] = useState(theme === "dark" ? -180 : 0);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setRotation((prev) => prev - 180); // Continually subtract 180 to spin counter-clockwise
+    setRotation((prev) => {
+      // Determine what the current rotation represents based on odd/even multiples of 180
+      const isCurrentlyDark = (Math.abs(prev) / 180) % 2 === 1;
+      const targetIsDark = theme === "dark";
+
+      // Only subtract 180 (spin counter-clockwise) if out of sync with the prop
+      return isCurrentlyDark !== targetIsDark ? prev - 180 : prev;
+    });
   }, [theme]);
 
   return (
