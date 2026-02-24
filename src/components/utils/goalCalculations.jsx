@@ -1,4 +1,5 @@
 import { parseISO, differenceInCalendarMonths, differenceInWeeks, differenceInDays, addMonths, addWeeks, format } from 'date-fns';
+import Decimal from 'decimal.js';
 
 /**
  * Calculate the required contribution per period to reach a goal by deadline
@@ -9,7 +10,7 @@ import { parseISO, differenceInCalendarMonths, differenceInWeeks, differenceInDa
  * @returns {Object} { requiredPerPeriod, periodsRemaining, isFeasible }
  */
 export const calculateRequiredContribution = (targetAmount, currentBalance, deadline, frequency) => {
-  const remaining = targetAmount - currentBalance;
+  const remaining = new Decimal(targetAmount).minus(currentBalance).toNumber();
   if (remaining <= 0) {
     return { requiredPerPeriod: 0, periodsRemaining: 0, isFeasible: true, remaining: 0 };
   }
@@ -31,7 +32,7 @@ export const calculateRequiredContribution = (targetAmount, currentBalance, dead
       break;
   }
 
-  const requiredPerPeriod = remaining / periodsRemaining;
+  const requiredPerPeriod = new Decimal(remaining).dividedBy(periodsRemaining).toNumber();
 
   return {
     requiredPerPeriod,
@@ -54,15 +55,15 @@ export const calculatePlannedContribution = (fundingRule, monthlyIncome) => {
   if (fundingRule.type === 'fixed') {
     baseAmount = fundingRule.amount || 0;
   } else if (fundingRule.type === 'percentage') {
-    baseAmount = (monthlyIncome * (fundingRule.percentage || 0)) / 100;
+    baseAmount = new Decimal(monthlyIncome).times(fundingRule.percentage || 0).dividedBy(100).toNumber();
   }
 
   // Adjust for frequency (convert to per-period amount)
   switch (fundingRule.frequency) {
     case 'weekly':
-      return baseAmount / 4.33; // Average weeks per month
+      return new Decimal(baseAmount).dividedBy(4.33).toNumber(); // Average weeks per month
     case 'biweekly':
-      return baseAmount / 2.16; // Average biweekly periods per month
+      return new Decimal(baseAmount).dividedBy(2.16).toNumber(); // Average biweekly periods per month
     case 'monthly':
     default:
       return baseAmount;
@@ -78,7 +79,7 @@ export const calculatePlannedContribution = (fundingRule, monthlyIncome) => {
  * @returns {Object} Feasibility analysis result
  */
 export const auditGoalFeasibility = (goal, monthlyIncome, monthlyExpenses, existingGoalsCommitment = 0) => {
-  const actualSurplus = Math.max(0, monthlyIncome - monthlyExpenses - existingGoalsCommitment);
+  const actualSurplus = Math.max(0, new Decimal(monthlyIncome).minus(monthlyExpenses).minus(existingGoalsCommitment).toNumber());
 
   const { requiredPerPeriod, periodsRemaining, remaining, isFeasible: timelineFeasible } =
     calculateRequiredContribution(goal.target_amount, goal.virtual_balance || 0, goal.deadline, goal.funding_rule?.frequency || 'monthly');
@@ -88,13 +89,13 @@ export const auditGoalFeasibility = (goal, monthlyIncome, monthlyExpenses, exist
   // Convert required to monthly for comparison
   let requiredMonthly = requiredPerPeriod;
   if (goal.funding_rule?.frequency === 'weekly') {
-    requiredMonthly = requiredPerPeriod * 4.33;
+    requiredMonthly = new Decimal(requiredPerPeriod).times(4.33).toNumber(); requiredMonthly = requiredPerPeriod * 4.33;
   } else if (goal.funding_rule?.frequency === 'biweekly') {
-    requiredMonthly = requiredPerPeriod * 2.16;
+    requiredMonthly = new Decimal(requiredPerPeriod).times(2.16).toNumber();
   }
 
-  const gap = requiredMonthly - plannedContribution;
-  const surplusAfterGoal = actualSurplus - plannedContribution;
+  const gap = new Decimal(requiredMonthly).minus(plannedContribution).toNumber();
+  const surplusAfterGoal = new Decimal(actualSurplus).minus(plannedContribution).toNumber();
 
   const fundingFeasible = plannedContribution <= actualSurplus && plannedContribution >= requiredMonthly;
 
@@ -121,7 +122,7 @@ export const auditGoalFeasibility = (goal, monthlyIncome, monthlyExpenses, exist
  */
 export const calculateGoalProgress = (currentBalance, targetAmount) => {
   if (targetAmount <= 0) return 0;
-  return Math.min(100, (currentBalance / targetAmount) * 100);
+  return Math.min(100, new Decimal(currentBalance).dividedBy(targetAmount).times(100).toNumber());
 };
 
 /**
