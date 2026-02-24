@@ -34,16 +34,19 @@ const TutorialOverlay = memo(() => {
     const step = activeTutorial.steps[currentStep];
     if (!step?.target) return false;
 
-    const targetElement = document.querySelector(step.target);
+    // Grab all matches and find the first one that is actually visible
+    const elements = document.querySelectorAll(step.target);
+    const targetElement = Array.from(elements).find(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+
     if (!targetElement) {
-      console.warn(`Tutorial target not found: ${step.target}`);
+      console.warn(`Tutorial target not found or is currently hidden: ${step.target}`);
       return false;
     }
 
     const rect = targetElement.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) {
-      return false; // Element is hidden via CSS (e.g. mobile/desktop switch)
-    }
 
     setTargetRect({
       top: rect.top,
