@@ -55,6 +55,7 @@ import Categories from './pages/Categories';
 import CookiePolicy from './pages/CookiePolicy';
 import Dashboard from './pages/Dashboard';
 import FinancialDisclaimer from './pages/FinancialDisclaimer';
+import Goals from './pages/Goals';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
 import Manage from './pages/Manage';
@@ -63,7 +64,7 @@ import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import TermsOfService from './pages/TermsOfService';
 import Transactions from './pages/Transactions';
-import Goals from './pages/Goals';
+import Learn from './pages/Learn';
 import __Layout from './Layout.jsx';
 
 
@@ -76,6 +77,7 @@ export const PAGES = {
     "CookiePolicy": CookiePolicy,
     "Dashboard": Dashboard,
     "FinancialDisclaimer": FinancialDisclaimer,
+    "Goals": Goals,
     "Home": Home,
     "ImportData": ImportData,
     "Manage": Manage,
@@ -84,7 +86,7 @@ export const PAGES = {
     "Reports": Reports,
     "TermsOfService": TermsOfService,
     "Transactions": Transactions,
-    "Goals": Goals,
+    "Learn": Learn,
 }
 
 export const pagesConfig = {
