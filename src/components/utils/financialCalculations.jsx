@@ -6,6 +6,7 @@
  */
 
 import { parseDate, isDateInRange, getMonthBoundaries } from "./dateUtils";
+import Decimal from "decimal.js";
 
 /**
  * Helper to check if a transaction falls within a date range.
@@ -13,15 +14,15 @@ import { parseDate, isDateInRange, getMonthBoundaries } from "./dateUtils";
  * This ensures expenses that were incurred in one month but paid in another are counted in the correct month.
  */
 export const isTransactionInDateRange = (transaction, startDate, endDate) => {
-    if (transaction.type === 'income') {
-        return isDateInRange(transaction.date, startDate, endDate);
-    }
-    // CRITICAL FIX 05-Feb-2026: For expenses, use paidDate if it exists (bank processing date),
-    // otherwise fall back to transaction date. This handles cases where an expense from October
-    // is paid in November - it should count toward November's budget.
-    const effectiveDate = transaction.paidDate || transaction.date;
+  if (transaction.type === 'income') {
+    return isDateInRange(transaction.date, startDate, endDate);
+  }
+  // CRITICAL FIX 05-Feb-2026: For expenses, use paidDate if it exists (bank processing date),
+  // otherwise fall back to transaction date. This handles cases where an expense from October
+  // is paid in November - it should count toward November's budget.
+  const effectiveDate = transaction.paidDate || transaction.date;
 
-    return isDateInRange(effectiveDate, startDate, endDate);
+  return isDateInRange(effectiveDate, startDate, endDate);
 };
 
 /**
@@ -29,43 +30,46 @@ export const isTransactionInDateRange = (transaction, startDate, endDate) => {
  * UPDATED 05-Feb-2026: Renamed parameter from customBudgetId to budgetId
  */
 const isActualCustomBudget = (budgetId, allCustomBudgets) => {
-    if (!budgetId) return false;
-    const budget = allCustomBudgets.find(cb => cb.id === budgetId);
-    return budget && !budget.isSystemBudget;
+  if (!budgetId) return false;
+  const budget = allCustomBudgets.find(cb => cb.id === budgetId);
+  return budget && !budget.isSystemBudget;
 };
 
 /**
  * Calculates total monthly income within a date range.
  */
 export const getMonthlyIncome = (transactions, startDate, endDate) => {
-    return transactions
-        .filter(t => t.type === 'income' && isTransactionInDateRange(t, startDate, endDate))
-        .reduce((sum, t) => sum + t.amount, 0);
+  return transactions
+    .filter(t => t.type === 'income' && isTransactionInDateRange(t, startDate, endDate))
+    .reduce((sum, t) => sum.plus(t.amount), new Decimal(0))
+    .toDecimalPlaces(2).toNumber();
 };
 
 /**
  * Calculates total monthly PAID expenses (excludes unpaid).
  */
 export const getMonthlyPaidExpenses = (transactions, startDate, endDate) => {
-    return transactions
-        .filter(t =>
-            t.type === 'expense' &&
-            t.isPaid &&
-            isTransactionInDateRange(t, startDate, endDate)
-        )
-        .reduce((sum, t) => sum + t.amount, 0);
+  return transactions
+    .filter(t =>
+      t.type === 'expense' &&
+      t.isPaid &&
+      isTransactionInDateRange(t, startDate, endDate)
+    )
+    .reduce((sum, t) => sum.plus(t.amount), new Decimal(0))
+    .toDecimalPlaces(2).toNumber();
 };
 
 /**
  * Calculates total monthly expenses (paid + unpaid).
  */
 export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
-    return transactions
-        .filter(t =>
-            t.type === 'expense' &&
-            isTransactionInDateRange(t, startDate, endDate)
-        )
-        .reduce((sum, t) => sum + t.amount, 0);
+  return transactions
+    .filter(t =>
+      t.type === 'expense' &&
+      isTransactionInDateRange(t, startDate, endDate)
+    )
+    .reduce((sum, t) => sum.plus(t.amount), new Decimal(0))
+    .toDecimalPlaces(2).toNumber();
 };
 
 /**
@@ -78,40 +82,43 @@ export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
  * @param {number} historicalAverage - (Optional) Average income from previous months for Inflation Protection
  */
 export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historicalAverage = 0) => {
-    if (!goal) return 0;
+  if (!goal) return 0;
 
-    const goalMode = settings.goalMode ?? true; // Default to Percentage
-    // If goalMode is False (Absolute), return the flat amount
-    if (goalMode === false) return goal.target_amount || 0;
+  const goalMode = settings.goalMode ?? true; // Default to Percentage
+  // If goalMode is False (Absolute), return the flat amount
+  if (goalMode === false) return goal.target_amount || 0;
 
-    // --- INFLATION PROTECTION LOGIC ---
-    // If enabled AND we have history AND current income exceeds history
-    if (settings.fixedMode && historicalAverage > 0 && monthlyIncome > historicalAverage) {
-        const basisIncome = historicalAverage;
-        const overflow = monthlyIncome - basisIncome;
+  const decIncome = new Decimal(monthlyIncome);
+  const decPercentage = new Decimal(goal.target_percentage || 0);
 
-        // 1. Calculate the standard percentage based on the LOWER basis
-        const standardCalc = (basisIncome * (goal.target_percentage || 0)) / 100;
+  // --- INFLATION PROTECTION LOGIC ---
+  // If enabled AND we have history AND current income exceeds history
+  if (settings.fixedMode && historicalAverage > 0 && monthlyIncome > historicalAverage) {
+    const decBasis = new Decimal(historicalAverage);
+    const decOverflow = decIncome.minus(decBasis);
 
-        // 2. If this is SAVINGS, add the entire overflow
-        if (goal.priority === 'savings') {
-            return standardCalc + overflow;
-        }
+    // 1. Calculate the standard percentage based on the LOWER basis
+    const decStandardCalc = decBasis.times(decPercentage).dividedBy(100);
 
-        // 3. For Needs/Wants, return the capped amount
-        return standardCalc;
+    // 2. If this is SAVINGS, add the entire overflow
+    if (goal.priority === 'savings') {
+      return decStandardCalc.plus(decOverflow).toDecimalPlaces(2).toNumber();
     }
-    // Default to Percentage Mode (true or undefined)
-    return (monthlyIncome * (goal.target_percentage || 0)) / 100;
+
+    // 3. For Needs/Wants, return the capped amount
+    return decStandardCalc.toDecimalPlaces(2).toNumber();
+  }
+  // Default to Percentage Mode (true or undefined)
+  return decIncome.times(decPercentage).dividedBy(100).toDecimalPlaces(2).toNumber();
 };
 
 /**
  * Returns the resolved target amount for a specific goal priority.
  */
 export const getMonthlyTarget = (allGoals, priority, monthlyIncome, settings, historicalAverage = 0) => {
-    const goal = allGoals.find(g => g.priority === priority);
-    if (!goal) return 0;
-    return resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+  const goal = allGoals.find(g => g.priority === priority);
+  if (!goal) return 0;
+  return resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
 };
 
 /**
@@ -120,69 +127,76 @@ export const getMonthlyTarget = (allGoals, priority, monthlyIncome, settings, hi
  * * @returns {Object} { needs: { paid, unpaid, total }, wants: { directPaid, directUnpaid, customPaid, customUnpaid, total } }
  */
 export const getFinancialBreakdown = (transactions, categories, allCustomBudgets, startDate, endDate, dayLimit = null) => {
-    const result = {
-        needs: { paid: 0, unpaid: 0, total: 0 },
-        wants: {
-            directPaid: 0,
-            directUnpaid: 0,
-            customPaid: 0,
-            customUnpaid: 0,
-            total: 0
-        }
-    };
+  let needsPaid = new Decimal(0);
+  let needsUnpaid = new Decimal(0);
+  let wantsDirectPaid = new Decimal(0);
+  let wantsDirectUnpaid = new Decimal(0);
+  let wantsCustomPaid = new Decimal(0);
+  let wantsCustomUnpaid = new Decimal(0);
 
-    transactions.forEach(t => {
-        if (t.type !== 'expense') return;
-        if (!isTransactionInDateRange(t, startDate, endDate)) return;
+  transactions.forEach(t => {
+    if (t.type !== 'expense') return;
+    if (!isTransactionInDateRange(t, startDate, endDate)) return;
 
-        // UNIFIED DATE LOGIC: Use the same effective date as the range check for pacing
-        const effectiveDate = (t.isPaid && t.paidDate) ? t.paidDate : t.date;
-        if (dayLimit && parseDate(effectiveDate).getDate() > dayLimit) return;
+    // UNIFIED DATE LOGIC: Use the same effective date as the range check for pacing
+    const effectiveDate = (t.isPaid && t.paidDate) ? t.paidDate : t.date;
+    if (dayLimit && parseDate(effectiveDate).getDate() > dayLimit) return;
 
-        // UPDATED 05-Feb-2026: Renamed customBudgetId to budgetId
-        const isCustom = isActualCustomBudget(t.budgetId, allCustomBudgets);
-        const category = categories ? categories.find(c => c.id === t.category_id) : null;
-        // Priority hierarchy: Transaction > Category > Default 'wants'
-        const priority = t.financial_priority || category?.priority || 'wants';
+    // UPDATED 05-Feb-2026: Renamed customBudgetId to budgetId
+    const isCustom = isActualCustomBudget(t.budgetId, allCustomBudgets);
+    const category = categories ? categories.find(c => c.id === t.category_id) : null;
+    // Priority hierarchy: Transaction > Category > Default 'wants'
+    const priority = t.financial_priority || category?.priority || 'wants';
 
-        // CRITICAL FIX 05-Feb-2026: Expenses in Custom Budgets should NEVER appear in System Budget "DIRECT" calculations
-        // UPDATED 05-Feb-2026: Renamed customBudgetId references to budgetId
-        // The word "DIRECT" means expenses directly assigned to that priority, NOT via a custom budget.
-        // Custom Budget expenses are aggregated separately and shown only in the Custom Budget views.
-        if (isCustom) {
-            // These are "Indirect" expenses (via Custom Budgets like Vacations, Trips, Events)
-            // They count toward the overall Wants total but NOT toward "Direct Wants"
-            if (t.isPaid) result.wants.customPaid += t.amount;
-            else result.wants.customUnpaid += t.amount;
-            return; // CRITICAL: Exit early to prevent these from being counted as "direct" expenses
-        }
+    // CRITICAL FIX 05-Feb-2026: Expenses in Custom Budgets should NEVER appear in System Budget "DIRECT" calculations
+    // UPDATED 05-Feb-2026: Renamed customBudgetId references to budgetId
+    // The word "DIRECT" means expenses directly assigned to that priority, NOT via a custom budget.
+    // Custom Budget expenses are aggregated separately and shown only in the Custom Budget views.
+    if (isCustom) {
+      // These are "Indirect" expenses (via Custom Budgets like Vacations, Trips, Events)
+      // They count toward the overall Wants total but NOT toward "Direct Wants"
+      if (t.isPaid) wantsCustomPaid = wantsCustomPaid.plus(t.amount);
+      else wantsCustomUnpaid = wantsCustomUnpaid.plus(t.amount);
+      return; // CRITICAL: Exit early to prevent these from being counted as "direct" expenses
+    }
 
-        // 1. NEEDS Logic (Direct only - CBs never contain needs)
-        if (priority === 'needs') {
-            if (t.isPaid) result.needs.paid += t.amount;
-            else result.needs.unpaid += t.amount;
-        }
-        // 2. WANTS Logic (Direct only - CBs handled above)
-        else if (priority === 'wants') {
-            if (t.isPaid) result.wants.directPaid += t.amount;
-            else result.wants.directUnpaid += t.amount;
-        }
-    });
+    // 1. NEEDS Logic (Direct only - CBs never contain needs)
+    if (priority === 'needs') {
+      if (t.isPaid) needsPaid = needsPaid.plus(t.amount);
+      else needsUnpaid = needsUnpaid.plus(t.amount);
+    }
+    // 2. WANTS Logic (Direct only - CBs handled above)
+    else if (priority === 'wants') {
+      if (t.isPaid) wantsDirectPaid = wantsDirectPaid.plus(t.amount);
+      else wantsDirectUnpaid = wantsDirectUnpaid.plus(t.amount);
+    }
+  });
 
-    // Compute Totals
-    result.needs.total = result.needs.paid + result.needs.unpaid;
+  // Compute Totals and convert to primitive JS numbers safely
+  const numNeedsPaid = needsPaid.toDecimalPlaces(2).toNumber();
+  const numNeedsUnpaid = needsUnpaid.toDecimalPlaces(2).toNumber();
+  const numNeedsTotal = needsPaid.plus(needsUnpaid).toDecimalPlaces(2).toNumber();
 
-    result.wants.total =
-        result.wants.directPaid +
-        result.wants.directUnpaid +
-        result.wants.customPaid +
-        result.wants.customUnpaid;
+  const numWantsDirectPaid = wantsDirectPaid.toDecimalPlaces(2).toNumber();
+  const numWantsDirectUnpaid = wantsDirectUnpaid.toDecimalPlaces(2).toNumber();
+  const numWantsCustomPaid = wantsCustomPaid.toDecimalPlaces(2).toNumber();
+  const numWantsCustomUnpaid = wantsCustomUnpaid.toDecimalPlaces(2).toNumber();
 
-    // Add top-level total for unified consumption by Health Algorithms
-    return {
-        ...result,
-        totalExpenses: result.needs.total + result.wants.total
-    };
+  const totalWants = wantsDirectPaid.plus(wantsDirectUnpaid).plus(wantsCustomPaid).plus(wantsCustomUnpaid);
+  const numWantsTotal = totalWants.toDecimalPlaces(2).toNumber();
+
+  // Add top-level total for unified consumption by Health Algorithms
+  return {
+    needs: { paid: numNeedsPaid, unpaid: numNeedsUnpaid, total: numNeedsTotal },
+    wants: {
+      directPaid: numWantsDirectPaid,
+      directUnpaid: numWantsDirectUnpaid,
+      customPaid: numWantsCustomPaid,
+      customUnpaid: numWantsCustomUnpaid,
+      total: numWantsTotal
+    },
+    totalExpenses: needsPaid.plus(needsUnpaid).plus(totalWants).toDecimalPlaces(2).toNumber()
+  };
 };
 
 /**
@@ -213,46 +227,48 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
  * @returns {Object} Budget statistics with paid, unpaid, spent, remaining amounts
  */
 export const getCustomBudgetStats = (customBudget, transactions) => {
-    // CRITICAL: Filter ONLY by budgetId - NO date filtering
-    // Custom budgets show ALL expenses linked to them, regardless of when they were paid
-    const budgetTransactions = transactions.filter(t => t.budgetId === customBudget.id);
+  // CRITICAL: Filter ONLY by budgetId - NO date filtering
+  // Custom budgets show ALL expenses linked to them, regardless of when they were paid
+  const budgetTransactions = transactions.filter(t => t.budgetId === customBudget.id);
 
-    const expenses = budgetTransactions.filter(t => t.type === 'expense');
-    const allocated = customBudget.allocatedAmount || 0;
+  const expenses = budgetTransactions.filter(t => t.type === 'expense');
+  const allocated = customBudget.allocatedAmount || 0;
 
-    // Calculate paid/unpaid in ONE pass to prevent double-counting
-    let paidBase = 0;
-    let unpaidBase = 0;
+  // Calculate paid/unpaid in ONE pass to prevent double-counting
+  let paidBase = new Decimal(0);
+  let unpaidBase = new Decimal(0);
 
-    expenses.forEach(t => {
-        if (t.isPaid) {
-            paidBase += t.amount;
-        } else {
-            unpaidBase += t.amount;
-        }
-    });
+  expenses.forEach(t => {
+    if (t.isPaid) {
+      paidBase = paidBase.plus(t.amount);
+    } else {
+      unpaidBase = unpaidBase.plus(t.amount);
+    }
+  });
 
-    const spent = paidBase + unpaidBase;
+  const numPaidBase = paidBase.toDecimalPlaces(2).toNumber();
+  const numUnpaidBase = unpaidBase.toDecimalPlaces(2).toNumber();
+  const spent = paidBase.plus(unpaidBase).toDecimalPlaces(2).toNumber();
 
-    return {
-        allocated,
-        spent,
-        unpaid: {
-            totalBaseCurrencyAmount: unpaidBase,
-            foreignCurrencyDetails: []
-        },
-        remaining: allocated - spent,
-        paid: {
-            totalBaseCurrencyAmount: paidBase,
-            foreignCurrencyDetails: []
-        },
-        paidAmount: paidBase,
-        unpaidAmount: unpaidBase,
-        totalAllocatedUnits: allocated,
-        totalSpentUnits: spent,
-        totalUnpaidUnits: unpaidBase,
-        totalTransactionCount: expenses.length
-    };
+  return {
+    allocated,
+    spent,
+    unpaid: {
+      totalBaseCurrencyAmount: numUnpaidBase,
+      foreignCurrencyDetails: []
+    },
+    remaining: allocated - spent,
+    paid: {
+      totalBaseCurrencyAmount: numPaidBase,
+      foreignCurrencyDetails: []
+    },
+    paidAmount: numPaidBase,
+    unpaidAmount: numUnpaidBase,
+    totalAllocatedUnits: allocated,
+    totalSpentUnits: spent,
+    totalUnpaidUnits: numUnpaidBase,
+    totalTransactionCount: expenses.length
+  };
 };
 
 /**
@@ -261,50 +277,55 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
  * UPDATED: Accepts settings and historicalAverage to correctly resolve the budget limit.
  */
 export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
-    // Get the granular data in one pass
-    const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, startDate, endDate);
+  // Get the granular data in one pass
+  const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, startDate, endDate);
 
-    let paidAmount = 0;
-    let unpaidAmount = 0;
+  let paidAmount = 0;
+  let unpaidAmount = 0;
 
-    if (systemBudget.systemBudgetType === 'needs') {
-        paidAmount = breakdown.needs.paid;
-        unpaidAmount = breakdown.needs.unpaid;
-    } else if (systemBudget.systemBudgetType === 'wants') {
-        // Wants System Budget aggregates Direct + Custom
-        paidAmount = breakdown.wants.directPaid + breakdown.wants.customPaid;
-        unpaidAmount = breakdown.wants.directUnpaid + breakdown.wants.customUnpaid;
-    } else if (systemBudget.systemBudgetType === 'savings') {
-        // Savings = Income - (Needs + Wants)
-        const totalExpenses = breakdown.needs.total + breakdown.wants.total;
-        paidAmount = Math.max(0, monthlyIncome - totalExpenses);
-        unpaidAmount = 0;
-    }
+  if (systemBudget.systemBudgetType === 'needs') {
+    paidAmount = breakdown.needs.paid;
+    unpaidAmount = breakdown.needs.unpaid;
+  } else if (systemBudget.systemBudgetType === 'wants') {
+    // Wants System Budget aggregates Direct + Custom
+    paidAmount = breakdown.wants.directPaid + breakdown.wants.customPaid;
+    unpaidAmount = breakdown.wants.directUnpaid + breakdown.wants.customUnpaid;
+  } else if (systemBudget.systemBudgetType === 'savings') {
+    // Savings = Income - (Needs + Wants)
+    const totalExpenses = breakdown.needs.total + breakdown.wants.total;
+    paidAmount = Math.max(0, monthlyIncome - totalExpenses);
+    unpaidAmount = 0;
+  }
 
-    // Use the helper to resolve the limit based on mode
-    const totalBudget = resolveBudgetLimit(systemBudget, monthlyIncome, settings, historicalAverage);
+  // Use the helper to resolve the limit based on mode
+  const totalBudget = resolveBudgetLimit(systemBudget, monthlyIncome, settings, historicalAverage);
 
-    const totalSpent = paidAmount + unpaidAmount;
-    const remaining = totalBudget - totalSpent;
-    const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const decTotalBudget = new Decimal(totalBudget);
+  const decTotalSpent = new Decimal(paidAmount).plus(unpaidAmount);
+  const decRemaining = decTotalBudget.minus(decTotalSpent);
 
-    return {
-        paid: {
-            totalBaseCurrencyAmount: paidAmount,
-            foreignCurrencyDetails: []
-        },
-        unpaid: {
-            totalBaseCurrencyAmount: unpaidAmount,
-            foreignCurrencyDetails: []
-        },
-        totalSpent,
-        paidAmount,
-        unpaidAmount,
-        remaining,
-        percentageUsed,
-        // Pass granular stats back if UI needs them (e.g. for Direct vs Custom split)
-        breakdown
-    };
+  let percentageUsed = 0;
+  if (decTotalBudget.gt(0)) {
+    percentageUsed = decTotalSpent.dividedBy(decTotalBudget).times(100).toDecimalPlaces(2).toNumber();
+  }
+
+  return {
+    paid: {
+      totalBaseCurrencyAmount: paidAmount,
+      foreignCurrencyDetails: []
+    },
+    unpaid: {
+      totalBaseCurrencyAmount: unpaidAmount,
+      foreignCurrencyDetails: []
+    },
+    totalSpent: decTotalSpent.toDecimalPlaces(2).toNumber(),
+    paidAmount,
+    unpaidAmount,
+    remaining: decRemaining.toDecimalPlaces(2).toNumber(),
+    percentageUsed,
+    // Pass granular stats back if UI needs them (e.g. for Direct vs Custom split)
+    breakdown
+  };
 };
 
 /**
@@ -312,36 +333,36 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
  * UPDATED 05-Feb-2026: Renamed customBudgetId to budgetId
  */
 export const getCustomBudgetAllocationStats = (customBudget, allocations, transactions) => {
-    const budgetTransactions = transactions.filter(t => t.budgetId === customBudget.id);
-    const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
-    const unallocated = customBudget.allocatedAmount - totalAllocated;
+  const budgetTransactions = transactions.filter(t => t.budgetId === customBudget.id);
+  const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
+  const unallocated = customBudget.allocatedAmount - totalAllocated;
 
-    const categorySpending = {};
-    allocations.forEach(allocation => {
-        const spent = budgetTransactions
-            .filter(t => t.type === 'expense' && t.category_id === allocation.categoryId)
-            .reduce((sum, t) => sum + t.amount, 0);
+  const categorySpending = {};
+  allocations.forEach(allocation => {
+    const spent = budgetTransactions
+      .filter(t => t.type === 'expense' && t.category_id === allocation.categoryId)
+      .reduce((sum, t) => sum + t.amount, 0);
 
-        categorySpending[allocation.categoryId] = {
-            allocated: allocation.allocatedAmount,
-            spent,
-            remaining: allocation.allocatedAmount - spent,
-            percentageUsed: allocation.allocatedAmount > 0 ? (spent / allocation.allocatedAmount) * 100 : 0
-        };
-    });
-
-    const allocatedCategoryIds = allocations.map(a => a.categoryId);
-    const unallocatedSpent = budgetTransactions
-        .filter(t => t.type === 'expense' && (!t.category_id || !allocatedCategoryIds.includes(t.category_id)))
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    return {
-        totalAllocated,
-        unallocated,
-        unallocatedSpent,
-        unallocatedRemaining: unallocated - unallocatedSpent,
-        categorySpending
+    categorySpending[allocation.categoryId] = {
+      allocated: allocation.allocatedAmount,
+      spent,
+      remaining: allocation.allocatedAmount - spent,
+      percentageUsed: allocation.allocatedAmount > 0 ? (spent / allocation.allocatedAmount) * 100 : 0
     };
+  });
+
+  const allocatedCategoryIds = allocations.map(a => a.categoryId);
+  const unallocatedSpent = budgetTransactions
+    .filter(t => t.type === 'expense' && (!t.category_id || !allocatedCategoryIds.includes(t.category_id)))
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  return {
+    totalAllocated,
+    unallocated,
+    unallocatedSpent,
+    unallocatedRemaining: unallocated - unallocatedSpent,
+    categorySpending
+  };
 };
 
 /**
@@ -350,20 +371,20 @@ export const getCustomBudgetAllocationStats = (customBudget, allocations, transa
  * UPDATED: Accepts settings to correctly resolve the limits.
  */
 export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
-    const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
-    const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
+  const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
+  const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
 
-    // Use the persisted budgetAmount from the database schema
-    const needsLimit = needsBudget?.budgetAmount || 0;
-    const wantsLimit = wantsBudget?.budgetAmount || 0;
-    const totalLimit = needsLimit + wantsLimit;
+  // Use the persisted budgetAmount from the database schema
+  const needsLimit = needsBudget?.budgetAmount || 0;
+  const wantsLimit = wantsBudget?.budgetAmount || 0;
+  const decTotalLimit = new Decimal(needsLimit).plus(wantsLimit);
 
-    // Get total spending for this month (using the existing simple function)
-    // We use getMonthlyPaidExpenses because efficiency is based on what you actually paid.
-    const actualSpent = getMonthlyPaidExpenses(transactions, startDate, endDate);
+  // Get total spending for this month (using the existing simple function)
+  // We use getMonthlyPaidExpenses because efficiency is based on what you actually paid.
+  const actualSpent = getMonthlyPaidExpenses(transactions, startDate, endDate);
 
-    // Bonus = What you were allowed to spend - What you actually spent
-    return totalLimit - actualSpent;
+  // Bonus = What you were allowed to spend - What you actually spent
+  return decTotalLimit.minus(actualSpent).toDecimalPlaces(2).toNumber();
 };
 
 /**
@@ -372,23 +393,23 @@ export const calculateBonusSavingsPotential = (systemBudgets, transactions, cate
  */
 
 export const getHistoricalAverageIncome = (transactions, selectedMonth, selectedYear, lookbackMonths = 3) => {
-    if (!transactions || transactions.length === 0) return 0;
+  if (!transactions || transactions.length === 0) return 0;
 
-    let totalIncome = 0;
+  let totalIncome = 0;
 
-    // Iterate backwards from the previous month
-    for (let i = 1; i <= lookbackMonths; i++) {
-        // Create date for (Month - i)
-        // JS Date automatically handles year rollover (e.g., Month -1 becomes Dec of prev year)
-        const date = new Date(selectedYear, selectedMonth - i, 1);
-        const m = date.getMonth();
-        const y = date.getFullYear();
+  // Iterate backwards from the previous month
+  for (let i = 1; i <= lookbackMonths; i++) {
+    // Create date for (Month - i)
+    // JS Date automatically handles year rollover (e.g., Month -1 becomes Dec of prev year)
+    const date = new Date(selectedYear, selectedMonth - i, 1);
+    const m = date.getMonth();
+    const y = date.getFullYear();
 
-        const { monthStart, monthEnd } = getMonthBoundaries(m, y);
-        totalIncome += getMonthlyIncome(transactions, monthStart, monthEnd);
-    }
+    const { monthStart, monthEnd } = getMonthBoundaries(m, y);
+    totalIncome += getMonthlyIncome(transactions, monthStart, monthEnd);
+  }
 
-    return totalIncome / lookbackMonths;
+  return new Decimal(totalIncome).dividedBy(lookbackMonths).toDecimalPlaces(2).toNumber();
 };
 
 /**
@@ -432,17 +453,17 @@ export const getAllHistoricalCategoryAverages = (transactions, selectedMonth, se
  * HELPER: Math Utils for Projection
  */
 const calculateMedian = (values) => {
-    if (values.length === 0) return 0;
-    const sorted = [...values].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
 
 const calculateStandardDeviation = (values, mean) => {
-    if (values.length < 2) return 0;
-    const squareDiffs = values.map(value => Math.pow(value - mean, 2));
-    const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
-    return Math.sqrt(avgSquareDiff);
+  if (values.length < 2) return 0;
+  const squareDiffs = values.map(value => Math.pow(value - mean, 2));
+  const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+  return Math.sqrt(avgSquareDiff);
 };
 
 /**
@@ -453,72 +474,72 @@ const calculateStandardDeviation = (values, mean) => {
  * @returns {Object} { projectedIncome, reliability, cv }
  */
 export const calculateIncomeProjection = (historicalTransactions, referenceDate = new Date()) => {
-    if (!historicalTransactions || historicalTransactions.length === 0) return { projectedIncome: 0, reliability: 'low', cv: 0 };
+  if (!historicalTransactions || historicalTransactions.length === 0) return { projectedIncome: 0, reliability: 'low', cv: 0 };
 
-    // 1. Bucket transactions by month relative to reference date
-    // We map 1..6 (months ago) to totals
-    const monthlyTotals = {};
+  // 1. Bucket transactions by month relative to reference date
+  // We map 1..6 (months ago) to totals
+  const monthlyTotals = {};
 
-    historicalTransactions.forEach(t => {
-        const tDate = new Date(t.date);
-        // Calculate how many months ago this was (approximate is fine for bucketing)
-        const monthDiff = (referenceDate.getFullYear() - tDate.getFullYear()) * 12 + (referenceDate.getMonth() - tDate.getMonth());
+  historicalTransactions.forEach(t => {
+    const tDate = new Date(t.date);
+    // Calculate how many months ago this was (approximate is fine for bucketing)
+    const monthDiff = (referenceDate.getFullYear() - tDate.getFullYear()) * 12 + (referenceDate.getMonth() - tDate.getMonth());
 
-        // Only care about buckets 1 to 6
-        if (monthDiff >= 1 && monthDiff <= 6) {
-            monthlyTotals[monthDiff] = (monthlyTotals[monthDiff] || 0) + t.amount;
-        }
-    });
-
-    const values = Object.values(monthlyTotals).filter(v => v > 0);
-
-    // Not enough data points for statistical analysis
-    if (values.length < 3) {
-        const simpleAvg = values.reduce((a, b) => a + b, 0) / (values.length || 1);
-        return { projectedIncome: simpleAvg, reliability: 'low', cv: 0 };
+    // Only care about buckets 1 to 6
+    if (monthDiff >= 1 && monthDiff <= 6) {
+      monthlyTotals[monthDiff] = (monthlyTotals[monthDiff] || 0) + t.amount;
     }
+  });
 
-    // 2. IQR Method (Tukey's Fences) to remove anomalies
-    const sorted = [...values].sort((a, b) => a - b);
-    const q1 = sorted[Math.floor((sorted.length / 4))];
-    const q3 = sorted[Math.ceil((sorted.length * (3 / 4))) - 1];
-    const iqr = q3 - q1;
+  const values = Object.values(monthlyTotals).filter(v => v > 0);
 
-    const lowerFence = q1 - (1.5 * iqr);
-    const upperFence = q3 + (1.5 * iqr);
+  // Not enough data points for statistical analysis
+  if (values.length < 3) {
+    const simpleAvg = values.reduce((a, b) => a + b, 0) / (values.length || 1);
+    return { projectedIncome: simpleAvg, reliability: 'low', cv: 0 };
+  }
 
-    // 3. Filter Outliers & Calculate Simple Mean
-    let cleanValues = [];
+  // 2. IQR Method (Tukey's Fences) to remove anomalies
+  const sorted = [...values].sort((a, b) => a - b);
+  const q1 = sorted[Math.floor((sorted.length / 4))];
+  const q3 = sorted[Math.ceil((sorted.length * (3 / 4))) - 1];
+  const iqr = q3 - q1;
 
-    // Iterate 1 to 6 to handle empty months correctly (as 0 if needed, or skip)
-    // Financial preference: Skip months with 0 income rather than treating them as $0 salary days? 
-    // For salary projection, usually we only care about months where money came in.
-    Object.values(monthlyTotals).forEach((amount) => {
-        if (amount === 0) return; // Ignore months with no activity
-        if (amount >= lowerFence && amount <= upperFence) {
-            cleanValues.push(amount);
-        }
-    });
+  const lowerFence = q1 - (1.5 * iqr);
+  const upperFence = q3 + (1.5 * iqr);
 
-    // Fallback: If IQR killed everything (rare), return Median
-    if (cleanValues.length === 0) {
-        return { projectedIncome: calculateMedian(values), reliability: 'low', cv: 0 };
+  // 3. Filter Outliers & Calculate Simple Mean
+  let cleanValues = [];
+
+  // Iterate 1 to 6 to handle empty months correctly (as 0 if needed, or skip)
+  // Financial preference: Skip months with 0 income rather than treating them as $0 salary days? 
+  // For salary projection, usually we only care about months where money came in.
+  Object.values(monthlyTotals).forEach((amount) => {
+    if (amount === 0) return; // Ignore months with no activity
+    if (amount >= lowerFence && amount <= upperFence) {
+      cleanValues.push(amount);
     }
+  });
 
-    const projectedIncome = cleanValues.reduce((a, b) => a + b, 0) / cleanValues.length;
+  // Fallback: If IQR killed everything (rare), return Median
+  if (cleanValues.length === 0) {
+    return { projectedIncome: calculateMedian(values), reliability: 'low', cv: 0 };
+  }
 
-    // 4. Calculate CV for Reliability
-    const mean = cleanValues.reduce((a, b) => a + b, 0) / cleanValues.length;
-    const stdDev = calculateStandardDeviation(cleanValues, mean);
-    const cv = mean > 0 ? (stdDev / mean) * 100 : 0;
+  const projectedIncome = cleanValues.reduce((a, b) => a + b, 0) / cleanValues.length;
 
-    let reliability = 'high';
-    if (cv > 10) reliability = 'medium';
-    if (cv > 25) reliability = 'low';
+  // 4. Calculate CV for Reliability
+  const mean = cleanValues.reduce((a, b) => a + b, 0) / cleanValues.length;
+  const stdDev = calculateStandardDeviation(cleanValues, mean);
+  const cv = mean > 0 ? (stdDev / mean) * 100 : 0;
 
-    return {
-        projectedIncome,
-        reliability,
-        cv
-    };
+  let reliability = 'high';
+  if (cv > 10) reliability = 'medium';
+  if (cv > 25) reliability = 'low';
+
+  return {
+    projectedIncome,
+    reliability,
+    cv
+  };
 };
