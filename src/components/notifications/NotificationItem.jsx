@@ -11,100 +11,100 @@ import { Link } from 'react-router-dom';
  */
 const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss, onNavigate }, ref) => {
 
-    const typeConfig = {
-        success: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-        error: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-        warning: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-        info: { icon: Info, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-        action: { icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-        story: { icon: Sparkles, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-    };
+  const typeConfig = {
+    success: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+    error: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+    warning: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+    info: { icon: Info, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+    action: { icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+    story: { icon: Sparkles, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  };
 
-    const config = typeConfig[notification.type] || typeConfig.info;
-    const Icon = config.icon;
+  const config = typeConfig[notification.type] || typeConfig.info;
+  const Icon = config.icon;
 
-    const handleClick = (e) => {
-        if (!notification.isRead) {
-            onMarkRead(notification.id);
-        }
-        if (notification.actionUrl && onNavigate) {
-            onNavigate();
-        }
-    };
+  const handleClick = (e) => {
+    if (!notification.isRead) {
+      onMarkRead(notification.id);
+    }
+    if (notification.actionUrl && onNavigate) {
+      onNavigate();
+    }
+  };
 
-    const handleDismiss = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onDismiss(notification.id);
-    };
+  const handleDismiss = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDismiss(notification.id);
+  };
 
-    // Dynamically wrap the content in a Link if it has an actionUrl
-    const ContentWrapper = notification.actionUrl ? Link : 'div';
-    const wrapperProps = notification.actionUrl
-        ? { to: notification.actionUrl, onClick: handleClick, className: "flex gap-3 w-full" }
-        : { onClick: handleClick, className: "flex gap-3 w-full" };
+  // Dynamically wrap the content in a Link if it has an actionUrl
+  const ContentWrapper = notification.actionUrl ? Link : 'div';
+  const wrapperProps = notification.actionUrl
+    ? { to: notification.actionUrl, onClick: handleClick, className: "flex gap-3 w-full pr-8" }
+    : { onClick: handleClick, className: "flex gap-3 w-full pr-8" };
 
-    return (
-        <motion.div
-            ref={ref}
-            layout
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            className={cn(
-                "group relative p-4 rounded-lg border transition-all cursor-pointer block hover:shadow-md",
-                notification.isRead ? 'bg-white' : config.bg,
-                notification.isRead ? 'border-gray-200' : config.border,
+  return (
+    <motion.div
+      ref={ref}
+      layout
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+      className={cn(
+        "group relative p-4 rounded-lg border transition-all cursor-pointer block hover:shadow-md",
+        notification.isRead ? 'bg-white' : config.bg,
+        notification.isRead ? 'border-gray-200' : config.border,
+      )}
+    >
+      <ContentWrapper {...wrapperProps}>
+        {/* Icon */}
+        <div className={cn("shrink-0 w-8 h-8 rounded-full flex items-center justify-center", config.bg)}>
+          <Icon className={cn("w-4 h-4", config.color)} />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h4 className={cn(
+              "font-semibold text-sm",
+              notification.isRead ? 'text-gray-700' : 'text-gray-900'
+            )}>
+              {notification.title}
+            </h4>
+            {!notification.isRead && (
+              <span className="w-2 h-2 bg-blue-600 rounded-full shrink-0 mt-1.5" />
             )}
-        >
-            <ContentWrapper {...wrapperProps}>
-                {/* Icon */}
-                <div className={cn("shrink-0 w-8 h-8 rounded-full flex items-center justify-center", config.bg)}>
-                    <Icon className={cn("w-4 h-4", config.color)} />
-                </div>
+          </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className={cn(
-                            "font-semibold text-sm",
-                            notification.isRead ? 'text-gray-700' : 'text-gray-900'
-                        )}>
-                            {notification.title}
-                        </h4>
-                        {!notification.isRead && (
-                            <span className="w-2 h-2 bg-blue-600 rounded-full shrink-0 mt-1.5" />
-                        )}
-                    </div>
+          <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
 
-                    <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-gray-400">
+              {formatDistanceToNow(new Date(notification.created_date), { addSuffix: true, includeSeconds: true })}
+            </span>
 
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs text-gray-400">
-                            {formatDistanceToNow(new Date(notification.created_date), { addSuffix: true, includeSeconds: true })}
-                        </span>
+            {notification.actionUrl && (
+              <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                {notification.actionLabel || 'View'}
+                <ExternalLink className="w-3 h-3" />
+              </span>
+            )}
+          </div>
+        </div>
+      </ContentWrapper>
 
-                        {notification.actionUrl && (
-                            <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                                {notification.actionLabel || 'View'}
-                                <ExternalLink className="w-3 h-3" />
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Dismiss Button */}
-                <CustomButton
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-4 top-4 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    onClick={handleDismiss}
-                >
-                    <X className="w-4 h-4" />
-                </CustomButton>
-            </ContentWrapper>
-        </motion.div>
-    );
+      {/* Dismiss Button */}
+      <CustomButton
+        variant="ghost"
+        size="icon"
+        className="absolute right-4 top-4 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        onClick={handleDismiss}
+      >
+        <X className="w-4 h-4" />
+      </CustomButton>
+    </motion.div>
+  );
 }));
 
 NotificationItem.displayName = 'NotificationItem';
