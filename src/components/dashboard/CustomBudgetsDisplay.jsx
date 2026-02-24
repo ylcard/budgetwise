@@ -67,7 +67,7 @@ export default function CustomBudgetsDisplay({
 
               {/* Desktop: The combined action button */}
               <CustomButton
-                variant="ghost"
+                variant="create"
                 className="rounded-lg bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-2 px-3 py-1 text-sm font-medium"
                 onClick={onCreateBudget}
               >
