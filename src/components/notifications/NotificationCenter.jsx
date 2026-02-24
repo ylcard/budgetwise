@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Bell, CheckCheck, Trash2, Filter } from 'lucide-react';
+import { Bell, CheckCheck, Archive, Filter } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { CustomButton } from '../ui/CustomButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
