@@ -128,8 +128,8 @@ export const TUTORIALS = {
         description: 'Create budgets for specific events or goals',
         steps: [
             {
-                target: '[data-tutorial="mini-budgets-tab"]',
-                title: 'Mini Budgets',
+                target: '[data-tutorial="custom-budgets-tab"]',
+                title: 'Custom Budgets',
                 content: 'Create budgets for trips, projects, or any specific goal with a defined timeframe.',
                 placement: 'right',
             },
