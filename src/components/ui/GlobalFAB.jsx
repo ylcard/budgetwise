@@ -32,7 +32,7 @@ export default function GlobalFAB() {
     <div className="md:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-[40] flex flex-col-reverse items-end gap-3 pointer-events-none">
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        data-tutorial="add-fab"
+        data-tutorial="mobile-fab"
         className="pointer-events-auto w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
         whileTap={{ scale: 0.95 }}
       >
