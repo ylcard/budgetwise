@@ -164,7 +164,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                         This prevents the "Blank Section" and ensures smooth morphing.
                     */}
 
-          <div className="w-full space-y-4 relative">
+          <div className="w-full space-y-4 relative" data-tutorial="budget-cards">
             {/* Empty State Overlay - Positioned Absolutely over the content */}
             {isDisplayedEmpty ? (
               <motion.div
