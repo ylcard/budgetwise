@@ -1,5 +1,4 @@
 import { memo, forwardRef } from 'react';
-import { motion } from 'framer-motion';
 import { X, ExternalLink, CheckCircle, AlertTriangle, Info, AlertCircle, Zap, Sparkles } from 'lucide-react';
 import { CustomButton } from '../ui/CustomButton';
 import { cn } from '@/lib/utils';
@@ -45,12 +44,8 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
     : { onClick: handleClick, className: "flex gap-3 w-full pr-8" };
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      layout
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
       className={cn(
         "group relative p-4 rounded-lg border transition-all cursor-pointer block hover:shadow-md",
         notification.isRead ? 'bg-white' : config.bg,
@@ -103,7 +98,7 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
       >
         <X className="w-4 h-4" />
       </CustomButton>
-    </motion.div>
+    </div>
   );
 }));
 
