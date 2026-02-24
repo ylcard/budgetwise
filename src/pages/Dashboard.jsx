@@ -46,6 +46,8 @@ import { useProjections } from "../components/hooks/useProjections";
 import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
+import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
+import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 
 export default function Dashboard() {
   const { user, settings } = useSettings();
@@ -59,6 +61,9 @@ export default function Dashboard() {
   const [showStory, setShowStory] = useState(false);
   const queryClient = useQueryClient();
 
+  // Automatically checks and triggers the dashboard tutorial
+  useTutorialTrigger(TUTORIAL_IDS.DASHBOARD_OVERVIEW);
+  
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
