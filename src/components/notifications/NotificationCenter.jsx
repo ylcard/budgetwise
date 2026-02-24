@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Bell, CheckCheck, Archive, Filter } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { CustomButton } from '../ui/CustomButton';
@@ -24,6 +24,7 @@ const NotificationCenter = memo(({ trigger }) => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState('all');
+  const [listRef] = useAutoAnimate();
 
   // Group by category
   const groupedNotifications = useMemo(() => {
@@ -113,7 +114,7 @@ const NotificationCenter = memo(({ trigger }) => {
           </TabsList>
 
           <div className="flex-1 overflow-y-auto">
-            <TabsContent value={selectedTab} className="m-0 p-4 space-y-3">
+            <TabsContent value={selectedTab} className="m-0 p-4">
               {isLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map(i => (
@@ -127,7 +128,7 @@ const NotificationCenter = memo(({ trigger }) => {
                   <p className="text-sm text-gray-400">You're all caught up!</p>
                 </div>
               ) : (
-                <AnimatePresence>
+                <div ref={listRef} className="space-y-3">
                   {currentNotifications.map(notification => (
                     <NotificationItem
                       key={notification.id}
@@ -137,7 +138,7 @@ const NotificationCenter = memo(({ trigger }) => {
                       onNavigate={handleNavigate}
                     />
                   ))}
-                </AnimatePresence>
+                </div>
               )}
             </TabsContent>
           </div>
