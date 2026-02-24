@@ -3,7 +3,7 @@
  * CREATED: 24-Feb-2026
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTutorial } from './TutorialContext';
 
 /**
@@ -13,32 +13,35 @@ import { useTutorial } from './TutorialContext';
  * @param {boolean} condition - Optional boolean to delay trigger (e.g., wait for data load)
  */
 export const useTutorialTrigger = (tutorialId, delay = 600, condition = true) => {
-    const { 
-        startTutorial, 
-        isTutorialCompleted, 
-        tutorialsEnabled, 
-        activeTutorial 
-    } = useTutorial();
+  const {
+    startTutorial,
+    isTutorialCompleted,
+    tutorialsEnabled,
+    activeTutorial
+  } = useTutorial();
 
-    useEffect(() => {
-        // Abort if tutorials are disabled, one is already running, or external conditions aren't met
-        if (!tutorialsEnabled || activeTutorial || !condition) return;
-        
-        // Only trigger if this specific tutorial is not yet completed
-        if (!isTutorialCompleted(tutorialId)) {
-            const timer = setTimeout(() => {
-                startTutorial(tutorialId);
-            }, delay);
-            
-            return () => clearTimeout(timer);
-        }
-    }, [
-        tutorialId, 
-        delay, 
-        condition, 
-        tutorialsEnabled, 
-        activeTutorial, 
-        isTutorialCompleted, 
-        startTutorial
-    ]);
+  const hasTriggered = useRef(false);
+
+  useEffect(() => {
+    // Abort if disabled, already running, conditions aren't met, or already triggered this session
+    if (!tutorialsEnabled || activeTutorial || !condition || hasTriggered.current) return;
+
+    // Only trigger if this specific tutorial is not yet completed
+    if (!isTutorialCompleted(tutorialId)) {
+      hasTriggered.current = true; // Lock the trigger so it doesn't loop
+      const timer = setTimeout(() => {
+        startTutorial(tutorialId);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }
+  }, [
+    tutorialId,
+    delay,
+    condition,
+    tutorialsEnabled,
+    activeTutorial,
+    isTutorialCompleted,
+    startTutorial
+  ]);
 };
