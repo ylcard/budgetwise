@@ -235,7 +235,7 @@ export default function Dashboard() {
         key: 'import',
         label: 'Import Data',
         icon: 'FileUp',
-        variant: 'glass',
+        variant: 'ghost',
         onClick: () => {
           setShowImportWizard(true);
         }
@@ -244,7 +244,7 @@ export default function Dashboard() {
         key: 'custom-budget',
         label: 'Add Budget',
         icon: 'Plus',
-        variant: 'glass',
+        variant: 'create',
         onClick: () => setShowQuickAddBudget(true)
       }
     ];
