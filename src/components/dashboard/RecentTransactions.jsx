@@ -120,7 +120,6 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                         {!isIncome && transaction.paidDate && (
                           <>
                             <span className="text-muted-foreground/30 hidden sm:inline">•</span>
-                            <span className="text-muted-foreground/30 hidden sm:inline">•</span>
                             <p className="text-[10px] sm:text-xs text-[hsl(var(--status-paid-text))] whitespace-nowrap">
                               Paid {format(new Date(transaction.paidDate), showYear ? "MMM d, yyyy" : "MMM d")}
                             </p>
