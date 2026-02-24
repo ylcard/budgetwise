@@ -55,6 +55,12 @@ export const TUTORIALS = {
         placement: 'bottom',
       },
       {
+        target: '[data-tutorial="upcoming-transactions"]',
+        title: 'Upcoming Transactions',
+        content: 'Keep track of your recurring bills and expected income. You can quickly mark them as paid from here when they clear.',
+        placement: 'left',
+      },
+      {
         target: '[data-tutorial="recent-transactions"]',
         title: 'Recent Activity',
         content: 'View your latest transactions here. Tap any transaction to edit or delete it.',
