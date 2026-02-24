@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Receipt, BarChart3, Settings, Shield, FileText, AlertTriangle, Cookie } from "lucide-react";
+import { LayoutDashboard, Receipt, BarChart3, Settings, Shield, FileText, AlertTriangle, Cookie, Target } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 export const navigationItems = [
@@ -18,6 +18,11 @@ export const navigationItems = [
     title: "Reports",
     url: createPageUrl("Reports"),
     icon: BarChart3,
+  },
+  {
+    title: "Goals",
+    url: createPageUrl("Goals"),
+    icon: Target,
   },
   {
     title: "Manage",
