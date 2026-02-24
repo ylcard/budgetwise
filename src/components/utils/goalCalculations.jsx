@@ -1,4 +1,4 @@
-import { parseISO, differenceInMonths, differenceInWeeks, differenceInDays, addMonths, addWeeks, format } from 'date-fns';
+import { parseISO, differenceInCalendarMonths, differenceInWeeks, differenceInDays, addMonths, addWeeks, format } from 'date-fns';
 
 /**
  * Calculate the required contribution per period to reach a goal by deadline
@@ -27,7 +27,7 @@ export const calculateRequiredContribution = (targetAmount, currentBalance, dead
       break;
     case 'monthly':
     default:
-      periodsRemaining = Math.max(1, differenceInMonths(deadlineDate, now));
+      periodsRemaining = Math.max(1, differenceInCalendarMonths(deadlineDate, now));
       break;
   }
 
@@ -80,7 +80,7 @@ export const calculatePlannedContribution = (fundingRule, monthlyIncome) => {
 export const auditGoalFeasibility = (goal, monthlyIncome, monthlyExpenses, existingGoalsCommitment = 0) => {
   const actualSurplus = Math.max(0, monthlyIncome - monthlyExpenses - existingGoalsCommitment);
 
-  const { requiredPerPeriod, periodsRemaining, remaining, isFeasible: timelineFeasible } = 
+  const { requiredPerPeriod, periodsRemaining, remaining, isFeasible: timelineFeasible } =
     calculateRequiredContribution(goal.target_amount, goal.virtual_balance || 0, goal.deadline, goal.funding_rule?.frequency || 'monthly');
 
   const plannedContribution = calculatePlannedContribution(goal.funding_rule, monthlyIncome);
@@ -95,9 +95,9 @@ export const auditGoalFeasibility = (goal, monthlyIncome, monthlyExpenses, exist
 
   const gap = requiredMonthly - plannedContribution;
   const surplusAfterGoal = actualSurplus - plannedContribution;
-  
+
   const fundingFeasible = plannedContribution <= actualSurplus && plannedContribution >= requiredMonthly;
-  
+
   return {
     isFeasible: timelineFeasible && fundingFeasible,
     timelineFeasible,
@@ -180,7 +180,7 @@ export const calculateNextDepositDate = (goal) => {
  */
 export const needsSettlement = (goal) => {
   if (goal.status !== 'active') return false;
-  
+
   const nextDeposit = calculateNextDepositDate(goal);
   return new Date() >= nextDeposit;
 };
