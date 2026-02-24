@@ -58,7 +58,6 @@ import FinancialDisclaimer from './pages/FinancialDisclaimer';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
 import Manage from './pages/Manage';
-import MiniBudgets from './pages/MiniBudgets';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
