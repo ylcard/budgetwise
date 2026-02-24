@@ -29,18 +29,22 @@ const TutorialOverlay = memo(() => {
 
   // Find and highlight the target element
   const updateTargetPosition = useCallback(() => {
-    if (!activeTutorial) return;
+    if (!activeTutorial) return false;
 
     const step = activeTutorial.steps[currentStep];
-    if (!step?.target) return;
+    if (!step?.target) return false;
 
     const targetElement = document.querySelector(step.target);
     if (!targetElement) {
       console.warn(`Tutorial target not found: ${step.target}`);
-      return;
+      return false;
     }
 
     const rect = targetElement.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      return false; // Element is hidden via CSS (e.g. mobile/desktop switch)
+    }
+
     setTargetRect({
       top: rect.top,
       left: rect.left,
@@ -92,12 +96,19 @@ const TutorialOverlay = memo(() => {
       block: 'center',
       inline: 'center',
     });
+
+    return true;
   }, [activeTutorial, currentStep]);
 
   // Update position when tutorial changes or window resizes
   useEffect(() => {
     if (activeTutorial) {
-      updateTargetPosition();
+      const isVisible = updateTargetPosition();
+      if (!isVisible) {
+        // Auto-skip steps that are hidden on the current viewport
+        nextStep();
+        return;
+      }
 
       const handleResize = () => updateTargetPosition();
       window.addEventListener('resize', handleResize);
