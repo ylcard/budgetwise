@@ -1,3 +1,4 @@
+/* 
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
@@ -135,10 +136,8 @@ export default function CustomBudgetCard({
                             {isCompleted ? (
                                 <>
                                     <div>
-                                        {/* <p className="text-xs text-gray-500 mb-1">Spent (Digital)</p> */}
                                         <p className="text-xs text-gray-500 mb-1">Total Spent</p>
                                         <p className="font-bold text-gray-900">
-                                            {/* {formatCurrency(stats?.digital?.spent || 0, settings)} */}
                                             {formatCurrency(totalSpent, settings)}
                                         </p>
                                     </div>
@@ -198,3 +197,5 @@ export default function CustomBudgetCard({
         </motion.div>
     );
 }
+
+*/
