@@ -44,7 +44,7 @@ export const TUTORIALS = {
       },
       {
         target: '[data-tutorial="quick-stats"]',
-        title: 'Quick Stats Overview',
+        title: 'Monthly Overview',
         content: 'Here you can see your monthly income, expenses, and remaining budget at a glance.',
         placement: 'bottom',
       },
