@@ -235,7 +235,7 @@ export default function Dashboard() {
         key: 'import',
         label: 'Import Data',
         icon: 'FileUp',
-        variant: 'ghost',
+        variant: 'seamless',
         onClick: () => {
           setShowImportWizard(true);
         }
