@@ -217,6 +217,13 @@ export default function Dashboard() {
         const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
         return [
             {
+                key: 'custom-budget',
+                label: 'Add Budget',
+                icon: 'Plus',
+                variant: 'primary',
+                onClick: () => setShowQuickAddBudget(true)
+            },
+            {
                 key: 'import',
                 label: 'Import Data',
                 icon: 'FileUp',
@@ -224,13 +231,6 @@ export default function Dashboard() {
                 onClick: () => {
                     setShowImportWizard(true);
                 }
-            },
-            {
-                key: 'expense',
-                label: 'Add Expense',
-                icon: 'MinusCircle',
-                variant: 'warning',
-                onClick: () => setQuickAddState('new')
             },
             {
                 key: 'income',
@@ -241,11 +241,11 @@ export default function Dashboard() {
                 onClick: () => setQuickAddIncomeState('new')
             },
             {
-                key: 'custom-budget',
-                label: 'Add Budget',
-                icon: 'Plus',
-                variant: 'primary',
-                onClick: () => setShowQuickAddBudget(true)
+                key: 'expense',
+                label: 'Add Expense',
+                icon: 'MinusCircle',
+                variant: 'warning',
+                onClick: () => setQuickAddState('new')
             }
         ];
     }, [currentMonthIncome, currentMonthExpenses]);
