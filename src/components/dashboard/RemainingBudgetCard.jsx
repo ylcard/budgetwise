@@ -955,7 +955,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 )}
               </AnimatePresence>
             </motion.div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-tutorial="add-fab">
               {importDataButton}
               {addExpenseButton}
               {/* Conditionally highlight the Add Income button if the month is empty */}
@@ -1052,7 +1052,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-tutorial="budget-cards">
                 <div className="relative h-10 w-full bg-muted/50 rounded-xl overflow-hidden flex shadow-inner border border-border">
                   {renderUnifiedBar()}
                 </div>
