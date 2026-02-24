@@ -4,6 +4,7 @@
  */
 
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
+import Decimal from "decimal.js";
 
 /**
  * MODIFIED: 17-Jan-2026 - Changed from USD to EUR as the reference currency
@@ -21,32 +22,37 @@ import { differenceInDays, parseISO, startOfDay } from "date-fns";
  * @returns {Object} { convertedAmount: number, exchangeRateUsed: number }
  */
 export function calculateConvertedAmount(sourceAmount, sourceCurrencyCode, targetCurrencyCode, rates) {
-    // Handle same currency case
-    if (sourceCurrencyCode === targetCurrencyCode) {
-        return {
-            convertedAmount: sourceAmount,
-            exchangeRateUsed: 1.0
-        };
-    }
-
-    const { sourceToEUR, targetToEUR } = rates;
-
-    // Pre-calculate EUR→Target rate (inverse)
-    const eurToTarget = 1 / targetToEUR;
-
-    // Convert Source→EUR
-    const amountInEUR = sourceAmount * sourceToEUR;
-
-    // Convert EUR→Target (multiplication only)
-    const convertedAmount = amountInEUR * eurToTarget;
-
-    // Calculate the direct exchange rate used (Source→Target)
-    const exchangeRateUsed = sourceToEUR * eurToTarget;
-
+  // Handle same currency case
+  if (sourceCurrencyCode === targetCurrencyCode) {
     return {
-        convertedAmount: parseFloat(convertedAmount.toFixed(2)),
-        exchangeRateUsed: parseFloat(exchangeRateUsed.toFixed(6))
+      convertedAmount: sourceAmount,
+      exchangeRateUsed: 1.0
     };
+  }
+
+  const { sourceToEUR, targetToEUR } = rates;
+
+  // Convert inputs to Decimal instances for precise calculation
+  const decSourceAmount = new Decimal(sourceAmount);
+  const decSourceToEUR = new Decimal(sourceToEUR);
+  const decTargetToEUR = new Decimal(targetToEUR);
+
+  // Pre-calculate EUR→Target rate (inverse)
+  const decEurToTarget = new Decimal(1).dividedBy(decTargetToEUR);
+
+  // Convert Source→EUR
+  const decAmountInEUR = decSourceAmount.times(decSourceToEUR);
+
+  // Convert EUR→Target (multiplication only)
+  const decConvertedAmount = decAmountInEUR.times(decEurToTarget);
+
+  // Calculate the direct exchange rate used (Source→Target)
+  const decExchangeRateUsed = decSourceToEUR.times(decEurToTarget);
+
+  return {
+    convertedAmount: decConvertedAmount.toDecimalPlaces(2).toNumber(),
+    exchangeRateUsed: decExchangeRateUsed.toDecimalPlaces(6).toNumber()
+  };
 }
 
 /**
@@ -60,13 +66,13 @@ export function calculateConvertedAmount(sourceAmount, sourceCurrencyCode, targe
  * @returns {number|null} The rate for Currency→EUR, or null if not found
  */
 export function getRateForDate(exchangeRates, currencyCode, date) {
-    // Handle EUR case (EUR→EUR = 1.0)
-    if (currencyCode === 'EUR') {
-        return 1.0;
-    }
+  // Handle EUR case (EUR→EUR = 1.0)
+  if (currencyCode === 'EUR') {
+    return 1.0;
+  }
 
-    const freshRates = getRateDetailsForDate(exchangeRates, currencyCode, date);
-    return freshRates ? freshRates.rate : null;
+  const freshRates = getRateDetailsForDate(exchangeRates, currencyCode, date);
+  return freshRates ? freshRates.rate : null;
 }
 
 /**
@@ -79,45 +85,45 @@ export function getRateForDate(exchangeRates, currencyCode, date) {
  * @returns {Object|null} The ExchangeRate entity or null
  */
 export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCurrency = 'EUR') {
-    // Handle EUR case (Source is EUR, Target is Base Currency)
-    if (currencyCode === 'EUR') {
-        // If base is also EUR, rate is 1
-        if (baseCurrency === 'EUR') return { rate: 1.0, date: date };
+  // Handle EUR case (Source is EUR, Target is Base Currency)
+  if (currencyCode === 'EUR') {
+    // If base is also EUR, rate is 1
+    if (baseCurrency === 'EUR') return { rate: 1.0, date: date };
 
-        // We need to find the rate for Base -> EUR
-        // Then invert it to get EUR -> Base
-        const baseRateDetails = getRateDetailsForDate(exchangeRates, baseCurrency, date, 'EUR');
+    // We need to find the rate for Base -> EUR
+    // Then invert it to get EUR -> Base
+    const baseRateDetails = getRateDetailsForDate(exchangeRates, baseCurrency, date, 'EUR');
 
-        if (baseRateDetails) {
-            return {
-                ...baseRateDetails,
-                rate: parseFloat((1 / baseRateDetails.rate).toFixed(6)),
-                isInverted: true
-            };
-        }
-        return null;
+    if (baseRateDetails) {
+      return {
+        ...baseRateDetails,
+        rate: parseFloat((1 / baseRateDetails.rate).toFixed(6)),
+        isInverted: true
+      };
     }
+    return null;
+  }
 
-    // Find all rates within the freshness window (0 to 14 days)
-    const targetDateObj = startOfDay(parseISO(date));
+  // Find all rates within the freshness window (0 to 14 days)
+  const targetDateObj = startOfDay(parseISO(date));
 
-    // MODIFIED: 17-Jan-2026 - Find all rates for this currency pair (now EUR-based)
-    const relevantRates = exchangeRates.filter(r =>
-        r.fromCurrency === currencyCode && r.toCurrency === 'EUR'
-    );
+  // MODIFIED: 17-Jan-2026 - Find all rates for this currency pair (now EUR-based)
+  const relevantRates = exchangeRates.filter(r =>
+    r.fromCurrency === currencyCode && r.toCurrency === 'EUR'
+  );
 
-    if (relevantRates.length === 0) return null;
+  if (relevantRates.length === 0) return null;
 
-    // Sort by date difference to find the closest one
-    relevantRates.sort((a, b) => {
-        const dateA = startOfDay(parseISO(a.date));
-        const dateB = startOfDay(parseISO(b.date));
-        const diffA = Math.abs(differenceInDays(targetDateObj, dateA));
-        const diffB = Math.abs(differenceInDays(targetDateObj, dateB));
-        return diffA - diffB;
-    });
+  // Sort by date difference to find the closest one
+  relevantRates.sort((a, b) => {
+    const dateA = startOfDay(parseISO(a.date));
+    const dateB = startOfDay(parseISO(b.date));
+    const diffA = Math.abs(differenceInDays(targetDateObj, dateA));
+    const diffB = Math.abs(differenceInDays(targetDateObj, dateB));
+    return diffA - diffB;
+  });
 
-    return relevantRates[0];
+  return relevantRates[0];
 }
 
 /**
@@ -132,16 +138,16 @@ export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCur
  * @returns {boolean} True if rates are fresh, false if stale or missing
  */
 export function areRatesFresh(exchangeRates, sourceCurrency, targetCurrency, date) {
-    // Logic simplified: Determine which currencies need lookup
-    const neededCurrencies = [];
-    if (sourceCurrency !== 'EUR') neededCurrencies.push(sourceCurrency);
-    if (targetCurrency !== 'EUR') neededCurrencies.push(targetCurrency);
+  // Logic simplified: Determine which currencies need lookup
+  const neededCurrencies = [];
+  if (sourceCurrency !== 'EUR') neededCurrencies.push(sourceCurrency);
+  if (targetCurrency !== 'EUR') neededCurrencies.push(targetCurrency);
 
-    if (neededCurrencies.length === 0) return true; // Both are EUR
+  if (neededCurrencies.length === 0) return true; // Both are EUR
 
-    // Check if EVERY needed currency has a rate within the window
-    return neededCurrencies.every(currency => {
-        const rate = getRateForDate(exchangeRates, currency, date);
-        return rate !== null;
-    });
+  // Check if EVERY needed currency has a rate within the window
+  return neededCurrencies.every(currency => {
+    const rate = getRateForDate(exchangeRates, currency, date);
+    return rate !== null;
+  });
 }
