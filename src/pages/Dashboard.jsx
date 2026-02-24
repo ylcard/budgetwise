@@ -396,7 +396,7 @@ export default function Dashboard() {
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Added spacing between elements in this column */}
-            <div className="lg:col-span-2 flex flex-col min-w-0 space-y-4 md:space-y-6" data-tutorial="budget-cards">
+            <div className="lg:col-span-2 flex flex-col min-w-0 space-y-4 md:space-y-6">
 
               <div data-tutorial="custom-budgets">
                 <CustomBudgetsDisplay
