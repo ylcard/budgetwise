@@ -292,15 +292,17 @@ export default function Dashboard() {
 
           {/* GRID LAYOUT: Split Hero Row */}
           <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4 md:space-y-6" data-tutorial="quick-stats">
+            <div className="lg:col-span-2 space-y-4 md:space-y-6">
 
               {/* INNOVATION: Velocity Widget at the top */}
-              <VelocityWidget
-                chartData={chartData}
-                totals={projectionTotals}
-                monthStatus={monthStatus}
-                settings={settings}
-              />
+              <div data-tutorial="velocity-widget">
+                <VelocityWidget
+                  chartData={chartData}
+                  totals={projectionTotals}
+                  monthStatus={monthStatus}
+                  settings={settings}
+                />
+              </div>
 
               <div data-tutorial="quick-stats">
                 {isMobile ? (
