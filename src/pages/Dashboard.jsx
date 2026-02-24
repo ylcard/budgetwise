@@ -383,7 +383,7 @@ export default function Dashboard() {
             </div>
 
             {/* DESKTOP PLACEMENT: Right side of Hero */}
-            <div className="hidden lg:block lg:col-span-1 h-full space-y-6" data-tutorial="budget-cards">
+            <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
               {/* <BudgetAvatar health={budgetHealth} /> */}
               <UpcomingTransactions
                 recurringWithStatus={recurringWithStatus}
