@@ -102,6 +102,12 @@ export const TutorialProvider = ({ children }) => {
     setCurrentStep(0);
   }, [activeTutorial, completedTutorials, updateSettings]);
 
+  // Temporarily dismiss current tutorial (until next app load)
+  const dismissTutorial = useCallback(() => {
+    setActiveTutorial(null);
+    setCurrentStep(0);
+  }, []);
+
   // Check if a tutorial is completed
   const isTutorialCompleted = useCallback((tutorialId) => {
     return completedTutorials.includes(tutorialId);
@@ -147,6 +153,7 @@ export const TutorialProvider = ({ children }) => {
     nextStep,
     previousStep,
     skipTutorial,
+    dismissTutorial,
     completeTutorial,
     isTutorialCompleted,
     resetTutorial,
