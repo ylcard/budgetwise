@@ -147,12 +147,12 @@ const TutorialOverlay = memo(() => {
         {/* Spotlight highlight */}
         {targetRect && (
           <motion.div
+            key={`spotlight-${currentStep}`}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
             className={cn(
-              "absolute bg-transparent border-4 border-blue-500 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] transition-all",
-              step.action ? "pointer-events-none border-dashed animate-pulse" : "pointer-events-none"
+              "absolute bg-transparent border-4 border-blue-500 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]",
+              step.action ? "pointer-events-none border-dashed animate-pulse transition-none" : "pointer-events-none transition-none"
             )}
             style={{
               top: targetRect.top - 8,
