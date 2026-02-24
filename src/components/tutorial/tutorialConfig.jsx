@@ -37,6 +37,12 @@ export const TUTORIALS = {
     description: 'Learn the basics of your financial dashboard',
     steps: [
       {
+        target: '[data-tutorial="velocity-widget"]',
+        title: 'Financial Velocity',
+        content: 'Track your daily income and expenses. When viewing the current month, this chart also projects your final balance based on your habits.',
+        placement: 'bottom',
+      },
+      {
         target: '[data-tutorial="quick-stats"]',
         title: 'Quick Stats Overview',
         content: 'Here you can see your monthly income, expenses, and remaining budget at a glance.',
