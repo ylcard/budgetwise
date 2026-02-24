@@ -49,12 +49,6 @@ export const TUTORIALS = {
         placement: 'bottom',
       },
       {
-        target: '[data-tutorial="budget-cards"]',
-        title: 'Budget Tracking',
-        content: 'Monitor your Needs and Wants budgets. Green means you\'re on track, yellow is a warning, and red means you\'ve exceeded your budget.',
-        placement: 'bottom',
-      },
-      {
         target: '[data-tutorial="custom-budgets"]',
         title: 'Custom Budgets',
         content: 'Create dedicated budgets for special events, trips, or specific goals to keep your spending organized.',
