@@ -12,11 +12,13 @@ import { GoalSettlementDrawer } from '../components/goals/GoalSettlementDrawer';
 import { CustomButton } from '../components/ui/CustomButton';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
-import { Target, Plus, TrendingUp, CheckCircle2, Archive } from 'lucide-react';
+import { Target, Plus, TrendingUp, CheckCircle2, Archive, X } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { needsSettlement } from '../components/utils/goalCalculations';
 import { toast } from 'sonner';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useIsMobile } from '../hooks/use-mobile';
 
 const STATUS_FILTERS = [
   { value: 'active', label: 'Active', icon: TrendingUp },
@@ -41,6 +43,8 @@ export default function GoalsPage() {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [settlementDrawerOpen, setSettlementDrawerOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
+
+  const isMobile = useIsMobile();
 
   const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
@@ -261,35 +265,63 @@ export default function GoalsPage() {
         </AnimatePresence>
       </div>
 
-      {/* Create Goal Drawer */}
-      <Drawer open={createDrawerOpen} onOpenChange={setCreateDrawerOpen}>
-        <DrawerContent className="px-4 pb-8">
-          <DrawerHeader>
-            <DrawerTitle>Create New Goal</DrawerTitle>
-          </DrawerHeader>
-          <GoalForm
-            onSubmit={handleCreateGoal}
-            onCancel={() => setCreateDrawerOpen(false)}
-          />
-        </DrawerContent>
-      </Drawer>
+      {/* Create Goal Modal/Drawer */}
+      {!isMobile ? (
+        <Dialog.Root open={createDrawerOpen} onOpenChange={setCreateDrawerOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+            <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] border border-border bg-background p-6 shadow-lg rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <Dialog.Title className="text-lg font-bold">Create New Goal</Dialog.Title>
+                <Dialog.Close asChild>
+                  <CustomButton variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                    <X className="w-4 h-4" />
+                  </CustomButton>
+                </Dialog.Close>
+              </div>
+              <GoalForm onSubmit={handleCreateGoal} onCancel={() => setCreateDrawerOpen(false)} />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      ) : (
+        <Drawer open={createDrawerOpen} onOpenChange={setCreateDrawerOpen}>
+          <DrawerContent className="px-4 pb-8">
+            <DrawerHeader>
+              <DrawerTitle>Create New Goal</DrawerTitle>
+            </DrawerHeader>
+            <GoalForm onSubmit={handleCreateGoal} onCancel={() => setCreateDrawerOpen(false)} />
+          </DrawerContent>
+        </Drawer>
+      )}
 
-      {/* Edit Goal Drawer */}
-      <Drawer open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
-        <DrawerContent className="px-4 pb-8">
-          <DrawerHeader>
-            <DrawerTitle>Edit Goal</DrawerTitle>
-          </DrawerHeader>
-          <GoalForm
-            goal={selectedGoal}
-            onSubmit={handleEditGoal}
-            onCancel={() => {
-              setEditDrawerOpen(false);
-              setSelectedGoal(null);
-            }}
-          />
-        </DrawerContent>
-      </Drawer>
+      {/* Edit Goal Modal/Drawer */}
+      {!isMobile ? (
+        <Dialog.Root open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+            <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] border border-border bg-background p-6 shadow-lg rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <Dialog.Title className="text-lg font-bold">Edit Goal</Dialog.Title>
+                <Dialog.Close asChild>
+                  <CustomButton variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                    <X className="w-4 h-4" />
+                  </CustomButton>
+                </Dialog.Close>
+              </div>
+              <GoalForm goal={selectedGoal} onSubmit={handleEditGoal} onCancel={() => setEditDrawerOpen(false)} />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      ) : (
+        <Drawer open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
+          <DrawerContent className="px-4 pb-8">
+            <DrawerHeader>
+              <DrawerTitle>Edit Goal</DrawerTitle>
+            </DrawerHeader>
+            <GoalForm goal={selectedGoal} onSubmit={handleEditGoal} onCancel={() => setEditDrawerOpen(false)} />
+          </DrawerContent>
+        </Drawer>
+      )}
 
       {/* Goal Detail Drawer */}
       <GoalDetailDrawer
