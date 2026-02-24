@@ -1052,7 +1052,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 )}
               </div>
 
-              <div className="space-y-2" data-tutorial="budget-cards">
+              <div className="space-y-2">
                 <div className="relative h-10 w-full bg-muted/50 rounded-xl overflow-hidden flex shadow-inner border border-border">
                   {renderUnifiedBar()}
                 </div>
