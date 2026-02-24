@@ -383,7 +383,7 @@ export default function Dashboard() {
             </div>
 
             {/* DESKTOP PLACEMENT: Right side of Hero */}
-            <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
+            <div className="hidden lg:block lg:col-span-1 h-full space-y-6" data-tutorial="upcoming-transactions">
               {/* <BudgetAvatar health={budgetHealth} /> */}
               <UpcomingTransactions
                 recurringWithStatus={recurringWithStatus}
@@ -406,7 +406,7 @@ export default function Dashboard() {
 
               {/* MOBILE PLACEMENT: Below Custom Budgets */}
               {/* Removed fixed height 'h-96' to let content flow naturally */}
-              <div className="lg:hidden w-full">
+              <div className="lg:hidden w-full" data-tutorial="upcoming-transactions">
                 <UpcomingTransactions
                   recurringWithStatus={recurringWithStatus}
                   onMarkPaid={handleMarkPaid}
