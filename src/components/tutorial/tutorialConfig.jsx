@@ -61,11 +61,17 @@ export const TUTORIALS = {
         placement: 'top',
       },
       {
-        target: '[data-tutorial="add-fab"]',
-        title: 'Quick Add',
-        content: 'Use this button to quickly add income or expenses from anywhere in the app.',
-        placement: 'left',
+        target: '[data-tutorial="desktop-actions"]',
+        title: 'Quick Actions',
+        content: 'Use these buttons to rapidly record new income, log expenses, or import data from your bank.',
+        placement: 'bottom',
       },
+      {
+        target: '[data-tutorial="mobile-fab"]',
+        title: 'Action Menu',
+        content: 'Tap this floating button from anywhere in the app to open your quick actions menu for adding transactions.',
+        placement: 'top',
+      }
     ],
   },
 
