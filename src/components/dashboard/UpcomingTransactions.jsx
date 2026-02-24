@@ -92,7 +92,7 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
               </span>
               <Button
                 size="icon"
-                variant="ghost"
+                variant="create"
                 className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 onClick={() => setShowAddForm(true)}
               >
