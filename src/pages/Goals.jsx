@@ -126,6 +126,12 @@ export default function GoalsPage() {
     setSettlementDrawerOpen(true);
   };
 
+  const handleManualDeposit = (goal) => {
+    setDetailDrawerOpen(false);
+    setSelectedGoal(goal);
+    setSettlementDrawerOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -337,6 +343,7 @@ export default function GoalsPage() {
         onTogglePause={handleTogglePause}
         onComplete={handleCompleteGoal}
         monthlyIncome={monthlyIncome}
+        onAddDeposit={handleManualDeposit}
       />
 
       {/* Settlement Drawer */}
