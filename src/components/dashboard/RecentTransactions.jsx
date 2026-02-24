@@ -119,7 +119,6 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                         </p>
                         {!isIncome && transaction.paidDate && (
                           <>
-                            <span className="text-muted-foreground/30 hidden sm:inline">•</span>
                             <p className="text-[10px] sm:text-xs text-[hsl(var(--status-paid-text))] whitespace-nowrap">
                               Paid {format(new Date(transaction.paidDate), showYear ? "MMM d, yyyy" : "MMM d")}
                             </p>
@@ -128,7 +127,6 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                         {/* UPDATED 13-Jan-2026: Always show CB badge if assigned */}
                         {customBudget && (
                           <>
-                            <span className="text-muted-foreground/30 hidden sm:inline">•</span>
                             <Badge
                               variant="outline"
                               className={`text-[10px] px-1.5 py-0 font-medium max-w-[120px] truncate ${crossPeriodInfo.isCrossPeriod
