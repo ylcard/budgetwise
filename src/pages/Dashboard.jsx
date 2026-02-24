@@ -63,7 +63,7 @@ export default function Dashboard() {
 
   // Automatically checks and triggers the dashboard tutorial
   useTutorialTrigger(TUTORIAL_IDS.DASHBOARD_OVERVIEW);
-  
+
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -280,7 +280,7 @@ export default function Dashboard() {
 
           {/* GRID LAYOUT: Split Hero Row */}
           <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4 md:space-y-6">
+            <div className="lg:col-span-2 space-y-4 md:space-y-6" data-tutorial="quick-stats">
 
               {/* INNOVATION: Velocity Widget at the top */}
               <VelocityWidget
@@ -366,7 +366,7 @@ export default function Dashboard() {
             </div>
 
             {/* DESKTOP PLACEMENT: Right side of Hero */}
-            <div className="hidden lg:block lg:col-span-1 h-full space-y-6">
+            <div className="hidden lg:block lg:col-span-1 h-full space-y-6" data-tutorial="budget-cards">
               {/* <BudgetAvatar health={budgetHealth} /> */}
               <UpcomingTransactions
                 recurringWithStatus={recurringWithStatus}
@@ -379,7 +379,7 @@ export default function Dashboard() {
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Added spacing between elements in this column */}
-            <div className="lg:col-span-2 flex flex-col min-w-0 space-y-4 md:space-y-6">
+            <div className="lg:col-span-2 flex flex-col min-w-0 space-y-4 md:space-y-6" data-tutorial="budget-cards">
 
               <CustomBudgetsDisplay
                 onCreateBudget={() => setShowQuickAddBudget(true)}
@@ -398,7 +398,7 @@ export default function Dashboard() {
 
             </div>
 
-            <div className="lg:col-span-1 flex flex-col">
+            <div className="lg:col-span-1 flex flex-col" data-tutorial="recent-transactions">
               <RecentTransactions
                 categories={categories}
                 settings={settings}
