@@ -20,6 +20,7 @@ const TutorialOverlay = memo(() => {
     nextStep,
     previousStep,
     skipTutorial,
+    dismissTutorial,
     completeTutorial,
   } = useTutorial();
 
@@ -177,7 +178,7 @@ const TutorialOverlay = memo(() => {
         >
           {/* Close button */}
           <button
-            onClick={skipTutorial}
+            onClick={dismissTutorial}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
             aria-label="Close tutorial"
           >
