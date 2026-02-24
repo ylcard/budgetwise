@@ -19,7 +19,8 @@ import {
   AlertCircle,
   DollarSign,
   Percent,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -36,7 +37,8 @@ export const GoalDetailDrawer = ({
   onEdit,
   onTogglePause,
   onComplete,
-  monthlyIncome
+  monthlyIncome,
+  onAddDeposit
 }) => {
   const { settings } = useSettings();
   const formatCurrency = (value) => new Intl.NumberFormat(undefined, {
@@ -125,8 +127,8 @@ export const GoalDetailDrawer = ({
           {/* Feasibility Status */}
           {feasibilityData && !isComplete && !isPaused && (
             <div className={`p-4 rounded-lg border ${feasibilityData.status === 'on_track'
-                ? 'bg-[hsl(var(--status-paid-bg))] border-[hsl(var(--status-paid-text))]'
-                : 'bg-[hsl(var(--status-unpaid-bg))] border-[hsl(var(--status-unpaid-text))]'
+              ? 'bg-[hsl(var(--status-paid-bg))] border-[hsl(var(--status-paid-text))]'
+              : 'bg-[hsl(var(--status-unpaid-bg))] border-[hsl(var(--status-unpaid-text))]'
               }`}>
               <div className="flex items-start gap-2">
                 {feasibilityData.status === 'on_track' ? (
@@ -197,10 +199,18 @@ export const GoalDetailDrawer = ({
           <CustomButton
             variant="outline"
             onClick={() => onEdit(goal)}
-            className="flex-1"
+            className="flex-none"
           >
             <Edit className="w-4 h-4 mr-2" />
             Edit
+          </CustomButton>
+          <CustomButton
+            variant="default"
+            onClick={() => onAddDeposit(goal)}
+            className="flex-1"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Deposit
           </CustomButton>
         </>
       )}
