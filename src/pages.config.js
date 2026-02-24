@@ -80,7 +80,6 @@ export const PAGES = {
     "Home": Home,
     "ImportData": ImportData,
     "Manage": Manage,
-    "MiniBudgets": MiniBudgets,
     "PrivacyPolicy": PrivacyPolicy,
     "RecurringTransactions": RecurringTransactions,
     "Reports": Reports,
