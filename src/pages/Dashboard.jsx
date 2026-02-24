@@ -48,7 +48,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
-import { useTutorial } from '../components/tutorial/TutorialContext.jsx';
+import { useTutorial } from '../components/tutorial/TutorialContext';
 export default function Dashboard() {
   const { user, settings } = useSettings();
   const [quickAddState, setQuickAddState] = useState(null); // null | 'new' | templateObject
