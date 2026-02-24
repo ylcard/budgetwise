@@ -63,6 +63,7 @@ export default function Dashboard() {
 
   // Automatically checks and triggers the dashboard tutorial
   useTutorialTrigger(TUTORIAL_IDS.DASHBOARD_OVERVIEW);
+  const { activeTutorial } = useTutorial();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -263,6 +264,17 @@ export default function Dashboard() {
   // Combine loading states. The dashboard summary relies heavily on transactions and categories.
   const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
 
+  // --- MOCK DATA FOR TUTORIAL ---
+  const isDashboardTutorial = activeTutorial?.id === TUTORIAL_IDS.DASHBOARD_OVERVIEW;
+
+  const displayIncome = isDashboardTutorial ? 4500 : currentMonthIncome;
+  const displayExpenses = isDashboardTutorial ? 2100 : currentMonthExpenses;
+  const displaySystemBudgets = isDashboardTutorial ? [
+    { id: 'needs', name: 'Needs', limit: 2250, spent: 1500, percentage: 66 },
+    { id: 'wants', name: 'Wants', limit: 1350, spent: 600, percentage: 44 }
+  ] : systemBudgetsData;
+  const displayBreakdown = isDashboardTutorial ? { Needs: 1500, Wants: 600, Savings: 0 } : detailedBreakdown;
+
   return (
     <HealthProvider>
       {/* Mobile: No padding on sides (components handle it). Desktop: Standard padding. */}
@@ -289,80 +301,83 @@ export default function Dashboard() {
                 monthStatus={monthStatus}
                 settings={settings}
               />
-              {isMobile ? (
-                <MobileRemainingBudgetCard
-                  breakdown={detailedBreakdown}
-                  systemBudgets={systemBudgetsData}
-                  currentMonthIncome={currentMonthIncome}
-                  currentMonthExpenses={currentMonthExpenses}
-                  projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
-                  isUsingProjection={isCurrentMonth || isUsingProjection}
-                  projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
-                  settings={settings}
-                  monthStatus={monthStatus}
-                  healthData={healthData}
-                  isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  monthNavigator={
-                    <MonthNavigator
-                      currentMonth={selectedMonth}
-                      currentYear={selectedYear}
-                      resetPosition="right"
-                      onMonthChange={(month, year) => {
-                        setSelectedMonth(month);
-                        setSelectedYear(year);
-                      }}
-                    />
-                  }
-                />
-              ) : (
-                <RemainingBudgetCard
-                  breakdown={detailedBreakdown}
-                  systemBudgets={systemBudgetsData}
-                  bonusSavingsPotential={bonusSavingsPotential}
-                  currentMonthIncome={currentMonthIncome}
-                  currentMonthExpenses={currentMonthExpenses}
-                  projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
-                  isUsingProjection={isCurrentMonth || isUsingProjection}
-                  projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
-                  healthData={healthData}
-                  goals={goals}
-                  monthStatus={monthStatus}
-                  settings={settings}
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  importDataButton={
-                    <CustomButton variant="primary" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
-                      <FileUp className="h-3.5 w-3.5" />
-                      <span className="hidden xl:inline">Import</span>
-                    </CustomButton>
-                  }
-                  addIncomeButton={
-                    <CustomButton variant="success" size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs">
-                      <PlusCircle className="h-3.5 w-3.5" />
-                      <span className="hidden xl:inline">Income</span>
-                    </CustomButton>
-                  }
-                  addExpenseButton={
-                    <CustomButton variant="delete" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
-                      <MinusCircle className="h-3.5 w-3.5" />
-                      <span className="hidden xl:inline">Expense</span>
-                    </CustomButton>
-                  }
-                  monthNavigator={
-                    <MonthNavigator
-                      currentMonth={selectedMonth}
-                      currentYear={selectedYear}
-                      resetPosition="right"
-                      onMonthChange={(month, year) => {
-                        setSelectedMonth(month);
-                        setSelectedYear(year);
-                      }}
-                    />
-                  }
-                />
-              )}
+
+              <div data-tutorial="quick-stats">
+                {isMobile ? (
+                  <MobileRemainingBudgetCard
+                    breakdown={displayBreakdown}
+                    systemBudgets={displaySystemBudgets}
+                    currentMonthIncome={displayIncome}
+                    currentMonthExpenses={displayExpenses}
+                    projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
+                    isUsingProjection={isCurrentMonth || isUsingProjection}
+                    projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
+                    settings={settings}
+                    monthStatus={monthStatus}
+                    healthData={healthData}
+                    isLoading={isLoading}
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    monthNavigator={
+                      <MonthNavigator
+                        currentMonth={selectedMonth}
+                        currentYear={selectedYear}
+                        resetPosition="right"
+                        onMonthChange={(month, year) => {
+                          setSelectedMonth(month);
+                          setSelectedYear(year);
+                        }}
+                      />
+                    }
+                  />
+                ) : (
+                  <RemainingBudgetCard
+                    breakdown={displayBreakdown}
+                    systemBudgets={displaySystemBudgets}
+                    bonusSavingsPotential={bonusSavingsPotential}
+                    currentMonthIncome={displayIncome}
+                    currentMonthExpenses={displayExpenses}
+                    projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
+                    isUsingProjection={isCurrentMonth || isUsingProjection}
+                    projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
+                    healthData={healthData}
+                    goals={goals}
+                    monthStatus={monthStatus}
+                    settings={settings}
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    importDataButton={
+                      <CustomButton variant="primary" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
+                        <FileUp className="h-3.5 w-3.5" />
+                        <span className="hidden xl:inline">Import</span>
+                      </CustomButton>
+                    }
+                    addIncomeButton={
+                      <CustomButton variant="success" size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs">
+                        <PlusCircle className="h-3.5 w-3.5" />
+                        <span className="hidden xl:inline">Income</span>
+                      </CustomButton>
+                    }
+                    addExpenseButton={
+                      <CustomButton variant="delete" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
+                        <MinusCircle className="h-3.5 w-3.5" />
+                        <span className="hidden xl:inline">Expense</span>
+                      </CustomButton>
+                    }
+                    monthNavigator={
+                      <MonthNavigator
+                        currentMonth={selectedMonth}
+                        currentYear={selectedYear}
+                        resetPosition="right"
+                        onMonthChange={(month, year) => {
+                          setSelectedMonth(month);
+                          setSelectedYear(year);
+                        }}
+                      />
+                    }
+                  />
+                )}
+              </div>
             </div>
 
             {/* DESKTOP PLACEMENT: Right side of Hero */}
@@ -381,9 +396,11 @@ export default function Dashboard() {
             {/* Added spacing between elements in this column */}
             <div className="lg:col-span-2 flex flex-col min-w-0 space-y-4 md:space-y-6" data-tutorial="budget-cards">
 
-              <CustomBudgetsDisplay
-                onCreateBudget={() => setShowQuickAddBudget(true)}
-              />
+              <div data-tutorial="custom-budgets">
+                <CustomBudgetsDisplay
+                  onCreateBudget={() => setShowQuickAddBudget(true)}
+                />
+              </div>
 
               {/* MOBILE PLACEMENT: Below Custom Budgets */}
               {/* Removed fixed height 'h-96' to let content flow naturally */}
