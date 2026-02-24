@@ -5,6 +5,7 @@
  */
 
 import Big from "big.js";
+import memoize from "lodash/memoize";
 
 /**
  * Get the currency symbol for a given currency code
@@ -62,7 +63,7 @@ export function unformatCurrency(formattedValue, settings) {
  * @param {Object} settings - User currency settings
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (amount, settings) => {
+export const formatCurrency = memoize((amount, settings) => {
   if (amount === null || amount === undefined || isNaN(amount)) {
     return settings.currencyPosition === 'before'
       ? `${settings.currencySymbol}0${settings.decimalSeparator}00`
@@ -105,4 +106,8 @@ export const formatCurrency = (amount, settings) => {
   return settings.currencyPosition === 'before'
     ? `${sign}${settings.currencySymbol}${formattedAmount}`
     : `${sign}${formattedAmount}${settings.currencySymbol}`;
-};
+}, (amount, settings) => {
+  // Custom resolver for lodash memoize to create a unique cache key based on amount and formatting settings
+  // This should prevent cache collisions if the user switches currency views
+  return `${amount}_${settings?.currencySymbol}_${settings?.decimalPlaces}_${settings?.currencyPosition}`;
+});
