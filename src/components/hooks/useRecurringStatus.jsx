@@ -50,8 +50,9 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
 
         // --- SCORE 1: AMOUNT (Weight: 70%) ---
         // Calculate percentage difference
-        const diff = Math.abs(tx.amount - template.amount);
-        const percentDiff = diff / (template.amount || 1);
+        // Enforce absolute values on both to prevent expense negative sign mismatches
+        const diff = Math.abs(Math.abs(tx.amount) - Math.abs(template.amount));
+        const percentDiff = diff / (Math.abs(template.amount) || 1);
 
         // Hard Fail: If difference is > 20%, score is 0.
         const amountScore = percentDiff > 0.2 ? 0 : (1 - (percentDiff * 5));
