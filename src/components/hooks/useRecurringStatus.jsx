@@ -1,67 +1,99 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format } from 'date-fns';
+import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format, max, isBefore, startOfMonth } from 'date-fns';
 import Big from 'big.js';
 import { useSettings } from '../utils/SettingsContext';
 import { notifyRecurringDue, notifyRecurringOverdue } from '../utils/notificationHelpers';
 
-export function useRecurringStatus(recurringTransactions = [], realTransactions = []) {
+export function useRecurringStatus(recurringTransactions = [], allTransactions = []) {
   const { user } = useSettings();
   const notifiedRefs = useRef(new Set());
 
   const data = useMemo(() => {
     const today = new Date();
+    const currentMonthStart = startOfMonth(today);
     const currentMonthItems = [];
     const timelineItems = [];
 
-    recurringTransactions.forEach(recurring => {
-      if (!recurring.isActive) return;
+    // 1. OPTIMIZATION: Get IDs of active templates to filter the massive transactions array once
+    const activeTemplates = recurringTransactions.filter(r => r.isActive);
+    const activeTemplateIds = new Set(activeTemplates.map(r => r.id));
 
-      // 1. Intelligent Matching: Find real transactions linked to this recurring ID in the current month
-      const currentMonthTxs = realTransactions.filter(t =>
-        t.recurringTransactionId === recurring.id &&
-        isSameMonth(parseISO(t.date), today)
-      );
+    // 2. OPTIMIZATION: Keep only real transactions that are actually linked to our active templates
+    const relevantTransactions = allTransactions.filter(t =>
+      t.recurringTransactionId && activeTemplateIds.has(t.recurringTransactionId)
+    );
 
-      // 2. Accurate summation using big.js to check if fully paid
+    activeTemplates.forEach(template => {
+      // Get all historical payments for this specific template
+      const templateHistory = relevantTransactions.filter(t => t.recurringTransactionId === template.id);
+
+      // 3. Find the MOST RECENT payment date from historical data
+      let lastPaymentDate = null;
+      if (templateHistory.length > 0) {
+        const dates = templateHistory.map(t => parseISO(t.date));
+        lastPaymentDate = max(dates);
+      }
+
+      // 4. Calculate the TRUE next expected date based on frequency
+      let expectedNextDate;
+      if (lastPaymentDate) {
+        switch (template.frequency) {
+          case 'monthly': expectedNextDate = addMonths(lastPaymentDate, 1); break;
+          case 'weekly': expectedNextDate = addWeeks(lastPaymentDate, 1); break;
+          case 'biweekly': expectedNextDate = addWeeks(lastPaymentDate, 2); break;
+          case 'quarterly': expectedNextDate = addMonths(lastPaymentDate, 3); break;
+          case 'yearly': expectedNextDate = addYears(lastPaymentDate, 1); break;
+          case 'daily': expectedNextDate = addDays(lastPaymentDate, 1); break;
+          default: expectedNextDate = addMonths(lastPaymentDate, 1);
+        }
+      } else {
+        // Fallback for brand new templates with no history
+        expectedNextDate = parseISO(template.nextOccurrence);
+      }
+
+      // 5. Check if it has been paid THIS month
+      const currentMonthTxs = templateHistory.filter(t => isSameMonth(parseISO(t.date), today));
       const totalPaid = currentMonthTxs.reduce((acc, t) => acc.plus(new Big(t.amount || 0)), new Big(0));
-      const isPaid = totalPaid.gte(new Big(recurring.amount));
+      const isPaid = totalPaid.gte(new Big(template.amount));
 
-      const nextDate = parseISO(recurring.nextOccurrence);
-      const daysUntilDue = differenceInDays(nextDate, today);
-
-      // 3. Status Determination
+      // 6. Status Determination
+      const daysUntilDue = differenceInDays(expectedNextDate, today);
       let status = 'upcoming';
       if (isPaid) status = 'paid';
       else if (daysUntilDue < 0) status = 'overdue';
       else if (daysUntilDue <= 3) status = 'due_soon';
 
       const enrichedItem = {
-        ...recurring,
+        ...template,
         isPaid,
         paidAmount: totalPaid.toNumber(),
         daysUntilDue,
         status,
+        calculatedNextDate: expectedNextDate.toISOString()
       };
 
-      // 4. Current Month View
-      if (isSameMonth(nextDate, today) || status === 'overdue') {
+      // 7. Inclusion Logic: Only show if expected THIS month, or strictly overdue from a past month, or paid this month
+      const isExpectedThisMonth = isSameMonth(expectedNextDate, today);
+      const isOverdueFromPast = isBefore(expectedNextDate, currentMonthStart) && !isPaid;
+
+      if (isExpectedThisMonth || isOverdueFromPast || isPaid) {
         currentMonthItems.push(enrichedItem);
       }
 
-      // 5. Timeline Projection (Next 3 occurrences)
-      let projDate = nextDate;
+      // 8. Timeline Projection (Next 3 occurrences based on calculated reality)
+      let projDate = expectedNextDate;
       for (let i = 0; i < 3; i++) {
         timelineItems.push({
           ...enrichedItem,
           projectedDate: projDate.toISOString(),
-          // Mark the first instance as accurate to reality, future ones as purely projections
           isProjection: i > 0 || isPaid
         });
 
-        switch (recurring.frequency) {
+        switch (template.frequency) {
           case 'monthly': projDate = addMonths(projDate, 1); break;
           case 'weekly': projDate = addWeeks(projDate, 1); break;
           case 'biweekly': projDate = addWeeks(projDate, 2); break;
+          case 'quarterly': projDate = addMonths(projDate, 3); break;
           case 'yearly': projDate = addYears(projDate, 1); break;
           case 'daily': projDate = addDays(projDate, 1); break;
           default: projDate = addMonths(projDate, 1);
@@ -69,22 +101,22 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       }
     });
 
-    currentMonthItems.sort((a, b) => new Date(a.nextOccurrence) - new Date(b.nextOccurrence));
+    currentMonthItems.sort((a, b) => new Date(a.calculatedNextDate) - new Date(b.calculatedNextDate));
     timelineItems.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
 
     return { currentMonthItems, timelineItems };
-  }, [recurringTransactions, realTransactions]);
+  }, [recurringTransactions, allTransactions]);
 
-  // 6. Notification System Integration
+  // Notification System Integration
   useEffect(() => {
     if (!user?.email || !data.currentMonthItems.length) return;
 
     data.currentMonthItems.forEach(async (item) => {
-      const notifKey = `${item.id}-${item.nextOccurrence}-${item.status}`;
+      const notifKey = `${item.id}-${item.calculatedNextDate}-${item.status}`;
       if (notifiedRefs.current.has(notifKey)) return;
 
       if (item.status === 'due_soon') {
-        await notifyRecurringDue(user.email, item.title, format(parseISO(item.nextOccurrence), 'MMM d'));
+        await notifyRecurringDue(user.email, item.title, format(parseISO(item.calculatedNextDate), 'MMM d'));
         notifiedRefs.current.add(notifKey);
       } else if (item.status === 'overdue') {
         await notifyRecurringOverdue(user.email, item.title);
