@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { differenceInDays, parseISO } from 'date-fns';
 
 /**
  * Calculates the status of recurring templates by matching them against
@@ -35,73 +34,35 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
       }
 
       // B. Find a "Smart Match" among unlinked transactions
+      // Rules: Same Type, Same Category, Amount within 20% margin
       let bestMatch = null;
-      let highestScore = 0;
       let bestMatchIndex = -1;
 
-      const targetDate = parseISO(template.nextOccurrence);
+      for (let i = 0; i < unlinkedTransactions.length; i++) {
+        const tx = unlinkedTransactions[i];
 
-      unlinkedTransactions.forEach((tx, index) => {
-        // FILTER: Strict type match, relaxed category match
-        if (tx.type !== template.type) return;
-        // Allow scoring if categories match perfectly, OR if either one is unassigned
-        const isSameCategory = tx.category_id === template.category_id || !tx.category_id || !template.category_id;
-        if (!isSameCategory) return;
+        if (template.type && tx.type !== template.type) continue;
+        if (tx.category_id !== template.category_id) continue;
 
-        // --- SCORE 1: AMOUNT (Weight: 70%) ---
-        // Calculate percentage difference
-        // Enforce absolute values on both to prevent expense negative sign mismatches
-        const diff = Math.abs(Math.abs(tx.amount) - Math.abs(template.amount));
-        const percentDiff = diff / (Math.abs(template.amount) || 1);
+        const txAmount = Math.abs(tx.amount);
+        const tmplAmount = Math.abs(template.amount);
+        const margin = tmplAmount * 0.20; // 20% margin
 
-        // Hard Fail: If difference is > 20%, score is 0.
-        const amountScore = percentDiff > 0.2 ? 0 : (1 - (percentDiff * 5));
-        // (Multiplier * 5 makes 20% diff = 0 score, 0% diff = 1 score)
-
-        // --- SCORE 2: TEXT (Weight: 20%) ---
-        // Simple token match
-        const txTitle = (tx.title || "").toLowerCase();
-        const tempTitle = (template.title || "").toLowerCase();
-        // Split into words (tokens)
-        const templateTokens = tempTitle.split(/[\s,.-]+/).filter(t => t.length > 3);
-
-        let textScore = 0;
-        if (templateTokens.length > 0) {
-          // If any significant word matches, give full points
-          const hasMatch = templateTokens.some(token => txTitle.includes(token));
-          textScore = hasMatch ? 1 : 0;
-        } else {
-          // Fallback for short titles: exact inclusion
-          textScore = txTitle.includes(tempTitle) ? 1 : 0;
-        }
-
-        // --- SCORE 3: DAY (Weight: 10%) ---
-        // Just a sanity check to prefer dates closer to the target
-        const daysDiff = Math.abs(differenceInDays(parseISO(tx.date), targetDate));
-        // Decay over 30 days
-        const dayScore = Math.max(0, 1 - (daysDiff / 30));
-
-        // --- WEIGHTED TOTAL ---
-        const totalScore = (amountScore * 0.7) + (textScore * 0.2) + (dayScore * 0.1);
-
-        if (totalScore > highestScore) {
-          highestScore = totalScore;
+        if (Math.abs(txAmount - tmplAmount) <= margin) {
           bestMatch = tx;
-          bestMatchIndex = index;
+          bestMatchIndex = i;
+          break; // Found a match, stop looking
         }
-      });
+      }
 
-      // C. Threshold Check (>= 75% allows exact amounts + close dates to pass even if titles differ)
-      if (bestMatch && highestScore >= 0.75) {
-        // Prevent this transaction from being matched to another template
+      // C. Match Found
+      if (bestMatch) {
         unlinkedTransactions.splice(bestMatchIndex, 1);
 
         return {
           ...template,
           status: 'paid',
-          linkedTransaction: bestMatch,
-          matchConfidence: highestScore,
-          matchReason: 'smart_match'
+          linkedTransaction: bestMatch
         };
       }
 
