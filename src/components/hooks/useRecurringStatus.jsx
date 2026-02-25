@@ -6,105 +6,110 @@ import { differenceInDays, parseISO } from 'date-fns';
  * actual transactions from the current month.
  */
 export function useRecurringStatus(recurringTransactions, currentMonthTransactions) {
-    return useMemo(() => {
-        if (!recurringTransactions || !currentMonthTransactions) return [];
+  return useMemo(() => {
+    if (!recurringTransactions || !currentMonthTransactions) return [];
 
-        // 1. Create a map of transactions that are already explicitly linked via ID
-        const linkedMap = new Map();
-        const unlinkedTransactions = [];
+    // 1. Create a map of transactions that are already explicitly linked via ID
+    const linkedMap = new Map();
+    const unlinkedTransactions = [];
 
-        currentMonthTransactions.forEach(tx => {
-            if (tx.recurringTransactionId) {
-                linkedMap.set(tx.recurringTransactionId, tx);
-            } else {
-                unlinkedTransactions.push(tx);
-            }
-        });
+    currentMonthTransactions.forEach(tx => {
+      if (tx.recurringTransactionId) {
+        linkedMap.set(tx.recurringTransactionId, tx);
+      } else {
+        unlinkedTransactions.push(tx);
+      }
+    });
 
-        // 2. Process each recurring template
-        return recurringTransactions.map(template => {
-            // A. Check for Explicit Link (The "Golden" Link)
-            if (linkedMap.has(template.id)) {
-                return {
-                    ...template,
-                    status: 'paid',
-                    linkedTransaction: linkedMap.get(template.id),
-                    matchConfidence: 1.0,
-                    matchReason: 'explicit_link'
-                };
-            }
+    // 2. Process each recurring template
+    return recurringTransactions.map(template => {
+      // A. Check for Explicit Link (The "Golden" Link)
+      if (linkedMap.has(template.id)) {
+        return {
+          ...template,
+          status: 'paid',
+          linkedTransaction: linkedMap.get(template.id),
+          matchConfidence: 1.0,
+          matchReason: 'explicit_link'
+        };
+      }
 
-            // B. Find a "Smart Match" among unlinked transactions
-            let bestMatch = null;
-            let highestScore = 0;
+      // B. Find a "Smart Match" among unlinked transactions
+      let bestMatch = null;
+      let highestScore = 0;
+      let bestMatchIndex = -1;
 
-            const targetDate = parseISO(template.nextOccurrence);
-            
-            // FILTER: Only look at transactions with the same category
-            const candidates = unlinkedTransactions.filter(
-                tx => tx.category_id === template.category_id
-            );
+      const targetDate = parseISO(template.nextOccurrence);
 
-            candidates.forEach(tx => {
-                // --- SCORE 1: AMOUNT (Weight: 70%) ---
-                // Calculate percentage difference
-                const diff = Math.abs(tx.amount - template.amount);
-                const percentDiff = diff / (template.amount || 1); 
-                
-                // Hard Fail: If difference is > 20%, score is 0.
-                const amountScore = percentDiff > 0.2 ? 0 : (1 - (percentDiff * 5)); 
-                // (Multiplier * 5 makes 20% diff = 0 score, 0% diff = 1 score)
+      unlinkedTransactions.forEach((tx, index) => {
+        // FILTER: Strict type match, loose category match (handles null vs undefined vs empty string)
+        if (tx.type !== template.type) return;
+        const isSameCategory = tx.category_id == template.category_id || (!tx.category_id && !template.category_id);
+        if (!isSameCategory) return;
 
-                // --- SCORE 2: TEXT (Weight: 20%) ---
-                // Simple token match
-                const txTitle = (tx.title || "").toLowerCase();
-                const tempTitle = (template.title || "").toLowerCase();
-                // Split into words (tokens)
-                const templateTokens = tempTitle.split(/[\s,.-]+/).filter(t => t.length > 3);
-                
-                let textScore = 0;
-                if (templateTokens.length > 0) {
-                     // If any significant word matches, give full points
-                    const hasMatch = templateTokens.some(token => txTitle.includes(token));
-                    textScore = hasMatch ? 1 : 0;
-                } else {
-                    // Fallback for short titles: exact inclusion
-                    textScore = txTitle.includes(tempTitle) ? 1 : 0;
-                }
+        // --- SCORE 1: AMOUNT (Weight: 70%) ---
+        // Calculate percentage difference
+        const diff = Math.abs(tx.amount - template.amount);
+        const percentDiff = diff / (template.amount || 1);
 
-                // --- SCORE 3: DAY (Weight: 10%) ---
-                // Just a sanity check to prefer dates closer to the target
-                const daysDiff = Math.abs(differenceInDays(parseISO(tx.date), targetDate));
-                // Decay over 30 days
-                const dayScore = Math.max(0, 1 - (daysDiff / 30));
+        // Hard Fail: If difference is > 20%, score is 0.
+        const amountScore = percentDiff > 0.2 ? 0 : (1 - (percentDiff * 5));
+        // (Multiplier * 5 makes 20% diff = 0 score, 0% diff = 1 score)
 
-                // --- WEIGHTED TOTAL ---
-                const totalScore = (amountScore * 0.7) + (textScore * 0.2) + (dayScore * 0.1);
+        // --- SCORE 2: TEXT (Weight: 20%) ---
+        // Simple token match
+        const txTitle = (tx.title || "").toLowerCase();
+        const tempTitle = (template.title || "").toLowerCase();
+        // Split into words (tokens)
+        const templateTokens = tempTitle.split(/[\s,.-]+/).filter(t => t.length > 3);
 
-                if (totalScore > highestScore) {
-                    highestScore = totalScore;
-                    bestMatch = tx;
-                }
-            });
+        let textScore = 0;
+        if (templateTokens.length > 0) {
+          // If any significant word matches, give full points
+          const hasMatch = templateTokens.some(token => txTitle.includes(token));
+          textScore = hasMatch ? 1 : 0;
+        } else {
+          // Fallback for short titles: exact inclusion
+          textScore = txTitle.includes(tempTitle) ? 1 : 0;
+        }
 
-            // C. Threshold Check (> 80% confidence required)
-            if (bestMatch && highestScore > 0.80) {
-                return {
-                    ...template,
-                    status: 'paid', 
-                    linkedTransaction: bestMatch,
-                    matchConfidence: highestScore,
-                    matchReason: 'smart_match'
-                };
-            }
+        // --- SCORE 3: DAY (Weight: 10%) ---
+        // Just a sanity check to prefer dates closer to the target
+        const daysDiff = Math.abs(differenceInDays(parseISO(tx.date), targetDate));
+        // Decay over 30 days
+        const dayScore = Math.max(0, 1 - (daysDiff / 30));
 
-            // D. No Match Found
-            return {
-                ...template,
-                status: 'due',
-                linkedTransaction: null
-            };
-        });
+        // --- WEIGHTED TOTAL ---
+        const totalScore = (amountScore * 0.7) + (textScore * 0.2) + (dayScore * 0.1);
 
-    }, [recurringTransactions, currentMonthTransactions]);
+        if (totalScore > highestScore) {
+          highestScore = totalScore;
+          bestMatch = tx;
+          bestMatchIndex = index;
+        }
+      });
+
+      // C. Threshold Check (> 80% confidence required)
+      if (bestMatch && highestScore > 0.80) {
+        // Prevent this transaction from being matched to another template
+        unlinkedTransactions.splice(bestMatchIndex, 1);
+
+        return {
+          ...template,
+          status: 'paid',
+          linkedTransaction: bestMatch,
+          matchConfidence: highestScore,
+          matchReason: 'smart_match'
+        };
+      }
+
+      // D. No Match Found
+      return {
+        ...template,
+        status: 'due',
+        linkedTransaction: null
+      };
+    });
+
+  }, [recurringTransactions, currentMonthTransactions]);
 }
