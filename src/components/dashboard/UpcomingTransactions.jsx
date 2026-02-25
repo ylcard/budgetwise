@@ -26,8 +26,9 @@ export default function UpcomingTransactions({
   }
 
   return (
-    <div className="bg-card rounded-xl border border-border shadow-sm flex flex-col w-full overflow-hidden">
-      <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="bg-card rounded-xl border border-border shadow-sm flex flex-col w-full overflow-hidden h-full max-h-[500px] lg:max-h-[650px]">
+      {/* Header Area - Stays fixed at the top */}
+      <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
         <div>
           <h2 className="text-lg font-bold text-foreground">Upcoming Bills</h2>
           <p className="text-sm text-muted-foreground">Manage your recurring transactions</p>
@@ -57,7 +58,8 @@ export default function UpcomingTransactions({
         </Tabs.Root>
       </div>
 
-      <div className="p-2 sm:p-4">
+      {/* Scrollable List Area */}
+      <div className="p-2 sm:p-4 flex-1 overflow-y-auto overscroll-contain">
         {displayItems.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground flex flex-col items-center gap-2">
             <CalendarDays className="h-8 w-8 opacity-50" />
