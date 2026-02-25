@@ -28,8 +28,7 @@ import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminConsistencyChecker } from "../components/transactions/AdminConsistencyChecker";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Check, X, Loader2, Plus, RefreshCw, Upload, PlusCircle, MinusCircle, ChevronDown } from "lucide-react";
+import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle } from "lucide-react";
 
 export default function TransactionsLayout() {
   const { user } = useSettings();
@@ -144,42 +143,6 @@ export default function TransactionsLayout() {
               <Button variant="default" size="sm" className="h-9 gap-2 bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => setShowAddIncome(true)}>
                 <PlusCircle className="h-4 w-4" /> Income
               </Button>
-
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="h-9 gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Bank Sync
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 gap-2"
-                onClick={() => setShowImportWizard(true)}
-              >
-                <Upload className="h-4 w-4" />
-                Import
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" className="h-9 gap-2 px-4">
-                    <Plus className="h-4 w-4" />
-                    Add New
-                    <ChevronDown className="h-3 w-3 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => setShowAddIncome(true)} className="gap-2 text-emerald-600 dark:text-emerald-400">
-                    <PlusCircle className="h-4 w-4" /> Add Income
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowAddExpense(true)} className="gap-2 text-rose-600 dark:text-rose-400">
-                    <MinusCircle className="h-4 w-4" /> Add Expense
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
 
           </div>
