@@ -32,12 +32,14 @@ export const TutorialProvider = ({ children }) => {
   );
   const [activeTutorial, setActiveTutorial] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isReady, setIsReady] = useState(false);
 
   // Sync with UserSettings when settings change
   useEffect(() => {
     if (settings) {
       setTutorialsEnabled(settings.tutorialsEnabled !== false);
       setCompletedTutorials(settings.completedTutorials || []);
+      setIsReady(true);
     }
   }, [settings]);
 
@@ -90,7 +92,7 @@ export const TutorialProvider = ({ children }) => {
   const completeTutorial = useCallback(() => {
     if (!activeTutorial) return;
 
-    const newCompleted = [...completedTutorials, activeTutorial.id];
+    const newCompleted = Array.from(new Set([...completedTutorials, activeTutorial.id]));
     setCompletedTutorials(newCompleted);
 
     // Persist to UserSettings
@@ -146,6 +148,7 @@ export const TutorialProvider = ({ children }) => {
 
   const value = {
     tutorialsEnabled,
+    isReady,
     activeTutorial,
     currentStep,
     completedTutorials,
