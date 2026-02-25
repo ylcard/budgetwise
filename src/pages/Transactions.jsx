@@ -29,7 +29,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminConsistencyChecker } from "../components/transactions/AdminConsistencyChecker";
 import { Button } from "@/components/ui/button";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2 } from "lucide-react";
-import { useBankSync } from "../components/hooks/useBankSync";
+import { useBankSync } from "../components/banksync/useBankSync";
 
 export default function TransactionsLayout() {
     const { user } = useSettings();
