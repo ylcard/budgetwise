@@ -1,8 +1,20 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format, max, isBefore, startOfMonth } from 'date-fns';
+import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format, max, isBefore, startOfMonth, startOfDay } from 'date-fns';
 import Big from 'big.js';
 import { useSettings } from '../utils/SettingsContext';
 import { notifyRecurringDue, notifyRecurringOverdue } from '../utils/notificationHelpers';
+
+function calculateNextDate(date, frequency) {
+  switch (frequency) {
+    case 'monthly': return addMonths(date, 1);
+    case 'weekly': return addWeeks(date, 1);
+    case 'biweekly': return addWeeks(date, 2);
+    case 'quarterly': return addMonths(date, 3);
+    case 'yearly': return addYears(date, 1);
+    case 'daily': return addDays(date, 1);
+    default: return addMonths(date, 1);
+  }
+}
 
 export function useRecurringStatus(recurringTransactions = [], allTransactions = []) {
   const { user } = useSettings();
@@ -27,37 +39,34 @@ export function useRecurringStatus(recurringTransactions = [], allTransactions =
       // Get all historical payments for this specific template
       const templateHistory = relevantTransactions.filter(t => t.recurringTransactionId === template.id);
 
-      // 3. Find the MOST RECENT payment date from historical data
-      let lastPaymentDate = null;
-      if (templateHistory.length > 0) {
-        const dates = templateHistory.map(t => parseISO(t.date));
-        lastPaymentDate = max(dates);
-      }
+      // 3. Split history: What happened THIS month vs PAST months
+      const currentMonthTxs = [];
+      const pastTxs = [];
 
-      // 4. Calculate the TRUE next expected date based on frequency
-      let expectedNextDate;
-      if (lastPaymentDate) {
-        switch (template.frequency) {
-          case 'monthly': expectedNextDate = addMonths(lastPaymentDate, 1); break;
-          case 'weekly': expectedNextDate = addWeeks(lastPaymentDate, 1); break;
-          case 'biweekly': expectedNextDate = addWeeks(lastPaymentDate, 2); break;
-          case 'quarterly': expectedNextDate = addMonths(lastPaymentDate, 3); break;
-          case 'yearly': expectedNextDate = addYears(lastPaymentDate, 1); break;
-          case 'daily': expectedNextDate = addDays(lastPaymentDate, 1); break;
-          default: expectedNextDate = addMonths(lastPaymentDate, 1);
+      templateHistory.forEach(t => {
+        const tDate = parseISO(t.date);
+        if (isSameMonth(tDate, today)) {
+          currentMonthTxs.push(t);
+        } else if (isBefore(tDate, currentMonthStart)) {
+          pastTxs.push(t);
         }
+      });
+
+      // 4. Determine what was SUPPOSED to happen this month based purely on past history
+      let expectedDueThisCycle;
+      if (pastTxs.length > 0) {
+        const lastPastPaymentDate = max(pastTxs.map(t => parseISO(t.date)));
+        expectedDueThisCycle = calculateNextDate(lastPastPaymentDate, template.frequency);
       } else {
-        // Fallback for brand new templates with no history
-        expectedNextDate = parseISO(template.nextOccurrence);
+        expectedDueThisCycle = parseISO(template.nextOccurrence);
       }
 
-      // 5. Check if it has been paid THIS month
-      const currentMonthTxs = templateHistory.filter(t => isSameMonth(parseISO(t.date), today));
+      // 5. Calculate dynamically if it was fulfilled THIS month (works for both income/expense)
       const totalPaid = currentMonthTxs.reduce((acc, t) => acc.plus(new Big(t.amount || 0)), new Big(0));
       const isPaid = totalPaid.gte(new Big(template.amount));
 
       // 6. Status Determination
-      const daysUntilDue = differenceInDays(expectedNextDate, today);
+      const daysUntilDue = differenceInDays(startOfDay(expectedDueThisCycle), startOfDay(today));
       let status = 'upcoming';
       if (isPaid) status = 'paid';
       else if (daysUntilDue < 0) status = 'overdue';
@@ -69,19 +78,20 @@ export function useRecurringStatus(recurringTransactions = [], allTransactions =
         paidAmount: totalPaid.toNumber(),
         daysUntilDue,
         status,
-        calculatedNextDate: expectedNextDate.toISOString()
+        calculatedNextDate: expectedDueThisCycle.toISOString()
       };
 
-      // 7. Inclusion Logic: Only show if expected THIS month, or strictly overdue from a past month, or paid this month
-      const isExpectedThisMonth = isSameMonth(expectedNextDate, today);
-      const isOverdueFromPast = isBefore(expectedNextDate, currentMonthStart) && !isPaid;
+      // 7. Inclusion Logic: Show if expected this month, overdue from past, or fulfilled this month
+      const isExpectedThisMonth = isSameMonth(expectedDueThisCycle, today);
+      const isOverdueFromPast = isBefore(expectedDueThisCycle, currentMonthStart) && !isPaid;
 
       if (isExpectedThisMonth || isOverdueFromPast || isPaid) {
         currentMonthItems.push(enrichedItem);
       }
 
-      // 8. Timeline Projection (Next 3 occurrences based on calculated reality)
-      let projDate = expectedNextDate;
+      // 8. Timeline Projection (Future occurrences)
+      // If paid this month, the NEXT expected date in the timeline starts from the next cycle
+      let projDate = isPaid ? calculateNextDate(expectedDueThisCycle, template.frequency) : expectedDueThisCycle;
       for (let i = 0; i < 3; i++) {
         timelineItems.push({
           ...enrichedItem,
@@ -89,15 +99,7 @@ export function useRecurringStatus(recurringTransactions = [], allTransactions =
           isProjection: i > 0 || isPaid
         });
 
-        switch (template.frequency) {
-          case 'monthly': projDate = addMonths(projDate, 1); break;
-          case 'weekly': projDate = addWeeks(projDate, 1); break;
-          case 'biweekly': projDate = addWeeks(projDate, 2); break;
-          case 'quarterly': projDate = addMonths(projDate, 3); break;
-          case 'yearly': projDate = addYears(projDate, 1); break;
-          case 'daily': projDate = addDays(projDate, 1); break;
-          default: projDate = addMonths(projDate, 1);
-        }
+        projDate = calculateNextDate(projDate, template.frequency);
       }
     });
 
