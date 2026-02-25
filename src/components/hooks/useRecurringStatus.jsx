@@ -1,76 +1,97 @@
-import { useMemo } from 'react';
-import { parseISO, isSameMonth, isPast } from 'date-fns';
+import { useMemo, useEffect, useRef } from 'react';
+import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format } from 'date-fns';
+import Big from 'big.js';
+import { useSettings } from '../utils/SettingsContext';
+import { notifyRecurringDue, notifyRecurringOverdue } from '../utils/notificationHelpers';
 
-/**
- * Calculates the status of recurring templates by matching them against
- * actual transactions from the current month.
- */
-export function useRecurringStatus(recurringTransactions, currentMonthTransactions) {
-  return useMemo(() => {
-    if (!recurringTransactions || !currentMonthTransactions) return [];
+export function useRecurringStatus(recurringTransactions = [], realTransactions = []) {
+  const { user } = useSettings();
+  const notifiedRefs = useRef(new Set());
 
-    const unlinkedTransactions = [...currentMonthTransactions];
-    const now = new Date();
+  const data = useMemo(() => {
+    const today = new Date();
+    const currentMonthItems = [];
+    const timelineItems = [];
 
-    // 2. Process each recurring template
-    return recurringTransactions.map(template => {
-      const targetDate = parseISO(template.nextOccurrence);
+    recurringTransactions.forEach(recurring => {
+      if (!recurring.isActive) return;
 
-      // STEP 1: STRICT GATEKEEPING
-      // Intelligently check if we are even expecting this bill this month.
-      // If it's a quarterly bill due next month, it fails this check instantly.
-      const isExpectedThisMonth = isSameMonth(targetDate, now) || isPast(targetDate) || isNaN(targetDate);
+      // 1. Intelligent Matching: Find real transactions linked to this recurring ID in the current month
+      const currentMonthTxs = realTransactions.filter(t =>
+        t.recurringTransactionId === recurring.id &&
+        isSameMonth(parseISO(t.date), today)
+      );
 
-      if (!isExpectedThisMonth) {
-        return {
-          ...template,
-          status: 'ignored', // Tag it so the UI knows to hide it
-          linkedTransaction: null
-        };
+      // 2. Accurate summation using big.js to check if fully paid
+      const totalPaid = currentMonthTxs.reduce((acc, t) => acc.plus(new Big(t.amount || 0)), new Big(0));
+      const isPaid = totalPaid.gte(new Big(recurring.amount));
+
+      const nextDate = parseISO(recurring.nextOccurrence);
+      const daysUntilDue = differenceInDays(nextDate, today);
+
+      // 3. Status Determination
+      let status = 'upcoming';
+      if (isPaid) status = 'paid';
+      else if (daysUntilDue < 0) status = 'overdue';
+      else if (daysUntilDue <= 3) status = 'due_soon';
+
+      const enrichedItem = {
+        ...recurring,
+        isPaid,
+        paidAmount: totalPaid.toNumber(),
+        daysUntilDue,
+        status,
+      };
+
+      // 4. Current Month View
+      if (isSameMonth(nextDate, today) || status === 'overdue') {
+        currentMonthItems.push(enrichedItem);
       }
 
-      // STEP 2: EFFICIENT MATCHING
-      // Only templates strictly due this month get to search the transaction pool
-      let bestMatch = null;
-      let bestMatchIndex = -1;
-      let smallestDiff = Infinity;
+      // 5. Timeline Projection (Next 3 occurrences)
+      let projDate = nextDate;
+      for (let i = 0; i < 3; i++) {
+        timelineItems.push({
+          ...enrichedItem,
+          projectedDate: projDate.toISOString(),
+          // Mark the first instance as accurate to reality, future ones as purely projections
+          isProjection: i > 0 || isPaid
+        });
 
-      for (let i = 0; i < unlinkedTransactions.length; i++) {
-        const tx = unlinkedTransactions[i];
-
-        if (template.type && tx.type !== template.type) continue;
-        if (tx.category_id !== template.category_id) continue;
-
-        const txAmount = Math.abs(tx.amount);
-        const tmplAmount = Math.abs(template.amount);
-        const margin = tmplAmount * 0.20; // 20% margin
-        const diff = Math.abs(txAmount - tmplAmount);
-
-        if (diff <= margin && diff < smallestDiff) {
-          bestMatch = tx;
-          bestMatchIndex = i;
-          smallestDiff = diff;
+        switch (recurring.frequency) {
+          case 'monthly': projDate = addMonths(projDate, 1); break;
+          case 'weekly': projDate = addWeeks(projDate, 1); break;
+          case 'biweekly': projDate = addWeeks(projDate, 2); break;
+          case 'yearly': projDate = addYears(projDate, 1); break;
+          case 'daily': projDate = addDays(projDate, 1); break;
+          default: projDate = addMonths(projDate, 1);
         }
       }
-
-      // STEP 3: ASSIGN STATUS
-      if (bestMatch) {
-        unlinkedTransactions.splice(bestMatchIndex, 1);
-
-        return {
-          ...template,
-          status: 'paid',
-          linkedTransaction: bestMatch
-        };
-      }
-
-      // D. No Match Found
-      return {
-        ...template,
-        status: 'due',
-        linkedTransaction: null
-      };
     });
 
-  }, [recurringTransactions, currentMonthTransactions]);
+    currentMonthItems.sort((a, b) => new Date(a.nextOccurrence) - new Date(b.nextOccurrence));
+    timelineItems.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
+
+    return { currentMonthItems, timelineItems };
+  }, [recurringTransactions, realTransactions]);
+
+  // 6. Notification System Integration
+  useEffect(() => {
+    if (!user?.email || !data.currentMonthItems.length) return;
+
+    data.currentMonthItems.forEach(async (item) => {
+      const notifKey = `${item.id}-${item.nextOccurrence}-${item.status}`;
+      if (notifiedRefs.current.has(notifKey)) return;
+
+      if (item.status === 'due_soon') {
+        await notifyRecurringDue(user.email, item.title, format(parseISO(item.nextOccurrence), 'MMM d'));
+        notifiedRefs.current.add(notifKey);
+      } else if (item.status === 'overdue') {
+        await notifyRecurringOverdue(user.email, item.title);
+        notifiedRefs.current.add(notifKey);
+      }
+    });
+  }, [data.currentMonthItems, user]);
+
+  return data;
 }
