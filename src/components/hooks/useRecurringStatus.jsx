@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format, max, isBefore, startOfMonth, startOfDay } from 'date-fns';
+import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format, isBefore, startOfMonth, startOfDay } from 'date-fns';
 import Big from 'big.js';
 import { useSettings } from '../utils/SettingsContext';
 import { notifyRecurringDue, notifyRecurringOverdue } from '../utils/notificationHelpers';
@@ -26,47 +26,36 @@ export function useRecurringStatus(recurringTransactions = [], allTransactions =
     const currentMonthItems = [];
     const timelineItems = [];
 
-    // 1. OPTIMIZATION: Get IDs of active templates to filter the massive transactions array once
     const activeTemplates = recurringTransactions.filter(r => r.isActive);
     const activeTemplateIds = new Set(activeTemplates.map(r => r.id));
 
-    // 2. OPTIMIZATION: Keep only real transactions that are actually linked to our active templates
     const relevantTransactions = allTransactions.filter(t =>
       t.recurringTransactionId && activeTemplateIds.has(t.recurringTransactionId)
     );
 
     activeTemplates.forEach(template => {
-      // Get all historical payments for this specific template
-      const templateHistory = relevantTransactions.filter(t => t.recurringTransactionId === template.id);
+      // 1. Find ALL transactions linked to this template exactly in the CURRENT month
+      const currentMonthTxs = relevantTransactions.filter(t =>
+        t.recurringTransactionId === template.id &&
+        isSameMonth(parseISO(t.date), today)
+      );
 
-      // 3. Split history: What happened THIS month vs PAST months
-      const currentMonthTxs = [];
-      const pastTxs = [];
+      const dbNextDate = parseISO(template.nextOccurrence);
 
-      templateHistory.forEach(t => {
-        const tDate = parseISO(t.date);
-        if (isSameMonth(tDate, today)) {
-          currentMonthTxs.push(t);
-        } else if (isBefore(tDate, currentMonthStart)) {
-          pastTxs.push(t);
-        }
-      });
+      // 2. Calculate dynamically if it was fulfilled THIS month
+      // Using Math.abs ensures negative expenses and positive incomes are treated equally
+      const totalPaid = currentMonthTxs.reduce((acc, t) => acc.plus(new Big(Math.abs(t.amount || 0))), new Big(0));
+      const isPaid = totalPaid.gte(new Big(Math.abs(template.amount)));
 
-      // 4. Determine what was SUPPOSED to happen this month based purely on past history
-      let expectedDueThisCycle;
-      if (pastTxs.length > 0) {
-        const lastPastPaymentDate = max(pastTxs.map(t => parseISO(t.date)));
-        expectedDueThisCycle = calculateNextDate(lastPastPaymentDate, template.frequency);
-      } else {
-        expectedDueThisCycle = parseISO(template.nextOccurrence);
+      // 3. Display Date Resolution
+      // If paid, and the DB date is already pushed to the future, use the actual payment date for "This Month" sorting
+      let displayDate = dbNextDate;
+      if (isPaid && currentMonthTxs.length > 0 && !isSameMonth(dbNextDate, today)) {
+        displayDate = parseISO(currentMonthTxs[0].date);
       }
 
-      // 5. Calculate dynamically if it was fulfilled THIS month (works for both income/expense)
-      const totalPaid = currentMonthTxs.reduce((acc, t) => acc.plus(new Big(t.amount || 0)), new Big(0));
-      const isPaid = totalPaid.gte(new Big(template.amount));
+      const daysUntilDue = differenceInDays(startOfDay(displayDate), startOfDay(today));
 
-      // 6. Status Determination
-      const daysUntilDue = differenceInDays(startOfDay(expectedDueThisCycle), startOfDay(today));
       let status = 'upcoming';
       if (isPaid) status = 'paid';
       else if (daysUntilDue < 0) status = 'overdue';
@@ -78,25 +67,26 @@ export function useRecurringStatus(recurringTransactions = [], allTransactions =
         paidAmount: totalPaid.toNumber(),
         daysUntilDue,
         status,
-        calculatedNextDate: expectedDueThisCycle.toISOString()
+        calculatedNextDate: displayDate.toISOString()
       };
 
-      // 7. Inclusion Logic: Show if expected this month, overdue from past, or fulfilled this month
-      const isExpectedThisMonth = isSameMonth(expectedDueThisCycle, today);
-      const isOverdueFromPast = isBefore(expectedDueThisCycle, currentMonthStart) && !isPaid;
+      // 4. INCLUSION MATRIX (The Fix)
+      const hasCurrentMonthActivity = currentMonthTxs.length > 0;
+      const isDueThisMonth = isSameMonth(dbNextDate, today);
+      const isOverdueFromPast = isBefore(dbNextDate, currentMonthStart) && !isPaid;
 
-      if (isExpectedThisMonth || isOverdueFromPast || isPaid) {
+      if (hasCurrentMonthActivity || isDueThisMonth || isOverdueFromPast) {
         currentMonthItems.push(enrichedItem);
       }
 
-      // 8. Timeline Projection (Future occurrences)
-      // If paid this month, the NEXT expected date in the timeline starts from the next cycle
-      let projDate = isPaid ? calculateNextDate(expectedDueThisCycle, template.frequency) : expectedDueThisCycle;
+      // 5. Timeline Projection (Future occurrences)
+      // Always project outward from what the database considers the true next occurrence
+      let projDate = dbNextDate;
       for (let i = 0; i < 3; i++) {
         timelineItems.push({
           ...enrichedItem,
           projectedDate: projDate.toISOString(),
-          isProjection: i > 0 || isPaid
+          isProjection: true
         });
 
         projDate = calculateNextDate(projDate, template.frequency);
