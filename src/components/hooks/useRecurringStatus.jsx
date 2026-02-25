@@ -51,8 +51,18 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // Your logic: Subtract the frequency to find what the PREVIOUS due date was
       const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
-      const totalPaid = currentMonthTxs.reduce((acc, t) => acc.plus(new Big(Math.abs(t.amount || 0))), new Big(0));
-      const paidThisMonth = totalPaid.gte(new Big(Math.abs(template.amount)));
+      // Flexible Amount Matching with Status Awareness
+      const totalPaid = currentMonthTxs.reduce((acc, t) => {
+        // Income counts automatically. Expenses must be explicitly cleared/paid.
+        const isValidPayment = t.type === 'income' || t.isPaid === true;
+        if (!isValidPayment) return acc;
+
+        return acc.plus(new Big(Math.abs(t.amount || 0)));
+      }, new Big(0));
+
+      const targetAmount = new Big(Math.abs(template.amount));
+      const fuzzyThreshold = targetAmount.times(0.85);
+      const paidThisMonth = totalPaid.gte(fuzzyThreshold);
 
       // INCLUSION MATRIX 
       const isDueThisMonth = isSameMonth(dbNextDate, today); // Expected this month, unpaid
