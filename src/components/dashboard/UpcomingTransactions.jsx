@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { format, parseISO, isPast, isToday, isSameMonth } from "date-fns";
 import { Check, Clock, CreditCard, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
   const [showAddForm, setShowAddForm] = useState(false);
   const { user } = useSettings();
   const { handleCreate, isSubmitting } = useRecurringTransactionActions(user);
+  const [listRef] = useAutoAnimate();
 
   // Filter: Only Current Month & Active (Includes Paid)
   const currentBills = useMemo(() => {
@@ -109,9 +111,11 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
               <p className="text-sm">No transactions this month</p>
             </div>
           ) : (
-            <div className="divide-y">
-              {/* Show max 5 items to avoid scroll trap on mobile */}
-              {sortedBills.slice(0, 5).map((bill) => {
+            <div
+              ref={listRef}
+              className="divide-y overflow-y-auto max-h-[320px] lg:max-h-[500px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            >
+              {sortedBills.map((bill) => {
                 const isPaid = bill.status === 'paid';
                 const dueDate = parseISO(bill.nextOccurrence);
                 const isOverdue = !isPaid && isPast(dueDate) && !isToday(dueDate);
@@ -167,13 +171,6 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
                   </div>
                 );
               })}
-              {sortedBills.length > 5 && (
-                <div className="p-2 text-center">
-                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground w-full">
-                    View All ({sortedBills.length})
-                  </Button>
-                </div>
-              )}
             </div>
           )}
         </CardContent>
