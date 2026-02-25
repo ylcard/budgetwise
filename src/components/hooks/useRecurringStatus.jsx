@@ -42,9 +42,10 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
       const targetDate = parseISO(template.nextOccurrence);
 
       unlinkedTransactions.forEach((tx, index) => {
-        // FILTER: Strict type match, loose category match (handles null vs undefined vs empty string)
+        // FILTER: Strict type match, relaxed category match
         if (tx.type !== template.type) return;
-        const isSameCategory = tx.category_id == template.category_id || (!tx.category_id && !template.category_id);
+        // Allow scoring if categories match perfectly, OR if either one is unassigned
+        const isSameCategory = tx.category_id === template.category_id || !tx.category_id || !template.category_id;
         if (!isSameCategory) return;
 
         // --- SCORE 1: AMOUNT (Weight: 70%) ---
@@ -89,8 +90,8 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
         }
       });
 
-      // C. Threshold Check (> 80% confidence required)
-      if (bestMatch && highestScore > 0.80) {
+      // C. Threshold Check (>= 75% allows exact amounts + close dates to pass even if titles differ)
+      if (bestMatch && highestScore >= 0.75) {
         // Prevent this transaction from being matched to another template
         unlinkedTransactions.splice(bestMatchIndex, 1);
 
