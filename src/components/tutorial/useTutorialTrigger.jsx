@@ -16,6 +16,7 @@ export const useTutorialTrigger = (tutorialId, delay = 600, condition = true) =>
   const {
     startTutorial,
     isTutorialCompleted,
+    completedTutorials,
     tutorialsEnabled,
     activeTutorial,
     isReady
@@ -24,8 +25,8 @@ export const useTutorialTrigger = (tutorialId, delay = 600, condition = true) =>
   const hasTriggered = useRef(false);
 
   useEffect(() => {
-    // Abort if context isn't ready, disabled, already running, conditions aren't met, or already triggered this session
-    if (!isReady || !tutorialsEnabled || activeTutorial || !condition || hasTriggered.current) return;
+    // Abort if completedTutorials is undefined (DB hasn't responded yet)
+    if (!isReady || !tutorialsEnabled || activeTutorial || !condition || hasTriggered.current || completedTutorials === undefined) return;
 
     // Only trigger if this specific tutorial is not yet completed
     if (!isTutorialCompleted(tutorialId)) {
@@ -42,6 +43,7 @@ export const useTutorialTrigger = (tutorialId, delay = 600, condition = true) =>
     condition,
     tutorialsEnabled,
     activeTutorial,
+    completedTutorials,
     isTutorialCompleted,
     startTutorial,
     isReady
