@@ -1,191 +1,160 @@
-import React, { useMemo, useState } from "react";
-import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { format, parseISO, isPast, isToday, isSameMonth } from "date-fns";
-import { Check, Clock, CreditCard, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { getCategoryIcon } from "../utils/iconMapConfig";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import RecurringTransactionForm from "../recurring/RecurringTransactionForm";
-import { useRecurringTransactionActions } from "../hooks/useRecurringTransactions";
-import { useSettings } from "../utils/SettingsContext";
+import { useState } from 'react';
+import { format, parseISO } from 'date-fns';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
+import * as Tabs from '@radix-ui/react-tabs';
+import { CheckCircle2, Clock, AlertCircle, CalendarDays } from 'lucide-react';
+import { CustomButton } from '../ui/CustomButton';
+import clsx from 'clsx';
 
-export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, isLoading, categories = [] }) {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const { user } = useSettings();
-  const { handleCreate, isSubmitting } = useRecurringTransactionActions(user);
+export default function UpcomingTransactions({
+  recurringWithStatus = { currentMonthItems: [], timelineItems: [] },
+  onMarkPaid,
+  isLoading,
+  categories
+}) {
+  const [viewMode, setViewMode] = useState('current'); // 'current' | 'timeline'
   const [listRef] = useAutoAnimate();
 
-  // Filter: Only Current Month & Active (Includes Paid)
-  const currentBills = useMemo(() => {
-    return (recurringWithStatus || []).filter(bill => {
-      if (!bill.isActive) return false;
+  const { currentMonthItems, timelineItems } = recurringWithStatus;
 
-      // Strictly hide any templates the intelligent hook deemed not due this month
-      if (bill.status === 'ignored') return false;
-
-      // Anything left is either 'paid' or 'due' and belongs on the screen
-      return true;
-    });
-  }, [recurringWithStatus]);
-
-  // Sort: Due/Overdue first, then by date
-  const sortedBills = useMemo(() => {
-    return [...currentBills].sort((a, b) => {
-      if (a.status === 'due' && b.status === 'paid') return -1;
-      if (a.status === 'paid' && b.status === 'due') return 1;
-      return new Date(a.nextOccurrence) - new Date(b.nextOccurrence);
-    });
-  }, [currentBills]);
-
-  const handleCreateSubmit = async (data) => {
-    await handleCreate(data);
-    setShowAddForm(false);
-  };
-
-  const getCategoryStyles = (bill) => {
-    const cat = categories.find(c => c.id === bill.category_id);
-
-    let IconComponent;
-    if (bill.type === 'income') {
-      IconComponent = getCategoryIcon('DollarSign');
-    } else {
-      IconComponent = cat?.icon ? getCategoryIcon(cat.icon) : CreditCard;
-    }
-    // Use category color or default gray
-    const color = cat?.color || 'hsl(var(--muted-foreground))';
-
-    return { IconComponent, color };
-  };
+  // Show unique items in timeline by dropping duplicates if they fall on the exact same projected day
+  // Optional, but helps deduplicate if the projection math overlapped today
+  const displayItems = viewMode === 'current' ? currentMonthItems : timelineItems;
 
   if (isLoading) {
-    return (
-      <Card className="h-full border shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium">Upcoming Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-muted rounded animate-pulse" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <div className="animate-pulse h-64 bg-muted rounded-xl"></div>;
   }
 
   return (
-    <>
-      {/* Removed h-full, added max-height constraint */}
-      <Card className="flex flex-col border shadow-sm h-auto">
-        <CardHeader className="pb-3 border-b bg-muted/40 px-4 py-3 flex-none">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-              <Clock className="w-4 h-4 text-primary" />
-              Upcoming
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-background border rounded-full text-muted-foreground uppercase tracking-wide">
-                {format(new Date(), 'MMMM')}
-              </span>
-              <Button
-                size="icon"
-                variant="create"
-                className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                onClick={() => setShowAddForm(true)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        {/* Added standard scrollbar hiding classes */}
-        <CardContent className="p-0 flex-1 min-h-0">
-          {sortedBills.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
-              <Check className="w-8 h-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm">No transactions this month</p>
-            </div>
-          ) : (
-            <div
-              ref={listRef}
-              className="divide-y overflow-y-auto max-h-[320px] lg:max-h-[500px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+    <div className="bg-card rounded-xl border border-border shadow-sm flex flex-col w-full overflow-hidden">
+      <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">Upcoming Bills</h2>
+          <p className="text-sm text-muted-foreground">Manage your recurring transactions</p>
+        </div>
+
+        <Tabs.Root value={viewMode} onValueChange={setViewMode} className="flex-shrink-0">
+          <Tabs.List className="flex p-1 bg-muted rounded-lg w-full sm:w-auto">
+            <Tabs.Trigger
+              value="current"
+              className={clsx(
+                "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+                viewMode === 'current' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+              )}
             >
-              {sortedBills.map((bill) => {
-                const isPaid = bill.status === 'paid';
-                const dueDate = parseISO(bill.nextOccurrence);
-                const isOverdue = !isPaid && isPast(dueDate) && !isToday(dueDate);
-                const { IconComponent, color } = getCategoryStyles(bill);
+              This Month
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="timeline"
+              className={clsx(
+                "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+                viewMode === 'timeline' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+              )}
+            >
+              Timeline
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Tabs.Root>
+      </div>
 
-                return (
-                  <div
-                    key={bill.id}
-                    className={cn(
-                      "flex items-center justify-between p-4 transition-colors hover:bg-accent/50",
-                      isPaid ? "bg-accent/30" : "",
-                      isOverdue && "border-destructive/20 bg-destructive/10"
-                    )}
-                  >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div
-                        className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border",
-                          isPaid ? "bg-[hsl(var(--status-paid-bg))] border-[hsl(var(--status-paid-text))/0.2] text-[hsl(var(--status-paid-text))]" : "bg-background border-border"
-                        )}
-                        style={!isPaid ? { color: color } : {}}
-                      >
-                        {isPaid ? <Check className="w-4 h-4" /> : <IconComponent className="w-4 h-4" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className={cn("font-medium text-sm truncate text-foreground", isPaid && "text-muted-foreground line-through")}>
-                          {bill.title}
-                        </p>
-                        <p className={cn("text-[11px]", isOverdue ? "text-destructive font-medium" : "text-muted-foreground")}>
-                          {isPaid ? 'Paid' : (isOverdue ? 'Overdue • ' : 'Due ') + format(dueDate, 'MMM d')}
-                        </p>
-                      </div>
-                    </div>
+      <div className="p-2 sm:p-4">
+        {displayItems.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+            <CalendarDays className="h-8 w-8 opacity-50" />
+            <p>No upcoming transactions found.</p>
+          </div>
+        ) : (
+          <ul ref={listRef} className="space-y-3">
+            {displayItems.map((item, index) => {
+              // Using index fallback for timeline projections to avoid identical key clashes
+              const uniqueKey = viewMode === 'current' ? item.id : `${item.id}-${item.projectedDate}-${index}`;
+              const displayDate = parseISO(viewMode === 'current' ? item.nextOccurrence : item.projectedDate);
+              const isExpense = item.type === 'expense';
 
-                    <div className="flex items-center gap-3 pl-2">
-                      <span className={cn("font-semibold text-sm whitespace-nowrap text-foreground", isPaid && "text-muted-foreground")}>
-                        {bill.amount?.toLocaleString('en-US', {
-                          style: 'currency',
-                          currency: user?.baseCurrency || 'EUR'
-                        })}
-                      </span>
-                      {!isPaid && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-9 px-3 text-xs border-primary/20 text-primary hover:bg-primary/10 hover:text-primary"
-                          onClick={() => onMarkPaid(bill)}
-                        >
-                          Pay
-                        </Button>
+              return (
+                <li
+                  key={uniqueKey}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border/50 bg-bg-subtle gap-3 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Status Indicator Icon */}
+                    <div className="mt-0.5 flex-shrink-0">
+                      {item.isPaid && viewMode === 'current' ? (
+                        <CheckCircle2 className="h-5 w-5 text-[hsl(var(--stat-income-text))]" />
+                      ) : item.status === 'overdue' && viewMode === 'current' ? (
+                        <AlertCircle className="h-5 w-5 text-[hsl(var(--stat-expense-text))]" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
+
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm text-foreground truncate">
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                        {format(displayDate, 'MMM do, yyyy')}
+
+                        {/* Contextual Status Badges for Current View */}
+                        {viewMode === 'current' && !item.isPaid && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-border inline-block"></span>
+                            <span className={clsx(
+                              item.status === 'overdue' && "text-[hsl(var(--stat-expense-text))] font-medium",
+                              item.status === 'due_soon' && "text-[hsl(var(--warning))] font-medium",
+                            )}>
+                              {item.status === 'overdue' ? `${Math.abs(item.daysUntilDue)} days overdue` :
+                                item.status === 'due_soon' ? `Due in ${item.daysUntilDue} days` :
+                                  `In ${item.daysUntilDue} days`}
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>New Recurring Transaction</DialogTitle>
-          </DialogHeader>
-          <RecurringTransactionForm
-            categories={categories}
-            onSubmit={handleCreateSubmit}
-            onCancel={() => setShowAddForm(false)}
-            isSubmitting={isSubmitting}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-4 ml-8 sm:ml-0">
+                    <span className={clsx(
+                      "font-semibold text-sm",
+                      isExpense ? "text-foreground" : "text-[hsl(var(--stat-income-text))]"
+                    )}>
+                      {isExpense ? '-' : '+'}{item.amount.toLocaleString()}
+                    </span>
+
+                    {viewMode === 'current' && (
+                      <div className="flex-shrink-0">
+                        {item.isPaid ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[hsl(var(--status-paid-bg))] text-[hsl(var(--status-paid-text))]">
+                            Paid
+                          </span>
+                        ) : (
+                          <CustomButton
+                            variant={item.status === 'overdue' ? 'delete' : 'outline'}
+                            size="sm"
+                            onClick={() => onMarkPaid(item)}
+                            className={clsx(
+                              "h-8 text-xs min-w-[80px]",
+                              // Adding mobile touch-target safety
+                              "sm:min-h-0 min-h-[44px]"
+                            )}
+                          >
+                            Mark Paid
+                          </CustomButton>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Timeline mode projection badge */}
+                    {viewMode === 'timeline' && item.isProjection && (
+                      <span className="text-xs text-muted-foreground italic px-2">Projected</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
