@@ -19,17 +19,14 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
 
   // Filter: Only Current Month & Active (Includes Paid)
   const currentBills = useMemo(() => {
-    const now = new Date();
     return (recurringWithStatus || []).filter(bill => {
       if (!bill.isActive) return false;
 
-      // 1. Always show if marked 'paid' (implies it was matched to a current month transaction)
-      if (bill.status === 'paid') return true;
+      // Strictly hide any templates the intelligent hook deemed not due this month
+      if (bill.status === 'ignored') return false;
 
-      // 2. Otherwise, check if the calculated next occurrence is in the current month
-      // Or if it is strictly in the past (an overdue bill from a previous month)
-      const billDate = parseISO(bill.nextOccurrence);
-      return isSameMonth(billDate, now) || isPast(billDate);
+      // Anything left is either 'paid' or 'due' and belongs on the screen
+      return true;
     });
   }, [recurringWithStatus]);
 
