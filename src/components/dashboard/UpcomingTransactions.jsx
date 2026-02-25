@@ -69,8 +69,8 @@ export default function UpcomingTransactions({
           <ul ref={listRef} className="space-y-3">
             {displayItems.map((item, index) => {
               // Using index fallback for timeline projections to avoid identical key clashes
-              const uniqueKey = viewMode === 'current' ? item.id : `${item.id}-${item.projectedDate}-${index}`;
-              const displayDate = parseISO(viewMode === 'current' ? item.nextOccurrence : item.projectedDate);
+              const uniqueKey = viewMode === 'current' ? item.id : `${item.id}-${item.calculatedNextDate}-${index}`;
+              const displayDate = parseISO(viewMode === 'current' ? item.calculatedNextDate : item.projectedDate);
               const isExpense = item.type === 'expense';
 
               return (
