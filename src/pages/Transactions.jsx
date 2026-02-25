@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
 import { toast } from "sonner";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
@@ -22,14 +22,14 @@ import TransactionFilters from "../components/transactions/TransactionFilters";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import RecurringTransactionList from "../components/recurring/RecurringTransactionList";
 import RecurringFormDialog from "../components/recurring/dialogs/RecurringFormDialog";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { useLocation } from "react-router-dom"; // Outlet/Context removed
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminConsistencyChecker } from "../components/transactions/AdminConsistencyChecker";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, RefreshCw, Upload, PlusCircle, MinusCircle, ChevronDown } from "lucide-react";
+import { Check, X, Loader2, Plus, RefreshCw, Upload, PlusCircle, MinusCircle, ChevronDown } from "lucide-react";
 
 export default function TransactionsLayout() {
   const { user } = useSettings();
@@ -49,6 +49,14 @@ export default function TransactionsLayout() {
   const { categories } = useMergedCategories();
   const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
 
+  // Bank Sync State
+  const [syncState, setSyncState] = useState('idle'); // 'idle' | 'syncing' | 'success' | 'error'
+  const { data: connections = [] } = useQuery({
+    queryKey: ['bankConnections'],
+    queryFn: () => base44.entities.BankConnection.list(),
+    staleTime: 1000 * 60 * 5,
+  });
+
   const queryClient = useQueryClient();
 
   const { handleSubmit, isSubmitting } = useTransactionActions({
@@ -66,6 +74,38 @@ export default function TransactionsLayout() {
     handleSubmit(data, editingTransaction);
   };
 
+  // Quick Sync Logic (Defaults to last 30 days)
+  const handleGlobalSync = async () => {
+    const activeConnections = connections.filter(c => c.status === 'active');
+
+    if (activeConnections.length === 0) {
+      toast.error("No active bank connections found. Please connect a bank first.");
+      return;
+    }
+
+    setSyncState('syncing');
+    const dateFrom = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+    const dateTo = format(new Date(), 'yyyy-MM-dd');
+
+    try {
+      for (const conn of activeConnections) {
+        await fetchWithRetry(() => base44.functions.invoke('trueLayerSync', {
+          connectionId: conn.id,
+          dateFrom,
+          dateTo
+        }));
+      }
+
+      setSyncState('success');
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      setTimeout(() => setSyncState('idle'), 3000);
+    } catch (error) {
+      setSyncState('error');
+      toast.error(`Sync failed: ${error.message}`);
+      setTimeout(() => setSyncState('idle'), 3000);
+    }
+  };
+
   return (
     <>
       <div className="min-h-screen p-2 md:p-8">
@@ -75,6 +115,36 @@ export default function TransactionsLayout() {
             <div>
               <h1 className="text-2xl md:text-4xl font-bold">Transactions</h1>
               <p className="text-xs text-muted-foreground">Monitor and automate your finances</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-2 w-[110px] transition-all duration-300"
+                onClick={handleGlobalSync}
+                disabled={syncState === 'syncing'}
+              >
+                {syncState === 'idle' && <><RefreshCw className="h-4 w-4" /> Sync</>}
+                {syncState === 'syncing' && <><Loader2 className="h-4 w-4 animate-spin" /> Syncing</>}
+                {syncState === 'success' && <><Check className="h-4 w-4 text-emerald-500" /> Synced</>}
+                {syncState === 'error' && <><X className="h-4 w-4 text-rose-500" /> Failed</>}
+              </Button>
+
+              <Button variant="outline" size="sm" className="h-9 gap-2" onClick={() => setShowImportWizard(true)}>
+                <Upload className="h-4 w-4" /> Import
+              </Button>
+
+              <div className="h-6 w-[1px] bg-border mx-1" />
+
+              <Button variant="default" size="sm" className="h-9 gap-2 bg-rose-500 hover:bg-rose-600 text-white" onClick={() => setShowAddExpense(true)}>
+                <MinusCircle className="h-4 w-4" /> Expense
+              </Button>
+
+              <Button variant="default" size="sm" className="h-9 gap-2 bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => setShowAddIncome(true)}>
+                <PlusCircle className="h-4 w-4" /> Income
+              </Button>
+
             </div>
 
             <div className="flex items-center gap-3">
