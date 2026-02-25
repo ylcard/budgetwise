@@ -27,8 +27,9 @@ export default function UpcomingTransactions({ recurringWithStatus, onMarkPaid, 
       if (bill.status === 'paid') return true;
 
       // 2. Otherwise, check if the calculated next occurrence is in the current month
+      // Or if it is strictly in the past (an overdue bill from a previous month)
       const billDate = parseISO(bill.nextOccurrence);
-      return isSameMonth(billDate, now);
+      return isSameMonth(billDate, now) || isPast(billDate);
     });
   }, [recurringWithStatus]);
 
