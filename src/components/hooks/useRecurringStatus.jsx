@@ -19,7 +19,7 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
       // STEP 1: STRICT GATEKEEPING
       // Intelligently check if we are even expecting this bill this month.
       // If it's a quarterly bill due next month, it fails this check instantly.
-      const isExpectedThisMonth = isSameMonth(targetDate, now) || isPast(targetDate);
+      const isExpectedThisMonth = isSameMonth(targetDate, now) || isPast(targetDate) || isNaN(targetDate);
 
       if (!isExpectedThisMonth) {
         return {
