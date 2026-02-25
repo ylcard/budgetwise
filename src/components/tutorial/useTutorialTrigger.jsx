@@ -17,14 +17,15 @@ export const useTutorialTrigger = (tutorialId, delay = 600, condition = true) =>
     startTutorial,
     isTutorialCompleted,
     tutorialsEnabled,
-    activeTutorial
+    activeTutorial,
+    isReady
   } = useTutorial();
 
   const hasTriggered = useRef(false);
 
   useEffect(() => {
-    // Abort if disabled, already running, conditions aren't met, or already triggered this session
-    if (!tutorialsEnabled || activeTutorial || !condition || hasTriggered.current) return;
+    // Abort if context isn't ready, disabled, already running, conditions aren't met, or already triggered this session
+    if (!isReady || !tutorialsEnabled || activeTutorial || !condition || hasTriggered.current) return;
 
     // Only trigger if this specific tutorial is not yet completed
     if (!isTutorialCompleted(tutorialId)) {
@@ -42,6 +43,7 @@ export const useTutorialTrigger = (tutorialId, delay = 600, condition = true) =>
     tutorialsEnabled,
     activeTutorial,
     isTutorialCompleted,
-    startTutorial
+    startTutorial,
+    isReady
   ]);
 };
