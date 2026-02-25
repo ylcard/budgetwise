@@ -23,6 +23,8 @@ const defaultSettings = {
     goalMode: true, // true = percentage, false = absolute
     displayName: '',
     showMascot: true,
+    tutorialsEnabled: true,
+    completedTutorials: [],
     themeConfig: { 
         mode: 'system', 
         schedules: [
@@ -90,6 +92,8 @@ export const SettingsProvider = ({ children }) => {
                     goalMode: userSettings.goalMode ?? true,
                     displayName: userSettings.displayName || '',
                     showMascot: userSettings.showMascot ?? settings.showMascot ?? true,
+                    tutorialsEnabled: userSettings.tutorialsEnabled ?? true,
+                    completedTutorials: userSettings.completedTutorials || [],
                     themeConfig: userSettings.themeConfig || defaultSettings.themeConfig
                 };
 
