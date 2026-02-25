@@ -21,7 +21,7 @@ import {
     History
 } from "lucide-react";
 import { useFAB } from "../components/hooks/FABContext";
-import { notifyBankSyncSuccess, notifyBankSyncWithReviews } from "../components/utils/notificationHelpers";
+import { useBankSync } from "../components/banksync/useBankSync";
 
 /**
  * Bank Sync Page
@@ -51,9 +51,7 @@ export default function BankSync() {
         staleTime: 1000 * 60 * 5,
     });
 
-    const [syncing, setSyncing] = useState(null);
-    const [syncStatus, setSyncStatus] = useState("");
-    const [syncProgress, setSyncProgress] = useState(0);
+    const { executeSync, syncing, syncStatus, syncProgress } = useBankSync(user);
     const [syncDateFrom, setSyncDateFrom] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
 
     // Fetch bank connections
@@ -224,116 +222,6 @@ export default function BankSync() {
         return () => clearFabButtons();
     }, [fabButtons]);
 
-    const handleSync = useCallback(async (connection) => {
-        setSyncing(connection.id);
-
-        setSyncStatus("Initializing secure connection...");
-        setSyncProgress(5);
-
-        try {
-            const now = new Date();
-            const fromDate = new Date(syncDateFrom);
-
-            // Calculate chunks to prevent timeouts (max 730 days per chunk)
-            const chunks = [];
-            let currentStart = fromDate;
-            const MAX_CHUNK_DAYS = 730;
-
-            while (currentStart < now) {
-                let currentEnd = addDays(currentStart, MAX_CHUNK_DAYS);
-                if (currentEnd > now) currentEnd = now;
-
-                chunks.push({
-                    from: format(currentStart, 'yyyy-MM-dd'),
-                    to: format(currentEnd, 'yyyy-MM-dd')
-                });
-
-                // Next chunk starts the day after currentEnd
-                currentStart = addDays(currentEnd, 1);
-            }
-
-            let totalImported = 0;
-            let totalNeedsReview = 0;
-
-            // Execute chunks sequentially
-            for (let i = 0; i < chunks.length; i++) {
-                const chunk = chunks[i];
-                // Calculate base progress for this step
-                const baseProgress = Math.floor((i / chunks.length) * 100);
-                const nextBaseProgress = Math.floor(((i + 1) / chunks.length) * 100);
-
-                setSyncProgress(baseProgress + 5);
-                setSyncStatus(chunks.length > 1
-                    ? `Retrieving transaction history (${Math.round((i / chunks.length) * 100)}%)...`
-                    : "Syncing transactions..."
-                );
-
-                console.log(`🔄 [SYNC] Chunk ${i + 1}: ${chunk.from} to ${chunk.to}`);
-
-                const response = await base44.functions.invoke('trueLayerSync', {
-                    connectionId: connection.id,
-                    dateFrom: chunk.from,
-                    dateTo: chunk.to
-                });
-
-                setSyncProgress(nextBaseProgress);
-
-                if (response.data?.importedCount) {
-                    totalImported += response.data.importedCount;
-                    totalNeedsReview += (response.data.needsReviewCount || 0);
-                }
-            }
-
-            setSyncProgress(100);
-            setSyncStatus("Finalizing...");
-
-            if (totalImported > 0) {
-                const dateStr = format(new Date(), 'MMM d, yyyy');
-
-                // Smart Notification Logic:
-                // If ANY transactions need review, we send a single "Action" notification pointing to the Inbox.
-                // If ALL are clean, we send a "Success" notification pointing to History.
-                if (totalNeedsReview > 0) {
-                    await notifyBankSyncWithReviews(user.email, totalImported, totalNeedsReview, dateStr);
-                } else {
-                    await notifyBankSyncSuccess(user.email, totalImported, dateStr);
-                }
-
-                toast({
-                    title: "Sync complete!",
-                    description: `Successfully imported ${totalImported} new transactions.`,
-                    variant: "success"
-                });
-
-                queryClient.invalidateQueries(['transactions']);
-                queryClient.invalidateQueries(['bankConnections']);
-            } else {
-                toast({
-                    title: "No new transactions",
-                    description: "All transactions are up to date."
-                });
-                // Still update connection to reflect the sync attempt time
-                queryClient.invalidateQueries(['bankConnections']);
-            }
-        } catch (error) {
-            console.error('❌ [SYNC] Full Error Object:', error.response?.data);
-            console.error('❌ [SYNC] Status:', error.response?.status);
-            console.error('❌ [SYNC] Error occurred:', error);
-            console.error('❌ [SYNC] Error message:', error.message);
-            console.error('❌ [SYNC] Error stack:', error.stack);
-            toast({
-                title: "Sync failed",
-                description: error.message,
-                variant: "destructive"
-            });
-        } finally {
-            console.log('🔄 [SYNC] Sync completed, resetting syncing state');
-            setSyncing(null);
-            setSyncStatus("");
-            setSyncProgress(0);
-        }
-    }, [toast, queryClient, syncDateFrom]);
-
     // Delete connection
     const { mutate: deleteConnection } = useMutation({
         mutationFn: (id) => base44.entities.BankConnection.delete(id),
@@ -488,7 +376,7 @@ export default function BankSync() {
                             key={connection.id}
                             connection={connection}
                             settings={settings}
-                            onSync={handleSync}
+                            onSync={(conn) => executeSync(conn, syncDateFrom)}
                             onDelete={handleDelete}
                             isSyncing={syncing === connection.id}
                         />
