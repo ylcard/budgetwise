@@ -23,16 +23,17 @@ import { ImportWizardDialog } from "../components/import/ImportWizard";
 import RecurringTransactionList from "../components/recurring/RecurringTransactionList";
 import RecurringFormDialog from "../components/recurring/dialogs/RecurringFormDialog";
 import { format, subDays } from "date-fns";
-import { useLocation } from "react-router-dom"; // Outlet/Context removed
+import { useLocation, useNavigate } from "react-router-dom";
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminConsistencyChecker } from "../components/transactions/AdminConsistencyChecker";
 import { Button } from "@/components/ui/button";
-import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle } from "lucide-react";
+import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2 } from "lucide-react";
 
 export default function TransactionsLayout() {
   const { user } = useSettings();
   const location = useLocation();
+  const navigate = useNavigate();
   // Initialize tab based on URL, but then handle locally
   const [activeTab, setActiveTab] = useState(location.pathname.includes("recurring") ? "recurring" : "history");
 
@@ -56,6 +57,8 @@ export default function TransactionsLayout() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const hasActiveConnections = connections.some(c => c.status === 'active');
+
   const queryClient = useQueryClient();
 
   const { handleSubmit, isSubmitting } = useTransactionActions({
@@ -76,11 +79,6 @@ export default function TransactionsLayout() {
   // Quick Sync Logic (Defaults to last 30 days)
   const handleGlobalSync = async () => {
     const activeConnections = connections.filter(c => c.status === 'active');
-
-    if (activeConnections.length === 0) {
-      toast.error("No active bank connections found. Please connect a bank first.");
-      return;
-    }
 
     setSyncState('syncing');
     const dateFrom = format(subDays(new Date(), 30), 'yyyy-MM-dd');
@@ -120,14 +118,20 @@ export default function TransactionsLayout() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 gap-2 w-[110px] transition-all duration-300"
-                onClick={handleGlobalSync}
+                className={`h-9 gap-2 transition-all duration-300 ${hasActiveConnections ? 'w-[110px]' : 'w-auto'}`}
+                onClick={hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')}
                 disabled={syncState === 'syncing'}
               >
-                {syncState === 'idle' && <><RefreshCw className="h-4 w-4" /> Sync</>}
-                {syncState === 'syncing' && <><Loader2 className="h-4 w-4 animate-spin" /> Syncing</>}
-                {syncState === 'success' && <><Check className="h-4 w-4 text-emerald-500" /> Synced</>}
-                {syncState === 'error' && <><X className="h-4 w-4 text-rose-500" /> Failed</>}
+                {!hasActiveConnections ? (
+                  <><Building2 className="h-4 w-4" /> Connect Bank</>
+                ) : (
+                  <>
+                    {syncState === 'idle' && <><RefreshCw className="h-4 w-4" /> Sync</>}
+                    {syncState === 'syncing' && <><Loader2 className="h-4 w-4 animate-spin" /> Syncing</>}
+                    {syncState === 'success' && <><Check className="h-4 w-4 text-emerald-500" /> Synced</>}
+                    {syncState === 'error' && <><X className="h-4 w-4 text-rose-500" /> Failed</>}
+                  </>
+                )}
               </Button>
 
               <Button variant="outline" size="sm" className="h-9 gap-2" onClick={() => setShowImportWizard(true)}>
