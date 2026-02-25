@@ -27,9 +27,9 @@ export const TutorialProvider = ({ children }) => {
   const [tutorialsEnabled, setTutorialsEnabled] = useState(
     settings?.tutorialsEnabled !== false
   );
-  const [completedTutorials, setCompletedTutorials] = useState(
-    settings?.completedTutorials || []
-  );
+
+  // Start as undefined to represent "loading" instead of defaulting to an empty array
+  const [completedTutorials, setCompletedTutorials] = useState(undefined);
   const [activeTutorial, setActiveTutorial] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isReady, setIsReady] = useState(false);
@@ -38,7 +38,7 @@ export const TutorialProvider = ({ children }) => {
   useEffect(() => {
     if (settings) {
       setTutorialsEnabled(settings.tutorialsEnabled !== false);
-      setCompletedTutorials(settings.completedTutorials || []);
+      setCompletedTutorials(settings.completedTutorials || []); // Now it becomes an array
       setIsReady(true);
     }
   }, [settings]);
@@ -112,7 +112,8 @@ export const TutorialProvider = ({ children }) => {
 
   // Check if a tutorial is completed
   const isTutorialCompleted = useCallback((tutorialId) => {
-    return completedTutorials.includes(tutorialId);
+    // Safely check, returning false if undefined
+    return completedTutorials?.includes(tutorialId) || false;
   }, [completedTutorials]);
 
   // Reset a specific tutorial
