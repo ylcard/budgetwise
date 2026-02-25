@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, format, isBefore, startOfMonth, startOfDay } from 'date-fns';
+import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, subMonths, subWeeks, subDays, subYears, format, isBefore, startOfMonth, startOfDay } from 'date-fns';
 import Big from 'big.js';
 import { useSettings } from '../utils/SettingsContext';
 import { notifyRecurringDue, notifyRecurringOverdue } from '../utils/notificationHelpers';
@@ -16,7 +16,20 @@ function calculateNextDate(date, frequency) {
   }
 }
 
-export function useRecurringStatus(recurringTransactions = [], allTransactions = []) {
+// Helper to subtract frequency to find the PREVIOUS cycle
+function calculatePreviousDate(date, frequency) {
+  switch (frequency) {
+    case 'monthly': return subMonths(date, 1);
+    case 'weekly': return subWeeks(date, 1);
+    case 'biweekly': return subWeeks(date, 2);
+    case 'quarterly': return subMonths(date, 3);
+    case 'yearly': return subYears(date, 1);
+    case 'daily': return subDays(date, 1);
+    default: return subMonths(date, 1);
+  }
+}
+
+export function useRecurringStatus(recurringTransactions = [], realTransactions = []) {
   const { user } = useSettings();
   const notifiedRefs = useRef(new Set());
 
@@ -27,64 +40,58 @@ export function useRecurringStatus(recurringTransactions = [], allTransactions =
     const timelineItems = [];
 
     const activeTemplates = recurringTransactions.filter(r => r.isActive);
-    const activeTemplateIds = new Set(activeTemplates.map(r => r.id));
-
-    const relevantTransactions = allTransactions.filter(t =>
-      t.recurringTransactionId && activeTemplateIds.has(t.recurringTransactionId)
-    );
 
     activeTemplates.forEach(template => {
-      // 1. Find ALL transactions linked to this template exactly in the CURRENT month
-      const currentMonthTxs = relevantTransactions.filter(t =>
+      const currentMonthTxs = realTransactions.filter(t =>
         t.recurringTransactionId === template.id &&
         isSameMonth(parseISO(t.date), today)
       );
 
       const dbNextDate = parseISO(template.nextOccurrence);
+      // Your logic: Subtract the frequency to find what the PREVIOUS due date was
+      const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
-      // 2. Calculate dynamically if it was fulfilled THIS month
-      // Using Math.abs ensures negative expenses and positive incomes are treated equally
       const totalPaid = currentMonthTxs.reduce((acc, t) => acc.plus(new Big(Math.abs(t.amount || 0))), new Big(0));
-      const isPaid = totalPaid.gte(new Big(Math.abs(template.amount)));
+      const paidThisMonth = totalPaid.gte(new Big(Math.abs(template.amount)));
 
-      // 3. Display Date Resolution
-      // If paid, and the DB date is already pushed to the future, use the actual payment date for "This Month" sorting
-      let displayDate = dbNextDate;
-      if (isPaid && currentMonthTxs.length > 0 && !isSameMonth(dbNextDate, today)) {
-        displayDate = parseISO(currentMonthTxs[0].date);
-      }
+      // INCLUSION MATRIX 
+      const isDueThisMonth = isSameMonth(dbNextDate, today); // Expected this month, unpaid
+      const isPrevDueThisMonth = isSameMonth(prevDate, today); // Expected this month, but already paid & advanced!
+      const isOverdue = isBefore(dbNextDate, currentMonthStart); // Missed entirely
+      const hasActivityThisMonth = currentMonthTxs.length > 0; // Random manual payment
 
-      const daysUntilDue = differenceInDays(startOfDay(displayDate), startOfDay(today));
+      if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth) {
+        // It's considered paid if we paid it this month, OR if the backend already pushed the date past this month
+        const isPaid = paidThisMonth || isPrevDueThisMonth;
 
-      let status = 'upcoming';
-      if (isPaid) status = 'paid';
-      else if (daysUntilDue < 0) status = 'overdue';
-      else if (daysUntilDue <= 3) status = 'due_soon';
+        // What date do we display? If it advanced to July, we want to show April's date.
+        let displayDate = isPrevDueThisMonth ? prevDate : dbNextDate;
 
-      const enrichedItem = {
-        ...template,
-        isPaid,
-        paidAmount: totalPaid.toNumber(),
-        daysUntilDue,
-        status,
-        calculatedNextDate: displayDate.toISOString()
-      };
+        if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth) {
+          displayDate = parseISO(currentMonthTxs[0].date); // Failsafe for early payments
+        }
 
-      // 4. INCLUSION MATRIX (The Fix)
-      const hasCurrentMonthActivity = currentMonthTxs.length > 0;
-      const isDueThisMonth = isSameMonth(dbNextDate, today);
-      const isOverdueFromPast = isBefore(dbNextDate, currentMonthStart) && !isPaid;
+        const daysUntilDue = differenceInDays(startOfDay(displayDate), startOfDay(today));
+        let status = 'upcoming';
+        if (isPaid) status = 'paid';
+        else if (daysUntilDue < 0) status = 'overdue';
+        else if (daysUntilDue <= 3) status = 'due_soon';
 
-      if (hasCurrentMonthActivity || isDueThisMonth || isOverdueFromPast) {
+        const enrichedItem = {
+          ...template,
+          isPaid,
+          paidAmount: totalPaid.toNumber(),
+          daysUntilDue,
+          status,
+          calculatedNextDate: displayDate.toISOString()
+        };
         currentMonthItems.push(enrichedItem);
       }
 
-      // 5. Timeline Projection (Future occurrences)
-      // Always project outward from what the database considers the true next occurrence
       let projDate = dbNextDate;
       for (let i = 0; i < 3; i++) {
         timelineItems.push({
-          ...enrichedItem,
+          ...template,
           projectedDate: projDate.toISOString(),
           isProjection: true
         });
@@ -97,7 +104,7 @@ export function useRecurringStatus(recurringTransactions = [], allTransactions =
     timelineItems.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
 
     return { currentMonthItems, timelineItems };
-  }, [recurringTransactions, allTransactions]);
+  }, [recurringTransactions, realTransactions]);
 
   // Notification System Integration
   useEffect(() => {
