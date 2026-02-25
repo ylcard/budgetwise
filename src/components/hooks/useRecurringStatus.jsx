@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { parseISO, isSameMonth, isPast } from 'date-fns';
 
 /**
  * Calculates the status of recurring templates by matching them against
@@ -8,35 +9,31 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
   return useMemo(() => {
     if (!recurringTransactions || !currentMonthTransactions) return [];
 
-    // 1. Create a map of transactions that are already explicitly linked via ID
-    const linkedMap = new Map();
-    const unlinkedTransactions = [];
-
-    currentMonthTransactions.forEach(tx => {
-      if (tx.recurringTransactionId) {
-        linkedMap.set(tx.recurringTransactionId, tx);
-      } else {
-        unlinkedTransactions.push(tx);
-      }
-    });
+    const unlinkedTransactions = [...currentMonthTransactions];
+    const now = new Date();
 
     // 2. Process each recurring template
     return recurringTransactions.map(template => {
-      // A. Check for Explicit Link (The "Golden" Link)
-      if (linkedMap.has(template.id)) {
+      const targetDate = parseISO(template.nextOccurrence);
+
+      // STEP 1: STRICT GATEKEEPING
+      // Intelligently check if we are even expecting this bill this month.
+      // If it's a quarterly bill due next month, it fails this check instantly.
+      const isExpectedThisMonth = isSameMonth(targetDate, now) || isPast(targetDate);
+
+      if (!isExpectedThisMonth) {
         return {
           ...template,
-          status: 'paid',
-          linkedTransaction: linkedMap.get(template.id),
-          matchConfidence: 1.0,
-          matchReason: 'explicit_link'
+          status: 'ignored', // Tag it so the UI knows to hide it
+          linkedTransaction: null
         };
       }
 
-      // B. Find a "Smart Match" among unlinked transactions
-      // Rules: Same Type, Same Category, Amount within 20% margin
+      // STEP 2: EFFICIENT MATCHING
+      // Only templates strictly due this month get to search the transaction pool
       let bestMatch = null;
       let bestMatchIndex = -1;
+      let smallestDiff = Infinity;
 
       for (let i = 0; i < unlinkedTransactions.length; i++) {
         const tx = unlinkedTransactions[i];
@@ -47,15 +44,16 @@ export function useRecurringStatus(recurringTransactions, currentMonthTransactio
         const txAmount = Math.abs(tx.amount);
         const tmplAmount = Math.abs(template.amount);
         const margin = tmplAmount * 0.20; // 20% margin
+        const diff = Math.abs(txAmount - tmplAmount);
 
-        if (Math.abs(txAmount - tmplAmount) <= margin) {
+        if (diff <= margin && diff < smallestDiff) {
           bestMatch = tx;
           bestMatchIndex = i;
-          break; // Found a match, stop looking
+          smallestDiff = diff;
         }
       }
 
-      // C. Match Found
+      // STEP 3: ASSIGN STATUS
       if (bestMatch) {
         unlinkedTransactions.splice(bestMatchIndex, 1);
 
