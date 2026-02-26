@@ -103,7 +103,7 @@ const LayoutContent = ({ children }) => {
     // Recursive helper to find the active item
     const findItem = (items) => {
       for (const item of items) {
-        if (item.url === pathname) return item;
+        if (item.url === pathname || (pathname === '/' && item.url === '/dashboard')) return item;
         if (item.items) {
           const subItem = item.items.find(sub => sub.url === pathname);
           if (subItem) return subItem;
@@ -117,7 +117,7 @@ const LayoutContent = ({ children }) => {
     return {
       currentPageTitle: route?.title || (isRoot ? 'Dashboard' : 'BudgetWise'),
       isRootPage: isRoot,
-      activeTab: route?.url
+      activeTab: route?.url || (isRoot ? '/dashboard' : null)
     };
   }, [location.pathname]);
 
