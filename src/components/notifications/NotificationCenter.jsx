@@ -94,7 +94,7 @@ const NotificationCenter = memo(({ trigger }) => {
           </div>
         </SheetHeader>
 
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full justify-start rounded-none border-b px-6 bg-transparent h-auto p-0">
             <TabsTrigger value="all" className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none">
               All
@@ -113,7 +113,7 @@ const NotificationCenter = memo(({ trigger }) => {
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             <TabsContent value={selectedTab} className="m-0 p-4">
               {isLoading ? (
                 <div className="space-y-3">
