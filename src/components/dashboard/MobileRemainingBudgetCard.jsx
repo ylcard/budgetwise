@@ -6,6 +6,7 @@ import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { memo, useEffect, useRef, useState } from "react";
 import { getMonthName } from "../utils/dateUtils";
 import confetti from "canvas-confetti";
+import { Link } from "react-router-dom";
 
 const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
   currentMonthIncome,
@@ -17,7 +18,8 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
   monthNavigator,
   selectedMonth,
   breakdown,
-  selectedYear
+  selectedYear,
+  systemBudgets = []
 }) {
   if (!settings) return null;
 
@@ -70,6 +72,10 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
   const needsPct = isDisplayedEmpty ? 0 : (needsTotal / calculationBase) * 100;
   const wantsPct = isDisplayedEmpty ? 0 : (wantsTotal / calculationBase) * 100;
   const savingsPct = (isDisplayedEmpty || isTotalOver) ? 0 : Math.max(0, 100 - needsPct - wantsPct);
+
+  // --- Extract IDs for Routing ---
+  const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
+  const wantsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'wants');
 
   // Donut chart calculations
   const needsColor = FINANCIAL_PRIORITIES.needs.color;
@@ -303,16 +309,24 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 {/* Legend */}
                 <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs px-1">
                   {needsPct > 0 && (
-                    <div className="flex items-center gap-1.5">
+                    <Link
+                      to={needsBudget?.id ? `/BudgetDetail?id=${needsBudget.id}` : undefined}
+                      className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
+                    >
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: needsColor }}></div>
                       <span className="font-semibold" style={{ color: needsColor }}>{FINANCIAL_PRIORITIES.needs.label}</span>
                       <span className="font-bold text-foreground">{Math.round(needsPct)}%</span>
-                    </div>
+                    </Link>
                   )}
                   {wantsPct > 0 && (
-                    <div className="flex items-center gap-1.5">
+                    <Link
+                      to={wantsBudget?.id ? `/BudgetDetail?id=${wantsBudget.id}` : undefined}
+                      className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
+                    >
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: wantsColor }}></div>
                       <span className="font-semibold" style={{ color: wantsColor }}>{FINANCIAL_PRIORITIES.wants.label}</span>
                       <span className="font-bold text-foreground">{Math.round(wantsPct)}%</span>
-                    </div>
+                    </Link>
                   )}
                   {savingsPct > 0 && (
                     <div className="flex items-center gap-1.5">
