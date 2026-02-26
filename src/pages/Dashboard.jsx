@@ -422,10 +422,10 @@ export default function Dashboard() {
             </div>
 
             {/* MOBILE ONLY: Activity Carousel */}
-            <div className="lg:hidden w-full">
-              <div className="overflow-hidden" ref={emblaRef}>
-                <div className="flex">
-                  <div className="flex-[0_0_100%] min-w-0 px-4" data-tutorial="upcoming-transactions">
+            <div className="lg:hidden w-full max-w-[95vw] mx-auto overflow-hidden">
+              <div className="overflow-hidden rounded-xl" ref={emblaRef}>
+                <div className="flex touch-pan-y">
+                  <div className="flex-[0_0_100%] min-w-0 px-1" data-tutorial="upcoming-transactions">
                     <UpcomingTransactions
                       recurringWithStatus={recurringWithStatus}
                       onMarkPaid={handleMarkPaid}
@@ -433,7 +433,7 @@ export default function Dashboard() {
                       categories={categories}
                     />
                   </div>
-                  <div className="flex-[0_0_100%] min-w-0 px-4" data-tutorial="recent-transactions">
+                  <div className="flex-[0_0_100%] min-w-0 px-1" data-tutorial="recent-transactions">
                     <RecentTransactions
                       categories={categories}
                       settings={settings}
