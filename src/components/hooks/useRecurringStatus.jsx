@@ -1,8 +1,7 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, subMonths, subWeeks, subDays, subYears, format, isBefore, startOfMonth, startOfDay } from 'date-fns';
 import Big from 'big.js';
 import { useSettings } from '../utils/SettingsContext';
-import { notifyRecurringDue, notifyRecurringOverdue } from '../utils/notificationHelpers';
 
 function calculateNextDate(date, frequency) {
   switch (frequency) {
@@ -31,7 +30,6 @@ function calculatePreviousDate(date, frequency) {
 
 export function useRecurringStatus(recurringTransactions = [], realTransactions = []) {
   const { user } = useSettings();
-  const notifiedRefs = useRef(new Set());
 
   const data = useMemo(() => {
     const today = new Date();
@@ -115,24 +113,6 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
 
     return { currentMonthItems, timelineItems };
   }, [recurringTransactions, realTransactions]);
-
-  // Notification System Integration
-  useEffect(() => {
-    if (!user?.email || !data.currentMonthItems.length) return;
-
-    data.currentMonthItems.forEach(async (item) => {
-      const notifKey = `${item.id}-${item.calculatedNextDate}-${item.status}`;
-      if (notifiedRefs.current.has(notifKey)) return;
-
-      if (item.status === 'due_soon') {
-        await notifyRecurringDue(user.email, item.title, format(parseISO(item.calculatedNextDate), 'MMM d'));
-        notifiedRefs.current.add(notifKey);
-      } else if (item.status === 'overdue') {
-        await notifyRecurringOverdue(user.email, item.title);
-        notifiedRefs.current.add(notifKey);
-      }
-    });
-  }, [data.currentMonthItems, user]);
 
   return data;
 }
