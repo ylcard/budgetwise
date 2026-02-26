@@ -284,14 +284,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 animate={{ opacity: isDisplayedEmpty ? 0 : 1 }}
               >
                 {/* Income/Spent Summary */}
-                <div className="text-center space-y-1">
-                  {/* Always show the math, but highlight text in red if over */}
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Spent <strong className={isTotalOver ? "text-destructive" : "text-foreground"}>
-                      {formatCurrency(totalSpent, settings)}
-                    </strong> of <strong>{formatCurrency(effectiveIncome, settings)}</strong>
-                  </p>
-
+                <div className="text-center">
                   {/* Dynamic Pill: Changes color and icon based on status, but layout stays stable */}
                   <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors duration-300 ${isTotalOver
                     ? "bg-destructive/10 border-destructive/20 text-destructive"
