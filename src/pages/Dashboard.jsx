@@ -449,6 +449,17 @@ export default function Dashboard() {
                   <div key={i} className={`h-1.5 rounded-full transition-all ${selectedIndex === i ? "w-4 bg-primary" : "w-1.5 bg-muted"}`} />
                 ))}
               </div>
+
+              {/* Pagination Dots */}
+              <div className="flex justify-center items-center gap-1.5 mt-4">
+                {[0, 1].map((index) => (
+                  <div
+                    key={index}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${selectedIndex === index ? "w-4 bg-primary" : "w-1.5 bg-border"
+                      }`}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* DESKTOP PLACEMENT: Sidebars */}
