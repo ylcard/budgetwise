@@ -422,10 +422,11 @@ export default function Dashboard() {
             </div>
 
             {/* MOBILE ONLY: Activity Carousel */}
-            <div className="lg:hidden w-full max-w-[95vw] mx-auto overflow-hidden">
+            <div className="lg:hidden w-full max-w-[95vw] mx-auto overflow-hidden mt-2">
               <div className="overflow-hidden rounded-xl" ref={emblaRef}>
-                <div className="flex touch-pan-y">
-                  <div className="flex-[0_0_100%] min-w-0 px-1" data-tutorial="upcoming-transactions">
+                <div className="flex touch-pan-y h-[calc(100dvh-var(--header-total-height)-var(--nav-total-height)-4rem)]">
+                  {/* Slide 1: Upcoming */}
+                  <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto scrollbar-hide" data-tutorial="upcoming-transactions">
                     <UpcomingTransactions
                       recurringWithStatus={recurringWithStatus}
                       onMarkPaid={handleMarkPaid}
@@ -433,7 +434,8 @@ export default function Dashboard() {
                       categories={categories}
                     />
                   </div>
-                  <div className="flex-[0_0_100%] min-w-0 px-1" data-tutorial="recent-transactions">
+                  {/* Slide 2: Recent */}
+                  <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto scrollbar-hide" data-tutorial="recent-transactions">
                     <RecentTransactions
                       categories={categories}
                       settings={settings}
