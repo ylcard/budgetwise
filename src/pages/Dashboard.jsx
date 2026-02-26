@@ -92,9 +92,10 @@ export default function Dashboard() {
       setShowStory(true);
 
       // Clean the URL so it doesn't reopen on refresh
-      setSearchParams({});
+      // Use native history API to prevent React Router from triggering a RouteTransition remount
+      window.history.replaceState(null, '', window.location.pathname);
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams]);
 
   // Data fetching
   // CRITICAL: Extract isLoading states to control the UI transitions
