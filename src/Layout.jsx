@@ -50,7 +50,7 @@ const LayoutContent = ({ children }) => {
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
   const { budgetHealth } = useHealth();
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, user } = useSettings();
 
   // Cookie Consent
   const { showBanner, consent, acceptAll, acceptNecessary, updateConsent } = useCookieConsent();
@@ -184,7 +184,16 @@ const LayoutContent = ({ children }) => {
               <ChevronLeft className="w-6 h-6" />
             </button>
           )}
-          <h1 className="text-lg font-semibold text-foreground truncate max-w-[60%]">{currentPageTitle}</h1>
+          <div className="flex flex-col items-center justify-center text-center min-w-0 max-w-[65%]">
+            <h1 className="text-sm font-bold text-foreground leading-tight truncate w-full">
+              {currentPageTitle}
+            </h1>
+            {isRootPage && (
+              <p className="text-[10px] text-muted-foreground leading-tight truncate w-full font-medium">
+                Welcome back, {settings?.displayName || user?.name || 'User'}!
+              </p>
+            )}
+          </div>
 
           {/* ADDED 14-Feb-2026: Notification Bell - Mobile Header */}
           <div className="absolute right-4">
