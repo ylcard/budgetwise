@@ -98,29 +98,25 @@ const LayoutContent = ({ children }) => {
 
   const { currentPageTitle, isRootPage, activeTab } = useMemo(() => {
     const pathname = location.pathname;
+    const isRoot = pathname === '/' || pathname === '/dashboard';
 
     // Recursive helper to find the active item
     const findItem = (items) => {
       for (const item of items) {
-        // Check exact match or if it's a parent path
-        if (item.url === pathname || pathname.startsWith(item.url + '/')) {
-          // Check children for specific match
-          if (item.items) {
-            const subItem = item.items.find(sub => sub.url === pathname);
-            if (subItem) return subItem;
-          }
-          return item;
+        if (item.url === pathname) return item;
+        if (item.items) {
+          const subItem = item.items.find(sub => sub.url === pathname);
+          if (subItem) return subItem;
         }
       }
       return null;
     };
 
     const route = findItem(navigationItems);
-    const isRoot = navigationItems.some(item => item.url === pathname);
 
     return {
-      currentPageTitle: route?.title || 'BudgetWise',
-      isRootPage: isRoot || pathname === '/',
+      currentPageTitle: route?.title || (isRoot ? 'Dashboard' : 'BudgetWise'),
+      isRootPage: isRoot,
       activeTab: route?.url
     };
   }, [location.pathname]);
