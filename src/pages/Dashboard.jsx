@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
@@ -47,6 +47,7 @@ import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth"
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
+import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
 export default function Dashboard() {
@@ -60,6 +61,20 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showStory, setShowStory] = useState(false);
   const queryClient = useQueryClient();
+
+  // Carousel for Mobile Activity (Upcoming/Recent)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on('select', onSelect);
+  }, [emblaApi, onSelect]);
 
   // Automatically checks and triggers the dashboard tutorial
   useTutorialTrigger(TUTORIAL_IDS.DASHBOARD_OVERVIEW);
@@ -404,21 +419,40 @@ export default function Dashboard() {
                   onCreateBudget={() => setShowQuickAddBudget(true)}
                 />
               </div>
-
-              {/* MOBILE PLACEMENT: Below Custom Budgets */}
-              {/* Removed fixed height 'h-96' to let content flow naturally */}
-              <div className="lg:hidden w-full" data-tutorial="upcoming-transactions">
-                <UpcomingTransactions
-                  recurringWithStatus={recurringWithStatus}
-                  onMarkPaid={handleMarkPaid}
-                  isLoading={isLoading}
-                  categories={categories}
-                />
-              </div>
-
             </div>
 
-            <div className="lg:col-span-1 flex flex-col" data-tutorial="recent-transactions">
+            {/* MOBILE ONLY: Activity Carousel */}
+            <div className="lg:hidden w-full">
+              <div className="overflow-hidden" ref={emblaRef}>
+                <div className="flex">
+                  <div className="flex-[0_0_100%] min-w-0 px-4" data-tutorial="upcoming-transactions">
+                    <UpcomingTransactions
+                      recurringWithStatus={recurringWithStatus}
+                      onMarkPaid={handleMarkPaid}
+                      isLoading={isLoading}
+                      categories={categories}
+                    />
+                  </div>
+                  <div className="flex-[0_0_100%] min-w-0 px-4" data-tutorial="recent-transactions">
+                    <RecentTransactions
+                      categories={categories}
+                      settings={settings}
+                      customBudgets={allCustomBudgets}
+                      onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
+                      onDelete={transactionActions.handleDelete}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center gap-1.5 mt-3">
+                {[0, 1].map((i) => (
+                  <div key={i} className={`h-1.5 rounded-full transition-all ${selectedIndex === i ? "w-4 bg-primary" : "w-1.5 bg-muted"}`} />
+                ))}
+              </div>
+            </div>
+
+            {/* DESKTOP PLACEMENT: Sidebars */}
+            <div className="hidden lg:flex lg:col-span-1 flex-col" data-tutorial="recent-transactions">
               <RecentTransactions
                 categories={categories}
                 settings={settings}
