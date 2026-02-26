@@ -280,7 +280,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
               {/* Summary Stats */}
               <motion.div
-                className="w-full space-y-3"
+                className="w-full space-y-3 mt-6"
                 animate={{ opacity: isDisplayedEmpty ? 0 : 1 }}
               >
                 {/* Income/Spent Summary */}
