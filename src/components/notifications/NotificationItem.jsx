@@ -3,12 +3,13 @@ import { X, ExternalLink, CheckCircle, AlertTriangle, Info, AlertCircle, Zap, Sp
 import { CustomButton } from '../ui/CustomButton';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * CREATED 14-Feb-2026: Individual notification item component
  */
 const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss, onNavigate }, ref) => {
+  const navigate = useNavigate();
 
   const typeConfig = {
     success: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
@@ -23,11 +24,9 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
   const Icon = config.icon;
 
   const handleClick = (e) => {
-    if (!notification.isRead) {
-      onMarkRead(notification.id);
-    }
-    if (notification.actionUrl && onNavigate) {
-      onNavigate();
+    if (notification.actionUrl) {
+      if (onNavigate) onNavigate();
+      navigate(notification.actionUrl);
     }
   };
 
@@ -37,11 +36,8 @@ const NotificationItem = memo(forwardRef(({ notification, onMarkRead, onDismiss,
     onDismiss(notification.id);
   };
 
-  // Dynamically wrap the content in a Link if it has an actionUrl
-  const ContentWrapper = notification.actionUrl ? Link : 'div';
-  const wrapperProps = notification.actionUrl
-    ? { to: notification.actionUrl, onClick: handleClick, className: "flex gap-3 w-full pr-8" }
-    : { onClick: handleClick, className: "flex gap-3 w-full pr-8" };
+  const ContentWrapper = 'div';
+  const wrapperProps = { onClick: handleClick, className: "flex gap-3 w-full pr-8" };
 
   return (
     <div
