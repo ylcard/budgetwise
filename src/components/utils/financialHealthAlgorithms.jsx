@@ -223,7 +223,7 @@ const calculateSharpeRatio = (historySummary) => {
   if (monthlySavings.length < 2) return 50; // Not enough data, neutral score
 
   const avgSavings = monthlySavings.reduce((a, b) => a + b, 0) / monthlySavings.length;
-  const stdDev = calculateStdDev(monthlySavings);
+  let stdDev = calculateStdDev(monthlySavings);
 
   // FLOOR STDDEV to prevent infinite ratios on perfect consistency
   // 1% of average or 1.0, whichever is larger
