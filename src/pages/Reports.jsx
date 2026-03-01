@@ -23,6 +23,7 @@ import { LayoutDashboard, Target, List, Maximize2, X, ChevronRight, ChevronLeft 
 import { parseDate, getMonthBoundaries } from "../components/utils/dateUtils";
 import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css";
+import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
 
 export default function Reports() {
   const { user, settings, updateSettings } = useSettings();
@@ -144,6 +145,9 @@ export default function Reports() {
 
   const isLoading = loadingTransactions || loadingCategories || loadingGoals;
 
+  // ADDED: Fetch Financial Health Data at page level to share between components
+  const { healthData, isLoading: healthLoading } = useFinancialHealthScore(user, selectedMonth, selectedYear);
+
   // Calculate Efficiency Bonus
   const bonusSavingsPotential = useMemo(() => {
     if (!monthStart || !monthEnd || !systemBudgets) return 0;
@@ -240,6 +244,7 @@ export default function Reports() {
       startDate={monthStart}
       endDate={monthEnd}
       bonusSavingsPotential={bonusSavingsPotential}
+      healthData={healthData} // Pass pre-fetched data
     />
   );
 
@@ -252,7 +257,8 @@ export default function Reports() {
       prevTransactions={prevMonthlyTransactions}
       startDate={monthStart}
       endDate={monthEnd}
-      isLoading={isLoading}
+      isLoading={isLoading || healthLoading} // Merge loading states
+      healthData={healthData} // Pass pre-fetched data
       settings={settings}
       categories={categories}
       allCustomBudgets={allCustomBudgets}
