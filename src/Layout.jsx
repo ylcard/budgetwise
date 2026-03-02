@@ -42,7 +42,7 @@ import CookieSettings from "./components/cookies/CookieSettings";
 import { useCookieConsent } from "./components/cookies/useCookieConsent";
 import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
 import { flushSync } from "react-dom";
-import { UserAvatar } from "@/components/ui/UserAvatar";
+// import { UserAvatar } from "@/components/ui/UserAvatar";
 
 const LayoutContent = ({ children }) => {
   const location = useLocation();
@@ -181,11 +181,11 @@ const LayoutContent = ({ children }) => {
               <ChevronLeft className="w-6 h-6" />
             </button>
           )}
-          {isRootPage && (
+          {/* {isRootPage && (
             <div className="absolute left-4 flex items-center justify-center">
               <UserAvatar size="sm" />
             </div>
-          )}
+          )} */}
           <div className="flex flex-col items-center justify-center text-center min-w-0 max-w-[65%]">
             <h1 className="text-sm font-bold text-foreground leading-tight truncate w-full">
               {currentPageTitle}
