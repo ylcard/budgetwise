@@ -441,7 +441,6 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
-// FIXED 02-Mar-2026: Removed invalid `...props, id` rest pattern from SidebarMenuButton that caused esbuild "Invalid binding pattern" build failure
 const SidebarMenuButton = React.forwardRef((
   {
     asChild = false,

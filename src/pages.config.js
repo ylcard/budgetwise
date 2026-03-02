@@ -58,13 +58,13 @@ import FinancialDisclaimer from './pages/FinancialDisclaimer';
 import Goals from './pages/Goals';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
+import Learn from './pages/Learn';
 import Manage from './pages/Manage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import TermsOfService from './pages/TermsOfService';
 import Transactions from './pages/Transactions';
-import Learn from './pages/Learn';
 import __Layout from './Layout.jsx';
 
 
@@ -80,13 +80,13 @@ export const PAGES = {
     "Goals": Goals,
     "Home": Home,
     "ImportData": ImportData,
+    "Learn": Learn,
     "Manage": Manage,
     "PrivacyPolicy": PrivacyPolicy,
     "RecurringTransactions": RecurringTransactions,
     "Reports": Reports,
     "TermsOfService": TermsOfService,
     "Transactions": Transactions,
-    "Learn": Learn,
 }
 
 export const pagesConfig = {
