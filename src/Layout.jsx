@@ -25,7 +25,7 @@ import {
   SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
-  SidebarProvider,
+  SidebarProvider
 } from "@/components/ui/sidebar";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PeriodProvider } from "./components/hooks/usePeriod";
