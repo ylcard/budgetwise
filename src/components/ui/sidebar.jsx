@@ -453,7 +453,6 @@ const SidebarMenuButton = React.forwardRef((
   },
   ref
 ) => {
-  // FIXED 02-Mar-2026: Removed invalid ...props, id pattern that caused esbuild parse error
   const Comp = asChild ? Slot : "button"
   const { isMobile, state } = useSidebar()
 
