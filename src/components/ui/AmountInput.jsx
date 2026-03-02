@@ -25,7 +25,7 @@ import { useCurrencies } from "../hooks/useCurrencies";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
-
+// test
 /**
  * Custom input component designed for monetary amounts.
  * It handles formatting and parsing based on user's defined separators and currency position.
