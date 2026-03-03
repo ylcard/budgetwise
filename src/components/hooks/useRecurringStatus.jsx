@@ -86,6 +86,14 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       const dbNextDate = parseISO(template.nextOccurrence);
       const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
+      // HISTORY BOUNDARY:
+      // Determine the earliest transaction in your entire history.
+      // We shouldn't generate "expected" slots for dates before you even started using the app.
+      // Default to 60 days ago if no history exists yet.
+      const historyStart = realTransactions.length > 0
+        ? realTransactions.reduce((min, t) => t.date < min ? t.date : min, realTransactions[0].date)
+        : format(subMonths(new Date(), 2), 'yyyy-MM-dd');
+
       // 4. GENERATE SLOTS (Backlog)
       // Create expected due dates for the last X cycles (e.g. 5) + Current Cycle
       // This handles your "Electricity" case: Dec(Late) -> Jan(Late) -> Feb(On Time)
@@ -95,7 +103,11 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // Go back 5 cycles (arbitrary safe history depth)
       for (let i = 0; i < 5; i++) {
         iterDate = calculatePreviousDate(iterDate, template.frequency);
-        slots.unshift({ date: iterDate, filledBy: null });
+        // ONLY add this slot if it's within a reasonable window of the user's history (e.g. -45 days buffer)
+        // This prevents a transaction today from paying off a "ghost" bill from 6 months ago
+        if (differenceInDays(iterDate, parseISO(historyStart)) >= -45) {
+          slots.unshift({ date: iterDate, filledBy: null });
+        }
       }
       // Add current cycle
       slots.push({ date: dbNextDate, filledBy: null }); // Index 5 is current
