@@ -524,7 +524,7 @@ Deno.serve(async (req) => {
                 }
 
                 // Determine the clean name (AI/Rule result OR raw fallback)
-                const finalCleanName = catResult.renamedTitle || rawDescription;
+                const finalCleanName = catResult.renamedTitle || searchString;
 
                 const transformed = {
                     id: existingDbId, // <--- If this is set, we UPDATE. If null, we CREATE.
