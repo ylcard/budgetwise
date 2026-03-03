@@ -1,12 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
+import { CustomButton } from "@/components/ui/CustomButton";
 import { format } from "date-fns";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { useMediaQuery } from "@/components/hooks/use-media-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function ConfirmMatchDialog({ isOpen, onClose, onConfirm, matchData }) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const isMobile = useIsMobile();
 
   if (!matchData) return null;
 
@@ -46,16 +46,16 @@ export function ConfirmMatchDialog({ isOpen, onClose, onConfirm, matchData }) {
 
   const Footer = (
     <div className="flex flex-col sm:flex-row gap-2 w-full pt-2">
-      <Button variant="outline" onClick={onClose} className="w-full sm:w-1/2">
+      <CustomButton variant="outline" onClick={onClose} className="w-full sm:w-1/2">
         Cancel
-      </Button>
-      <Button onClick={onConfirm} className="w-full sm:w-1/2 bg-green-600 hover:bg-green-700 text-white">
+      </CustomButton>
+      <CustomButton onClick={onConfirm} variant="success" className="w-full sm:w-1/2">
         Confirm Match
-      </Button>
+      </CustomButton>
     </div>
   );
 
-  if (isDesktop) {
+  if (!isMobile) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[425px]">
@@ -81,7 +81,7 @@ export function ConfirmMatchDialog({ isOpen, onClose, onConfirm, matchData }) {
             Is this the correct payment for your bill?
           </DrawerDescription>
         </DrawerHeader>
-        <div className="px-4">
+        <div className="px-4 pb-8">
           {Content}
           {Footer}
         </div>
