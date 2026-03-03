@@ -63,9 +63,12 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         }
       }
 
-      // Only count matched transactions if they are 'auto_match'.
-      // If they are 'needs_review', they should NOT contribute to 'totalPaid' 
-      // until the user confirms them (which creates a link).
+      // RESTORED: "All Relevant" includes suggestions (needs_review) to trigger UI "Activity" states
+      const allRelevantTxs = [...linkedTxs];
+      if (matchCandidate) allRelevantTxs.push(matchCandidate);
+
+      // SEPARATE: "Paying" only includes confirmed links or high-confidence auto-matches
+      // If they are 'needs_review', they should NOT contribute to 'totalPaid' until confirmed.
       const payingTransactions = [...linkedTxs];
       if (matchCandidate && matchStatus === 'auto_match') {
         payingTransactions.push(matchCandidate);
