@@ -44,14 +44,27 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // 1. Find explicit links
       const linkedTxs = realTransactions.filter(t => t.recurringTransactionId === template.id);
 
-      // 2. Find potential fuzzy matches for unlinked transactions this month
-      const potentialMatches = realTransactions.filter(t => {
-        if (t.recurringTransactionId || !isSameMonth(parseISO(t.date), today)) return false;
-        const evaluation = evaluateTransactionMatch(t, [template]);
-        return evaluation.status !== 'no_match';
-      });
+      // 2. Find Candidates: Analyze unlinked transactions
+      let matchCandidate = null;
+      let matchStatus = 'none';
 
-      const allRelevantTxs = [...linkedTxs, ...potentialMatches];
+      // Only look for matches if not already paid/linked this month
+      if (linkedTxs.length === 0) {
+        const availableTxs = realTransactions.filter(t => !t.recurringTransactionId);
+
+        const bestMatch = availableTxs
+          .map(tx => ({ tx, result: evaluateTransactionMatch(tx, [template]) }))
+          .filter(item => item.result.status !== 'no_match')
+          .sort((a, b) => b.result.matchConfidenceScore - a.result.matchConfidenceScore)[0];
+
+        if (bestMatch) {
+          matchCandidate = bestMatch.tx;
+          matchStatus = bestMatch.result.status; // 'auto_match' or 'needs_review'
+        }
+      }
+
+      const allRelevantTxs = [...linkedTxs];
+      if (matchCandidate) allRelevantTxs.push(matchCandidate);
 
       const dbNextDate = parseISO(template.nextOccurrence);
       // Your logic: Subtract the frequency to find what the PREVIOUS due date was
@@ -71,7 +84,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       const isPrevDueThisMonth = isSameMonth(prevDate, today); // Expected this month, but already paid & advanced!
       const isOverdue = isBefore(dbNextDate, currentMonthStart); // Missed entirely
       const hasActivityThisMonth = allRelevantTxs.length > 0;
-      const needsReview = potentialMatches.length > 0 && !linkedTxs.length;
+      const needsReview = matchStatus === 'needs_review' && !linkedTxs.length;
 
       if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth) {
         // It's considered paid if we paid it this month, OR if the backend already pushed the date past this month
@@ -80,8 +93,8 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         // What date do we display? If it advanced to July, we want to show April's date.
         let displayDate = isPrevDueThisMonth ? prevDate : dbNextDate;
 
-        if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth && allRelevantTxs[0]) {
-          displayDate = parseISO(allRelevantTxs[0].date);
+        if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth && linkedTxs[0]) {
+          displayDate = parseISO(linkedTxs[0].date);
         }
 
         const daysUntilDue = differenceInDays(startOfDay(displayDate), startOfDay(today));
@@ -94,7 +107,8 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
           ...template,
           isPaid,
           needsReview,
-          suggestedTransactions: potentialMatches,
+          matchStatus,
+          suggestedTransactions: matchCandidate ? [matchCandidate] : [],
           paidAmount: totalPaid.toNumber(),
           daysUntilDue,
           status,
