@@ -404,6 +404,7 @@ export default function Dashboard() {
               <UpcomingTransactions
                 recurringWithStatus={recurringWithStatus}
                 onMarkPaid={handleMarkPaid}
+                onConfirmMatch={handleConfirmMatch}
                 isLoading={isLoading}
                 categories={categories}
               />
@@ -429,6 +430,7 @@ export default function Dashboard() {
                     <UpcomingTransactions
                       recurringWithStatus={recurringWithStatus}
                       onMarkPaid={handleMarkPaid}
+                      onConfirmMatch={handleConfirmMatch}
                       isLoading={isLoading}
                       categories={categories}
                     />
