@@ -86,50 +86,47 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       const dbNextDate = parseISO(template.nextOccurrence);
       const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
-      // HISTORY BOUNDARY:
-      // Determine the earliest transaction in your entire history.
-      // We shouldn't generate "expected" slots for dates before you even started using the app.
-      // Default to 60 days ago if no history exists yet.
-      const historyStart = realTransactions.length > 0
-        ? realTransactions.reduce((min, t) => t.date < min ? t.date : min, realTransactions[0].date)
-        : format(subMonths(new Date(), 2), 'yyyy-MM-dd');
-
-      // 4. GENERATE SLOTS (Backlog)
-      // Create expected due dates for the last X cycles (e.g. 5) + Current Cycle
-      // This handles your "Electricity" case: Dec(Late) -> Jan(Late) -> Feb(On Time)
+      // 4. GENERATE SLOTS (Magnets)
+      // Create expected due dates for the last 5 cycles + Current Cycle
       const slots = [];
       let iterDate = dbNextDate;
 
-      // Go back 5 cycles (arbitrary safe history depth)
+      // Start with Current
+      slots.push({ date: dbNextDate, filledBy: null });
+
+      // Add 5 past slots to the beginning to handle late payments history
       for (let i = 0; i < 5; i++) {
         iterDate = calculatePreviousDate(iterDate, template.frequency);
-        // ONLY add this slot if it's within a reasonable window of the user's history (e.g. -45 days buffer)
-        // This prevents a transaction today from paying off a "ghost" bill from 6 months ago
-        if (differenceInDays(iterDate, parseISO(historyStart)) >= -45) {
-          slots.unshift({ date: iterDate, filledBy: null });
-        }
+        slots.unshift({ date: iterDate, filledBy: null });
       }
-      // Add current cycle
-      slots.push({ date: dbNextDate, filledBy: null }); // Index 5 is current
 
-      // 5. FILL SLOTS (FIFO)
-      // Match oldest transaction to oldest *compatible* slot
+      // 5. FILL SLOTS (Best Fit / Greedy Magnet)
+      // Let each transaction find its CLOSEST empty slot.
       poolOfTransactions.forEach(tx => {
         const txDate = parseISO(tx.date);
 
-        // Find the first empty slot where this transaction makes sense.
-        // "Makes sense" = Transaction isn't wildly before the due date (e.g. 2 months early).
-        // We allow late payments (infinity), but restrict early payments (e.g. max 20 days early).
-        const validSlotIndex = slots.findIndex(slot => {
-          if (slot.filledBy) return false; // Already paid
-          const diff = differenceInDays(txDate, slot.date);
-          // Allow paying up to 25 days early, or any time after.
-          return diff >= -25;
+        let bestSlotIndex = -1;
+        let minDiff = Infinity;
+
+        slots.forEach((slot, index) => {
+          if (slot.filledBy) return; // Slot already taken
+
+          // Calculate ABSOLUTE distance (how far is this tx from this due date?)
+          const diff = Math.abs(differenceInDays(txDate, slot.date));
+
+          // MATCHING RULES:
+          // 1. Threshold: If the transaction is > 25 days away from the due date, it's probably not for this bill.
+          //    (This protects March bills from snatching January transactions)
+          // 2. Proximity: It must be the closest slot found so far.
+          if (diff < 25 && diff < minDiff) {
+            minDiff = diff;
+            bestSlotIndex = index;
+          }
         });
 
-        if (validSlotIndex !== -1) {
-          slots[validSlotIndex].filledBy = tx;
-          // MARK AS USED so subsequent templates don't grab it
+        if (bestSlotIndex !== -1) {
+          slots[bestSlotIndex].filledBy = tx;
+          // CRITICAL: Mark this ID as used so other templates (like Apple Music) can't use it
           usedTransactionIds.add(tx.id);
         }
       });
