@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { CheckCircle2, Clock, AlertCircle, CalendarDays } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, CalendarDays, X } from 'lucide-react';
 import { CustomButton } from '../ui/CustomButton';
 import { useTransactionActions } from '../hooks/useActions';
 import clsx from 'clsx';
@@ -15,6 +15,7 @@ export default function UpcomingTransactions({
   categories
 }) {
   const [viewMode, setViewMode] = useState('current'); // 'current' | 'timeline'
+  const [ignoredMatches, setIgnoredMatches] = useState(new Set()); // Local state to dismiss suggestions
   const [listRef] = useAutoAnimate();
   const { handleConfirmMatch } = useTransactionActions();
 
@@ -75,6 +76,7 @@ export default function UpcomingTransactions({
               const uniqueKey = viewMode === 'current' ? item.id : `${item.id}-${item.calculatedNextDate}-${index}`;
               const displayDate = parseISO(viewMode === 'current' ? item.calculatedNextDate : item.projectedDate);
               const isExpense = item.type === 'expense';
+              const showMatchSuggestion = item.needsReview && !ignoredMatches.has(item.id);
 
               return (
                 <li
@@ -133,15 +135,28 @@ export default function UpcomingTransactions({
                             Paid
                           </span>
                         ) : (
-                          item.needsReview ? (
-                            <CustomButton
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-xs min-w-[80px] border-amber-500 text-amber-600 bg-amber-50 hover:bg-amber-100"
-                              onClick={() => handleConfirmMatch(item.suggestedTransactions?.[0], item)}
-                            >
-                              Confirm Match
-                            </CustomButton>
+                          showMatchSuggestion ? (
+                            <div className="flex items-center gap-1">
+                              <CustomButton
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs min-w-[80px] border-amber-500 text-amber-600 bg-amber-50 hover:bg-amber-100"
+                                onClick={() => handleConfirmMatch(item.suggestedTransactions?.[0], item)}
+                              >
+                                Confirm Match
+                              </CustomButton>
+                              <button
+                                onClick={() => {
+                                  const next = new Set(ignoredMatches);
+                                  next.add(item.id);
+                                  setIgnoredMatches(next);
+                                }}
+                                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Ignore Suggestion"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
                           ) : (
                             <CustomButton
                               variant={item.status === 'overdue' ? 'delete' : 'outline'}
