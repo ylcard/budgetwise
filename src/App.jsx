@@ -82,9 +82,7 @@ const AuthenticatedApp = () => {
                 </Route>
 
                 {/* Legal Tabbed Routes */}
-                <Route path="/legal" element={<LegalPage />}>
-                    <Route path=":tab" element={<LegalPage />} />
-                </Route>
+                <Route path="/legal/:tab?" element={<LegalPage />} />
 
                 {/* Standard Page Fallback */}
                 {Object.entries(Pages).map(([path, Page]) => (
