@@ -90,6 +90,20 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         const distToCurrent = Math.abs(differenceInDays(txDate, dbNextDate));
         const distToPrev = Math.abs(differenceInDays(txDate, prevDate));
 
+        // ANTI-HIJACK RULE: 
+        // If the transaction is in the PREVIOUS month (relative to current due date),
+        // verify if the previous month has "surplus" transactions.
+        // If there is only 1 transaction in that previous month, it almost certainly belongs 
+        // to the previous cycle (even if paid late), so don't steal it for the current cycle.
+        if (isBefore(txDate, startOfMonth(dbNextDate))) {
+          const previousMonthTxs = payingTransactions.filter(t =>
+            isSameMonth(parseISO(t.date), txDate)
+          );
+
+          // If we only found ONE transaction in that previous month, assume it's for that month.
+          if (previousMonthTxs.length < 2) return false;
+        }
+
         return distToCurrent <= distToPrev;
       });
 
