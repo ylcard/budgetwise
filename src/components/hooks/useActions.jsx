@@ -6,541 +6,571 @@ import { useCreateEntity } from "./useCreateEntity";
 import { useUpdateEntity } from "./useUpdateEntity";
 import { useDeleteEntity } from "./useDeleteEntity";
 import { QUERY_KEYS } from "./queryKeys";
-import { parseDate } from "../utils/dateUtils";
+import { parseDate, formatDateString } from "../utils/dateUtils";
 import { snapshotFutureBudgets, ensureSystemBudgetsExist } from "../utils/budgetInitialization";
 import { getMonthBoundaries } from "../utils/dateUtils";
 import { getHistoricalAverageIncome } from "../utils/financialCalculations";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../utils/SettingsContext";
 import { fetchWithRetry } from "../utils/generalUtils";
+import { calculateNextOccurrence } from "../utils/recurringUtils";
 
 // Hook for transaction actions (CRUD operations - Transactions page)
 // UPDATED 03-Feb-2026: Added optimistic UI updates for immediate feedback
 export const useTransactionActions = (config = {}) => {
-    const { setShowForm, setEditingTransaction, ...options } = config;
-    const queryClient = useQueryClient();
-    const { settings, user } = useSettings();
+  const { setShowForm, setEditingTransaction, ...options } = config;
+  const queryClient = useQueryClient();
+  const { settings, user } = useSettings();
 
-    // Helper to sync budgets when income changes
-    const syncBudgetsAfterIncomeChange = async (dateString) => {
-        if (!user?.email) return;
-        const date = parseDate(dateString);
-        const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
+  // Helper to sync budgets when income changes
+  const syncBudgetsAfterIncomeChange = async (dateString) => {
+    if (!user?.email) return;
+    const date = parseDate(dateString);
+    const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
-        // 1. Get all transactions for this month to sum actual income
-        const allTransactions = await fetchWithRetry(() => base44.entities.Transaction.filter({
-            created_by: user.email,
-            type: 'income',
-            date: { $gte: monthStart, $lte: monthEnd }
-        }));
+    // 1. Get all transactions for this month to sum actual income
+    const allTransactions = await fetchWithRetry(() => base44.entities.Transaction.filter({
+      created_by: user.email,
+      type: 'income',
+      date: { $gte: monthStart, $lte: monthEnd }
+    }));
 
-        const monthlyIncome = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const monthlyIncome = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-        const budgetGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ user_email: user.email }));
-        const histAvg = getHistoricalAverageIncome(allTransactions, date.getMonth(), date.getFullYear());
+    const budgetGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ user_email: user.email }));
+    const histAvg = getHistoricalAverageIncome(allTransactions, date.getMonth(), date.getFullYear());
 
-        // 2. Force the budget engine to update allocations
-        await ensureSystemBudgetsExist(user.email, monthStart, monthEnd, budgetGoals, settings, monthlyIncome, {
-            allowUpdates: true,
-            historicalAverage: histAvg
-        });
-
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-    };
-
-    // CREATE: Use generic hook with cash wallet preprocessing + optimistic updates
-    const createMutation = useCreateEntity({
-        entityName: 'Transaction',
-        queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_BUDGETS], // Removed TRANSACTIONS to prevent background refetch
-        // ADDED 03-Feb-2026: Optimistic create - immediately add to cache
-        onMutate: async (newTransaction) => {
-            // Cancel outgoing refetches
-            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-
-            // Snapshot previous value
-            const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-
-            // Optimistically add new transaction with temporary ID
-            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => [
-                { ...newTransaction, id: `temp-${Date.now()}`, _optimistic: true },
-                ...old
-            ]);
-
-            return { previousQueries };
-        },
-        onError: (_, __, context) => {
-            // Rollback on error
-            context.previousQueries.forEach(([queryKey, oldData]) => {
-                queryClient.setQueryData(queryKey, oldData);
-            });
-        },
-        onAfterSuccess: async (newDoc) => {
-            // Swap temporary optimistic transaction with the real database record
-            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
-                if (!old) return [newDoc];
-                return old.map(t => (t._optimistic && t.id.startsWith('temp-')) ? newDoc : t);
-            });
-
-            if (newDoc?.type === 'income') await syncBudgetsAfterIncomeChange(newDoc.date);
-            if (setShowForm) setShowForm(false);
-            if (setEditingTransaction) setEditingTransaction(null);
-            if (options.onSuccess) options.onSuccess();
-        }
+    // 2. Force the budget engine to update allocations
+    await ensureSystemBudgetsExist(user.email, monthStart, monthEnd, budgetGoals, settings, monthlyIncome, {
+      allowUpdates: true,
+      historicalAverage: histAvg
     });
 
-    // UPDATE: Use generic hook with complex cash transaction handling + optimistic updates
-    const updateMutation = useUpdateEntity({
-        entityName: 'Transaction',
-        queryKeysToInvalidate: [], // Removed TRANSACTIONS to prevent background refetch
-        // ADDED 03-Feb-2026: Optimistic update - immediately update cache
-        onMutate: async ({ id, data }) => {
-            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+  };
 
-            const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+  // CREATE: Use generic hook with cash wallet preprocessing + optimistic updates
+  const createMutation = useCreateEntity({
+    entityName: 'Transaction',
+    queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_BUDGETS], // Removed TRANSACTIONS to prevent background refetch
+    // ADDED 03-Feb-2026: Optimistic create - immediately add to cache
+    onMutate: async (newTransaction) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
-            // Optimistically update transaction
-            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
-                old.map(t => t.id === id ? { ...t, ...data, _optimistic: true } : t)
-            );
+      // Snapshot previous value
+      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
 
-            return { previousQueries };
+      // Optimistically add new transaction with temporary ID
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => [
+        { ...newTransaction, id: `temp-${Date.now()}`, _optimistic: true },
+        ...old
+      ]);
+
+      return { previousQueries };
+    },
+    onError: (_, __, context) => {
+      // Rollback on error
+      context.previousQueries.forEach(([queryKey, oldData]) => {
+        queryClient.setQueryData(queryKey, oldData);
+      });
+    },
+    onAfterSuccess: async (newDoc) => {
+      // Swap temporary optimistic transaction with the real database record
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
+        if (!old) return [newDoc];
+        return old.map(t => (t._optimistic && t.id.startsWith('temp-')) ? newDoc : t);
+      });
+
+      if (newDoc?.type === 'income') await syncBudgetsAfterIncomeChange(newDoc.date);
+      if (setShowForm) setShowForm(false);
+      if (setEditingTransaction) setEditingTransaction(null);
+      if (options.onSuccess) options.onSuccess();
+    }
+  });
+
+  // UPDATE: Use generic hook with complex cash transaction handling + optimistic updates
+  const updateMutation = useUpdateEntity({
+    entityName: 'Transaction',
+    queryKeysToInvalidate: [], // Removed TRANSACTIONS to prevent background refetch
+    // ADDED 03-Feb-2026: Optimistic update - immediately update cache
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+
+      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+
+      // Optimistically update transaction
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+        old.map(t => t.id === id ? { ...t, ...data, _optimistic: true } : t)
+      );
+
+      return { previousQueries };
+    },
+    onError: (_, __, context) => {
+      context.previousQueries.forEach(([queryKey, oldData]) => {
+        queryClient.setQueryData(queryKey, oldData);
+      });
+    },
+    onAfterSuccess: async (updatedDoc) => {
+      // Replace with real data from server
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
+        if (!old) return [];
+        return old.map(t => t.id === updatedDoc.id ? updatedDoc : t);
+      });
+
+      if (updatedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(updatedDoc.date);
+      if (setShowForm) setShowForm(false);
+      if (setEditingTransaction) setEditingTransaction(null);
+    }
+  });
+
+  // DELETE: Use generic hook with cash wallet reversal + optimistic updates
+  const { handleDelete: handleDeleteTransaction } = useDeleteEntity({
+    entityName: 'Transaction',
+    queryKeysToInvalidate: [], // Removed TRANSACTIONS to prevent background refetch
+    confirmTitle: "Delete Transaction",
+    confirmMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
+    // ADDED 03-Feb-2026: Optimistic delete - immediately remove from cache
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+
+      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+
+      // Optimistically remove transaction
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+        old.filter(t => t.id !== id)
+      );
+
+      return { previousQueries };
+    },
+    onError: (_, __, context) => {
+      context.previousQueries.forEach(([queryKey, oldData]) => {
+        queryClient.setQueryData(queryKey, oldData);
+      });
+    },
+    onAfterSuccess: async (deletedDoc) => {
+      if (deletedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(deletedDoc.date);
+    }
+  });
+
+  // NEW: Handle confirming a fuzzy match between a raw TX and a Recurring Template
+  const handleConfirmMatch = async (transaction, template) => {
+    try {
+      // 1. Link the transaction to the template
+      await updateMutation.mutateAsync({
+        id: transaction.id,
+        data: {
+          recurringTransactionId: template.id,
+          isPaid: true,
+          category_id: transaction.category_id || template.category_id
         },
-        onError: (_, __, context) => {
-            context.previousQueries.forEach(([queryKey, oldData]) => {
-                queryClient.setQueryData(queryKey, oldData);
-            });
-        },
-        onAfterSuccess: async (updatedDoc) => {
-            // Replace with real data from server
-            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
-                if (!old) return [];
-                return old.map(t => t.id === updatedDoc.id ? updatedDoc : t);
-            });
+        oldEntity: transaction
+      });
 
-            if (updatedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(updatedDoc.date);
-            if (setShowForm) setShowForm(false);
-            if (setEditingTransaction) setEditingTransaction(null);
-        }
-    });
+      // 2. Advance the recurring template to its next occurrence
+      const nextDate = calculateNextOccurrence(template, transaction.date);
+      await fetchWithRetry(() => base44.entities.RecurringTransaction.update(template.id, {
+        nextOccurrence: nextDate,
+        lastProcessedDate: transaction.date
+      }));
 
-    // DELETE: Use generic hook with cash wallet reversal + optimistic updates
-    const { handleDelete: handleDeleteTransaction } = useDeleteEntity({
-        entityName: 'Transaction',
-        queryKeysToInvalidate: [], // Removed TRANSACTIONS to prevent background refetch
-        confirmTitle: "Delete Transaction",
-        confirmMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
-        // ADDED 03-Feb-2026: Optimistic delete - immediately remove from cache
-        onMutate: async (id) => {
-            await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
+      showToast({ title: "Match Confirmed", description: `Linked to ${template.title}` });
+    } catch (error) {
+      console.error("Match confirmation failed:", error);
+      showToast({ title: "Error", description: "Failed to confirm match.", variant: "destructive" });
+    }
+  };
 
-            const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+  const handleSubmit = (data, editingTransaction) => {
+    if (editingTransaction) {
+      updateMutation.mutate({
+        id: editingTransaction.id,
+        data,
+        oldEntity: editingTransaction
+      });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
 
-            // Optimistically remove transaction
-            queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
-                old.filter(t => t.id !== id)
-            );
+  const handleEdit = (transaction) => {
+    if (setEditingTransaction) setEditingTransaction(transaction);
+    if (setShowForm) setShowForm(true);
+  };
 
-            return { previousQueries };
-        },
-        onError: (_, __, context) => {
-            context.previousQueries.forEach(([queryKey, oldData]) => {
-                queryClient.setQueryData(queryKey, oldData);
-            });
-        },
-        onAfterSuccess: async (deletedDoc) => {
-            if (deletedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(deletedDoc.date);
-        }
-    });
-
-    const handleSubmit = (data, editingTransaction) => {
-        if (editingTransaction) {
-            updateMutation.mutate({
-                id: editingTransaction.id,
-                data,
-                oldEntity: editingTransaction
-            });
-        } else {
-            createMutation.mutate(data);
-        }
-    };
-
-    const handleEdit = (transaction) => {
-        if (setEditingTransaction) setEditingTransaction(transaction);
-        if (setShowForm) setShowForm(true);
-    };
-
-    return {
-        handleSubmit,
-        handleEdit,
-        handleDelete: handleDeleteTransaction,
-        isSubmitting: createMutation.isPending || updateMutation.isPending,
-    };
+  return {
+    handleSubmit,
+    handleEdit,
+    handleDelete: handleDeleteTransaction,
+    isSubmitting: createMutation.isPending || updateMutation.isPending,
+  };
 };
 
 // Uses generic useCreateEntity, useUpdateEntity, and useDeleteEntity hooks
 // Hook for category actions (CRUD operations)
 export const useCategoryActions = (setShowForm, setEditingCategory) => {
-    // CREATE: Use generic hook (no preprocessing needed)
-    const createMutation = useCreateEntity({
-        entityName: 'Category',
-        queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
-        onAfterSuccess: () => {
-            if (setShowForm) setShowForm(false);
-            if (setEditingCategory) setEditingCategory(null);
-        }
-    });
+  // CREATE: Use generic hook (no preprocessing needed)
+  const createMutation = useCreateEntity({
+    entityName: 'Category',
+    queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
+    onAfterSuccess: () => {
+      if (setShowForm) setShowForm(false);
+      if (setEditingCategory) setEditingCategory(null);
+    }
+  });
 
-    // UPDATE: Use generic hook (no preprocessing needed)
-    const updateMutation = useUpdateEntity({
-        entityName: 'Category',
-        queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
-        onAfterSuccess: () => {
-            if (setShowForm) setShowForm(false);
-            if (setEditingCategory) setEditingCategory(null);
-        }
-    });
+  // UPDATE: Use generic hook (no preprocessing needed)
+  const updateMutation = useUpdateEntity({
+    entityName: 'Category',
+    queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
+    onAfterSuccess: () => {
+      if (setShowForm) setShowForm(false);
+      if (setEditingCategory) setEditingCategory(null);
+    }
+  });
 
-    // UPDATED 14-Feb-2026: Mutation for System Categories (Admin only)
-    const updateSystemMutation = useUpdateEntity({
-        entityName: 'SystemCategory',
-        queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_CATEGORIES, QUERY_KEYS.CATEGORIES], // Invalidate both to be safe
-        onAfterSuccess: () => {
-            if (setShowForm) setShowForm(false);
-            if (setEditingCategory) setEditingCategory(null);
-        }
-    });
+  // UPDATED 14-Feb-2026: Mutation for System Categories (Admin only)
+  const updateSystemMutation = useUpdateEntity({
+    entityName: 'SystemCategory',
+    queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_CATEGORIES, QUERY_KEYS.CATEGORIES], // Invalidate both to be safe
+    onAfterSuccess: () => {
+      if (setShowForm) setShowForm(false);
+      if (setEditingCategory) setEditingCategory(null);
+    }
+  });
 
-    // DELETE: Use generic hook (no dependencies to handle)
-    // We map deleteDirect to handleBulkDelete to bypass the single-item dialog
-    const { handleDelete: deleteCustomCategory, deleteDirect: bulkDeleteCustomCategories } = useDeleteEntity({
-        entityName: 'Category',
-        queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
-        confirmTitle: "Delete Category",
-        confirmMessage: "Are you sure you want to delete this category? This will not delete associated transactions.",
-    });
+  // DELETE: Use generic hook (no dependencies to handle)
+  // We map deleteDirect to handleBulkDelete to bypass the single-item dialog
+  const { handleDelete: deleteCustomCategory, deleteDirect: bulkDeleteCustomCategories } = useDeleteEntity({
+    entityName: 'Category',
+    queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
+    confirmTitle: "Delete Category",
+    confirmMessage: "Are you sure you want to delete this category? This will not delete associated transactions.",
+  });
 
-    // Delete hook for System Categories (Admin only)
-    const { handleDelete: deleteSystemCategory } = useDeleteEntity({
-        entityName: 'SystemCategory',
-        queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_CATEGORIES, QUERY_KEYS.CATEGORIES],
-        confirmTitle: "Delete System Category",
-        confirmMessage: "Warning: This is a system default. Deleting it will affect all users relying on it.",
-    });
+  // Delete hook for System Categories (Admin only)
+  const { handleDelete: deleteSystemCategory } = useDeleteEntity({
+    entityName: 'SystemCategory',
+    queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_CATEGORIES, QUERY_KEYS.CATEGORIES],
+    confirmTitle: "Delete System Category",
+    confirmMessage: "Warning: This is a system default. Deleting it will affect all users relying on it.",
+  });
 
-    const handleSubmit = (data, editingCategory) => {
-        if (editingCategory) {
-            if (editingCategory.isSystemCategory) {
-                updateSystemMutation.mutate({ id: editingCategory.id, data });
-            } else {
-                updateMutation.mutate({ id: editingCategory.id, data });
-            }
-        } else {
-            createMutation.mutate(data);
-        }
-    };
+  const handleSubmit = (data, editingCategory) => {
+    if (editingCategory) {
+      if (editingCategory.isSystemCategory) {
+        updateSystemMutation.mutate({ id: editingCategory.id, data });
+      } else {
+        updateMutation.mutate({ id: editingCategory.id, data });
+      }
+    } else {
+      createMutation.mutate(data);
+    }
+  };
 
-    const handleEdit = (category) => {
-        if (setEditingCategory) setEditingCategory(category);
-        if (setShowForm) setShowForm(true);
-    };
+  const handleEdit = (category) => {
+    if (setEditingCategory) setEditingCategory(category);
+    if (setShowForm) setShowForm(true);
+  };
 
-    //	Route delete action to the correct entity
-    const handleDeleteWrapper = (category) => {
-        if (category.isSystemCategory) {
-            deleteSystemCategory(category.id);
-        } else {
-            deleteCustomCategory(category.id);
-        }
-    };
+  //	Route delete action to the correct entity
+  const handleDeleteWrapper = (category) => {
+    if (category.isSystemCategory) {
+      deleteSystemCategory(category.id);
+    } else {
+      deleteCustomCategory(category.id);
+    }
+  };
 
-    return {
-        handleSubmit,
-        handleEdit,
-        handleDelete: handleDeleteWrapper,
-        handleBulkDelete: bulkDeleteCustomCategories,
-        isSubmitting: createMutation.isPending || updateMutation.isPending || updateSystemMutation.isPending,
-    };
+  return {
+    handleSubmit,
+    handleEdit,
+    handleDelete: handleDeleteWrapper,
+    handleBulkDelete: bulkDeleteCustomCategories,
+    isSubmitting: createMutation.isPending || updateMutation.isPending || updateSystemMutation.isPending,
+  };
 };
 
 // Hook for goal actions (mutations)
 export const useGoalActions = (user, goals) => {
-    const queryClient = useQueryClient();
-    const { settings } = useSettings();
+  const queryClient = useQueryClient();
+  const { settings } = useSettings();
 
-    const updateGoalMutation = useMutation({
-        mutationFn: ({ id, data }) => fetchWithRetry(() => base44.entities.BudgetGoal.update(id, data)),
-        onSuccess: async (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
+  const updateGoalMutation = useMutation({
+    mutationFn: ({ id, data }) => fetchWithRetry(() => base44.entities.BudgetGoal.update(id, data)),
+    onSuccess: async (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
 
-            // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
-            const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
-            await snapshotFutureBudgets(
-                { ...variables.data, priority: variables.priority },
-                settings,
-                user?.email,
-                allGoals
-            );
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-        },
-        onError: (error) => {
-            console.error('Error updating goal:', error);
-        },
-    });
+      // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
+      const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
+      await snapshotFutureBudgets(
+        { ...variables.data, priority: variables.priority },
+        settings,
+        user?.email,
+        allGoals
+      );
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+    },
+    onError: (error) => {
+      console.error('Error updating goal:', error);
+    },
+  });
 
-    const createGoalMutation = useMutation({
-        mutationFn: (data) => fetchWithRetry(() => base44.entities.BudgetGoal.create(data)),
-        onSuccess: async (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
-            // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
-            const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
-            await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-        },
-        onError: (error) => {
-            console.error('Error creating goal:', error);
-        },
-    });
+  const createGoalMutation = useMutation({
+    mutationFn: (data) => fetchWithRetry(() => base44.entities.BudgetGoal.create(data)),
+    onSuccess: async (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
+      // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
+      const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
+      await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+    },
+    onError: (error) => {
+      console.error('Error creating goal:', error);
+    },
+  });
 
-    const handleGoalUpdate = async (priority, percentage, extraData = {}) => {
-        const existingGoal = goals.find(g => g.priority === priority);
+  const handleGoalUpdate = async (priority, percentage, extraData = {}) => {
+    const existingGoal = goals.find(g => g.priority === priority);
 
-        try {
-            if (existingGoal) {
-                // Return the promise directly, allowing the caller (GoalSettings) to handle resolution status
-                return updateGoalMutation.mutateAsync({
-                    id: existingGoal.id,
-                    priority, // Pass priority so onSuccess can verify which budget type to update
-                    data: {
-                        target_percentage: percentage,
-                        ...extraData
-                    }
-                });
-            } else if (user) {
-                // Return the promise directly
-                return createGoalMutation.mutateAsync({
-                    priority,
-                    target_percentage: percentage,
-                    created_by: user.email,
-                    ...extraData
-                });
-            }
+    try {
+      if (existingGoal) {
+        // Return the promise directly, allowing the caller (GoalSettings) to handle resolution status
+        return updateGoalMutation.mutateAsync({
+          id: existingGoal.id,
+          priority, // Pass priority so onSuccess can verify which budget type to update
+          data: {
+            target_percentage: percentage,
+            ...extraData
+          }
+        });
+      } else if (user) {
+        // Return the promise directly
+        return createGoalMutation.mutateAsync({
+          priority,
+          target_percentage: percentage,
+          created_by: user.email,
+          ...extraData
+        });
+      }
 
-        } catch (error) {
-            console.error('Error in handleGoalUpdate:', error);
-            // Re-throw the error so any Promise.allSettled wrapper knows it failed
-            throw error;
-        }
+    } catch (error) {
+      console.error('Error in handleGoalUpdate:', error);
+      // Re-throw the error so any Promise.allSettled wrapper knows it failed
+      throw error;
+    }
 
-        // If no action was taken (e.g., no existing goal and no user), return gracefully
-        return Promise.resolve();
-    };
+    // If no action was taken (e.g., no existing goal and no user), return gracefully
+    return Promise.resolve();
+  };
 
-    return {
-        handleGoalUpdate,
-        isSaving: updateGoalMutation.isPending || createGoalMutation.isPending,
-    };
+  return {
+    handleGoalUpdate,
+    isSaving: updateGoalMutation.isPending || createGoalMutation.isPending,
+  };
 };
 
 // Hook for custom budget actions (CRUD operations)
 export const useCustomBudgetActions = (config = {}) => {
-    const { user } = useSettings();
-    const { transactions, ...options } = config;
-    const [showForm, setShowForm] = useState(false);
-    const [editingBudget, setEditingBudget] = useState(null);
+  const { user } = useSettings();
+  const { transactions, ...options } = config;
+  const [showForm, setShowForm] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
 
-    // CREATE: Use generic hook with intelligent status assignment and cash allocation
-    const createMutation = useCreateEntity({
-        entityName: 'CustomBudget',
-        queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS],
-        onBeforeCreate: async (data) => {
-            // CRITICAL: Determine status based on start date
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+  // CREATE: Use generic hook with intelligent status assignment and cash allocation
+  const createMutation = useCreateEntity({
+    entityName: 'CustomBudget',
+    queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS],
+    onBeforeCreate: async (data) => {
+      // CRITICAL: Determine status based on start date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-            const startDate = parseDate(data.startDate);
-            const status = startDate > today ? 'planned' : 'active';
+      const startDate = parseDate(data.startDate);
+      const status = startDate > today ? 'planned' : 'active';
 
-            return {
-                ...data,
-                status,
-                user_email: user.email,
-                created_by: user.email,
-                isSystemBudget: false
-            };
-        },
-        onAfterSuccess: () => {
-            setShowForm(false);
-            setEditingBudget(null);
-            if (options.onSuccess) options.onSuccess();
-        }
-    });
+      return {
+        ...data,
+        status,
+        user_email: user.email,
+        created_by: user.email,
+        isSystemBudget: false
+      };
+    },
+    onAfterSuccess: () => {
+      setShowForm(false);
+      setEditingBudget(null);
+      if (options.onSuccess) options.onSuccess();
+    }
+  });
 
-    // UPDATE: Use generic hook with cash allocation change handling
-    const updateMutation = useUpdateEntity({
-        entityName: 'CustomBudget',
-        queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, ['budget'], ['allBudgets']],
-        onBeforeUpdate: async ({ id, data }) => {
-            // CRITICAL: Use get() instead of list().find() for efficiency
-            const existingBudget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
+  // UPDATE: Use generic hook with cash allocation change handling
+  const updateMutation = useUpdateEntity({
+    entityName: 'CustomBudget',
+    queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, ['budget'], ['allBudgets']],
+    onBeforeUpdate: async ({ id, data }) => {
+      // CRITICAL: Use get() instead of list().find() for efficiency
+      const existingBudget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
 
-            if (!existingBudget) {
-                throw new Error('Budget not found');
-            }
+      if (!existingBudget) {
+        throw new Error('Budget not found');
+      }
 
-            return data;
-        },
-        onAfterSuccess: () => {
-            setShowForm(false);
-            setEditingBudget(null);
-        }
-    });
+      return data;
+    },
+    onAfterSuccess: () => {
+      setShowForm(false);
+      setEditingBudget(null);
+    }
+  });
 
-    const { handleDelete: handleDeleteBudget, deleteDirect, isDeleting } = useDeleteEntity({
-        entityName: 'CustomBudget',
-        queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, QUERY_KEYS.TRANSACTIONS],
-        confirmTitle: "Delete Budget",
-        confirmMessage: "Are you sure you want to delete this budget? This will also delete all associated transactions and return cash allocations to your wallet.",
-        onBeforeDelete: async (budgetId) => {
-            // CRITICAL5: Use efficient get() instead of list().find()
-            const budget = await fetchWithRetry(() => base44.entities.CustomBudget.get(budgetId));
+  const { handleDelete: handleDeleteBudget, deleteDirect, isDeleting } = useDeleteEntity({
+    entityName: 'CustomBudget',
+    queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, QUERY_KEYS.TRANSACTIONS],
+    confirmTitle: "Delete Budget",
+    confirmMessage: "Are you sure you want to delete this budget? This will also delete all associated transactions and return cash allocations to your wallet.",
+    onBeforeDelete: async (budgetId) => {
+      // CRITICAL5: Use efficient get() instead of list().find()
+      const budget = await fetchWithRetry(() => base44.entities.CustomBudget.get(budgetId));
 
-            if (!budget) {
-                throw new Error('Budget not found for deletion');
-            }
+      if (!budget) {
+        throw new Error('Budget not found for deletion');
+      }
 
-            // Delete all associated transactions
-            const budgetTransactions = transactions.filter(t => t.budgetId === budgetId);
+      // Delete all associated transactions
+      const budgetTransactions = transactions.filter(t => t.budgetId === budgetId);
 
-            if (budgetTransactions.length > 0) {
-                // Replaced iteration with highly-efficient bulk deletion
-                const transactionIds = budgetTransactions.map(t => t.id);
-                await fetchWithRetry(() => base44.entities.Transaction.deleteMany({ id: { $in: transactionIds } }));
-            }
-        },
-        onAfterSuccess: () => {
-            // Redirect to Budgets page after successful deletion
-            // Potentially refactor this to intelligently go back to whatever was the location before entering the budget
-            window.location.href = createPageUrl("Budgets");
-        }
-    });
+      if (budgetTransactions.length > 0) {
+        // Replaced iteration with highly-efficient bulk deletion
+        const transactionIds = budgetTransactions.map(t => t.id);
+        await fetchWithRetry(() => base44.entities.Transaction.deleteMany({ id: { $in: transactionIds } }));
+      }
+    },
+    onAfterSuccess: () => {
+      // Redirect to Budgets page after successful deletion
+      // Potentially refactor this to intelligently go back to whatever was the location before entering the budget
+      window.location.href = createPageUrl("Budgets");
+    }
+  });
 
-    // STATUS CHANGE: Use generic update hook with special handling for completion/reactivation
-    const updateStatusMutation = useUpdateEntity({
-        entityName: 'CustomBudget',
-        queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS],
-        onBeforeUpdate: async ({ id, data }) => {
-            // CRITICAL: Use get() instead of list().find()
-            const budget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
+  // STATUS CHANGE: Use generic update hook with special handling for completion/reactivation
+  const updateStatusMutation = useUpdateEntity({
+    entityName: 'CustomBudget',
+    queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS],
+    onBeforeUpdate: async ({ id, data }) => {
+      // CRITICAL: Use get() instead of list().find()
+      const budget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
 
-            if (!budget) {
-                throw new Error('Budget not found');
-            }
+      if (!budget) {
+        throw new Error('Budget not found');
+      }
 
-            if (data.status === 'completed') {
-                // Calculate actual spent amount
-                const budgetTransactions = transactions.filter(t => t.budgetId === id && t.isPaid);
-                const actualSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
+      if (data.status === 'completed') {
+        // Calculate actual spent amount
+        const budgetTransactions = transactions.filter(t => t.budgetId === id && t.isPaid);
+        const actualSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-                return {
-                    status: 'completed',
-                    allocatedAmount: actualSpent,
-                    originalAllocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount,
-                };
-            } else if (data.status === 'active') {
-                // When reactivating: restore original allocated amount, but do NOT restore cash allocations
-                return {
-                    status: 'active',
-                    allocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount,
-                    originalAllocatedAmount: null,
-                };
-            } else {
-                return data;
-            }
-        }
-    });
+        return {
+          status: 'completed',
+          allocatedAmount: actualSpent,
+          originalAllocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount,
+        };
+      } else if (data.status === 'active') {
+        // When reactivating: restore original allocated amount, but do NOT restore cash allocations
+        return {
+          status: 'active',
+          allocatedAmount: budget.originalAllocatedAmount || budget.allocatedAmount,
+          originalAllocatedAmount: null,
+        };
+      } else {
+        return data;
+      }
+    }
+  });
 
-    const handleSubmit = (data, budgetToEdit = null) => {
-        const budgetForUpdate = budgetToEdit || editingBudget;
+  const handleSubmit = (data, budgetToEdit = null) => {
+    const budgetForUpdate = budgetToEdit || editingBudget;
 
-        if (budgetForUpdate) {
-            updateMutation.mutate({ id: budgetForUpdate.id, data });
-        } else {
-            createMutation.mutate(data);
-        }
-    };
+    if (budgetForUpdate) {
+      updateMutation.mutate({ id: budgetForUpdate.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
 
-    const handleEdit = (budget) => {
-        setEditingBudget(budget);
-        setShowForm(true);
-    };
+  const handleEdit = (budget) => {
+    setEditingBudget(budget);
+    setShowForm(true);
+  };
 
-    const handleStatusChange = (id, newStatus) => {
-        updateStatusMutation.mutate({ id, data: { status: newStatus } });
-    };
+  const handleStatusChange = (id, newStatus) => {
+    updateStatusMutation.mutate({ id, data: { status: newStatus } });
+  };
 
-    return {
-        showForm,
-        setShowForm,
-        editingBudget,
-        setEditingBudget,
-        handleSubmit,
-        handleEdit,
-        handleDelete: handleDeleteBudget,
-        handleDeleteDirect: deleteDirect,
-        handleStatusChange,
-        isSubmitting: createMutation.isPending || updateMutation.isPending || isDeleting,
-    };
+  return {
+    showForm,
+    setShowForm,
+    editingBudget,
+    setEditingBudget,
+    handleSubmit,
+    handleEdit,
+    handleDelete: handleDeleteBudget,
+    handleDeleteDirect: deleteDirect,
+    handleStatusChange,
+    isSubmitting: createMutation.isPending || updateMutation.isPending || isDeleting,
+  };
 };
 
 // Hook for settings form state and submission
 export const useSettingsForm = (settings, updateSettings) => {
-    const [formData, setFormData] = useState(settings);
-    const [isSaving, setIsSaving] = useState(false);
-    const [saveSuccess, setSaveSuccess] = useState(false);
+  const [formData, setFormData] = useState(settings);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-    useEffect(() => {
-        setFormData(settings);
-    }, [settings]);
+  useEffect(() => {
+    setFormData(settings);
+  }, [settings]);
 
-    const handleFormChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
-    const resetForm = (newValues) => {
-        setFormData(newValues);
-    };
+  const resetForm = (newValues) => {
+    setFormData(newValues);
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSaving(true);
-        setSaveSuccess(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaveSuccess(false);
 
-        try {
-            await updateSettings(formData);
-            setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 3000);
-            showToast({
-                title: "Success",
-                description: "Settings saved successfully",
-            });
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            showToast({
-                title: "Error",
-                description: error?.message || "Failed to save settings. Please try again.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    try {
+      await updateSettings(formData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      showToast({
+        title: "Success",
+        description: "Settings saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      showToast({
+        title: "Error",
+        description: error?.message || "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-    return {
-        formData,
-        handleFormChange,
-        resetForm,
-        handleSubmit,
-        isSaving,
-        saveSuccess,
-    };
+  return {
+    formData,
+    handleFormChange,
+    resetForm,
+    handleSubmit,
+    isSaving,
+    saveSuccess,
+  };
 };
