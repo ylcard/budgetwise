@@ -135,7 +135,9 @@ export const evaluateTransactionMatch = (transaction, templates) => {
       // If the name score is low (< 50) but other factors are strong, we boost the score.
 
       // 1. Exact Amount Bonus (Crucial for rent/mortgage with unique values)
-      if (amountScore === 100) {
+      // SAFEGUARD: Only apply if there is at least a minimal identity match OR category match.
+      // This prevents "random $10 transaction" from matching "Netflix $10" if names are totally different.
+      if (amountScore === 100 && (identityScore > 20 || (transaction.category_id && transaction.category_id === tpl.category_id))) {
         totalScore += BONUSES.EXACT_AMOUNT;
       }
 
