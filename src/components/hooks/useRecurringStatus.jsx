@@ -38,19 +38,25 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
     const currentMonthItems = [];
     const timelineItems = [];
 
+    // TRACKER: Prevent identical transactions (same amt/desc) from being used by multiple templates
+    const usedTransactionIds = new Set();
+
     const activeTemplates = recurringTransactions.filter(r => r.isActive);
 
     activeTemplates.forEach(template => {
       // 1. Find explicit links
-      const linkedTxs = realTransactions.filter(t => t.recurringTransactionId === template.id);
+      const linkedTxs = realTransactions.filter(t => t.recurringTransactionId === template.id && !usedTransactionIds.has(t.id));
 
       // 2. Find Candidates: Analyze unlinked transactions
       let matchCandidate = null;
       let matchStatus = 'none';
 
-      // Only look for matches if not already paid/linked this month
+      // Only look for matches if we don't have a linked transaction for the *immediate* current period? 
+      // Actually, we need to gather ALL potentials to solve the backlog, so let's check for candidates regardless, 
+      // but prioritize linked ones.
       if (linkedTxs.length === 0) {
-        const availableTxs = realTransactions.filter(t => !t.recurringTransactionId);
+        // Filter out already used IDs from other templates
+        const availableTxs = realTransactions.filter(t => !t.recurringTransactionId && !usedTransactionIds.has(t.id));
 
         const bestMatch = availableTxs
           .map(tx => ({ tx, result: evaluateTransactionMatch(tx, [template]) }))
@@ -63,89 +69,66 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         }
       }
 
-      // RESTORED: "All Relevant" includes suggestions (needs_review) to trigger UI "Activity" states
-      const allRelevantTxs = [...linkedTxs];
-      if (matchCandidate) allRelevantTxs.push(matchCandidate);
+      // 3. GATHER ALL HISTORY (The "Pool")
+      // We need every transaction that *could* be this bill from the past ~6 months
+      // to correctly fill the "slots" of unpaid previous months.
+      const poolOfTransactions = [...linkedTxs];
 
-      // SEPARATE: "Paying" only includes confirmed links or high-confidence auto-matches
-      // If they are 'needs_review', they should NOT contribute to 'totalPaid' until confirmed.
-      const payingTransactions = [...linkedTxs];
+      // Only add auto-matches to the "payment pool". 
+      // 'needs_review' is for UI suggestions only, not for logic verification.
       if (matchCandidate && matchStatus === 'auto_match') {
-        payingTransactions.push(matchCandidate);
+        poolOfTransactions.push(matchCandidate);
       }
 
+      // Sort pool by date (Oldest first) for FIFO filling
+      poolOfTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
       const dbNextDate = parseISO(template.nextOccurrence);
-      // Your logic: Subtract the frequency to find what the PREVIOUS due date was
       const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
-      // FIX: Filter transactions to ensure they belong to the CURRENT cycle.
-      // A transaction is only valid for the current month if it is temporally closer 
-      // to the current due date (dbNextDate) than the previous due date (prevDate).
-      // This prevents late payments for the previous month from being counted as "Paid" for this month.
-      const validCurrentCycleTxs = payingTransactions.filter(tx => {
-        // Always respect explicit ID links
-        if (tx.recurringTransactionId === template.id) return true;
+      // 4. GENERATE SLOTS (Backlog)
+      // Create expected due dates for the last X cycles (e.g. 5) + Current Cycle
+      // This handles your "Electricity" case: Dec(Late) -> Jan(Late) -> Feb(On Time)
+      const slots = [];
+      let iterDate = dbNextDate;
 
-        // FIFO CYCLE MAPPING (The "Anti-Hijack" Fix)
-        // If we have history, we must ensure transactions pay off the OLDEST due date first.
-        // 1. Find the start of our data window
-        const windowStart = realTransactions.length > 0
-          ? realTransactions.reduce((min, t) => t.date < min ? t.date : min, realTransactions[0].date)
-          : format(startOfMonth(new Date()), 'yyyy-MM-dd');
+      // Go back 5 cycles (arbitrary safe history depth)
+      for (let i = 0; i < 5; i++) {
+        iterDate = calculatePreviousDate(iterDate, template.frequency);
+        slots.unshift({ date: iterDate, filledBy: null });
+      }
+      // Add current cycle
+      slots.push({ date: dbNextDate, filledBy: null }); // Index 5 is current
 
-        // 2. Count how many unpaid cycles exist in this window BEFORE the current one
-        let cyclesBeforeCurrent = 0;
-        let checkDate = prevDate;
-        while (!isBefore(checkDate, parseISO(windowStart))) {
-          cyclesBeforeCurrent++;
-          checkDate = calculatePreviousDate(checkDate, template.frequency);
-        }
-
-        // 3. If there are previous cycles, this tx might belong to them.
-        if (cyclesBeforeCurrent > 0) {
-          // Get all matches in window sorted by date
-          const allMatchesInWindow = payingTransactions
-            .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-          const txIndex = allMatchesInWindow.findIndex(t => t.id === tx.id);
-
-          // If this is the 1st tx (index 0), but we have 1 cycle before current (Feb),
-          // then this tx belongs to Feb. It cannot pay Current (March).
-          if (txIndex < cyclesBeforeCurrent) return false;
-        }
-
+      // 5. FILL SLOTS (FIFO)
+      // Match oldest transaction to oldest *compatible* slot
+      poolOfTransactions.forEach(tx => {
         const txDate = parseISO(tx.date);
 
-        // ANTI-HIJACK (FIFO Rule):
-        // We have a window of transactions (Last Month + This Month).
-        // If the Previous Cycle Date falls in this window, we expect TWO payments to exist 
-        // (one for Prev, one for Current) before we mark Current as paid.
+        // Find the first empty slot where this transaction makes sense.
+        // "Makes sense" = Transaction isn't wildly before the due date (e.g. 2 months early).
+        // We allow late payments (infinity), but restrict early payments (e.g. max 20 days early).
+        const validSlotIndex = slots.findIndex(slot => {
+          if (slot.filledBy) return false; // Already paid
+          const diff = differenceInDays(txDate, slot.date);
+          // Allow paying up to 25 days early, or any time after.
+          return diff >= -25;
+        });
 
-        const prevDateInWindow = !isBefore(prevDate, parseISO(realTransactions[0]?.date || '2000-01-01')); // Rough check if window covers prev
-
-        if (prevDateInWindow) {
-          // Get all potential matches for this bill in the entire window
-          const totalMatchesInWindow = payingTransactions.filter(t =>
-            evaluateTransactionMatch(t, [template]).status !== 'no_match'
-          ).length;
-
-          // If we have fewer matches than cycles (2 cycles: Prev + Curr), 
-          // the single transaction belongs to the Oldest debt (Prev).
-          // Therefore, it CANNOT count for Current.
-          if (totalMatchesInWindow < 2) return false;
+        if (validSlotIndex !== -1) {
+          slots[validSlotIndex].filledBy = tx;
+          // MARK AS USED so subsequent templates don't grab it
+          usedTransactionIds.add(tx.id);
         }
-
-        // Fallback: If we have enough transactions, use simple proximity
-        const distToCurrent = Math.abs(differenceInDays(txDate, dbNextDate));
-        const distToPrev = Math.abs(differenceInDays(txDate, prevDate));
-
-        return distToCurrent <= distToPrev;
       });
 
-      const totalPaid = validCurrentCycleTxs.reduce((acc, t) => {
+      // 6. DETERMINE CURRENT STATUS
+      // The "Current" slot is the last one in our array (based on dbNextDate)
+      const currentSlot = slots[slots.length - 1];
+      const previousSlot = slots[slots.length - 2];
 
-        return acc.plus(new Big(Math.abs(t.amount || 0)));
-      }, new Big(0));
+      const payingTx = currentSlot.filledBy;
+      const totalPaid = payingTx ? new Big(Math.abs(payingTx.amount)) : new Big(0);
 
       const targetAmount = new Big(Math.abs(template.amount));
       const fuzzyThreshold = targetAmount.times(0.85);
@@ -153,19 +136,23 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
 
       // INCLUSION MATRIX 
       const isDueThisMonth = isSameMonth(dbNextDate, today); // Expected this month, unpaid
-      const isPrevDueThisMonth = isSameMonth(prevDate, today); // Expected this month, but already paid & advanced!
+
+      // Logic check: If the backend advanced the date to next month, but the previous slot 
+      // (which should be "this month" in that case) is NOT filled, we have a problem.
+      // But for now, stick to standard visual logic.
+      const isPrevDueThisMonth = isSameMonth(prevDate, today);
+
       const isOverdue = isBefore(dbNextDate, currentMonthStart); // Missed entirely
-      const hasActivityThisMonth = allRelevantTxs.length > 0;
+      const hasActivityThisMonth = linkedTxs.some(t => isSameMonth(parseISO(t.date), today));
       const needsReview = matchStatus === 'needs_review' && !linkedTxs.length;
 
       if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth) {
-        // It's considered paid if we paid it this month, OR if the backend already pushed the date past this month
         const isPaid = paidThisMonth || isPrevDueThisMonth;
 
         // What date do we display? If it advanced to July, we want to show April's date.
         let displayDate = isPrevDueThisMonth ? prevDate : dbNextDate;
 
-        if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth && linkedTxs[0]) {
+        if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth && linkedTxs.length > 0) {
           displayDate = parseISO(linkedTxs[0].date);
         }
 
