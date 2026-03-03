@@ -97,7 +97,13 @@ function matchLocally(tx, rules, categories) {
   // 2. Standardized Taxonomy
   for (const [slug, keywords] of Object.entries(STANDARD_TAXONOMY)) {
     if (keywords.some(kw => text.includes(kw))) {
-      return { slug, source: 'standard_taxonomy' };
+      // Map slug to a readable name (e.g., "GROCERIES" -> "Groceries")
+      const cleanName = slug.charAt(0) + slug.slice(1).toLowerCase();
+      return { 
+        slug, 
+        source: 'standard_taxonomy',
+        cleanName 
+      };
     }
   }
 
