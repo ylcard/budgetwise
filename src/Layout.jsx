@@ -221,9 +221,7 @@ const LayoutContent = ({ children }) => {
           <SidebarHeader className="border-b border-border p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Wallet className="w-6 h-6 text-white" />
-                </div>
+                <UserAvatar size="sm" />
                 <div>
                   <h2 className="font-bold text-foreground text-lg">BudgetWise</h2>
                   <p className="text-xs text-muted-foreground">Personal Finance</p>
