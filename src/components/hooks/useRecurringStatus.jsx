@@ -86,6 +86,34 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         // Always respect explicit ID links
         if (tx.recurringTransactionId === template.id) return true;
 
+        // FIFO CYCLE MAPPING (The "Anti-Hijack" Fix)
+        // If we have history, we must ensure transactions pay off the OLDEST due date first.
+        // 1. Find the start of our data window
+        const windowStart = realTransactions.length > 0
+          ? realTransactions.reduce((min, t) => t.date < min ? t.date : min, realTransactions[0].date)
+          : format(startOfMonth(new Date()), 'yyyy-MM-dd');
+
+        // 2. Count how many unpaid cycles exist in this window BEFORE the current one
+        let cyclesBeforeCurrent = 0;
+        let checkDate = prevDate;
+        while (!isBefore(checkDate, parseISO(windowStart))) {
+          cyclesBeforeCurrent++;
+          checkDate = calculatePreviousDate(checkDate, template.frequency);
+        }
+
+        // 3. If there are previous cycles, this tx might belong to them.
+        if (cyclesBeforeCurrent > 0) {
+          // Get all matches in window sorted by date
+          const allMatchesInWindow = payingTransactions
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+          const txIndex = allMatchesInWindow.findIndex(t => t.id === tx.id);
+
+          // If this is the 1st tx (index 0), but we have 1 cycle before current (Feb),
+          // then this tx belongs to Feb. It cannot pay Current (March).
+          if (txIndex < cyclesBeforeCurrent) return false;
+        }
+
         const txDate = parseISO(tx.date);
 
         // ANTI-HIJACK (FIFO Rule):
