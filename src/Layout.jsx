@@ -184,17 +184,17 @@ const LayoutContent = ({ children }) => {
       {/* Mobile-only fixed top header with dynamic back button (iOS native standard) */}
       <header className="md:hidden fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md border-b border-border z-40 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-center h-14 px-4 relative">
-          {!isRootPage && (
-            <button
-              onClick={handleBackNavigation}
-              className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
-              aria-label="Go back"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-          )}
-
-          <div className="absolute left-4 flex items-center justify-center fade-in zoom-in duration-300">
+          {/* Left Controls: Back Button (Conditional) + Avatar (Always) */}
+          <div className="absolute left-4 flex items-center gap-2 z-10">
+            {!isRootPage && (
+              <button
+                onClick={handleBackNavigation}
+                className="flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                aria-label="Go back"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
             <UserAvatar size="sm" />
           </div>
 
