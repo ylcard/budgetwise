@@ -195,6 +195,12 @@ const LayoutContent = ({ children }) => {
             </button>
           )}
 
+          {isRootPage && (
+            <div className="absolute left-4 flex items-center justify-center fade-in zoom-in duration-300">
+              <UserAvatar size="sm" />
+            </div>
+          )}
+
           <div className="flex flex-col items-center justify-center text-center min-w-0 max-w-[65%]">
             <h1 className="text-sm font-bold text-foreground leading-tight truncate w-full">
               {currentPageTitle}
@@ -363,12 +369,6 @@ const LayoutContent = ({ children }) => {
                     <SheetHeader className="px-6 pb-4 border-b">
                       <SheetTitle>More Options</SheetTitle>
                     </SheetHeader>
-
-                    {/* Mobile: User Level (Inside More Menu) */}
-                    <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-                      <span className="font-medium text-foreground">My Level</span>
-                      <UserAvatar size="sm" />
-                    </div>
 
                     <div className="grid grid-cols-1 divide-y divide-border">
                       {secondaryNav.map((item) => (
