@@ -297,8 +297,8 @@ Deno.serve(async (req) => {
           ...tx,
           category_id: resolved?.id || null,
           categoryName: resolved?.name || 'Uncategorized',
-          title: local.cleanName || tx.title,
-          cleanDescription: local.cleanName || tx.title,
+          title: tx.title,
+          cleanDescription: tx.title,
           source: local.source,
           confidence: 0.8
         });
@@ -350,8 +350,8 @@ Deno.serve(async (req) => {
           ...tx,
           category_id: cat?.id || null,
           categoryName: cat?.name || aiCatName || 'Uncategorized',
-          title: cleanName, // AI suggested name
-          cleanDescription: cleanName, // Permanent clean record
+          title: tx.title,
+          cleanDescription: tx.title,
           confidence: confidence,
           source: 'ai'
         });
