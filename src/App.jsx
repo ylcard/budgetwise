@@ -21,6 +21,7 @@ import Categories from './pages/Categories';
 import Automation from './pages/Automation';
 import BankSync from './pages/BankSync';
 import TransactionsPage from './pages/Transactions';
+import LegalPage from './pages/Legal';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -78,6 +79,11 @@ const AuthenticatedApp = () => {
                     <Route path="automation" element={<Automation />} />
                     <Route path="banksync" element={<BankSync />} />
                     <Route path="account" element={<AccountSection />} />
+                </Route>
+
+                {/* Legal Tabbed Routes */}
+                <Route path="/legal" element={<LegalPage />}>
+                    <Route path=":tab" element={<LegalPage />} />
                 </Route>
 
                 {/* Standard Page Fallback */}
