@@ -64,7 +64,8 @@ function buildMemoryMap(historicalTransactions) {
 }
 
 function matchLocally(tx, rules, categories) {
-  const text = (tx.title || tx.description || '').toUpperCase();
+  // Priority: cleanDescription -> title -> description
+  const text = (tx.cleanDescription || tx.title || tx.description || '').toUpperCase();
 
   // 1. User Rules
   for (const rule of rules) {
@@ -99,10 +100,10 @@ function matchLocally(tx, rules, categories) {
     if (keywords.some(kw => text.includes(kw))) {
       // Map slug to a readable name (e.g., "GROCERIES" -> "Groceries")
       const cleanName = slug.charAt(0) + slug.slice(1).toLowerCase();
-      return { 
-        slug, 
+      return {
+        slug,
         source: 'standard_taxonomy',
-        cleanName 
+        cleanName
       };
     }
   }
@@ -231,7 +232,8 @@ Deno.serve(async (req) => {
 
     // 2. PIPELINE: MEMORY -> RULES -> AI
     for (const tx of transactions) {
-      const rawKey = (tx.rawDescription || tx.title || '').trim().toUpperCase();
+      // Use cleanDescription for memory lookup if available
+      const rawKey = (tx.cleanDescription || tx.rawDescription || tx.title || '').trim().toUpperCase();
       const isIncome = tx.type === 'income' || (tx.amount && tx.amount < 0 && !tx.type); // Fail-safe
 
       // 0. INCOME BYPASS
@@ -244,7 +246,7 @@ Deno.serve(async (req) => {
           financial_priority: null,
           // We still let it pass through to be cleaned by AI if we wanted, 
           // but for now, let's keep it simple and just return it.
-          cleanDescription: tx.title,
+          cleanDescription: tx.cleanDescription || tx.title,
           needsReview: false
         });
         continue;
@@ -257,8 +259,8 @@ Deno.serve(async (req) => {
 
         results.push({
           ...tx,
-          title: learned.title, // User's preferred title
-          cleanDescription: learned.title,
+          title: tx.title,
+          cleanDescription: tx.cleanDescription,
           category_id: learned.category_id,
           categoryName: catObj ? catObj.name : 'Uncategorized',
           financial_priority: learned.financial_priority || (catObj?.priority || 'wants'),
@@ -283,8 +285,8 @@ Deno.serve(async (req) => {
         results.push({
           ...tx,
           ...local,
-          title: finalTitle,
-          cleanDescription: finalTitle,
+          title: tx.title,
+          cleanDescription: tx.cleanDescription,
           categoryName: catObj ? catObj.name : 'Uncategorized',
           financial_priority: finalPriority,
           source: 'user_rule',
@@ -298,7 +300,7 @@ Deno.serve(async (req) => {
           category_id: resolved?.id || null,
           categoryName: resolved?.name || 'Uncategorized',
           title: tx.title,
-          cleanDescription: tx.title,
+          cleanDescription: tx.cleanDescription,
           source: local.source,
           confidence: 0.8
         });
@@ -351,7 +353,7 @@ Deno.serve(async (req) => {
           category_id: cat?.id || null,
           categoryName: cat?.name || aiCatName || 'Uncategorized',
           title: tx.title,
-          cleanDescription: tx.title,
+          cleanDescription: tx.cleanDescription,
           confidence: confidence,
           source: 'ai'
         });
