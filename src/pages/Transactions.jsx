@@ -27,7 +27,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminConsistencyChecker } from "../components/transactions/AdminConsistencyChecker";
-import { Button } from "@/components/ui/button";
+import { CustomButton as Button } from "@/components/ui/CustomButton";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2, Repeat } from "lucide-react";
 import { useBankSync } from "../components/banksync/useBankSync";
 
@@ -148,15 +148,15 @@ export default function TransactionsLayout() {
 
               <div className="h-6 w-[1px] bg-border mx-1" />
 
-              <Button variant="outline" size="sm" className="h-9 gap-2 border-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400" onClick={() => { setEditingRecurring(null); setShowRecurringForm(true); }}>
+              <Button variant="primary" size="sm" className="h-9 gap-2" onClick={() => setShowAddIncome(true)}>
                 <Repeat className="h-4 w-4" /> Recurring
               </Button>
 
-              <Button variant="default" size="sm" className="h-9 gap-2 bg-rose-500 hover:bg-rose-600 text-white" onClick={() => setShowAddExpense(true)}>
+              <Button variant="warning" size="sm" className="h-9 gap-2" onClick={() => setShowAddExpense(true)}>
                 <MinusCircle className="h-4 w-4" /> Expense
               </Button>
 
-              <Button variant="default" size="sm" className="h-9 gap-2 bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => setShowAddIncome(true)}>
+              <Button variant="success" size="sm" className="h-9 gap-2" onClick={() => setShowAddIncome(true)}>
                 <PlusCircle className="h-4 w-4" /> Income
               </Button>
             </div>
