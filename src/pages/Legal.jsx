@@ -61,19 +61,19 @@ export default function LegalPage() {
     const currentTab = tab || "privacy";
 
     return (
-        <div className="flex flex-col w-full bg-gray-50/50">
+        <div className="flex flex-col w-full bg-muted/30">
             <Tabs
                 value={currentTab}
                 onValueChange={handleTabChange}
                 className="w-full flex flex-col"
             >
                 {/* Header Section (Not Sticky to fix layout bugs) */}
-                <div className="w-full bg-white border-b border-gray-200 shadow-sm z-10">
+                <div className="w-full bg-background border-b border-border shadow-sm z-10">
                     <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4 pb-0">
                         {/* Desktop Title */}
                         <div className="hidden md:block mb-4">
-                            <h1 className="text-2xl font-bold text-gray-900">Legal Center</h1>
-                            <p className="text-gray-500 text-sm">Review our policies and terms</p>
+                            <h1 className="text-2xl font-bold text-foreground">Legal Center</h1>
+                            <p className="text-muted-foreground text-sm">Review our policies and terms</p>
                         </div>
 
                         <TabsList className="w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-3 gap-2 md:gap-4">
@@ -84,9 +84,9 @@ export default function LegalPage() {
                                     className={cn(
                                         "flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all whitespace-nowrap",
                                         // Active: Dark text/border or specific brand color
-                                        "data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:border-gray-900",
+                                        "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary",
                                         // Inactive: Simple gray
-                                        "data-[state=inactive]:bg-white data-[state=inactive]:text-gray-600 data-[state=inactive]:border-gray-200 data-[state=inactive]:hover:bg-gray-50"
+                                        "data-[state=inactive]:bg-background data-[state=inactive]:text-muted-foreground data-[state=inactive]:border-border data-[state=inactive]:hover:bg-muted"
                                     )}
                                 >
                                     <item.icon className="w-4 h-4" />
