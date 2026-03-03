@@ -70,7 +70,22 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // Your logic: Subtract the frequency to find what the PREVIOUS due date was
       const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
-      const totalPaid = allRelevantTxs.reduce((acc, t) => {
+      // FIX: Filter transactions to ensure they belong to the CURRENT cycle.
+      // A transaction is only valid for the current month if it is temporally closer 
+      // to the current due date (dbNextDate) than the previous due date (prevDate).
+      // This prevents late payments for the previous month from being counted as "Paid" for this month.
+      const validCurrentCycleTxs = allRelevantTxs.filter(tx => {
+        // Always respect explicit ID links
+        if (tx.recurringTransactionId === template.id) return true;
+
+        const txDate = parseISO(tx.date);
+        const distToCurrent = Math.abs(differenceInDays(txDate, dbNextDate));
+        const distToPrev = Math.abs(differenceInDays(txDate, prevDate));
+
+        return distToCurrent <= distToPrev;
+      });
+
+      const totalPaid = validCurrentCycleTxs.reduce((acc, t) => {
 
         return acc.plus(new Big(Math.abs(t.amount || 0)));
       }, new Big(0));
