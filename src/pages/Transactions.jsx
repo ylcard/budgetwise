@@ -148,7 +148,7 @@ export default function TransactionsLayout() {
 
               <div className="h-6 w-[1px] bg-border mx-1" />
 
-              <Button variant="primary" size="sm" className="h-9 gap-2" onClick={() => setShowAddIncome(true)}>
+              <Button variant="primary" size="sm" className="h-9 gap-2" onClick={() => { setEditingRecurring(null); setShowRecurringForm(true); }}>
                 <Repeat className="h-4 w-4" /> Recurring
               </Button>
 
