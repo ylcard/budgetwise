@@ -196,7 +196,7 @@ const LayoutContent = ({ children }) => {
           )}
 
           {isRootPage && (
-            <div className="absolute left-4 flex items-center justify-center fade-in zoom-in duration-300">
+            <div className="absolute left-4 h-full flex items-center justify-center fade-in zoom-in duration-300">
               <UserAvatar size="sm" />
             </div>
           )}
