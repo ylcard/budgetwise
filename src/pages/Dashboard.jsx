@@ -219,13 +219,28 @@ export default function Dashboard() {
     }
   };
 
-  const transactionActions = useTransactionActions({
+  const { handleConfirmMatch, ...transactionActions } = useTransactionActions({
     onSuccess: () => {
       setQuickAddState(null);
       setQuickAddIncomeState(null);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
     }
   });
+
+  // AUTOMATION: Trigger auto-matches on load/sync
+  useEffect(() => {
+    if (!recurringWithStatus.currentMonthItems) return;
+
+    const autoMatches = recurringWithStatus.currentMonthItems.filter(
+      item => item.matchStatus === 'auto_match' && item.suggestedTransactions?.[0]
+    );
+
+    if (autoMatches.length > 0) {
+      autoMatches.forEach(item => {
+        handleConfirmMatch(item.suggestedTransactions[0], item);
+      });
+    }
+  }, [recurringWithStatus.currentMonthItems, handleConfirmMatch]);
 
   const budgetActions = useCustomBudgetActions({
     transactions,
