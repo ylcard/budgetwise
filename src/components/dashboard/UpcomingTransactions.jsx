@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, AlertCircle, CalendarDays, X } from 'lucide-react'
 import { CustomButton } from '../ui/CustomButton';
 import { useTransactionActions } from '../hooks/useActions';
 import clsx from 'clsx';
+import { ConfirmMatchDialog } from './ConfirmMatchDialog';
 
 export default function UpcomingTransactions({
   recurringWithStatus = { currentMonthItems: [], timelineItems: [] },
@@ -16,6 +17,7 @@ export default function UpcomingTransactions({
 }) {
   const [viewMode, setViewMode] = useState('current'); // 'current' | 'timeline'
   const [ignoredMatches, setIgnoredMatches] = useState(new Set()); // Local state to dismiss suggestions
+  const [confirmingMatch, setConfirmingMatch] = useState(null); // { transaction, template }
   const [listRef] = useAutoAnimate();
   const { handleConfirmMatch } = useTransactionActions();
 
@@ -141,7 +143,10 @@ export default function UpcomingTransactions({
                                 variant="outline"
                                 size="sm"
                                 className="h-8 text-xs min-w-[80px] border-amber-500 text-amber-600 bg-amber-50 hover:bg-amber-100"
-                                onClick={() => handleConfirmMatch(item.suggestedTransactions?.[0], item)}
+                                onClick={() => setConfirmingMatch({
+                                  transaction: item.suggestedTransactions[0],
+                                  template: item
+                                })}
                               >
                                 Confirm Match
                               </CustomButton>
@@ -185,6 +190,16 @@ export default function UpcomingTransactions({
             })}
           </ul>
         )}
+
+        <ConfirmMatchDialog
+          isOpen={!!confirmingMatch}
+          onClose={() => setConfirmingMatch(null)}
+          matchData={confirmingMatch}
+          onConfirm={() => {
+            handleConfirmMatch(confirmingMatch.transaction, confirmingMatch.template);
+            setConfirmingMatch(null);
+          }}
+        />
       </div>
     </div>
   );
