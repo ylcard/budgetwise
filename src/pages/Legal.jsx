@@ -16,29 +16,29 @@ export default function LegalPage() {
 
     // Configuration for the tabs
     const tabItems = [
-        { 
-            id: "privacy", 
-            label: "Privacy", 
-            icon: Shield, 
-            component: PrivacyPolicy 
+        {
+            id: "privacy",
+            label: "Privacy",
+            icon: Shield,
+            component: PrivacyPolicy
         },
-        { 
-            id: "terms", 
-            label: "Terms", 
-            icon: FileText, 
-            component: TermsOfService 
+        {
+            id: "terms",
+            label: "Terms",
+            icon: FileText,
+            component: TermsOfService
         },
-        { 
-            id: "cookies", 
-            label: "Cookies", 
-            icon: Cookie, 
-            component: CookiePolicy 
+        {
+            id: "cookies",
+            label: "Cookies",
+            icon: Cookie,
+            component: CookiePolicy
         },
-        { 
-            id: "disclaimer", 
-            label: "Disclaimer", 
-            icon: AlertTriangle, 
-            component: FinancialDisclaimer 
+        {
+            id: "disclaimer",
+            label: "Disclaimer",
+            icon: AlertTriangle,
+            component: FinancialDisclaimer
         },
     ];
 
@@ -51,33 +51,42 @@ export default function LegalPage() {
 
     // Handle tab switching
     const handleTabChange = (value) => {
-        navigate(`/legal/${value}`);
-        // Scroll to top when switching tabs
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Use replace to avoid history stack buildup
+        navigate(`/legal/${value}`, { replace: true });
+
+        // Optional: scroll top of content
+        window.scrollTo({ top: 0, behavior: 'instant' });
     };
 
     const currentTab = tab || "privacy";
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50/50">
-            <Tabs 
-                value={currentTab} 
-                onValueChange={handleTabChange} 
-                className="w-full flex-1 flex flex-col"
+        <div className="flex flex-col w-full bg-gray-50/50">
+            <Tabs
+                value={currentTab}
+                onValueChange={handleTabChange}
+                className="w-full flex flex-col"
             >
-                {/* Sticky Tab Header */}
-                <div className="sticky top-[var(--header-total-height)] z-30 w-full bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
-                    <div className="max-w-4xl mx-auto px-4 md:px-8 py-2">
-                        <TabsList className="w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 gap-2 md:gap-4">
+                {/* Header Section (Not Sticky to fix layout bugs) */}
+                <div className="w-full bg-white border-b border-gray-200 shadow-sm z-10">
+                    <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4 pb-0">
+                        {/* Desktop Title */}
+                        <div className="hidden md:block mb-4">
+                            <h1 className="text-2xl font-bold text-gray-900">Legal Center</h1>
+                            <p className="text-gray-500 text-sm">Review our policies and terms</p>
+                        </div>
+
+                        <TabsList className="w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-3 gap-2 md:gap-4">
                             {tabItems.map((item) => (
                                 <TabsTrigger
                                     key={item.id}
                                     value={item.id}
                                     className={cn(
-                                        "flex items-center gap-2 px-3 py-2 rounded-full border border-transparent transition-all",
-                                        "data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200",
-                                        "data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-gray-100",
-                                        "whitespace-nowrap"
+                                        "flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all whitespace-nowrap",
+                                        // Active: Dark text/border or specific brand color
+                                        "data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:border-gray-900",
+                                        // Inactive: Simple gray
+                                        "data-[state=inactive]:bg-white data-[state=inactive]:text-gray-600 data-[state=inactive]:border-gray-200 data-[state=inactive]:hover:bg-gray-50"
                                     )}
                                 >
                                     <item.icon className="w-4 h-4" />
@@ -89,16 +98,15 @@ export default function LegalPage() {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1">
+                <div className="w-full max-w-5xl mx-auto">
                     {tabItems.map((item) => (
-                        <TabsContent key={item.id} value={item.id} className="m-0 mt-0">
-                            {/* We render the component directly. 
-                               Since the original pages have their own padding/containers,
-                               we just mount them here.
-                            */}
-                            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <item.component />
-                            </div>
+                        <TabsContent
+                            key={item.id}
+                            value={item.id}
+                            className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+                        >
+                            {/* Render component directly */}
+                            <item.component />
                         </TabsContent>
                     ))}
                 </div>
