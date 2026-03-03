@@ -130,18 +130,29 @@ export default function UpcomingTransactions({
                             Paid
                           </span>
                         ) : (
-                          <CustomButton
-                            variant={item.status === 'overdue' ? 'delete' : 'outline'}
-                            size="sm"
-                            onClick={() => onMarkPaid(item)}
-                            className={clsx(
-                              "h-8 text-xs min-w-[80px]",
-                              // Adding mobile touch-target safety
-                              "sm:min-h-0 min-h-[44px]"
-                            )}
-                          >
-                            Mark Paid
-                          </CustomButton>
+                          item.needsReview ? (
+                            <CustomButton
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs border-amber-500 text-amber-600 bg-amber-50 hover:bg-amber-100"
+                              onClick={() => {/* Open Match Resolver Drawer */ }}
+                            >
+                              Confirm Match
+                            </CustomButton>
+                          ) : (
+                            <CustomButton
+                              variant={item.status === 'overdue' ? 'delete' : 'outline'}
+                              size="sm"
+                              onClick={() => onMarkPaid(item)}
+                              className={clsx(
+                                "h-8 text-xs min-w-[80px]",
+                                // Adding mobile touch-target safety
+                                "sm:min-h-0 min-h-[44px]"
+                              )}
+                            >
+                              Mark Paid
+                            </CustomButton>
+                          )
                         )}
                       </div>
                     )}
