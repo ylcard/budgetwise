@@ -184,19 +184,16 @@ const LayoutContent = ({ children }) => {
       {/* Mobile-only fixed top header with dynamic back button (iOS native standard) */}
       <header className="md:hidden fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md border-b border-border z-40 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-center h-14 px-4 relative">
-          {/* Left Controls: Back Button (Conditional) + Avatar (Always) */}
-          <div className="absolute left-4 flex items-center gap-2 z-10">
-            {!isRootPage && (
-              <button
-                onClick={handleBackNavigation}
-                className="flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
-                aria-label="Go back"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            )}
-            <UserAvatar size="sm" />
-          </div>
+
+          {!isRootPage && (
+            <button
+              onClick={handleBackNavigation}
+              className="absolute left-4 flex items-center justify-center w-8 h-8 text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+              aria-label="Go back"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
 
           <div className="flex flex-col items-center justify-center text-center min-w-0 max-w-[65%]">
             <h1 className="text-sm font-bold text-foreground leading-tight truncate w-full">
@@ -221,7 +218,9 @@ const LayoutContent = ({ children }) => {
           <SidebarHeader className="border-b border-border p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <UserAvatar size="sm" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Wallet className="w-6 h-6 text-white" />
+                </div>
                 <div>
                   <h2 className="font-bold text-foreground text-lg">BudgetWise</h2>
                   <p className="text-xs text-muted-foreground">Personal Finance</p>
@@ -292,6 +291,12 @@ const LayoutContent = ({ children }) => {
               <ThemeSwitcher theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
             </div>
 
+            {/* User Level (Above Logout) */}
+            <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-accent/50 rounded-md mb-1 transition-colors select-none">
+              <span className="font-medium text-sm text-muted-foreground">My Level</span>
+              <UserAvatar size="sm" />
+            </div>
+
             <CustomButton
               variant="ghost"
               className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -358,6 +363,13 @@ const LayoutContent = ({ children }) => {
                     <SheetHeader className="px-6 pb-4 border-b">
                       <SheetTitle>More Options</SheetTitle>
                     </SheetHeader>
+
+                    {/* Mobile: User Level (Inside More Menu) */}
+                    <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                      <span className="font-medium text-foreground">My Level</span>
+                      <UserAvatar size="sm" />
+                    </div>
+
                     <div className="grid grid-cols-1 divide-y divide-border">
                       {secondaryNav.map((item) => (
                         <Link
