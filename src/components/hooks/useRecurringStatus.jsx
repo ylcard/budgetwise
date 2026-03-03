@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, subMonths, subWeeks, subDays, subYears, format, isBefore, startOfMonth, startOfDay } from 'date-fns';
 import Big from 'big.js';
 import { useSettings } from '../utils/SettingsContext';
+import { evaluateTransactionMatch } from '../utils/matchingEngine';
 
 function calculateNextDate(date, frequency) {
   switch (frequency) {
@@ -40,20 +41,23 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
     const activeTemplates = recurringTransactions.filter(r => r.isActive);
 
     activeTemplates.forEach(template => {
-      const currentMonthTxs = realTransactions.filter(t =>
-        t.recurringTransactionId === template.id &&
-        isSameMonth(parseISO(t.date), today)
-      );
+      // 1. Find explicit links
+      const linkedTxs = realTransactions.filter(t => t.recurringTransactionId === template.id);
+
+      // 2. Find potential fuzzy matches for unlinked transactions this month
+      const potentialMatches = realTransactions.filter(t => {
+        if (t.recurringTransactionId || !isSameMonth(parseISO(t.date), today)) return false;
+        const evaluation = evaluateTransactionMatch(t, [template]);
+        return evaluation.status !== 'no_match';
+      });
+
+      const allRelevantTxs = [...linkedTxs, ...potentialMatches];
 
       const dbNextDate = parseISO(template.nextOccurrence);
       // Your logic: Subtract the frequency to find what the PREVIOUS due date was
       const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
-      // Flexible Amount Matching with Status Awareness
-      const totalPaid = currentMonthTxs.reduce((acc, t) => {
-        // Income counts automatically. Expenses must be explicitly cleared/paid.
-        const isValidPayment = t.type === 'income' || t.isPaid === true;
-        if (!isValidPayment) return acc;
+      const totalPaid = allRelevantTxs.reduce((acc, t) => {
 
         return acc.plus(new Big(Math.abs(t.amount || 0)));
       }, new Big(0));
@@ -66,7 +70,8 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       const isDueThisMonth = isSameMonth(dbNextDate, today); // Expected this month, unpaid
       const isPrevDueThisMonth = isSameMonth(prevDate, today); // Expected this month, but already paid & advanced!
       const isOverdue = isBefore(dbNextDate, currentMonthStart); // Missed entirely
-      const hasActivityThisMonth = currentMonthTxs.length > 0; // Random manual payment
+      const hasActivityThisMonth = allRelevantTxs.length > 0;
+      const needsReview = potentialMatches.length > 0 && !linkedTxs.length;
 
       if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth) {
         // It's considered paid if we paid it this month, OR if the backend already pushed the date past this month
@@ -75,8 +80,8 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         // What date do we display? If it advanced to July, we want to show April's date.
         let displayDate = isPrevDueThisMonth ? prevDate : dbNextDate;
 
-        if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth) {
-          displayDate = parseISO(currentMonthTxs[0].date); // Failsafe for early payments
+        if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth && allRelevantTxs[0]) {
+          displayDate = parseISO(allRelevantTxs[0].date);
         }
 
         const daysUntilDue = differenceInDays(startOfDay(displayDate), startOfDay(today));
@@ -88,6 +93,8 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         const enrichedItem = {
           ...template,
           isPaid,
+          needsReview,
+          suggestedTransactions: potentialMatches,
           paidAmount: totalPaid.toNumber(),
           daysUntilDue,
           status,
