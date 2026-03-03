@@ -202,6 +202,7 @@ export const useTransactionActions = (config = {}) => {
   return {
     handleSubmit,
     handleEdit,
+    handleConfirmMatch,
     handleDelete: handleDeleteTransaction,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
@@ -274,7 +275,7 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
     if (setShowForm) setShowForm(true);
   };
 
-  //	Route delete action to the correct entity
+  //    Route delete action to the correct entity
   const handleDeleteWrapper = (category) => {
     if (category.isSystemCategory) {
       deleteSystemCategory(category.id);
