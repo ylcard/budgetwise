@@ -59,6 +59,7 @@ import Goals from './pages/Goals';
 import Home from './pages/Home';
 import ImportData from './pages/ImportData';
 import Learn from './pages/Learn';
+import Legal from './pages/Legal';
 import Manage from './pages/Manage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RecurringTransactions from './pages/RecurringTransactions';
@@ -81,6 +82,7 @@ export const PAGES = {
     "Home": Home,
     "ImportData": ImportData,
     "Learn": Learn,
+    "Legal": Legal,
     "Manage": Manage,
     "PrivacyPolicy": PrivacyPolicy,
     "RecurringTransactions": RecurringTransactions,
