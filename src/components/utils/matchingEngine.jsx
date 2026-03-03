@@ -14,6 +14,11 @@ const THRESHOLDS = {
   TIE_BREAKER_MARGIN: 5,
 };
 
+const BONUSES = {
+  EXACT_AMOUNT: 15,
+  CATEGORY_MATCH: 15, // Use category as a strong signal if names fail
+};
+
 const STOP_WORDS = new Set([
   'pos', 'dd', 'so', 'crd', 'auth', 'fee', 'visa', 'mastercard',
   'payment', 'transfer', 'standing', 'order', 'direct', 'debit'
@@ -56,7 +61,7 @@ const calculateIdentityScore = (txRaw, aliases = [], title = '') => {
         matchCount += 1;
         continue;
       }
-      
+
       // Fuzzy token fallback (allows slight typos)
       const fuzzyRes = fuzzysort.go(tToken, txTokens, { threshold: -20, allowTypo: true });
       if (fuzzyRes.length > 0) {
@@ -90,7 +95,7 @@ const calculateAmountScore = (txAmount, tplAmount, allowedVariancePct = 5) => {
  */
 const calculateTemporalScore = (txDateStr, tplDateStr, allowedVarianceDays = 3) => {
   if (!txDateStr || !tplDateStr) return 0;
-  
+
   const txDate = parseISO(txDateStr);
   const tplDate = parseISO(tplDateStr);
   const diffDays = Math.abs(differenceInDays(txDate, tplDate));
@@ -121,10 +126,23 @@ export const evaluateTransactionMatch = (transaction, templates) => {
       const amountScore = calculateAmountScore(transaction.amount, tpl.amount, tpl.amount_variance_percentage || 5);
       const temporalScore = calculateTemporalScore(transaction.date, tpl.nextOccurrence, tpl.temporal_variance_days || 3);
 
-      const totalScore = 
-        (identityScore * WEIGHTS.IDENTITY) + 
-        (amountScore * WEIGHTS.AMOUNT) + 
+      let totalScore =
+        (identityScore * WEIGHTS.IDENTITY) +
+        (amountScore * WEIGHTS.AMOUNT) +
         (temporalScore * WEIGHTS.TEMPORAL);
+
+      // BONUS: Precision Boosters
+      // If the name score is low (< 50) but other factors are strong, we boost the score.
+
+      // 1. Exact Amount Bonus (Crucial for rent/mortgage with unique values)
+      if (amountScore === 100) {
+        totalScore += BONUSES.EXACT_AMOUNT;
+      }
+
+      // 2. Category Match Bonus (If both have categories assigned)
+      if (transaction.category_id && tpl.category_id && transaction.category_id === tpl.category_id) {
+        totalScore += BONUSES.CATEGORY_MATCH;
+      }
 
       return { id: tpl.id, score: Math.round(totalScore) };
     })
