@@ -9,6 +9,7 @@ import clsx from 'clsx';
 export default function UpcomingTransactions({
   recurringWithStatus = { currentMonthItems: [], timelineItems: [] },
   onMarkPaid,
+  onConfirmMatch,
   isLoading,
   categories
 }) {
@@ -135,7 +136,7 @@ export default function UpcomingTransactions({
                               variant="outline"
                               size="sm"
                               className="h-8 text-xs border-amber-500 text-amber-600 bg-amber-50 hover:bg-amber-100"
-                              onClick={() => {/* Open Match Resolver Drawer */ }}
+                              onClick={() => onConfirmMatch(item.suggestedTransactions?.[0], item)}
                             >
                               Confirm Match
                             </CustomButton>
