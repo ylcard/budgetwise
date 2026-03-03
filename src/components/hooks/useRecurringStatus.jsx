@@ -87,22 +87,29 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         if (tx.recurringTransactionId === template.id) return true;
 
         const txDate = parseISO(tx.date);
+
+        // ANTI-HIJACK (FIFO Rule):
+        // We have a window of transactions (Last Month + This Month).
+        // If the Previous Cycle Date falls in this window, we expect TWO payments to exist 
+        // (one for Prev, one for Current) before we mark Current as paid.
+
+        const prevDateInWindow = !isBefore(prevDate, parseISO(realTransactions[0]?.date || '2000-01-01')); // Rough check if window covers prev
+
+        if (prevDateInWindow) {
+          // Get all potential matches for this bill in the entire window
+          const totalMatchesInWindow = payingTransactions.filter(t =>
+            evaluateTransactionMatch(t, [template]).status !== 'no_match'
+          ).length;
+
+          // If we have fewer matches than cycles (2 cycles: Prev + Curr), 
+          // the single transaction belongs to the Oldest debt (Prev).
+          // Therefore, it CANNOT count for Current.
+          if (totalMatchesInWindow < 2) return false;
+        }
+
+        // Fallback: If we have enough transactions, use simple proximity
         const distToCurrent = Math.abs(differenceInDays(txDate, dbNextDate));
         const distToPrev = Math.abs(differenceInDays(txDate, prevDate));
-
-        // ANTI-HIJACK RULE: 
-        // If the transaction is in the PREVIOUS month (relative to current due date),
-        // verify if the previous month has "surplus" transactions.
-        // If there is only 1 transaction in that previous month, it almost certainly belongs 
-        // to the previous cycle (even if paid late), so don't steal it for the current cycle.
-        if (isBefore(txDate, startOfMonth(dbNextDate))) {
-          const previousMonthTxs = payingTransactions.filter(t =>
-            isSameMonth(parseISO(t.date), txDate)
-          );
-
-          // If we only found ONE transaction in that previous month, assume it's for that month.
-          if (previousMonthTxs.length < 2) return false;
-        }
 
         return distToCurrent <= distToPrev;
       });
