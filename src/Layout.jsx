@@ -44,6 +44,8 @@ import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
 import { flushSync } from "react-dom";
 // ADDED 03-Mar-2026: Initialize Typography.js Moraga theme — injects CSS into <head> as a side effect
 import "@/components/utils/typography";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import { useGamification } from "@/components/hooks/useGamification";
 
 const LayoutContent = ({ children }) => {
   const location = useLocation();
@@ -53,6 +55,7 @@ const LayoutContent = ({ children }) => {
   const { logout } = useAuth();
   const { budgetHealth } = useHealth();
   const { settings, updateSettings, user } = useSettings();
+  const { checkDailyStreak } = useGamification();
 
   // Cookie Consent
   const { showBanner, consent, acceptAll, acceptNecessary, updateConsent } = useCookieConsent();
@@ -65,6 +68,14 @@ const LayoutContent = ({ children }) => {
       }
     });
   };
+
+  // GAMIFICATION: Check Daily Streak on App Load
+  useEffect(() => {
+    // If budgetHealth is available, we use it to decide if the day was "Won"
+    // Logic: If status is not critical, we count it as a win for the streak
+    const isBudgetHealthy = budgetHealth ? budgetHealth.status !== 'critical' : true;
+    checkDailyStreak(isBudgetHealthy);
+  }, [checkDailyStreak, budgetHealth]);
 
   // ADDED 14-Feb-2026: Initialize privacy signal enforcement on mount
   useEffect(() => {
@@ -182,6 +193,13 @@ const LayoutContent = ({ children }) => {
               <ChevronLeft className="w-6 h-6" />
             </button>
           )}
+
+          {isRootPage && (
+            <div className="absolute left-4 flex items-center justify-center fade-in zoom-in duration-300">
+              <UserAvatar size="sm" />
+            </div>
+          )}
+
           <div className="flex flex-col items-center justify-center text-center min-w-0 max-w-[65%]">
             <h1 className="text-sm font-bold text-foreground leading-tight truncate w-full">
               {currentPageTitle}
