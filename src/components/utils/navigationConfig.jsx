@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Receipt, BarChart3, Settings, Shield, FileText, AlertTriangle, Cookie, Target, BookOpen } from "lucide-react";
+import { LayoutDashboard, Receipt, BarChart3, Settings, Shield, Target, BookOpen } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 export const navigationItems = [
@@ -43,23 +43,8 @@ export const navigationItems = [
   },
   // Secondary Nav (Legal Pages)
   {
-    title: "Privacy",
-    url: createPageUrl("PrivacyPolicy"),
+    title: "Legal",
+    url: "/legal/privacy",
     icon: Shield,
-  },
-  {
-    title: "Terms",
-    url: createPageUrl("TermsOfService"),
-    icon: FileText,
-  },
-  {
-    title: "Disclaimer",
-    url: createPageUrl("FinancialDisclaimer"),
-    icon: AlertTriangle,
-  },
-  {
-    title: "Cookies",
-    url: createPageUrl("CookiePolicy"),
-    icon: Cookie,
   },
 ];
