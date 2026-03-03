@@ -63,8 +63,13 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
         }
       }
 
-      const allRelevantTxs = [...linkedTxs];
-      if (matchCandidate) allRelevantTxs.push(matchCandidate);
+      // Only count matched transactions if they are 'auto_match'.
+      // If they are 'needs_review', they should NOT contribute to 'totalPaid' 
+      // until the user confirms them (which creates a link).
+      const payingTransactions = [...linkedTxs];
+      if (matchCandidate && matchStatus === 'auto_match') {
+        payingTransactions.push(matchCandidate);
+      }
 
       const dbNextDate = parseISO(template.nextOccurrence);
       // Your logic: Subtract the frequency to find what the PREVIOUS due date was
@@ -74,7 +79,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // A transaction is only valid for the current month if it is temporally closer 
       // to the current due date (dbNextDate) than the previous due date (prevDate).
       // This prevents late payments for the previous month from being counted as "Paid" for this month.
-      const validCurrentCycleTxs = allRelevantTxs.filter(tx => {
+      const validCurrentCycleTxs = payingTransactions.filter(tx => {
         // Always respect explicit ID links
         if (tx.recurringTransactionId === template.id) return true;
 
@@ -123,7 +128,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
           isPaid,
           needsReview,
           matchStatus,
-          suggestedTransactions: matchCandidate ? [matchCandidate] : [],
+          suggestedTransactions: (matchCandidate && !isPaid) ? [matchCandidate] : [],
           paidAmount: totalPaid.toNumber(),
           daysUntilDue,
           status,
