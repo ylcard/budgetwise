@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState, useMemo } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -183,30 +183,36 @@ export default function RuleGeneratorDialog({
         );
     }
 
-    // --- DESKTOP VIEW (Sheet) ---
+    // --- DESKTOP VIEW (Dialog 85vw/85vh) ---
     return (
-        <Sheet open={isOpen} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
-                <SheetHeader className="px-6 py-6 border-b shrink-0">
-                    <SheetTitle className="flex items-center gap-2">
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            {/* +                CRITICAL STYLING FOR SCROLLING:
+                1. w-[85vw] / h-[85vh]: Explicitly sets the box size.
+                2. max-w-none: Overrides shadcn's default 'max-w-lg'.
+                3. flex flex-col: Overrides shadcn's default 'grid', allowing flex-1 children to work.
+                4. p-0: Removes default padding so header/footer go edge-to-edge.
+            */}
+            <DialogContent className="w-[85vw] max-w-none h-[85vh] p-0 flex flex-col gap-0">
+                <DialogHeader className="px-6 py-6 border-b shrink-0 space-y-1">
+                    <DialogTitle className="flex items-center gap-2">
                         <BrainCircuit className="w-5 h-5 text-amber-500" />
                         Rule Generator
-                    </SheetTitle>
-                    <SheetDescription>
+                    </DialogTitle>
+                    <DialogDescription>
                         Analyzes your transaction history to detect naming and categorization patterns.
-                    </SheetDescription>
-                </SheetHeader>
+                    </DialogDescription>
+                </DialogHeader>
                 {ContentBody}
                 {candidates.length > 0 && (
-                    <SheetFooter className="px-6 py-4 border-t bg-muted/20 shrink-0 sm:justify-between sm:space-x-0">
+                    <DialogFooter className="px-6 py-4 border-t bg-muted/20 shrink-0 sm:justify-between sm:space-x-0">
                         <p className="text-xs text-muted-foreground self-center">Rules apply to future imports.</p>
                         <CustomButton onClick={onSave} disabled={selectedCount === 0 || isSaving} className="gap-2">
                             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             Save {selectedCount} Rules
                         </CustomButton>
-                    </SheetFooter>
+                    </DialogFooter>
                 )}
-            </SheetContent>
-        </Sheet>
+            </DialogContent>
+        </Dialog>
     );
 }
