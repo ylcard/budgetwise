@@ -514,6 +514,7 @@ export const useSettingsForm = (initialSettings, updateSettings) => {
     setSaveSuccess(false);
     try {
       await updateSettings(data);
+      reset(data);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       showToast({
