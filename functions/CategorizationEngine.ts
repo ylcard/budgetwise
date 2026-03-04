@@ -64,8 +64,8 @@ function buildMemoryMap(historicalTransactions) {
 }
 
 function matchLocally(tx, rules, categories) {
-  // Priority: cleanDescription -> title -> description
-  const text = (tx.cleanDescription || tx.title || tx.description || '').toUpperCase();
+  // Priority: rawDescription (Source of truth) -> title -> description
+  const text = (tx.rawDescription || tx.description || tx.title || '').toUpperCase();
 
   // 1. User Rules
   for (const rule of rules) {
@@ -232,8 +232,8 @@ Deno.serve(async (req) => {
 
     // 2. PIPELINE: MEMORY -> RULES -> AI
     for (const tx of transactions) {
-      // Use cleanDescription for memory lookup if available
-      const rawKey = (tx.cleanDescription || tx.rawDescription || tx.title || '').trim().toUpperCase();
+      // Use rawDescription for memory lookup as the anchor
+      const rawKey = (tx.rawDescription || tx.description || tx.title || '').trim().toUpperCase();
       const isIncome = tx.type === 'income' || (tx.amount && tx.amount < 0 && !tx.type); // Fail-safe
 
       // 0. INCOME BYPASS
