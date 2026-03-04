@@ -30,24 +30,29 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
 
   // Token Logic for surgical keyword building
   const allTokens = useMemo(() => {
-    // Split by whitespace and asterisks, then strip trailing/leading punctuation from each token
     return rawDescription
-      .split(/[\s*]+/)
+      .split(/[\s*]+/) // Split on spaces or asterisks
       .map(t => t.replace(/^[.,!?;:]|[.,!?;:]$/g, ""))
       .filter(Boolean);
   }, [rawDescription]);
 
-  // Split by comma to reflect backend "OR" logic
-  const activeTokens = useMemo(() => (keyword || "").split(",").map(k => k.trim()).filter(Boolean), [keyword]);
+  // Check if we are in "Raw Mode" (haven't started surgical selection yet)
+  const isRawMode = useMemo(() => keyword === rawDescription, [keyword, rawDescription]);
+  const activeTokens = useMemo(() => isRawMode ? [] : (keyword || "").split(",").map(k => k.trim()).filter(Boolean), [keyword, isRawMode]);
 
   const toggleToken = (token) => {
-    const isSelected = activeTokens.includes(token);
-    const newTokens = isSelected
-      ? activeTokens.filter(t => t !== token)
-      : [...activeTokens, token];
+    let newTokens;
+    if (isRawMode) {
+      // First click: Replace the raw string with just this token
+      newTokens = [token];
+    } else {
+      newTokens = activeTokens.includes(token)
+        ? activeTokens.filter(t => t !== token)
+        : [...activeTokens, token];
+    }
 
-    // Join with commas to trigger "OR" logic in the sync engine
-    onUpdate(id, "keyword", newTokens.join(", "));
+    // If all tokens cleared, revert to rawDescription as fallback
+    onUpdate(id, "keyword", newTokens.length > 0 ? newTokens.join(", ") : rawDescription);
   };
 
   return (
