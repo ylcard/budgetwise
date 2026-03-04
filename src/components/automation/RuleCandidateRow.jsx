@@ -29,14 +29,25 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
   const hasPriority = !!financial_priority;
 
   // Token Logic for surgical keyword building
-  const allTokens = useMemo(() => rawDescription.split(/\s+/).filter(Boolean), [rawDescription]);
-  const activeTokens = useMemo(() => (keyword || "").split(/\s+/).filter(Boolean), [keyword]);
+  const allTokens = useMemo(() => {
+    // Split by whitespace and asterisks, then strip trailing/leading punctuation from each token
+    return rawDescription
+      .split(/[\s*]+/)
+      .map(t => t.replace(/^[.,!?;:]|[.,!?;:]$/g, ""))
+      .filter(Boolean);
+  }, [rawDescription]);
+
+  // Split by comma to reflect backend "OR" logic
+  const activeTokens = useMemo(() => (keyword || "").split(",").map(k => k.trim()).filter(Boolean), [keyword]);
 
   const toggleToken = (token) => {
-    const newTokens = activeTokens.includes(token)
+    const isSelected = activeTokens.includes(token);
+    const newTokens = isSelected
       ? activeTokens.filter(t => t !== token)
       : [...activeTokens, token];
-    onUpdate(id, "keyword", newTokens.join(" "));
+
+    // Join with commas to trigger "OR" logic in the sync engine
+    onUpdate(id, "keyword", newTokens.join(", "));
   };
 
   return (
@@ -93,16 +104,20 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Keyword */}
               <div className="sm:col-span-2 lg:col-span-2">
-                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Match Keywords (Tap to refine rule)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Match Logic: <span className="text-amber-600 font-bold">{keyword.includes(',') ? 'OR (Any)' : 'PHRASE (Exact)'}</span>
+                  </label>
+                </div>
                 <div className="flex flex-wrap gap-1 mt-1.5 mb-2">
                   {allTokens.map((token, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => toggleToken(token)}
-                      className={`text-[10px] px-2 py-0.5 rounded-md border transition-all ${activeTokens.includes(token)
-                          ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-900/40 dark:border-amber-700 dark:text-amber-300"
-                          : "bg-muted border-transparent text-muted-foreground opacity-50 hover:opacity-100"
+                      className={`text-[10px] px-2 py-0.5 rounded-md border transition-all truncate max-w-[150px] ${activeTokens.includes(token)
+                        ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-900/40 dark:border-amber-700 dark:text-amber-300"
+                        : "bg-muted border-transparent text-muted-foreground opacity-50 hover:opacity-100"
                         }`}
                     >
                       {token}
@@ -113,7 +128,7 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
                   value={keyword}
                   onChange={(e) => onUpdate(id, "keyword", e.target.value)}
                   className="h-8 text-xs"
-                  placeholder="Match string..."
+                  placeholder="Keywords (comma-separated for OR)..."
                 />
               </div>
 
