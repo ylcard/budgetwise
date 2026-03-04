@@ -6,7 +6,7 @@ import { useCreateEntity } from "./useCreateEntity";
 import { useUpdateEntity } from "./useUpdateEntity";
 import { useDeleteEntity } from "./useDeleteEntity";
 import { QUERY_KEYS } from "./queryKeys";
-import { parseDate, formatDateString } from "../utils/dateUtils";
+import { parseDate } from "../utils/dateUtils";
 import { snapshotFutureBudgets, ensureSystemBudgetsExist } from "../utils/budgetInitialization";
 import { getMonthBoundaries } from "../utils/dateUtils";
 import { getHistoricalAverageIncome } from "../utils/financialCalculations";
@@ -14,13 +14,13 @@ import { createPageUrl } from "@/utils";
 import { useSettings } from "../utils/SettingsContext";
 import { fetchWithRetry } from "../utils/generalUtils";
 import { calculateNextOccurrence } from "../utils/recurringUtils";
+import { useStateUI } from "./useStateUI";
 
 // Hook for transaction actions (CRUD operations - Transactions page)
-// UPDATED 03-Feb-2026: Added optimistic UI updates for immediate feedback
-export const useTransactionActions = (config = {}) => {
-  const { setShowForm, setEditingTransaction, ...options } = config;
+export const useTransactionActions = (options = {}) => {
   const queryClient = useQueryClient();
   const { settings, user } = useSettings();
+  const ui = useStateUI();
 
   // Helper to sync budgets when income changes
   const syncBudgetsAfterIncomeChange = async (dateString) => {
@@ -28,12 +28,18 @@ export const useTransactionActions = (config = {}) => {
     const date = parseDate(dateString);
     const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
-    // 1. Get all transactions for this month to sum actual income
-    const allTransactions = await fetchWithRetry(() => base44.entities.Transaction.filter({
-      created_by: user.email,
-      type: 'income',
-      date: { $gte: monthStart, $lte: monthEnd }
-    }));
+    const cachedTransactions = queryClient.getQueryData([QUERY_KEYS.TRANSACTIONS]) || [];
+    let allTransactions = cachedTransactions.filter(t =>
+      t.type === 'income' && t.date >= monthStart && t.date <= monthEnd
+    );
+
+    if (allTransactions.length === 0) {
+      allTransactions = await fetchWithRetry(() => base44.entities.Transaction.filter({
+        created_by: user.email,
+        type: 'income',
+        date: { $gte: monthStart, $lte: monthEnd }
+      }));
+    }
 
     const monthlyIncome = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
@@ -83,8 +89,7 @@ export const useTransactionActions = (config = {}) => {
       });
 
       if (newDoc?.type === 'income') await syncBudgetsAfterIncomeChange(newDoc.date);
-      if (setShowForm) setShowForm(false);
-      if (setEditingTransaction) setEditingTransaction(null);
+      ui.closeForm();
       if (options.onSuccess) options.onSuccess();
     }
   });
@@ -119,8 +124,7 @@ export const useTransactionActions = (config = {}) => {
       });
 
       if (updatedDoc?.type === 'income') await syncBudgetsAfterIncomeChange(updatedDoc.date);
-      if (setShowForm) setShowForm(false);
-      if (setEditingTransaction) setEditingTransaction(null);
+      ui.closeForm();
     }
   });
 
@@ -183,62 +187,42 @@ export const useTransactionActions = (config = {}) => {
   };
 
   const handleSubmit = (data, editingTransaction) => {
-    if (editingTransaction) {
-      updateMutation.mutate({
-        id: editingTransaction.id,
-        data,
-        oldEntity: editingTransaction
-      });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
-
-  const handleEdit = (transaction) => {
-    if (setEditingTransaction) setEditingTransaction(transaction);
-    if (setShowForm) setShowForm(true);
+    const activeItem = editingTransaction || ui.editingItem;
+    activeItem
+      ? updateMutation.mutate({ id: activeItem.id, data, oldEntity: activeItem })
+      : createMutation.mutate(data);
   };
 
   return {
+    ...ui,
     handleSubmit,
-    handleEdit,
+    handleEdit: ui.openForm,
     handleConfirmMatch,
     handleDelete: handleDeleteTransaction,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
 };
 
-// Uses generic useCreateEntity, useUpdateEntity, and useDeleteEntity hooks
 // Hook for category actions (CRUD operations)
-export const useCategoryActions = (setShowForm, setEditingCategory) => {
-  // CREATE: Use generic hook (no preprocessing needed)
+export const useCategoryActions = () => {
+  const ui = useStateUI();
+
   const createMutation = useCreateEntity({
     entityName: 'Category',
     queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
-    onAfterSuccess: () => {
-      if (setShowForm) setShowForm(false);
-      if (setEditingCategory) setEditingCategory(null);
-    }
+    onAfterSuccess: ui.closeForm
   });
 
-  // UPDATE: Use generic hook (no preprocessing needed)
   const updateMutation = useUpdateEntity({
     entityName: 'Category',
     queryKeysToInvalidate: [QUERY_KEYS.CATEGORIES],
-    onAfterSuccess: () => {
-      if (setShowForm) setShowForm(false);
-      if (setEditingCategory) setEditingCategory(null);
-    }
+    onAfterSuccess: ui.closeForm
   });
 
-  // UPDATED 14-Feb-2026: Mutation for System Categories (Admin only)
   const updateSystemMutation = useUpdateEntity({
     entityName: 'SystemCategory',
     queryKeysToInvalidate: [QUERY_KEYS.SYSTEM_CATEGORIES, QUERY_KEYS.CATEGORIES], // Invalidate both to be safe
-    onAfterSuccess: () => {
-      if (setShowForm) setShowForm(false);
-      if (setEditingCategory) setEditingCategory(null);
-    }
+    onAfterSuccess: ui.closeForm
   });
 
   // DELETE: Use generic hook (no dependencies to handle)
@@ -259,23 +243,16 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
   });
 
   const handleSubmit = (data, editingCategory) => {
-    if (editingCategory) {
-      if (editingCategory.isSystemCategory) {
-        updateSystemMutation.mutate({ id: editingCategory.id, data });
-      } else {
-        updateMutation.mutate({ id: editingCategory.id, data });
-      }
+    const activeItem = editingCategory || ui.editingItem;
+    if (activeItem) {
+      activeItem.isSystemCategory
+        ? updateSystemMutation.mutate({ id: activeItem.id, data })
+        : updateMutation.mutate({ id: activeItem.id, data });
     } else {
       createMutation.mutate(data);
     }
   };
 
-  const handleEdit = (category) => {
-    if (setEditingCategory) setEditingCategory(category);
-    if (setShowForm) setShowForm(true);
-  };
-
-  //    Route delete action to the correct entity
   const handleDeleteWrapper = (category) => {
     if (category.isSystemCategory) {
       deleteSystemCategory(category.id);
@@ -285,8 +262,9 @@ export const useCategoryActions = (setShowForm, setEditingCategory) => {
   };
 
   return {
+    ...ui,
     handleSubmit,
-    handleEdit,
+    handleEdit: ui.openForm,
     handleDelete: handleDeleteWrapper,
     handleBulkDelete: bulkDeleteCustomCategories,
     isSubmitting: createMutation.isPending || updateMutation.isPending || updateSystemMutation.isPending,
@@ -301,9 +279,6 @@ export const useGoalActions = (user, goals) => {
   const updateGoalMutation = useMutation({
     mutationFn: ({ id, data }) => fetchWithRetry(() => base44.entities.BudgetGoal.update(id, data)),
     onSuccess: async (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
-
-      // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
       const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
       await snapshotFutureBudgets(
         { ...variables.data, priority: variables.priority },
@@ -311,7 +286,8 @@ export const useGoalActions = (user, goals) => {
         user?.email,
         allGoals
       );
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
     },
     onError: (error) => {
       console.error('Error updating goal:', error);
@@ -321,11 +297,10 @@ export const useGoalActions = (user, goals) => {
   const createGoalMutation = useMutation({
     mutationFn: (data) => fetchWithRetry(() => base44.entities.BudgetGoal.create(data)),
     onSuccess: async (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
-      // UPDATED 17-Jan-2026: Fetch all goals and pass to snapshotFutureBudgets
       const allGoals = await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user?.email }));
       await snapshotFutureBudgets(variables, settings, user?.email, allGoals);
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GOALS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
     },
     onError: (error) => {
       console.error('Error creating goal:', error);
@@ -337,17 +312,15 @@ export const useGoalActions = (user, goals) => {
 
     try {
       if (existingGoal) {
-        // Return the promise directly, allowing the caller (GoalSettings) to handle resolution status
         return updateGoalMutation.mutateAsync({
           id: existingGoal.id,
-          priority, // Pass priority so onSuccess can verify which budget type to update
+          priority,
           data: {
             target_percentage: percentage,
             ...extraData
           }
         });
       } else if (user) {
-        // Return the promise directly
         return createGoalMutation.mutateAsync({
           priority,
           target_percentage: percentage,
@@ -375,9 +348,8 @@ export const useGoalActions = (user, goals) => {
 // Hook for custom budget actions (CRUD operations)
 export const useCustomBudgetActions = (config = {}) => {
   const { user } = useSettings();
-  const { transactions, ...options } = config;
-  const [showForm, setShowForm] = useState(false);
-  const [editingBudget, setEditingBudget] = useState(null);
+  const { ...options } = config;
+  const ui = useStateUI();
 
   // CREATE: Use generic hook with intelligent status assignment and cash allocation
   const createMutation = useCreateEntity({
@@ -399,11 +371,7 @@ export const useCustomBudgetActions = (config = {}) => {
         isSystemBudget: false
       };
     },
-    onAfterSuccess: () => {
-      setShowForm(false);
-      setEditingBudget(null);
-      if (options.onSuccess) options.onSuccess();
-    }
+    onAfterSuccess: ui.closeForm
   });
 
   // UPDATE: Use generic hook with cash allocation change handling
@@ -411,19 +379,13 @@ export const useCustomBudgetActions = (config = {}) => {
     entityName: 'CustomBudget',
     queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, ['budget'], ['allBudgets']],
     onBeforeUpdate: async ({ id, data }) => {
-      // CRITICAL: Use get() instead of list().find() for efficiency
       const existingBudget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
-
       if (!existingBudget) {
         throw new Error('Budget not found');
       }
-
       return data;
     },
-    onAfterSuccess: () => {
-      setShowForm(false);
-      setEditingBudget(null);
-    }
+    onAfterSuccess: ui.closeForm
   });
 
   const { handleDelete: handleDeleteBudget, deleteDirect, isDeleting } = useDeleteEntity({
@@ -432,25 +394,14 @@ export const useCustomBudgetActions = (config = {}) => {
     confirmTitle: "Delete Budget",
     confirmMessage: "Are you sure you want to delete this budget? This will also delete all associated transactions and return cash allocations to your wallet.",
     onBeforeDelete: async (budgetId) => {
-      // CRITICAL5: Use efficient get() instead of list().find()
       const budget = await fetchWithRetry(() => base44.entities.CustomBudget.get(budgetId));
-
       if (!budget) {
         throw new Error('Budget not found for deletion');
       }
-
-      // Delete all associated transactions
-      const budgetTransactions = transactions.filter(t => t.budgetId === budgetId);
-
-      if (budgetTransactions.length > 0) {
-        // Replaced iteration with highly-efficient bulk deletion
-        const transactionIds = budgetTransactions.map(t => t.id);
-        await fetchWithRetry(() => base44.entities.Transaction.deleteMany({ id: { $in: transactionIds } }));
-      }
+      await fetchWithRetry(() => base44.entities.Transaction.deleteMany({ budgetId: budgetId }));
     },
     onAfterSuccess: () => {
       // Redirect to Budgets page after successful deletion
-      // Potentially refactor this to intelligently go back to whatever was the location before entering the budget
       window.location.href = createPageUrl("Budgets");
     }
   });
@@ -468,8 +419,8 @@ export const useCustomBudgetActions = (config = {}) => {
       }
 
       if (data.status === 'completed') {
-        // Calculate actual spent amount
-        const budgetTransactions = transactions.filter(t => t.budgetId === id && t.isPaid);
+        // Need to fetch transactions for completion sum since it's a specific logic requirement
+        const budgetTransactions = await fetchWithRetry(() => base44.entities.Transaction.filter({ budgetId: id, isPaid: true }));
         const actualSpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0);
 
         return {
@@ -491,8 +442,7 @@ export const useCustomBudgetActions = (config = {}) => {
   });
 
   const handleSubmit = (data, budgetToEdit = null) => {
-    const budgetForUpdate = budgetToEdit || editingBudget;
-
+    const budgetForUpdate = budgetToEdit || ui.editingItem;
     if (budgetForUpdate) {
       updateMutation.mutate({ id: budgetForUpdate.id, data });
     } else {
@@ -500,22 +450,14 @@ export const useCustomBudgetActions = (config = {}) => {
     }
   };
 
-  const handleEdit = (budget) => {
-    setEditingBudget(budget);
-    setShowForm(true);
-  };
-
   const handleStatusChange = (id, newStatus) => {
     updateStatusMutation.mutate({ id, data: { status: newStatus } });
   };
 
   return {
-    showForm,
-    setShowForm,
-    editingBudget,
-    setEditingBudget,
+    ...ui,
     handleSubmit,
-    handleEdit,
+    handleEdit: ui.openForm,
     handleDelete: handleDeleteBudget,
     handleDeleteDirect: deleteDirect,
     handleStatusChange,
