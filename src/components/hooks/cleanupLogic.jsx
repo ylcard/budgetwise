@@ -1,3 +1,5 @@
+// Possibly deprecated
+
 /**
  * Applies learned renaming rules to raw transaction titles.
  * * @param {string} rawTitle - The original messy string from the bank/LLM
