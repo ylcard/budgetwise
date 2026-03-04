@@ -15,6 +15,7 @@ import { FINANCIAL_PRIORITIES } from "./constants";
 import { resolveBudgetLimit } from "./financialCalculations";
 import { format, parseISO, isValid, addMonths, startOfMonth, endOfMonth } from "date-fns";
 import { fetchWithRetry } from "./generalUtils";
+import Big from "big.js";
 
 // In-memory lock to prevent race conditions during concurrent budget creation
 const inFlightRequests = new Map();
@@ -25,12 +26,12 @@ const inFlightRequests = new Map();
  * Handles both Date objects and strings.
  */
 const normalizeDate = (dateInput) => {
-    if (!dateInput) return null;
-    try {
-        const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
-        if (!isValid(date)) return null;
-        return format(date, 'yyyy-MM-dd');
-    } catch (e) { return null; }
+  if (!dateInput) return null;
+  try {
+    const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
+    if (!isValid(date)) return null;
+    return format(date, 'yyyy-MM-dd');
+  } catch (e) { return null; }
 };
 
 /**
@@ -49,35 +50,35 @@ const normalizeDate = (dateInput) => {
  * @returns {Promise<string>} The ID of the existing or newly created SystemBudget
  */
 export const getOrCreateSystemBudgetForTransaction = async (
-    userEmail,
-    transactionDate,
-    financialPriority,
-    budgetGoals = [],
-    settings = {},
-    monthlyIncome = 0,
-    options = { allowUpdates: false, historicalAverage: 0 }
+  userEmail,
+  transactionDate,
+  financialPriority,
+  budgetGoals = [],
+  settings = {},
+  monthlyIncome = 0,
+  options = { allowUpdates: false, historicalAverage: 0 }
 ) => {
-    if (!userEmail || !transactionDate || !financialPriority) {
-        throw new Error('getOrCreateSystemBudgetForTransaction: userEmail, transactionDate, and financialPriority are required');
-    }
+  if (!userEmail || !transactionDate || !financialPriority) {
+    throw new Error('getOrCreateSystemBudgetForTransaction: userEmail, transactionDate, and financialPriority are required');
+  }
 
-    // Extract month/year from transaction date
-    const date = new Date(transactionDate);
-    const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
+  // Extract month/year from transaction date
+  const date = new Date(transactionDate);
+  const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
-    // Ensure system budgets exist for this month, passing through options
-    const budgets = await ensureSystemBudgetsExist(
-        userEmail,
-        monthStart,
-        monthEnd,
-        budgetGoals,
-        settings,
-        monthlyIncome,
-        options
-    );
+  // Ensure system budgets exist for this month, passing through options
+  const budgets = await ensureSystemBudgetsExist(
+    userEmail,
+    monthStart,
+    monthEnd,
+    budgetGoals,
+    settings,
+    monthlyIncome,
+    options
+  );
 
-    // Return the ID of the specific budget for this priority
-    return budgets[financialPriority]?.id || null;
+  // Return the ID of the specific budget for this priority
+  return budgets[financialPriority]?.id || null;
 };
 
 /**
@@ -105,123 +106,124 @@ export const getOrCreateSystemBudgetForTransaction = async (
  * @returns {Promise<Object>} Object with budgets by type: { needs: Budget, wants: Budget }
  */
 export const ensureSystemBudgetsExist = async (
-    userEmail,
-    startDateRaw,
-    endDateRaw,
-    budgetGoals = [],
-    settings = {},
-    monthlyIncome = 0,
-    options = {}
+  userEmail,
+  startDateRaw,
+  endDateRaw,
+  budgetGoals = [],
+  settings = {},
+  monthlyIncome = 0,
+  options = {}
 ) => {
-    const startDate = normalizeDate(startDateRaw);
-    const endDate = normalizeDate(endDateRaw);
+  const startDate = normalizeDate(startDateRaw);
+  const endDate = normalizeDate(endDateRaw);
 
-    if (!userEmail || !startDate || !endDate) return {};
+  if (!userEmail || !startDate || !endDate) return {};
 
-    // Destructure options with defaults to ensure properties aren't undefined if the object is partially provided
-    const { allowUpdates = false, historicalAverage = 0 } = options;
+  // Destructure options with defaults to ensure properties aren't undefined if the object is partially provided
+  const { allowUpdates = false, historicalAverage = 0 } = options;
 
-    // 1. Create a unique key for this specific user and month
-    const lockKey = `${userEmail}:${startDate}`;
+  // 1. Create a unique key for this specific user and month
+  const lockKey = `${userEmail}:${startDate}`;
 
-    // 2. If a request for this month is already in flight, return that promise
-    if (inFlightRequests.has(lockKey)) {
-        return inFlightRequests.get(lockKey);
-    }
+  // 2. If a request for this month is already in flight, return that promise
+  if (inFlightRequests.has(lockKey)) {
+    return inFlightRequests.get(lockKey);
+  }
 
-    // 3. Define the work as a self-executing async promise
-    const work = (async () => {
-        try {
-            const priorityTypes = ['needs', 'wants'];
-            const results = {};
-            const toCreate = [];
-            const toUpdate = [];
+  // 3. Define the work as a self-executing async promise
+  const work = (async () => {
+    try {
+      const priorityTypes = ['needs', 'wants'];
+      const results = {};
+      const toCreate = [];
+      const toUpdate = [];
 
-            // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
-            const existingBudgetsForMonth = await fetchWithRetry(() => base44.entities.SystemBudget.filter({
-                user_email: userEmail,
-                startDate: startDate
-            }));
+      // CRITICAL OPTIMIZATION: Fetch all existing budgets for the given month and user in a single query
+      const existingBudgetsForMonth = await fetchWithRetry(() => base44.entities.SystemBudget.filter({
+        user_email: userEmail,
+        startDate: startDate
+      }));
 
-            // Map for O(1) lookup
-            const budgetMap = new Map();
-            existingBudgetsForMonth.forEach(b => budgetMap.set(b.systemBudgetType, b));
+      // Map for O(1) lookup
+      const budgetMap = new Map();
+      existingBudgetsForMonth.forEach(b => budgetMap.set(b.systemBudgetType, b));
 
-            for (const type of priorityTypes) {
-                const existing = budgetMap.get(type);
-                const goal = budgetGoals.find(g => g.priority === type);
+      for (const type of priorityTypes) {
+        const existing = budgetMap.get(type);
+        const goal = budgetGoals.find(g => g.priority === type);
 
-                // resolveBudgetLimit handles both goalMode and fixedMode logic
-                const amount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+        // resolveBudgetLimit handles both goalMode and fixedMode logic
+        const rawAmount = resolveBudgetLimit(goal, monthlyIncome, settings, historicalAverage);
+        const amount = new Big(rawAmount || 0).round(2).toNumber();
 
-                if (existing) {
-                    // FORCE update if income/goals changed OR if initialization is needed
-                    const isUninitialized = existing.budgetAmount === 0 && amount > 0;
-                    const needsUpdate = (allowUpdates || isUninitialized) &&
-                        Math.abs(existing.budgetAmount - amount) > 0.01;
+        if (existing) {
+          // FORCE update if income/goals changed OR if initialization is needed
+          const isUninitialized = existing.budgetAmount === 0 && amount > 0;
+          const needsUpdate = (allowUpdates || isUninitialized) &&
+            new Big(existing.budgetAmount).minus(amount).abs().gt(0.01);
 
-                    if (needsUpdate) {
-                        toUpdate.push({
-                            id: existing.id,
-                            data: {
-                                budgetAmount: amount,
-                                target_percentage: goal?.target_percentage || 0,
-                                target_amount: goal?.target_amount || 0
-                            }
-                        });
-                    }
-                    results[type] = existing; // Return existing for now, will update memory if needed
-                } else {
-                    // Queue for Bulk Creation
-                    toCreate.push({
-                        name: FINANCIAL_PRIORITIES[type].label,
-                        budgetAmount: amount,
-                        startDate,
-                        endDate,
-                        color: FINANCIAL_PRIORITIES[type].color,
-                        user_email: userEmail,
-                        systemBudgetType: type,
-                        target_percentage: goal?.target_percentage || 0,
-                        target_amount: goal?.target_amount || 0
-                    });
-                }
-            }
-
-            // 4. Execute Writes (Parallel / Bulk)
-            const promises = [];
-
-            // A. Bulk Create (Atomic-ish)
-            if (toCreate.length > 0) {
-                promises.push(
-                    fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate)).then(created => {
-                        created.forEach(b => results[b.systemBudgetType] = b);
-                    })
-                );
-            }
-
-            // B. Updates (Parallel)
-            if (toUpdate.length > 0) {
-                // Batch update if API supports it, otherwise Promise.all
-                const updatePromises = toUpdate.map(({ id, data }) =>
-                    fetchWithRetry(() => base44.entities.SystemBudget.update(id, data)).then(updated => {
-                        results[updated.systemBudgetType] = updated;
-                    })
-                );
-                promises.push(Promise.all(updatePromises));
-            }
-
-            await Promise.all(promises);
-            return results;
-
-        } finally {
-            // 4. Always clean up the lock when the work is finished (success or error)
-            inFlightRequests.delete(lockKey);
+          if (needsUpdate) {
+            toUpdate.push({
+              id: existing.id,
+              data: {
+                budgetAmount: amount,
+                target_percentage: goal?.target_percentage || 0,
+                target_amount: goal?.target_amount || 0
+              }
+            });
+          }
+          results[type] = existing; // Return existing for now, will update memory if needed
+        } else {
+          // Queue for Bulk Creation
+          toCreate.push({
+            name: FINANCIAL_PRIORITIES[type].label,
+            budgetAmount: amount,
+            startDate,
+            endDate,
+            color: FINANCIAL_PRIORITIES[type].color,
+            user_email: userEmail,
+            systemBudgetType: type,
+            target_percentage: goal?.target_percentage || 0,
+            target_amount: goal?.target_amount || 0
+          });
         }
-    })();
+      }
 
-    // 5. Register the promise in the lock map so other callers can wait for it
-    inFlightRequests.set(lockKey, work);
-    return work;
+      // 4. Execute Writes (Parallel / Bulk)
+      const promises = [];
+
+      // A. Bulk Create (Atomic-ish)
+      if (toCreate.length > 0) {
+        promises.push(
+          fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate)).then(created => {
+            created.forEach(b => results[b.systemBudgetType] = b);
+          })
+        );
+      }
+
+      // B. Updates (Parallel)
+      if (toUpdate.length > 0) {
+        // Batch update if API supports it, otherwise Promise.all
+        const updatePromises = toUpdate.map(({ id, data }) =>
+          fetchWithRetry(() => base44.entities.SystemBudget.update(id, data)).then(updated => {
+            results[updated.systemBudgetType] = updated;
+          })
+        );
+        promises.push(Promise.all(updatePromises));
+      }
+
+      await Promise.all(promises);
+      return results;
+
+    } finally {
+      // 4. Always clean up the lock when the work is finished (success or error)
+      inFlightRequests.delete(lockKey);
+    }
+  })();
+
+  // 5. Register the promise in the lock map so other callers can wait for it
+  inFlightRequests.set(lockKey, work);
+  return work;
 };
 
 /**
@@ -230,83 +232,85 @@ export const ensureSystemBudgetsExist = async (
  * This guarantees NO duplicates and minimizes requests.
  */
 export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, allGoals = []) => {
-    if (!userEmail || !settings) return;
+  if (!userEmail || !settings) return;
 
-    const now = new Date();
-    const monthsToSync = 12;
-    const requiredBudgets = [];
+  const now = new Date();
+  const monthsToSync = 12;
+  const requiredBudgets = [];
 
-    for (let i = 0; i < monthsToSync; i++) {
-        const date = addMonths(now, i);
-        const start = format(startOfMonth(date), 'yyyy-MM-dd');
-        const end = format(endOfMonth(date), 'yyyy-MM-dd');
-        ['needs', 'wants'].forEach(type => requiredBudgets.push({ start, end, type }));
+  for (let i = 0; i < monthsToSync; i++) {
+    const date = addMonths(now, i);
+    const start = format(startOfMonth(date), 'yyyy-MM-dd');
+    const end = format(endOfMonth(date), 'yyyy-MM-dd');
+    ['needs', 'wants'].forEach(type => requiredBudgets.push({ start, end, type }));
+  }
+
+  const startOfRange = requiredBudgets[0].start;
+  const existingBudgets = await fetchWithRetry(() => base44.entities.SystemBudget.filter({
+    user_email: userEmail,
+    startDate: { $gte: startOfRange }
+  }));
+
+  const budgetMap = new Map();
+  existingBudgets.forEach(b => budgetMap.set(`${b.startDate}|${b.systemBudgetType}`, b));
+
+  const toCreate = [];
+  const toUpdate = [];
+
+  requiredBudgets.forEach(req => {
+    const existing = budgetMap.get(`${req.start}|${req.type}`);
+    const goal = allGoals.find(g => g.priority === req.type);
+
+    // Consistent Logic: Use Absolute mode if goalMode is false
+    const isPercentageMode = settings?.goalMode !== false;
+    let amount = 0;
+
+    if (!isPercentageMode && goal?.target_amount > 0) {
+      amount = goal.target_amount;
+    } else {
+      amount = resolveBudgetLimit(goal, 0, settings, 0);
     }
 
-    const startOfRange = requiredBudgets[0].start;
-    const existingBudgets = await fetchWithRetry(() => base44.entities.SystemBudget.filter({
+    amount = new Big(amount || 0).round(2).toNumber();
+
+    if (existing) {
+      if (new Big(existing.budgetAmount).minus(amount).abs().gt(0.01)) {
+        toUpdate.push({
+          id: existing.id,
+          data: {
+            budgetAmount: amount,
+            target_percentage: goal?.target_percentage || 0,
+            target_amount: goal?.target_amount || 0
+          }
+        });
+      }
+    } else {
+      toCreate.push({
+        name: FINANCIAL_PRIORITIES[req.type].label,
+        budgetAmount: amount,
+        startDate: req.start,
+        endDate: req.end,
+        color: FINANCIAL_PRIORITIES[req.type].color,
         user_email: userEmail,
-        startDate: { $gte: startOfRange }
-    }));
-
-    const budgetMap = new Map();
-    existingBudgets.forEach(b => budgetMap.set(`${b.startDate}|${b.systemBudgetType}`, b));
-
-    const toCreate = [];
-    const toUpdate = [];
-
-    requiredBudgets.forEach(req => {
-        const existing = budgetMap.get(`${req.start}|${req.type}`);
-        const goal = allGoals.find(g => g.priority === req.type);
-
-        // Consistent Logic: Use Absolute mode if goalMode is false
-        const isPercentageMode = settings?.goalMode !== false;
-        let amount = 0;
-
-        if (!isPercentageMode && goal?.target_amount > 0) {
-            amount = goal.target_amount;
-        } else {
-            amount = resolveBudgetLimit(goal, 0, settings, 0);
-        }
-
-        if (existing) {
-            if (Math.abs(existing.budgetAmount - amount) > 0.01) {
-                toUpdate.push({
-                    id: existing.id,
-                    data: {
-                        budgetAmount: amount,
-                        target_percentage: goal?.target_percentage || 0,
-                        target_amount: goal?.target_amount || 0
-                    }
-                });
-            }
-        } else {
-            toCreate.push({
-                name: FINANCIAL_PRIORITIES[req.type].label,
-                budgetAmount: amount,
-                startDate: req.start,
-                endDate: req.end,
-                color: FINANCIAL_PRIORITIES[req.type].color,
-                user_email: userEmail,
-                systemBudgetType: req.type,
-                target_percentage: goal?.target_percentage || 0,
-                target_amount: goal?.target_amount || 0
-            });
-        }
-    });
-
-    if (toCreate.length > 0) await fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate));
-
-    if (toUpdate.length > 0) {
-        // Simple chunking for updates to avoid overwhelming connection pool if needed
-        const chunkSize = 20;
-        for (let i = 0; i < toUpdate.length; i += chunkSize) {
-            await Promise.all(toUpdate.slice(i, i + chunkSize).map(u =>
-                fetchWithRetry(() => base44.entities.SystemBudget.update(u.id, u.data))
-            ));
-            await new Promise(res => setTimeout(res, 250));
-        }
+        systemBudgetType: req.type,
+        target_percentage: goal?.target_percentage || 0,
+        target_amount: goal?.target_amount || 0
+      });
     }
+  });
+
+  if (toCreate.length > 0) await fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate));
+
+  if (toUpdate.length > 0) {
+    // Simple chunking for updates to avoid overwhelming connection pool if needed
+    const chunkSize = 20;
+    for (let i = 0; i < toUpdate.length; i += chunkSize) {
+      await Promise.all(toUpdate.slice(i, i + chunkSize).map(u =>
+        fetchWithRetry(() => base44.entities.SystemBudget.update(u.id, u.data))
+      ));
+      await new Promise(res => setTimeout(res, 250));
+    }
+  }
 };
 
 
@@ -318,66 +322,68 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, al
  * @param {Object} settings 
  */
 export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], settings = {}) => {
-    if (!userEmail) return;
+  if (!userEmail) return;
 
-    // 1. Fetch ALL transactions and ALL existing budgets for this user in parallel
-    const [transactions, existingBudgets] = await Promise.all([
-        fetchWithRetry(() => base44.entities.Transaction.filter({ created_by: userEmail })),
-        fetchWithRetry(() => base44.entities.SystemBudget.filter({ user_email: userEmail }))
-    ]);
+  // 1. Fetch ALL transactions and ALL existing budgets for this user in parallel
+  const [transactions, existingBudgets] = await Promise.all([
+    fetchWithRetry(() => base44.entities.Transaction.filter({ created_by: userEmail })),
+    fetchWithRetry(() => base44.entities.SystemBudget.filter({ user_email: userEmail }))
+  ]);
 
-    // 2. Identify unique months from transactions
-    const activeMonths = new Set();
-    transactions.forEach(t => {
-        const d = t.date || t.paidDate;
-        if (d) {
-            const dateObj = typeof d === 'string' ? parseISO(d) : d;
-            if (isValid(dateObj)) activeMonths.add(format(dateObj, 'yyyy-MM-01'));
-        }
-    });
-
-    // 3. Map existing budgets for O(1) lookup: "YYYY-MM-DD|type"
-    const budgetMap = new Set(existingBudgets.map(b => `${b.startDate}|${b.systemBudgetType}`));
-
-    // 4. Determine which budgets are missing
-    const toCreate = [];
-    const priorityTypes = ['needs', 'wants'];
-
-    activeMonths.forEach(monthDate => {
-        const date = parseISO(monthDate);
-        const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
-
-        priorityTypes.forEach(type => {
-            if (!budgetMap.has(`${monthStart}|${type}`)) {
-                const goal = budgetGoals.find(g => g.priority === type);
-
-                // Consistent Logic: Use Absolute mode if goalMode is false
-                const isPercentageMode = settings?.goalMode !== false;
-                let amount = 0;
-
-                if (!isPercentageMode && goal?.target_amount > 0) {
-                    amount = goal.target_amount;
-                } else {
-                    amount = resolveBudgetLimit(goal, 0, settings, 0);
-                }
-
-                toCreate.push({
-                    name: FINANCIAL_PRIORITIES[type].label,
-                    budgetAmount: amount,
-                    startDate: monthStart,
-                    endDate: monthEnd,
-                    color: FINANCIAL_PRIORITIES[type].color,
-                    user_email: userEmail,
-                    systemBudgetType: type,
-                    target_percentage: goal?.target_percentage || 0,
-                    target_amount: goal?.target_amount || 0
-                });
-            }
-        });
-    });
-
-    // 5. Single Bulk Write
-    if (toCreate.length > 0) {
-        await fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate));
+  // 2. Identify unique months from transactions
+  const activeMonths = new Set();
+  transactions.forEach(t => {
+    const d = t.date || t.paidDate;
+    if (d) {
+      const dateObj = typeof d === 'string' ? parseISO(d) : d;
+      if (isValid(dateObj)) activeMonths.add(format(dateObj, 'yyyy-MM-01'));
     }
+  });
+
+  // 3. Map existing budgets for O(1) lookup: "YYYY-MM-DD|type"
+  const budgetMap = new Set(existingBudgets.map(b => `${b.startDate}|${b.systemBudgetType}`));
+
+  // 4. Determine which budgets are missing
+  const toCreate = [];
+  const priorityTypes = ['needs', 'wants'];
+
+  activeMonths.forEach(monthDate => {
+    const date = parseISO(monthDate);
+    const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
+
+    priorityTypes.forEach(type => {
+      if (!budgetMap.has(`${monthStart}|${type}`)) {
+        const goal = budgetGoals.find(g => g.priority === type);
+
+        // Consistent Logic: Use Absolute mode if goalMode is false
+        const isPercentageMode = settings?.goalMode !== false;
+        let amount = 0;
+
+        if (!isPercentageMode && goal?.target_amount > 0) {
+          amount = goal.target_amount;
+        } else {
+          amount = resolveBudgetLimit(goal, 0, settings, 0);
+        }
+
+        amount = new Big(amount || 0).round(2).toNumber();
+
+        toCreate.push({
+          name: FINANCIAL_PRIORITIES[type].label,
+          budgetAmount: amount,
+          startDate: monthStart,
+          endDate: monthEnd,
+          color: FINANCIAL_PRIORITIES[type].color,
+          user_email: userEmail,
+          systemBudgetType: type,
+          target_percentage: goal?.target_percentage || 0,
+          target_amount: goal?.target_amount || 0
+        });
+      }
+    });
+  });
+
+  // 5. Single Bulk Write
+  if (toCreate.length > 0) {
+    await fetchWithRetry(() => base44.entities.SystemBudget.bulkCreate(toCreate));
+  }
 };
