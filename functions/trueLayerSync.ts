@@ -535,6 +535,7 @@ Deno.serve(async (req) => {
         }
 
         const rawDescription = String(tx.description || tx.transaction_category || 'Bank Transaction');
+        const cleanDescription = cleanMerchantName(rawDescription);
 
         // Combine all available string data to maximize regex matching surface area
         const combinedRaw = `${rawDescription} ${tx.merchant_name || ''} ${tx.meta?.counter_party_preferred_name || ''}`;
@@ -574,7 +575,7 @@ Deno.serve(async (req) => {
           id: existingDbId, // <--- If this is set, we UPDATE. If null, we CREATE.
           title: finalCleanName, // Dynamic Display Name
           rawDescription: rawDescription, // Immutable Source
-          cleanDescription: searchString, // The "clean" string for matching logic
+          cleanDescription: cleanDescription, // The "clean" string for matching logic
           amount: Math.abs(tx.amount),
           originalAmount: Math.abs(tx.amount),
           originalCurrency: tx.currency,
