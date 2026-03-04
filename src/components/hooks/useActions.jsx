@@ -471,10 +471,15 @@ export const useCustomBudgetActions = (config = {}) => {
 // Hook for settings form state and submission
 // Define schema based on your settings structure
 const settingsSchema = z.object({
-  currency: z.string().min(1, "Currency is required"),
+  baseCurrency: z.string().min(1, "Currency is required"),
+  currencySymbol: z.string().optional(),
+  currencyPosition: z.enum(['before', 'after']).optional(),
+  thousandSeparator: z.string().optional(),
+  decimalSeparator: z.string().optional(),
+  decimalPlaces: z.number().min(0).max(4).optional(),
+  hideTrailingZeros: z.boolean().optional(),
   goalMode: z.boolean().default(true),
   monthlyIncome: z.number().nonnegative().optional(),
-  // Add other specific settings fields here
 }).passthrough(); // passthrough allows fields not explicitly defined
 
 export const useSettingsForm = (initialSettings, updateSettings) => {
@@ -492,6 +497,12 @@ export const useSettingsForm = (initialSettings, updateSettings) => {
     resolver: zodResolver(settingsSchema),
     defaultValues: initialSettings,
   });
+
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.warn("Settings Form Validation Errors:", errors);
+    }
+  }, [errors]);
 
   useEffect(() => {
     if (initialSettings && !isDirty) {
