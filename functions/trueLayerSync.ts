@@ -35,26 +35,70 @@ const FALLBACK_REGEX = [
   { pattern: /(HOSPITAL|DOCTOR|CLINIC|DENTIST|PHARMACY|CVS|WALGREENS|PERRUQUERS)/i, category: 'Health', priority: 'needs' }
 ];
 
-// --- HELPER: NOISE CLEANER (Safer Version) ---
-const cleanMerchantName = (name) => {
-  if (!name) return "";
-  let clean = name.toUpperCase();
+// =============================================================================
+// PAYMENT PROCESSOR MAP
+// If found on the LEFT side of *, take what's on the RIGHT.
+// Also used for whole-string intermediary substitutions (e.g. RIVERTY → BVG).
+// Add new entries here as you discover them.
+// =============================================================================
+const KNOWN_PROCESSORS = new Set([
+  'PAYPAL', 'PP', 'SQ', 'SQUARE', 'STRIPE', 'AMEX',
+  'SHOPIFY', 'KLARNA', 'AFTERPAY', 'CLEARPAY', 'AFFIRM',
+  'SEZZLE', 'VFI', 'TST', 'SP',
+]);
 
-  // 1. Metadata Removal (Only at start/end to protect the brand name)
-  const metadataPatterns = [
-    /^(PAGO (CON|DE) TARJETA|COMPRA EN|CARD (PURCHASE|PAYMENT)|POS PURCHASE|DEBIT|PAIEMENT PAR CARTE)/g,
-    /(LIQUIDACION|ACH DEBIT)$/g
-  ];
-  metadataPatterns.forEach(p => clean = clean.replace(p, ""));
+const INTERMEDIARY_MAP = {
+  'RIVERTY': 'BVG',
+  'BEENETWORK': 'BVG',
+  'BEE NETWORK': 'BVG',
+};
 
-  // 2. Suffixes (Only at the very end with a preceding space)
-  const legalSuffixes = /\s\b(S\.?L\.?|S\.?A\.?|L\.?L\.?C\.?|INC|LTD|GMBH|CORP)\b$/g;
-  clean = clean.replace(legalSuffixes, "");
+const SEPA_DD = /^N\s+\d{13,}\s+(.+)/i;
+const LOCATION_SFXS = /\s+[A-Z]{3,}\s+[A-Z]{2}\s*$/;
+const LEGAL_SFXS = /[\s,]*\b(S\.?\s?L\.?\s?U?\.?|S\.?\s?A\.?|L\.?\s?L\.?\s?C\.?|INC\.?|LTD\.?|GMBH|CORP\.?|S\.?\s?C\.?|B\.?\s?V\.?)\s*$/i;
+const TX_PREFIXES = /^(PAGO\s+(CON|DE)\s+TARJETA|COMPRA\s+EN|CARD\s+(PURCHASE|PAYMENT)|POS\s+PURCHASE|DEBIT\s+CARD|PURCHASE\s+AT|PAYMENT\s+TO|TRANSFERENCIA\s+A|BIZUM\s+(DE|PARA|A))\s+/i;
+const TRAILING_PUNCT = /[,.\s]+$/;
+const REF_CODE_TRAIL = /\s+[A-Z0-9]*[0-9][A-Z0-9]*$/;
 
-  // 3. Sanitize separators but KEEP alphanumeric strings (like Amazon IDs)
-  clean = clean.replace(/[*#._-]/g, " ");
+const cleanMerchantName = (raw) => {
+  if (!raw) return '';
 
-  return clean.trim().replace(/\s+/g, " ");
+  let s = raw.trim();
+
+  // 0. Whole-string intermediary substitution (highest priority)
+  const upper = s.toUpperCase().trim();
+  if (INTERMEDIARY_MAP[upper]) return INTERMEDIARY_MAP[upper];
+
+  // 1. Asterisk: PROCESSOR*MERCHANT vs MERCHANT*REFCODE
+  if (s.includes('*')) {
+    const [left, ...rest] = s.split('*');
+    const right = rest.join('*').trim();
+    if (KNOWN_PROCESSORS.has(left.trim().toUpperCase())) {
+      s = right;
+    } else {
+      s = left.trim();
+    }
+  }
+
+  // 2. SEPA Direct Debit: "N YYYYDDD<ref> <MERCHANT>"
+  const sepaMatch = SEPA_DD.exec(s);
+  if (sepaMatch) s = sepaMatch[1];
+
+  // 3. Strip generic transaction prefixes
+  s = s.replace(TX_PREFIXES, '');
+
+  // 4. Strip legal entity suffixes + trailing punctuation
+  s = s.trim().replace(LEGAL_SFXS, '').trim();
+  s = s.replace(TRAILING_PUNCT, '').trim();
+
+  // 5. Strip trailing POS location: <CITY> <CC>
+  s = s.replace(LOCATION_SFXS, '').trim();
+
+  // 6. Strip trailing ref codes (alphanumeric, must contain at least one digit)
+  const noRef = s.replace(REF_CODE_TRAIL, '').trim();
+  if (noRef) s = noRef;
+
+  return s.trim();
 };
 
 // --- HELPER: FUZZY MATH ENGINE ---
