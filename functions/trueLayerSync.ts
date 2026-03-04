@@ -167,27 +167,24 @@ const findCategorySmart = (targetName, categoryList) => {
   return match;
 };
 
-const categorizeTransaction = (searchString, userRules, userCategories, systemCategories) => {
+const categorizeTransaction = (rawDescription, userRules, userCategories, systemCategories) => {
+  // Normalize input once for speed - using RAW data ensures we don't lose signal
+  const normalizedRaw = rawDescription.toUpperCase();
+
   // 1. User Rules (Highest Priority)
   for (const rule of userRules) {
     let matched = false;
-    let fuzzyScore = 0;
 
     if (rule.regexPattern) {
-      try { if (new RegExp(rule.regexPattern, 'i').test(searchString)) matched = true; } catch (e) { }
+      try { if (new RegExp(rule.regexPattern, 'i').test(normalizedRaw)) matched = true; } catch (e) { }
     } else if (rule.keyword) {
       // Split comma-separated variations into an array and check if any match
       const variations = rule.keyword.split(',').map(k => k.trim().toUpperCase());
 
       for (const k of variations) {
-        // Direct match first (Fast)
-        if (searchString.includes(k)) {
-          matched = true;
-          break;
-        }
-        // Fuzzy match second (The "amzn" -> "amazon" logic)
-        fuzzyScore = calculateSimilarity(searchString, k);
-        if (fuzzyScore > 0.8) { // High confidence threshold
+        // STRICT SUBSTRING MATCHING (Reliable)
+        // We match against the RAW description to ensure we catch the signal
+        if (normalizedRaw.includes(k)) {
           matched = true;
           break;
         }
@@ -200,7 +197,7 @@ const categorizeTransaction = (searchString, userRules, userCategories, systemCa
         categoryName: cat.name,
         priority: rule.financial_priority || cat.priority || 'wants',
         needsReview: false,
-        renamedTitle: rule.renamedTitle || null // Pass the clean name back!
+        renamedTitle: rule.renamedTitle || null // Apply the user's specific rename
       };
     }
   }
@@ -226,17 +223,17 @@ const categorizeTransaction = (searchString, userRules, userCategories, systemCa
   // 2. Dictionary Pass (Tokenized + Fuzzy)
   for (const entry of DICTIONARY) {
     // A. Direct Substring Pass (Catches exact "AMAZON" inside "AMAZON V52DA5J05")
-    if (searchString.includes(entry.key)) {
+    if (normalizedRaw.includes(entry.key)) {
       const resolved = resolveCategory(entry.category, entry.priority);
       return { ...resolved, renamedTitle: entry.clean, needsReview: false };
     }
 
     // B. Tokenized Fuzzy Pass (Catches typos like "AMZN" inside "AMZN V52DA5J05")
-    const tokens = searchString.split(/\s+/);
+    const tokens = normalizedRaw.split(/\s+/);
     const tokenScores = tokens.map(token => calculateSimilarity(token, entry.key));
 
     // We check the whole string AND the individual tokens to find the highest score
-    const bestScore = Math.max(calculateSimilarity(searchString, entry.key), ...tokenScores);
+    const bestScore = Math.max(calculateSimilarity(normalizedRaw, entry.key), ...tokenScores);
 
     if (bestScore > 0.75) {
       const resolved = resolveCategory(entry.category, entry.priority);
@@ -246,7 +243,7 @@ const categorizeTransaction = (searchString, userRules, userCategories, systemCa
 
   // 3. Regex Fallback
   for (const { pattern, category, priority } of FALLBACK_REGEX) {
-    if (pattern.test(searchString)) {
+    if (pattern.test(normalizedRaw)) {
       return resolveCategory(category, priority);
     }
   }
@@ -565,17 +562,18 @@ Deno.serve(async (req) => {
         // Only run categorization engine for expenses
         if (isExpense && !catResult.categoryId) {
           // Merged categories used here
-          catResult = categorizeTransaction(searchString, rules, customCategories, systemCategories);
+          // Pass the combined RAW string to allow rules to match against description OR merchant name
+          catResult = categorizeTransaction(combinedRaw, rules, customCategories, systemCategories);
         }
 
-        // Determine the clean name (AI/Rule result OR raw fallback)
-        const finalCleanName = catResult.renamedTitle || searchString;
+        // Determine the clean name (Rule result OR raw fallback)
+        const finalCleanName = catResult.renamedTitle || cleanDescription;
 
         const transformed = {
           id: existingDbId, // <--- If this is set, we UPDATE. If null, we CREATE.
           title: finalCleanName, // Dynamic Display Name
           rawDescription: rawDescription, // Immutable Source
-          cleanDescription: cleanDescription, // The "clean" string for matching logic
+          cleanDescription: cleanDescription, // Kept for legacy compatibility
           amount: Math.abs(tx.amount),
           originalAmount: Math.abs(tx.amount),
           originalCurrency: tx.currency,
