@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@/components/ui/use-toast";
@@ -466,30 +469,40 @@ export const useCustomBudgetActions = (config = {}) => {
 };
 
 // Hook for settings form state and submission
-export const useSettingsForm = (settings, updateSettings) => {
-  const [formData, setFormData] = useState(settings);
-  const [isSaving, setIsSaving] = useState(false);
+// Define schema based on your settings structure
+const settingsSchema = z.object({
+  currency: z.string().min(1, "Currency is required"),
+  goalMode: z.boolean().default(true),
+  monthlyIncome: z.number().nonnegative().optional(),
+  // Add other specific settings fields here
+}).passthrough(); // passthrough allows fields not explicitly defined
+
+export const useSettingsForm = (initialSettings, updateSettings) => {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { isSubmitting, isDirty, errors },
+    setValue,
+    watch
+  } = useForm({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: initialSettings,
+  });
+
   useEffect(() => {
-    setFormData(settings);
-  }, [settings]);
+    if (initialSettings && !isDirty) {
+      reset(initialSettings);
+    }
+  }, [initialSettings, reset, isDirty]);
 
-  const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const resetForm = (newValues) => {
-    setFormData(newValues);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
+  const onSubmit = async (data) => {
     setSaveSuccess(false);
-
     try {
-      await updateSettings(formData);
+      await updateSettings(data);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       showToast({
@@ -503,17 +516,18 @@ export const useSettingsForm = (settings, updateSettings) => {
         description: error?.message || "Failed to save settings. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
   return {
-    formData,
-    handleFormChange,
-    resetForm,
-    handleSubmit,
-    isSaving,
+    register,
+    control,
+    setValue,
+    watch,
+    handleSubmit: handleSubmit(onSubmit),
+    isSaving: isSubmitting,
     saveSuccess,
+    isDirty,
+    errors,
   };
 };
