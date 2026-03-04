@@ -8,12 +8,14 @@
  *   3. Edit, select/deselect, and bulk-save them as CategoryRule records
  */
 import { useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogPortal } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, BrainCircuit, ListChecks, Save, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsMobile } from "@/hooks/use-mobile";
 import RuleCandidateRow from "./RuleCandidateRow";
 
 export default function RuleGeneratorDialog({
@@ -31,6 +33,8 @@ export default function RuleGeneratorDialog({
     onSave,
     isSaving,
 }) {
+    const isMobile = useIsMobile();
+
     // Auto-analyze when dialog opens
     useEffect(() => {
         if (isOpen && !isAnalyzing && candidates.length === 0) {
@@ -41,11 +45,14 @@ export default function RuleGeneratorDialog({
     const allSelected = candidates.length > 0 && selectedCount === candidates.length;
     const someSelected = selectedCount > 0 && selectedCount < candidates.length;
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-0">
+    const Content = (
+        <>
+            <div className="flex flex-col h-full max-h-[inherit] overflow-hidden">
                 {/* Header */}
-                <DialogHeader className="px-6 pt-6 pb-4 border-b">
+                <DialogHeader className={isMobile ? "px-4 pt-4 pb-2 text-left" : "px-6 pt-6 pb-4 border-b"}>
+                    {isMobile && (
+                        <div className="mx-auto w-12 h-1.5 rounded-full bg-muted mb-4 md:hidden" />
+                    )}
                     <DialogTitle className="flex items-center gap-2">
                         <BrainCircuit className="w-5 h-5 text-amber-500" />
                         Rule Generator
@@ -56,7 +63,7 @@ export default function RuleGeneratorDialog({
                 </DialogHeader>
 
                 {/* Content */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
                     {isAnalyzing ? (
                         <div className="flex flex-col items-center justify-center h-64 gap-4">
                             <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
@@ -89,7 +96,7 @@ export default function RuleGeneratorDialog({
                         <div className="flex flex-col h-full">
                             {/* Toolbar */}
                             <div className="px-6 py-3 border-b bg-muted/30 flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 shrink-0">
                                     <Checkbox
                                         checked={allSelected}
                                         ref={(el) => {
@@ -119,7 +126,7 @@ export default function RuleGeneratorDialog({
                             </div>
 
                             {/* Candidate List */}
-                            <ScrollArea className="flex-1 px-6 py-4" style={{ maxHeight: "calc(85vh - 280px)" }}>
+                            <ScrollArea className="flex-1 px-6 py-4">
                                 <div className="space-y-3">
                                     {candidates.map((candidate) => (
                                         <RuleCandidateRow
@@ -140,14 +147,14 @@ export default function RuleGeneratorDialog({
                 {/* Footer */}
                 {candidates.length > 0 && (
                     <DialogFooter className="px-6 py-4 border-t bg-muted/20">
-                        <div className="flex items-center justify-between w-full">
-                            <p className="text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between w-full gap-4">
+                            <p className="hidden sm:block text-xs text-muted-foreground">
                                 Selected rules will be saved and applied to future imports automatically.
                             </p>
                             <CustomButton
                                 onClick={onSave}
                                 disabled={selectedCount === 0 || isSaving}
-                                className="gap-2"
+                                className="gap-2 w-full sm:w-auto"
                             >
                                 {isSaving ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -159,6 +166,24 @@ export default function RuleGeneratorDialog({
                         </div>
                     </DialogFooter>
                 )}
+            </div>
+        </>
+    );
+
+    if (isMobile) {
+        return (
+            <Drawer open={isOpen} onOpenChange={onOpenChange}>
+                <DrawerContent className="max-h-[92vh]">
+                    {Content}
+                </DrawerContent>
+            </Drawer>
+        );
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden block">
+                {Content}
             </DialogContent>
         </Dialog>
     );
