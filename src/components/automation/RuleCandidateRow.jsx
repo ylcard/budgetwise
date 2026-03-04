@@ -20,15 +20,18 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
     onUpdate,
     onRemove,
 }) {
-    const { id, rawDescription, keyword, renamedTitle, categoryId, financial_priority, frequency, selected, hasRename, hasCategory } = candidate;
+    const { id, rawDescription, keyword, renamedTitle, categoryId, financial_priority, frequency, selected } = candidate;
+
+    // Determine visual cues dynamically based on current values
+    const hasRename = renamedTitle && renamedTitle.trim().length > 0;
+    const hasCategory = !!categoryId;
 
     return (
         <div
-            className={`group relative rounded-xl border p-4 transition-all ${
-                selected
+            className={`group relative rounded-xl border p-4 transition-all ${selected
                     ? "border-blue-200 bg-blue-50/30 dark:border-blue-800 dark:bg-blue-950/20"
                     : "border-border bg-card opacity-60"
-            }`}
+                }`}
         >
             {/* Header: Checkbox + Raw Description + Frequency */}
             <div className="flex items-start gap-3">
@@ -110,22 +113,20 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
                                     <button
                                         type="button"
                                         onClick={() => onUpdate(id, "financial_priority", "needs")}
-                                        className={`flex-1 px-2 py-1 rounded-md text-[10px] font-medium flex items-center justify-center gap-1 transition-all ${
-                                            financial_priority === "needs"
+                                        className={`flex-1 px-2 py-1 rounded-md text-[10px] font-medium flex items-center justify-center gap-1 transition-all ${financial_priority === "needs"
                                                 ? "bg-background text-emerald-700 shadow-sm dark:text-emerald-400"
                                                 : "text-muted-foreground hover:text-foreground"
-                                        }`}
+                                            }`}
                                     >
                                         <ShieldCheck className="w-3 h-3" /> Essentials
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => onUpdate(id, "financial_priority", "wants")}
-                                        className={`flex-1 px-2 py-1 rounded-md text-[10px] font-medium flex items-center justify-center gap-1 transition-all ${
-                                            financial_priority === "wants"
+                                        className={`flex-1 px-2 py-1 rounded-md text-[10px] font-medium flex items-center justify-center gap-1 transition-all ${financial_priority === "wants"
                                                 ? "bg-background text-amber-600 shadow-sm dark:text-amber-400"
                                                 : "text-muted-foreground hover:text-foreground"
-                                        }`}
+                                            }`}
                                     >
                                         <Sparkles className="w-3 h-3" /> Lifestyle
                                     </button>
