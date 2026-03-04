@@ -3,6 +3,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import { CustomButton } from "@/components/ui/CustomButton";
+import { Badge } from "@/components/ui/badge";
 import { BrainCircuit, Trash2, Loader2, Plus, X, Sparkles, ShieldCheck, Code2, Type, ChevronLeft, ChevronRight, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
