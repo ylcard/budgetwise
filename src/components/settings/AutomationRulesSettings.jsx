@@ -116,13 +116,13 @@ export default function AutomationRulesSettings() {
       result = result.filter(r => filterCategory.includes(r.categoryId));
     }
     if (filterPriority !== 'all') {
-      result = result.filter(r => r.financial_priority === filterPriority);
+      result = result.filter(r => r?.financial_priority === filterPriority);
     }
 
     // 2. Sorting
     result.sort((a, b) => {
-      let aValue = a[sortConfig.key];
-      let bValue = b[sortConfig.key];
+      let aValue = a?.[sortConfig.key];
+      let bValue = b?.[sortConfig.key];
 
       // Custom Sort Getters
       if (sortConfig.key === 'keywords') {
