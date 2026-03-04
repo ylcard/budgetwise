@@ -283,8 +283,8 @@ export default function TransactionList({
               <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('paidDate')}>
                 <div className="flex items-center justify-center">Paid Date <SortIcon columnKey="paidDate" /></div>
               </th>
-              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('category')}>
-                <div className="flex items-center justify-center">Category <SortIcon columnKey="category" /></div>
+              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-left" onClick={() => handleSort('category')}>
+                <div className="flex items-center justify-start">Category <SortIcon columnKey="category" /></div>
               </th>
               <th className="px-4 py-3 text-right cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('amount')}>
                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
@@ -330,9 +330,9 @@ export default function TransactionList({
                   </td>
                   <td className="px-4 py-2">
                     {isIncome ? (
-                      <div className="flex justify-center"><span className="text-muted-foreground/30">-</span></div>
+                      <div className="flex justify-start"><span className="text-muted-foreground/30">-</span></div>
                     ) : category ? (
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-start gap-2">
                         <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${category.color}20` }}>
                           <Icon className="w-3 h-3" style={{ color: category.color }} />
                         </div>
