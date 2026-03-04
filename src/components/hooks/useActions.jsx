@@ -529,5 +529,6 @@ export const useSettingsForm = (initialSettings, updateSettings) => {
     saveSuccess,
     isDirty,
     errors,
+    reset,
   };
 };
