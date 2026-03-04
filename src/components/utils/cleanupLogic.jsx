@@ -1,3 +1,5 @@
+// Possibly deprecated
+
 /**
  * Applies renaming rules stored in CategoryRule objects.
  * It looks for rules where 'renamedTitle' is present.
