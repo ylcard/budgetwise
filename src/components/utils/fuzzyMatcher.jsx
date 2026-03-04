@@ -45,7 +45,7 @@ const scoreSubsequence = (sub, str) => {
  * Returns a similarity score between 0 and 1
  */
 export const calculateSimilarity = (str1, str2) => {
-    +  const s1 = str1.toLowerCase();
+    const s1 = str1.toLowerCase();
     const s2 = str2.toLowerCase();
 
     if (s1 === s2) return 1;
