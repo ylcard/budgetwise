@@ -30,22 +30,20 @@ function getStableSignature(rawDescription) {
 
   return rawDescription
     .toUpperCase()
-    // Replace special chars with spaces
-    .replace(/[^A-Z0-9]/g, " ")
-    .split(/\s+/)
+    // Split by whitespace or asterisks, but preserve internal dots, slashes, and dashes
+    .split(/[\s*]+/)
     .filter(token => {
       if (!token) return false;
-      // Filter 1: Remove Stop Words
-      if (STOP_WORDS.has(token)) return false;
-      // Filter 2: Remove Pure Numbers (usually IDs, Dates, Amounts)
-      if (/^\d+$/.test(token)) return false;
-      // Filter 3: Remove Mixed Alphanumerics > 6 chars (usually Transaction IDs)
-      // e.g. "2026A", "XJ992" are okayish, but "A1B2C3D4E5" is noise.
-      if (token.length > 5 && /\d/.test(token) && /[A-Z]/.test(token)) return false;
-      // Filter 4: Remove very short junk (1 char tokens that aren't A-Z)
-      if (token.length < 2) return false;
 
-      return true;
+      // Clean only leading/trailing punctuation (e.g. "III," -> "III")
+      const cleanToken = token.replace(/^[.,!?;:]|[.,!?;:]$/g, "");
+
+      if (STOP_WORDS.has(cleanToken)) return false;
+      if (/^\d+$/.test(cleanToken)) return false;
+      if (cleanToken.length > 8 && /\d/.test(cleanToken) && /[A-Z]/.test(cleanToken)) return false;
+
+      return cleanToken.length > 1;
+
     })
     .join(" ");
 }
