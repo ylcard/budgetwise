@@ -77,6 +77,7 @@ export function PreferencesSection() {
     setValue,
     watch,
     handleSubmit,
+    onSubmit,
     isSaving,
     isDirty,
     reset
@@ -229,7 +230,7 @@ export function PreferencesSection() {
             Discard
           </CustomButton>
           <CustomButton
-            onClick={handleSubmit}
+            onClick={handleSubmit(onSubmit)}
             disabled={isSaving}
             variant="primary"
             size="sm"
@@ -254,7 +255,7 @@ export function PreferencesSection() {
           Discard
         </CustomButton>
         <CustomButton
-          onClick={handleSubmit}
+          onClick={handleSubmit(onSubmit)}
           disabled={isSaving}
           variant="primary"
           className="flex-1 shadow-lg"
