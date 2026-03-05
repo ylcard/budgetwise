@@ -12,9 +12,11 @@ import { fetchWithRetry } from "../utils/generalUtils";
  * @param {string} config.entityName - Name of the entity (e.g., 'Transaction', 'Category', 'CustomBudget')
  * @param {Array<string|Array>} config.queryKeysToInvalidate - Array of React Query keys to invalidate on success
  * @param {string} config.successMessage - Custom success message (defaults to "{entityName} created successfully")
+ * @param {boolean} config.showToasts - Whether to show automatic success/error toasts (defaults to true)
  * @param {Function} config.onBeforeCreate - Optional async function for preprocessing data before API call (receives data object)
  * @param {Function} config.onAfterSuccess - Optional callback function to run after successful creation (receives created entity data)
- * 
+ * @param {Function} config.onMutate - Optional callback for optimistic updates
+ * @param {Function} config.onError - Optional callback for error handling/rollback
  * @returns {Object} - { mutate, mutateAsync, isPending, isSuccess, isError, error }
  * 
  * @example
@@ -43,54 +45,66 @@ import { fetchWithRetry } from "../utils/generalUtils";
  * });
  */
 export const useCreateEntity = ({
-    entityName,
-    queryKeysToInvalidate = [],
-    successMessage,
-    onBeforeCreate,
-    onAfterSuccess,
+  entityName,
+  queryKeysToInvalidate = [],
+  successMessage,
+  showToasts = true,
+  onBeforeCreate,
+  onAfterSuccess,
+  onMutate,
+  onError: onErrorCallback,
 }) => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    const createMutation = useMutation({
-        mutationFn: async (data) => {
-            // Execute preprocessing logic if provided
-            let processedData = data;
-            if (onBeforeCreate) {
-                processedData = await onBeforeCreate(data);
-            }
+  const createMutation = useMutation({
+    onMutate: onMutate || undefined,
+    mutationFn: async (data) => {
+      // Execute preprocessing logic if provided
+      let processedData = data;
+      if (onBeforeCreate) {
+        processedData = await onBeforeCreate(data);
+      }
 
-            // Perform the entity creation via the base44 API
-            return await fetchWithRetry(() => base44.entities[entityName].create(processedData));
-        },
-        onSuccess: (createdData) => {
-            // Invalidate all specified query keys to trigger refetches
-            queryKeysToInvalidate.forEach(key => {
-                queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
-            });
+      // Perform the entity creation via the base44 API
+      return await fetchWithRetry(() => base44.entities[entityName].create(processedData));
+    },
+    onSuccess: (createdData) => {
+      // Invalidate all specified query keys to trigger refetches
+      queryKeysToInvalidate.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
+      });
 
-            // Execute post-success callback if provided
-            if (onAfterSuccess) {
-                onAfterSuccess(createdData);
-            }
+      // Execute post-success callback if provided
+      if (onAfterSuccess) {
+        onAfterSuccess(createdData);
+      }
 
-            // Show success toast notification
-            showToast({
-                title: "Success",
-                description: successMessage || `${entityName} created successfully`,
-            });
-        },
-        onError: (error) => {
-            // Log error for debugging
-            console.error(`Error creating ${entityName}:`, error);
+      // Show success toast notification
+      if (showToasts) {
+        showToast({
+          title: "Success",
+          description: successMessage || `${entityName} created successfully`,
+        });
+      }
+    },
+    onError: (error, variables, context) => {
+      if (onErrorCallback) {
+        onErrorCallback(error, variables, context);
+      }
 
-            // Show error toast notification
-            showToast({
-                title: "Error",
-                description: error?.message || `Failed to create ${entityName}. Please try again.`,
-                variant: "destructive",
-            });
-        },
-    });
+      // Log error for debugging
+      console.error(`Error creating ${entityName}:`, error);
 
-    return createMutation;
+      // Show error toast notification
+      if (showToasts) {
+        showToast({
+          title: "Error",
+          description: error?.message || `Failed to create ${entityName}. Please try again.`,
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  return createMutation;
 };
