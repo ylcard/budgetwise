@@ -16,6 +16,7 @@ import { fetchWithRetry } from "../utils/generalUtils";
  * @param {string} config.entityName - Name of the entity (e.g., 'Transaction', 'Category', 'CustomBudget')
  * @param {Array<string|Array>} config.queryKeysToInvalidate - Array of React Query keys to invalidate on success
  * @param {string} config.confirmTitle - Title for the confirmation dialog (defaults to "Delete {entityName}")
+ * @param {boolean} config.showToasts - Whether to show automatic success/error toasts (defaults to true)
  * @param {string} config.confirmMessage - Message for the confirmation dialog (defaults to generic message)
  * @param {Function} config.onBeforeDelete - Optional async function for pre-deletion cleanup (receives idOrEntity)
  *                                            CRITICAL: If this function throws an error, the entity will NOT be deleted
@@ -96,99 +97,103 @@ import { fetchWithRetry } from "../utils/generalUtils";
  * </AlertDialog>
  */
 export const useDeleteEntity = ({
-    entityName,
-    queryKeysToInvalidate = [],
-    confirmTitle,
-    confirmMessage,
-    onBeforeDelete,
-    onAfterSuccess,
-    // ADDED 05-Mar-2026: Support for optimistic UI update callbacks
-    onMutate,
-    onError: onErrorCallback,
+  entityName,
+  queryKeysToInvalidate = [],
+  confirmTitle,
+  confirmMessage,
+  onBeforeDelete,
+  showToasts = true,
+  onAfterSuccess,
+  onMutate,
+  onError: onErrorCallback,
 }) => {
-    const queryClient = useQueryClient();
-    const { confirmAction } = useConfirm();
+  const queryClient = useQueryClient();
+  const { confirmAction } = useConfirm();
 
-    const deleteMutation = useMutation({
-        mutationFn: async (idOrEntity) => {
-            // 1. Bulk Deletion Check (Array of IDs)
-            if (Array.isArray(idOrEntity)) {
-                if (onBeforeDelete) await onBeforeDelete(idOrEntity);
-                // Assuming the generic fetchWithRetry is applied inside base44 or imported here
-                return await fetchWithRetry(() => base44.entities[entityName].deleteMany({ id: { $in: idOrEntity } }));
-            }
+  const deleteMutation = useMutation({
+    mutationFn: async (idOrEntity) => {
+      // 1. Bulk Deletion Check (Array of IDs)
+      if (Array.isArray(idOrEntity)) {
+        if (onBeforeDelete) await onBeforeDelete(idOrEntity);
+        // Assuming the generic fetchWithRetry is applied inside base44 or imported here
+        return await fetchWithRetry(() => base44.entities[entityName].deleteMany({ id: { $in: idOrEntity } }));
+      }
 
-            // 2. Single Deletion Check
-            // Determine if we received an ID or a full entity object
-            const id = typeof idOrEntity === 'object' ? idOrEntity.id : idOrEntity;
+      // 2. Single Deletion Check
+      // Determine if we received an ID or a full entity object
+      const id = typeof idOrEntity === 'object' ? idOrEntity.id : idOrEntity;
 
-            // CRITICAL: Execute entity-specific pre-deletion logic
-            // If onBeforeDelete throws an error, the entity deletion is aborted
-            if (onBeforeDelete) {
-                await onBeforeDelete(idOrEntity);
-            }
+      // CRITICAL: Execute entity-specific pre-deletion logic
+      // If onBeforeDelete throws an error, the entity deletion is aborted
+      if (onBeforeDelete) {
+        await onBeforeDelete(idOrEntity);
+      }
 
-            // Perform the actual entity deletion via the base44 API
-            // This line is only reached if onBeforeDelete completes successfully
-            await fetchWithRetry(() => base44.entities[entityName].delete(id));
-        },
-        // ADDED 05-Mar-2026: Forward onMutate for optimistic UI updates
-        onMutate: onMutate || undefined,
-        onSuccess: (_, idOrEntity) => {
-            // Invalidate all specified query keys to trigger refetches
-            queryKeysToInvalidate.forEach(key => {
-                queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
-            });
+      // Perform the actual entity deletion via the base44 API
+      // This line is only reached if onBeforeDelete completes successfully
+      await fetchWithRetry(() => base44.entities[entityName].delete(id));
+    },
+    // ADDED 05-Mar-2026: Forward onMutate for optimistic UI updates
+    onMutate: onMutate || undefined,
+    onSuccess: (_, idOrEntity) => {
+      // Invalidate all specified query keys to trigger refetches
+      queryKeysToInvalidate.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
+      });
 
-            // Execute post-success callback if provided
-            if (onAfterSuccess) {
-                onAfterSuccess();
-            }
+      // Execute post-success callback if provided
+      if (onAfterSuccess) {
+        onAfterSuccess();
+      }
 
-            // Plural-aware toast notification
-            const count = Array.isArray(idOrEntity) ? idOrEntity.length : 1;
+      // Plural-aware toast notification
+      const count = Array.isArray(idOrEntity) ? idOrEntity.length : 1;
 
-            // Show success toast notification
-            showToast({
-                title: "Success",
-                description: count > 1 ? `${count} ${entityName}s deleted successfully` : `${entityName} deleted successfully`,
-            });
-        },
-        onError: (error, variables, context) => {
-            // ADDED 05-Mar-2026: Execute caller's onError for optimistic rollback
-            if (onErrorCallback) {
-                onErrorCallback(error, variables, context);
-            }
+      // Show success toast notification
+      if (showToasts) {
+        showToast({
+          title: "Success",
+          description: count > 1 ? `${count} ${entityName}s deleted successfully` : `${entityName} deleted successfully`,
+        });
+      }
+    },
+    onError: (error, variables, context) => {
+      // ADDED 05-Mar-2026: Execute caller's onError for optimistic rollback
+      if (onErrorCallback) {
+        onErrorCallback(error, variables, context);
+      }
 
-            // Log error for debugging
-            console.error(`Error deleting ${entityName}:`, error);
+      // Log error for debugging
+      console.error(`Error deleting ${entityName}:`, error);
 
-            // Show error toast notification
-            showToast({
-                title: "Error",
-                description: error?.message || `Failed to delete ${entityName}. Please try again.`,
-                variant: "destructive",
-            });
-        },
-    });
+      // Show error toast notification
+      if (showToasts) {
+        showToast({
+          title: "Error",
+          description: error?.message || `Failed to delete ${entityName}. Please try again.`,
+          variant: "destructive",
+        });
+      }
+    },
+  });
 
-    const handleDelete = (idOrEntity) => {
-        confirmAction(
-            confirmTitle || `Delete ${entityName}`,
-            confirmMessage || `Are you sure you want to delete this ${entityName.toLowerCase()}? This action cannot be undone.`,
-            () => deleteMutation.mutate(idOrEntity),
-            { destructive: true }
-        );
-    };
+  const handleDelete = (idOrEntity) => {
+    confirmAction(
+      confirmTitle || `Delete ${entityName}`,
+      confirmMessage || `Are you sure you want to delete this ${entityName.toLowerCase()}? This action cannot be undone.`,
+      () => deleteMutation.mutate(idOrEntity),
+      { destructive: true }
+    );
+  };
 
-    // Use this when the caller already shows their own confirmation dialog
-    const deleteDirect = (idOrEntity) => {
-        deleteMutation.mutate(idOrEntity);
-    };
+  // Use this when the caller already shows their own confirmation dialog
+  const deleteDirect = (idOrEntity) => {
+    deleteMutation.mutate(idOrEntity);
+  };
 
-    return {
-        handleDelete,
-        deleteDirect,
-        isDeleting: deleteMutation.isPending,
-    };
+  return {
+    handleDelete,
+    deleteDirect,
+    isDeleting: deleteMutation.isPending,
+  };
 };
