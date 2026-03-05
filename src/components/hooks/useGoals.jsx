@@ -10,7 +10,7 @@ export const useGoals = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: [QUERY_KEYS.GOALS, user?.email],
+    queryKey: [QUERY_KEYS.SAVINGS_GOALS, user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return await base44.entities.Goal.filter({ user_email: user.email });
@@ -27,7 +27,7 @@ export const useActiveGoals = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: [QUERY_KEYS.GOALS, user?.email, 'active'],
+    queryKey: [QUERY_KEYS.SAVINGS_GOALS, user?.email, 'active'],
     queryFn: async () => {
       if (!user?.email) return [];
       return await base44.entities.Goal.filter({
