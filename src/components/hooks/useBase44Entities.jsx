@@ -115,7 +115,7 @@ export const useHistoricalIncomeTransactions = (user) => {
 // Hook for fetching budget goals
 export const useGoals = (user) => {
     const { data: goals = [], isLoading } = useQuery({
-        queryKey: [QUERY_KEYS.GOALS],
+        queryKey: [QUERY_KEYS.BUDGET_GOALS],
         queryFn: async () => {
             if (!user) return [];
             return await fetchWithRetry(() => base44.entities.BudgetGoal.filter({ created_by: user.email }));
