@@ -102,6 +102,9 @@ export const useDeleteEntity = ({
     confirmMessage,
     onBeforeDelete,
     onAfterSuccess,
+    // ADDED 05-Mar-2026: Support for optimistic UI update callbacks
+    onMutate,
+    onError: onErrorCallback,
 }) => {
     const queryClient = useQueryClient();
     const { confirmAction } = useConfirm();
@@ -129,6 +132,8 @@ export const useDeleteEntity = ({
             // This line is only reached if onBeforeDelete completes successfully
             await fetchWithRetry(() => base44.entities[entityName].delete(id));
         },
+        // ADDED 05-Mar-2026: Forward onMutate for optimistic UI updates
+        onMutate: onMutate || undefined,
         onSuccess: (_, idOrEntity) => {
             // Invalidate all specified query keys to trigger refetches
             queryKeysToInvalidate.forEach(key => {
@@ -149,7 +154,12 @@ export const useDeleteEntity = ({
                 description: count > 1 ? `${count} ${entityName}s deleted successfully` : `${entityName} deleted successfully`,
             });
         },
-        onError: (error) => {
+        onError: (error, variables, context) => {
+            // ADDED 05-Mar-2026: Execute caller's onError for optimistic rollback
+            if (onErrorCallback) {
+                onErrorCallback(error, variables, context);
+            }
+
             // Log error for debugging
             console.error(`Error deleting ${entityName}:`, error);
 
