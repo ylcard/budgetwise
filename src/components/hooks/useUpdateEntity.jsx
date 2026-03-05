@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { showToast } from "@/components/ui/use-toast";
@@ -13,9 +12,11 @@ import { fetchWithRetry } from "../utils/generalUtils";
  * @param {string} config.entityName - Name of the entity (e.g., 'Transaction', 'Category', 'CustomBudget')
  * @param {Array<string|Array>} config.queryKeysToInvalidate - Array of React Query keys to invalidate on success
  * @param {string} config.successMessage - Custom success message (defaults to "{entityName} updated successfully")
+ * @param {boolean} config.showToasts - Whether to show automatic success/error toasts (defaults to true)
  * @param {Function} config.onBeforeUpdate - Optional async function for preprocessing before API call (receives { id, data, oldEntity })
  * @param {Function} config.onAfterSuccess - Optional callback function to run after successful update (receives updated entity data)
- * 
+ * @param {Function} config.onMutate - Optional callback for optimistic updates
+ * @param {Function} config.onError - Optional callback for error handling/rollback
  * @returns {Object} - { mutate, mutateAsync, isPending, isSuccess, isError, error }
  * 
  * @example
@@ -63,54 +64,66 @@ import { fetchWithRetry } from "../utils/generalUtils";
  * });
  */
 export const useUpdateEntity = ({
-    entityName,
-    queryKeysToInvalidate = [],
-    successMessage,
-    onBeforeUpdate,
-    onAfterSuccess,
+  entityName,
+  queryKeysToInvalidate = [],
+  successMessage,
+  showToasts = true,
+  onBeforeUpdate,
+  onAfterSuccess,
+  onMutate,
+  onError: onErrorCallback,
 }) => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    const updateMutation = useMutation({
-        mutationFn: async ({ id, data, oldEntity }) => {
-            // Execute preprocessing logic if provided
-            let processedData = data;
-            if (onBeforeUpdate) {
-                processedData = await onBeforeUpdate({ id, data, oldEntity });
-            }
+  const updateMutation = useMutation({
+    onMutate: onMutate || undefined,
+    mutationFn: async ({ id, data, oldEntity }) => {
+      // Execute preprocessing logic if provided
+      let processedData = data;
+      if (onBeforeUpdate) {
+        processedData = await onBeforeUpdate({ id, data, oldEntity });
+      }
 
-            // Perform the entity update via the base44 API
-            return await fetchWithRetry(() => base44.entities[entityName].update(id, processedData));
-        },
-        onSuccess: (updatedData) => {
-            // Invalidate all specified query keys to trigger refetches
-            queryKeysToInvalidate.forEach(key => {
-                queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
-            });
+      // Perform the entity update via the base44 API
+      return await fetchWithRetry(() => base44.entities[entityName].update(id, processedData));
+    },
+    onSuccess: (updatedData) => {
+      // Invalidate all specified query keys to trigger refetches
+      queryKeysToInvalidate.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] });
+      });
 
-            // Execute post-success callback if provided
-            if (onAfterSuccess) {
-                onAfterSuccess(updatedData);
-            }
+      // Execute post-success callback if provided
+      if (onAfterSuccess) {
+        onAfterSuccess(updatedData);
+      }
 
-            // Show success toast notification
-            showToast({
-                title: "Success",
-                description: successMessage || `${entityName} updated successfully`,
-            });
-        },
-        onError: (error) => {
-            // Log error for debugging
-            console.error(`Error updating ${entityName}:`, error);
+      // Show success toast notification
+      if (showToasts) {
+        showToast({
+          title: "Success",
+          description: successMessage || `${entityName} updated successfully`,
+        });
+      }
+    },
+    onError: (error, variables, context) => {
+      if (onErrorCallback) {
+        onErrorCallback(error, variables, context);
+      }
 
-            // Show error toast notification
-            showToast({
-                title: "Error",
-                description: error?.message || `Failed to update ${entityName}. Please try again.`,
-                variant: "destructive",
-            });
-        },
-    });
+      // Log error for debugging
+      console.error(`Error updating ${entityName}:`, error);
 
-    return updateMutation;
+      // Show error toast notification
+      if (showToasts) {
+        showToast({
+          title: "Error",
+          description: error?.message || `Failed to update ${entityName}. Please try again.`,
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  return updateMutation;
 };
