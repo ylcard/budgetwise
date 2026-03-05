@@ -469,7 +469,7 @@ export const useCustomBudgetActions = (config = {}) => {
 };
 
 // Hook for Savings Goal actions (Goal entity)
-export const useGoalActions = () => {
+export const useSavingsGoalActions = () => {
   const { user } = useSettings();
   const ui = useStateUI();
 
@@ -508,7 +508,6 @@ export const useGoalActions = () => {
     queryKeysToInvalidate: [QUERY_KEYS.GOALS],
     successMessage: "Mental deposit confirmed",
     onBeforeUpdate: async ({ id, data }) => {
-      // data here contains { amount, notes, source }
       const goal = await fetchWithRetry(() => base44.entities.Goal.get(id));
 
       const newDeposit = {
