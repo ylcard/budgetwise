@@ -42,7 +42,6 @@ import CookieSettings from "./components/cookies/CookieSettings";
 import { useCookieConsent } from "./components/cookies/useCookieConsent";
 import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
 import { flushSync } from "react-dom";
-// ADDED 03-Mar-2026: Initialize Typography.js Moraga theme — injects CSS into <head> as a side effect
 import "@/components/utils/typography";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useGamification } from "@/components/hooks/useGamification";
