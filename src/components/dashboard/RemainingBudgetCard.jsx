@@ -194,7 +194,7 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
   return (
     <div className="space-y-3 w-60">
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider">Target Goals</h4>
+        <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider">Budgets Distribution</h4>
         <div className="flex bg-muted p-0.5 rounded-md">
           <button onClick={() => setMode(true)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${mode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>%</button>
           <button onClick={() => setMode(false)} className={`px-2 py-0.5 text-[10px] font-medium rounded-sm transition-all ${!mode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>$</button>
