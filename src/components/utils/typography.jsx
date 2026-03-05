@@ -2,10 +2,12 @@
 // Moraga is a clean, modern sans-serif theme ideal for professional financial apps.
 import Typography from 'typography';
 import moragaTheme from 'typography-theme-moraga';
+import fairyGatesTheme from 'typography-theme-fairy-gates'
 
-moragaTheme.baseFontSize = '16px';
+// moragaTheme.baseFontSize = '16px';
 
-const typography = new Typography(moragaTheme);
+// const typography = new Typography(moragaTheme);
+const typography = new Typography(fairyGatesTheme);
 // Inject the generated CSS styles directly into the document <head>
 // This is the recommended approach for client-only React apps (no SSR).
 typography.injectStyles();
