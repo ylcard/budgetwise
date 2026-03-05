@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useAddGoalDeposit } from '../components/hooks/useGoals';
+import { useGoals } from '../components/hooks/useGoals';
 import { useGoalsFeasibility } from '../components/hooks/useFeasibilityAudit';
 import { useMonthlyIncome } from '../components/hooks/useDerivedData';
 import { usePeriod } from '../components/hooks/usePeriod';
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useSettings } from '../components/utils/SettingsContext';
-import { useGoalActions } from '../components/hooks/useActions';
+import { useGoalActions, useSavingsGoalActions } from '../components/hooks/useActions';
 
 // Icons
 import { Target, Plus, TrendingUp, CheckCircle2, Archive, X, Wallet } from 'lucide-react';
@@ -38,11 +38,8 @@ export default function GoalsPage() {
     const { transactions = [] } = useTransactions(monthStart, monthEnd);
 
     const { data: goals = [], isLoading } = useGoals();
-    const { handleGoalUpdate, isSaving: isGoalSaving } = useGoalActions(user, goals);
-    const createGoal = useCreateGoal();
-    const updateGoal = useUpdateGoal();
-    const deleteGoal = useDeleteGoal();
-    const addDeposit = useAddGoalDeposit();
+    const { handleGoalUpdate, isSaving: isBudgetSaving } = useGoalActions(user, goals);
+    const savingsActions = useSavingsGoalActions();
 
     const [activeView, setActiveView] = useState('goals'); // 'budgets' | 'goals'
     const [statusFilter, setStatusFilter] = useState('active');
@@ -130,42 +127,33 @@ export default function GoalsPage() {
     }, [goals]);
 
     const handleCreateGoal = async (goalData) => {
-        await createGoal.mutateAsync(goalData);
+        savingsActions.handleSubmit(goalData);
         setCreateDrawerOpen(false);
     };
 
     const handleEditGoal = async (goalData) => {
-        await updateGoal.mutateAsync({
-            id: selectedGoal.id,
-            data: goalData
-        });
+        savingsActions.handleSubmit(goalData, selectedGoal);
         setEditDrawerOpen(false);
         setSelectedGoal(null);
     };
 
     const handleTogglePause = async (goal) => {
         const newStatus = goal.status === 'paused' ? 'active' : 'paused';
-        await updateGoal.mutateAsync({
-            id: goal.id,
-            data: { status: newStatus }
-        });
-        toast.success(`Goal ${newStatus === 'paused' ? 'paused' : 'resumed'}`);
+        savingsActions.handleSubmit({ status: newStatus }, goal);
     };
 
     const handleCompleteGoal = async (goal) => {
-        await updateGoal.mutateAsync({
-            id: goal.id,
-            data: { status: 'completed' }
-        });
+        savingsActions.handleSubmit({ status: 'completed' }, goal);
         setDetailDrawerOpen(false);
-        toast.success('🎉 Goal completed! Congratulations!');
     };
 
     const handleSettlementConfirm = async (depositData) => {
-        await addDeposit.mutateAsync({
-            goalId: selectedGoal.id,
-            ...depositData
-        });
+        savingsActions.handleAddDeposit(
+            selectedGoal.id,
+            depositData.amount,
+            depositData.notes
+        );
+        setSettlementDrawerOpen(false);
     };
 
     const handleViewDetails = (goal) => {
@@ -289,7 +277,7 @@ export default function GoalsPage() {
                         >
                             <GoalSettings
                                 isLoading={isLoading}
-                                isSaving={isGoalSaving}
+                                isSaving={isBudgetSaving}
                                 goalMode={localGoalMode}
                                 setGoalMode={setLocalGoalMode}
                                 splits={splits}
