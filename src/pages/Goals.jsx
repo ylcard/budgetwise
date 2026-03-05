@@ -420,6 +420,7 @@ export default function GoalsPage() {
                 open={detailDrawerOpen}
                 onOpenChange={setDetailDrawerOpen}
                 goal={selectedGoal}
+                onDelete={(goal) => handleDelete(goal.id)}
                 feasibilityData={
                     selectedGoal
                         ? goalsWithFeasibility.find(gf => gf.goal.id === selectedGoal.id)?.feasibility
