@@ -468,6 +468,88 @@ export const useCustomBudgetActions = (config = {}) => {
   };
 };
 
+// Hook for Savings Goal actions (Goal entity)
+export const useGoalActions = () => {
+  const { user } = useSettings();
+  const ui = useStateUI();
+
+  // CREATE: Standardized creation with defaults
+  const createMutation = useCreateEntity({
+    entityName: 'Goal',
+    queryKeysToInvalidate: [QUERY_KEYS.GOALS],
+    onBeforeCreate: async (data) => ({
+      ...data,
+      user_email: user.email,
+      virtual_balance: 0,
+      ledger_history: [],
+      status: 'active'
+    }),
+    onAfterSuccess: ui.closeForm
+  });
+
+  // UPDATE: Standardized update
+  const updateMutation = useUpdateEntity({
+    entityName: 'Goal',
+    queryKeysToInvalidate: [QUERY_KEYS.GOALS],
+    onAfterSuccess: ui.closeForm
+  });
+
+  // DELETE: Standardized delete with confirmation
+  const { handleDelete: deleteGoal, isDeleting } = useDeleteEntity({
+    entityName: 'Goal',
+    queryKeysToInvalidate: [QUERY_KEYS.GOALS],
+    confirmTitle: "Delete Goal",
+    confirmMessage: "Are you sure you want to delete this goal? This will permanently remove its history.",
+  });
+
+  // SPECIAL: Add Mental Deposit using the generic update hook
+  const depositMutation = useUpdateEntity({
+    entityName: 'Goal',
+    queryKeysToInvalidate: [QUERY_KEYS.GOALS],
+    successMessage: "Mental deposit confirmed",
+    onBeforeUpdate: async ({ id, data }) => {
+      // data here contains { amount, notes, source }
+      const goal = await fetchWithRetry(() => base44.entities.Goal.get(id));
+
+      const newDeposit = {
+        timestamp: new Date().toISOString(),
+        amount: data.amount,
+        period: new Date().toISOString().slice(0, 7),
+        source: data.source || 'manual',
+        notes: data.notes || ''
+      };
+
+      const updatedHistory = [...(goal.ledger_history || []), newDeposit];
+      const updatedBalance = (goal.virtual_balance || 0) + data.amount;
+
+      return {
+        ledger_history: updatedHistory,
+        virtual_balance: updatedBalance,
+        status: updatedBalance >= goal.target_amount ? 'completed' : goal.status
+      };
+    }
+  });
+
+  const handleSubmit = (data, editingGoal) => {
+    const activeItem = editingGoal || ui.editingItem;
+    activeItem
+      ? updateMutation.mutate({ id: activeItem.id, data })
+      : createMutation.mutate(data);
+  };
+
+  const handleAddDeposit = (goalId, amount, notes = "") => {
+    depositMutation.mutate({ id: goalId, data: { amount, notes } });
+  };
+
+  return {
+    ...ui,
+    handleSubmit,
+    handleAddDeposit,
+    handleDelete: deleteGoal,
+    isSubmitting: createMutation.isPending || updateMutation.isPending || depositMutation.isPending || isDeleting,
+  };
+};
+
 // Hook for settings form state and submission
 // Define schema based on your settings structure
 const settingsSchema = z.object({
