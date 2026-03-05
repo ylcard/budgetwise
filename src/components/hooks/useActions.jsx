@@ -65,13 +65,13 @@ export const useTransactionActions = (options = {}) => {
     // ADDED 03-Feb-2026: Optimistic create - immediately add to cache
     onMutate: async (newTransaction) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
 
       // Snapshot previous value
-      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
 
       // Optimistically add new transaction with temporary ID
-      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => [
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false }, (old = []) => [
         { ...newTransaction, id: `temp-${Date.now()}`, _optimistic: true },
         ...old
       ]);
@@ -86,7 +86,7 @@ export const useTransactionActions = (options = {}) => {
     },
     onAfterSuccess: async (newDoc) => {
       // Swap temporary optimistic transaction with the real database record
-      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false }, (old = []) => {
         if (!old) return [newDoc];
         return old.map(t => (t._optimistic && t.id.startsWith('temp-')) ? newDoc : t);
       });
@@ -103,12 +103,12 @@ export const useTransactionActions = (options = {}) => {
     queryKeysToInvalidate: [], // Removed TRANSACTIONS to prevent background refetch
     // ADDED 03-Feb-2026: Optimistic update - immediately update cache
     onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
 
-      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
 
       // Optimistically update transaction
-      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false }, (old = []) =>
         old.map(t => t.id === id ? { ...t, ...data, _optimistic: true } : t)
       );
 
@@ -121,7 +121,7 @@ export const useTransactionActions = (options = {}) => {
     },
     onAfterSuccess: async (updatedDoc) => {
       // Replace with real data from server
-      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) => {
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false }, (old = []) => {
         if (!old) return [];
         return old.map(t => t.id === updatedDoc.id ? updatedDoc : t);
       });
@@ -139,12 +139,12 @@ export const useTransactionActions = (options = {}) => {
     confirmMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
     // ADDED 03-Feb-2026: Optimistic delete - immediately remove from cache
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
 
-      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
 
       // Optimistically remove transaction
-      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false }, (old = []) =>
         old.filter(t => t.id !== id)
       );
 
