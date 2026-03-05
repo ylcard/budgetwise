@@ -5,7 +5,7 @@
  * Updated: 2025-11-13 - Consolidated local date string formatting for consistency
  */
 
-import { format } from "date-fns";
+import { format, isToday, isYesterday, isSameDay, addDays as fnsAddDays, subDays as fnsSubDays } from "date-fns";
 
 /**
  * Create a timezone-safe local date from YYYY-MM-DD string
@@ -13,11 +13,12 @@ import { format } from "date-fns";
  * @returns {Date|null} Date object (set to local midnight) or null if invalid
  */
 export const parseDate = (dateString) => {
-    if (!dateString) return null;
-    if (dateString instanceof Date) return new Date(dateString);
-    if (typeof dateString !== 'string') return null;
-    const [year, month, day] = dateString.split('-').map(Number);
-    return new Date(year, month - 1, day);
+  if (!dateString) return null;
+  if (dateString instanceof Date) return new Date(dateString);
+  if (typeof dateString !== 'string') return null;
+  // Handle both "2024-01-01" and "2024-01-01T00:00:00.000Z"
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
 };
 
 /**
@@ -27,27 +28,27 @@ export const parseDate = (dateString) => {
  * @returns {string} The formatted date string
  */
 export const formatDate = (date, formatOrSettings = "MMM dd, yyyy") => {
-    if (!date) return "";
+  if (!date) return "";
 
-    // If an object (settings) was passed instead of a string, fallback to default format
-    const fnsFormat = typeof formatOrSettings === 'string'
-        ? formatOrSettings
-        : "MMM dd, yyyy";
+  // If an object (settings) was passed instead of a string, fallback to default format
+  const fnsFormat = typeof formatOrSettings === 'string'
+    ? formatOrSettings
+    : "MMM dd, yyyy";
 
-    let dateObj;
-    // Use .test() instead of .match() for better safety
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        dateObj = parseDate(date);
-    } else if (date) {
-        dateObj = new Date(date);
-    } else {
-        return "";
-    }
+  let dateObj;
+  // Use .test() instead of .match() for better safety
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    dateObj = parseDate(date); // Forces local midnight
+  } else if (date) {
+    dateObj = new Date(date);
+  } else {
+    return "";
+  }
 
-    // const fnsFormat = dateFormat || "MMM dd, yyyy";
-    if (!dateObj || isNaN(dateObj.getTime())) return "";
+  // const fnsFormat = dateFormat || "MMM dd, yyyy";
+  if (!dateObj || isNaN(dateObj.getTime())) return "";
 
-    return format(dateObj, fnsFormat);
+  return format(dateObj, fnsFormat);
 };
 
 
@@ -60,38 +61,38 @@ export const formatDate = (date, formatOrSettings = "MMM dd, yyyy") => {
  * @returns {string} Local date string in YYYY-MM-DD format, or empty string on failure.
  */
 export const formatDateString = (date) => {
-    if (!date) return '';
+  if (!date) return '';
 
-    // Normalize input to a Date object
-    let inputDate;
-    if (date instanceof Date) {
-        inputDate = date;
-    } else if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
-        inputDate = parseDate(date);
-    } else {
-        // Handle other string formats or timestamp input
-        inputDate = new Date(date);
-    }
+  // Normalize input to a Date object
+  let inputDate;
+  if (date instanceof Date) {
+    inputDate = date;
+  } else if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+    inputDate = parseDate(date);
+  } else {
+    // Handle other string formats or timestamp input
+    inputDate = new Date(date);
+  }
 
-    if (isNaN(inputDate)) {
-        // Return empty string for invalid dates
-        return '';
-    }
+  if (isNaN(inputDate)) {
+    // Return empty string for invalid dates
+    return '';
+  }
 
-    // CRITICAL STEP: Construct a NEW Date object using the input's LOCAL year, month, and day.
-    // This resets the time to 00:00:00 in the LOCAL timezone, nullifying any offset issues.
-    const d = new Date(
-        inputDate.getFullYear(),
-        inputDate.getMonth(),
-        inputDate.getDate()
-    );
+  // CRITICAL STEP: Construct a NEW Date object using the input's LOCAL year, month, and day.
+  // This resets the time to 00:00:00 in the LOCAL timezone, nullifying any offset issues.
+  const d = new Date(
+    inputDate.getFullYear(),
+    inputDate.getMonth(),
+    inputDate.getDate()
+  );
 
-    const year = d.getFullYear();
-    // Months are 0-indexed, so add 1
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+  const year = d.getFullYear();
+  // Months are 0-indexed, so add 1
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
 
-    return `${year}-${month}-${day}`;
+  return `${year}-${month}-${day}`;
 };
 
 
@@ -102,7 +103,7 @@ export const formatDateString = (date) => {
  * @returns {string} First day of month as YYYY-MM-DD
  */
 export const getFirstDayOfMonth = (month, year) => {
-    return formatDateString(new Date(year, month, 1));
+  return formatDateString(new Date(year, month, 1));
 };
 
 /**
@@ -112,7 +113,7 @@ export const getFirstDayOfMonth = (month, year) => {
  * @returns {string} Last day of month as YYYY-MM-DD
  */
 export const getLastDayOfMonth = (month, year) => {
-    return formatDateString(new Date(year, month + 1, 0));
+  return formatDateString(new Date(year, month + 1, 0));
 };
 
 /**
@@ -123,10 +124,10 @@ export const getLastDayOfMonth = (month, year) => {
  * @returns {{ monthStart: string, monthEnd: string }} Object with monthStart and monthEnd
  */
 export const getMonthBoundaries = (month, year) => {
-    return {
-        monthStart: getFirstDayOfMonth(month, year),
-        monthEnd: getLastDayOfMonth(month, year)
-    };
+  return {
+    monthStart: getFirstDayOfMonth(month, year),
+    monthEnd: getLastDayOfMonth(month, year)
+  };
 };
 
 /**
@@ -136,8 +137,8 @@ export const getMonthBoundaries = (month, year) => {
  * @returns {string} e.g. "January"
  */
 export const getMonthName = (monthIndex, locale = 'en-US') => {
-    const date = new Date(2000, monthIndex, 1); // Year doesn't matter
-    return date.toLocaleString(locale, { month: 'long' });
+  const date = new Date(2000, monthIndex, 1); // Year doesn't matter
+  return date.toLocaleString(locale, { month: 'long' });
 };
 
 /**
@@ -146,14 +147,14 @@ export const getMonthName = (monthIndex, locale = 'en-US') => {
  * @returns {Date|null} Date object at midnight or null if invalid.
  */
 export const normalizeToMidnight = (dateInput) => {
-    if (!dateInput) return null;
-    if (typeof dateInput === 'string') {
-        return parseDate(dateInput);
-    }
-    if (dateInput instanceof Date) {
-        return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
-    }
-    return null;
+  if (!dateInput) return null;
+  if (typeof dateInput === 'string') {
+    return parseDate(dateInput);
+  }
+  if (dateInput instanceof Date) {
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+  }
+  return null;
 };
 
 /**
@@ -164,12 +165,12 @@ export const normalizeToMidnight = (dateInput) => {
  * @returns {boolean} True if date is within range.
  */
 export const isDateInRange = (date, startDate, endDate) => {
-    const d = normalizeToMidnight(date);
-    const start = normalizeToMidnight(startDate);
-    const end = normalizeToMidnight(endDate);
+  const d = normalizeToMidnight(date);
+  const start = normalizeToMidnight(startDate);
+  const end = normalizeToMidnight(endDate);
 
-    if (!d || !start || !end) return false;
-    return d >= start && d <= end;
+  if (!d || !start || !end) return false;
+  return d >= start && d <= end;
 };
 
 /**
@@ -181,13 +182,13 @@ export const isDateInRange = (date, startDate, endDate) => {
  * @returns {boolean} True if ranges overlap.
  */
 export const doDateRangesOverlap = (start1, end1, start2, end2) => {
-    const s1 = normalizeToMidnight(start1);
-    const e1 = normalizeToMidnight(end1);
-    const s2 = normalizeToMidnight(start2);
-    const e2 = normalizeToMidnight(end2);
+  const s1 = normalizeToMidnight(start1);
+  const e1 = normalizeToMidnight(end1);
+  const s2 = normalizeToMidnight(start2);
+  const e2 = normalizeToMidnight(end2);
 
-    if (!s1 || !e1 || !s2 || !e2) return false;
-    return s1 <= e2 && e1 >= s2;
+  if (!s1 || !e1 || !s2 || !e2) return false;
+  return s1 <= e2 && e1 >= s2;
 };
 
 /**
@@ -196,8 +197,49 @@ export const doDateRangesOverlap = (start1, end1, start2, end2) => {
  * @returns {{ currentYear: number, monthStart: string, monthEnd: string }}
  */
 export const getCurrentPeriodBoundaries = () => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const { monthStart, monthEnd } = getMonthBoundaries(now.getMonth(), currentYear);
-    return { currentYear, monthStart, monthEnd };
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const { monthStart, monthEnd } = getMonthBoundaries(now.getMonth(), currentYear);
+  return { currentYear, monthStart, monthEnd };
+};
+
+
+/**
+ * ADDED: Mobile-first helper for Transaction Lists.
+ * Returns "Today", "Yesterday", or formatted date.
+ * @param {string|Date} date
+ * @returns {string}
+ */
+export const getRelativeDateLabel = (date) => {
+  const d = normalizeToMidnight(date);
+  if (!d) return "";
+
+  if (isToday(d)) return "Today";
+  if (isYesterday(d)) return "Yesterday";
+  return format(d, "MMM dd, yyyy");
+};
+
+/**
+ * ADDED: Safe same-day comparison ignoring time.
+ */
+export const isSameDaySafe = (dateLeft, dateRight) => {
+  const d1 = normalizeToMidnight(dateLeft);
+  const d2 = normalizeToMidnight(dateRight);
+  if (!d1 || !d2) return false;
+  return isSameDay(d1, d2);
+};
+
+/**
+ * ADDED: Date math helpers keeping local midnight consistency
+ */
+export const addDays = (date, amount) => {
+  const d = normalizeToMidnight(date);
+  if (!d) return null;
+  return fnsAddDays(d, amount);
+};
+
+export const subDays = (date, amount) => {
+  const d = normalizeToMidnight(date);
+  if (!d) return null;
+  return fnsSubDays(d, amount);
 };
