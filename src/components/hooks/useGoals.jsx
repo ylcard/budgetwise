@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { QUERY_KEYS } from './queryKeys';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Hook to fetch all goals for the current user
