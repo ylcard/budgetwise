@@ -310,9 +310,9 @@ export function TransactionHistory({
       setIsBulkDeleting(true);
 
       // 1. Optimistic UI Update
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
+      const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
+      queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false }, (old = []) =>
         old.filter(t => !selectedIds.has(t.id))
       );
 
@@ -339,9 +339,9 @@ export function TransactionHistory({
   // NEW: Handle Mass Update
   const handleMassUpdate = async (updates) => {
     // 1. Optimistic UI Update
-    await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-    const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
-    queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS] }, (old = []) =>
+    await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
+    const previousQueries = queryClient.getQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false });
+    queryClient.setQueriesData({ queryKey: [QUERY_KEYS.TRANSACTIONS], exact: false }, (old = []) =>
       old.map(t => selectedIds.has(t.id) ? { ...t, ...updates } : t)
     );
 
