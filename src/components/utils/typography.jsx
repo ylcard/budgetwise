@@ -1,7 +1,7 @@
 // ADDED 03-Mar-2026: Typography.js integration using the Moraga theme
 // Moraga is a clean, modern sans-serif theme ideal for professional financial apps.
 import Typography from 'typography';
-import moragaTheme from 'typography-theme-moraga';
+// import moragaTheme from 'typography-theme-moraga';
 import fairyGatesTheme from 'typography-theme-fairy-gates'
 
 // moragaTheme.baseFontSize = '16px';
