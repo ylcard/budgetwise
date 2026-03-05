@@ -368,7 +368,7 @@ export default function TransactionList({
                             <BrainCircuit className="w-4 h-4 mr-2" /> Create Rule
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => onDelete(transaction)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                          <DropdownMenuItem onClick={() => onDelete(transaction.id)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                             <Trash2 className="w-4 h-4 mr-2" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
