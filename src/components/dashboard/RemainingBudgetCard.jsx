@@ -259,7 +259,7 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
       )}
 
       <Button onClick={handleSave} disabled={isSaving} className="w-full h-7 text-xs mt-2">
-        {isSaving ? 'Saving...' : 'Update Targets'}
+        {isSaving ? 'Saving...' : 'Update Budgets'}
       </Button>
     </div>
   );
