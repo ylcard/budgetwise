@@ -91,7 +91,8 @@
     "i18next-http-backend": "3.0.2",
     "i18next-browser-languagedetector": "8.2.1",
     "typography": "^0.16.19",
-    "typography-theme-moraga": "^0.16.19"
+    "typography-theme-moraga": "^0.16.19",
+    "typography-theme-fairy-gates": "^0.16.19"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
