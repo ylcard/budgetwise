@@ -3,8 +3,9 @@
 import Typography from 'typography';
 import moragaTheme from 'typography-theme-moraga';
 
-const typography = new Typography(moragaTheme);
-
+const typography = new Typography(moragaTheme) ({
+  baseFontSize: '12px',
+});
 // Inject the generated CSS styles directly into the document <head>
 // This is the recommended approach for client-only React apps (no SSR).
 typography.injectStyles();
