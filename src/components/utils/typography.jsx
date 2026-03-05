@@ -3,7 +3,7 @@
 import Typography from 'typography';
 import moragaTheme from 'typography-theme-moraga';
 
-moragaTheme.baseFontSize = '12px';
+moragaTheme.baseFontSize = '16px';
 
 const typography = new Typography(moragaTheme);
 // Inject the generated CSS styles directly into the document <head>
