@@ -224,8 +224,10 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
           <div className="flex justify-between px-1">
             {['needs', 'wants', 'savings'].map(key => (
               <div key={key} className="flex flex-col items-center">
-                <div className="w-1.5 h-1.5 rounded-full mb-0.5" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
-                <span className="text-[10px] font-bold text-muted-foreground">{Math.round(pctValues[key])}%</span>
+                <span className="text-[9px] font-bold uppercase tracking-tighter" style={{ color: FINANCIAL_PRIORITIES[key].color }}>
+                  {key === 'needs' ? 'Essentials' : key === 'wants' ? 'Lifestyle' : 'Savings'}
+                </span>
+                <span className="text-[10px] font-black text-muted-foreground">{Math.round(pctValues[key])}%</span>
               </div>
             ))}
           </div>
@@ -235,8 +237,10 @@ const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose 
         <div className="flex items-end justify-between gap-2 pt-2">
           {['needs', 'wants', 'savings'].map(key => (
             <div key={key} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-              {/* Dot Indicator */}
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: FINANCIAL_PRIORITIES[key].color }} />
+
+              <span className="text-[9px] font-bold uppercase tracking-tighter" style={{ color: FINANCIAL_PRIORITIES[key].color }}>
+                {key === 'needs' ? 'Essentials' : key === 'wants' ? 'Lifestyle' : 'Savings'}
+              </span>
 
               {/* Compact Input */}
               <div className="relative w-full">
@@ -1059,13 +1063,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
                 <div className="flex flex-col sm:flex-row justify-between text-xs text-muted-foreground pt-1 gap-2">
                   <div className="flex gap-4 items-center">
-                    <span className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: needsColor }}></div>
-                      {FINANCIAL_PRIORITIES.needs.label}
+                    <span className="flex items-center gap-1.5 font-bold" style={{ color: needsColor }}>
+                      Essentials
                     </span>
-                    <span className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: wantsColor }}></div>
-                      {FINANCIAL_PRIORITIES.wants.label}
+                    <span className="flex items-center gap-1.5 font-bold" style={{ color: wantsColor }}>
+                      Lifestyle
                     </span>
                     <AnimatePresence>
                       {!isSimpleView && (
@@ -1075,8 +1077,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                           exit={{ opacity: 0, y: -15, width: 0 }}
                           className="flex items-center gap-4 overflow-hidden"
                         >
-                          <span className="flex items-center gap-1.5 ml-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: savingsColor }}></div>
+                          <span className="flex items-center gap-1.5 ml-2 font-bold" style={{ color: savingsColor }}>
                             Savings
                           </span>
                           {projectedRemainingExpense > 0 && (
