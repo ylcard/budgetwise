@@ -48,6 +48,7 @@ export default function GoalsPage() {
     const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
     const [settlementDrawerOpen, setSettlementDrawerOpen] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState(null);
+    const { handleDelete, ...actions } = useSavingsGoalActions();
 
     // Budgets (Allocation) State
     const [localGoalMode, setLocalGoalMode] = useState(settings.goalMode ?? true);
