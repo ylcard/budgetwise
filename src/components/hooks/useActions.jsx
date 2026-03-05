@@ -500,6 +500,7 @@ export const useSavingsGoalActions = () => {
     queryKeysToInvalidate: [QUERY_KEYS.GOALS],
     confirmTitle: "Delete Goal",
     confirmMessage: "Are you sure you want to delete this goal? This will permanently remove its history.",
+    onAfterSuccess: ui.closeForm
   });
 
   // SPECIAL: Add Mental Deposit using the generic update hook
