@@ -129,6 +129,11 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
             bestSlotIndex = index;
           }
         });
+
+        if (bestSlotIndex !== -1) {
+          slots[bestSlotIndex].filledBy = tx;
+          usedTransactionIds.add(tx.id);
+        }
       });
 
       // 6. DETERMINE CURRENT STATUS
