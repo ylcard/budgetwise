@@ -22,7 +22,7 @@ import TransactionFilters from "../components/transactions/TransactionFilters";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import RecurringTransactionList from "../components/recurring/RecurringTransactionList";
 import RecurringFormDialog from "../components/recurring/dialogs/RecurringFormDialog";
-import { format, subDays } from "date-fns";
+import { subDays, formatDateString } from "../components/utils/dateUtils";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +31,9 @@ import { CustomButton as Button } from "@/components/ui/CustomButton";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2, Repeat } from "lucide-react";
 import { useBankSync } from "../components/banksync/useBankSync";
 
+/**
+ * Transactions Layout - Main wrapper for History and Recurring tabs
+ */
 export default function TransactionsLayout() {
   const { user } = useSettings();
   const location = useLocation();
@@ -87,8 +90,8 @@ export default function TransactionsLayout() {
     const activeConnections = connections.filter(c => c.status === 'active');
 
     setSyncState('syncing');
-    const dateFrom = format(subDays(new Date(), 30), 'yyyy-MM-dd');
-    const dateTo = format(new Date(), 'yyyy-MM-dd');
+    const dateFrom = formatDateString(subDays(new Date(), 30));
+    const dateTo = formatDateString(new Date());
 
     try {
       for (const conn of activeConnections) {
@@ -231,6 +234,9 @@ export default function TransactionsLayout() {
   );
 }
 
+/**
+ * Transaction History Tab Content
+ */
 export function TransactionHistory({
   setEditingTransaction,
   setShowAddIncome,
@@ -450,6 +456,9 @@ export function TransactionHistory({
   );
 }
 
+/**
+ * Recurring Transactions Tab Content
+ */
 export function RecurringTransactions({ setEditingRecurring, setShowRecurringForm }) {
   const { user } = useSettings();
   const queryClient = useQueryClient();
@@ -464,7 +473,7 @@ export function RecurringTransactions({ setEditingRecurring, setShowRecurringFor
     setIsProcessingRecurring(true);
     const toastId = toast.loading('Processing...');
     try {
-      const userLocalDate = format(new Date(), 'yyyy-MM-dd');
+      const userLocalDate = formatDateString(new Date());
       const response = await fetchWithRetry(() => base44.functions.invoke('processRecurringTransactions', { userLocalDate }));
       if (response.data.success) {
         toast.success(`Processed ${response.data.processed}`, { id: toastId });
