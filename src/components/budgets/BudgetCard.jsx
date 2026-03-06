@@ -3,13 +3,42 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "../utils/currencyUtils";
-import { parseDate } from "../utils/dateUtils";
+import { parseDate, normalizeToMidnight } from "../utils/dateUtils";
 import { motion } from "framer-motion";
 import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
-import { getCustomBudgetStats } from "../utils/financialCalculations";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 
-export default function BudgetCard({ budgets = [], transactions = [], settings, onActivateBudget, size = 'md' }) {
+/**
+ * Configuration for different card sizes to keep the component body clean.
+ */
+const SIZE_CONFIG = {
+  sm: {
+    radius: 34, stroke: 5, p: 'p-3', title: 'text-xs', mb: 'mb-2',
+    circleText: 'text-sm', overText: 'text-[8px] px-1 py-px mt-px',
+    statLabel: 'text-[10px]', statVal: 'text-[11px]', gap: 'gap-x-2 gap-y-1'
+  },
+  md: {
+    radius: 42, stroke: 8, p: 'p-4 md:p-5', title: 'text-sm', mb: 'mb-3 md:mb-4',
+    circleText: 'text-lg md:text-xl', overText: 'text-[10px] px-1.5 py-0.5 mt-0.5',
+    statLabel: 'text-xs', statVal: 'text-sm', gap: 'gap-x-3 gap-y-2 md:gap-x-4 md:gap-y-3'
+  },
+  lg: {
+    radius: 56, stroke: 10, p: 'p-6', title: 'text-lg', mb: 'mb-6',
+    circleText: 'text-2xl', overText: 'text-xs px-2 py-1 mt-1',
+    statLabel: 'text-sm', statVal: 'text-base', gap: 'gap-x-6 gap-y-4'
+  }
+};
+
+/**
+ * BudgetCard Component
+ * Renders a visual overview of a budget, including progress towards limits and activation prompts.
+ * @param {Object} props
+ * @param {Array} props.budgets - Array of budget objects (uses index 0).
+ * @param {Object} props.settings - User settings for currency formatting.
+ * @param {Function} props.onActivateBudget - Callback to activate a 'planned' budget.
+ * @param {'sm'|'md'|'lg'} [props.size='md'] - Defines the visual scale of the card.
+ */
+export default function BudgetCard({ budgets = [], settings, onActivateBudget, size = 'md' }) {
   const budget = budgets?.[0];
 
   if (!budget) return null;
@@ -20,8 +49,8 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
   const shouldActivate = useMemo(() => {
     if (isSystemBudget || budget.status !== 'planned') return false;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Utilize centralized normalization to avoid timezone-related "1 day cutoff" bugs
+    const today = normalizeToMidnight(new Date());
 
     const startDate = parseDate(budget.startDate);
 
@@ -63,7 +92,6 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
       statusColor: statColor,
       statusLabel: statLabel
     };
-    // }, [stats, isSystemBudget, budget]);
   }, [isSystemBudget, budget]);
 
   // Visual Theme Helper
@@ -95,26 +123,7 @@ export default function BudgetCard({ budgets = [], transactions = [], settings, 
   }, [budget.name, budget.color, budget.systemBudgetType, isSystemBudget]);
 
   // SVG Calculations
-  // Size Configuration
-  const sizeConfig = {
-    sm: {
-      radius: 34, stroke: 5, p: 'p-3', title: 'text-xs', mb: 'mb-2',
-      circleText: 'text-sm', overText: 'text-[8px] px-1 py-px mt-px',
-      statLabel: 'text-[10px]', statVal: 'text-[11px]', gap: 'gap-x-2 gap-y-1'
-    },
-    md: {
-      radius: 42, stroke: 8, p: 'p-4 md:p-5', title: 'text-sm', mb: 'mb-3 md:mb-4',
-      circleText: 'text-lg md:text-xl', overText: 'text-[10px] px-1.5 py-0.5 mt-0.5',
-      statLabel: 'text-xs', statVal: 'text-sm', gap: 'gap-x-3 gap-y-2 md:gap-x-4 md:gap-y-3'
-    },
-    lg: {
-      radius: 56, stroke: 10, p: 'p-6', title: 'text-lg', mb: 'mb-6',
-      circleText: 'text-2xl', overText: 'text-xs px-2 py-1 mt-1',
-      statLabel: 'text-sm', statVal: 'text-base', gap: 'gap-x-6 gap-y-4'
-    }
-  };
-
-  const currentStyle = sizeConfig[size] || sizeConfig.md;
+  const currentStyle = SIZE_CONFIG[size] || SIZE_CONFIG.md;
   const radius = currentStyle.radius;
   const normalizedRadius = radius - currentStyle.stroke / 2;
   const circumference = 2 * Math.PI * normalizedRadius;
