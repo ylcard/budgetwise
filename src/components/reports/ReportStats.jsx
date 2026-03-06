@@ -8,7 +8,15 @@ import { motion, useTransform, animate, useMotionValue } from "framer-motion";
 import InfoTooltip from "../ui/InfoTooltip";
 import { useFinancialHealthScore } from "../hooks/useFinancialHealth";
 import { useSettings } from "../utils/SettingsContext";
+import { parseDate } from "../utils/dateUtils";
 
+/**
+ * ReportStats Component
+ * Displays high-level financial metrics (Savings Rate, Net Flow, Efficiency Bonus)
+ * comparing current performance against previous periods.
+ *
+ * @param {Object} props
+ */
 const ReportStats = memo(function ReportStats({
   transactions = [],
   monthlyIncome = 0,
@@ -32,7 +40,6 @@ const ReportStats = memo(function ReportStats({
   }
 
   const totalPaidExpenses = Math.abs(getMonthlyPaidExpenses(transactions, startDate, endDate));
-  // const prevPaidExpenses = Math.abs(getMonthlyPaidExpenses(prevTransactions));
   const prevPaidExpenses = prevTransactions.reduce((sum, t) => {
     // If your DB doesn't use 'type', remove the condition and just return sum + t.amount
     if (t.category?.name === 'Income' || t.type === 'income') return sum;
@@ -53,8 +60,8 @@ const ReportStats = memo(function ReportStats({
   // --- Analysis & Projection Logic ---
   const today = new Date();
   // Ensure startDate is a real Date object before reading properties
-  const start = new Date(startDate);
-  const isCurrentMonth = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
+  const start = parseDate(startDate);
+  const isCurrentMonth = start && today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
 
   // 1. Get projection for the current month using the Safe Baseline
   const estimate = estimateCurrentMonth(transactions, safeBaseline);
@@ -194,11 +201,36 @@ export default ReportStats;
 
 // --- HELPER COMPONENTS (Moved outside to prevent re-animation on parent render) ---
 
+/**
+ * Determines styling configuration based on health score (0-100)
+ */
 const getScoreStyle = (score) => {
   if (score >= 90) return { color: 'text-emerald-600', bg: 'bg-emerald-50', bar: 'bg-emerald-500', label: 'Excellent' };
   if (score >= 75) return { color: 'text-blue-600', bg: 'bg-blue-50', bar: 'bg-blue-500', label: 'Good' };
   if (score >= 60) return { color: 'text-amber-600', bg: 'bg-amber-50', bar: 'bg-amber-500', label: 'Fair' };
-  return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'Risk' };
+  return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'At Risk' };
+};
+
+/**
+ * Determines styling configuration for the Health Score Header
+ */
+const getHeaderStyle = (score) => {
+  if (score >= 90) return {
+    bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-900', subtext: 'text-emerald-600',
+    iconBg: 'bg-emerald-200', iconColor: 'text-emerald-700', gradient: 'from-emerald-50 to-white', verdict: 'Excellent Health'
+  };
+  if (score >= 75) return {
+    bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', subtext: 'text-blue-600',
+    iconBg: 'bg-blue-200', iconColor: 'text-blue-700', gradient: 'from-blue-50 to-white', verdict: 'Good Health'
+  };
+  if (score >= 60) return {
+    bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-900', subtext: 'text-amber-600',
+    iconBg: 'bg-amber-200', iconColor: 'text-amber-700', gradient: 'from-amber-50 to-white', verdict: 'Fair Health'
+  };
+  return {
+    bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-900', subtext: 'text-rose-600',
+    iconBg: 'bg-rose-200', iconColor: 'text-rose-700', gradient: 'from-rose-50 to-white', verdict: 'Needs Attention'
+  };
 };
 
 // Helper: A "slot machine" style rolling number for the "Calculating" effect
@@ -254,13 +286,17 @@ const HealthCell = memo(({ label, score, description, wiki }) => {
 });
 
 
-// --- Financial Health Score Component (Appended to existing file) ---
+/**
+ * FinancialHealthScore Component
+ * Renders a composite "Wellness Score" with a DNA-like breakdown of 5 key metrics.
+ */
 export const FinancialHealthScore = memo(function FinancialHealthScore({
   startDate,
   className
 }) {
   const { user } = useSettings();
-  const start = new Date(startDate);
+  const start = parseDate(startDate);
+  if (!start) return null; // Guard against invalid dates
   const month = start.getMonth();
   const year = start.getFullYear();
 
@@ -280,71 +316,10 @@ export const FinancialHealthScore = memo(function FinancialHealthScore({
     );
   }
 
-  // const { totalScore, breakdown, label } = healthData;
-  if (!healthData) return <div className="animate-pulse bg-gray-50 rounded-xl h-48" />;
-
   const { totalScore, breakdown } = healthData;
   const { pacing: pacingScore, ratio: ratioScore, stability: stabilityScore, sharpe: sharpeScore, creep: creepScore } = breakdown;
 
-  // HELPER: Dynamic styling for the DNA cards
-  const getScoreStyle = (score) => {
-    if (score >= 90) return { color: 'text-emerald-600', bg: 'bg-emerald-50', bar: 'bg-emerald-500', label: 'Excellent' };
-    if (score >= 75) return { color: 'text-blue-600', bg: 'bg-blue-50', bar: 'bg-blue-500', label: 'Good' };
-    if (score >= 60) return { color: 'text-amber-600', bg: 'bg-amber-50', bar: 'bg-amber-500', label: 'Fair' };
-    return { color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', label: 'At Risk' };
-  };
-
-  // HELPER: Dynamic styling for the Main Header
-  const getHeaderStyle = (score) => {
-    if (score >= 90) return {
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-100',
-      text: 'text-emerald-900',
-      subtext: 'text-emerald-600',
-      iconBg: 'bg-emerald-200',
-      iconColor: 'text-emerald-700',
-      gradient: 'from-emerald-50 to-white',
-      verdict: 'Excellent Health'
-    };
-    if (score >= 75) return {
-      bg: 'bg-blue-50',
-      border: 'border-blue-100',
-      text: 'text-blue-900',
-      subtext: 'text-blue-600',
-      iconBg: 'bg-blue-200',
-      iconColor: 'text-blue-700',
-      gradient: 'from-blue-50 to-white',
-      verdict: 'Good Health'
-    };
-    if (score >= 60) return {
-      bg: 'bg-amber-50',
-      border: 'border-amber-100',
-      text: 'text-amber-900',
-      subtext: 'text-amber-600',
-      iconBg: 'bg-amber-200',
-      iconColor: 'text-amber-700',
-      gradient: 'from-amber-50 to-white',
-      verdict: 'Fair Health'
-    };
-    return {
-      bg: 'bg-rose-50',
-      border: 'border-rose-100',
-      text: 'text-rose-900',
-      subtext: 'text-rose-600',
-      iconBg: 'bg-rose-200',
-      iconColor: 'text-rose-700',
-      gradient: 'from-rose-50 to-white',
-      verdict: 'Needs Attention'
-    };
-  };
-
   const headerStyle = getHeaderStyle(totalScore);
-
-  // ADDED: 16-Jan-2026 - Color mapping for label
-  let color = '#10B981'; // Green
-  if (totalScore < 90) color = '#3B82F6'; // Blue for Good
-  if (totalScore < 75) color = '#F59E0B'; // Orange for Fair
-  if (totalScore < 60) color = '#EF4444'; // Red for Needs Work
 
   return (
     <div className={`flex flex-col gap-4 h-full ${className || ''}`}>
