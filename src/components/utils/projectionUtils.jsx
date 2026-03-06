@@ -2,21 +2,23 @@
  * Calculates outliers and projected expenses based on historical transaction data.
  * Uses Mean and Standard Deviation (Z-Score approach) to identify and exclude outliers
  * for more accurate forecasting.
+ * Refactored: 06-Mar-2026 - Utilized central dateUtils for consistent boundary handling
  */
 
 import Decimal from "decimal.js";
+import { formatDate, getLastDayOfMonth, normalizeToMidnight, isDateInRange } from "./dateUtils";
 
 /**
  * Helper to get a list of month keys (YYYY-MM) for the last N months.
+ * @param {number} monthsBack - Number of months to generate keys for
+ * @returns {string[]} Array of keys like ['2025-02', '2025-01', ...]
  */
 const getMonthKeys = (monthsBack) => {
   const keys = [];
   const now = new Date();
   for (let i = 1; i <= monthsBack; i++) { // Start from last month to avoid partial current month data
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    keys.push(`${year}-${month}`);
+    keys.push(formatDate(d, 'yyyy-MM'));
   }
   return keys;
 };
@@ -24,6 +26,8 @@ const getMonthKeys = (monthsBack) => {
 /**
  * Filters out outliers from a dataset using the Mean +/- 2 * StdDev method.
  * Returns the average of the non-outlier values.
+ * @param {number[]} values - Array of monthly spending amounts
+ * @returns {number} Adjusted average
  */
 const calculateAdjustedAverage = (values) => {
   if (!values || values.length === 0) return 0;
@@ -74,16 +78,21 @@ export const calculateProjection = (transactions, categories, historicalMonths =
   categoryHistory['uncategorized'] = {};
 
   const monthKeys = getMonthKeys(historicalMonths);
-  const minDate = new Date(monthKeys[monthKeys.length - 1] + "-01"); // Oldest month
-  const maxDate = new Date(new Date().getFullYear(), new Date().getMonth(), 0); // Last day of last month
+
+  // Define analysis window (Oldest Month Start -> Last Month End)
+  const minDate = normalizeToMidnight(`${monthKeys[monthKeys.length - 1]}-01`);
+
+  const now = new Date();
+  // Get last day of *previous* month (month - 1). getLastDayOfMonth handles negative indices nicely.
+  const maxDate = normalizeToMidnight(getLastDayOfMonth(now.getMonth() - 1, now.getFullYear()));
 
   // Filter transactions to the analysis window
   const relevantTransactions = transactions.filter(t => {
     if (t.type !== 'expense') return false;
     // Use paidDate for expenses if paid, otherwise date (but mostly paid for history)
     const dateStr = t.isPaid && t.paidDate ? t.paidDate : t.date;
-    const d = new Date(dateStr);
-    return d >= minDate && d <= maxDate;
+
+    return isDateInRange(dateStr, minDate, maxDate);
   });
 
   relevantTransactions.forEach(t => {
@@ -91,8 +100,8 @@ export const calculateProjection = (transactions, categories, historicalMonths =
     if (!categoryHistory[catId]) categoryHistory[catId] = {};
 
     const dateStr = t.isPaid && t.paidDate ? t.paidDate : t.date;
-    const d = new Date(dateStr);
-    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const d = normalizeToMidnight(dateStr);
+    const monthKey = formatDate(d, 'yyyy-MM');
 
     if (monthKeys.includes(monthKey)) {
       categoryHistory[catId][monthKey] = new Decimal(categoryHistory[catId][monthKey] || 0)
@@ -134,10 +143,14 @@ export const calculateProjection = (transactions, categories, historicalMonths =
 
 /**
  * Estimates the remaining spend for the current month based on the Safe Baseline.
+ * @param {Array} currentMonthTransactions - Transactions for the current month
+ * @param {number} safeMonthlyBaseline - The calculated safe spending limit/average
+ * @returns {Object} { actual, remaining, total }
  */
 export const estimateCurrentMonth = (currentMonthTransactions, safeMonthlyBaseline) => {
   const today = new Date();
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  // Get total days in current month using utility for consistency
+  const daysInMonth = normalizeToMidnight(getLastDayOfMonth(today.getMonth(), today.getFullYear())).getDate();
   const daysPassed = Math.max(1, today.getDate());
   const daysRemaining = daysInMonth - daysPassed;
 
