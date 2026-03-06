@@ -2,6 +2,18 @@ import { useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import { flushSync } from 'react-dom';
 
+const TEMP_THEME_KEY = 'budgetwise_temp_theme';
+
+/**
+ * Custom hook to synchronize the application theme with user settings.
+ * Handles:
+ * 1. Static theme application (light/dark/system).
+ * 2. Scheduled theme changes based on time of day.
+ * 3. View Transitions API integration for smooth theme switching.
+ * 4. Visibility change handling to re-sync on app resume.
+ *
+ * @param {Object} userSettings - The user's settings object containing themeConfig.
+ */
 export function useThemeSync(userSettings) {
   const { setTheme, theme: currentTheme } = useTheme();
 
@@ -9,12 +21,12 @@ export function useThemeSync(userSettings) {
     // Defensive check: abort if settings aren't loaded yet
     if (!userSettings || !userSettings.themeConfig) return;
 
+    const { mode, schedules } = userSettings.themeConfig || {};
+
     // If user manually toggled the theme this session, pause enforcement
-    if (sessionStorage.getItem('budgetwise_temp_theme') === 'true') {
+    if (sessionStorage.getItem(TEMP_THEME_KEY) === 'true') {
       return;
     }
-
-    const { mode, schedules } = userSettings.themeConfig;
 
     const applyTheme = (newTheme) => {
       if (currentTheme === newTheme) return;
@@ -47,8 +59,9 @@ export function useThemeSync(userSettings) {
 
       // Sort schedules by absolute minutes
       const sortedSchedules = [...schedules].map(s => {
-        const [h, m] = s.time.split(':').map(Number);
-        return { ...s, mins: h * 60 + m };
+        if (!s.time) return { ...s, mins: 0 };
+        const [h, m] = s.time.split(':').map(n => parseInt(n, 10) || 0);
+        return { ...s, mins: (h * 60) + m };
       }).sort((a, b) => a.mins - b.mins);
 
       // Find the active theme. Default to the LAST schedule of the day (wrap-around from previous night)
@@ -74,7 +87,7 @@ export function useThemeSync(userSettings) {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // Clear temporary manual override when app wakes up/is reopened
-        sessionStorage.removeItem('budgetwise_temp_theme');
+        sessionStorage.removeItem(TEMP_THEME_KEY);
         validateAndApplyTheme();
       }
     };
