@@ -9,6 +9,12 @@ import { parseDate, isDateInRange, getMonthBoundaries } from "./dateUtils";
 import Decimal from "decimal.js";
 
 /**
+ * Check if a transaction falls within a specific date range.
+ * Handles income (transaction date) vs expenses (paid date priority).
+ * @param {Object} transaction - The transaction object
+ * @param {string|Date} startDate - Range start (inclusive)
+ * @param {string|Date} endDate - Range end (inclusive)
+ * @returns {boolean} True if in range
  * Helper to check if a transaction falls within a date range.
  * CRITICAL FIX 05-Feb-2026: For expenses, ALWAYS use paidDate if available, regardless of isPaid status.
  * This ensures expenses that were incurred in one month but paid in another are counted in the correct month.
@@ -37,6 +43,10 @@ const isActualCustomBudget = (budgetId, allCustomBudgets) => {
 
 /**
  * Calculates total monthly income within a date range.
+ * @param {Array} transactions - List of transactions
+ * @param {string|Date} startDate 
+ * @param {string|Date} endDate 
+ * @returns {number} Total income amount
  */
 export const getMonthlyIncome = (transactions, startDate, endDate) => {
   return transactions
@@ -47,6 +57,10 @@ export const getMonthlyIncome = (transactions, startDate, endDate) => {
 
 /**
  * Calculates total monthly PAID expenses (excludes unpaid).
+ * @param {Array} transactions - List of transactions
+ * @param {string|Date} startDate 
+ * @param {string|Date} endDate 
+ * @returns {number} Total paid expense amount
  */
 export const getMonthlyPaidExpenses = (transactions, startDate, endDate) => {
   return transactions
@@ -61,6 +75,10 @@ export const getMonthlyPaidExpenses = (transactions, startDate, endDate) => {
 
 /**
  * Calculates total monthly expenses (paid + unpaid).
+ * @param {Array} transactions - List of transactions
+ * @param {string|Date} startDate 
+ * @param {string|Date} endDate 
+ * @returns {number} Total expense amount
  */
 export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
   return transactions
@@ -80,6 +98,7 @@ export const getTotalMonthExpenses = (transactions, startDate, endDate) => {
  * @param {number} monthlyIncome - The total monthly income
  * @param {Object} settings - App settings (must include goalMode and fixedLifestyleMode)
  * @param {number} historicalAverage - (Optional) Average income from previous months for Inflation Protection
+ * @returns {number} The calculated budget limit
  */
 export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historicalAverage = 0) => {
   if (!goal) return 0;
@@ -114,6 +133,7 @@ export const resolveBudgetLimit = (goal, monthlyIncome, settings = {}, historica
 
 /**
  * Returns the resolved target amount for a specific goal priority.
+ * @returns {number} Target amount
  */
 export const getMonthlyTarget = (allGoals, priority, monthlyIncome, settings, historicalAverage = 0) => {
   const goal = allGoals.find(g => g.priority === priority);
@@ -124,7 +144,13 @@ export const getMonthlyTarget = (allGoals, priority, monthlyIncome, settings, hi
 /**
  * CORE AGGREGATOR: Calculates granular breakdown of expenses in one pass.
  * Replaces getPaidNeedsExpenses, getDirectPaidWantsExpenses, etc.
- * * @returns {Object} { needs: { paid, unpaid, total }, wants: { directPaid, directUnpaid, customPaid, customUnpaid, total } }
+ * @param {Array} transactions 
+ * @param {Array} categories 
+ * @param {Array} allCustomBudgets 
+ * @param {string|Date} startDate 
+ * @param {string|Date} endDate 
+ * @param {number|null} dayLimit - Optional day of month to cut off calculation (for pacing)
+ * @returns {{ needs: { paid: number, unpaid: number, total: number }, wants: { directPaid: number, directUnpaid: number, customPaid: number, customUnpaid: number, total: number }, totalExpenses: number }}
  */
 export const getFinancialBreakdown = (transactions, categories, allCustomBudgets, startDate, endDate, dayLimit = null) => {
   let needsPaid = new Decimal(0);
@@ -221,7 +247,7 @@ export const getFinancialBreakdown = (transactions, categories, allCustomBudgets
  * 
  * @param {Object} customBudget - The custom budget entity
  * @param {Array} transactions - ALL transactions (will be filtered by budgetId)
- * @param {string} monthStart - IGNORED (kept for API compatibility)
+ * @param {string} [monthStart] - IGNORED (kept for API compatibility)
  * @param {string} monthEnd - IGNORED (kept for API compatibility)
  * @param {string} baseCurrency - Base currency for display (default: 'USD')
  * @returns {Object} Budget statistics with paid, unpaid, spent, remaining amounts
@@ -275,6 +301,7 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
  * Calculates statistics for a system budget.
  * Optimized to use getFinancialBreakdown for single-pass calculation.
  * UPDATED: Accepts settings and historicalAverage to correctly resolve the budget limit.
+ * @returns {Object} System Budget stats including remaining, percentage used, and breakdown
  */
 export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
   // Get the granular data in one pass
@@ -331,6 +358,7 @@ export const getSystemBudgetStats = (systemBudget, transactions, categories, all
 /**
  * Calculates allocation statistics for a custom budget's categories.
  * UPDATED 05-Feb-2026: Renamed customBudgetId to budgetId
+ * @returns {Object} Category-level spending breakdown for a custom budget
  */
 export const getCustomBudgetAllocationStats = (customBudget, allocations, transactions) => {
   const budgetTransactions = transactions.filter(t => t.budgetId === customBudget.id);
@@ -369,6 +397,7 @@ export const getCustomBudgetAllocationStats = (customBudget, allocations, transa
  * Calculates the net "Bonus Savings Potential".
  * (Needs Limit + Wants Limit) - Actual Spending
  * UPDATED: Accepts settings to correctly resolve the limits.
+ * @returns {number} The calculated bonus potential
  */
 export const calculateBonusSavingsPotential = (systemBudgets, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
   const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
@@ -390,6 +419,7 @@ export const calculateBonusSavingsPotential = (systemBudgets, transactions, cate
 /**
  * Calculates the average monthly income for the X months PRIOR to the current reference date.
  * Used for "Inflation Protection" baseline.
+ * @returns {number} Average monthly income
  */
 
 export const getHistoricalAverageIncome = (transactions, selectedMonth, selectedYear, lookbackMonths = 3) => {
@@ -413,43 +443,6 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 };
 
 /**
- * Calculates historical averages for all categories in one pass.
- * DEPRECATED on 21-FEB-2026 Was used by MonthlyBreakdown before
- */
-/*
-export const getAllHistoricalCategoryAverages = (transactions, selectedMonth, selectedYear, lookbackMonths = 3) => {
-    if (!transactions || transactions.length === 0) return {};
-
-    const categoryTotals = {};
-
-    // Look back at the last X months
-    for (let i = 1; i <= lookbackMonths; i++) {
-        const date = new Date(selectedYear, selectedMonth - i, 1);
-        const m = date.getMonth();
-        const y = date.getFullYear();
-        const { monthStart, monthEnd } = getMonthBoundaries(m, y);
-
-        transactions.forEach(t => {
-            if (t.type === 'expense' && t.category_id && isTransactionInDateRange(t, monthStart, monthEnd)) {
-                if (!categoryTotals[t.category_id]) {
-                    categoryTotals[t.category_id] = 0;
-                }
-                categoryTotals[t.category_id] += t.amount;
-            }
-        });
-    }
-
-    // Calculate average per month
-    const averages = {};
-    Object.keys(categoryTotals).forEach(catId => {
-        averages[catId] = categoryTotals[catId] / lookbackMonths;
-    });
-
-    return averages;
-};
-*/
-
-/**
  * HELPER: Math Utils for Projection
  */
 const calculateMedian = (values) => {
@@ -469,7 +462,7 @@ const calculateStandardDeviation = (values, mean) => {
 /**
  * Calculates a smart income projection based on a provided slice of historical transactions.
  * Expects the caller (Dashboard) to provide ONLY the relevant historical period (e.g. past 6 months).
- * + * @param {Array} historicalTransactions - Filtered list of income transactions from the lookback period
+ * @param {Array} historicalTransactions - Filtered list of income transactions from the lookback period
  * @param {Date} referenceDate - The anchor date (usually today) to determine "recency" for weighting
  * @returns {Object} { projectedIncome, reliability, cv }
  */
@@ -481,7 +474,8 @@ export const calculateIncomeProjection = (historicalTransactions, referenceDate 
   const monthlyTotals = {};
 
   historicalTransactions.forEach(t => {
-    const tDate = new Date(t.date);
+    // Use parseDate to ensure local date consistency (YYYY-MM-DD string to local Date)
+    const tDate = parseDate(t.date);
     // Calculate how many months ago this was (approximate is fine for bucketing)
     const monthDiff = (referenceDate.getFullYear() - tDate.getFullYear()) * 12 + (referenceDate.getMonth() - tDate.getMonth());
 
