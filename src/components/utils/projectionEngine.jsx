@@ -1,10 +1,15 @@
-import { format, getDate } from "date-fns";
-import { parseDate } from "./dateUtils";
+import { parseDate, formatDate } from "./dateUtils";
 import Decimal from "decimal.js";
 
 /**
- * PURE FUNCTION: Income Projection Engine
+ * Income Projection Engine
  * Predicts future income based on historical anchors (Salary, Secondary) and petty averages.
+ *
+ * @param {Array} historyTxns - Multi-month historical transaction data
+ * @param {Array} currentTxns - Current month-to-date transactions
+ * @param {number} daysInMonth - Total days in target month
+ * @param {number} todayDay - Current day of the month (1-31)
+ * @returns {Object} Map of predicted amounts indexed by day of month
  */
 export const calculateIncomeProjections = (historyTxns, currentTxns, daysInMonth, todayDay) => {
   const predictionMap = {};
@@ -16,9 +21,9 @@ export const calculateIncomeProjections = (historyTxns, currentTxns, daysInMonth
     if (t.type !== 'income') return;
     const date = t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
     if (!date) return;
-    const key = format(date, 'yyyy-MM');
+    const key = formatDate(date, 'yyyy-MM');
     if (!months[key]) months[key] = [];
-    months[key].push({ amount: Math.abs(Number(t.amount)), day: getDate(date) });
+    months[key].push({ amount: Math.abs(Number(t.amount)), day: date.getDate() });
   });
 
   const monthKeys = Object.keys(months);
@@ -87,8 +92,14 @@ export const calculateIncomeProjections = (historyTxns, currentTxns, daysInMonth
 };
 
 /**
- * PURE FUNCTION: Expense Projection Engine (Heatmap & Burn Rate)
+ * Expense Projection Engine (Heatmap & Burn Rate)
  * Distributes remaining expected monthly volume across future days based on historical intensity.
+ *
+ * @param {Array} historyTxns - Multi-month historical transaction data
+ * @param {Array} currentTxns - Current month-to-date transactions
+ * @param {number} daysInMonth - Total days in target month
+ * @param {number} todayDay - Current day of the month (1-31)
+ * @returns {Object} Map of predicted expenditure indexed by day of month
  */
 export const calculateExpenseProjections = (historyTxns, currentTxns, daysInMonth, todayDay) => {
   const predictionMap = {};
@@ -109,8 +120,8 @@ export const calculateExpenseProjections = (historyTxns, currentTxns, daysInMont
     totalHistory = totalHistory.plus(amt);
 
     // Weighting: Add the AMOUNT to the day's weight.
-    dayWeights[getDate(effectiveDate)] = new Decimal(dayWeights[getDate(effectiveDate)]).plus(amt).toNumber();
-    uniqueMonths.add(format(effectiveDate, 'yyyy-MM'));
+    dayWeights[effectiveDate.getDate()] = new Decimal(dayWeights[effectiveDate.getDate()]).plus(amt).toNumber();
+    uniqueMonths.add(formatDate(effectiveDate, 'yyyy-MM'));
   });
 
   const numMonths = Math.max(1, uniqueMonths.size);
