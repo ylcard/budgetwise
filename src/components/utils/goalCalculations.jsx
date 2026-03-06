@@ -1,4 +1,11 @@
-import { parseISO, differenceInCalendarMonths, differenceInWeeks, differenceInDays, addMonths, addWeeks, format } from 'date-fns';
+
+/**
+ * Goal Calculation Utilities
+ * Core logic for goal projection, feasibility audits, and contribution planning.
+ */
+
+import { differenceInCalendarMonths, differenceInWeeks, addMonths, addWeeks } from 'date-fns';
+import { parseDate, formatDate } from './dateUtils';
 import Decimal from 'decimal.js';
 
 /**
@@ -16,7 +23,8 @@ export const calculateRequiredContribution = (targetAmount, currentBalance, dead
   }
 
   const now = new Date();
-  const deadlineDate = parseISO(deadline);
+  // Use parseDate to ensure local midnight deadline (avoids timezone shifts)
+  const deadlineDate = parseDate(deadline);
 
   let periodsRemaining = 0;
   switch (frequency) {
@@ -59,11 +67,12 @@ export const calculatePlannedContribution = (fundingRule, monthlyIncome) => {
   }
 
   // Adjust for frequency (convert to per-period amount)
+  // We use standard month multipliers (4.33 weeks, 2.16 biweeks)
   switch (fundingRule.frequency) {
     case 'weekly':
-      return new Decimal(baseAmount).dividedBy(4.33).toNumber(); // Average weeks per month
+      return new Decimal(baseAmount).dividedBy(4.33).toNumber();
     case 'biweekly':
-      return new Decimal(baseAmount).dividedBy(2.16).toNumber(); // Average biweekly periods per month
+      return new Decimal(baseAmount).dividedBy(2.16).toNumber();
     case 'monthly':
     default:
       return baseAmount;
@@ -89,7 +98,7 @@ export const auditGoalFeasibility = (goal, monthlyIncome, monthlyExpenses, exist
   // Convert required to monthly for comparison
   let requiredMonthly = requiredPerPeriod;
   if (goal.funding_rule?.frequency === 'weekly') {
-    requiredMonthly = new Decimal(requiredPerPeriod).times(4.33).toNumber(); requiredMonthly = requiredPerPeriod * 4.33;
+    requiredMonthly = new Decimal(requiredPerPeriod).times(4.33).toNumber();
   } else if (goal.funding_rule?.frequency === 'biweekly') {
     requiredMonthly = new Decimal(requiredPerPeriod).times(2.16).toNumber();
   }
@@ -160,7 +169,7 @@ export const projectCompletionDate = (goal, monthlyIncome) => {
 export const calculateNextDepositDate = (goal) => {
   const now = new Date();
   const lastDeposit = goal.ledger_history && goal.ledger_history.length > 0
-    ? parseISO(goal.ledger_history[goal.ledger_history.length - 1].timestamp)
+    ? parseDate(goal.ledger_history[goal.ledger_history.length - 1].timestamp)
     : now;
 
   switch (goal.funding_rule?.frequency) {
@@ -196,9 +205,9 @@ export const formatGoalPeriod = (frequency, date = new Date()) => {
   switch (frequency) {
     case 'weekly':
     case 'biweekly':
-      return format(date, "yyyy-'W'II");
+      return formatDate(date, "yyyy-'W'II");
     case 'monthly':
     default:
-      return format(date, 'yyyy-MM');
+      return formatDate(date, 'yyyy-MM');
   }
 };
