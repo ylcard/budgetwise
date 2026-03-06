@@ -12,9 +12,23 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus, Pencil } from "lucide-react";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useCustomBudgetsForPeriod, useSystemBudgetsForPeriod } from "@/components/hooks/useBase44Entities";
-import { formatDateString, getFirstDayOfMonth, getMonthBoundaries } from "@/components/utils/dateUtils";
+import { formatDateString, getFirstDayOfMonth, getMonthBoundaries, normalizeToMidnight, parseDate } from "@/components/utils/dateUtils";
 import ExpenseForm from "../forms/ExpenseForm";
 
+/**
+ * ExpenseFormDialog Component
+ * Responsive dialog/drawer for creating or editing expense transactions.
+ * @param {Object} props
+ * @param {boolean} [props.open] - Controlled visibility state.
+ * @param {Function} [props.onOpenChange] - State setter.
+ * @param {Object} [props.transaction] - Existing transaction for Edit Mode.
+ * @param {Object} [props.transactionTemplate] - Template for recurring bill pre-fill.
+ * @param {Array} props.categories - List of available categories.
+ * @param {Function} props.onSubmit - Callback for form submission.
+ * @param {boolean} props.isSubmitting - Loading state.
+ * @param {number} props.selectedMonth - 0-indexed month of the parent view.
+ * @param {number} props.selectedYear - Full year of the parent view.
+ */
 export default function ExpenseFormDialog({
   open,
   onOpenChange,
@@ -41,12 +55,12 @@ export default function ExpenseFormDialog({
     // SETTLEMENT FIX: Prioritize paidDate for effective budget context.
     // If an expense settled in March, we need March budgets, even if the transaction was in Feb.
     if (transaction?.paidDate) {
-      const d = new Date(transaction.paidDate);
-      if (!isNaN(d)) return { month: d.getMonth(), year: d.getFullYear() };
+      const d = parseDate(transaction.paidDate);
+      if (d) return { month: d.getMonth(), year: d.getFullYear() };
     }
     if (transaction?.date) {
-      const d = new Date(transaction.date);
-      if (!isNaN(d)) return { month: d.getMonth(), year: d.getFullYear() };
+      const d = parseDate(transaction.date);
+      if (d) return { month: d.getMonth(), year: d.getFullYear() };
     }
     return {
       month: selectedMonth ?? new Date().getMonth(),
@@ -55,15 +69,14 @@ export default function ExpenseFormDialog({
   }, [transaction, selectedMonth, selectedYear]);
 
   const { monthStart, monthEnd } = getMonthBoundaries(dateContext.month, dateContext.year);
-  // const { monthStart, monthEnd } = getMonthBoundaries(targetMonth, targetYear);
 
   // 2. Fetch Data
   // System: Constrained by Date (Strict) - BUT if editing, fetch the transaction's month too
   // CRITICAL FIX 17-Jan-2026: When editing, we need to fetch system budgets for BOTH:
   // 1. The currently viewed month (for context)
   // 2. The transaction's original month (so the linked budget appears in dropdown)
-  const transactionMonth = transaction?.date ? new Date(transaction.date).getMonth() : null;
-  const transactionYear = transaction?.date ? new Date(transaction.date).getFullYear() : null;
+  const transactionMonth = transaction?.date ? parseDate(transaction.date).getMonth() : null;
+  const transactionYear = transaction?.date ? parseDate(transaction.date).getFullYear() : null;
 
   const needsSecondFetch = transaction && (
     transactionMonth !== dateContext.month || transactionYear !== dateContext.year
@@ -159,7 +172,7 @@ export default function ExpenseFormDialog({
 
   // Calculate default date
   const getInitialDate = () => {
-    const now = new Date();
+    const now = normalizeToMidnight(new Date());
     // If selected month/year matches current real-time, use today
     if (dateContext.month === now.getMonth() && dateContext.year === now.getFullYear()) {
       return formatDateString(now);
