@@ -50,6 +50,7 @@ import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
 import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
+import { subMonths } from 'date-fns';
 
 /**
  * Main Dashboard Page
