@@ -3,13 +3,13 @@
  * Implements the triangulation method with multiplication-only approach.
  */
 
-import { differenceInDays, parseISO, startOfDay } from "date-fns";
+import { parseDate } from "./dateUtils";
 import Decimal from "decimal.js";
 
 /**
  * MODIFIED: 17-Jan-2026 - Changed from USD to EUR as the reference currency
  * Calculate converted amount from source currency to target currency.
- * Uses EUR as the reference currency for triangulation.
+ * Uses EUR as the reference currency for triangulation to maintain precision.
  * 
  * Formula: Converted Amount = Amount × Rate(Source→EUR) × Rate(EUR→Target)
  * 
@@ -63,6 +63,7 @@ export function calculateConvertedAmount(sourceAmount, sourceCurrencyCode, targe
  * @param {Array} exchangeRates - Array of ExchangeRate entities
  * @param {string} currencyCode - The currency code to look up (e.g., 'GBP')
  * @param {string} date - The target date in YYYY-MM-DD format
+ * @param {string} [baseCurrency='EUR'] - The reference currency
  * @returns {number|null} The rate for Currency→EUR, or null if not found
  */
 export function getRateForDate(exchangeRates, currencyCode, date) {
@@ -105,7 +106,8 @@ export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCur
   }
 
   // Find all rates within the freshness window (0 to 14 days)
-  const targetDateObj = startOfDay(parseISO(date));
+  const targetDateObj = parseDate(date);
+  if (!targetDateObj) return null;
 
   // MODIFIED: 17-Jan-2026 - Find all rates for this currency pair (now EUR-based)
   const relevantRates = exchangeRates.filter(r =>
@@ -116,10 +118,14 @@ export function getRateDetailsForDate(exchangeRates, currencyCode, date, baseCur
 
   // Sort by date difference to find the closest one
   relevantRates.sort((a, b) => {
-    const dateA = startOfDay(parseISO(a.date));
-    const dateB = startOfDay(parseISO(b.date));
-    const diffA = Math.abs(differenceInDays(targetDateObj, dateA));
-    const diffB = Math.abs(differenceInDays(targetDateObj, dateB));
+    const dateA = parseDate(a.date);
+    const dateB = parseDate(b.date);
+    if (!dateA || !dateB) return 0;
+
+    // Calculate absolute difference in days using millisecond normalization
+    const diffA = Math.abs(targetDateObj.getTime() - dateA.getTime());
+    const diffB = Math.abs(targetDateObj.getTime() - dateB.getTime());
+
     return diffA - diffB;
   });
 
