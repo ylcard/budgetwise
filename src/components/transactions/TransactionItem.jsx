@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Trash2, Circle, Check, Clock, Banknote, MapPin } from "lucide-react";
-import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
@@ -9,7 +8,17 @@ import { getCategoryIcon } from "../utils/iconMapConfig";
 import ExpenseFormDialog from "../dialogs/ExpenseFormDialog";
 import { detectCrossPeriodSettlement } from "../utils/calculationEngine";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatDate, parseDate, normalizeToMidnight } from "../utils/dateUtils";
 
+/**
+ * TransactionItem Component
+ * Renders a single transaction row with visual enrichment (Google Places), status icons, and actions.
+ * @param {Object} props
+ * @param {Object} props.transaction - The transaction entity.
+ * @param {Object} props.category - The associated category entity.
+ * @param {Function} props.onDelete - Callback to delete the item.
+ * @param {Function} props.onSelect - Callback for checkbox selection.
+ */
 export default function TransactionItem({
   transaction,
   category,
@@ -39,7 +48,7 @@ export default function TransactionItem({
     const fetchMerchantDetails = async () => {
       try {
         // Securely access the API key from environment variables
-        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+        const apiKey = import.meta.env?.VITE_GOOGLE_MAPS_KEY;
         if (!apiKey) return;
 
         const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -66,8 +75,8 @@ export default function TransactionItem({
 
   const IconComponent = getCategoryIcon(category?.icon);
 
-  const currentYear = new Date().getFullYear();
-  const paidYear = transaction.paidDate ? new Date(transaction.paidDate).getFullYear() : null;
+  const currentYear = normalizeToMidnight(new Date()).getFullYear();
+  const paidYear = transaction.paidDate ? parseDate(transaction.paidDate).getFullYear() : null;
   const showYear = paidYear && paidYear !== currentYear;
 
   const crossPeriodInfo = monthStart && monthEnd
@@ -129,13 +138,13 @@ export default function TransactionItem({
 
             <div className="flex items-center gap-3 mt-1">
               <p className="text-sm text-muted-foreground">
-                {format(new Date(transaction.date), "MMM d, yyyy")}
+                {formatDate(transaction.date, "MMM d, yyyy")}
               </p>
               {!isIncome && isPaid && transaction.paidDate && (
                 <>
                   <span className="text-muted-foreground/30">•</span>
                   <p className="text-xs text-[hsl(var(--status-paid-text))]">
-                    Paid {format(new Date(transaction.paidDate), showYear ? "MMM d, yyyy" : "MMM d")}
+                    Paid {formatDate(transaction.paidDate, showYear ? "MMM d, yyyy" : "MMM d")}
                   </p>
                 </>
               )}
