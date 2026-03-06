@@ -82,7 +82,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
 
       // Only add auto-matches to the "payment pool". 
       // 'needs_review' is for UI suggestions only, not for logic verification.
-      if (matchCandidate && matchStatus === 'auto_match') {
+      if (matchCandidate && (matchStatus === 'auto_match' || matchStatus === 'needs_review')) {
         poolOfTransactions.push(matchCandidate);
       }
 
