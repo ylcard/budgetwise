@@ -15,10 +15,11 @@ import {
   getMonthlyIncome,
   getMonthlyTarget
 } from "./financialCalculations";
-import { getMonthBoundaries } from "./dateUtils";
+import { getMonthBoundaries, parseDate } from "./dateUtils";
 
 /**
  * Calculate standard deviation
+ * @param {number[]} values - Array of numerical values
  */
 const calculateStdDev = (values) => {
   if (values.length < 2) return 0;
@@ -34,9 +35,13 @@ const calculateStdDev = (values) => {
 /**
  * Single-pass bucket builder to prevent massive O(N * 18) looping in algorithms.
  * Groups raw transactions by month and pre-calculates top-level aggregates.
+ * @param {Array} fullHistory - List of all historical transactions
+ * @param {string} startDate - The reference start date (YYYY-MM-DD)
+ * @param {Array} categories - Category definitions
+ * @param {Array} allCustomBudgets - Budget definitions
  */
 const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudgets) => {
-  const start = new Date(startDate);
+  const start = parseDate(startDate);
 
   // 1. Single pass: Group all historical transactions by YYYY-MM
   const groupedTxns = {};
@@ -71,10 +76,15 @@ const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudget
 /**
  * METRIC 1: Pacing Score (0-100)
  * Real-time: Compare current spend vs 3-month average for same day range
+ * @param {Array} transactions - Current month transactions
+ * @param {Object} historySummary - Pre-calculated history buckets
+ * @param {Array} categories - Category definitions
+ * @param {Array} allCustomBudgets - Budget definitions
+ * @param {string} startDate - Current view date (YYYY-MM-DD)
  */
 const calculatePacingScore = (transactions, historySummary, categories, allCustomBudgets, startDate) => {
   const today = new Date();
-  const start = new Date(startDate);
+  const start = parseDate(startDate);
 
   // If viewing current month, compare "Day 1 to Today". If past month, compare full month.
   const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
@@ -115,9 +125,17 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
  * Real-time: Is spending rate sustainable for income?
  * Target: Spend < 80% of income by end of month
  * UPGRADE: Uses "Smart Target" (Historical Floor) and "Weighted Penalty" (Needs vs Wants)
+ * @param {Array} transactions - Current month transactions
+ * @param {Array} categories - Category definitions
+ * @param {Array} allCustomBudgets - Budget definitions
+ * @param {number} monthlyIncome - Current income
+ * @param {string} startDate - Current view date (YYYY-MM-DD)
+ * @param {Object} settings - User settings
+ * @param {Array} goals - User goals
+ * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary) => {
-  const start = new Date(startDate);
+  const start = parseDate(startDate);
   const year = start.getFullYear();
   const month = start.getMonth();
   const { monthStart, monthEnd } = getMonthBoundaries(month, year);
@@ -181,6 +199,7 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
  * METRIC 3: Stability Score (0-100)
  * Historical: Coefficient of Variation of monthly expenses over last 6 months
  * Lower CV = Higher stability = Better score
+ * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateStabilityScore = (historySummary) => {
   const monthlyExpenses = [];
@@ -207,6 +226,7 @@ const calculateStabilityScore = (historySummary) => {
  * METRIC 4: Financial Sharpe Ratio (0-100)
  * Historical: Risk-adjusted savings consistency
  * Formula: (Average Monthly Net Savings) / (Std Dev of Net Savings)
+ * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateSharpeRatio = (historySummary) => {
   const monthlySavings = [];
@@ -252,6 +272,7 @@ const calculateSharpeRatio = (historySummary) => {
  * METRIC 5: Lifestyle Creep Index (0-100)
  * Historical: Compare expense growth vs income growth over last 6 months
  * Penalize if expenses grow faster than income
+ * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateLifestyleCreepIndex = (historySummary) => {
   const dataPoints = [];
@@ -295,6 +316,10 @@ const calculateLifestyleCreepIndex = (historySummary) => {
  * @param {Array} fullHistory - All historical transactions
  * @param {number} monthlyIncome - Current period income
  * @param {string} startDate - Start date of current viewing period (YYYY-MM-DD)
+ * @param {Object} settings - User settings
+ * @param {Array} goals - User goals
+ * @param {Array} categories - User categories
+ * @param {Array} allCustomBudgets - Custom budgets list
  * @returns {Object} { totalScore, breakdown, label }
  */
 export const calculateFinancialHealth = (transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets) => {
