@@ -1,4 +1,5 @@
 import { base44 } from '@/api/base44Client';
+import { getMonthName } from './dateUtils';
 
 /**
  * CREATED 14-Feb-2026: Centralized notification creation helpers
@@ -7,6 +8,18 @@ import { base44 } from '@/api/base44Client';
 
 /**
  * Create a generic notification
+ * @param {object} params
+ * @param {string} params.title - Notification title
+ * @param {string} params.message - Body text
+ * @param {'info'|'success'|'warning'|'error'|'action'|'story'} [params.type='info'] - Visual style
+ * @param {string} params.category - System category (e.g., 'budgets', 'bank_sync')
+ * @param {'low'|'medium'|'high'|'urgent'} [params.priority='medium'] - Importance level
+ * @param {string|null} [params.actionUrl] - Internal route to navigate to
+ * @param {string|null} [params.actionLabel] - Button text
+ * @param {object} [params.metadata] - Extra data for logic/analytics
+ * @param {string|null} [params.expiresAt] - ISO Date string for auto-dismissal
+ * @param {string} params.userEmail - User identifier
+ * @returns {Promise<object|null>} The created notification object or null
  */
 export const createNotification = async ({
   title,
@@ -43,6 +56,10 @@ export const createNotification = async ({
 
 /**
  * Bank Sync Notifications
+ * @param {string} userEmail
+ * @param {number} transactionCount
+ * @param {string} [dateStr='today']
+ * @returns {Promise<object|null>}
  */
 export const notifyBankSyncSuccess = (userEmail, transactionCount, dateStr = 'today') => {
   return createNotification({
@@ -58,6 +75,13 @@ export const notifyBankSyncSuccess = (userEmail, transactionCount, dateStr = 'to
   });
 };
 
+/**
+ * @param {string} userEmail
+ * @param {number} totalCount
+ * @param {number} reviewCount
+ * @param {string} [dateStr='today']
+ * @returns {Promise<object|null>}
+ */
 export const notifyBankSyncWithReviews = (userEmail, totalCount, reviewCount, dateStr = 'today') => {
   // Grammar logic: 
   // 1. "transaction" vs "transactions"
@@ -78,6 +102,11 @@ export const notifyBankSyncWithReviews = (userEmail, totalCount, reviewCount, da
   });
 };
 
+/**
+ * @param {string} userEmail
+ * @param {string} errorMessage
+ * @returns {Promise<object|null>}
+ */
 export const notifyBankSyncError = (userEmail, errorMessage) => {
   return createNotification({
     title: 'Bank Sync Failed',
@@ -91,6 +120,12 @@ export const notifyBankSyncError = (userEmail, errorMessage) => {
   });
 };
 
+/**
+ * @param {string} userEmail
+ * @param {string} bankName
+ * @param {number} daysLeft
+ * @returns {Promise<object|null>}
+ */
 export const notifyBankTokenExpiring = (userEmail, bankName, daysLeft) => {
   return createNotification({
     title: 'Bank Connection Expiring',
@@ -108,6 +143,12 @@ export const notifyBankTokenExpiring = (userEmail, bankName, daysLeft) => {
 /**
  * Budget Notifications
  */
+
+/**
+ * @param {string} userEmail
+ * @param {string} budgetName
+ * @param {number} percentage
+ */
 export const notifyBudgetExceeded = (userEmail, budgetName, percentage) => {
   return createNotification({
     title: 'Budget Alert',
@@ -122,6 +163,11 @@ export const notifyBudgetExceeded = (userEmail, budgetName, percentage) => {
   });
 };
 
+/**
+ * @param {string} userEmail
+ * @param {string} budgetName
+ * @param {string|number} remaining - Currency formatted string or number
+ */
 export const notifyBudgetLowFunds = (userEmail, budgetName, remaining) => {
   return createNotification({
     title: 'Low Budget Funds',
@@ -139,6 +185,11 @@ export const notifyBudgetLowFunds = (userEmail, budgetName, remaining) => {
 /**
  * Transaction Notifications
  */
+
+/**
+ * @param {string} userEmail
+ * @param {number} count
+ */
 export const notifyTransactionsNeedReview = (userEmail, count) => {
   return createNotification({
     title: 'Review Required',
@@ -153,6 +204,10 @@ export const notifyTransactionsNeedReview = (userEmail, count) => {
   });
 };
 
+/**
+ * @param {string} userEmail
+ * @param {number} count
+ */
 export const notifyDuplicateDetected = (userEmail, count) => {
   return createNotification({
     title: 'Possible Duplicates',
@@ -170,6 +225,11 @@ export const notifyDuplicateDetected = (userEmail, count) => {
 /**
  * System Notifications
  */
+
+/**
+ * @param {string} userEmail
+ * @param {string} setupType
+ */
 export const notifySystemSetupRequired = (userEmail, setupType) => {
   return createNotification({
     title: 'Setup Required',
@@ -184,6 +244,10 @@ export const notifySystemSetupRequired = (userEmail, setupType) => {
   });
 };
 
+/**
+ * @param {string} userEmail
+ * @param {string} filename
+ */
 export const notifyDataExportReady = (userEmail, filename) => {
   return createNotification({
     title: 'Export Complete',
@@ -199,6 +263,12 @@ export const notifyDataExportReady = (userEmail, filename) => {
 /**
  * Goal Notifications
  */
+
+/**
+ * @param {string} userEmail
+ * @param {string} goalType
+ * @param {number} percentage
+ */
 export const notifyGoalAchieved = (userEmail, goalType, percentage) => {
   return createNotification({
     title: 'Goal Achieved! 🎉',
@@ -213,6 +283,11 @@ export const notifyGoalAchieved = (userEmail, goalType, percentage) => {
   });
 };
 
+/**
+ * @param {string} userEmail
+ * @param {string} goalType
+ * @param {string|number} shortfall
+ */
 export const notifyGoalAtRisk = (userEmail, goalType, shortfall) => {
   return createNotification({
     title: 'Savings Goal at Risk',
@@ -230,9 +305,15 @@ export const notifyGoalAtRisk = (userEmail, goalType, shortfall) => {
 /**
  * Report/Story Notifications
  */
+
+/**
+ * @param {string} userEmail
+ * @param {number} monthIndex - 0-11
+ * @param {number} year
+ */
 export const notifyMonthlyRewindReady = (userEmail, monthIndex, year) => {
   // Get full month name for the message
-  const monthName = new Date(year, monthIndex).toLocaleString('default', { month: 'long' });
+  const monthName = getMonthName(monthIndex);
 
   return createNotification({
     title: `${monthName} Rewind Ready 🎬`,
@@ -249,6 +330,8 @@ export const notifyMonthlyRewindReady = (userEmail, monthIndex, year) => {
 
 /**
  * Batch notification cleanup
+ * @param {string} userEmail
+ * @returns {Promise<number>} Number of dismissed notifications
  */
 export const dismissExpiredNotifications = async (userEmail) => {
   try {
@@ -271,6 +354,12 @@ export const dismissExpiredNotifications = async (userEmail) => {
   }
 };
 
+/**
+ * @param {string} userEmail
+ * @param {string[]} categoryNames
+ * @param {string} monthYear
+ * @returns {Promise<object|null>}
+ */
 export const notifyCategorySpendingAlert = (userEmail, categoryNames, monthYear) => {
   // Format the list gracefully depending on how many categories triggered the alert
   let categoryString = categoryNames[0];
