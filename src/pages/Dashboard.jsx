@@ -51,6 +51,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
 import { subMonths } from 'date-fns';
+import { ActivityHub } from "../components/dashboard/ActivityHub";
 
 /**
  * Main Dashboard Page
@@ -417,22 +418,12 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-
-            {/* DESKTOP PLACEMENT: Right side of Hero */}
-            <div className="hidden lg:block lg:col-span-1 h-full space-y-6" data-tutorial="upcoming-transactions">
-              {/* <BudgetAvatar health={budgetHealth} /> */}
-              <UpcomingTransactions
-                recurringWithStatus={recurringWithStatus}
-                onMarkPaid={handleMarkPaid}
-                isLoading={isLoading}
-                categories={categories}
-              />
-            </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6">
+          {/* NEW GRID LAYOUT: Custom Budgets + Activity Hub side-by-side with equal height */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             {/* Added spacing between elements in this column */}
-            <div className="lg:col-span-2 flex flex-col min-w-0 space-y-4 md:space-y-6 px-4 md:px-0">
+            <div className="lg:col-span-8 flex flex-col min-w-0 space-y-4 md:space-y-6 px-4 md:px-0">
               <div data-tutorial="custom-budgets" className="w-full">
                 <CustomBudgetsDisplay
                   onCreateBudget={() => setShowQuickAddBudget(true)}
@@ -440,53 +431,55 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* MOBILE ONLY: Activity Carousel */}
-            <div className="lg:hidden w-full max-w-full mx-auto overflow-hidden mt-2">
-              <div className="overflow-hidden rounded-xl" ref={emblaRef}>
-                <div className="flex touch-pan-y h-[calc(100dvh-var(--header-total-height)-var(--nav-total-height)-5rem)]">
-                  {/* Slide 1: Upcoming */}
-                  <div className="flex-[0_0_100%] min-w-0 px-4 h-full overflow-y-auto scrollbar-hide" data-tutorial="upcoming-transactions">
-                    <UpcomingTransactions
-                      recurringWithStatus={recurringWithStatus}
-                      onMarkPaid={handleMarkPaid}
-                      isLoading={isLoading}
-                      categories={categories}
-                    />
-                  </div>
-                  {/* Slide 2: Recent */}
-                  <div className="flex-[0_0_100%] min-w-0 px-4 h-full overflow-y-auto scrollbar-hide" data-tutorial="recent-transactions">
-                    <RecentTransactions
-                      categories={categories}
-                      settings={settings}
-                      customBudgets={allCustomBudgets}
-                      onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
-                      onDelete={transactionActions.handleDelete}
-                    />
-                  </div>
-                </div>
-              </div>
+            {/* DESKTOP: Activity Hub (Combined Recent + Upcoming) */}
+            <div className="hidden lg:block lg:col-span-4 h-full" data-tutorial="activity-hub">
+              <ActivityHub
+                recurringWithStatus={recurringWithStatus}
+                onMarkPaid={handleMarkPaid}
+                isLoading={isLoading}
+                categories={categories}
+                customBudgets={allCustomBudgets}
+                transactionActions={transactionActions}
+                settings={settings}
+              />
+            </div>
+          </div>
 
-              {/* Pagination Dots */}
-              <div className="flex justify-center items-center gap-1.5 mt-4">
-                {[0, 1].map((index) => (
-                  <div
-                    key={index}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${selectedIndex === index ? "w-4 bg-primary" : "w-1.5 bg-border"
-                      }`}
+          {/* MOBILE ONLY: Activity Carousel (Kept as requested) */}
+          <div className="lg:hidden w-full max-w-full mx-auto overflow-hidden mt-2">
+            <div className="overflow-hidden rounded-xl" ref={emblaRef}>
+              <div className="flex touch-pan-y h-[calc(100dvh-var(--header-total-height)-var(--nav-total-height)-5rem)]">
+                {/* Slide 1: Upcoming */}
+                <div className="flex-[0_0_100%] min-w-0 px-4 h-full overflow-y-auto scrollbar-hide" data-tutorial="upcoming-transactions">
+                  <UpcomingTransactions
+                    recurringWithStatus={recurringWithStatus}
+                    onMarkPaid={handleMarkPaid}
+                    isLoading={isLoading}
+                    categories={categories}
                   />
-                ))}
+                </div>
+                {/* Slide 2: Recent */}
+                <div className="flex-[0_0_100%] min-w-0 px-4 h-full overflow-y-auto scrollbar-hide" data-tutorial="recent-transactions">
+                  <RecentTransactions
+                    categories={categories}
+                    settings={settings}
+                    customBudgets={allCustomBudgets}
+                    onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
+                    onDelete={transactionActions.handleDelete}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* DESKTOP PLACEMENT: Sidebars */}
-            <div className="hidden lg:flex lg:col-span-1 flex-col" data-tutorial="recent-transactions">
-              <RecentTransactions
-                categories={categories}
-                settings={settings}
-                customBudgets={allCustomBudgets}
-                onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
-                onDelete={transactionActions.handleDelete}
-              />
+            {/* Pagination Dots */}
+            <div className="flex justify-center items-center gap-1.5 mt-4">
+              {[0, 1].map((index) => (
+                <div
+                  key={index}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${selectedIndex === index ? "w-4 bg-primary" : "w-1.5 bg-border"
+                    }`}
+                />
+              ))}
             </div>
           </div>
 
