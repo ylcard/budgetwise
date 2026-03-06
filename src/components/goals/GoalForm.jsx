@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AmountInput } from '@/components/ui/AmountInput';
 import DatePicker from '@/components/ui/DatePicker';
 import { useSettings } from '../utils/SettingsContext';
-import { addMonths } from 'date-fns';
-import { Target, Calendar, TrendingUp, DollarSign, Percent } from 'lucide-react';
+import { formatDateString, addDays, normalizeToMidnight } from '../utils/dateUtils';
+import { TrendingUp, DollarSign, Percent } from 'lucide-react';
 
 const FREQUENCY_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
@@ -23,7 +23,12 @@ const FUNDING_TYPE_OPTIONS = [
 ];
 
 /**
- * GoalForm - Form for creating/editing goals
+ * GoalForm Component
+ * Handles creation and editing of financial goals with flexible funding strategies.
+ * @param {Object} props
+ * @param {Object} [props.goal] - Existing goal data for edit mode.
+ * @param {Function} props.onSubmit - Callback function for form submission.
+ * @param {Function} props.onCancel - Callback function for cancellation.
  */
 export const GoalForm = ({ goal, onSubmit, onCancel }) => {
   const { settings } = useSettings();
@@ -41,7 +46,7 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
       title: goal?.title || '',
       description: goal?.description || '',
       target_amount: goal?.target_amount || '',
-      deadline: goal?.deadline || addMonths(new Date(), 6).toISOString().split('T')[0],
+      deadline: goal?.deadline || formatDateString(addDays(normalizeToMidnight(new Date()), 180)),
       funding_frequency: goal?.funding_rule?.frequency || 'monthly',
       funding_amount: goal?.funding_rule?.amount || '',
       funding_percentage: goal?.funding_rule?.percentage || '',
