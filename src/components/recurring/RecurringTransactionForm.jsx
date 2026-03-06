@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,7 @@ import AmountInput from "../ui/AmountInput";
 import DatePicker, { CalendarView } from "../ui/DatePicker";
 import CategorySelect from "../ui/CategorySelect";
 import { useSettings } from "../utils/SettingsContext";
-import { formatDateString, formatDate } from "../utils/dateUtils";
+import { formatDateString, formatDate, parseDate } from "../utils/dateUtils";
 import { normalizeAmount } from "../utils/generalUtils";
 import { cn } from "@/lib/utils";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
@@ -29,6 +29,14 @@ const FREQUENCY_OPTIONS = [
   { value: "yearly", label: "Yearly" },
 ];
 
+/**
+ * Mobile-optimized category selector using a Drawer.
+ *
+ * @param {Object} props
+ * @param {string} props.value - Selected category ID
+ * @param {Array} props.categories - List of category objects
+ * @param {Function} props.onSelect - Callback when category is selected
+ */
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const selectedCategory = categories.find(c => c.id === value);
@@ -98,9 +106,17 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
   );
 };
 
+/**
+ * Adaptive DatePicker that uses a Drawer on mobile and Popover on desktop.
+ *
+ * @param {Object} props
+ * @param {string} props.value - Date string (YYYY-MM-DD)
+ * @param {Function} props.onChange - Callback with new date string
+ */
 const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
   const isMobile = useIsMobile();
-  const dateValue = value ? new Date(value) : undefined;
+  // Use parseDate to ensure timezone-safe conversion from YYYY-MM-DD string
+  const dateValue = value ? parseDate(value) : undefined;
 
   if (isMobile) {
     return (
@@ -128,6 +144,16 @@ const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
   );
 };
 
+/**
+ * Form component for creating or editing recurring transactions.
+ * Handles validation, adaptive inputs for mobile/desktop, and type toggling.
+ *
+ * @param {Object} props
+ * @param {Object} [props.initialData] - Data to pre-fill for editing
+ * @param {Array} props.categories - Available categories
+ * @param {Function} props.onSubmit - Submission handler
+ * @param {Function} props.onCancel - Cancellation handler
+ */
 export default function RecurringTransactionForm({
   initialData = null,
   categories = [],
