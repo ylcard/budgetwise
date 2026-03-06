@@ -19,8 +19,8 @@ import CategorySelect from "@/components/ui/CategorySelect";
 import { useSettings } from "@/components/utils/SettingsContext";
 import { useExchangeRates } from "@/components/hooks/useExchangeRates";
 import { calculateConvertedAmount, getRateForDate, getRateDetailsForDate } from "@/components/utils/currencyCalculations";
-import { formatDateString, isDateInRange, formatDate, getMonthBoundaries } from "@/components/utils/dateUtils";
-import { differenceInDays, parseISO, startOfDay } from "date-fns";
+import { formatDateString, isDateInRange, formatDate, getMonthBoundaries, parseDate, normalizeToMidnight } from "@/components/utils/dateUtils";
+import { differenceInDays } from "date-fns";
 import { normalizeAmount, getBudgetDisplayName } from "@/components/utils/generalUtils";
 import { cn } from "@/lib/utils";
 import { useCategoryRules, useGoals, useSystemBudgetsForPeriod } from "@/components/hooks/useBase44Entities";
@@ -33,6 +33,12 @@ import DatePicker, { CalendarView } from "@/components/ui/DatePicker";
 import ReceiptScanner from "./ReceiptScanner";
 import fuzzysort from "fuzzysort";
 
+/**
+ * Mobile-optimized drawer for category selection
+ * @param {Object} props
+ * @param {string} props.value - Selected category ID
+ * @param {Array} props.categories - List of category objects
+ */
 const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const selectedCategory = categories.find(c => c.id === value);
@@ -104,6 +110,12 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
   );
 };
 
+/**
+ * Mobile-optimized drawer for budget selection
+ * @param {Object} props
+ * @param {string} props.value - Selected budget ID
+ * @param {Array} props.options - List of budget objects
+ */
 const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchTerm, onSearchChange }) => {
   const selectedBudget = options.find(b => b.id === value);
   const label = selectedBudget ? getBudgetDisplayName(selectedBudget) : placeholder;
@@ -181,9 +193,17 @@ const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchT
   );
 };
 
+/**
+ * Responsive Date Picker that switches between Drawer (Mobile) and Popover (Desktop)
+ * @param {Object} props
+ * @param {string} props.value - Date string YYYY-MM-DD
+ * @param {Function} props.onChange - Handler for date change
+ */
 const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
   const isMobile = useIsMobile();
-  const dateValue = value ? new Date(value) : undefined;
+
+  // Use parseDate to ensure local midnight consistency (avoids UTC off-by-one errors)
+  const dateValue = value ? parseDate(value) : undefined;
 
   if (isMobile) {
     return (
@@ -211,6 +231,16 @@ const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
   );
 };
 
+/**
+ * Main Expense Form Content
+ * Handles creating and editing expense transactions with budget allocation, currency conversion, and receipt scanning.
+ * @param {Object} props
+ * @param {Object} [props.initialTransaction] - Transaction object if editing
+ * @param {Array} props.categories - Available categories
+ * @param {Array} props.allBudgets - Available budgets
+ * @param {Function} props.onSubmit - Submit handler
+ * @param {Function} props.onCancel - Cancel handler
+ */
 export default function TransactionFormContent({
   initialTransaction = null,
   categories = [],
@@ -294,7 +324,7 @@ export default function TransactionFormContent({
       : formData.date;
 
     if (!effectiveDateStr) return null;
-    const date = new Date(effectiveDateStr);
+    const date = parseDate(effectiveDateStr);
     return getMonthBoundaries(date.getMonth(), date.getFullYear());
   }, [formData.date, formData.paidDate, formData.isPaid, formData.type]);
 
@@ -764,7 +794,10 @@ export default function TransactionFormContent({
                     {(() => {
                       const rateDetails = getRateDetailsForDate(exchangeRates, formData.originalCurrency, formData.date, settings?.baseCurrency);
                       if (rateDetails) {
-                        const isOld = Math.abs(differenceInDays(startOfDay(parseISO(formData.date)), startOfDay(parseISO(rateDetails.date)))) > 14;
+                        // Use normalizeToMidnight for safe local date comparison without time/zone offsets
+                        const formDateNorm = normalizeToMidnight(formData.date);
+                        const rateDateNorm = normalizeToMidnight(rateDetails.date);
+                        const isOld = formDateNorm && rateDateNorm ? Math.abs(differenceInDays(formDateNorm, rateDateNorm)) > 14 : false;
                         return (
                           <span className={`text-[10px] font-bold uppercase tracking-tight ${isOld ? 'text-warning' : 'text-muted-foreground'}`}>
                             1 {formData.originalCurrency} = {rateDetails.rate} {settings?.baseCurrency}
