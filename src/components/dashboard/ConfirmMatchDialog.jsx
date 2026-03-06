@@ -1,10 +1,18 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { format } from "date-fns";
+import { formatDate } from "../utils/dateUtils";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+/**
+ * Dialog to confirm linking a transaction to a recurring bill template.
+ * @param {object} props
+ * @param {boolean} props.isOpen - Visibility state
+ * @param {function} props.onClose - Close handler
+ * @param {function} props.onConfirm - Confirm match handler
+ * @param {object} props.matchData - Object containing { transaction, template }
+ */
 export function ConfirmMatchDialog({ isOpen, onClose, onConfirm, matchData }) {
   const isMobile = useIsMobile();
 
@@ -30,7 +38,7 @@ export function ConfirmMatchDialog({ isOpen, onClose, onConfirm, matchData }) {
           <p className="font-bold truncate">{transaction.rawDescription || transaction.title}</p>
           <div className="flex justify-between items-center">
             <p className="text-sm font-semibold">{Math.abs(transaction.amount).toLocaleString()}</p>
-            <span className="text-xs text-muted-foreground">{format(new Date(transaction.date), "MMM d")}</span>
+            <span className="text-xs text-muted-foreground">{formatDate(transaction.date, "MMM d")}</span>
           </div>
         </div>
       </div>
