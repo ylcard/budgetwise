@@ -1,187 +1,192 @@
-import { Trash2, Check, Clock, Banknote } from "lucide-react";
-import { format } from "date-fns";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion"; // ADDED 03-Feb-2026: Layout transitions
+import { Trash2, Check, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../utils/SettingsContext";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
+import { formatDate } from "../utils/dateUtils";
 import ExpenseFormDialog from "./dialogs/ExpenseFormDialog";
-import { useTransactions } from "../hooks/useBase44Entities";
-import { useMergedCategories } from "../hooks/useMergedCategories";
 import { CustomButton } from "@/components/ui/CustomButton";
 
-export default function TransactionCard({ transaction, category, onEdit, onDelete }) {
-    const { settings } = useSettings();
-    const { transactions } = useTransactions();
-    const { categories } = useMergedCategories();
-    const [isHovered, setIsHovered] = useState(false);
+/**
+ * TransactionCard Component
+ * A compact, interactive card for displaying transaction details.
+ * Features a "Spring" expansion animation on hover for desktop/tap on mobile.
+ * @param {Object} props
+ * @param {Object} props.transaction - The transaction entity
+ * @param {Object} props.category - The associated category object
+ * @param {Function} props.onEdit - Callback for updating the transaction
+ * @param {Function} props.onDelete - Callback for removing the transaction
+ */
+export default function TransactionCard({ transaction, category, categories, onEdit, onDelete }) {
+  const { settings } = useSettings();
+  const [isHovered, setIsHovered] = useState(false);
 
-    const isIncome = transaction.type === 'income';
-    const isPaid = transaction.isPaid;
+  const isIncome = transaction.type === 'income';
+  const isPaid = transaction.isPaid;
 
-    const IconComponent = getCategoryIcon(category?.icon);
+  const IconComponent = getCategoryIcon(category?.icon);
 
-    // Get category color with fallback
-    const categoryColor = isIncome ? '#10B981' : (category?.color || '#6B7280');
-    const categoryName = isIncome ? 'Income' : (category?.name || 'Uncategorized');
+  // Get category color with fallback
+  const categoryColor = isIncome ? '#10B981' : (category?.color || '#6B7280');
+  const categoryName = isIncome ? 'Income' : (category?.name || 'Uncategorized');
 
-    return (
-        <motion.div
-            className="relative flex-shrink-0"
-            style={{
-                width: '140px',
-                height: '140px',
-            }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            layout
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-            {/*  Using Framer Motion layout transitions */}
+  return (
+    <motion.div
+      className="relative flex-shrink-0"
+      style={{
+        width: '140px',
+        height: '140px',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      layout
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      {/*  Using Framer Motion layout transitions */}
+      <motion.div
+        className="absolute top-0 bg-white border border-gray-200 rounded-2xl"
+        layout // Enable smooth layout transitions
+        animate={{
+          width: isHovered ? '280px' : '140px',
+          boxShadow: isHovered
+            ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+          zIndex: isHovered ? 50 : 1,
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        style={{
+          height: '140px',
+          left: '0px',
+        }}
+      >
+        {/* Collapsed State - Vertical Layout */}
+        <AnimatePresence mode="wait">
+          {!isHovered && (
             <motion.div
-                className="absolute top-0 bg-white border border-gray-200 rounded-2xl"
-                layout // Enable smooth layout transitions
-                animate={{
-                    width: isHovered ? '280px' : '140px',
-                    boxShadow: isHovered
-                        ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                        : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-                    zIndex: isHovered ? 50 : 1,
-                }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                style={{
-                    height: '140px',
-                    left: '0px',
-                }}
+              key="collapsed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4"
             >
-                {/* Collapsed State - Vertical Layout */}
-                <AnimatePresence mode="wait">
-                    {!isHovered && (
-                        <motion.div
-                            key="collapsed"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4"
-                        >
-                            {/* Icon Circle */}
-                            <motion.div
-                                layout
-                                className="w-12 h-12 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: `${categoryColor}20` }}
-                            >
-                                <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
-                            </motion.div>
+              {/* Icon Circle */}
+              <motion.div
+                layout
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: `${categoryColor}20` }}
+              >
+                <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
+              </motion.div>
 
-                            {/* Category Name */}
-                            <motion.p layout className="text-sm font-semibold text-gray-900 text-center line-clamp-1">
-                                {categoryName}
-                            </motion.p>
+              {/* Category Name */}
+              <motion.p layout className="text-sm font-semibold text-gray-900 text-center line-clamp-1">
+                {categoryName}
+              </motion.p>
 
-                            {/* Price Pill */}
-                            <motion.div
-                                layout
-                                className="px-3 py-1 rounded-full"
-                                style={{
-                                    backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
-                                    color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
-                                }}
-                            >
-                                <p className="text-sm font-bold">
-                                    {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
-                                </p>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Expanded State - Horizontal Layout */}
-                <AnimatePresence mode="wait">
-                    {isHovered && (
-                        <motion.div
-                            key="expanded"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute inset-0 flex items-center gap-3 p-4"
-                        >
-                            {/* Left Side - Icon and Price */}
-                            <motion.div layout className="flex flex-col items-center gap-2 flex-shrink-0">
-                                <motion.div
-                                    layout
-                                    className="w-12 h-12 rounded-full flex items-center justify-center"
-                                    style={{ backgroundColor: `${categoryColor}20` }}
-                                >
-                                    <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
-                                </motion.div>
-                                <motion.div
-                                    layout
-                                    className="px-2.5 py-1 rounded-full"
-                                    style={{
-                                        backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
-                                        color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
-                                    }}
-                                >
-                                    <p className="text-xs font-bold whitespace-nowrap">
-                                        {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
-                                    </p>
-                                </motion.div>
-                            </motion.div>
-
-                            {/* Right Side - Merchant Name and Date */}
-                            <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                <p className="text-base font-semibold text-gray-900 line-clamp-2 mb-0.5">
-                                    {transaction.title}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                    {format(new Date(transaction.date), "MMM d, yyyy")}
-                                </p>
-                            </div>
-
-                            {/* Payment Status Indicator */}
-                            {!isIncome && (
-                                <div className="flex-shrink-0">
-                                    {isPaid ? (
-                                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                                            <Check className="w-4 h-4 text-green-600" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                                            <Clock className="w-4 h-4 text-orange-600" />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Action buttons - only visible on hover */}
-                            <div className="absolute top-2 right-2 flex gap-1">
-                                <ExpenseFormDialog
-                                    transaction={transaction}
-                                    categories={categories}
-                                    customBudgets={[]}
-                                    onSubmit={(data) => onEdit(transaction, data)}
-                                    isSubmitting={false}
-                                    transactions={transactions}
-                                    renderTrigger={true}
-                                />
-                                <CustomButton
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDelete(transaction.id);
-                                    }}
-                                    className="hover:bg-red-50 hover:text-red-600 h-6 w-6"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </CustomButton>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+              {/* Price Pill */}
+              <motion.div
+                layout
+                className="px-3 py-1 rounded-full"
+                style={{
+                  backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
+                  color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
+                }}
+              >
+                <p className="text-sm font-bold">
+                  {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                </p>
+              </motion.div>
             </motion.div>
-        </motion.div>
-    );
+          )}
+        </AnimatePresence>
+
+        {/* Expanded State - Horizontal Layout */}
+        <AnimatePresence mode="wait">
+          {isHovered && (
+            <motion.div
+              key="expanded"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 flex items-center gap-3 p-4"
+            >
+              {/* Left Side - Icon and Price */}
+              <motion.div layout className="flex flex-col items-center gap-2 flex-shrink-0">
+                <motion.div
+                  layout
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: `${categoryColor}20` }}
+                >
+                  <IconComponent className="w-6 h-6" style={{ color: categoryColor }} />
+                </motion.div>
+                <motion.div
+                  layout
+                  className="px-2.5 py-1 rounded-full"
+                  style={{
+                    backgroundColor: (isIncome || isPaid) ? categoryColor : `${categoryColor}15`,
+                    color: (isIncome || isPaid) ? '#FFFFFF' : categoryColor,
+                  }}
+                >
+                  <p className="text-xs font-bold whitespace-nowrap">
+                    {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, settings)}
+                  </p>
+                </motion.div>
+              </motion.div>
+
+              {/* Right Side - Merchant Name and Date */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <p className="text-base font-semibold text-gray-900 line-clamp-2 mb-0.5">
+                  {transaction.title}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatDate(transaction.date, "MMM d, yyyy")}
+                </p>
+              </div>
+
+              {/* Payment Status Indicator */}
+              {!isIncome && (
+                <div className="flex-shrink-0">
+                  {isPaid ? (
+                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                      <Check className="w-4 h-4 text-green-600" />
+                    </div>
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-orange-600" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action buttons - only visible on hover */}
+              <div className="absolute top-2 right-2 flex gap-1">
+                <ExpenseFormDialog
+                  transaction={transaction}
+                  categories={categories}
+                  customBudgets={[]}
+                  onSubmit={(data) => onEdit(transaction, data)}
+                  isSubmitting={false}
+                  renderTrigger={true}
+                />
+                <CustomButton
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(transaction.id);
+                  }}
+                  className="hover:bg-red-50 hover:text-red-600 h-6 w-6"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </CustomButton>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
+  );
 }
