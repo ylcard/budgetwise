@@ -10,29 +10,15 @@
  */
 
 import { base44 } from "@/api/base44Client";
-import { getMonthBoundaries } from "./dateUtils";
+import { getMonthBoundaries, parseDate, formatDateString, getFirstDayOfMonth, getLastDayOfMonth } from "./dateUtils";
 import { FINANCIAL_PRIORITIES } from "./constants";
 import { resolveBudgetLimit } from "./financialCalculations";
-import { format, parseISO, isValid, addMonths, startOfMonth, endOfMonth } from "date-fns";
+import { addMonths } from "date-fns";
 import { fetchWithRetry } from "./generalUtils";
 import Big from "big.js";
 
 // In-memory lock to prevent race conditions during concurrent budget creation
 const inFlightRequests = new Map();
-
-
-/**
- * Helper to ensure consistent date strings (YYYY-MM-DD)
- * Handles both Date objects and strings.
- */
-const normalizeDate = (dateInput) => {
-  if (!dateInput) return null;
-  try {
-    const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
-    if (!isValid(date)) return null;
-    return format(date, 'yyyy-MM-dd');
-  } catch (e) { return null; }
-};
 
 /**
  * ADDED 05-Feb-2026: Helper function to get or create a SystemBudget for a specific transaction.
@@ -63,7 +49,8 @@ export const getOrCreateSystemBudgetForTransaction = async (
   }
 
   // Extract month/year from transaction date
-  const date = new Date(transactionDate);
+  // Use parseDate to ensure local midnight consistency
+  const date = parseDate(transactionDate);
   const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
   // Ensure system budgets exist for this month, passing through options
@@ -114,8 +101,9 @@ export const ensureSystemBudgetsExist = async (
   monthlyIncome = 0,
   options = {}
 ) => {
-  const startDate = normalizeDate(startDateRaw);
-  const endDate = normalizeDate(endDateRaw);
+  // Normalize to YYYY-MM-DD using centralized utility
+  const startDate = formatDateString(startDateRaw);
+  const endDate = formatDateString(endDateRaw);
 
   if (!userEmail || !startDate || !endDate) return {};
 
@@ -228,6 +216,12 @@ export const ensureSystemBudgetsExist = async (
 
 /**
  * NEW: Bulk Sync Future Budgets
+ * Creates or updates system budgets for the next 12 months based on current goals.
+ * This ensures dashboards for future months work immediately.
+ * @param {Object} updatedGoal - The goal that triggered this sync
+ * @param {Object} settings - User settings
+ * @param {string} userEmail - User's email
+ * @param {Array} allGoals - All user goals
  * Fetches next 12 months, identifies missing vs existing, and performs bulk ops.
  * This guarantees NO duplicates and minimizes requests.
  */
@@ -240,8 +234,8 @@ export const snapshotFutureBudgets = async (updatedGoal, settings, userEmail, al
 
   for (let i = 0; i < monthsToSync; i++) {
     const date = addMonths(now, i);
-    const start = format(startOfMonth(date), 'yyyy-MM-dd');
-    const end = format(endOfMonth(date), 'yyyy-MM-dd');
+    const start = getFirstDayOfMonth(date.getMonth(), date.getFullYear());
+    const end = getLastDayOfMonth(date.getMonth(), date.getFullYear());
     ['needs', 'wants'].forEach(type => requiredBudgets.push({ start, end, type }));
   }
 
@@ -334,9 +328,11 @@ export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], 
   const activeMonths = new Set();
   transactions.forEach(t => {
     const d = t.date || t.paidDate;
-    if (d) {
-      const dateObj = typeof d === 'string' ? parseISO(d) : d;
-      if (isValid(dateObj)) activeMonths.add(format(dateObj, 'yyyy-MM-01'));
+    // Use parseDate to safely handle strings or Date objects
+    const dateObj = parseDate(d);
+    if (dateObj) {
+      // Store as the first of the month YYYY-MM-DD
+      activeMonths.add(getFirstDayOfMonth(dateObj.getMonth(), dateObj.getFullYear()));
     }
   });
 
@@ -348,7 +344,7 @@ export const ensureBudgetsForActiveMonths = async (userEmail, budgetGoals = [], 
   const priorityTypes = ['needs', 'wants'];
 
   activeMonths.forEach(monthDate => {
-    const date = parseISO(monthDate);
+    const date = parseDate(monthDate);
     const { monthStart, monthEnd } = getMonthBoundaries(date.getMonth(), date.getFullYear());
 
     priorityTypes.forEach(type => {
