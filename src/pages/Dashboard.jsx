@@ -456,6 +456,7 @@ export default function Dashboard() {
                     onMarkPaid={handleMarkPaid}
                     isLoading={isLoading}
                     categories={categories}
+                    embedded={false}
                   />
                 </div>
                 {/* Slide 2: Recent */}
@@ -466,6 +467,7 @@ export default function Dashboard() {
                     customBudgets={allCustomBudgets}
                     onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
                     onDelete={transactionActions.handleDelete}
+                    embedded={false}
                   />
                 </div>
               </div>
