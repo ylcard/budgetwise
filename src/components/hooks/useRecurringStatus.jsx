@@ -152,7 +152,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       const isPrevDueThisMonth = isSameMonth(prevDate, today);
 
       const isOverdue = isBefore(dbNextDate, currentMonthStart); // Missed entirely
-      const hasActivityThisMonth = linkedTxs.some(t => isSameMonth(parseISO(t.date), today));
+      const hasActivityThisMonth = linkedTxs.some(t => isSameMonth(parseDate(t.date), today));
       const needsReview = (matchStatus === 'needs_review' || matchStatus === 'auto_match') && !payingTx;
 
       if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth) {
