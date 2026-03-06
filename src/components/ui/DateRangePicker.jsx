@@ -19,17 +19,26 @@ import {
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSettings } from "../utils/SettingsContext";
-import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
+import { parseDate, formatDateString, formatDate, normalizeToMidnight } from "../utils/dateUtils";
+
+/**
+ * A mobile-responsive date range picker component.
+ * Uses a Drawer on mobile and a Popover on desktop.
+ * + * @param {Object} props
+ * @param {string} props.startDate - ISO date string (YYYY-MM-DD)
+ * @param {string} props.endDate - ISO date string (YYYY-MM-DD)
+ * @param {Function} props.onRangeChange - Callback receiving (startStr, endStr)
+ * @returns {JSX.Element}
+ */
 
 export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
   const { settings } = useSettings();
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  // Internal state to handle the selection process independently of parent state
+  /** @type {[import("react-day-picker").DateRange | undefined, Function]} */
   const [internalRange, setInternalRange] = useState(undefined);
 
-  // Sync internal state with props ONLY when the popover opens or props change externally
   useEffect(() => {
     if (open) {
       setInternalRange({
@@ -39,10 +48,12 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
     }
   }, [open, startDate, endDate]);
 
-  // We accept triggerDate (the specific day clicked) to handle the reset logic
+  /**
+   * Handles date selection logic, including range resetting.
+   * @param {import("react-day-picker").DateRange | undefined} selectedRange 
+   * @param {Date} triggerDate The specific day that was clicked
+   */
   const handleSelect = (selectedRange, triggerDate) => {
-    // If we already have a complete range selected, start a fresh selection
-    // instead of letting the library "extend" the previous range.
     if (internalRange?.from && internalRange?.to) {
       setInternalRange({ from: triggerDate, to: undefined });
       return;
@@ -64,7 +75,7 @@ export default function DateRangePicker({ startDate, endDate, onRangeChange }) {
       mode="range"
       selected={internalRange}
       onSelect={handleSelect}
-      defaultMonth={internalRange?.from || (startDate ? parseDate(startDate) : new Date())}
+      defaultMonth={internalRange?.from || (startDate ? parseDate(startDate) : normalizeToMidnight(new Date()))}
       className="p-3"
       weekStartsOn={1}
       showOutsideDays
