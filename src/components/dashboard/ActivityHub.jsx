@@ -12,7 +12,8 @@ export function ActivityHub({
   categories,
   customBudgets,
   transactionActions,
-  settings 
+  settings,
+  embedded = false
 }) {
   const [activeTab, setActiveTab] = useState('upcoming');
 
