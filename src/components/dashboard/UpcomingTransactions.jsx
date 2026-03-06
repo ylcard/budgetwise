@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import * as Tabs from '@radix-ui/react-tabs';
 import { CheckCircle2, Clock, AlertCircle, CalendarDays, X } from 'lucide-react';
 import { CustomButton } from '../ui/CustomButton';
 import { useTransactionActions } from '../hooks/useActions';
@@ -12,16 +11,16 @@ import { formatDate, parseDate } from '../utils/dateUtils';
  * UpcomingTransactions Component
  *
  * Displays a scrollable list of upcoming recurring bills and income.
- * Features a "Timeline" view for future projections and a "This Month" view with status badges.
  *
  * @param {Object} props
  * @param {Object} props.recurringWithStatus - Contains currentMonthItems and timelineItems
  * @param {Function} props.onMarkPaid - Callback to mark a recurring item as paid
  * @param {boolean} props.isLoading - Loading state for the container
  * @param {Array} props.categories - Category entities for icon/color mapping
+ * @param {boolean} props.embedded - Whether this is running inside the ActivityHub (removes outer card styles)
  */
 export default function UpcomingTransactions({
-  recurringWithStatus = { currentMonthItems: [], timelineItems: [] },
+  recurringWithStatus = { currentMonthItems: [] },
   onMarkPaid,
   isLoading,
   categories
@@ -32,63 +31,38 @@ export default function UpcomingTransactions({
   const [listRef] = useAutoAnimate();
   const { handleConfirmMatch } = useTransactionActions();
 
-  const { currentMonthItems, timelineItems } = recurringWithStatus;
-
-  // Memoize display items to avoid recalculation on unrelated re-renders
-  const displayItems = useMemo(() =>
-    viewMode === 'current' ? currentMonthItems : timelineItems,
-    [viewMode, currentMonthItems, timelineItems]);
+  const { currentMonthItems } = recurringWithStatus;
 
   if (isLoading) {
     return <div className="animate-pulse h-64 bg-muted rounded-xl"></div>;
   }
 
   return (
-    <div className="bg-card rounded-xl border border-border shadow-sm flex flex-col w-full overflow-hidden h-full max-h-[500px] lg:max-h-[650px]">
-      {/* Header Area - Stays fixed at the top */}
-      <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">Upcoming Bills</h2>
-          <p className="text-sm text-muted-foreground">Manage your recurring transactions</p>
+    <div className={clsx(
+      "flex flex-col w-full overflow-hidden h-full",
+      !embedded && "bg-card rounded-xl border border-border shadow-sm max-h-[500px] lg:max-h-[650px]"
+    )}>
+      {/* Header Area (Only show if NOT embedded, otherwise ActivityHub handles title) */}
+      {!embedded && (
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Upcoming Bills</h2>
+            <p className="text-sm text-muted-foreground">Manage your recurring transactions</p>
+          </div>
         </div>
+      )}
 
-        <Tabs.Root value={viewMode} onValueChange={setViewMode} className="flex-shrink-0">
-          <Tabs.List className="flex p-1 bg-muted rounded-lg w-full sm:w-auto">
-            <Tabs.Trigger
-              value="current"
-              className={clsx(
-                "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all",
-                viewMode === 'current' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-              )}
-            >
-              This Month
-            </Tabs.Trigger>
-            <Tabs.Trigger
-              value="timeline"
-              className={clsx(
-                "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all",
-                viewMode === 'timeline' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-              )}
-            >
-              Timeline
-            </Tabs.Trigger>
-          </Tabs.List>
-        </Tabs.Root>
-      </div>
-
-      {/* Scrollable List Area */}
-      <div className="p-2 sm:p-4 flex-1 overflow-y-auto overscroll-contain">
-        {displayItems.length === 0 ? (
+      <div className={clsx("flex-1 overflow-y-auto overscroll-contain", embedded ? "p-2" : "p-2 sm:p-4")}>
+        {currentMonthItems.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground flex flex-col items-center gap-2">
             <CalendarDays className="h-8 w-8 opacity-50" />
             <p>No upcoming transactions found.</p>
           </div>
         ) : (
           <ul ref={listRef} className="space-y-3">
-            {displayItems.map((item, index) => {
-              // Using index fallback for timeline projections to avoid identical key clashes
-              const uniqueKey = viewMode === 'current' ? item.id : `${item.id}-${item.calculatedNextDate}-${index}`;
-              const displayDate = parseDate(viewMode === 'current' ? item.calculatedNextDate : item.projectedDate);
+            {currentMonthItems.map((item) => {
+              const uniqueKey = item.id;
+              const displayDate = parseDate(item.calculatedNextDate);
               const isExpense = item.type === 'expense';
               const showMatchSuggestion = item.needsReview && !ignoredMatches.has(item.id);
 
@@ -100,9 +74,9 @@ export default function UpcomingTransactions({
                   <div className="flex items-start gap-3">
                     {/* Status Indicator Icon */}
                     <div className="mt-0.5 flex-shrink-0">
-                      {item.isPaid && viewMode === 'current' ? (
+                      {item.isPaid ? (
                         <CheckCircle2 className="h-5 w-5 text-[hsl(var(--stat-income-text))]" />
-                      ) : item.status === 'overdue' && viewMode === 'current' ? (
+                      ) : item.status === 'overdue' ? (
                         <AlertCircle className="h-5 w-5 text-[hsl(var(--stat-expense-text))]" />
                       ) : (
                         <Clock className="h-5 w-5 text-muted-foreground" />
@@ -116,8 +90,8 @@ export default function UpcomingTransactions({
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                         {formatDate(displayDate, 'MMM do, yyyy')}
 
-                        {/* Contextual Status Badges for Current View */}
-                        {viewMode === 'current' && !item.isPaid && (
+                        {/* Contextual Status Badges */}
+                        {!item.isPaid && (
                           <>
                             <span className="w-1 h-1 rounded-full bg-border inline-block"></span>
                             <span className={clsx(
@@ -142,60 +116,53 @@ export default function UpcomingTransactions({
                       {isExpense ? '-' : '+'}{item.amount.toLocaleString()}
                     </span>
 
-                    {viewMode === 'current' && (
-                      <div className="flex-shrink-0">
-                        {item.isPaid ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[hsl(var(--status-paid-bg))] text-[hsl(var(--status-paid-text))]">
-                            Paid
-                          </span>
-                        ) : (
-                          showMatchSuggestion ? (
-                            <div className="flex items-center gap-1">
-                              <CustomButton
-                                variant="outline"
-                                size="sm"
-                                className="h-8 text-xs min-w-[80px] border-amber-500 text-amber-600 bg-amber-50 hover:bg-amber-100"
-                                onClick={() => setConfirmingMatch({
-                                  transaction: item.suggestedTransactions[0],
-                                  template: item
-                                })}
-                              >
-                                Confirm Match
-                              </CustomButton>
-                              <button
-                                onClick={() => {
-                                  const next = new Set(ignoredMatches);
-                                  next.add(item.id);
-                                  setIgnoredMatches(next);
-                                }}
-                                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                title="Ignore Suggestion"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
+                    <div className="flex-shrink-0">
+                      {item.isPaid ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[hsl(var(--status-paid-bg))] text-[hsl(var(--status-paid-text))]">
+                          Paid
+                        </span>
+                      ) : (
+                        showMatchSuggestion ? (
+                          <div className="flex items-center gap-1">
                             <CustomButton
-                              variant={item.status === 'overdue' ? 'delete' : 'outline'}
+                              variant="outline"
                               size="sm"
-                              onClick={() => onMarkPaid(item)}
-                              className={clsx(
-                                "h-8 text-xs min-w-[80px]",
-                                // Adding mobile touch-target safety
-                                "sm:min-h-0 min-h-[44px]"
-                              )}
+                              className="h-8 text-xs min-w-[80px] border-amber-500 text-amber-600 bg-amber-50 hover:bg-amber-100"
+                              onClick={() => setConfirmingMatch({
+                                transaction: item.suggestedTransactions[0],
+                                template: item
+                              })}
                             >
-                              Mark Paid
+                              Confirm Match
                             </CustomButton>
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {/* Timeline mode projection badge */}
-                    {viewMode === 'timeline' && item.isProjection && (
-                      <span className="text-xs text-muted-foreground italic px-2">Projected</span>
-                    )}
+                            <button
+                              onClick={() => {
+                                const next = new Set(ignoredMatches);
+                                next.add(item.id);
+                                setIgnoredMatches(next);
+                              }}
+                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                              title="Ignore Suggestion"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <CustomButton
+                            variant={item.status === 'overdue' ? 'delete' : 'outline'}
+                            size="sm"
+                            onClick={() => onMarkPaid(item)}
+                            className={clsx(
+                              "h-8 text-xs min-w-[80px]",
+                              // Adding mobile touch-target safety
+                              "sm:min-h-0 min-h-[44px]"
+                            )}
+                          >
+                            Mark Paid
+                          </CustomButton>
+                        )
+                      )}
+                    </div>
                   </div>
                 </li>
               );
