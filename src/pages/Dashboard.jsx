@@ -35,8 +35,8 @@ import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialo
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { FileUp, MinusCircle, PlusCircle } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { FileUp, MinusCircle, PlusCircle } from "lucide-react"; // 'Plus' removed (unused)
+import { formatDateString, getFirstDayOfMonth, getLastDayOfMonth } from "../components/utils/dateUtils";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams } from "react-router-dom"; // Added for notification linking
 import { WrappedStory } from "../components/dashboard/WrappedStory";
@@ -50,6 +50,10 @@ import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
 import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
+
+/**
+ * Main Dashboard Page
+ */
 export default function Dashboard() {
   const { user, settings } = useSettings();
   const [quickAddState, setQuickAddState] = useState(null); // null | 'new' | templateObject
@@ -176,8 +180,8 @@ export default function Dashboard() {
   // Fetch REAL current month transactions for the widget status logic (independent of navigator)
   const today = new Date();
   // const realMonthStart = format(startOfMonth(today), 'yyyy-MM-dd');
-  const realMonthStart = format(startOfMonth(subMonths(today, 1)), 'yyyy-MM-dd');
-  const realMonthEnd = format(endOfMonth(today), 'yyyy-MM-dd');
+  const realMonthStart = getFirstDayOfMonth(today.getMonth() - 1, today.getFullYear());
+  const realMonthEnd = getLastDayOfMonth(today.getMonth(), today.getFullYear());
   const { transactions: realTransactions } = useTransactions(realMonthStart, realMonthEnd);
 
   // Use the REAL transactions for status matching
@@ -207,7 +211,7 @@ export default function Dashboard() {
       title: bill.title,
       amount: bill.amount,
       category_id: bill.category_id,
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: formatDateString(new Date()),
       recurringTransactionId: bill.id, // The Link ID
       type: bill.type
     };
