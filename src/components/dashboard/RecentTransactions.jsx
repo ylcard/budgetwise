@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
 import { ArrowRight, Banknote, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +8,7 @@ import { createEntityMap } from "../utils/generalUtils";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { useSettings } from "../utils/SettingsContext";
-import { getCurrentPeriodBoundaries } from "../utils/dateUtils";
+import { getCurrentPeriodBoundaries, formatDate, parseDate } from "../utils/dateUtils";
 import { useTransactions } from "../hooks/useBase44Entities";
 import { usePaidTransactions } from "../hooks/useDerivedData";
 import { detectCrossPeriodSettlement } from "../utils/calculationEngine";
@@ -17,6 +16,16 @@ import { useState } from "react";
 import ExpenseFormDialog from "../transactions/dialogs/ExpenseFormDialog";
 import IncomeFormDialog from "../transactions/dialogs/IncomeFormDialog";
 
+/**
+ * RecentTransactions Component
+ * Displays a mobile-optimized list of the 10 most recent paid transactions.
+ * Supports quick editing and deletion with a sliding action UI on hover.
+ * @param {Object} props
+ * @param {Array} props.categories - List of category entities
+ * @param {Array} props.customBudgets - List of budget entities
+ * @param {Function} props.onEdit - Callback for transaction updates
+ * @param {Function} props.onDelete - Callback for transaction removal
+ */
 export default function RecentTransactions({ categories, customBudgets, onEdit, onDelete }) {
   const { settings } = useSettings();
 
@@ -81,7 +90,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
               const isIncome = transaction.type === 'income';
               const IconComponent = getCategoryIcon(category?.icon);
 
-              const paidYear = transaction.paidDate ? new Date(transaction.paidDate).getFullYear() : null;
+              const paidYear = transaction.paidDate ? parseDate(transaction.paidDate)?.getFullYear() : null;
               const showYear = paidYear && paidYear !== currentYear;
 
               const crossPeriodInfo = detectCrossPeriodSettlement(
@@ -115,12 +124,12 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
                       <p className="font-medium text-foreground truncate text-sm sm:text-base">{transaction.title}</p>
                       <div className="flex items-center gap-x-1 gap-y-0.5 mt-0.5 flex-wrap">
                         <p className="text-[11px] sm:text-sm text-muted-foreground whitespace-nowrap">
-                          {format(new Date(transaction.date), "MMM d, yyyy")}
+                          {formatDate(transaction.date, "MMM d, yyyy")}
                         </p>
                         {!isIncome && transaction.paidDate && (
                           <>
                             <p className="text-[10px] sm:text-xs text-[hsl(var(--status-paid-text))] whitespace-nowrap">
-                              Paid {format(new Date(transaction.paidDate), showYear ? "MMM d, yyyy" : "MMM d")}
+                              Paid {formatDate(transaction.paidDate, showYear ? "MMM d, yyyy" : "MMM d")}
                             </p>
                           </>
                         )}
