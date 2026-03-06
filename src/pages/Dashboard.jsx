@@ -327,11 +327,13 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* GRID LAYOUT: Split Hero Row */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          {/* UNIFIED GRID LAYOUT: Left Column (Stats+Budgets) | Right Column (Activity) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
-              {/* INNOVATION: Velocity Widget at the top */}
+            {/* LEFT COLUMN: Velocity -> Stats -> Budgets */}
+            <div className="lg:col-span-8 flex flex-col gap-6">
+
+              {/* 1. Velocity Widget */}
               <div data-tutorial="velocity-widget">
                 <VelocityWidget
                   chartData={chartData}
@@ -341,6 +343,7 @@ export default function Dashboard() {
                 />
               </div>
 
+              {/* 2. Remaining Budget / Stats */}
               <div data-tutorial="quick-stats">
                 {isMobile ? (
                   <MobileRemainingBudgetCard
@@ -417,13 +420,8 @@ export default function Dashboard() {
                   />
                 )}
               </div>
-            </div>
-          </div>
 
-          {/* NEW GRID LAYOUT: Custom Budgets + Activity Hub side-by-side with equal height */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* Added spacing between elements in this column */}
-            <div className="lg:col-span-8 flex flex-col min-w-0 space-y-4 md:space-y-6 px-4 md:px-0">
+              {/* 3. Custom Budgets */}
               <div data-tutorial="custom-budgets" className="w-full">
                 <CustomBudgetsDisplay
                   onCreateBudget={() => setShowQuickAddBudget(true)}
@@ -431,7 +429,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* DESKTOP: Activity Hub (Combined Recent + Upcoming) */}
+            {/* RIGHT COLUMN: Activity Hub (Sidebar) */}
             <div className="hidden lg:block lg:col-span-4 h-full" data-tutorial="activity-hub">
               <ActivityHub
                 recurringWithStatus={recurringWithStatus}
@@ -441,6 +439,7 @@ export default function Dashboard() {
                 customBudgets={allCustomBudgets}
                 transactionActions={transactionActions}
                 settings={settings}
+                embedded={true}
               />
             </div>
           </div>
