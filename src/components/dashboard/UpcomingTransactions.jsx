@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
+import { useState, useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { CheckCircle2, Clock, AlertCircle, CalendarDays, X } from 'lucide-react';
@@ -7,11 +6,23 @@ import { CustomButton } from '../ui/CustomButton';
 import { useTransactionActions } from '../hooks/useActions';
 import clsx from 'clsx';
 import { ConfirmMatchDialog } from './ConfirmMatchDialog';
+import { formatDate, parseDate } from '../utils/dateUtils';
 
+/**
+ * UpcomingTransactions Component
+ *
+ * Displays a scrollable list of upcoming recurring bills and income.
+ * Features a "Timeline" view for future projections and a "This Month" view with status badges.
+ *
+ * @param {Object} props
+ * @param {Object} props.recurringWithStatus - Contains currentMonthItems and timelineItems
+ * @param {Function} props.onMarkPaid - Callback to mark a recurring item as paid
+ * @param {boolean} props.isLoading - Loading state for the container
+ * @param {Array} props.categories - Category entities for icon/color mapping
+ */
 export default function UpcomingTransactions({
   recurringWithStatus = { currentMonthItems: [], timelineItems: [] },
   onMarkPaid,
-  onConfirmMatch,
   isLoading,
   categories
 }) {
@@ -23,9 +34,10 @@ export default function UpcomingTransactions({
 
   const { currentMonthItems, timelineItems } = recurringWithStatus;
 
-  // Show unique items in timeline by dropping duplicates if they fall on the exact same projected day
-  // Optional, but helps deduplicate if the projection math overlapped today
-  const displayItems = viewMode === 'current' ? currentMonthItems : timelineItems;
+  // Memoize display items to avoid recalculation on unrelated re-renders
+  const displayItems = useMemo(() =>
+    viewMode === 'current' ? currentMonthItems : timelineItems,
+    [viewMode, currentMonthItems, timelineItems]);
 
   if (isLoading) {
     return <div className="animate-pulse h-64 bg-muted rounded-xl"></div>;
@@ -76,7 +88,7 @@ export default function UpcomingTransactions({
             {displayItems.map((item, index) => {
               // Using index fallback for timeline projections to avoid identical key clashes
               const uniqueKey = viewMode === 'current' ? item.id : `${item.id}-${item.calculatedNextDate}-${index}`;
-              const displayDate = parseISO(viewMode === 'current' ? item.calculatedNextDate : item.projectedDate);
+              const displayDate = parseDate(viewMode === 'current' ? item.calculatedNextDate : item.projectedDate);
               const isExpense = item.type === 'expense';
               const showMatchSuggestion = item.needsReview && !ignoredMatches.has(item.id);
 
@@ -102,7 +114,7 @@ export default function UpcomingTransactions({
                         {item.title}
                       </p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                        {format(displayDate, 'MMM do, yyyy')}
+                        {formatDate(displayDate, 'MMM do, yyyy')}
 
                         {/* Contextual Status Badges for Current View */}
                         {viewMode === 'current' && !item.isPaid && (
