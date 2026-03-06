@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { parseDate, getFirstDayOfMonth, getLastDayOfMonth, getMonthBoundaries } from "../utils/dateUtils";
+import { parseDate, getFirstDayOfMonth, getLastDayOfMonth, getMonthBoundaries, normalizeToMidnight, formatDateString } from "../utils/dateUtils";
 import { createEntityMap } from "../utils/generalUtils";
 import {
   getTotalMonthExpenses,
@@ -36,7 +36,9 @@ export const usePaidTransactions = (transactions, limit = 10) => {
     }
     return transactions.filter(t => {
       return t.type === 'income' || t.isPaid === true;
-    }).sort((a, b) => new Date(b.date) - new Date(a.date))
+    })
+      // Use normalizeToMidnight for stable sorting comparison
+      .sort((a, b) => normalizeToMidnight(b.date) - normalizeToMidnight(a.date))
       .slice(0, limit);
   }, [transactions, limit]);
 };
@@ -169,7 +171,7 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
   // 2. LOGIC: Smart Projection for Current Month
   // Only runs if we are viewing the *Actual* current calendar month
   const { projectedIncome, isUsingProjection } = useMemo(() => {
-    const now = new Date();
+    const now = normalizeToMidnight(new Date());
     const isCurrentRealMonth = (
       selectedMonth === now.getMonth() &&
       selectedYear === now.getFullYear()
@@ -183,12 +185,13 @@ export const useDashboardSummary = (transactions, selectedMonth, selectedYear, a
     // SLICE: Filter ONLY the past 6 months of data from the HISTORICAL source
     // Use historicalTransactions if available, otherwise fall back to main list (which usually fails due to limited scope)
     const sourceData = historicalTransactions.length > 0 ? historicalTransactions : transactions;
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of previous month
+
+    const sixMonthsAgo = normalizeToMidnight(new Date(now.getFullYear(), now.getMonth() - 6, 1));
+    const lastMonthEnd = normalizeToMidnight(new Date(now.getFullYear(), now.getMonth(), 0)); // Last day of previous month
 
     const historicalSlice = sourceData.filter(t => {
       if (t.type !== 'income') return false;
-      const tDate = new Date(t.date);
+      const tDate = parseDate(t.date);
       return tDate >= sixMonthsAgo && tDate <= lastMonthEnd;
     });
 
@@ -473,11 +476,8 @@ export const useTransactionFiltering = (transactions) => {
     let endFilterDate = null;
 
     if (filters.startDate && filters.endDate) {
-      startFilterDate = new Date(filters.startDate);
-      startFilterDate.setHours(0, 0, 0, 0);
-
-      endFilterDate = new Date(filters.endDate);
-      endFilterDate.setHours(0, 0, 0, 0);
+      startFilterDate = normalizeToMidnight(filters.startDate);
+      endFilterDate = normalizeToMidnight(filters.endDate);
     }
     return transactions.filter(t => {
       const typeMatch = filters.type === 'all' || t.type === filters.type;
@@ -490,10 +490,8 @@ export const useTransactionFiltering = (transactions) => {
 
       let dateMatch = true;
       if (startFilterDate && endFilterDate) {
-        const transactionDate = new Date(t.date);
-
-        transactionDate.setHours(0, 0, 0, 0);
-
+        const transactionDate = normalizeToMidnight(t.date);
+        // Safe comparison now that everything is normalized to midnight
         dateMatch = transactionDate >= startFilterDate && transactionDate <= endFilterDate;
       }
 
@@ -617,9 +615,9 @@ export const useBudgetBarsData = (
         overBudgetAmount
       };
     }).sort((a, b) => {
-      const now = new Date();
-      const aStart = new Date(a.startDate);
-      const bStart = new Date(b.startDate);
+      const now = normalizeToMidnight(new Date());
+      const aStart = parseDate(a.startDate);
+      const bStart = parseDate(b.startDate);
       const aDistance = Math.abs(aStart - now);
       const bDistance = Math.abs(bStart - now);
       return aDistance - bDistance;
@@ -824,11 +822,8 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
     let endFilterDate = null;
 
     if (filters.startDate && filters.endDate) {
-      startFilterDate = new Date(filters.startDate);
-      startFilterDate.setHours(0, 0, 0, 0);
-
-      endFilterDate = new Date(filters.endDate);
-      endFilterDate.setHours(0, 0, 0, 0);
+      startFilterDate = normalizeToMidnight(filters.startDate);
+      endFilterDate = normalizeToMidnight(filters.endDate);
     }
 
     const searchTerm = filters.search.trim();
@@ -900,10 +895,9 @@ export const useAdvancedTransactionFiltering = (transactions, externalFilters = 
       if (startFilterDate && endFilterDate) {
         // SETTLEMENT VIEW FIX: Use paidDate if available (for expenses), otherwise date
         const effectiveDate = (t.type === 'expense' && t.paidDate)
-          ? new Date(t.paidDate)
-          : new Date(t.date);
+          ? parseDate(t.paidDate)
+          : parseDate(t.date);
 
-        effectiveDate.setHours(0, 0, 0, 0);
         if (effectiveDate < startFilterDate || effectiveDate > endFilterDate) {
           return false;
         }
