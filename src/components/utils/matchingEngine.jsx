@@ -1,7 +1,8 @@
 // Imported & used by /hooks/useRecurringStatus.jsx
 
 import fuzzysort from 'fuzzysort';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays } from 'date-fns';
+import { parseDate } from './dateUtils';
 
 // --- Configuration & Constants ---
 const WEIGHTS = {
@@ -95,11 +96,11 @@ const calculateAmountScore = (txAmount, tplAmount, allowedVariancePct = 5) => {
 /**
  * Calculates Temporal Score (0-100) based on days variance.
  */
-const calculateTemporalScore = (txDateStr, tplDateStr, allowedVarianceDays = 3) => {
+const calculateTemporalScore = (txDateStr, tplDateStr, allowedVarianceDays = 7) => {
   if (!txDateStr || !tplDateStr) return 0;
 
-  const txDate = parseISO(txDateStr);
-  const tplDate = parseISO(tplDateStr);
+  const txDate = parseDate(txDateStr);
+  const tplDate = parseDate(tplDateStr);
   const diffDays = Math.abs(differenceInDays(txDate, tplDate));
 
   if (diffDays === 0) return 100;
