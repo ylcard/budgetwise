@@ -41,7 +41,7 @@ const calculateStdDev = (values) => {
  * @param {Array} allCustomBudgets - Budget definitions
  */
 const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudgets) => {
-  const start = parseDate(startDate);
+  const start = parseDate(startDate) || new Date();
 
   // 1. Single pass: Group all historical transactions by YYYY-MM
   const groupedTxns = {};
@@ -84,7 +84,7 @@ const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudget
  */
 const calculatePacingScore = (transactions, historySummary, categories, allCustomBudgets, startDate) => {
   const today = new Date();
-  const start = parseDate(startDate);
+  const start = parseDate(startDate) || new Date();
 
   // If viewing current month, compare "Day 1 to Today". If past month, compare full month.
   const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
@@ -135,7 +135,7 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
  * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary) => {
-  const start = parseDate(startDate);
+  const start = parseDate(startDate) || new Date();
   const year = start.getFullYear();
   const month = start.getMonth();
   const { monthStart, monthEnd } = getMonthBoundaries(month, year);
