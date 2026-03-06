@@ -179,8 +179,7 @@ export default function Dashboard() {
 
   // Fetch REAL current month transactions for the widget status logic (independent of navigator)
   const today = new Date();
-  // const realMonthStart = format(startOfMonth(today), 'yyyy-MM-dd');
-  const realMonthStart = getFirstDayOfMonth(today.getMonth() - 1, today.getFullYear());
+  const realMonthStart = formatDateString(subMonths(today, 2));
   const realMonthEnd = getLastDayOfMonth(today.getMonth(), today.getFullYear());
   const { transactions: realTransactions } = useTransactions(realMonthStart, realMonthEnd);
 
