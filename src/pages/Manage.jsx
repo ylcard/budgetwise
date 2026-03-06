@@ -39,7 +39,11 @@ import { base44 } from "@/api/base44Client";
 import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import AppearanceSettings from "../components/theme/AppearanceSettings";
+import { formatDateString } from "../components/utils/dateUtils";
 
+/**
+ * Manage Layout - Wrapper for Settings Pages
+ */
 export default function ManageLayout() {
   return (
     <div className="min-h-screen p-4 md:p-8 pb-24 bg-gray-50/50">
@@ -61,6 +65,9 @@ export default function ManageLayout() {
   );
 }
 
+/**
+ * Preferences Section - App Settings (Currency, Formatting, etc.)
+ */
 export function PreferencesSection() {
   const { settings, updateSettings } = useSettings();
   const stableSettings = useMemo(() => settings, [
@@ -267,6 +274,9 @@ export function PreferencesSection() {
   );
 }
 
+/**
+ * Account Section - User Profile, Auth, Data Export/Delete
+ */
 export function AccountSection() {
   const { user, logout } = useAuth();
   const { settings, updateSettings } = useSettings();
@@ -531,7 +541,7 @@ export function AccountSection() {
         const dataStr = JSON.stringify(exportData, null, 2);
         downloadFile(
           dataStr,
-          `budgetwise-data-${new Date().toISOString().split('T')[0]}.json`,
+          `budgetwise-data-${formatDateString(new Date())}.json`,
           'application/json'
         );
         showToast({ title: "Export Complete", description: "JSON data downloaded successfully." });
@@ -555,7 +565,7 @@ export function AccountSection() {
           const mainFile = csvFiles.find(f => f.name === 'transactions') || csvFiles[0];
           downloadFile(
             mainFile.content,
-            `budgetwise-${mainFile.name}-${new Date().toISOString().split('T')[0]}.csv`,
+            `budgetwise-${mainFile.name}-${formatDateString(new Date())}.csv`,
             'text/csv'
           );
           showToast({
@@ -582,7 +592,7 @@ export function AccountSection() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `budgetwise-report-${new Date().toISOString().split('T')[0]}.pdf`;
+        link.download = `budgetwise-report-${formatDateString(new Date())}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
