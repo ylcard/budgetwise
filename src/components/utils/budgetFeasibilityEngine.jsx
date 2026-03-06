@@ -6,7 +6,7 @@
  * feasibility grades and recommendations for funding strategies.
  */
 
-import { differenceInMonths, subMonths, isDate } from "date-fns";
+import { differenceInMonths, subMonths } from "date-fns";
 import { getMonthlyIncome, getMonthlyPaidExpenses } from "./financialCalculations";
 import { getMonthBoundaries, parseDate } from "./dateUtils";
 
@@ -30,15 +30,13 @@ export function checkBudgetImpact(proposedAmount, startDate, endDate, transactio
     };
   }
 
-  // ADDED: 16-Jan-2026 - Temporal awareness
   const now = new Date();
-  // Ensure consistent parsing with dateUtils or Date object
-  const budgetStart = isDate(startDate) ? startDate : parseDate(startDate);
-  const budgetEnd = isDate(endDate) ? endDate : parseDate(endDate);
+  // Use parseDate to normalize inputs (strings or Date objects) to local midnight
+  const budgetStart = parseDate(startDate);
+  const budgetEnd = parseDate(endDate);
 
   const isFuture = budgetStart > now;
   const isOngoing = budgetStart <= now && budgetEnd >= now;
-  const isPast = budgetEnd < now;
 
   const temporalContext = isFuture ? 'future' : isOngoing ? 'ongoing' : 'past';
 
@@ -115,7 +113,7 @@ export function checkBudgetImpact(proposedAmount, startDate, endDate, transactio
     message = 'Not recommended - exceeds your typical monthly surplus';
   }
 
-  // Calculate opportunity cost
+  // Calculate opportunity cost (metrics)
   const opportunityCost = proposedAmount;
   const monthsToRecover = avgNetFlow > 0 ? Math.ceil(proposedAmount / avgNetFlow) : 999;
 
@@ -123,7 +121,7 @@ export function checkBudgetImpact(proposedAmount, startDate, endDate, transactio
     feasibilityGrade: grade,
     isAffordable,
     message,
-    temporalContext, // ADDED: 16-Jan-2026
+    temporalContext,
     metrics: {
       avgMonthlyIncome: Math.round(avgMonthlyIncome),
       avgMonthlyExpenses: Math.round(avgMonthlyExpenses),
@@ -145,8 +143,8 @@ export function checkBudgetImpact(proposedAmount, startDate, endDate, transactio
  * 
  * @param {number} targetAmount - Total amount to save
  * @param {number} months - Number of months to save over
- * @param {Array} transactions - Transaction history
- * @returns {Array} Monthly contribution schedule
+ * @param {Array} transactions - Transaction history for volatility analysis
+ * @returns {Array<{month: number, amount: number, confidence: string, note?: string}>} Monthly contribution schedule
  */
 export function calculateSavingsSprint(targetAmount, months, transactions) {
   if (!targetAmount || !months || months <= 0) return [];
@@ -187,10 +185,10 @@ export function calculateSavingsSprint(targetAmount, months, transactions) {
   const avg = monthlyData.reduce((sum, e) => sum + e, 0) / monthlyData.length;
   const variance = monthlyData.reduce((sum, e) => sum + Math.pow(e - avg, 2), 0) / monthlyData.length;
   const stdDev = Math.sqrt(variance);
-  const cv = stdDev / avg;
+  const cv = avg > 0 ? stdDev / avg : 0; // Prevent division by zero
 
   // If volatility is low, distribute evenly
-  if (cv < 0.15) {
+  if (cv < 0.15 || avg === 0) {
     const monthlyAmount = targetAmount / months;
     let accumulated = 0;
 
@@ -253,7 +251,7 @@ export function calculateSavingsSprint(targetAmount, months, transactions) {
  * @param {number} neededAmount - Amount needed for the budget
  * @param {Object} elasticity - Expense elasticity data from historicalAnalyzer
  * @param {Array} categories - Category definitions
- * @returns {Object} Funding recommendations
+ * @returns {{strategy: string, message: string, recommendations: Array, remainingToFund: number}} Funding recommendations
  */
 export function suggestFundingStrategy(neededAmount, elasticity, categories) {
   if (!elasticity || Object.keys(elasticity).length === 0) {
