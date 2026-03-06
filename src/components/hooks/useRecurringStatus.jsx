@@ -53,38 +53,30 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // 1. Find explicit links
       const linkedTxs = realTransactions.filter(t => t.recurringTransactionId === template.id && !usedTransactionIds.has(t.id));
 
-      // 2. Find Candidates: Analyze unlinked transactions
-      let matchCandidate = null;
-      let matchStatus = 'none';
+      // 2. Find Potential Candidates (The Greedy Pool Approach)
+      // Instead of finding just one "best" candidate, we gather ALL plausible unlinked 
+      // transactions of the same type and let the "Magnet" date logic decide which one fits.
+      const availableTxs = realTransactions.filter(t =>
+        !t.recurringTransactionId &&
+        !usedTransactionIds.has(t.id) &&
+        t.type === template.type
+      );
 
-      // Only look for matches if we don't have a linked transaction for the *immediate* current period? 
-      // Actually, we need to gather ALL potentials to solve the backlog, so let's check for candidates regardless, 
-      // but prioritize linked ones.
-      if (linkedTxs.length === 0) {
-        // Filter out already used IDs from other templates
-        const availableTxs = realTransactions.filter(t => !t.recurringTransactionId && !usedTransactionIds.has(t.id));
-
-        const bestMatch = availableTxs
-          .map(tx => ({ tx, result: evaluateTransactionMatch(tx, [template]) }))
-          .filter(item => item.result.status !== 'no_match')
-          .sort((a, b) => b.result.matchConfidenceScore - a.result.matchConfidenceScore)[0];
-
-        if (bestMatch) {
-          matchCandidate = bestMatch.tx;
-          matchStatus = bestMatch.result.status; // 'auto_match' or 'needs_review'
-        }
-      }
+      const scoredCandidates = availableTxs
+        .map(tx => ({ tx, result: evaluateTransactionMatch(tx, [template]) }))
+        // Allow anything that isn't a 'no_match' into the pool
+        .filter(item => item.result.status !== 'no_match');
 
       // 3. GATHER ALL HISTORY (The "Pool")
-      // We need every transaction that *could* be this bill from the past ~6 months
-      // to correctly fill the "slots" of unpaid previous months.
-      const poolOfTransactions = [...linkedTxs];
-
-      // Only add auto-matches to the "payment pool". 
-      // 'needs_review' is for UI suggestions only, not for logic verification.
-      if (matchCandidate && (matchStatus === 'auto_match' || matchStatus === 'needs_review')) {
-        poolOfTransactions.push(matchCandidate);
-      }
+      // We construct the pool with match metadata attached
+      const poolOfTransactions = [
+        ...linkedTxs.map(t => ({ ...t, _matchStatus: 'linked' })),
+        ...scoredCandidates.map(c => ({
+          ...c.tx,
+          _matchStatus: c.result.status,
+          _matchScore: c.result.matchConfidenceScore
+        }))
+      ];
 
       // Sort pool by date (Oldest first) for FIFO filling
       poolOfTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -132,21 +124,32 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
 
         if (bestSlotIndex !== -1) {
           slots[bestSlotIndex].filledBy = tx;
+          // Only mark as "used" to block other templates if it matched
           usedTransactionIds.add(tx.id);
         }
       });
 
       // 6. DETERMINE CURRENT STATUS
-      // The "Current" slot is the last one in our array (based on dbNextDate)
-      const currentSlot = slots[slots.length - 1];
-      const previousSlot = slots[slots.length - 2];
+      // FIX: Find the slot that belongs to THIS month. 
+      // If DB advanced to April, we want the March slot.
+      const currentMonthSlot = slots.find(s => isSameMonth(s.date, today));
+      // Fallback: If no slot matches today's month (e.g. very overdue), use the last (upcoming) slot
+      const currentSlot = currentMonthSlot || slots[slots.length - 1];
+      const previousSlot = slots.find(s => isSameMonth(s.date, subMonths(today, 1))); // Useful for display context
 
-      const payingTx = currentSlot.filledBy;
+      const payingTx = currentSlot?.filledBy;
+
+      // Determine match metadata from the transaction that filled the slot
+      const matchStatus = payingTx ? payingTx._matchStatus : 'none';
+      const isReviewCandidate = matchStatus === 'needs_review';
+
       const totalPaid = payingTx ? new Big(Math.abs(payingTx.amount)) : new Big(0);
 
       const targetAmount = new Big(Math.abs(template.amount));
       const fuzzyThreshold = targetAmount.times(0.85);
-      const paidThisMonth = totalPaid.gte(fuzzyThreshold);
+
+      // Paid logic: Amount matches AND it's not just a suggestion waiting for review
+      const paidThisMonth = totalPaid.gte(fuzzyThreshold) && !isReviewCandidate;
 
       // INCLUSION MATRIX 
       const isDueThisMonth = isSameMonth(dbNextDate, today); // Expected this month, unpaid
@@ -158,16 +161,21 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
 
       const isOverdue = isBefore(dbNextDate, currentMonthStart); // Missed entirely
       const hasActivityThisMonth = linkedTxs.some(t => isSameMonth(parseDate(t.date), today));
-      const needsReview = (matchStatus === 'needs_review' || matchStatus === 'auto_match') && !payingTx;
 
-      if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth) {
+      if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth || payingTx) {
         const isPaid = (payingTx && paidThisMonth) || false;
+
+        // Flag for UI: It's found, but user needs to confirm
+        const needsReview = payingTx && isReviewCandidate;
 
         // What date do we display? If it advanced to July, we want to show April's date.
         let displayDate = isPrevDueThisMonth ? prevDate : dbNextDate;
 
         if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth && linkedTxs.length > 0) {
           displayDate = parseDate(linkedTxs[0].date);
+        } else if (payingTx) {
+          // If matched/paid, show the matched date
+          displayDate = parseDate(payingTx.date);
         }
 
         const daysUntilDue = differenceInDays(startOfDay(displayDate), startOfDay(today));
@@ -182,7 +190,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
           isPaid,
           needsReview,
           matchStatus,
-          suggestedTransactions: (matchCandidate && !isPaid) ? [matchCandidate] : [],
+          suggestedTransactions: needsReview ? [payingTx] : [],
           paidAmount: totalPaid.toNumber(),
           daysUntilDue,
           status,
