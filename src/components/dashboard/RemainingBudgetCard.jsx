@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar, Wallet, Sparkles, Activity } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Zap, LayoutList, BarChart3, GripVertical, Calendar, Activity } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { Link } from "react-router-dom";
 import { useSettings } from "../utils/SettingsContext";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useGoalActions } from "../hooks/useActions";
 import React, { useState, useEffect, useRef, memo } from "react";
-import { getMonthName } from "../utils/dateUtils";
+import { getMonthName, normalizeToMidnight, getLastDayOfMonth, parseDate } from "../utils/dateUtils";
 import confetti from "canvas-confetti";
 
 // --- SHARED CONFIG ---
@@ -27,8 +27,16 @@ const STRIPE_PATTERN = {
   backgroundSize: '8px 8px'
 };
 
-// --- SMART SEGMENT (Handles Hover Expansion) ---
-// REFACTORED: 23-Jan-2026 - Clean rebuild with percentage-based detection and stable flex
+/**
+ * SmartSegment Component
+ * A responsive bar segment that expands on hover if it is too narrow to display its content.
+ * @param {Object} props
+ * @param {number} widthPct - The percentage width of the segment relative to the total bar.
+ * @param {string} color - CSS color for the segment background.
+ * @param {React.ReactNode} children - Content to display inside the segment.
+ * @param {string} [className] - Optional additional CSS classes.
+ * @param {Object} [style] - Optional inline styles.
+ */
 const SmartSegment = memo(({
   widthPct,
   color,
@@ -79,7 +87,15 @@ const SmartSegment = memo(({
   );
 });
 
-// --- COMPACT GOAL EDITOR COMPONENT ---
+/**
+ * QuickGoalsEditor Component
+ * Provides a compact UI for users to adjust their 50/30/20 (or custom) budget goals
+ * using either percentage-based sliders or absolute currency inputs.
+ * @param {Object} props
+ * @param {Array} props.goals - Current goal objects from the database.
+ * @param {Object} props.settings - User settings (defines goalMode).
+ * @param {Function} props.onClose - Callback to close the popover.
+ */
 const QuickGoalsEditor = memo(({ goals, settings, updateSettings, user, onClose }) => {
   const { handleGoalUpdate, isSaving } = useGoalActions(user, goals);
   const [mode, setMode] = useState(settings.goalMode ?? true); // true = %, false = $
@@ -286,6 +302,11 @@ const getHealthIconColor = (score) => {
   return "text-[hsl(var(--stat-expense-text))]";
 };
 
+/**
+ * RemainingBudgetCard Component
+ * The primary dashboard widget for BudgetWise. Displays a unified visual bar of spending 
+ * relative to income and goals, including "Waiting for Payday" projections.
+ */
 const RemainingBudgetCard = memo(function RemainingBudgetCard({
   bonusSavingsPotential,
   currentMonthIncome,
@@ -433,13 +454,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
   const extraSavingsAmount = Math.max(0, savingsAmount - savingsLimit);
 
   // Date Context
-  const now = new Date();
+  const now = normalizeToMidnight(new Date());
   const isCurrentMonth =
     now.getMonth() === selectedMonth &&
     now.getFullYear() === selectedYear;
 
-  // Calculate days based strictly on the selected props
-  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  // Use centralized dateUtils for day count to maintain consistency with financial boundaries
+  const daysInMonth = parseDate(getLastDayOfMonth(selectedMonth, selectedYear)).getDate();
 
   const currentDay = now.getDate();
   const isEndOfMonth = currentDay >= (daysInMonth - 3);
