@@ -5,6 +5,7 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "./queryKeys";
 import { fetchWithRetry } from "../utils/generalUtils";
+import { formatDateString, normalizeToMidnight, subMonths } from "../utils/dateUtils";
 
 // ─── Constants ───────────────────────────────────────────────────────
 const CANDIDATE_QUERY_KEY = "rule_generator_candidates";
@@ -23,6 +24,7 @@ const STOP_WORDS = new Set([
 // ─── Logic: Stable Signature Extraction ──────────────────────────────
 /**
  * Reduces a raw dirty string to its "stable core".
+ * Removes noise words and isolated numbers to find the merchant entity.
  * e.g., "N 2026058000127951 ENERGIA NUFRI S.L." -> "ENERGIA NUFRI"
  */
 function getStableSignature(rawDescription) {
@@ -48,7 +50,12 @@ function getStableSignature(rawDescription) {
     .join(" ");
 }
 
-// ─── Candidate Extraction Logic ──────────────────────────────────────
+/**
+ * Analyzes transaction history to find recurring patterns that are not yet covered by rules.
+ * @param {Array} transactions - List of past transactions.
+ * @param {Array} existingRules - Currently active category rules.
+ * @param {Array} categories - Available categories for mapping.
+ */
 export const extractCandidates = (transactions, existingRules, categories) => {
   if (!transactions?.length) return [];
 
@@ -161,7 +168,9 @@ export const extractCandidates = (transactions, existingRules, categories) => {
   return candidates;
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────
+/**
+ * Returns the key with the highest value in a Map<Key, Count>.
+ */
 function getMostFrequent(map) {
   if (map.size === 0) return null;
   let maxKey = null;
@@ -175,6 +184,9 @@ function getMostFrequent(map) {
   return maxKey;
 }
 
+/**
+ * Simple string hashing for generating stable temp IDs.
+ */
 function hashString(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -185,7 +197,9 @@ function hashString(str) {
   return Math.abs(hash).toString(36);
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────
+/**
+ * Hook managing the state and logic for the Rule Generator Wizard.
+ */
 export function useRuleGenerator() {
   const { user } = useSettings();
   const queryClient = useQueryClient();
@@ -193,13 +207,15 @@ export function useRuleGenerator() {
   const [isOpen, setIsOpen] = useState(false);
   const [candidates, setCandidates] = useState([]);
 
-  // Fetch transactions (last 6 months)
+  // Fetch transactions (last 6 months) using centralized date logic
   const { data: transactions = [], isLoading: txLoading } = useQuery({
     queryKey: [CANDIDATE_QUERY_KEY, "transactions", user?.email],
     queryFn: async () => {
-      const cutoff = new Date();
-      cutoff.setMonth(cutoff.getMonth() - 6);
-      const cutoffStr = cutoff.toISOString().split("T")[0];
+      // Normalize "Now" to local midnight and subtract 6 months
+      const today = normalizeToMidnight(new Date());
+      const cutoff = subMonths(today, 6);
+      const cutoffStr = formatDateString(cutoff);
+
       return fetchWithRetry(() =>
         base44.entities.Transaction.filter({
           created_by: user?.email,
