@@ -1,9 +1,12 @@
-import { addDays, addWeeks, addMonths, addYears, setDate, startOfDay, isBefore, isAfter, parseISO } from "date-fns";
-import { formatDateString } from "./dateUtils";
+import { addWeeks, addMonths, addYears, setDate, isBefore, isAfter } from "date-fns";
+import { formatDateString, normalizeToMidnight, addDays } from "./dateUtils";
 
 /**
  * Calculate the next occurrence date for a recurring transaction.
  * @param {Object} recurring - The recurring transaction data
+ * @param {string} recurring.frequency - daily, weekly, biweekly, monthly, quarterly, yearly
+ * @param {string} recurring.startDate - ISO Date string
+ * @param {string} [recurring.endDate] - ISO Date string
  * @param {Date|string} fromDate - The date to calculate from (defaults to today)
  * @returns {string|null} - ISO date string of next occurrence, or null if ended
  */
@@ -17,9 +20,9 @@ export function calculateNextOccurrence(recurring, fromDate = new Date()) {
   }
 
   // Parse the reference date
-  const today = startOfDay(typeof fromDate === 'string' ? parseISO(fromDate) : fromDate);
-  const start = startOfDay(parseISO(startDate));
-  const end = endDate ? startOfDay(parseISO(endDate)) : null;
+  const today = normalizeToMidnight(fromDate);
+  const start = normalizeToMidnight(startDate);
+  const end = endDate ? normalizeToMidnight(endDate) : null;
 
   // If end date has passed, no more occurrences
   if (end && isBefore(end, today)) {
@@ -27,7 +30,7 @@ export function calculateNextOccurrence(recurring, fromDate = new Date()) {
   }
 
   // Determine base date for calculation
-  let baseDate = lastProcessedDate ? startOfDay(parseISO(lastProcessedDate)) : start;
+  let baseDate = lastProcessedDate ? normalizeToMidnight(lastProcessedDate) : start;
 
   // If base is before start, use start
   if (isBefore(baseDate, start)) {
@@ -56,6 +59,11 @@ export function calculateNextOccurrence(recurring, fromDate = new Date()) {
 
 /**
  * Calculate the next date from a base date based on frequency.
+ * @param {Date} baseDate
+ * @param {string} frequency
+ * @param {number} [dayOfMonth]
+ * @param {number} [dayOfWeek]
+ * @returns {Date}
  */
 function calculateNextFromBase(baseDate, frequency, dayOfMonth, dayOfWeek) {
   switch (frequency) {
@@ -110,6 +118,8 @@ function calculateNextFromBase(baseDate, frequency, dayOfMonth, dayOfWeek) {
 
 /**
  * Get the number of days in a month.
+ * @param {Date} date
+ * @returns {number}
  */
 function getDaysInMonth(date) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -117,10 +127,12 @@ function getDaysInMonth(date) {
 
 /**
  * Check if a recurring transaction is due (nextOccurrence is today or in the past).
+ * @param {Object} recurring
+ * @returns {boolean}
  */
 export function isDue(recurring) {
   if (!recurring.nextOccurrence || !recurring.isActive) return false;
-  const today = startOfDay(new Date());
-  const next = startOfDay(parseISO(recurring.nextOccurrence));
+  const today = normalizeToMidnight(new Date());
+  const next = normalizeToMidnight(recurring.nextOccurrence);
   return !isAfter(next, today);
 }
