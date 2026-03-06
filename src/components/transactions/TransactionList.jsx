@@ -21,14 +21,35 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
 import { formatCurrency } from "../utils/currencyUtils";
 import { useSettings } from "../utils/SettingsContext";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { useRuleActions } from "@/components/hooks/useRuleActions";
 import CreateRuleDialog from "@/components/automation/CreateRuleDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatDate } from "../utils/dateUtils";
 
+/**
+ * TransactionList Component
+ * 
+ * A responsive, mobile-first table/list for managing transactions. 
+ * Supports sorting, pagination, bulk selection/editing, and automation rule creation.
+ * 
+ * @param {Object} props
+ * @param {Array} props.transactions - List of transaction objects to display
+ * @param {Array} props.categories - List of category entities for mapping
+ * @param {Function} props.onEdit - Handler for single item edit
+ * @param {Function} props.onDelete - Handler for single item deletion
+ * @param {boolean} props.isLoading - Loading state for skeletons
+ * @param {Array} props.customBudgets - Available budget entities
+ * @param {number} props.currentPage - Current pagination page
+ * @param {number} props.totalPages - Total available pages
+ * @param {Function} props.onPageChange - Pagination change handler
+ * @param {Set<string>} props.selectedIds - Set of IDs currently selected for bulk actions
+ * @param {Function} props.onToggleSelection - Toggle selection for a single ID
+ * @param {Function} props.onSort - Sort configuration change handler
+ * @param {Object} props.sortConfig - Current sort key and direction
+ */
 export default function TransactionList({
   transactions,
   categories,
@@ -314,7 +335,7 @@ export default function TransactionList({
                   <td className="px-4 py-2 font-medium text-foreground max-w-[20ch] md:max-w-[40ch] truncate" title={transaction.title}>{transaction.title}</td>
                   <td className="px-4 py-2 text-muted-foreground whitespace-nowrap text-center">
                     <span className="text-sm text-muted-foreground tabular-nums">
-                      {format(new Date(transaction.date), "MMM d, yyyy")}
+                      {formatDate(transaction.date, "MMM d, yyyy")}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-muted-foreground whitespace-nowrap text-center">
@@ -322,7 +343,7 @@ export default function TransactionList({
                       <span className="text-muted-foreground/30">-</span>
                     ) : transaction.paidDate ? (
                       <span className="text-sm font-medium text-[hsl(var(--status-paid-text))] tabular-nums">
-                        {format(new Date(transaction.paidDate), "MMM d, yyyy")}
+                        {formatDate(transaction.paidDate, "MMM d, yyyy")}
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground/60 italic">Pending</span>
@@ -437,7 +458,7 @@ export default function TransactionList({
                         {transaction.notes && <StickyNote className="w-3 h-3 text-muted-foreground/40 shrink-0" />}
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
-                        <span>{format(new Date(transaction.date), "MMM d")}</span>
+                        <span>{formatDate(transaction.date, "MMM d")}</span>
                         {!isIncome && transaction.paidDate && (
                           <CheckCircle2 className="w-3 h-3 text-[hsl(var(--status-paid-text))] shrink-0" />
                         )}
