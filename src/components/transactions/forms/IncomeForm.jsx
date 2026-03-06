@@ -8,11 +8,21 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Calendar, StickyNote } from "lucide-react";
 import AmountInput from "@/components/ui/AmountInput";
 import { CalendarView } from "@/components/ui/DatePicker";
-import { formatDateString, getFirstDayOfMonth, formatDate } from "@/components/utils/dateUtils";
+import { formatDateString, getFirstDayOfMonth, formatDate, parseDate } from "@/components/utils/dateUtils";
 import { normalizeAmount } from "@/components/utils/generalUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
 
+/**
+ * Mobile drawer component for selecting income dates
+ * @param {Object} props
+ * @param {string} props.value - Currently selected date string (YYYY-MM-DD)
+ * @param {Function} props.onChange - Handler for date updates
+ * @param {React.ReactNode} props.trigger - The button element to trigger the drawer
+ */
 const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
+  // Use parseDate to ensure local midnight time; fallback to now
+  const dateValue = value ? parseDate(value) : new Date();
+
   return (
     <Drawer>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
@@ -20,7 +30,7 @@ const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
         <DrawerHeader><DrawerTitle>Select Date</DrawerTitle></DrawerHeader>
         <div className="p-4 flex justify-center pb-[calc(2rem+env(safe-area-inset-bottom))]">
           <CalendarView
-            selected={value ? new Date(value) : new Date()}
+            selected={dateValue}
             onSelect={(date) => {
               if (date) onChange(formatDateString(date));
             }}
@@ -31,6 +41,16 @@ const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
   );
 };
 
+/**
+ * Form content for creating/editing Income transactions
+ * @param {Object} props
+ * @param {Object} [props.initialTransaction] - Existing transaction data if editing
+ * @param {Function} props.onSubmit - Submission handler
+ * @param {Function} props.onCancel - Cancellation handler
+ * @param {boolean} props.isSubmitting - Loading state
+ * @param {number} props.selectedMonth - Current dashboard month
+ * @param {number} props.selectedYear - Current dashboard year
+ */
 export default function IncomeFormContent({
   initialTransaction,
   onSubmit,
@@ -126,7 +146,9 @@ export default function IncomeFormContent({
                 trigger={
                   <CustomButton type="button" variant="outline" className="h-12 px-3 bg-accent/30 border-dashed border-border hover:bg-accent text-sm">
                     <Calendar className="w-3.5 h-3.5 mr-2 text-[hsl(var(--status-paid-text))]" />
-                    <span className="text-[hsl(var(--status-paid-text))] font-medium">{formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date'}</span>
+                    <span className="text-[hsl(var(--status-paid-text))] font-medium">
+                      {formData.date ? formatDate(formData.date, 'MMM d') : 'Date'}
+                    </span>
                   </CustomButton>
                 }
               />
@@ -142,12 +164,14 @@ export default function IncomeFormContent({
                     className="h-12 px-3 bg-accent/30 border-dashed border-border hover:border-border/80 hover:bg-accent transition-all text-sm"
                   >
                     <Calendar className="w-3.5 h-3.5 mr-2 text-[hsl(var(--status-paid-text))]" />
-                    <span className="text-[hsl(var(--status-paid-text))] font-medium">{formData.date ? formatDate(new Date(formData.date), 'MMM d') : 'Date'}</span>
+                    <span className="text-[hsl(var(--status-paid-text))] font-medium">
+                      {formData.date ? formatDate(formData.date, 'MMM d') : 'Date'}
+                    </span>
                   </CustomButton>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
                   <CalendarView
-                    selected={formData.date ? new Date(formData.date) : new Date()}
+                    selected={formData.date ? parseDate(formData.date) : new Date()}
                     onSelect={(date) => {
                       if (date) setFormData({ ...formData, date: formatDateString(date) });
                     }}
