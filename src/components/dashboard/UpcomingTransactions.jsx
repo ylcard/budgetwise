@@ -23,7 +23,8 @@ export default function UpcomingTransactions({
   recurringWithStatus = { currentMonthItems: [] },
   onMarkPaid,
   isLoading,
-  categories
+  categories,
+  embedded = false
 }) {
   const [viewMode, setViewMode] = useState('current'); // 'current' | 'timeline'
   const [ignoredMatches, setIgnoredMatches] = useState(new Set()); // Local state to dismiss suggestions
