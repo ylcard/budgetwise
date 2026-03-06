@@ -47,7 +47,7 @@ export function ActivityHub({
         </div>
 
         {/* Scrollable Content Area - Defined Height controlled by Parent Grid */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 min-h-0 overflow-hidden relative">
           <Tabs.Content value="upcoming" className="h-full overflow-y-auto outline-none">
             <UpcomingTransactions
               recurringWithStatus={recurringWithStatus}
