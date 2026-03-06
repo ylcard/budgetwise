@@ -20,22 +20,33 @@ import {
 import { formatCurrency } from "../utils/currencyUtils";
 import { createEntityMap } from "../utils/generalUtils";
 import Decimal from "decimal.js";
+import { normalizeToMidnight } from "../utils/dateUtils";
 
+/**
+ * BudgetPostMortem Component
+ * Performs a "Post-Mortem" analysis on a budget by comparing planned versus actual spending.
+ * Provides accuracy scores, variance analysis, and qualitative insights for fintech users.
+ * @param {Object} props
+ * @param {Object} props.budget - The budget object containing startDate, endDate, and allocatedAmount.
+ * @param {Array} props.transactions - Array of transaction objects to filter and analyze.
+ * @param {Array} props.categories - Array of category objects for name mapping.
+ * @param {Object} props.settings - User settings including currency and locale preferences.
+ */
 export default function BudgetPostMortem({ budget, transactions, categories, settings }) {
   const analysis = useMemo(() => {
     if (!budget || !transactions || !categories) return null;
 
-    // ADDED: 16-Jan-2026 - Don't analyze future/planned budgets
-    const now = new Date();
-    const budgetStart = new Date(budget.startDate);
-    const budgetEnd = new Date(budget.endDate);
+    // Use centralized dateUtils to prevent timezone shifting (1-day cutoff bug)
+    const now = normalizeToMidnight(new Date());
+    const budgetStart = normalizeToMidnight(budget.startDate);
+    const budgetEnd = normalizeToMidnight(budget.endDate);
 
     // Only analyze if budget has started
-    if (budgetStart > now) return null;
+    if (!budgetStart || budgetStart > now) return null;
 
     // Determine if budget is ongoing or completed
-    const isOngoing = budgetEnd >= now;
-    const isCompleted = budgetEnd < now || budget.status === 'completed';
+    const isOngoing = budgetEnd ? budgetEnd >= now : true;
+    const isCompleted = (budgetEnd && budgetEnd < now) || budget.status === 'completed';
 
     const categoryMap = createEntityMap(categories);
 
@@ -166,25 +177,34 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-500">
-            {budget && new Date(budget.startDate) > new Date()
-              ? 'Budget starts in the future. Insights will appear once expenses are added.'
-              : 'Add expenses to see insights and recommendations.'}
+            {budget && normalizeToMidnight(budget.startDate) > normalizeToMidnight(new Date())
+              ? "Budget starts in the future. Insights will appear once expenses are added."
+              : "Add expenses to see insights and recommendations."}
           </p>
         </CardContent>
       </Card>
     );
   }
 
+  /**
+   * Determines the visual indicator for budget variance.
+   * @returns {React.Component} Lucide Icon component.
+   */
   const getVarianceIcon = () => {
     if (analysis.variancePercentage > 10) return TrendingUp;
     if (analysis.variancePercentage < -10) return TrendingDown;
     return Target;
   };
 
+  /**
+   * Determines the color class based on the severity of the budget variance.
+   * @returns {string} Tailwind CSS text color class.
+   */
   const getVarianceColor = () => {
-    if (Math.abs(analysis.variancePercentage) <= 10) return 'text-green-600';
-    if (Math.abs(analysis.variancePercentage) <= 20) return 'text-yellow-600';
-    return 'text-red-600';
+    const absVariance = Math.abs(analysis.variancePercentage);
+    if (absVariance <= 10) return "text-green-600";
+    if (absVariance <= 20) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const VarianceIcon = getVarianceIcon();
