@@ -14,14 +14,12 @@ import {
     Music,
     Ticket,
     Tent,
-    ShoppingBag,
     Users,
     Calendar,
     Sparkles,
     Target
 } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
-import { format } from "date-fns";
 
 const ARCHETYPE_ICONS = {
     'Trip': Plane,
@@ -36,6 +34,14 @@ const ARCHETYPE_ICONS = {
     'Special Occasion': Calendar
 };
 
+/**
+ * AI-powered archetype selection screen
+ * @param {object[]} archetypes - List of suggested budget templates
+ * @param {function} onSelectArchetype - Callback when a template is chosen
+ * @param {function} onSkip - Callback to skip templates
+ * @param {object} settings - User settings for currency formatting
+ * @returns {JSX.Element}
+ */
 export default function BudgetArchetypeSelector({
     archetypes,
     onSelectArchetype,
