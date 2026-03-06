@@ -430,17 +430,19 @@ export default function Dashboard() {
             </div>
 
             {/* RIGHT COLUMN: Activity Hub (Sidebar) */}
-            <div className="hidden lg:block lg:col-span-4 h-full" data-tutorial="activity-hub">
-              <ActivityHub
-                recurringWithStatus={recurringWithStatus}
-                onMarkPaid={handleMarkPaid}
-                isLoading={isLoading}
-                categories={categories}
-                customBudgets={allCustomBudgets}
-                transactionActions={transactionActions}
-                settings={settings}
-                embedded={true}
-              />
+            <div className="hidden lg:block lg:col-span-4 relative min-h-[600px]" data-tutorial="activity-hub">
+              <div className="absolute inset-0">
+                <ActivityHub
+                  recurringWithStatus={recurringWithStatus}
+                  onMarkPaid={handleMarkPaid}
+                  isLoading={isLoading}
+                  categories={categories}
+                  customBudgets={allCustomBudgets}
+                  transactionActions={transactionActions}
+                  settings={settings}
+                  embedded={true}
+                />
+              </div>
             </div>
           </div>
 
