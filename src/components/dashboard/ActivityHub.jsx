@@ -18,7 +18,7 @@ export function ActivityHub({
   const [activeTab, setActiveTab] = useState('upcoming');
 
   return (
-    <Card className="h-full border-border shadow-sm flex flex-col overflow-hidden bg-card">
+    <Card className="h-full border-border shadow-md flex flex-col overflow-hidden bg-card">
       <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
         {/* Header / Segmented Control */}
         <div className="p-4 border-b border-border flex-shrink-0">
