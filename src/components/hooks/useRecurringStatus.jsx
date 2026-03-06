@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { isSameMonth, parseISO, differenceInDays, addMonths, addWeeks, addDays, addYears, subMonths, subWeeks, subDays, subYears, format, isBefore, startOfMonth, startOfDay } from 'date-fns';
+import { isSameMonth, differenceInDays, addMonths, addWeeks, addDays, addYears, subMonths, subWeeks, subDays, subYears, isBefore, startOfDay } from 'date-fns';
 import Big from 'big.js';
 import { useSettings } from '../utils/SettingsContext';
 import { evaluateTransactionMatch } from '../utils/matchingEngine';
+import { normalizeToMidnight, parseDate } from '../utils/dateUtils';
 
 function calculateNextDate(date, frequency) {
   switch (frequency) {
@@ -29,12 +30,17 @@ function calculatePreviousDate(date, frequency) {
   }
 }
 
+/**
+ * Hook to analyze recurring transaction templates against real transactions.
+ * Determines if a bill has been paid, is due soon, or is overdue for the current period.
+ */
 export function useRecurringStatus(recurringTransactions = [], realTransactions = []) {
   const { user } = useSettings();
 
   const data = useMemo(() => {
-    const today = new Date();
-    const currentMonthStart = startOfMonth(today);
+    // Use normalized local midnight for consistent status checks
+    const today = normalizeToMidnight(new Date());
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const currentMonthItems = [];
     const timelineItems = [];
 
@@ -83,7 +89,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // Sort pool by date (Oldest first) for FIFO filling
       poolOfTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      const dbNextDate = parseISO(template.nextOccurrence);
+      const dbNextDate = parseDate(template.nextOccurrence);
       const prevDate = calculatePreviousDate(dbNextDate, template.frequency);
 
       // 4. GENERATE SLOTS (Magnets)
@@ -103,7 +109,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
       // 5. FILL SLOTS (Best Fit / Greedy Magnet)
       // Let each transaction find its CLOSEST empty slot.
       poolOfTransactions.forEach(tx => {
-        const txDate = parseISO(tx.date);
+        const txDate = parseDate(tx.date);
 
         let bestSlotIndex = -1;
         let minDiff = Infinity;
@@ -123,12 +129,6 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
             bestSlotIndex = index;
           }
         });
-
-        if (bestSlotIndex !== -1) {
-          slots[bestSlotIndex].filledBy = tx;
-          // CRITICAL: Mark this ID as used so other templates (like Apple Music) can't use it
-          usedTransactionIds.add(tx.id);
-        }
       });
 
       // 6. DETERMINE CURRENT STATUS
@@ -153,24 +153,25 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
 
       const isOverdue = isBefore(dbNextDate, currentMonthStart); // Missed entirely
       const hasActivityThisMonth = linkedTxs.some(t => isSameMonth(parseISO(t.date), today));
-      const needsReview = matchStatus === 'needs_review' && !linkedTxs.length;
+      const needsReview = (matchStatus === 'needs_review' || matchStatus === 'auto_match') && !payingTx;
 
       if (isDueThisMonth || isPrevDueThisMonth || isOverdue || hasActivityThisMonth) {
-        const isPaid = paidThisMonth || isPrevDueThisMonth;
+        const isPaid = (payingTx && paidThisMonth) || false;
 
         // What date do we display? If it advanced to July, we want to show April's date.
         let displayDate = isPrevDueThisMonth ? prevDate : dbNextDate;
 
         if (hasActivityThisMonth && isPaid && !isPrevDueThisMonth && !isDueThisMonth && linkedTxs.length > 0) {
-          displayDate = parseISO(linkedTxs[0].date);
+          displayDate = parseDate(linkedTxs[0].date);
         }
 
         const daysUntilDue = differenceInDays(startOfDay(displayDate), startOfDay(today));
         let status = 'upcoming';
         if (isPaid) status = 'paid';
-        else if (daysUntilDue < 0) status = 'overdue';
+        else if (daysUntilDue < 0 && !isPaid) status = 'overdue';
         else if (daysUntilDue <= 3) status = 'due_soon';
 
+        // Enriched item to return to UI
         const enrichedItem = {
           ...template,
           isPaid,
@@ -201,7 +202,7 @@ export function useRecurringStatus(recurringTransactions = [], realTransactions 
     timelineItems.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
 
     return { currentMonthItems, timelineItems };
-  }, [recurringTransactions, realTransactions]);
+  }, [recurringTransactions, realTransactions, user]); // Added user dependency for safety
 
   return data;
 }
