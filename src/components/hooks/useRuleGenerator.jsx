@@ -5,7 +5,8 @@ import { useSettings } from "@/components/utils/SettingsContext";
 import { showToast } from "@/components/ui/use-toast";
 import { QUERY_KEYS } from "./queryKeys";
 import { fetchWithRetry } from "../utils/generalUtils";
-import { formatDateString, normalizeToMidnight, subMonths } from "../utils/dateUtils";
+import { formatDateString, normalizeToMidnight } from "../utils/dateUtils";
+import { subMonths } from 'date-fns';
 
 // ─── Constants ───────────────────────────────────────────────────────
 const CANDIDATE_QUERY_KEY = "rule_generator_candidates";
