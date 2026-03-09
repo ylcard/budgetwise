@@ -289,29 +289,29 @@ export default function TransactionList({
 
       {/* DESKTOP VIEW: Table */}
       <div className="hidden md:block overflow-x-auto custom-scrollbar">
-        <table className="w-full text-sm text-left border-collapse min-w-[1000px]">
+        <table className="w-full text-sm text-left border-collapse table-auto">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
             <tr>
-              <th className="pl-6 pr-4 py-3 w-14">
+              <th className="pl-6 pr-2 py-3 w-14">
                 <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
               </th>
-              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-left whitespace-nowrap" onClick={() => handleSort('title')}>
-                <div className="flex items-center justify-center">Title <SortIcon columnKey="title" /></div>
+              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-left min-w-[200px]" onClick={() => handleSort('title')}>
+                <div className="flex items-center">Title <SortIcon columnKey="title" /></div>
               </th>
-              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('date')}>
+              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center w-36" onClick={() => handleSort('date')}>
                 <div className="flex items-center justify-center">Date <SortIcon columnKey="date" /></div>
               </th>
-              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center" onClick={() => handleSort('paidDate')}>
+              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center w-36" onClick={() => handleSort('paidDate')}>
                 <div className="flex items-center justify-center">Paid Date <SortIcon columnKey="paidDate" /></div>
               </th>
-              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-left" onClick={() => handleSort('category')}>
+              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-left w-44" onClick={() => handleSort('category')}>
                 <div className="flex items-center justify-start">Category <SortIcon columnKey="category" /></div>
               </th>
-              <th className="px-4 py-3 text-right cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('amount')}>
+              <th className="px-4 py-3 text-right cursor-pointer hover:bg-accent/50 transition-colors w-36" onClick={() => handleSort('amount')}>
                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
               </th>
-              <th className="px-4 py-3 w-1/4 text-center whitespace-nowrap">Note</th>
-              <th className="pl-4 pr-6 py-3 w-20 text-center">Actions</th>
+              <th className="px-4 py-3 text-left">Note</th>
+              <th className="pl-2 pr-6 py-3 w-20 text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -326,7 +326,7 @@ export default function TransactionList({
                   onClick={(e) => handleRowClick(e, transaction)}
                   className={`group hover:bg-accent/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-primary/5' : ''}`}
                 >
-                  <td className="pl-6 pr-4 py-2">
+                  <td className="pl-6 pr-2 py-2">
                     <Checkbox
                       checked={selectedIds.has(transaction.id)}
                       onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
@@ -372,7 +372,7 @@ export default function TransactionList({
                   <td className="px-4 py-2 text-muted-foreground text-xs truncate max-w-[200px]" title={transaction.notes}>
                     {transaction.notes}
                   </td>
-                  <td className="pl-4 pr-6 py-2">
+                  <td className="pl-2 pr-6 py-2">
                     <div className="flex items-center justify-center gap-1">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
