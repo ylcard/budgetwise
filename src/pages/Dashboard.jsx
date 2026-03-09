@@ -35,7 +35,6 @@ import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialo
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { FABAction } from "@/components/ui/FABAction";
 import { FileUp, MinusCircle, PlusCircle } from "lucide-react"; // 'Plus' removed (unused)
 import { formatDateString, getFirstDayOfMonth, getLastDayOfMonth } from "../components/utils/dateUtils";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
@@ -64,6 +63,7 @@ export default function Dashboard() {
     const [showQuickAddBudget, setShowQuickAddBudget] = useState(false);
     const [showImportWizard, setShowImportWizard] = useState(false);
     const [storyContext, setStoryContext] = useState(null); // { month, year }
+    const { setFabButtons, clearFabButtons } = useFAB();
     const [searchParams, setSearchParams] = useSearchParams();
     const [showStory, setShowStory] = useState(false);
     const queryClient = useQueryClient();
@@ -255,10 +255,50 @@ export default function Dashboard() {
         }
     });
 
-    // FAB Logic: Highlight "Add Income" if the month is currently empty
-    const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
+    // UPDATED 04-Feb-2026: FAB buttons use simple configs with onClick handlers
+    const fabButtons = useMemo(() => {
+        const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
+        return [
+            {
+                key: 'expense',
+                label: 'Add Expense',
+                icon: 'MinusCircle',
+                variant: 'warning',
+                onClick: () => setQuickAddState('new')
+            },
+            {
+                key: 'income',
+                label: 'Add Income',
+                icon: 'PlusCircle',
+                variant: 'success',
+                highlighted: isEmptyMonth,
+                onClick: () => setQuickAddIncomeState('new')
+            },
+            {
+                key: 'import',
+                label: 'Import Data',
+                icon: 'FileUp',
+                variant: 'create',
+                onClick: () => {
+                    setShowImportWizard(true);
+                }
+            },
+            {
+                key: 'custom-budget',
+                label: 'Add Budget',
+                icon: 'Plus',
+                variant: 'create',
+                onClick: () => setShowQuickAddBudget(true)
+            }
+        ];
+    }, [currentMonthIncome, currentMonthExpenses]);
 
-    // Combine loading states.
+    useEffect(() => {
+        setFabButtons(fabButtons);
+        return () => clearFabButtons();
+    }, [fabButtons, setFabButtons, clearFabButtons]);
+
+    // Combine loading states. The dashboard summary relies heavily on transactions and categories.
     const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
 
     // --- MOCK DATA FOR TUTORIAL ---
@@ -349,28 +389,22 @@ export default function Dashboard() {
                                         selectedMonth={selectedMonth}
                                         selectedYear={selectedYear}
                                         importDataButton={
-                                            <FABAction id="dash-import" label="Import" icon="FileUp" onClick={() => setShowImportWizard(true)}>
-                                                <CustomButton variant="primary" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
-                                                    <FileUp className="h-3.5 w-3.5" />
-                                                    <span className="hidden xl:inline">Import</span>
-                                                </CustomButton>
-                                            </FABAction>
+                                            <CustomButton variant="primary" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
+                                                <FileUp className="h-3.5 w-3.5" />
+                                                <span className="hidden xl:inline">Import</span>
+                                            </CustomButton>
                                         }
                                         addIncomeButton={
-                                            <FABAction id="dash-income" label="Income" icon="PlusCircle" highlighted={isEmptyMonth} onClick={() => setQuickAddIncomeState('new')}>
-                                                <CustomButton variant="success" size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs">
-                                                    <PlusCircle className="h-3.5 w-3.5" />
-                                                    <span className="hidden xl:inline">Income</span>
-                                                </CustomButton>
-                                            </FABAction>
+                                            <CustomButton variant="success" size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs">
+                                                <PlusCircle className="h-3.5 w-3.5" />
+                                                <span className="hidden xl:inline">Income</span>
+                                            </CustomButton>
                                         }
                                         addExpenseButton={
-                                            <FABAction id="dash-expense" label="Expense" icon="MinusCircle" onClick={() => setQuickAddState('new')}>
-                                                <CustomButton variant="delete" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
-                                                    <MinusCircle className="h-3.5 w-3.5" />
-                                                    <span className="hidden xl:inline">Expense</span>
-                                                </CustomButton>
-                                            </FABAction>
+                                            <CustomButton variant="delete" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
+                                                <MinusCircle className="h-3.5 w-3.5" />
+                                                <span className="hidden xl:inline">Expense</span>
+                                            </CustomButton>
                                         }
                                         monthNavigator={
                                             <MonthNavigator
@@ -389,11 +423,9 @@ export default function Dashboard() {
 
                             {/* 3. Custom Budgets */}
                             <div data-tutorial="custom-budgets" className="w-full">
-                                <FABAction id="dash-budget" label="Add Budget" icon="Plus" onClick={() => setShowQuickAddBudget(true)}>
-                                    <CustomBudgetsDisplay
-                                        onCreateBudget={() => setShowQuickAddBudget(true)}
-                                    />
-                                </FABAction>
+                                <CustomBudgetsDisplay
+                                    onCreateBudget={() => setShowQuickAddBudget(true)}
+                                />
                             </div>
                         </div>
 
