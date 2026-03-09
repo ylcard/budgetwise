@@ -12,7 +12,9 @@ const iconMap = {
     MinusCircle,
     PlusCircle,
     Play,
-    Plus
+    Plus,
+    Loader2,
+    RefreshCw
 };
 
 export default function GlobalFAB() {
