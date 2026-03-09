@@ -297,7 +297,8 @@ export default function Dashboard() {
         const syncButton = hasActiveConnections ? {
             key: `sync-${syncState}`, // Dynamic key forces re-render when state changes
             label: syncState === 'syncing' ? 'Syncing...' : 'Smart Sync',
-            icon: syncState === 'syncing' ? 'Loader2' : 'RefreshCw', // Strings, not components
+            // icon: syncState === 'syncing' ? 'Loader2' : 'RefreshCw', // Strings, not components
+            icon: 'Loader2',
             variant: 'secondary',
             keepOpen: true,
             onClick: handleGlobalSync
