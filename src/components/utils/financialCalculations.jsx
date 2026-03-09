@@ -7,6 +7,7 @@
 
 import { parseDate, isDateInRange, getMonthBoundaries } from "./dateUtils";
 import Decimal from "decimal.js";
+import { isDateInRange } from "./dateUtils";
 
 /**
  * Check if a transaction falls within a specific date range.
@@ -299,59 +300,40 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
 
 /**
  * Calculates statistics for a system budget.
- * Optimized to use getFinancialBreakdown for single-pass calculation.
- * UPDATED: Accepts settings and historicalAverage to correctly resolve the budget limit.
- * @returns {Object} System Budget stats including remaining, percentage used, and breakdown
  */
-export const getSystemBudgetStats = (systemBudget, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome = 0, settings = {}, historicalAverage = 0) => {
-  // Get the granular data in one pass
-  const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, startDate, endDate);
-
+export const getSystemBudgetStats = (systemBudget, transactions, startDate, endDate) => {
   let paidAmount = 0;
-  let unpaidAmount = 0;
 
-  if (systemBudget.systemBudgetType === 'needs') {
-    paidAmount = breakdown.needs.paid;
-    unpaidAmount = breakdown.needs.unpaid;
-  } else if (systemBudget.systemBudgetType === 'wants') {
-    // Wants System Budget aggregates Direct + Custom
-    paidAmount = breakdown.wants.directPaid + breakdown.wants.customPaid;
-    unpaidAmount = breakdown.wants.directUnpaid + breakdown.wants.customUnpaid;
-  } else if (systemBudget.systemBudgetType === 'savings') {
-    // Savings = Income - (Needs + Wants)
-    const totalExpenses = breakdown.needs.total + breakdown.wants.total;
-    paidAmount = Math.max(0, monthlyIncome - totalExpenses);
-    unpaidAmount = 0;
-  }
+  // Filter transactions based on priority, payment status, and period
+  const periodTransactions = transactions.filter(t => {
+    // 1. Priority must match the budget type (needs/wants)
+    if (t.financial_priority !== systemBudget.systemBudgetType) return false;
 
-  // Use the helper to resolve the limit based on mode
-  const totalBudget = resolveBudgetLimit(systemBudget, monthlyIncome, settings, historicalAverage);
+    // 2. Only count paid transactions for cashflow monitoring
+    if (!t.isPaid) return false;
+
+    // 3. Must fall within the period using dateUtils normalization
+    return isDateInRange(t.paidDate || t.date, startDate, endDate);
+  });
+
+  paidAmount = periodTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
+  const totalBudget = systemBudget.budgetAmount || 0;
 
   const decTotalBudget = new Decimal(totalBudget);
-  const decTotalSpent = new Decimal(paidAmount).plus(unpaidAmount);
-  const decRemaining = decTotalBudget.minus(decTotalSpent);
+  const decRemaining = decTotalBudget.minus(new Decimal(paidAmount));
 
   let percentageUsed = 0;
   if (decTotalBudget.gt(0)) {
-    percentageUsed = decTotalSpent.dividedBy(decTotalBudget).times(100).toDecimalPlaces(2).toNumber();
+    percentageUsed = new Decimal(paidAmount).dividedBy(decTotalBudget).times(100).toDecimalPlaces(2).toNumber();
   }
 
   return {
-    paid: {
-      totalBaseCurrencyAmount: paidAmount,
-      foreignCurrencyDetails: []
-    },
-    unpaid: {
-      totalBaseCurrencyAmount: unpaidAmount,
-      foreignCurrencyDetails: []
-    },
-    totalSpent: decTotalSpent.toDecimalPlaces(2).toNumber(),
+    spent: paidAmount, // Required by BudgetHealthCircular.jsx
+    totalSpent: paidAmount,
     paidAmount,
-    unpaidAmount,
+    unpaidAmount: 0,
     remaining: decRemaining.toDecimalPlaces(2).toNumber(),
-    percentageUsed,
-    // Pass granular stats back if UI needs them (e.g. for Direct vs Custom split)
-    breakdown
+    percentageUsed
   };
 };
 
