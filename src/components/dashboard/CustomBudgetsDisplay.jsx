@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
@@ -14,7 +13,6 @@ import {
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * CREATED: 03-Feb-2026
@@ -34,9 +32,6 @@ export default function CustomBudgetsDisplay({
 
   // Unified Stat Engine: Fetch and calculate once
   const { enrichedBudgets: budgets = [] } = useEnrichedCustomBudgets(user, monthStart, monthEnd);
-
-  const isMobile = useIsMobile();
-  const cardSize = isMobile ? 'sm' : 'md';
 
   return (
     <div className="space-y-6">
