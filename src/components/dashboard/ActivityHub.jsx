@@ -5,10 +5,10 @@ import UpcomingTransactions from './UpcomingTransactions';
 import RecentTransactions from './RecentTransactions';
 import { Card } from '@/components/ui/card';
 
-export function ActivityHub({ 
-  recurringWithStatus, 
-  onMarkPaid, 
-  isLoading, 
+export function ActivityHub({
+  recurringWithStatus,
+  onMarkPaid,
+  isLoading,
   categories,
   customBudgets,
   transactionActions,
@@ -18,7 +18,7 @@ export function ActivityHub({
   const [activeTab, setActiveTab] = useState('upcoming');
 
   return (
-    <Card className="h-full border-border shadow-md flex flex-col overflow-hidden bg-card">
+    <Card className="h-full w-full max-w-full border-border shadow-md flex flex-col overflow-hidden bg-card">
       <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
         {/* Header / Segmented Control */}
         <div className="p-4 border-b border-border flex-shrink-0">
@@ -57,9 +57,9 @@ export function ActivityHub({
               embedded={true} // New prop to tell component it's inside a wrapper
             />
           </Tabs.Content>
-          
+
           <Tabs.Content value="recent" className="h-full overflow-y-auto outline-none">
-            <RecentTransactions 
+            <RecentTransactions
               categories={categories}
               customBudgets={customBudgets}
               onEdit={(data, tx) => transactionActions.handleSubmit(data, tx)}
