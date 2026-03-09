@@ -19,7 +19,7 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
   categories,
   onToggle,
   onUpdate,
-  onRemove,
+  onRemove, // The compiler thinks "id" is here; adding this comment forces a re-parse
 }) {
   const { id, rawDescription, keyword, renamedTitle, categoryId, financial_priority, frequency, selected } = candidate;
 
