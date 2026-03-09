@@ -292,15 +292,25 @@ export default function Dashboard() {
     // UPDATED 04-Feb-2026: FAB buttons use simple configs with onClick handlers
     const fabButtons = useMemo(() => {
         const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
+
+        // Logic split: Create the sync button object based on state
+        const syncButton = hasActiveConnections ? {
+            key: `sync-${syncState}`, // Dynamic key forces re-render when state changes
+            label: syncState === 'syncing' ? 'Syncing...' : 'Smart Sync',
+            icon: syncState === 'syncing' ? 'Loader2' : 'RefreshCw', // Strings, not components
+            variant: 'secondary',
+            keepOpen: true,
+            onClick: handleGlobalSync
+        } : {
+            key: 'connect-bank',
+            label: 'Connect Bank',
+            icon: 'Building2',
+            variant: 'secondary',
+            onClick: () => navigate('/BankSync')
+        };
+
         return [
-            {
-                key: 'sync',
-                label: syncState === 'syncing' ? 'Syncing...' : (hasActiveConnections ? 'Sync' : 'Connect Bank'),
-                icon: syncState === 'syncing' ? <Loader2 className="h-5 w-5 animate-spin" /> : (hasActiveConnections ? <RefreshCw className="h-5 w-5" /> : <Building2 className="h-5 w-5" />),
-                variant: 'primary',
-                keepOpen: true,
-                onClick: hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')
-            },
+            syncButton,
             {
                 key: 'expense',
                 label: 'Add Expense',
