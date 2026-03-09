@@ -5,7 +5,15 @@
  * Updated: 2025-11-13 - Consolidated local date string formatting for consistency
  */
 
-import { format, isToday, isYesterday, isSameDay, addDays as fnsAddDays, subDays as fnsSubDays } from "date-fns";
+import {
+  format,
+  isToday,
+  isYesterday,
+  isSameDay,
+  addDays as fnsAddDays,
+  subDays as fnsSubDays,
+  differenceInDays
+} from "date-fns";
 
 /**
  * Create a timezone-safe local date from YYYY-MM-DD string
@@ -242,4 +250,18 @@ export const subDays = (date, amount) => {
   const d = normalizeToMidnight(date);
   if (!d) return null;
   return fnsSubDays(d, amount);
+};
+
+/**
+ * Calculates the number of days between two dates.
+ * Uses local midnight normalization for financial consistency.
+ * @param {string|Date} dateLeft
+ * @param {string|Date} dateRight
+ * @returns {number|null} Absolute number of days between dates
+ */
+export const getDaysBetween = (dateLeft, dateRight) => {
+  const d1 = normalizeToMidnight(dateLeft);
+  const d2 = normalizeToMidnight(dateRight);
+  if (!d1 || !d2) return null;
+  return Math.abs(differenceInDays(d1, d2)) + 1; // Inclusive of both start and end dates
 };
