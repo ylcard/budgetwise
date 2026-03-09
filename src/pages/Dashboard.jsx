@@ -349,32 +349,28 @@ export default function Dashboard() {
                                         selectedMonth={selectedMonth}
                                         selectedYear={selectedYear}
                                         importDataButton={
-                                            <FABAction
-                                                id="dash-import"
-                                                label="Import"
-                                                icon="FileUp"
-                                                variant="primary"
-                                                onClick={() => setShowImportWizard(true)}
-                                            />
+                                            <FABAction id="dash-import" label="Import" icon="FileUp" onClick={() => setShowImportWizard(true)}>
+                                                <CustomButton variant="primary" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs">
+                                                    <FileUp className="h-3.5 w-3.5" />
+                                                    <span className="hidden xl:inline">Import</span>
+                                                </CustomButton>
+                                            </FABAction>
                                         }
                                         addIncomeButton={
-                                            <FABAction
-                                                id="dash-income"
-                                                label="Income"
-                                                icon="PlusCircle"
-                                                variant="success"
-                                                highlighted={isEmptyMonth}
-                                                onClick={() => setQuickAddIncomeState('new')}
-                                            />
+                                            <FABAction id="dash-income" label="Income" icon="PlusCircle" highlighted={isEmptyMonth} onClick={() => setQuickAddIncomeState('new')}>
+                                                <CustomButton variant="success" size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs">
+                                                    <PlusCircle className="h-3.5 w-3.5" />
+                                                    <span className="hidden xl:inline">Income</span>
+                                                </CustomButton>
+                                            </FABAction>
                                         }
                                         addExpenseButton={
-                                            <FABAction
-                                                id="dash-expense"
-                                                label="Expense"
-                                                icon="MinusCircle"
-                                                variant="delete"
-                                                onClick={() => setQuickAddState('new')}
-                                            />
+                                            <FABAction id="dash-expense" label="Expense" icon="MinusCircle" onClick={() => setQuickAddState('new')}>
+                                                <CustomButton variant="delete" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs">
+                                                    <MinusCircle className="h-3.5 w-3.5" />
+                                                    <span className="hidden xl:inline">Expense</span>
+                                                </CustomButton>
+                                            </FABAction>
                                         }
                                         monthNavigator={
                                             <MonthNavigator
@@ -393,17 +389,11 @@ export default function Dashboard() {
 
                             {/* 3. Custom Budgets */}
                             <div data-tutorial="custom-budgets" className="w-full">
-                                <FABAction
-                                    id="dash-add-budget"
-                                    label="Add Budget"
-                                    icon="Plus"
-                                    variant="create"
-                                    className="mb-4"
-                                    onClick={() => setShowQuickAddBudget(true)}
-                                />
-                                <CustomBudgetsDisplay
-                                    onCreateBudget={() => setShowQuickAddBudget(true)}
-                                />
+                                <FABAction id="dash-budget" label="Add Budget" icon="Plus" onClick={() => setShowQuickAddBudget(true)}>
+                                    <CustomBudgetsDisplay
+                                        onCreateBudget={() => setShowQuickAddBudget(true)}
+                                    />
+                                </FABAction>
                             </div>
                         </div>
 
