@@ -49,15 +49,15 @@ export default function GlobalFAB() {
                         exit={{ opacity: 0, y: 20 }}
                         className="flex flex-col-reverse gap-2 pointer-events-auto"
                     >
-                        {buttons.map((button, index) => {
+                        {buttons.map((button) => {
                             const Icon = iconMap[button.icon];
                             return (
                                 <motion.div
-                                    key={button.id}
+                                    key={button.key}
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
-                                    transition={{ delay: index * 0.05 }}
+                                    transition={{ delay: 0.05 }}
                                     className={button.highlighted ? "relative" : ""}
                                 >
                                     {button.highlighted && (
