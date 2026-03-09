@@ -26,9 +26,11 @@ export default function GlobalFAB() {
 
     if (!buttons || buttons.length === 0) return null;
 
-    const handleButtonClick = (onClick) => {
-        onClick();
-        setIsOpen(false);
+    const handleButtonClick = (button) => {
+        button.onClick?.();
+        if (!button.keepOpen) {
+            setIsOpen(false);
+        }
     };
 
     return (
@@ -69,11 +71,15 @@ export default function GlobalFAB() {
                                     <CustomButton
                                         variant={button.variant}
                                         size="sm"
-                                        onClick={() => handleButtonClick(button.onClick)}
+                                        onClick={() => handleButtonClick(button)}
                                         disabled={button.disabled}
                                         className="w-full justify-start relative"
                                     >
-                                        {Icon && <Icon className="w-4 h-4" />}
+                                        {Icon && (
+                                            <Icon
+                                                className={`w-4 h-4 ${button.icon === 'Loader2' ? 'animate-spin' : ''}`}
+                                            />
+                                        )}
                                         {button.label}
                                     </CustomButton>
                                 </motion.div>
