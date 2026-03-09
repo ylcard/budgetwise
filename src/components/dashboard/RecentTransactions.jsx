@@ -162,7 +162,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
 
   return (
     <>
-      <div className={clsx("flex flex-col h-full", !embedded && "bg-card border-none shadow-lg rounded-xl")}>
+      <div className={clsx("flex flex-col h-full w-full max-w-full", !embedded && "bg-card border-none shadow-lg rounded-xl")}>
         {!embedded && (
           <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 shrink-0">
             <CardTitle>Recent Transactions</CardTitle>
