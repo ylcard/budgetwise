@@ -106,29 +106,21 @@ export default function BudgetDetail() {
     staleTime: 1000 * 60 * 60,
   });
 
-  // 3. Fetch all Custom Budgets for the period (Defined ONCE)
+  // 3. Fetch all Custom Budgets to support cross-period links (e.g. June trip paid in Feb)
   const { data: allCustomBudgets = [] } = useQuery({
-    queryKey: ['allCustomBudgets', monthStart, monthEnd, user?.email],
+    queryKey: ['allCustomBudgets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      return await fetchWithRetry(() => base44.entities.CustomBudget.filter({
-        created_by: user.email,
-        startDate: { $lte: monthEnd },
-        endDate: { $gte: monthStart }
-      }));
+      return await fetchWithRetry(() => base44.entities.CustomBudget.filter({ created_by: user.email }));
     },
-    // initialData: [],
-    enabled: !!budget && !!user?.email && budget.isSystemBudget === true,
+    enabled: !!user?.email,
     staleTime: 1000 * 60 * 5,
   });
 
   // 4. Calculate related IDs
   const relatedCustomBudgetIds = useMemo(() => {
-    if (!budget || !budget.isSystemBudget || budget.systemBudgetType !== 'wants') return [];
-    return allCustomBudgets
-      .filter(cb => doDateRangesOverlap(cb.startDate, cb.endDate, budget.startDate, budget.endDate))
-      .map(cb => cb.id);
-  }, [budget, allCustomBudgets]);
+    return allCustomBudgets.map(cb => cb.id);
+  }, [allCustomBudgets]);
 
   // 5. Smart Transaction Fetch
   const { data: transactions = [] } = useQuery({
@@ -139,7 +131,7 @@ export default function BudgetDetail() {
       }
       return await fetchWithRetry(() => base44.entities.Transaction.filter({
         $or: [
-          { date: { $gte: budget.startDate, $lte: budget.endDate } },
+          { paidDate: { $gte: budget.startDate, $lte: budget.endDate } },
           { budgetId: budgetId },
           { budgetId: { $in: relatedCustomBudgetIds } }
         ]
@@ -226,31 +218,24 @@ export default function BudgetDetail() {
   // Memos for data processing
   const budgetTransactions = useMemo(() => {
     if (!budget) return [];
+    const customBudgetIds = new Set(allCustomBudgets.map(cb => cb.id));
+
     if (budget.isSystemBudget) {
 
-      // FIXED: 16-Jan-2026 - System budgets should only show direct expenses within date range
       return transactions.filter(t => {
-        const compDate = t.isPaid && t.paidDate ? t.paidDate : t.date;
-        const inRange = isDateInRange(compDate, budget.startDate, budget.endDate);
+        if (!t.isPaid) return false;
+        const isInPeriod = isDateInRange(t.paidDate || t.date, budget.startDate, budget.endDate);
+        if (!isInPeriod) return false;
 
-        if (!inRange) return false;
+        // Show if: explicitly assigned, matches priority, OR is a custom budget expense (for Lifestyle)
+        const isDirect = t.budgetId === budget.id || t.financial_priority === budget.systemBudgetType;
+        const isCustomWant = budget.systemBudgetType === 'wants' && customBudgetIds.has(t.budgetId);
 
-        // If transaction is explicitly assigned to THIS system budget, include it
-        if (t.budgetId === budget.id) {
-          return true;
-        }
-
-        if (t.type !== 'expense' || !t.category_id) return false;
-        if (t.budgetId) return false; // Exclude if assigned to any custom budget
-
-        const category = categories.find(c => c.id === t.category_id);
-        const effectivePriority = t.financial_priority || (category ? category.priority : null);
-
-        return effectivePriority === budget.systemBudgetType;
+        return isDirect || isCustomWant;
       });
     }
     return transactions.filter(t => t.budgetId === budgetId);
-  }, [transactions, budgetId, budget, categories, allCustomBudgets]);
+  }, [transactions, budgetId, budget, allCustomBudgets]);
 
   // ADDED: 16-Jan-2026 - Filtered transactions based on user filters
   const filteredTransactions = useMemo(() => {
@@ -291,24 +276,19 @@ export default function BudgetDetail() {
 
   const relatedCustomBudgetsForDisplay = useMemo(() => {
     if (!budget || !budget.isSystemBudget || budget.systemBudgetType !== 'wants') return [];
-    return allCustomBudgets
-      .filter(cb => !cb.isSystemBudget && doDateRangesOverlap(cb.startDate, cb.endDate, budget.startDate, budget.endDate))
-      .sort((a, b) => {
-        if (a.status === 'active' && b.status !== 'active') return -1;
-        if (a.status !== 'active' && b.status === 'active') return 1;
-        return 0;
-      });
-  }, [budget, allCustomBudgets]);
+
+    // Only show custom budgets that have a transaction paid in THIS period
+    const budgetIdsInPeriod = new Set(budgetTransactions.map(t => t.budgetId));
+    return allCustomBudgets.filter(cb => budgetIdsInPeriod.has(cb.id));
+  }, [budget, allCustomBudgets, budgetTransactions]);
 
   const stats = useMemo(() => {
     if (!budget) return null;
     if (budget.isSystemBudget) {
-      const bDate = parseDate(budget.startDate);
-      const histAvg = getHistoricalAverageIncome(transactions, bDate.getMonth(), bDate.getFullYear());
-      return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, incomeData, settings, histAvg);
+      return getSystemBudgetStats(budget, transactions, budget.startDate, budget.endDate, allCustomBudgets);
     }
     return getCustomBudgetStats(budget, transactions);
-  }, [budget, transactions, categories, allCustomBudgets, incomeData, settings]);
+  }, [budget, transactions, allCustomBudgets]);
 
   const allocationStats = useMemo(() => {
     if (!budget || budget.isSystemBudget) return null;
