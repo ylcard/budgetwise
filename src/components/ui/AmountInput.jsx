@@ -55,6 +55,7 @@ export function AmountInput({
   onCurrencyChange = null,
   hideSymbol = false,
   settingsOverride = null,
+  id, 
   ...props
 }) {
   const { settings: contextSettings } = useSettings();
