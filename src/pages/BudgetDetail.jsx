@@ -508,7 +508,12 @@ export default function BudgetDetail() {
                         <div className="bg-background/50 rounded-lg p-3 border border-border/30">
                           <p className="text-[10px] uppercase text-muted-foreground font-bold">Direct Lifestyle</p>
                           <p className="text-lg font-black text-primary">
-                            {formatCurrency(budgetTransactions.reduce((acc, t) => acc + (t.amount || 0), 0), settings)}
+                            {formatCurrency(
+                              budgetTransactions
+                                .filter(t => t.budgetId === budget.id || !t.budgetId)
+                                .reduce((acc, t) => acc + (t.amount || 0), 0),
+                              settings
+                            )}
                           </p>
                           <p className="text-[9px] text-muted-foreground">Unassigned expenses</p>
                         </div>
@@ -516,7 +521,7 @@ export default function BudgetDetail() {
                           <p className="text-[10px] uppercase text-muted-foreground font-bold">Custom Budgets</p>
                           <p className="text-lg font-black text-indigo-500">
                             {formatCurrency(
-                              transactions
+                              budgetTransactions
                                 .filter(t => t.budgetId && t.budgetId !== budget.id)
                                 .reduce((acc, t) => acc + (t.amount || 0), 0),
                               settings
