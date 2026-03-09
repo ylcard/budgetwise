@@ -290,7 +290,11 @@ export default function BudgetDetail() {
     if (!budget || !budget.isSystemBudget || budget.systemBudgetType !== 'wants') return [];
     return allCustomBudgets
       .filter(cb => !cb.isSystemBudget && doDateRangesOverlap(cb.startDate, cb.endDate, budget.startDate, budget.endDate))
-      .sort((a, b) => (a.status === 'active' ? -1 : 1));
+      .sort((a, b) => {
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (a.status !== 'active' && b.status === 'active') return 1;
+        return 0;
+      });
   }, [budget, allCustomBudgets]);
 
   const stats = useMemo(() => {
