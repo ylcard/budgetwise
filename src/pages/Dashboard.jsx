@@ -298,7 +298,7 @@ export default function Dashboard() {
             key: `sync-${syncState}`, // Dynamic key forces re-render when state changes
             label: syncState === 'syncing' ? 'Syncing...' : 'Smart Sync',
             // icon: syncState === 'syncing' ? 'Loader2' : 'RefreshCw', // Strings, not components
-            icon: 'Loader2',
+            icon: 'RefreshCw',
             variant: 'secondary',
             keepOpen: true,
             onClick: handleGlobalSync
