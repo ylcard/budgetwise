@@ -1,3 +1,5 @@
+import { base44 } from "@/api/base44Client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
@@ -35,23 +37,25 @@ import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialo
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { FileUp, MinusCircle, PlusCircle } from "lucide-react"; // 'Plus' removed (unused)
+import { FileUp, MinusCircle, PlusCircle, Building2, RefreshCw, Loader2, Check, X } from "lucide-react";
+import { fetchWithRetry } from "../components/utils/generalUtils";
 import { formatDateString, getFirstDayOfMonth, getLastDayOfMonth } from "../components/utils/dateUtils";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
-import { useSearchParams } from "react-router-dom"; // Added for notification linking
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { WrappedStory } from "../components/dashboard/WrappedStory";
 import { HealthProvider } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
 import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
-import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
 import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
-import { subMonths } from 'date-fns';
+import { subMonths, subDays } from 'date-fns';
 import { ActivityHub } from "../components/dashboard/ActivityHub";
+import { useBankSync } from "../components/banksync/useBankSync";
+import { toast } from "sonner";
 
 /**
  * Main Dashboard Page
@@ -67,6 +71,7 @@ export default function Dashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [showStory, setShowStory] = useState(false);
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     // Carousel for Mobile Activity (Upcoming/Recent)
     const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
@@ -207,6 +212,35 @@ export default function Dashboard() {
     // --- FINANCIAL HEALTH SCORE ---
     const { healthData } = useFinancialHealthScore(user, selectedMonth, selectedYear);
 
+    // --- BANK SYNC LOGIC ---
+    const [syncState, setSyncState] = useState('idle');
+    const { data: connections = [] } = useQuery({
+        queryKey: ['bankConnections'],
+        queryFn: () => base44.entities.BankConnection.list(),
+        staleTime: 1000 * 60 * 5,
+    });
+    const hasActiveConnections = connections.some(c => c.status === 'active');
+    const { executeSync } = useBankSync(user);
+
+    const handleGlobalSync = async () => {
+        const activeConnections = connections.filter(c => c.status === 'active');
+        setSyncState('syncing');
+        const dateFrom = formatDateString(subDays(new Date(), 30));
+
+        try {
+            for (const conn of activeConnections) {
+                await executeSync(conn, dateFrom);
+            }
+            setSyncState('success');
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+            setTimeout(() => setSyncState('idle'), 3000);
+        } catch (error) {
+            setSyncState('error');
+            toast.error(`Sync failed: ${error.message}`);
+            setTimeout(() => setSyncState('idle'), 3000);
+        }
+    };
+
     const handleMarkPaid = (bill) => {
         const template = {
             title: bill.title,
@@ -260,6 +294,13 @@ export default function Dashboard() {
         const isEmptyMonth = (!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0);
         return [
             {
+                key: 'sync',
+                label: syncState === 'syncing' ? 'Syncing...' : (hasActiveConnections ? 'Smart Sync' : 'Connect Bank'),
+                icon: syncState === 'syncing' ? 'Loader2' : (hasActiveConnections ? 'RefreshCw' : 'Building2'),
+                variant: 'secondary',
+                onClick: hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')
+            },
+            {
                 key: 'expense',
                 label: 'Add Expense',
                 icon: 'MinusCircle',
@@ -291,7 +332,7 @@ export default function Dashboard() {
                 onClick: () => setShowQuickAddBudget(true)
             }
         ];
-    }, [currentMonthIncome, currentMonthExpenses]);
+    }, [currentMonthIncome, currentMonthExpenses, hasActiveConnections, syncState, navigate]);
 
     useEffect(() => {
         setFabButtons(fabButtons);
@@ -324,6 +365,28 @@ export default function Dashboard() {
                             <p className="text-muted-foreground mt-1">
                                 Welcome back, {settings?.displayName || user?.name || 'User'}!
                             </p>
+                        </div>
+
+                        {/* Desktop Sync Button */}
+                        <div className="flex items-center gap-2">
+                            <CustomButton
+                                variant="outline"
+                                size="sm"
+                                className={`h-9 gap-2 transition-all duration-300 ${hasActiveConnections ? 'w-[110px]' : 'w-auto'}`}
+                                onClick={hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')}
+                                disabled={syncState === 'syncing'}
+                            >
+                                {!hasActiveConnections ? (
+                                    <><Building2 className="h-4 w-4" /> Connect Bank</>
+                                ) : (
+                                    <>
+                                        {syncState === 'idle' && <><RefreshCw className="h-4 w-4" /> Sync</>}
+                                        {syncState === 'syncing' && <><Loader2 className="h-4 w-4 animate-spin" /> Syncing</>}
+                                        {syncState === 'success' && <><Check className="h-4 w-4 text-emerald-500" /> Synced</>}
+                                        {syncState === 'error' && <><X className="h-4 w-4 text-rose-500" /> Failed</>}
+                                    </>
+                                )}
+                            </CustomButton>
                         </div>
                     </div>
 
