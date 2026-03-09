@@ -43,6 +43,7 @@ const SidebarProvider = React.forwardRef((
     className,
     style,
     children,
+    id,
     ...props
   },
   ref
