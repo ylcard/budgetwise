@@ -11,13 +11,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ArrowLeft, CheckCircle, Trash2, AlertCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Trash2, AlertCircle, Calendar, Target, CreditCard, Receipt, Layers } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { formatDate, parseDate, doDateRangesOverlap } from "../components/utils/dateUtils";
+import { formatDate, parseDate, doDateRangesOverlap, getDaysBetween } from "../components/utils/dateUtils";
 import {
   getCustomBudgetStats,
   getSystemBudgetStats,
@@ -447,28 +447,122 @@ export default function BudgetDetail() {
             </>
           )}
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card><CardContent className="pt-6 text-center">
-              <p className="text-sm font-medium text-gray-500">Budget</p>
-              <p className="text-lg font-bold">{formatCurrency(totalBudget, settings)}</p>
-            </CardContent></Card>
-            <BudgetHealthCircular
-              budget={{
-                ...budget,
-                calculatedPaid: stats?.spent || 0,
-                calculatedUnpaid: stats?.unpaidAmount || 0,
-                calculatedTotal: totalBudget
-              }}
-              transactions={budgetTransactions}
-              settings={settings}
-            />
-            <Card><CardContent className="pt-6 text-center">
-              <p className="text-sm font-medium text-gray-500">Remaining</p>
-              <p className={`text-lg font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(totalRemaining, settings)}
-              </p>
-            </CardContent></Card>
-          </div>
+          {/* Unified Budget Overview Panel */}
+          <Card className="border-none shadow-xl bg-gradient-to-br from-card to-muted/20 overflow-hidden">
+            <div className="grid md:grid-cols-12 gap-0">
+              {/* Left Side: Circular Health Visualization */}
+              <div className="md:col-span-4 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border/50">
+                <BudgetHealthCircular
+                  budget={{
+                    ...budget,
+                    calculatedPaid: stats?.spent || 0,
+                    calculatedUnpaid: stats?.unpaidAmount || 0,
+                    calculatedTotal: totalBudget
+                  }}
+                  transactions={budgetTransactions}
+                  settings={settings}
+                />
+                <div className="mt-4 text-center">
+                  <p className="text-sm font-medium text-muted-foreground">Overall Progress</p>
+                  <p className={`text-2xl font-black ${totalRemaining >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {formatCurrency(totalRemaining, settings)} <span className="text-xs font-medium text-muted-foreground italic">left</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side: Detailed Stats Grid */}
+              <div className="md:col-span-8 p-6">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Timeline Info */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">Duration</span>
+                    </div>
+                    <p className="text-sm font-bold">{getDaysBetween(budget.startDate, budget.endDate)} Days</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      {formatDate(budget.startDate, settings.dateFormat)} - {formatDate(budget.endDate, settings.dateFormat)}
+                    </p>
+                  </div>
+
+                  {/* Allocation Info */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Target className="w-4 h-4" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">Budgeted</span>
+                    </div>
+                    <p className="text-sm font-bold">{formatCurrency(totalBudget, settings)}</p>
+                    <p className="text-[10px] text-muted-foreground">Total assigned limit</p>
+                  </div>
+
+                  {/* Payment Status Info */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Receipt className="w-4 h-4" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">Payments</span>
+                    </div>
+                    <p className="text-sm font-bold text-success">{formatCurrency(stats?.spent || 0, settings)} <span className="text-[10px] font-normal text-muted-foreground">Paid</span></p>
+                    {stats?.unpaidAmount > 0 && (
+                      <p className="text-[10px] font-bold text-warning flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {formatCurrency(stats?.unpaidAmount, settings)} Unpaid
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Custom Budget Breakdown (Only for Lifestyle/Wants) */}
+                  {budget.isSystemBudget && budget.systemBudgetType === 'wants' && (
+                    <div className="col-span-full pt-4 mt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+                        <Layers className="w-4 h-4" />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Spend Differentiation</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-background/50 rounded-lg p-3 border border-border/30">
+                          <p className="text-[10px] uppercase text-muted-foreground font-bold">Direct Lifestyle</p>
+                          <p className="text-lg font-black text-primary">
+                            {formatCurrency(budgetTransactions.reduce((acc, t) => acc + (t.amount || 0), 0), settings)}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground">Unassigned expenses</p>
+                        </div>
+                        <div className="bg-background/50 rounded-lg p-3 border border-border/30">
+                          <p className="text-[10px] uppercase text-muted-foreground font-bold">Custom Budgets</p>
+                          <p className="text-lg font-black text-indigo-500">
+                            {formatCurrency(
+                              transactions
+                                .filter(t => t.budgetId && t.budgetId !== budget.id)
+                                .reduce((acc, t) => acc + (t.amount || 0), 0),
+                              settings
+                            )}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground">Total of all sub-budgets</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Direct Spending for Custom Budgets */}
+                  {!budget.isSystemBudget && (
+                    <div className="col-span-full pt-4 mt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+                        <CreditCard className="w-4 h-4" />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Spending Velocity</span>
+                      </div>
+                      <div className="w-full bg-muted h-2 rounded-full overflow-hidden flex">
+                        <div
+                          className="bg-primary h-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, (stats?.spent / totalBudget) * 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] mt-1 text-muted-foreground italic text-right">
+                        {Math.round((stats?.spent / totalBudget) * 100)}% of limit reached
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
 
           {!budget.isSystemBudget && budget.status !== 'completed' && allocationStats && (
             <AllocationManager
