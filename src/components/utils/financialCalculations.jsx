@@ -37,7 +37,9 @@ export const isTransactionInDateRange = (transaction, startDate, endDate) => {
  */
 const isActualCustomBudget = (budgetId, allCustomBudgets) => {
   if (!budgetId) return false;
-  const budget = allCustomBudgets.find(cb => cb.id === budgetId);
+  // const budget = allCustomBudgets.find(cb => cb.id === budgetId);
+  const safeBudgets = Array.isArray(allCustomBudgets) ? allCustomBudgets : [];
+  const budget = safeBudgets.find(cb => cb.id === budgetId);
   return budget && !budget.isSystemBudget;
 };
 
@@ -303,7 +305,9 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
  */
 export const getSystemBudgetStats = (systemBudget, transactions, startDate, endDate, allCustomBudgets = []) => {
   let paidAmount = 0;
-  const customBudgetIds = new Set(allCustomBudgets.map(cb => cb.id));
+  // const customBudgetIds = new Set(allCustomBudgets.map(cb => cb.id));
+  const safeBudgets = Array.isArray(allCustomBudgets) ? allCustomBudgets : [];
+  const customBudgetIds = new Set(safeBudgets.map(cb => cb.id));
 
   // Filter transactions based on priority, payment status, and period
   const periodTransactions = transactions.filter(t => {
