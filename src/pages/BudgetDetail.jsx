@@ -371,8 +371,8 @@ export default function BudgetDetail() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen p-2 md:p-8">
+        <div className="max-w-[1400px] mx-auto space-y-6">
           <div className="flex items-center gap-4">
             <CustomButton variant="ghost" size="icon" onClick={() => navigate(location.state?.from || '/Budgets')}>
               <ArrowLeft className="w-5 h-5" />
