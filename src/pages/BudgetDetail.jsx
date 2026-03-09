@@ -28,15 +28,18 @@ import { useTransactionActions, useCustomBudgetActions } from "../components/hoo
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useMonthlyIncome } from "../components/hooks/useDerivedData";
 import ExpenseFormDialog from "../components/transactions/dialogs/ExpenseFormDialog";
-import TransactionCard from "../components/transactions/TransactionCard";
+import TransactionList from "../components/transactions/TransactionList";
+import TransactionFilters from "../components/transactions/TransactionFilters";
+import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
 import AllocationManager from "../components/custombudgets/AllocationManager";
 import BudgetHealthCircular from "../components/custombudgets/BudgetHealthCircular";
 import CustomBudgetForm from "../components/custombudgets/CustomBudgetForm";
 import BudgetPostMortem from "../components/budgetdetail/BudgetPostMortem";
-import ExpenseFilters from "../components/budgetdetail/ExpenseFilters";
 import BudgetFeasibilityDisplay from "../components/custombudgets/BudgetFeasibilityDisplay";
 import { useBudgetAnalysis } from "../components/hooks/useBudgetAnalysis";
 import { fetchWithRetry } from "../components/utils/generalUtils";
+import { useAdvancedTransactionFiltering } from "../components/hooks/useDerivedData";
+import { useMergedCategories } from "../components/hooks/useMergedCategories";
 
 export default function BudgetDetail() {
   const { settings, user } = useSettings();
@@ -47,12 +50,20 @@ export default function BudgetDetail() {
   const { confirmAction } = useConfirm();
   const { triggerAnalysis } = useBudgetAnalysis();
 
-  // ADDED: 16-Jan-2026 - Expense filtering state
-  const [expenseFilters, setExpenseFilters] = useState({
-    categories: [],
-    paidStatus: 'all',
-    priorities: []
+  const { categories: mergedCategories } = useMergedCategories();
+
+  // Advanced List & Filter State
+  const [filters, setFilters] = useState({
+    search: '', type: 'all', category: [], paymentStatus: 'all',
+    cashStatus: 'all', financialPriority: 'all', budgetId: 'all',
+    startDate: '', endDate: '', minAmount: '', maxAmount: ''
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showMassEdit, setShowMassEdit] = useState(false);
 
   const { monthStart, monthEnd } = usePeriod();
 
@@ -62,8 +73,12 @@ export default function BudgetDetail() {
   useEffect(() => {
     if (budgetId) {
       queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+      setFilters(prev => ({ ...prev, budgetId: budgetId }));
     }
   }, [budgetId, location, queryClient]);
+
+  // Reset page on filter change
+  useEffect(() => { setCurrentPage(1); }, [filters]);
 
   // 1. Fetch the main budget
   const { data: budget, isLoading: budgetLoading } = useQuery({
@@ -241,42 +256,27 @@ export default function BudgetDetail() {
     return transactions.filter(t => t.budgetId === budgetId);
   }, [transactions, budgetId, budget, allCustomBudgets]);
 
-  // ADDED: 16-Jan-2026 - Filtered transactions based on user filters
-  const filteredTransactions = useMemo(() => {
-    let filtered = budgetTransactions;
+  // 10. Use the shared advanced filtering logic
+  const { filteredTransactions } = useAdvancedTransactionFiltering(budgetTransactions, filters, setFilters);
 
-    // Filter by payment status
-    if (expenseFilters.paidStatus === 'paid') {
-      filtered = filtered.filter(t => t.isPaid);
-    } else if (expenseFilters.paidStatus === 'unpaid') {
-      filtered = filtered.filter(t => !t.isPaid);
-    }
-
-    // Filter by categories
-    if (expenseFilters.categories.length > 0) {
-      filtered = filtered.filter(t => expenseFilters.categories.includes(t.category_id));
-    }
-
-    // Filter by priorities
-    if (expenseFilters.priorities.length > 0) {
-      filtered = filtered.filter(t => {
-        const category = categories.find(c => c.id === t.category_id);
-        const effectivePriority = t.financial_priority || (category ? category.priority : null);
-        return expenseFilters.priorities.includes(effectivePriority);
+  const sortedTransactions = useMemo(() => {
+    const sortableItems = [...filteredTransactions];
+    if (sortConfig.key) {
+      sortableItems.sort((a, b) => {
+        let aValue = a[sortConfig.key], bValue = b[sortConfig.key];
+        if (sortConfig.key === 'amount') { aValue = Number(aValue); bValue = Number(bValue); }
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
       });
     }
+    return sortableItems;
+  }, [filteredTransactions, sortConfig]);
 
-    return filtered;
-  }, [budgetTransactions, expenseFilters, categories]);
-
-  // ADDED: 16-Jan-2026 - Active filter count
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (expenseFilters.paidStatus !== 'all') count++;
-    if (expenseFilters.categories.length > 0) count += expenseFilters.categories.length;
-    if (expenseFilters.priorities.length > 0) count += expenseFilters.priorities.length;
-    return count;
-  }, [expenseFilters]);
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedTransactions.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedTransactions, currentPage, itemsPerPage]);
 
   const relatedCustomBudgetsForDisplay = useMemo(() => {
     if (!budget || !budget.isSystemBudget || budget.systemBudgetType !== 'wants') return [];
@@ -309,10 +309,24 @@ export default function BudgetDetail() {
   const handleDeleteBudget = () => {
     confirmAction(
       "Delete Budget",
-      "This will delete the budget and all associated transactions. This action cannot be undone.",
+      "This will delete the budget and all associated transactions.",
       async () => await budgetActions.handleDeleteDirect(budgetId),
       { destructive: true }
     );
+  };
+
+  const handleMassUpdate = async (updates) => {
+    try {
+      const idsToUpdate = Array.from(selectedIds);
+      await Promise.all(idsToUpdate.map(id =>
+        fetchWithRetry(() => base44.entities.Transaction.update(id, updates))
+      ));
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setSelectedIds(new Set());
+      setShowMassEdit(false);
+    } catch (e) {
+      console.error("Bulk update failed", e);
+    }
   };
 
   // ADDED 03-Feb-2026: Pull-to-refresh handler
@@ -574,7 +588,7 @@ export default function BudgetDetail() {
           {budget.isSystemBudget && relatedCustomBudgetsForDisplay.length > 0 && (
             <Card className="border-none shadow-lg">
               <CardHeader>
-                <CardTitle>Custom Budgets ({relatedCustomBudgetsForDisplay.length})</CardTitle>
+                <CardTitle>Linked Custom Budgets ({relatedCustomBudgetsForDisplay.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -599,18 +613,15 @@ export default function BudgetDetail() {
             </Card>
           )}
 
-          <Card className="border-none shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>
-                  {budget.isSystemBudget ? 'Direct Expenses' : 'Expenses'} ({filteredTransactions.length}{budgetTransactions.length !== filteredTransactions.length ? ` of ${budgetTransactions.length}` : ''})
-                </CardTitle>
-                {budget.isSystemBudget && <p className="text-sm text-gray-500">Expenses not part of any custom budget</p>}
-              </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">
+                {budget.isSystemBudget ? 'Direct Expenses' : 'Budget Transactions'}
+              </h2>
               <ExpenseFormDialog
                 open={showQuickAdd}
                 onOpenChange={setShowQuickAdd}
-                categories={categories}
+                categories={mergedCategories}
                 customBudgets={allBudgets}
                 defaultCustomBudgetId={budgetId}
                 onSubmit={(data) => transactionActions.handleSubmit(data)}
@@ -618,45 +629,55 @@ export default function BudgetDetail() {
                 transactions={transactions}
                 triggerSize="sm"
               />
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
-                {/* ADDED: 16-Jan-2026 - Expense filters on left side */}
-                <div className="flex-shrink-0">
-                  <ExpenseFilters
-                    categories={categories}
-                    transactions={budgetTransactions}
-                    filters={expenseFilters}
-                    onFilterChange={setExpenseFilters}
-                    activeFilterCount={activeFilterCount}
-                  />
-                </div>
+            </div>
 
-                {/* Expense cards on right side */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap gap-4">
-                    {filteredTransactions.length > 0 ? (
-                      filteredTransactions.map((t) => (
-                        <TransactionCard
-                          key={t.id}
-                          transaction={t}
-                          category={categoryMap[t.category_id]}
-                          onEdit={(t, data) => transactionActions.handleSubmit(data, t)}
-                          onDelete={() => transactionActions.handleDelete(t)}
-                        />
-                      ))
-                    ) : (
-                      <div className="col-span-full text-center py-8 text-gray-500">
-                        {budgetTransactions.length === 0
-                          ? 'No expenses yet. Add your first expense above.'
-                          : 'No expenses match the selected filters.'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            <TransactionFilters
+              filters={filters}
+              setFilters={setFilters}
+              categories={mergedCategories}
+              allCustomBudgets={allCustomBudgets}
+              sortConfig={sortConfig}
+              onSort={setSortConfig}
+            />
+
+            <TransactionList
+              transactions={paginatedTransactions}
+              categories={mergedCategories}
+              onEdit={(t) => transactionActions.handleSubmit(null, t)}
+              onDelete={(t) => transactionActions.handleDelete(t)}
+              isLoading={budgetLoading}
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredTransactions.length / itemsPerPage) || 1}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={setItemsPerPage}
+              totalItems={filteredTransactions.length}
+              selectedIds={selectedIds}
+              onToggleSelection={(id, s) => {
+                const n = new Set(selectedIds);
+                s ? n.add(id) : n.delete(id);
+                setSelectedIds(n);
+              }}
+              onSelectAll={(ids, s) => {
+                const n = new Set(selectedIds);
+                ids.forEach(id => s ? n.add(id) : n.delete(id));
+                setSelectedIds(n);
+              }}
+              onClearSelection={() => setSelectedIds(new Set())}
+              onEditSelected={() => setShowMassEdit(true)}
+              sortConfig={sortConfig}
+              onSort={setSortConfig}
+            />
+          </div>
+
+          <MassEditDrawer
+            open={showMassEdit}
+            onOpenChange={setShowMassEdit}
+            selectedCount={selectedIds.size}
+            onSave={handleMassUpdate}
+            categories={mergedCategories}
+            customBudgets={allCustomBudgets}
+          />
         </div>
       </div>
     </PullToRefresh>
