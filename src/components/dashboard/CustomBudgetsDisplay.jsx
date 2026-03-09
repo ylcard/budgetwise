@@ -1,12 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { Plus, BarChart2, LayoutGrid, CircleDot, StretchHorizontal } from "lucide-react";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import VerticalBar from "../custombudgets/VerticalBar";
-import BudgetCard from "../budgets/BudgetCard";
+import { Plus } from "lucide-react";
 import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
-import BudgetHealthCompact from "../custombudgets/BudgetHealthCompact";
 import { useSettings } from "../utils/SettingsContext";
 import { usePeriod } from "../hooks/usePeriod";
 import { useEnrichedCustomBudgets } from "../hooks/useDerivedData";
@@ -17,7 +13,7 @@ import {
   CarouselDots
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils"
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
@@ -38,21 +34,6 @@ export default function CustomBudgetsDisplay({
 
   // Unified Stat Engine: Fetch and calculate once
   const { enrichedBudgets: budgets = [] } = useEnrichedCustomBudgets(user, monthStart, monthEnd);
-  const [viewMode, setViewMode] = useState(settings.budgetViewMode || 'bars');
-
-  const VIEW_OPTIONS = [
-    { value: 'bars', label: <BarChart2 className="w-4 h-4" />, desktopLabel: 'Bars' },
-    { value: 'cards', label: <LayoutGrid className="w-4 h-4" />, desktopLabel: 'Cards' },
-    { value: 'circular', label: <CircleDot className="w-4 h-4" />, desktopLabel: 'Circular' },
-    { value: 'compact', label: <StretchHorizontal className="w-4 h-4" />, desktopLabel: 'Compact' },
-  ];
-
-  // Sync local state when global settings update
-  useEffect(() => {
-    if (settings.budgetViewMode) {
-      setViewMode(settings.budgetViewMode);
-    }
-  }, [settings.budgetViewMode]);
 
   const isMobile = useIsMobile();
   const cardSize = isMobile ? 'sm' : 'md';
@@ -61,11 +42,9 @@ export default function CustomBudgetsDisplay({
     <div className="space-y-6">
       {budgets.length > 0 && (
         <Card className="border-none shadow-lg">
-          {/* Changed to justify-end on mobile to align the SegmentedControl nicely when there's no title */}
           <CardHeader className="relative flex flex-row items-center justify-end md:justify-between space-y-0 py-4 pr-6 min-h-[70px]">
             <div className="hidden md:flex items-center gap-3">
-
-              {/* Desktop: The combined action button */}
+              <h3 className="text-lg font-semibold">Custom Budgets</h3>
               <CustomButton
                 variant="create"
                 className="rounded-lg bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-2 px-3 py-1 text-sm font-medium"
@@ -75,81 +54,36 @@ export default function CustomBudgetsDisplay({
                 <Plus className="w-4 h-4" />
               </CustomButton>
             </div>
-            <SegmentedControl
-              options={VIEW_OPTIONS}
-              value={viewMode}
-              onChange={setViewMode}
-            />
           </CardHeader>
           <CardContent className="pt-4 overflow-hidden">
             <motion.div
               layout
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={viewMode}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
+              <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                <CarouselContent
+                  className={cn(
+                    "items-stretch",
+                    budgets.length < 2 && "sm:justify-center",
+                    budgets.length < 3 && "md:justify-center",
+                    budgets.length < 4 && "lg:justify-center"
+                  )}
                 >
-                  <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                    <CarouselContent
-                      className={cn(
-                        viewMode === 'bars' ? 'items-end' : 'items-stretch',
-                        budgets.length < 2 && "sm:justify-center",
-                        budgets.length < 3 && "md:justify-center",
-                        budgets.length < 4 && "lg:justify-center"
-                      )}
+                  {budgets.map((budget) => (
+                    <CarouselItem
+                      key={budget.id}
+                      className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
                     >
-                      {budgets.map((budget) => (
-                        <CarouselItem
-                          key={budget.id}
-                          className={`
-                                            basis-full 
-                                            sm:basis-1/2 
-                                            md:basis-1/3 
-                                            lg:basis-1/4
-                                        `}
-                        >
-                          {viewMode === 'bars' && (
-                            <VerticalBar
-                              budget={budget}
-                              transactions={[]}
-                              settings={settings}
-                              isCustom={true}
-                            />
-                          )}
-                          {viewMode === 'cards' && (
-                            <BudgetCard
-                              budgets={[budget]}
-                              transactions={[]}
-                              settings={settings}
-                              size={cardSize}
-                            />
-                          )}
-                          {viewMode === 'circular' && (
-                            <BudgetHealthCircular
-                              budget={budget}
-                              transactions={[]}
-                              settings={settings}
-                            />
-                          )}
-                          {viewMode === 'compact' && (
-                            <BudgetHealthCompact
-                              budget={budget}
-                              transactions={[]}
-                              settings={settings}
-                            />
-                          )}
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselDots />
-                  </Carousel>
-                </motion.div>
-              </AnimatePresence>
+                      <BudgetHealthCircular
+                        budget={budget}
+                        transactions={[]}
+                        settings={settings}
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselDots />
+              </Carousel>
             </motion.div>
           </CardContent>
         </Card>
