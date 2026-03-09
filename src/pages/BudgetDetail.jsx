@@ -111,7 +111,9 @@ export default function BudgetDetail() {
     queryKey: ['allCustomBudgets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      return await fetchWithRetry(() => base44.entities.CustomBudget.filter({ created_by: user.email }));
+      // return await fetchWithRetry(() => base44.entities.CustomBudget.filter({ created_by: user.email }));
+      const res = await fetchWithRetry(() => base44.entities.CustomBudget.filter({ created_by: user.email }));
+      return Array.isArray(res) ? res : []; // Force array type for downstream .map() calls
     },
     enabled: !!user?.email,
     staleTime: 1000 * 60 * 5,
