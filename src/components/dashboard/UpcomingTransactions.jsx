@@ -40,7 +40,7 @@ export default function UpcomingTransactions({
 
   return (
     <div className={clsx(
-      "flex flex-col w-full overflow-hidden h-full",
+      "flex flex-col w-full max-w-full overflow-hidden h-full",
       !embedded && "bg-card rounded-xl border border-border shadow-sm max-h-[500px] lg:max-h-[650px]"
     )}>
       {/* Header Area (Only show if NOT embedded, otherwise ActivityHub handles title) */}
