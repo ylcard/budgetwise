@@ -17,7 +17,7 @@ import { createPageUrl } from "@/utils";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { formatDate, parseDate, doDateRangesOverlap, getDaysBetween } from "../components/utils/dateUtils";
+import { formatDate, parseDate, doDateRangesOverlap, getDaysBetween, isDateInRange } from "../components/utils/dateUtils";
 import {
   getCustomBudgetStats,
   getSystemBudgetStats,
@@ -151,7 +151,12 @@ export default function BudgetDetail() {
   });
 
   // 6. Monthly Income Hook
-  const monthlyIncome = useMonthlyIncome(transactions, new Date(monthStart).getMonth(), new Date(monthStart).getFullYear());
+  const monthlyIncome = useMemo(() => {
+    const d = parseDate(monthStart);
+    return d ? { month: d.getMonth(), year: d.getFullYear() } : { month: 0, year: 2026 };
+  }, [monthStart]);
+
+  const incomeData = useMonthlyIncome(transactions, monthlyIncome.month, monthlyIncome.year);
 
   // 7. All Budgets (For dropdowns/QuickAdd)
   // CRITICAL FIX 17-Jan-2026: Fetch ALL budgets without date filtering
@@ -222,28 +227,26 @@ export default function BudgetDetail() {
   const budgetTransactions = useMemo(() => {
     if (!budget) return [];
     if (budget.isSystemBudget) {
-      const budgetStart = parseDate(budget.startDate);
-      const budgetEnd = parseDate(budget.endDate);
-      if (budgetEnd) budgetEnd.setHours(23, 59, 59, 999);
 
       // FIXED: 16-Jan-2026 - System budgets should only show direct expenses within date range
       return transactions.filter(t => {
-        // If transaction is explicitly assigned to THIS system budget, include it (with date validation)
+        const compDate = t.isPaid && t.paidDate ? t.paidDate : t.date;
+        const inRange = isDateInRange(compDate, budget.startDate, budget.endDate);
+
+        if (!inRange) return false;
+
+        // If transaction is explicitly assigned to THIS system budget, include it
         if (t.budgetId === budget.id) {
-          const compDate = t.isPaid && t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
-          return compDate >= budgetStart && compDate <= budgetEnd;
+          return true;
         }
 
-        // Otherwise, only include unassigned expenses that match priority and date range
         if (t.type !== 'expense' || !t.category_id) return false;
         if (t.budgetId) return false; // Exclude if assigned to any custom budget
 
         const category = categories.find(c => c.id === t.category_id);
         const effectivePriority = t.financial_priority || (category ? category.priority : null);
-        if (effectivePriority !== budget.systemBudgetType) return false;
 
-        const compDate = t.isPaid && t.paidDate ? parseDate(t.paidDate) : parseDate(t.date);
-        return compDate >= budgetStart && compDate <= budgetEnd;
+        return effectivePriority === budget.systemBudgetType;
       });
     }
     return transactions.filter(t => t.budgetId === budgetId);
@@ -300,12 +303,12 @@ export default function BudgetDetail() {
   const stats = useMemo(() => {
     if (!budget) return null;
     if (budget.isSystemBudget) {
-      const bDate = new Date(budget.startDate);
+      const bDate = parseDate(budget.startDate);
       const histAvg = getHistoricalAverageIncome(transactions, bDate.getMonth(), bDate.getFullYear());
-      return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, monthlyIncome, settings, histAvg);
+      return getSystemBudgetStats(budget, transactions, categories, allCustomBudgets, budget.startDate, budget.endDate, incomeData, settings, histAvg);
     }
     return getCustomBudgetStats(budget, transactions);
-  }, [budget, transactions, categories, allCustomBudgets, monthlyIncome, settings]);
+  }, [budget, transactions, categories, allCustomBudgets, incomeData, settings]);
 
   const allocationStats = useMemo(() => {
     if (!budget || budget.isSystemBudget) return null;
