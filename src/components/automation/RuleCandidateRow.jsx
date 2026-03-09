@@ -22,7 +22,8 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
   onRemove,
   _forceRefresh, // Adding this dummy prop to clear the build cache
 }) {
-  const { id, rawDescription, keyword, renamedTitle, categoryId, financial_priority, frequency, selected } = candidate;
+  // const { id, rawDescription, keyword, renamedTitle, categoryId, financial_priority, frequency, selected } = candidate;
+  const { rawDescription, keyword, renamedTitle, categoryId, financial_priority, frequency, selected } = candidate;
 
   // Determine visual cues dynamically based on current values
   const hasRename = renamedTitle && renamedTitle.trim().length > 0;
