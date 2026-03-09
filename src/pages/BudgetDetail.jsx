@@ -453,7 +453,12 @@ export default function BudgetDetail() {
               <p className="text-lg font-bold">{formatCurrency(totalBudget, settings)}</p>
             </CardContent></Card>
             <BudgetHealthCircular
-              budget={budget}
+              budget={{
+                ...budget,
+                calculatedPaid: stats?.spent || 0,
+                calculatedUnpaid: stats?.unpaidAmount || 0,
+                calculatedTotal: totalBudget
+              }}
               transactions={budgetTransactions}
               settings={settings}
             />
@@ -487,14 +492,22 @@ export default function BudgetDetail() {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {relatedCustomBudgetsForDisplay.map((cb) => (
-                    <BudgetHealthCircular
-                      key={cb.id}
-                      budget={cb}
-                      transactions={transactions}
-                      settings={settings}
-                    />
-                  ))}
+                  {relatedCustomBudgetsForDisplay.map((cb) => {
+                    const cbStats = getCustomBudgetStats(cb, transactions);
+                    return (
+                      <BudgetHealthCircular
+                        key={cb.id}
+                        budget={{
+                          ...cb,
+                          calculatedPaid: cbStats?.spent || 0,
+                          calculatedUnpaid: cbStats?.unpaidAmount || 0,
+                          calculatedTotal: cb.allocatedAmount || cb.budgetAmount || 0
+                        }}
+                        transactions={transactions.filter(t => t.budgetId === cb.id)}
+                        settings={settings}
+                      />
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
