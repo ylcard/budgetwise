@@ -299,20 +299,25 @@ export const getCustomBudgetStats = (customBudget, transactions) => {
 
 /**
  * Calculates statistics for a system budget.
+ * Added allCustomBudgets to support cross-month custom budget links (e.g. June trip paid in Feb).
  */
-export const getSystemBudgetStats = (systemBudget, transactions, startDate, endDate) => {
+export const getSystemBudgetStats = (systemBudget, transactions, startDate, endDate, allCustomBudgets = []) => {
   let paidAmount = 0;
+  const customBudgetIds = new Set(allCustomBudgets.map(cb => cb.id));
 
   // Filter transactions based on priority, payment status, and period
   const periodTransactions = transactions.filter(t => {
-    // 1. Priority must match the budget type (needs/wants)
-    if (t.financial_priority !== systemBudget.systemBudgetType) return false;
-
-    // 2. Only count paid transactions for cashflow monitoring
+    // 1. Only count paid transactions for cashflow monitoring
     if (!t.isPaid) return false;
 
-    // 3. Must fall within the period using dateUtils normalization
-    return isDateInRange(t.paidDate || t.date, startDate, endDate);
+    // 2. Must fall within the period using dateUtils normalization
+    if (!isDateInRange(t.paidDate || t.date, startDate, endDate)) return false;
+
+    // 3. Logic for Lifestyle (Wants) vs Essentials (Needs)
+    const isDirectMatch = t.financial_priority === systemBudget.systemBudgetType;
+    const isCustomWant = systemBudget.systemBudgetType === 'wants' && customBudgetIds.has(t.budgetId);
+
+    return isDirectMatch || isCustomWant;
   });
 
   paidAmount = periodTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
