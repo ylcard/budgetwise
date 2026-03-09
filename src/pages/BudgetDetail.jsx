@@ -121,6 +121,7 @@ export default function BudgetDetail() {
 
   // 4. Calculate related IDs
   const relatedCustomBudgetIds = useMemo(() => {
+    if (!Array.isArray(allCustomBudgets)) return [];
     return allCustomBudgets.map(cb => cb.id);
   }, [allCustomBudgets]);
 
@@ -220,7 +221,8 @@ export default function BudgetDetail() {
   // Memos for data processing
   const budgetTransactions = useMemo(() => {
     if (!budget) return [];
-    const customBudgetIds = new Set(allCustomBudgets.map(cb => cb.id));
+    // const customBudgetIds = new Set(allCustomBudgets.map(cb => cb.id));
+    const customBudgetIds = new Set((Array.isArray(allCustomBudgets) ? allCustomBudgets : []).map(cb => cb.id));
 
     if (budget.isSystemBudget) {
 
