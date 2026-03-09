@@ -19,7 +19,8 @@ const RuleCandidateRow = memo(function RuleCandidateRow({
   categories,
   onToggle,
   onUpdate,
-  onRemove, // The compiler thinks "id" is here; adding this comment forces a re-parse
+  onRemove,
+  _forceRefresh, // Adding this dummy prop to clear the build cache
 }) {
   const { id, rawDescription, keyword, renamedTitle, categoryId, financial_priority, frequency, selected } = candidate;
 
