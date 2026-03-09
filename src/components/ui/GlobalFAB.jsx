@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileUp, MinusCircle, PlusCircle, Play, Loader2, RefreshCw } from "lucide-react";
+import { Plus, FileUp, MinusCircle, PlusCircle, Play, Loader2, RefreshCw, Building2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFAB } from "../hooks/FABContext";
 import { CustomButton } from "./CustomButton";
@@ -14,7 +14,8 @@ const iconMap = {
     Play,
     Plus,
     Loader2,
-    RefreshCw
+    RefreshCw,
+    Building2
 };
 
 export default function GlobalFAB() {
