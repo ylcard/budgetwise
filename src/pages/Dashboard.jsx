@@ -297,7 +297,7 @@ export default function Dashboard() {
                 key: 'sync',
                 label: syncState === 'syncing' ? 'Syncing...' : (hasActiveConnections ? 'Sync' : 'Connect Bank'),
                 icon: syncState === 'syncing' ? 'Loader2' : (hasActiveConnections ? 'RefreshCw' : 'Building2'),
-                variant: 'secondary',
+                variant: 'primary',
                 onClick: hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')
             },
             {
