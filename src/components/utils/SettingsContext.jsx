@@ -6,33 +6,48 @@ const SettingsContext = createContext();
 
 const STORAGE_KEY = 'budgetwise_settings';
 
-const defaultSettings = {
-    baseCurrency: 'USD',
-    currencySymbol: '$',
-    currencyPosition: 'before',
-    thousandSeparator: ',',
-    decimalSeparator: '.',
-    decimalPlaces: 2,
-    hideTrailingZeros: false,
-    dateFormat: 'MMM dd, yyyy',
-    budgetViewMode: 'bars',
-    fixedLifestyleMode: false,
-    barViewMode: true,
-    // goalAllocationMode: 'percentage', // 'percentage' or 'absolute'
-    // absoluteGoals: { needs: 0, wants: 0, savings: 0 }, // Store absolute amounts
-    goalMode: true, // true = percentage, false = absolute
-    displayName: '',
-    showMascot: true,
-    tutorialsEnabled: true,
-    completedTutorials: [],
-    themeConfig: { 
-        mode: 'system', 
-        schedules: [
-            { time: '08:00', theme: 'light' },
-            { time: '20:00', theme: 'dark' }
-        ] 
-    }
+const getLocaleDefaults = () => {
+    const locale = navigator.language || 'en-US';
+    const numberFormat = new Intl.NumberFormat(locale);
+    const parts = numberFormat.formatToParts(1000.1);
+
+    const thousandSeparator = parts.find(p => p.type === 'group')?.value || ',';
+    const decimalSeparator = parts.find(p => p.type === 'decimal')?.value || '.';
+    const baseCurrency = Intl.NumberFormat().resolvedOptions().currency || 'USD';
+
+    // Simple check for currency symbol
+    const currencySymbol = new Intl.NumberFormat(locale, { style: 'currency', currency: baseCurrency })
+        .formatToParts(1)
+        .find(p => p.type === 'currency')?.value || '$';
+
+    return {
+        baseCurrency,
+        currencySymbol,
+        currencyPosition: 'before',
+        thousandSeparator,
+        decimalSeparator,
+        decimalPlaces: 2,
+        hideTrailingZeros: false,
+        dateFormat: locale.startsWith('en-US') ? 'MMM dd, yyyy' : 'dd/MM/yyyy',
+        budgetViewMode: 'bars',
+        fixedLifestyleMode: false,
+        barViewMode: true,
+        goalMode: true,
+        displayName: '',
+        showMascot: true,
+        tutorialsEnabled: true,
+        completedTutorials: [],
+        themeConfig: {
+            mode: 'system',
+            schedules: [
+                { time: '08:00', theme: 'light' },
+                { time: '20:00', theme: 'dark' }
+            ]
+        }
+    };
 };
+
+const defaultSettings = getLocaleDefaults();
 
 export const useSettings = () => {
     const context = useContext(SettingsContext);
