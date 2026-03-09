@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from "react";
 
 // CREATED 04-Feb-2026: Context for managing GlobalFAB buttons across pages
 // Pages use setFabButtons to control what buttons appear in the FAB
@@ -6,20 +6,27 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 const FABContext = createContext();
 
 export const FABProvider = ({ children }) => {
-    const [buttons, setButtons] = useState([]);
+    const [registry, setRegistry] = useState({});
 
-    // Pages will use this to "plug in" their buttons
-    const setFabButtons = useCallback((newButtons) => {
-        setButtons(newButtons);
+    const registerButton = useCallback((id, config) => {
+        setRegistry((prev) => ({ ...prev, [id]: config }));
     }, []);
 
-    // Clear buttons when unmounting
-    const clearFabButtons = useCallback(() => {
-        setButtons([]);
+    const unregisterButton = useCallback((id) => {
+        setRegistry((prev) => {
+            const newRegistry = { ...prev };
+            delete newRegistry[id];
+            return newRegistry;
+        });
     }, []);
+
+    // Convert registry object to sorted array for the FAB UI
+    const buttons = React.useMemo(() => {
+        return Object.values(registry).sort((a, b) => (a.order || 0) - (b.order || 0));
+    }, [registry]);
 
     return (
-        <FABContext.Provider value={{ buttons, setFabButtons, clearFabButtons }}>
+        <FABContext.Provider value={{ buttons, registerButton, unregisterButton }}>
             {children}
         </FABContext.Provider>
     );
