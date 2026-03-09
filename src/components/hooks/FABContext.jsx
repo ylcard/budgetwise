@@ -1,17 +1,19 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
-// CREATED 04-Feb-2026: Context for managing GlobalFAB buttons across pages
-// Pages use setFabButtons to control what buttons appear in the FAB
+// Context for managing GlobalFAB buttons via a Registry pattern.
+// Components use <FABAction /> to register themselves automatically.
 
 const FABContext = createContext();
 
 export const FABProvider = ({ children }) => {
     const [registry, setRegistry] = useState({});
 
+    // Register a button configuration (upsert)
     const registerButton = useCallback((id, config) => {
-        setRegistry((prev) => ({ ...prev, [id]: config }));
+        setRegistry((prev) => ({ ...prev, [id]: { ...config, id } }));
     }, []);
 
+    // Remove a button by ID
     const unregisterButton = useCallback((id) => {
         setRegistry((prev) => {
             const newRegistry = { ...prev };
@@ -20,8 +22,8 @@ export const FABProvider = ({ children }) => {
         });
     }, []);
 
-    // Convert registry object to sorted array for the FAB UI
-    const buttons = React.useMemo(() => {
+    // Flatten registry to array and sort by order
+    const buttons = useMemo(() => {
         return Object.values(registry).sort((a, b) => (a.order || 0) - (b.order || 0));
     }, [registry]);
 
