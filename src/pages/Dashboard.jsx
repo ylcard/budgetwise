@@ -58,8 +58,8 @@ import { toast } from "sonner";
  * Main Dashboard Page
  */
 export default function Dashboard() {
-  // Measure the collapsed height of the Velocity Widget
-  const [velocityRef, { height: velocityHeight }] = useMeasure();
+  // Measure QuickActions to set the "standard" top-row height
+  const [actionsRef, { height: actionsHeight }] = useMeasure();
 
   const { user, settings } = useSettings();
   const [quickAddState, setQuickAddState] = useState(null); // null | 'new' | templateObject
@@ -440,7 +440,7 @@ export default function Dashboard() {
                   totals={projectionTotals}
                   monthStatus={monthStatus}
                   settings={settings}
-                  headerRef={velocityRef}
+                  targetHeight={actionsHeight}
                 />
               </div>
 
@@ -516,10 +516,7 @@ export default function Dashboard() {
 
             {/* RIGHT COLUMN: Quick Actions + Activity Hub (Sidebar) */}
             <div className="hidden lg:flex lg:flex-col lg:col-span-4 gap-4 min-w-0 max-w-full" data-tutorial="activity-hub">
-              <div
-                className="flex flex-col justify-center"
-                style={{ height: velocityHeight > 0 ? velocityHeight : 'auto' }}
-              >
+              <div ref={actionsRef}>
                 <QuickActions
                   onAddIncome={() => setQuickAddIncomeState('new')}
                   onAddExpense={() => setQuickAddState('new')}
