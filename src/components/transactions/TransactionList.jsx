@@ -326,7 +326,7 @@ export default function TransactionList({
                   onClick={(e) => handleRowClick(e, transaction)}
                   className={`group hover:bg-accent/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-primary/5' : ''}`}
                 >
-                  <td className="pl-10 pr-4 py-3">
+                  <td className="items-center pl-10 pr-4 py-3">
                     <Checkbox
                       checked={selectedIds.has(transaction.id)}
                       onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
