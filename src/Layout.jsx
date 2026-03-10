@@ -45,6 +45,7 @@ import { flushSync } from "react-dom";
 import "@/components/utils/typography";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useGamification } from "@/components/hooks/useGamification";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"; // ADDED 10-Mar-2026: Mount Sonner toast renderer
 
 const LayoutContent = ({ children }) => {
   const location = useLocation();
