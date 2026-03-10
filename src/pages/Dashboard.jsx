@@ -44,7 +44,8 @@ import { ImportWizardDialog } from "../components/import/ImportWizard";
 // import { CustomButton } from "@/components/ui/CustomButton";
 // REMOVED 10-Mar-2026: Button icons moved to QuickActions component
 // import { FileUp, MinusCircle, PlusCircle, Building2, RefreshCw, Loader2, Check, X } from "lucide-react";
-import { fetchWithRetry } from "../components/utils/generalUtils";
+// REMOVED 10-Mar-2026: fetchWithRetry no longer used directly in Dashboard
+// import { fetchWithRetry } from "../components/utils/generalUtils";
 // UPDATED 10-Mar-2026: getLastDayOfMonth no longer needed (realMonthEnd removed)
 import { formatDateString, getFirstDayOfMonth } from "../components/utils/dateUtils";
 // import { getLastDayOfMonth } from "../components/utils/dateUtils";
