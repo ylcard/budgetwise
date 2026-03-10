@@ -78,7 +78,7 @@ export default function TransactionsLayout() {
 
     const { handleCreate, handleUpdate, isSubmitting: isRecurringSubmitting } = useRecurringTransactionActions(user);
 
-    // ADDED: Custom submit wrapper to pass the editing context
+    // Custom submit wrapper to pass the editing context
     const handleFormSubmit = (data) => {
         // The hook expects (data, existingEntity) for updates
         handleSubmit(data, editingTransaction);
@@ -90,8 +90,6 @@ export default function TransactionsLayout() {
 
         setSyncState('syncing');
         const dateFrom = formatDateString(subDays(new Date(), 30));
-        // COMMENTED 10-Mar-2026: dateTo is unused — executeSync internally defaults endDate to today via normalizeToMidnight(new Date())
-        // const dateTo = formatDateString(new Date());
 
         try {
             for (const conn of activeConnections) {
@@ -262,14 +260,14 @@ export function TransactionHistory({
         search: '', type: 'all', category: [], paymentStatus: 'all',
         cashStatus: 'all', financialPriority: 'all', budgetId: 'all',
         startDate: usePeriod().monthStart, endDate: usePeriod().monthEnd, minAmount: '', maxAmount: '',
-        idSearch: '' // NEW: Admin ID Search
+        idSearch: '' // Admin ID Search
     });
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-    const [showMassEdit, setShowMassEdit] = useState(false); // NEW STATE
+    const [showMassEdit, setShowMassEdit] = useState(false);
     const isAdmin = user?.role === 'admin';
 
     // Hooks
@@ -385,7 +383,7 @@ export function TransactionHistory({
         }
     };
 
-    // ADDED: Define FAB buttons here
+    // Define FAB buttons here
     const historyFab = useMemo(() => [
         {
             key: 'sync',
