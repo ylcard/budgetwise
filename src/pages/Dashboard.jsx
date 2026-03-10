@@ -546,6 +546,7 @@ export default function Dashboard() {
                   embedded={true}
                 />
               </div>
+              </div>
             </div>
           </div>
 
