@@ -53,7 +53,9 @@ import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
 import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
-import { subMonths, subDays } from 'date-fns';
+// UPDATED 10-Mar-2026: subMonths no longer needed (realTransactions fetch removed)
+import { subDays } from 'date-fns';
+// import { subMonths } from 'date-fns';
 import { ActivityHub } from "../components/dashboard/ActivityHub";
 import { useBankSync } from "../components/banksync/useBankSync";
 import { toast } from "sonner";
