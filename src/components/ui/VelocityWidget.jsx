@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { formatCurrency } from "../utils/currencyUtils";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthStatus = 'current' }) => {
@@ -11,6 +11,8 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
     const saved = localStorage.getItem("velocity_widget_expanded");
     return saved === "true"; // Defaults to false (collapsed) if null
   });
+
+  const [rotation, setRotation] = useState(isExpanded ? -180 : 0);
 
   useEffect(() => {
     localStorage.setItem("velocity_widget_expanded", isExpanded);
@@ -117,7 +119,10 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
     >
       {/* Header / Trigger Area */}
       <div
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => {
+          setIsExpanded(!isExpanded);
+          setRotation(prev => prev - 180);
+        }}
         className="p-4 md:p-5 cursor-pointer flex flex-col relative z-10 group"
       >
         {/* Background Glows (Subtle) */}
@@ -145,9 +150,9 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
 
           {/* Right Side: Chevron */}
           <motion.div
+            animate={{ rotate: rotation }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
             className="text-muted-foreground group-hover:text-foreground transition-colors"
-            animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <ChevronDown size={20} />
           </motion.div>
