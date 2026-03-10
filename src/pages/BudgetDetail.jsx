@@ -523,7 +523,7 @@ export default function BudgetDetail() {
                               settings
                             )}
                           </p>
-                          <p className="text-[9px] text-muted-foreground">Unassigned expenses</p>
+                          <p className="text-[9px] text-muted-foreground">Total direct expenses, not assigned to any Custom Budget</p>
                         </div>
                         <div className="bg-background/50 rounded-lg p-3 border border-border/30">
                           <p className="text-[10px] uppercase text-muted-foreground font-bold">Custom Budgets</p>
