@@ -720,7 +720,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             {/* SIMPLE VIEW LABEL OVERLAY */}
             <div
               className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}
-              style={{ color: getContrastingTextColor(needsColor) }}
+              style={{ color: getContrastingTextColor(needsColor, isSimpleView) }}
             >
               <div className={`flex items-center justify-center ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
                 {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1 text-[hsl(var(--destructive))]" />}
@@ -808,7 +808,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
             <div
               className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}
-              style={{ color: getContrastingTextColor(wantsColor) }}
+              style={{ color: getContrastingTextColor(wantsColor, isSimpleView) }}
             >
               <div className={`flex items-center justify-center ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
                 {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-[hsl(var(--warning))] text-[hsl(var(--warning))]" />}
@@ -917,7 +917,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
 
             <div
               className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}
-              style={{ color: getContrastingTextColor(savingsColor) }}
+              style={{ color: getContrastingTextColor(savingsColor, isSimpleView) }}
             >
               <div className="font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap drop-shadow-md">
                 <TextSwap>
