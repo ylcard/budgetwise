@@ -3,7 +3,7 @@
 export const QUERY_KEYS = {
     TRANSACTIONS: 'transactions',
     CATEGORIES: 'categories',
-    SYSTEM_CATEGORIES: 'systemCategories', // ADDED 14-Feb-2026: Global categories
+    SYSTEM_CATEGORIES: 'systemCategories',
     SAVINGS_GOALS: 'savingsGoals',
     BUDGET_GOALS: 'budgetGoals',
     CUSTOM_BUDGETS: 'customBudgets',
@@ -13,6 +13,7 @@ export const QUERY_KEYS = {
     ALLOCATIONS: 'allocations',
     EXCHANGE_RATES: 'exchangeRates',
     CATEGORY_RULES: 'categoryRules',
-    NOTIFICATIONS: 'notifications', // ADDED 14-Feb-2026
-    CURRENCIES: 'currencies', // ADDED 14-Feb-2026: REST Countries API currencies
+    NOTIFICATIONS: 'notifications',
+    CURRENCIES: 'currencies',
+    BANK_CONNECTIONS: 'bankConnections',
 };
