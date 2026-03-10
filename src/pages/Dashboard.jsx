@@ -185,14 +185,11 @@ export default function Dashboard() {
   // --- RECURRING BILLS LOGIC ---
   const { recurringTransactions, isLoading: recurringLoading } = useRecurringTransactions(user);
 
-  // Fetch REAL current month transactions for the widget status logic (independent of navigator)
-  const today = new Date();
-  const realMonthStart = formatDateString(subMonths(today, 2));
-  const realMonthEnd = getLastDayOfMonth(today.getMonth(), today.getFullYear());
-  const { transactions: realTransactions } = useTransactions(realMonthStart, realMonthEnd);
-
-  // Use the REAL transactions for status matching
-  const recurringWithStatus = useRecurringStatus(recurringTransactions, realTransactions);
+  // OPTIMIZED 10-Mar-2026: Removed separate useTransactions call for recurring status.
+  // The main `transactions` already includes a 30-day buffer (fetched with subDays(start, 30)),
+  // which covers the recent context needed for recurring bill matching.
+  // Previously this was a 2nd separate DB query contributing to 429 errors.
+  const recurringWithStatus = useRecurringStatus(recurringTransactions, transactions);
 
   // --- TEMPORAL CONTEXT ---
   // Determine if we are looking at the past, present, or future
