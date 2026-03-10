@@ -78,8 +78,17 @@ export default function Reports() {
 
   const isLoading = loadingTransactions || loadingCategories || loadingGoals;
 
-  // ADDED: Fetch Financial Health Data at page level to share between components
-  const { healthData, isLoading: healthLoading } = useFinancialHealthScore(user, selectedMonth, selectedYear);
+  // UPDATED 10-Mar-2026: Pass data to useFinancialHealthScore instead of letting it self-fetch
+  const { healthData } = useFinancialHealthScore({
+    allTransactions: transactions,
+    categories,
+    goals,
+    customBudgets: allCustomBudgets,
+    targetMonth: selectedMonth,
+    targetYear: selectedYear
+  });
+  // COMMENTED 10-Mar-2026: healthLoading no longer returned (hook is pure computation now)
+  const healthLoading = false;
 
   // Calculate Efficiency Bonus
   const bonusSavingsPotential = useMemo(() => {
