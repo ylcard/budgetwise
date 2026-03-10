@@ -13,7 +13,8 @@ import {
   useCustomBudgetsForPeriod,
   useSystemBudgetsAll,
   useSystemBudgetsForPeriod,
-  useHistoricalIncomeTransactions
+  // REMOVED 10-Mar-2026: useHistoricalIncomeTransactions - consolidated into main transactions fetch
+  // useHistoricalIncomeTransactions
 } from "../components/hooks/useBase44Entities";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import {
@@ -213,7 +214,7 @@ export default function Dashboard() {
   const { data: connections = [] } = useQuery({
     queryKey: ['bankConnections'],
     queryFn: () => base44.entities.BankConnection.list(),
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 15, // CHANGED 10-Mar-2026: 15 mins (was 5) — bank connections rarely change
   });
   const hasActiveConnections = connections.some(c => c.status === 'active');
   const { executeSync } = useBankSync(user);
