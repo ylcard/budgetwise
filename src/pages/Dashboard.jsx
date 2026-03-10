@@ -8,7 +8,8 @@ import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useFAB } from "../components/hooks/FABContext";
 import {
-  useTransactions,
+  // REMOVED 10-Mar-2026: useTransactions - replaced by useTransactionWindow for wide-window fetching
+  // useTransactions,
   useGoals,
   useCustomBudgetsForPeriod,
   // REMOVED 10-Mar-2026: useSystemBudgetsAll - consolidated with useSystemBudgetsForPeriod
@@ -17,6 +18,7 @@ import {
   // REMOVED 10-Mar-2026: useHistoricalIncomeTransactions - consolidated into main transactions fetch
   // useHistoricalIncomeTransactions
 } from "../components/hooks/useBase44Entities";
+import { useTransactionWindow } from "../components/hooks/useTransactionWindow";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import {
   useMonthlyIncome,
