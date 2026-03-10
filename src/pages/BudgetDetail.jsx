@@ -463,12 +463,6 @@ export default function BudgetDetail() {
                   transactions={budgetTransactions}
                   settings={settings}
                 />
-                <div className="mt-4 text-center">
-                  <p className="text-sm font-medium text-muted-foreground">Overall Progress</p>
-                  <p className={`text-2xl font-black ${totalRemaining >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                    {formatCurrency(totalRemaining, settings)} <span className="text-xs font-medium text-muted-foreground italic">left</span>
-                  </p>
-                </div>
               </div>
 
               {/* Right Side: Detailed Stats Grid */}
