@@ -404,7 +404,9 @@ export default function Dashboard() {
   const displayBreakdown = isDashboardTutorial ? { Needs: 1500, Wants: 600, Savings: 0 } : detailedBreakdown;
 
   return (
-    <HealthProvider>
+    // REMOVED 10-Mar-2026: Inner HealthProvider — the Layout already wraps all pages in HealthProvider.
+    // Dashboard now pushes health data up via useHealth().setBudgetHealth instead.
+    <>
       {/* Mobile: No padding on sides (components handle it). Desktop: Standard padding. */}
       <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden px-0 py-4 md:p-8 relative">
         <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24">
