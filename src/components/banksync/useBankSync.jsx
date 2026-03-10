@@ -8,7 +8,7 @@
 import { useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "../ui/use-toast";
+import { toast } from "sonner";
 import { notifyBankSyncSuccess, notifyBankSyncWithReviews } from "../utils/notificationHelpers";
 import {
   addDays,
@@ -24,7 +24,6 @@ export function useBankSync(user) {
   const [syncing, setSyncing] = useState(null);
   const [syncStatus, setSyncStatus] = useState("");
   const [syncProgress, setSyncProgress] = useState(0);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   /**
@@ -97,26 +96,21 @@ export function useBankSync(user) {
           await notifyBankSyncSuccess(user.email, totalImported, dateStr);
         }
 
-        toast({
-          title: "Sync complete!",
+        toast.success("Sync complete!", {
           description: `Successfully imported ${totalImported} new transactions.`,
-          variant: "success"
         });
 
         queryClient.invalidateQueries({ queryKey: ['transactions'] });
         queryClient.invalidateQueries({ queryKey: ['bankConnections'] });
       } else {
-        toast({
-          title: "No new transactions",
+        toast("No new transactions", {
           description: "All transactions are up to date."
         });
         queryClient.invalidateQueries({ queryKey: ['bankConnections'] });
       }
     } catch (error) {
-      toast({
-        title: "Sync failed",
+      toast.error("Sync failed", {
         description: error.message,
-        variant: "destructive"
       });
       throw error; // Propagate so caller (Transactions page) can handle button state
     } finally {
@@ -124,7 +118,7 @@ export function useBankSync(user) {
       setSyncStatus("");
       setSyncProgress(0);
     }
-  }, [toast, queryClient, user]);
+  }, [queryClient, user]);
 
   return { executeSync, syncing, syncStatus, syncProgress };
 }
