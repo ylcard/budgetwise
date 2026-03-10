@@ -92,7 +92,8 @@ export default function TransactionsLayout() {
 
         setSyncState('syncing');
         const dateFrom = formatDateString(subDays(new Date(), 30));
-        const dateTo = formatDateString(new Date());
+        // COMMENTED 10-Mar-2026: dateTo is unused — executeSync internally defaults endDate to today via normalizeToMidnight(new Date())
+        // const dateTo = formatDateString(new Date());
 
         try {
             for (const conn of activeConnections) {
