@@ -357,10 +357,7 @@ export const useSystemBudgetManagement = (
         // Centralized Invalidation
         // We only invalidate if there were NO budgets before, or if we allowed updates
         if (systemBudgets.length === 0 || !isPastMonth) {
-          // UPDATED 10-Mar-2026: Both hooks now share the same query key [SYSTEM_BUDGETS, email]
           queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SYSTEM_BUDGETS] });
-          // COMMENTED 10-Mar-2026: ALL_SYSTEM_BUDGETS now uses same key as SYSTEM_BUDGETS
-          // queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS] });
         }
       } catch (err) {
         console.error('System Budget Sync Failed:', err);
