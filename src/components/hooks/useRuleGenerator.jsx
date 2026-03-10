@@ -9,7 +9,6 @@ import { formatDateString, normalizeToMidnight } from "../utils/dateUtils";
 import { subMonths } from 'date-fns';
 
 // ─── Constants ───────────────────────────────────────────────────────
-const CANDIDATE_QUERY_KEY = "rule_generator_candidates";
 const MIN_FREQUENCY = 1; // Show even if it happened once, as long as it has a pattern
 
 // Common financial noise words to strip out for the "Stable Core"
@@ -210,7 +209,7 @@ export function useRuleGenerator() {
 
   // Fetch transactions (last 6 months) using centralized date logic
   const { data: transactions = [], isLoading: txLoading } = useQuery({
-    queryKey: [CANDIDATE_QUERY_KEY, "transactions", user?.email],
+    queryKey: [QUERY_KEYS.RULE_CANDIDATES, QUERY_KEYS.TRANSACTIONS, user?.email],
     queryFn: async () => {
       // Normalize "Now" to local midnight and subtract 6 months
       const today = normalizeToMidnight(new Date());
