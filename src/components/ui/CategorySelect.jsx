@@ -20,12 +20,12 @@ import { FINANCIAL_PRIORITIES, PRESET_COLORS } from "../utils/constants";
 import { Drawer, DrawerContent, DrawerTrigger, DrawerPortal } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { QUERY_KEYS } from "../hooks/queryKeys";
 import { useSettings } from "@/components/utils/SettingsContext";
-import { useMergedCategories } from "../hooks/useMergedCategories"; // ADDED 14-Feb-2026
+import { useMergedCategories } from "../hooks/useMergedCategories";
 import { fetchWithRetry } from "../utils/generalUtils";
 import fuzzysort from "fuzzysort";
 
@@ -34,7 +34,6 @@ export default function CategorySelect({ value, onValueChange, categories: provi
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const isMobile = useIsMobile();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useSettings();
 
@@ -135,14 +134,13 @@ export default function CategorySelect({ value, onValueChange, categories: provi
       setOpen(false);
       setSearchTerm("");
 
-      toast({
-        title: `Category '${newCat.name}' created`,
-        description: "Icon and color auto-assigned.",
+      toast.success(`Category '${newCat.name}' created`, {
+        description: "Icon and color auto-assigned."
       });
 
     } catch (error) {
       console.error(error);
-      toast({ title: "Failed to create category", variant: "destructive" });
+      toast.error("Failed to create category");
     } finally {
       setIsCreating(false);
     }
