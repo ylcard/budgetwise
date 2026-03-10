@@ -125,11 +125,17 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
           setIsExpanded(!isExpanded);
           setRotation(prev => prev - 180);
         }}
-        className="p-4 md:p-5 cursor-pointer flex flex-col justify-center relative z-10 group overflow-hidden"
+        className="p-4 md:p-5 cursor-pointer flex flex-col justify-center relative z-10 group overflow-hidden isolate"
       >
         {/* Background Glows (Subtle) */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[hsl(var(--stat-income-bg))] dark:bg-[hsl(var(--stat-income-bg))] blur-[40px] rounded-full -z-10 transition-opacity duration-500" style={{ opacity: isExpanded ? 1 : 0.5 }} />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-[hsl(var(--stat-expense-bg))] dark:bg-[hsl(var(--stat-expense-bg))] blur-[40px] rounded-full -z-10 transition-opacity duration-500" style={{ opacity: isExpanded ? 1 : 0.5 }} />
+        <motion.div
+          animate={{ scale: isExpanded ? 1.2 : 0.8, opacity: isExpanded ? 0.8 : 0.4 }}
+          className="absolute -top-6 -right-6 w-32 h-32 bg-[hsl(var(--stat-income-bg))] blur-[40px] rounded-full -z-10 transition-all duration-500"
+        />
+        <motion.div
+          animate={{ scale: isExpanded ? 1.2 : 0.8, opacity: isExpanded ? 0.8 : 0.4 }}
+          className="absolute -bottom-6 -left-6 w-32 h-32 bg-[hsl(var(--stat-expense-bg))] blur-[40px] rounded-full -z-10 transition-all duration-500"
+        />
 
         <div className="flex justify-between items-center w-full">
           {/* Left Side: Label & Data */}
