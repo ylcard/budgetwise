@@ -189,25 +189,30 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = [], monthStart
   return { transactions, isLoading };
 };
 
-// Hook for fetching all system budgets for a user
+// UPDATED 10-Mar-2026: Now reuses the same stable query key as useSystemBudgetsForPeriod
+// to avoid duplicate DB calls. Filters client-side by overlap if dates provided.
 export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) => {
-  const { data: allSystemBudgets = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.ALL_SYSTEM_BUDGETS, monthStart, monthEnd],
+  const { data: allUserSystemBudgets = [], isLoading } = useQuery({
+    queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, user?.email],
     queryFn: async () => {
       if (!user) return [];
-      if (monthStart && monthEnd) {
-        return await fetchWithRetry(() => base44.entities.SystemBudget.filter({
-          created_by: user.email,
-          startDate: { $lte: monthEnd },
-          endDate: { $gte: monthStart }
-        }));
-      }
-      return await fetchWithRetry(() => base44.entities.SystemBudget.filter({ created_by: user.email }));
+      return await fetchWithRetry(() => base44.entities.SystemBudget.filter(
+        { created_by: user.email },
+        '-startDate',
+        200
+      ));
     },
     keepPreviousData: true,
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
+
+  const allSystemBudgets = useMemo(() => {
+    if (!monthStart || !monthEnd) return allUserSystemBudgets;
+    return allUserSystemBudgets.filter(sb =>
+      sb.startDate <= monthEnd && sb.endDate >= monthStart
+    );
+  }, [allUserSystemBudgets, monthStart, monthEnd]);
 
   return { allSystemBudgets, isLoading };
 };
