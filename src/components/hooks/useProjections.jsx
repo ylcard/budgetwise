@@ -1,36 +1,30 @@
 import { useMemo } from 'react';
-import { useTransactions } from './useBase44Entities';
+// REMOVED 10-Mar-2026: useTransactions — historical data now passed in via allTransactions param
+// This eliminates a separate DB call that was competing with useTransactionWindow and causing 429s.
+// import { useTransactions } from './useBase44Entities';
 import { formatDateString, parseDate, normalizeToMidnight, getLastDayOfMonth } from '../utils/dateUtils';
 import { calculateIncomeProjections, calculateExpenseProjections } from '../utils/projectionEngine';
 
 /**
  * HOOK: useProjections
- * Orchestrates historical data fetching and projection engine execution.
- * Provides both granular chart data and high-level aggregated totals.
- * @param {Array} currentTransactions - Transactions for the current selected period.
+ * UPDATED 10-Mar-2026: No longer fetches its own historical data. Uses the wide-window
+ * allTransactions array from useTransactionWindow (passed by Dashboard) for history.
+ * @param {Array} currentTransactions - Transactions for the current selected period (wide-window allTransactions).
  * @param {number} selectedMonth - 0-indexed month.
  * @param {number} selectedYear - Full year (e.g., 2025).
  */
 export const useProjections = (currentTransactions = [], selectedMonth, selectedYear) => {
-  // 1. Define Historical Window (Last 6 full months)
-  // We memoize the dates so they don't trigger re-fetches on every render
-  const { historyStart, historyEnd } = useMemo(() => {
+  // REMOVED 10-Mar-2026: Separate historical fetch — now uses currentTransactions which IS the wide window
+  // const { historyStart, historyEnd } = useMemo(() => { ... }, []);
+  // const { transactions: historyTxns, isLoading: isLoadingHistory } = useTransactions(historyStart, historyEnd);
+
+  // Historical transactions are now extracted from the wide-window allTransactions param
+  const historyTxns = useMemo(() => {
     const now = normalizeToMidnight(new Date());
-    // Start: 1st day of 6 months ago
-    const start = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-    // End: Last day of previous month
-    const end = new Date(now.getFullYear(), now.getMonth(), 0);
-
-    return {
-      historyStart: formatDateString(start),
-      historyEnd: formatDateString(end)
-    };
-  }, []);
-
-  // 2. Fetch Historical Data quietly in the background
-  // NOTE: This uses useTransactions which has staleTime of 5 mins.
-  // The date range is static (always last 6 months), so TanStack Query deduplicates well.
-  const { transactions: historyTxns, isLoading: isLoadingHistory } = useTransactions(historyStart, historyEnd);
+    const histStart = formatDateString(new Date(now.getFullYear(), now.getMonth() - 6, 1));
+    const histEnd = formatDateString(new Date(now.getFullYear(), now.getMonth(), 0));
+    return currentTransactions.filter(t => t.date && t.date >= histStart && t.date <= histEnd);
+  }, [currentTransactions]);
 
   // 3. Process Projections and Chart Data
   const result = useMemo(() => {
