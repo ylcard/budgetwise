@@ -20,7 +20,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 // COMMENTED 10-Mar-2026: useCallback not needed in this hook
 // import { useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { QUERY_KEYS } from "./queryKeys";
 import { fetchWithRetry } from "../utils/generalUtils";
@@ -146,7 +146,7 @@ export const useTransactionWindow = (selectedMonth, selectedYear) => {
         )
       );
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
