@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { Input } from "@/components/ui/input"
 import { fetchWithRetry } from "@/components/utils/generalUtils";
+import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 
 /**
  * Bulk Review Inbox
@@ -184,7 +185,8 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
       });
 
       // Force deep cache refresh so the dashboard counter updates instantly
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORY_RULES] });
 
       // Clear selections and close modal
       setSelections({});
