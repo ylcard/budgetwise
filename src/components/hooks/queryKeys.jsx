@@ -16,5 +16,6 @@ export const QUERY_KEYS = {
     NOTIFICATIONS: 'notifications',
     CURRENCIES: 'currencies',
     BANK_CONNECTIONS: 'bankConnections',
-    RECURRING_TRANSACTIONS: 'recurringTransactions', 
+    RECURRING_TRANSACTIONS: 'recurringTransactions',
+    USER_EXP: 'userExp',
 };
