@@ -8,15 +8,9 @@ import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useFAB } from "../components/hooks/FABContext";
 import {
-  // REMOVED 10-Mar-2026: useTransactions - replaced by useTransactionWindow for wide-window fetching
-  // useTransactions,
   useGoals,
   useCustomBudgetsForPeriod,
-  // REMOVED 10-Mar-2026: useSystemBudgetsAll - consolidated with useSystemBudgetsForPeriod
-  // useSystemBudgetsAll,
   useSystemBudgetsForPeriod,
-  // REMOVED 10-Mar-2026: useHistoricalIncomeTransactions - consolidated into main transactions fetch
-  // useHistoricalIncomeTransactions
 } from "../components/hooks/useBase44Entities";
 import { useTransactionWindow } from "../components/hooks/useTransactionWindow";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
@@ -40,20 +34,10 @@ import ExpenseFormDialog from "../components/transactions/dialogs/ExpenseFormDia
 import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialog";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
-// REMOVED 10-Mar-2026: CustomButton no longer used directly in Dashboard — moved to QuickActions
-// import { CustomButton } from "@/components/ui/CustomButton";
-// REMOVED 10-Mar-2026: Button icons moved to QuickActions component
-// import { FileUp, MinusCircle, PlusCircle, Building2, RefreshCw, Loader2, Check, X } from "lucide-react";
-// REMOVED 10-Mar-2026: fetchWithRetry no longer used directly in Dashboard
-// import { fetchWithRetry } from "../components/utils/generalUtils";
-// UPDATED 10-Mar-2026: getLastDayOfMonth no longer needed (realMonthEnd removed)
 import { formatDateString, getFirstDayOfMonth } from "../components/utils/dateUtils";
-// import { getLastDayOfMonth } from "../components/utils/dateUtils";
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { WrappedStory } from "../components/dashboard/WrappedStory";
-// REMOVED 10-Mar-2026: HealthProvider no longer needed — Layout already provides it
-// import { HealthProvider, useHealth } from "../components/utils/HealthContext";
 import { useHealth } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
@@ -63,9 +47,7 @@ import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
 import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
-// UPDATED 10-Mar-2026: subMonths no longer needed (realTransactions fetch removed)
 import { subDays } from 'date-fns';
-// import { subMonths } from 'date-fns';
 import { ActivityHub } from "../components/dashboard/ActivityHub";
 import QuickActions from "../components/dashboard/QuickActions";
 import { useBankSync } from "../components/banksync/useBankSync";
@@ -539,18 +521,18 @@ export default function Dashboard() {
                 onNavigateBank={() => navigate('/BankSync')}
               />
               <div className="relative flex-1 min-h-[500px]">
-              <div className="absolute inset-0">
-                <ActivityHub
-                  recurringWithStatus={recurringWithStatus}
-                  onMarkPaid={handleMarkPaid}
-                  isLoading={isLoading}
-                  categories={categories}
-                  customBudgets={allCustomBudgets}
-                  transactionActions={transactionActions}
-                  settings={settings}
-                  embedded={true}
-                />
-              </div>
+                <div className="absolute inset-0">
+                  <ActivityHub
+                    recurringWithStatus={recurringWithStatus}
+                    onMarkPaid={handleMarkPaid}
+                    isLoading={isLoading}
+                    categories={categories}
+                    customBudgets={allCustomBudgets}
+                    transactionActions={transactionActions}
+                    settings={settings}
+                    embedded={true}
+                  />
+                </div>
               </div>
             </div>
           </div>
