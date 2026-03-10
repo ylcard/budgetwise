@@ -292,10 +292,12 @@ export default function TransactionList({
         <table className="w-full text-sm text-left border-collapse min-w-[1000px]">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
             <tr>
-              <th className="items-center pl-10 pr-4 py-4 w-20 text-center">
-                <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
+              <th className="px-4 py-4 w-20">
+                <div className="flex items-center justify-center">
+                  <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                </div>
               </th>
-              <th className="px-4 py-4 cursor-pointer hover:bg-accent/50 transition-colors text-center whitespace-nowrap" onClick={() => handleSort('title')}>
+              <th className="px-4 py-4 cursor-pointer hover:bg-accent/50 transition-colors text-left whitespace-nowrap" onClick={() => handleSort('title')}>
                 <div className="flex items-center justify-center">Title <SortIcon columnKey="title" /></div>
               </th>
               <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center w-36" onClick={() => handleSort('date')}>
@@ -326,11 +328,13 @@ export default function TransactionList({
                   onClick={(e) => handleRowClick(e, transaction)}
                   className={`group hover:bg-accent/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-primary/5' : ''}`}
                 >
-                  <td className="items-center pl-10 pr-4 py-3">
-                    <Checkbox
-                      checked={selectedIds.has(transaction.id)}
-                      onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
-                    />
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center">
+                      <Checkbox
+                        checked={selectedIds.has(transaction.id)}
+                        onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-2 font-medium text-foreground max-w-[20ch] md:max-w-[40ch] truncate" title={transaction.title}>{transaction.title}</td>
                   <td className="px-4 py-2 text-muted-foreground whitespace-nowrap text-center">
