@@ -17,7 +17,9 @@
  * @created 10-Mar-2026
  */
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+// COMMENTED 10-Mar-2026: useCallback not needed in this hook
+// import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { QUERY_KEYS } from "./queryKeys";
