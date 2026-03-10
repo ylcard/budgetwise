@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
+import useMeasure from "react-use-measure";
 import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useFAB } from "../components/hooks/FABContext";
@@ -57,6 +58,9 @@ import { toast } from "sonner";
  * Main Dashboard Page
  */
 export default function Dashboard() {
+  // Measure the collapsed height of the Velocity Widget
+  const [velocityRef, { height: velocityHeight }] = useMeasure();
+
   const { user, settings } = useSettings();
   const [quickAddState, setQuickAddState] = useState(null); // null | 'new' | templateObject
   const [quickAddIncomeState, setQuickAddIncomeState] = useState(null); // UPDATED: null | 'new' | templateObject
@@ -436,6 +440,7 @@ export default function Dashboard() {
                   totals={projectionTotals}
                   monthStatus={monthStatus}
                   settings={settings}
+                  headerRef={velocityRef}
                 />
               </div>
 
@@ -521,8 +526,11 @@ export default function Dashboard() {
                 isEmptyMonth={(!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0)}
                 onNavigateBank={() => navigate('/BankSync')}
               />
-              <div className="relative flex-1 min-h-[500px]">
-                <div className="absolute inset-0">
+              <div
+                className="relative overflow-hidden"
+                style={{ height: velocityHeight > 0 ? velocityHeight : 'auto' }}
+              >
+                <div className="absolute inset-0 w-full h-full">
                   <ActivityHub
                     recurringWithStatus={recurringWithStatus}
                     onMarkPaid={handleMarkPaid}
