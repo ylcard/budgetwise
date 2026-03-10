@@ -41,7 +41,8 @@ import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialo
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
 import { ImportWizardDialog } from "../components/import/ImportWizard";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { FileUp, MinusCircle, PlusCircle, Building2, RefreshCw, Loader2, Check, X } from "lucide-react";
+// REMOVED 10-Mar-2026: Button icons moved to QuickActions component
+// import { FileUp, MinusCircle, PlusCircle, Building2, RefreshCw, Loader2, Check, X } from "lucide-react";
 import { fetchWithRetry } from "../components/utils/generalUtils";
 // UPDATED 10-Mar-2026: getLastDayOfMonth no longer needed (realMonthEnd removed)
 import { formatDateString, getFirstDayOfMonth } from "../components/utils/dateUtils";
