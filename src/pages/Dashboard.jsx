@@ -132,8 +132,12 @@ export default function Dashboard() {
   const { categories, isLoading: categoriesLoading } = useMergedCategories();
   const { goals } = useGoals(user);
   const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
-  const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
+  // OPTIMIZED 10-Mar-2026: useSystemBudgetsAll and useSystemBudgetsForPeriod were two separate DB calls
+  // with overlapping date ranges. useSystemBudgetsAll is used by useActiveBudgets which just filters locally.
+  // We can reuse the period-specific data for both purposes.
   const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
+  // Alias for useActiveBudgets which expects 'allSystemBudgets' — same data when viewing one month
+  const allSystemBudgets = systemBudgets;
 
   // REMOVED 10-Mar-2026: useHistoricalIncomeTransactions was a separate DB call
   // The projection engine and dashboard summary now use the main transactions list
