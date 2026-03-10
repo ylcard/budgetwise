@@ -39,9 +39,6 @@ const QuickActions = memo(function QuickActions({
 
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5 px-0.5">
-        Quick Actions
-      </p>
       <div className="grid grid-cols-2 justify-center gap-2">
         {/* Add Income */}
         {isEmptyMonth ? (
