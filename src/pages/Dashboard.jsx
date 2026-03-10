@@ -166,21 +166,19 @@ export default function Dashboard() {
     selectedYear
   );
 
+  // UPDATED 10-Mar-2026: Aligned with new getSystemBudgetStats signature
   const systemBudgetsData = useMemo(() => {
     return systemBudgets.map(sb => ({
       ...sb,
       ...getSystemBudgetStats(
         sb,
         transactions,
-        categories,
-        allCustomBudgets,
         monthStart,
         monthEnd,
-        monthlyIncome,
-        settings
+        allCustomBudgets
       )
     }));
-  }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
+  }, [systemBudgets, transactions, allCustomBudgets, monthStart, monthEnd]);
 
   // --- RECURRING BILLS LOGIC ---
   const { recurringTransactions, isLoading: recurringLoading } = useRecurringTransactions(user);
