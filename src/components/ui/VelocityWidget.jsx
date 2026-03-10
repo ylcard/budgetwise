@@ -125,17 +125,21 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
           setIsExpanded(!isExpanded);
           setRotation(prev => prev - 180);
         }}
-        className="p-4 md:p-5 cursor-pointer flex flex-col justify-center relative z-10 group overflow-hidden isolate"
+        className="p-4 md:p-5 cursor-pointer flex flex-col justify-center relative z-10 group overflow-hidden"
       >
-        {/* Background Glows (Subtle) */}
-        <motion.div
-          animate={{ scale: isExpanded ? 1.2 : 0.8, opacity: isExpanded ? 0.8 : 0.4 }}
-          className="absolute -top-6 -right-6 w-32 h-32 bg-[hsl(var(--stat-income-bg))] blur-[40px] rounded-full -z-10 transition-all duration-500"
-        />
-        <motion.div
-          animate={{ scale: isExpanded ? 1.2 : 0.8, opacity: isExpanded ? 0.8 : 0.4 }}
-          className="absolute -bottom-6 -left-6 w-32 h-32 bg-[hsl(var(--stat-expense-bg))] blur-[40px] rounded-full -z-10 transition-all duration-500"
-        />
+        {/* Dedicated Clipped Container for Glows */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 select-none">
+          <motion.div
+            animate={{ scale: isExpanded ? 1.2 : 0.8, opacity: isExpanded ? 0.8 : 0.4 }}
+            className="absolute -top-10 -right-10 w-32 h-32 bg-[hsl(var(--stat-income-bg))] blur-[40px] rounded-full"
+            transition={{ duration: 0.5 }}
+          />
+          <motion.div
+            animate={{ scale: isExpanded ? 1.2 : 0.8, opacity: isExpanded ? 0.8 : 0.4 }}
+            className="absolute -bottom-10 -left-10 w-32 h-32 bg-[hsl(var(--stat-expense-bg))] blur-[40px] rounded-full"
+            transition={{ duration: 0.5 }}
+          />
+        </div>
 
         <div className="flex justify-between items-center w-full">
           {/* Left Side: Label & Data */}
