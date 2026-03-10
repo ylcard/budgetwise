@@ -63,7 +63,7 @@ const QuickActions = memo(function QuickActions({
         ) : (
           <button
             onClick={onAddIncome}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+            className="w-full flex items-center text-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
               bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] hover:brightness-95 dark:hover:brightness-110 border border-[hsl(var(--stat-income-text))]/20"
           >
             <PlusCircle className="h-4 w-4" />
@@ -74,7 +74,7 @@ const QuickActions = memo(function QuickActions({
         {/* Add Expense */}
         <button
           onClick={onAddExpense}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+          className="w-full flex items-center text-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
             bg-[hsl(var(--stat-expense-bg))] text-[hsl(var(--stat-expense-text))] hover:brightness-95 dark:hover:brightness-110 border border-[hsl(var(--stat-expense-text))]/20"
         >
           <MinusCircle className="h-4 w-4" />
@@ -84,7 +84,7 @@ const QuickActions = memo(function QuickActions({
         {/* Import */}
         <button
           onClick={onImport}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+          className="w-full flex items-center text-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
             bg-[hsl(var(--stat-balance-pos-bg))] text-[hsl(var(--stat-balance-pos-text))] hover:brightness-95 dark:hover:brightness-110 border border-[hsl(var(--stat-balance-pos-text))]/20"
         >
           <FileUp className="h-4 w-4" />
@@ -95,7 +95,7 @@ const QuickActions = memo(function QuickActions({
         <button
           onClick={handleSyncClick}
           disabled={syncState === 'syncing'}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-60
+          className="w-full flex items-center text-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-60
             bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground border border-border"
         >
           {renderSyncIcon()}
