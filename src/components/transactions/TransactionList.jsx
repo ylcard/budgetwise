@@ -292,10 +292,10 @@ export default function TransactionList({
         <table className="w-full text-sm text-left border-collapse min-w-[1000px]">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
             <tr>
-              <th className="pl-6 pr-4 py-3 w-14">
+              <th className="pl-10 pr-4 py-4 w-20">
                 <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
               </th>
-              <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-left whitespace-nowrap" onClick={() => handleSort('title')}>
+              <th className="px-4 py-4 cursor-pointer hover:bg-accent/50 transition-colors text-left whitespace-nowrap" onClick={() => handleSort('title')}>
                 <div className="flex items-center justify-center">Title <SortIcon columnKey="title" /></div>
               </th>
               <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center w-36" onClick={() => handleSort('date')}>
@@ -310,8 +310,8 @@ export default function TransactionList({
               <th className="px-4 py-3 text-right cursor-pointer hover:bg-accent/50 transition-colors w-36" onClick={() => handleSort('amount')}>
                 <div className="flex items-center justify-end">Amount <SortIcon columnKey="amount" /></div>
               </th>
-              <th className="px-4 py-3 w-1/4 text-center whitespace-nowrap">Note</th>
-              <th className="pl-4 pr-6 py-3 w-20 text-center">Actions</th>
+              <th className="px-4 py-4 w-1/4 text-center whitespace-nowrap">Note</th>
+              <th className="pl-4 pr-10 py-4 w-28 text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -326,7 +326,7 @@ export default function TransactionList({
                   onClick={(e) => handleRowClick(e, transaction)}
                   className={`group hover:bg-accent/50 transition-colors cursor-pointer ${selectedIds.has(transaction.id) ? 'bg-primary/5' : ''}`}
                 >
-                  <td className="pl-6 pr-4 py-2">
+                  <td className="pl-10 pr-4 py-3">
                     <Checkbox
                       checked={selectedIds.has(transaction.id)}
                       onCheckedChange={(checked) => onToggleSelection(transaction.id, checked)}
@@ -372,7 +372,7 @@ export default function TransactionList({
                   <td className="px-4 py-2 text-muted-foreground text-xs truncate max-w-[200px]" title={transaction.notes}>
                     {transaction.notes}
                   </td>
-                  <td className="pl-4 pr-6 py-2">
+                  <td className="pl-4 pr-10 py-3">
                     <div className="flex items-center justify-center gap-1">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
