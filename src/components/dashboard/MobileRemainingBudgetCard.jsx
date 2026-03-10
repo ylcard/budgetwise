@@ -1,25 +1,47 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Calendar, Wallet } from "lucide-react";
+import { AlertCircle, Calendar, Wallet, TrendingUp, Target, Activity } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
+import { resolveBudgetLimit } from "../utils/financialCalculations";
 import { memo, useEffect, useRef, useState } from "react";
-import { getMonthName } from "../utils/dateUtils";
+import { getMonthName, normalizeToMidnight, getLastDayOfMonth, parseDate } from "../utils/dateUtils";
 import confetti from "canvas-confetti";
 import { Link } from "react-router-dom";
+
+// --- HEALTH BADGE HELPERS (matching desktop) ---
+const getHealthBadgeStyle = (score) => {
+  if (!score) return "bg-muted text-muted-foreground border-border hover:bg-muted/80";
+  if (score >= 90) return "bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] border-[hsl(var(--stat-income-text))/0.2] hover:brightness-95 dark:hover:brightness-110";
+  if (score >= 75) return "bg-[hsl(var(--stat-balance-pos-bg))] text-[hsl(var(--stat-balance-pos-text))] border-[hsl(var(--stat-balance-pos-text))/0.2] hover:brightness-95 dark:hover:brightness-110";
+  if (score >= 60) return "bg-[hsl(var(--stat-balance-neg-bg))] text-[hsl(var(--stat-balance-neg-text))] border-[hsl(var(--stat-balance-neg-text))/0.2] hover:brightness-95 dark:hover:brightness-110";
+  return "bg-[hsl(var(--stat-expense-bg))] text-[hsl(var(--stat-expense-text))] border-[hsl(var(--stat-expense-text))/0.2] hover:brightness-95 dark:hover:brightness-110";
+};
+
+const getHealthIconColor = (score) => {
+  if (!score) return "text-muted-foreground";
+  if (score >= 90) return "text-[hsl(var(--stat-income-text))]";
+  if (score >= 75) return "text-[hsl(var(--stat-balance-pos-text))]";
+  if (score >= 60) return "text-[hsl(var(--stat-balance-neg-text))]";
+  return "text-[hsl(var(--stat-expense-text))]";
+};
 
 const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
   currentMonthIncome,
   currentMonthExpenses,
   projectedIncome = 0,
   isUsingProjection = false,
+  projectedRemainingExpense = 0,
   settings,
   isLoading,
   monthNavigator,
   selectedMonth,
   breakdown,
   selectedYear,
-  systemBudgets = []
+  systemBudgets = [],
+  goals = [],
+  monthStatus = 'current',
+  healthData = null
 }) {
   if (!settings) return null;
 
@@ -44,34 +66,56 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
   const { income, expenses, breakdown: displayBreakdown } = displayedData;
 
-  // --- LOGIC FIX: Projection Integration ---
+  // --- LOGIC: Projection Integration (matching desktop) ---
   // Use projected income if provided and active, otherwise actual income
   const effectiveIncome = isUsingProjection ? projectedIncome : income;
-  const calculationBase = effectiveIncome && effectiveIncome > 0 ? effectiveIncome : 1;
+  const safeIncome = effectiveIncome && effectiveIncome > 0 ? effectiveIncome : 1;
 
   // Empty state only if NO income (real or projected) AND NO expenses
   const isDisplayedEmpty = (!effectiveIncome || effectiveIncome === 0) && (!expenses || expenses === 0);
 
   const totalSpent = expenses;
-  const savingsAmount = Math.max(0, effectiveIncome - totalSpent);
-  const overAmount = Math.max(0, totalSpent - effectiveIncome);
-  const isTotalOver = totalSpent > effectiveIncome;
 
-  // Helper: Is this "Bad" over (Real Money gone) or "Soft" over (Waiting for payday)?
-  // If we are using projection, being "Over" actual cash is normal. We only alert if over PROJECTION.
+  // --- LOGIC: Resolve budget limits from goals (matching desktop) ---
+  const resolveLimit = (type) => {
+    const budget = systemBudgets.find(sb => sb.systemBudgetType === type);
+    if (budget && typeof budget.targetAmount === 'number') return budget.targetAmount;
+    const goal = goals.find(g => g.priority === type);
+    if (!goal) return 0;
+    return resolveBudgetLimit(goal, safeIncome, settings, 0);
+  };
 
-  // --- LOGIC FIX: Use Actual Breakdown (Paid + Unpaid) instead of Limits ---
-  const needsData = displayBreakdown?.needs || { paid: 0, unpaid: 0 };
-  const needsTotal = (needsData.paid || 0) + (needsData.unpaid || 0);
+  // COMMENTED 10-Mar-2026: Old simple calculation without goal limits
+  // const savingsAmount = Math.max(0, effectiveIncome - totalSpent);
+  // const overAmount = Math.max(0, totalSpent - effectiveIncome);
+  // const isTotalOver = totalSpent > effectiveIncome;
+
+  const savingsLimit = resolveLimit('savings');
+
+  // --- LOGIC: Net balance calculation (matching desktop) ---
+  // Account for BOTH actual expenses AND future projected expenses
+  const netBalance = effectiveIncome - totalSpent - projectedRemainingExpense;
+  const isActuallyOver = netBalance < 0;
+
+  const savingsAmount = Math.max(0, netBalance);
+  const extraSavingsAmount = Math.max(0, netBalance - savingsLimit);
+  const overAmount = Math.abs(Math.min(0, netBalance));
+
+  // Calculate display percentage based on safeIncome (matching desktop)
+  const absPctDisplay = (Math.abs(netBalance) / safeIncome) * 100;
+
+  // --- LOGIC: Breakdown extraction (matching desktop) ---
+  const needsData = displayBreakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
+  const needsTotal = needsData.total || ((needsData.paid || 0) + (needsData.unpaid || 0));
 
   const wantsData = displayBreakdown?.wants || {};
   const wantsTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) +
     (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
 
   // Calculate Percentages. If Empty, everything forces to 0 to create the "Morph" to empty effect.
-  const needsPct = isDisplayedEmpty ? 0 : (needsTotal / calculationBase) * 100;
-  const wantsPct = isDisplayedEmpty ? 0 : (wantsTotal / calculationBase) * 100;
-  const savingsPct = (isDisplayedEmpty || isTotalOver) ? 0 : Math.max(0, 100 - needsPct - wantsPct);
+  const needsPct = isDisplayedEmpty ? 0 : (needsTotal / safeIncome) * 100;
+  const wantsPct = isDisplayedEmpty ? 0 : (wantsTotal / safeIncome) * 100;
+  const savingsPct = (isDisplayedEmpty || isActuallyOver) ? 0 : Math.max(0, 100 - needsPct - wantsPct);
 
   // --- Extract IDs for Routing ---
   const needsBudget = systemBudgets.find(sb => sb.systemBudgetType === 'needs');
@@ -89,15 +133,17 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
   const circumference = 2 * Math.PI * radius;
 
   // Calculate segment lengths and rotation angles
-  // Each segment is drawn from 0 degrees, then rotated to its position
   const needsLength = (needsPct / 100) * circumference;
   const wantsLength = (wantsPct / 100) * circumference;
   const savingsLength = (savingsPct / 100) * circumference;
 
   // Rotation angles for each segment (in degrees)
-  const needsRotation = 0; // Starts at top (12 o'clock due to -rotate-90)
-  const wantsRotation = needsPct * 3.6; // 3.6 degrees per percentage point
+  const needsRotation = 0;
+  const wantsRotation = needsPct * 3.6;
   const savingsRotation = (needsPct + wantsPct) * 3.6;
+
+  // Get explicit month name for the empty state message
+  const monthName = getMonthName(selectedMonth);
 
   // Confetti logic (same as desktop)
   const prevIncomeRef = useRef(currentMonthIncome);
@@ -152,7 +198,8 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
     prevYearRef.current = selectedYear;
   }, [currentMonthIncome, selectedMonth, selectedYear]);
 
-  const savingsPctDisplay = (savingsAmount / calculationBase) * 100;
+  // Center text: savings percentage display (matching desktop logic)
+  const savingsPctDisplay = isActuallyOver ? absPctDisplay : (savingsAmount / safeIncome) * 100;
 
   return (
     <Card className="w-auto mx-4 max-w-md md:mx-auto border-none shadow-md bg-card overflow-hidden h-auto flex flex-col relative">
@@ -164,25 +211,19 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
         {/* Main Content */}
         <div className="relative flex flex-col items-center justify-start flex-1 gap-6">
-          {/* +                        CRITICAL FIX: Removed AnimatePresence mode="wait" wrapper.
-                        We now ALWAYS render the Chart structure.
-                        If data is empty, we simply animate values to 0 and crossfade the text.
-                        This prevents the "Blank Section" and ensures smooth morphing.
-                    */}
-
           <div className="w-full space-y-4 relative">
             {/* Empty State Overlay - Positioned Absolutely over the content */}
             {isDisplayedEmpty ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }} // Delay slightly to let chart morph out
+                transition={{ duration: 0.5, delay: 0.2 }}
                 className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/90 backdrop-blur-[2px] rounded-full"
               >
                 <div className="w-16 h-16 bg-[hsl(var(--stat-income-bg))] rounded-full flex items-center justify-center shadow-sm mb-4">
                   <Calendar className="w-8 h-8 text-[hsl(var(--stat-income-text))]" />
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">Plan for {getMonthName(selectedMonth)}</h3>
+                <h3 className="text-lg font-bold text-foreground mb-2">Plan for {monthName}</h3>
                 <p className="text-muted-foreground text-sm max-w-[260px]">
                   Start by adding your expected income.
                 </p>
@@ -219,9 +260,7 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                     strokeWidth={strokeWidth}
                     strokeLinecap="butt"
                     style={{ transformOrigin: 'center' }}
-                    // Initial is only for the very first mount
                     initial={{ strokeDasharray: `0 ${circumference}`, rotate: 0 }}
-                    // Animate will catch every subsequent change in variables
                     animate={{
                       strokeDasharray: `${needsLength} ${circumference}`,
                       rotate: needsRotation
@@ -266,19 +305,33 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                   />
                 </svg>
 
-                {/* Center Text */}
+                {/* Center Text - Matching desktop logic for over/saved display */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  {/* Hide center text if empty, otherwise it looks weird with 0% and "Ready to plan" overlay */}
                   {!isDisplayedEmpty && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="text-center"
                     >
-                      <div className="text-3xl font-extrabold text-foreground">
-                        {Math.round(savingsPctDisplay)}%
-                      </div>
-                      <div className="text-xs font-semibold text-[hsl(var(--stat-income-text))]">Saved</div>
+                      {isActuallyOver ? (
+                        <>
+                          <div className="text-3xl font-extrabold text-destructive">
+                            {Math.round(absPctDisplay)}%
+                          </div>
+                          <div className="text-xs font-semibold text-destructive">
+                            {monthStatus === 'current' ? 'Over (proj.)' : 'Over budget'}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-3xl font-extrabold text-foreground">
+                            {Math.round(savingsPctDisplay)}%
+                          </div>
+                          <div className="text-xs font-semibold text-[hsl(var(--stat-income-text))]">
+                            {monthStatus === 'current' ? 'Proj. saved' : 'Saved'}
+                          </div>
+                        </>
+                      )}
                     </motion.div>
                   )}
                 </div>
@@ -289,21 +342,54 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                 className="w-full space-y-3 mt-6"
                 animate={{ opacity: isDisplayedEmpty ? 0 : 1 }}
               >
-                {/* Income/Spent Summary */}
-                <div className="text-center">
-                  {/* Dynamic Pill: Changes color and icon based on status, but layout stays stable */}
-                  <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors duration-300 ${isTotalOver
-                    ? "bg-destructive/10 border-destructive/20 text-destructive"
-                    : "bg-muted border-border text-muted-foreground"
-                    }`}>
-                    {isTotalOver ? <AlertCircle className="w-3.5 h-3.5" /> : <Wallet className="w-3.5 h-3.5" />}
-                    <span className="text-sm font-medium">
-                      {isTotalOver
-                        ? `Over Limit: ${formatCurrency(overAmount, settings)}`
-                        : `Left: ${formatCurrency(savingsAmount, settings)}`
-                      }
-                    </span>
-                  </div>
+                {/* Status Summary - matching desktop messaging */}
+                <div className="text-center space-y-1.5">
+                  {isActuallyOver ? (
+                    <>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-destructive/10 border-destructive/20 text-destructive">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span className="text-sm font-medium">
+                          Over by {formatCurrency(overAmount, settings)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground px-4">
+                        {monthStatus === 'current' ? 'Spent so far: ' : 'Total spent: '}
+                        <strong className="text-destructive">{formatCurrency(totalSpent, settings)}</strong>
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-muted border-border text-muted-foreground">
+                        <Wallet className="w-3.5 h-3.5" />
+                        <span className="text-sm font-medium">
+                          {monthStatus === 'current' ? 'Projected savings: ' : 'Savings: '}
+                          {formatCurrency(savingsAmount, settings)}
+                        </span>
+                      </div>
+                      {/* Contextual sub-text matching desktop */}
+                      <p className="text-xs text-muted-foreground px-4">
+                        {extraSavingsAmount > 0 ? (
+                          <span className="flex items-center justify-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-[hsl(var(--stat-income-text))]" />
+                            Goal crushed by <strong className="text-[hsl(var(--stat-income-text))]">{formatCurrency(extraSavingsAmount, settings)}</strong>
+                          </span>
+                        ) : savingsAmount > 0 && savingsLimit > savingsAmount ? (
+                          <span className="flex items-center justify-center gap-1">
+                            <Target className="w-3 h-3 text-primary" />
+                            {monthStatus === 'current'
+                              ? <>Reduce expenses by <strong className="text-primary">{formatCurrency(savingsLimit - savingsAmount, settings)}</strong> to hit target</>
+                              : <>Missed target by <strong className="text-primary">{formatCurrency(savingsLimit - savingsAmount, settings)}</strong></>
+                            }
+                          </span>
+                        ) : (
+                          <span>
+                            {monthStatus === 'current' ? 'Spent so far: ' : 'Total spent: '}
+                            <strong className="text-foreground">{formatCurrency(totalSpent, settings)}</strong>
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {/* Legend */}
@@ -330,11 +416,26 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
                   )}
                   {savingsPct > 0 && (
                     <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: savingsColor }}></div>
                       <span className="font-semibold" style={{ color: savingsColor }}>Savings</span>
                       <span className="font-bold text-foreground">{Math.round(savingsPct)}%</span>
                     </div>
                   )}
                 </div>
+
+                {/* Health Score Badge (matching desktop) */}
+                {healthData && (
+                  <div className="flex justify-center">
+                    <Link
+                      to="/reports"
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold transition-colors ${getHealthBadgeStyle(healthData.totalScore)}`}
+                      title={`Financial Health: ${healthData.label}`}
+                    >
+                      <Activity className={`w-3 h-3 ${getHealthIconColor(healthData.totalScore)}`} />
+                      Score: {healthData.totalScore}
+                    </Link>
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           </div>
