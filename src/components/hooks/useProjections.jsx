@@ -129,5 +129,7 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
     };
   }, [currentTransactions, selectedMonth, selectedYear, historyTxns]);
 
+  // UPDATED 10-Mar-2026: isLoadingHistory no longer exists (no separate fetch)
+  const isLoadingHistory = false;
   return { ...result, isLoadingHistory, historyTxns };
 };
