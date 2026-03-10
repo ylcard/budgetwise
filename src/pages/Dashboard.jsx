@@ -133,7 +133,13 @@ export default function Dashboard() {
 
   // Data fetching
   // CRITICAL: Extract isLoading states to control the UI transitions
-  const { transactions, isLoading: transactionsLoading } = useTransactions(monthStart, monthEnd);
+  // UPDATED 10-Mar-2026: Wide-window strategy — fetches 7 months at once, only re-fetches
+  // when navigating beyond the cached window. Prevents per-month DB calls and 429 errors.
+  const {
+    allTransactions,
+    periodTransactions: transactions,
+    isLoading: transactionsLoading
+  } = useTransactionWindow(selectedMonth, selectedYear);
   const { categories, isLoading: categoriesLoading } = useMergedCategories();
   const { goals } = useGoals(user);
   const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
