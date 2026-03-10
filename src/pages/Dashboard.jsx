@@ -62,6 +62,7 @@ import { useTutorial } from '../components/tutorial/TutorialContext';
 import { subDays } from 'date-fns';
 // import { subMonths } from 'date-fns';
 import { ActivityHub } from "../components/dashboard/ActivityHub";
+import QuickActions from "../components/dashboard/QuickActions";
 import { useBankSync } from "../components/banksync/useBankSync";
 import { toast } from "sonner";
 
