@@ -19,4 +19,6 @@ export const QUERY_KEYS = {
     RECURRING_TRANSACTIONS: 'recurringTransactions',
     USER_EXP: 'userExp',
     NEEDS_REVIEW: 'needsReview',
+    BUDGET: 'budget', // For the specific detail view
+    ALL_CUSTOM_BUDGETS: 'allCustomBudgets', // For the heavy lookup fetch
 };
