@@ -220,7 +220,8 @@ export default function Dashboard() {
   }, [selectedMonth, selectedYear]);
 
   // Centralized Projection Engine
-  const { chartData, totals: projectionTotals } = useProjections(transactions, selectedMonth, selectedYear);
+  // UPDATED 10-Mar-2026: Pass allTransactions (7-month window) so projections have full historical context
+  const { chartData, totals: projectionTotals } = useProjections(allTransactions, selectedMonth, selectedYear);
   const isCurrentMonth = monthStatus === 'current';
 
   // --- FINANCIAL HEALTH SCORE ---
