@@ -487,7 +487,7 @@ export default function BudgetDetail() {
                       <span className="text-xs font-semibold uppercase tracking-wider">Budgeted</span>
                     </div>
                     <p className="text-sm font-bold">{formatCurrency(totalBudget, settings)}</p>
-                    <p className="text-[10px] text-muted-foreground">Total assigned limit</p>
+                    <p className="text-[10px] text-muted-foreground">Total Budget</p>
                   </div>
 
                   {/* Payment Status Info */}
@@ -535,7 +535,7 @@ export default function BudgetDetail() {
                               settings
                             )}
                           </p>
-                          <p className="text-[9px] text-muted-foreground">Total of all sub-budgets</p>
+                          <p className="text-[9px] text-muted-foreground">Total of all in-period Custom Budgets expenses</p>
                         </div>
                       </div>
                     </div>
