@@ -976,13 +976,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
           <div className="flex-1 w-full sm:w-auto">
             {monthNavigator}
           </div>
-          <div className="flex flex-col-reverse sm:flex-row items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          {/* REMOVED 10-Mar-2026: Action buttons moved to QuickActions component in Dashboard right column */}
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
             <motion.div layout>
               <AnimatePresence>
                 {!isEmptyMonth && (
                   <motion.div
                     key="view-toggle"
-                    // key={`view-toggle-${selectedMonth}-${selectedYear}`}
                     initial={{ opacity: 0, scale: 0.8, x: 20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.8, x: 20 }}
@@ -993,30 +993,6 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
                 )}
               </AnimatePresence>
             </motion.div>
-            <div className="flex items-center gap-3" data-tutorial="desktop-actions">
-              <div className="flex flex-col gap-2 min-w-[90px]">
-                {syncButton}
-                {importDataButton}
-              </div>
-              <div className="flex flex-col gap-2 min-w-[90px]">
-                {/* Conditionally highlight the Add Income button if the month is empty */}
-                {isEmptyMonth && addIncomeButton ? (
-                  <motion.div
-                    // "Breathing" animation: scales up to 10% larger and back down
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="relative z-10 w-full"
-                  >
-                    {/* Stronger Glow: Negative inset makes it bleed out, blur makes it glow */}
-                    <div className="absolute -inset-1 bg-emerald-400/50 rounded-lg blur-md animate-pulse"></div>
-                    <div className="relative w-full">{addIncomeButton}</div>
-                  </motion.div>
-                ) : (
-                  addIncomeButton
-                )}
-                {addExpenseButton}
-              </div>
-            </div>
           </div>
         </div>
 
