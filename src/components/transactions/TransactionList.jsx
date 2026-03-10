@@ -292,7 +292,7 @@ export default function TransactionList({
         <table className="w-full text-sm text-left border-collapse min-w-[1000px]">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
             <tr>
-              <th className="pl-10 pr-4 py-4 w-20">
+              <th className="items-center pl-10 pr-4 py-4 w-20 text-center">
                 <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
               </th>
               <th className="px-4 py-4 cursor-pointer hover:bg-accent/50 transition-colors text-center whitespace-nowrap" onClick={() => handleSort('title')}>
