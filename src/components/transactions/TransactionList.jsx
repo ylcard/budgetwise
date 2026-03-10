@@ -295,7 +295,7 @@ export default function TransactionList({
               <th className="pl-10 pr-4 py-4 w-20">
                 <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
               </th>
-              <th className="px-4 py-4 cursor-pointer hover:bg-accent/50 transition-colors text-left whitespace-nowrap" onClick={() => handleSort('title')}>
+              <th className="px-4 py-4 cursor-pointer hover:bg-accent/50 transition-colors text-center whitespace-nowrap" onClick={() => handleSort('title')}>
                 <div className="flex items-center justify-center">Title <SortIcon columnKey="title" /></div>
               </th>
               <th className="px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors text-center w-36" onClick={() => handleSort('date')}>
