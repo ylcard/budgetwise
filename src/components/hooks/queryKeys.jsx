@@ -18,4 +18,5 @@ export const QUERY_KEYS = {
     BANK_CONNECTIONS: 'bankConnections',
     RECURRING_TRANSACTIONS: 'recurringTransactions',
     USER_EXP: 'userExp',
+    NEEDS_REVIEW: 'needsReview',
 };
