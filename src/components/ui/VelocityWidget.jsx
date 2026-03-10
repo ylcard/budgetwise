@@ -144,9 +144,13 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
           </div>
 
           {/* Right Side: Chevron */}
-          <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </div>
+          <motion.div
+            className="text-muted-foreground group-hover:text-foreground transition-colors"
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            <ChevronDown size={20} />
+          </motion.div>
         </div>
       </div>
 
