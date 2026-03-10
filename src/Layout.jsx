@@ -433,7 +433,7 @@ const LayoutContent = ({ children }) => {
       />
 
       {/* ADDED 10-Mar-2026: Sonner toast renderer — required for toast.success/error calls to display */}
-      <SonnerToaster position="top-center" richColors closeButton />
+      <SonnerToaster position="bottom-left" richColors closeButton />
     </SidebarProvider>
   );
 };
