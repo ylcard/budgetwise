@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useFAB } from "../components/hooks/FABContext";
 import { useBankSync } from "../components/banksync/useBankSync";
+import { QUERY_KEYS } from "../components/hooks/queryKeys";
 
 /**
  * Bank Sync Page
@@ -44,7 +45,7 @@ export default function BankSync() {
   // --- NEW: Review Inbox State ---
   const [showReviewInbox, setShowReviewInbox] = useState(false);
   const { data: needsReviewTransactions = [] } = useQuery({
-    queryKey: ['transactions', 'needsReview'],
+    queryKey: [QUERY_KEYS.TRANSACTIONS, QUERY_KEYS.NEEDS_REVIEW],
     queryFn: () => base44.entities.Transaction.filter({ needsReview: true }),
     staleTime: 1000 * 60 * 5,
   });
@@ -54,7 +55,7 @@ export default function BankSync() {
 
   // Fetch bank connections
   const { data: connections = [], isLoading } = useQuery({
-    queryKey: ['bankConnections'],
+    queryKey: [QUERY_KEYS.BANK_CONNECTIONS],
     queryFn: () => base44.entities.BankConnection.list(),
     staleTime: 1000 * 60 * 5,
   });
@@ -169,7 +170,7 @@ export default function BankSync() {
             });
           }
 
-          queryClient.invalidateQueries(['bankConnections']);
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BANK_CONNECTIONS] });
 
           // Clear storage and URL
           sessionStorage.removeItem('bank_sync_state');
@@ -215,7 +216,7 @@ export default function BankSync() {
   const { mutate: deleteConnection } = useMutation({
     mutationFn: (id) => base44.entities.BankConnection.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['bankConnections']);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BANK_CONNECTIONS] });
       toast.success("Connection removed", {
         description: "Bank connection has been deleted"
       });
