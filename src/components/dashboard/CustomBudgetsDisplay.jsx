@@ -3,8 +3,10 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
 import { useSettings } from "../utils/SettingsContext";
-import { usePeriod } from "../hooks/usePeriod";
-import { useEnrichedCustomBudgets } from "../hooks/useDerivedData";
+// REMOVED 10-Mar-2026: usePeriod and useEnrichedCustomBudgets — data now passed from Dashboard
+// This eliminates 2 separate DB calls (CustomBudget + Transaction) that were duplicating Dashboard fetches.
+// import { usePeriod } from "../hooks/usePeriod";
+// import { useEnrichedCustomBudgets } from "../hooks/useDerivedData";
 import {
   Carousel,
   CarouselContent,
@@ -22,16 +24,14 @@ import { motion } from "framer-motion";
  * Displays ONLY custom budgets (no system budgets) in various view modes
  * UPDATED: 09-Feb-2026 - Replaced manual height hook with Framer Motion for smooth height transitions
  * and cross-fading view modes.
+ * UPDATED: 10-Mar-2026 - No longer self-fetches. Accepts budgets from parent to prevent 429s.
  */
 
 export default function CustomBudgetsDisplay({
   onCreateBudget,
+  budgets = [],
 }) {
-  const { user, settings } = useSettings();
-  const { monthStart, monthEnd } = usePeriod();
-
-  // Unified Stat Engine: Fetch and calculate once
-  const { enrichedBudgets: budgets = [] } = useEnrichedCustomBudgets(user, monthStart, monthEnd);
+  const { settings } = useSettings();
 
   return (
     <div className="space-y-6">
