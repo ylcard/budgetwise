@@ -31,7 +31,7 @@ export const useNotifications = () => {
             });
         },
         enabled: !!user,
-        staleTime: 1000 * 30, // Refresh every 30 seconds
+        staleTime: 1000 * 60 * 5, // CHANGED 10-Mar-2026: Was 30s, now 5 mins to reduce 429 errors
     });
 
     // Mark notification as read
