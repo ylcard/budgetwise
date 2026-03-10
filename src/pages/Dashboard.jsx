@@ -497,44 +497,6 @@ export default function Dashboard() {
                     settings={settings}
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
-                    importDataButton={
-                      <CustomButton variant="primary" size="sm" onClick={() => setShowImportWizard(true)} className="gap-2 h-8 text-xs w-full justify-start">
-                        <FileUp className="h-3.5 w-3.5" />
-                        <span className="hidden xl:inline">Import</span>
-                      </CustomButton>
-                    }
-                    syncButton={
-                      <CustomButton
-                        variant="primary"
-                        size="sm"
-                        className={`h-8 gap-2 text-xs w-full justify-start transition-all duration-300`}
-                        onClick={hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')}
-                        disabled={syncState === 'syncing'}
-                      >
-                        {!hasActiveConnections ? (
-                          <><Building2 className="h-3.5 w-3.5" /> <span className="hidden xl:inline">Connect</span></>
-                        ) : (
-                          <>
-                            {syncState === 'idle' && <><RefreshCw className="h-3.5 w-3.5" /> <span className="hidden xl:inline">Sync</span></>}
-                            {syncState === 'syncing' && <><Loader2 className="h-3.5 w-3.5 animate-spin" /> <span className="hidden xl:inline">Syncing</span></>}
-                            {syncState === 'success' && <><Check className="h-3.5 w-3.5 text-emerald-500" /> <span className="hidden xl:inline">Synced</span></>}
-                            {syncState === 'error' && <><X className="h-3.5 w-3.5 text-rose-500" /> <span className="hidden xl:inline">Failed</span></>}
-                          </>
-                        )}
-                      </CustomButton>
-                    }
-                    addIncomeButton={
-                      <CustomButton variant="success" size="sm" onClick={() => setQuickAddIncomeState('new')} className="gap-2 h-8 text-xs w-full justify-start">
-                        <PlusCircle className="h-3.5 w-3.5" />
-                        <span className="hidden xl:inline">Income</span>
-                      </CustomButton>
-                    }
-                    addExpenseButton={
-                      <CustomButton variant="delete" size="sm" onClick={() => setQuickAddState('new')} className="gap-2 h-8 text-xs w-full justify-start">
-                        <MinusCircle className="h-3.5 w-3.5" />
-                        <span className="hidden xl:inline">Expense</span>
-                      </CustomButton>
-                    }
                     monthNavigator={
                       <MonthNavigator
                         currentMonth={selectedMonth}
