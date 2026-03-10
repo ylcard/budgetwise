@@ -13,6 +13,7 @@ import { useGoalActions } from "../hooks/useActions";
 import React, { useState, useEffect, useRef, memo } from "react";
 import { getMonthName, normalizeToMidnight, getLastDayOfMonth, parseDate } from "../utils/dateUtils";
 import confetti from "canvas-confetti";
+import { getContrastingTextColor } from "../utils/colorUtils";
 
 // --- SHARED CONFIG ---
 const fluidSpring = {
@@ -717,7 +718,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             />
 
             {/* SIMPLE VIEW LABEL OVERLAY */}
-            <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 text-[hsl(var(--primary-foreground))] drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+              className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}
+              style={{ color: getContrastingTextColor(needsColor) }}
+            >
               <div className={`flex items-center justify-center ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
                 {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1 text-[hsl(var(--destructive))]" />}
                 <TextSwap>
@@ -802,7 +806,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
               direction="center"
             />
 
-            <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 text-[hsl(var(--primary-foreground))] drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+              className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}
+              style={{ color: getContrastingTextColor(wantsColor) }}
+            >
               <div className={`flex items-center justify-center ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
                 {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-[hsl(var(--warning))] text-[hsl(var(--warning))]" />}
                 <TextSwap>
@@ -908,8 +915,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
               )}
             </SmartSegment>
 
-            <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="text-foreground font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap drop-shadow-md">
+            <div
+              className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}
+              style={{ color: getContrastingTextColor(savingsColor) }}
+            >
+              <div className="font-medium text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap drop-shadow-md">
                 <TextSwap>
                   {/* Simple View: Show Total Amount + % of Target */}
                   <span className="font-bold">{formatCurrency(totalSavings, settings)}</span>
