@@ -521,8 +521,19 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Activity Hub (Sidebar) */}
-            <div className="hidden lg:block lg:col-span-4 relative min-h-[600px] min-w-0 max-w-full" data-tutorial="activity-hub">
+            {/* RIGHT COLUMN: Quick Actions + Activity Hub (Sidebar) */}
+            <div className="hidden lg:flex lg:flex-col lg:col-span-4 gap-4 min-w-0 max-w-full" data-tutorial="activity-hub">
+              <QuickActions
+                onAddIncome={() => setQuickAddIncomeState('new')}
+                onAddExpense={() => setQuickAddState('new')}
+                onImport={() => setShowImportWizard(true)}
+                onSync={handleGlobalSync}
+                hasActiveConnections={hasActiveConnections}
+                syncState={syncState}
+                isEmptyMonth={(!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0)}
+                onNavigateBank={() => navigate('/BankSync')}
+              />
+              <div className="relative flex-1 min-h-[500px]">
               <div className="absolute inset-0">
                 <ActivityHub
                   recurringWithStatus={recurringWithStatus}
