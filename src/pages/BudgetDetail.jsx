@@ -496,7 +496,7 @@ export default function BudgetDetail() {
                       <Receipt className="w-4 h-4" />
                       <span className="text-xs font-semibold uppercase tracking-wider">Payments</span>
                     </div>
-                    <p className="text-sm font-bold text-success">{formatCurrency(stats?.spent || 0, settings)} <span className="text-[10px] font-normal text-muted-foreground">Paid</span></p>
+                    <p className="text-sm font-bold text-success">{formatCurrency(stats?.spent || 0, settings)} <span className="text-[10px] font-normal text-muted-foreground">Total Paid</span></p>
                     {stats?.unpaidAmount > 0 && (
                       <p className="text-[10px] font-bold text-warning flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
