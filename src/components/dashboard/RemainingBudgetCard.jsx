@@ -549,15 +549,15 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
   }, [currentMonthIncome, selectedMonth, selectedYear]);
 
   const getStatusStyles = (used, limit, type) => {
-    if (!limit || limit === 0) return "text-foreground font-medium";
+    if (!limit || limit === 0) return "font-medium";
     const ratio = used / limit;
-    if (ratio > 1) return "text-destructive font-extrabold flex items-center justify-center gap-1 animate-pulse shadow-sm drop-shadow-md";
+    if (ratio > 1) return "font-black flex items-center justify-center gap-1 animate-pulse drop-shadow-sm";
 
     if (type === 'wants' && ratio > 0.90) {
-      if (isCurrentMonth && isEndOfMonth) return "text-foreground font-medium";
-      return "text-[hsl(var(--stat-balance-neg-text))] font-bold flex items-center justify-center gap-1 drop-shadow-md";
+      if (isCurrentMonth && isEndOfMonth) return "font-medium";
+      return "font-bold flex items-center justify-center gap-1 drop-shadow-sm";
     }
-    return "text-foreground font-medium";
+    return "font-medium";
   };
 
   // --- RENDER: UNIFIED BAR (Handles both Simple & Detailed via internal sizing) ---
@@ -717,9 +717,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             />
 
             {/* SIMPLE VIEW LABEL OVERLAY */}
-            <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 text-[hsl(var(--primary-foreground))] drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
               <div className={`flex items-center justify-center ${getStatusStyles(needsTotal, needsLimit, 'needs')}`}>
-                {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1" />}
+                {needsTotal > needsLimit && <AlertCircle className="w-3 h-3 inline mr-1 text-[hsl(var(--destructive))]" />}
                 <TextSwap>
                   {/* Show Amount and % instead of Label */}
                   <span className="font-bold">{formatCurrency(needsTotal, settings)}</span>
@@ -802,9 +802,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
               direction="center"
             />
 
-            <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`absolute inset-0 flex items-center justify-center text-xs sm:text-sm z-10 pointer-events-none transition-opacity duration-300 text-[hsl(var(--primary-foreground))] drop-shadow-sm ${isSimpleView ? 'opacity-100' : 'opacity-0'}`}>
               <div className={`flex items-center justify-center ${getStatusStyles(wantsTotal, wantsLimit, 'wants')}`}>
-                {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-current" />}
+                {(wantsTotal / wantsLimit) > 0.9 && !(isCurrentMonth && isEndOfMonth && (wantsTotal / wantsLimit) <= 1) && <Zap className="w-3 h-3 inline mr-1 fill-[hsl(var(--warning))] text-[hsl(var(--warning))]" />}
                 <TextSwap>
                   <span className="font-bold">{formatCurrency(wantsTotal, settings)}</span>
                   <span className="opacity-90 ml-1 font-normal">({wantsLabel})</span>
