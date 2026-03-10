@@ -1,10 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { differenceInCalendarDays } from 'date-fns';
 import { normalizeToMidnight } from '../utils/dateUtils';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { QUERY_KEYS } from "./queryKeys";
 
 // CONFIG: 1000 XP per level
 const XP_PER_LEVEL = 1000;
@@ -23,7 +24,7 @@ export const useGamification = () => {
    */
   // FIXED 10-Mar-2026: Replaced non-standard base44.eval/create with correct SDK methods
   const { data: userExp, isLoading } = useQuery({
-    queryKey: ['userExp', user?.email],
+    queryKey: [QUERY_KEYS.USER_EXP, user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
 
@@ -45,7 +46,8 @@ export const useGamification = () => {
       return newRecord;
     },
     enabled: !!user?.email,
-    staleTime: 1000 * 60 * 10, // CHANGED 10-Mar-2026: 10 mins (was 5)
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60 * 10,
   });
 
   /**
@@ -81,7 +83,7 @@ export const useGamification = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['userExp', user?.email]);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_EXP, user?.email] });
     }
   });
 
@@ -138,7 +140,7 @@ export const useGamification = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['userExp', user?.email]);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_EXP, user?.email] });
     }
   });
 
