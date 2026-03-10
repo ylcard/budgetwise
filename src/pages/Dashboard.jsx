@@ -377,6 +377,21 @@ export default function Dashboard() {
   // Combine loading states. The dashboard summary relies heavily on transactions and categories.
   const isLoading = transactionsLoading || categoriesLoading || recurringLoading;
 
+  // ADDED 10-Mar-2026: Push budget health into Layout-level HealthProvider context
+  // so the mascot (Casper) can use it without HealthProvider fetching its own data.
+  const { setBudgetHealth } = useHealth();
+  useEffect(() => {
+    if (!currentMonthIncome || currentMonthIncome === 0) {
+      setBudgetHealth(0.5);
+      return;
+    }
+    const spendRatio = currentMonthExpenses / currentMonthIncome;
+    if (spendRatio >= 1.0) setBudgetHealth(0.1);
+    else if (spendRatio >= 0.90) setBudgetHealth(0.3);
+    else if (spendRatio >= 0.70) setBudgetHealth(0.6);
+    else setBudgetHealth(1.0);
+  }, [currentMonthIncome, currentMonthExpenses, setBudgetHealth]);
+
   // --- MOCK DATA FOR TUTORIAL ---
   const isDashboardTutorial = activeTutorial?.id === TUTORIAL_IDS.DASHBOARD_OVERVIEW;
 
