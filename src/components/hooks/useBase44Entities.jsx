@@ -6,7 +6,7 @@ import { getMonthlyIncome, getHistoricalAverageIncome } from "../utils/financial
 import { ensureSystemBudgetsExist, snapshotFutureBudgets } from "../utils/budgetInitialization";
 import { useSettings } from "../utils/SettingsContext";
 import { DEFAULT_SYSTEM_GOALS } from "../utils/constants";
-import { showToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { fetchWithRetry } from "../utils/generalUtils";
 import { formatDateString, subDays, normalizeToMidnight } from "../utils/dateUtils";
 
@@ -23,7 +23,10 @@ export const useSystemActions = (user) => {
     if (!user?.email || !settings) return;
 
     try {
-      showToast({ title: "Initializing...", description: "Setting up your 50/30/20 budget..." });
+      toast("Initializing...", {
+        description: "Setting up your 50/30/20 budget...",
+        duration: 3000
+      });
 
       // 0. SERVER-SIDE SAFETY CHECK
       // We fetch specific data for THIS user to prevent duplicates regardless of UI state
@@ -57,16 +60,13 @@ export const useSystemActions = (user) => {
       // 2. Refresh everything
       await queryClient.invalidateQueries();
 
-      showToast({
-        title: "Defaults Created",
+      toast.success("Defaults Created", {
         description: `Created ${goalsToCreate.length} goals.`,
       });
     } catch (error) {
       console.error("Initialization Failed:", error);
-      showToast({
-        title: "Setup Failed",
+      toast.error("Setup Failed", {
         description: "We couldn't initialize your defaults. Please try again.",
-        variant: "destructive"
       });
     }
   };
