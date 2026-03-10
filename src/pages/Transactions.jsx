@@ -2,8 +2,6 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-// REMOVED 10-Mar-2026: showToast from use-toast replaced with sonner
-// import { showToast } from "@/components/ui/use-toast";
 import { toast } from "sonner";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { PullToRefresh } from "../components/ui/PullToRefresh";
