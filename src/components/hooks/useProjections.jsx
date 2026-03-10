@@ -28,6 +28,8 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
   }, []);
 
   // 2. Fetch Historical Data quietly in the background
+  // NOTE: This uses useTransactions which has staleTime of 5 mins.
+  // The date range is static (always last 6 months), so TanStack Query deduplicates well.
   const { transactions: historyTxns, isLoading: isLoadingHistory } = useTransactions(historyStart, historyEnd);
 
   // 3. Process Projections and Chart Data
