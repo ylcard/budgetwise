@@ -165,7 +165,7 @@ export default function Dashboard() {
     systemBudgets,
     categories,
     settings,
-    transactions // CHANGED 10-Mar-2026: Reuse main transaction list instead of separate historical fetch
+    allTransactions // CHANGED 10-Mar-2026: Pass wide-window data for historical income projections
   );
 
   const { detailedBreakdown } = useMonthlyBreakdown(
