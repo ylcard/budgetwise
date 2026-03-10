@@ -177,12 +177,27 @@ export default function Dashboard() {
     selectedYear
   );
 
-  const { activeCustomBudgets } = useActiveBudgets(
+  const { activeCustomBudgets: rawActiveCustomBudgets } = useActiveBudgets(
     allCustomBudgets,
     allSystemBudgets,
     selectedMonth,
     selectedYear
   );
+
+  // ADDED 10-Mar-2026: Enrich active custom budgets with calculated stats from existing transactions.
+  // Previously done by useEnrichedCustomBudgets (which made its own DB call). Now uses allTransactions.
+  const activeCustomBudgets = useMemo(() => {
+    return rawActiveCustomBudgets.map(budget => {
+      const stats = getCustomBudgetStats(budget, allTransactions);
+      return {
+        ...budget,
+        calculatedPaid: stats?.paid?.totalBaseCurrencyAmount ?? 0,
+        calculatedUnpaid: stats?.unpaid?.totalBaseCurrencyAmount ?? 0,
+        calculatedTotal: budget.allocatedAmount || budget.budgetAmount || 0,
+        rawStats: stats
+      };
+    });
+  }, [rawActiveCustomBudgets, allTransactions]);
 
   // UPDATED 10-Mar-2026: Aligned with new getSystemBudgetStats signature
   const systemBudgetsData = useMemo(() => {
