@@ -251,7 +251,7 @@ export default function Dashboard() {
   // --- BANK SYNC LOGIC ---
   const [syncState, setSyncState] = useState('idle');
   const { data: connections = [] } = useQuery({
-    queryKey: ['bankConnections'],
+    queryKey: [QUERY_KEYS.BANK_CONNECTIONS],
     queryFn: () => base44.entities.BankConnection.list(),
     staleTime: 1000 * 60 * 15, // CHANGED 10-Mar-2026: 15 mins (was 5) — bank connections rarely change
   });
