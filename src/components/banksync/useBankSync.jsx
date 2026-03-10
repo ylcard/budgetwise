@@ -16,6 +16,7 @@ import {
   formatDate,
   normalizeToMidnight
 } from "../utils/dateUtils";
+import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 
 /**
  * @param {Object} user The current authenticated user object.
@@ -100,13 +101,14 @@ export function useBankSync(user) {
           description: `Successfully imported ${totalImported} new transactions.`,
         });
 
-        queryClient.invalidateQueries({ queryKey: ['transactions'] });
-        queryClient.invalidateQueries({ queryKey: ['bankConnections'] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.NOTIFICATIONS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BANK_CONNECTIONS] });
       } else {
         toast("No new transactions", {
           description: "All transactions are up to date."
         });
-        queryClient.invalidateQueries({ queryKey: ['bankConnections'] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BANK_CONNECTIONS] });
       }
     } catch (error) {
       toast.error("Sync failed", {
