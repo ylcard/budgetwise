@@ -185,7 +185,7 @@ export const useTransactionActions = (options = {}) => {
         lastProcessedDate: transaction.date
       }));
 
-      queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.RECURRING_TRANSACTIONS] });
       toast.success(`Linked to ${template.title}`);
     } catch (error) {
       console.error("Match confirmation failed:", error);
@@ -382,7 +382,7 @@ export const useCustomBudgetActions = (config = {}) => {
   // UPDATE: Use generic hook with cash allocation change handling
   const updateMutation = useUpdateEntity({
     entityName: 'CustomBudget',
-    queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, ['budget'], ['allBudgets']],
+    queryKeysToInvalidate: [QUERY_KEYS.CUSTOM_BUDGETS, QUERY_KEYS.ALL_BUDGETS],
     onBeforeUpdate: async ({ id, data }) => {
       const existingBudget = await fetchWithRetry(() => base44.entities.CustomBudget.get(id));
       if (!existingBudget) {
