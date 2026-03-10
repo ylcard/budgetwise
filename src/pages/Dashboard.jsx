@@ -521,6 +521,7 @@ export default function Dashboard() {
               <div data-tutorial="custom-budgets" className="w-full">
                 <CustomBudgetsDisplay
                   onCreateBudget={() => setShowQuickAddBudget(true)}
+                  budgets={activeCustomBudgets}
                 />
               </div>
             </div>
