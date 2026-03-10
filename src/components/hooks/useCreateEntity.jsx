@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { showToast } from "@/components/ui/use-toast";
+// REMOVED 10-Mar-2026: showToast from use-toast replaced with sonner
+// import { showToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { fetchWithRetry } from "../utils/generalUtils";
 
 /**
@@ -81,10 +83,7 @@ export const useCreateEntity = ({
 
       // Show success toast notification
       if (showToasts) {
-        showToast({
-          title: "Success",
-          description: successMessage || `${entityName} created successfully`,
-        });
+        toast.success(successMessage || `${entityName} created successfully`);
       }
     },
     onError: (error, variables, context) => {
@@ -97,11 +96,7 @@ export const useCreateEntity = ({
 
       // Show error toast notification
       if (showToasts) {
-        showToast({
-          title: "Error",
-          description: error?.message || `Failed to create ${entityName}. Please try again.`,
-          variant: "destructive",
-        });
+        toast.error(error?.message || `Failed to create ${entityName}. Please try again.`);
       }
     },
   });

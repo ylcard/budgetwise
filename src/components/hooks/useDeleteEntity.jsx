@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
-import { showToast } from "@/components/ui/use-toast";
+// REMOVED 10-Mar-2026: showToast from use-toast replaced with sonner
+// import { showToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { fetchWithRetry } from "../utils/generalUtils";
 
 /**
@@ -151,10 +153,7 @@ export const useDeleteEntity = ({
 
       // Show success toast notification
       if (showToasts) {
-        showToast({
-          title: "Success",
-          description: count > 1 ? `${count} ${entityName}s deleted successfully` : `${entityName} deleted successfully`,
-        });
+        toast.success(count > 1 ? `${count} ${entityName}s deleted successfully` : `${entityName} deleted successfully`);
       }
     },
     onError: (error, variables, context) => {
@@ -168,11 +167,7 @@ export const useDeleteEntity = ({
 
       // Show error toast notification
       if (showToasts) {
-        showToast({
-          title: "Error",
-          description: error?.message || `Failed to delete ${entityName}. Please try again.`,
-          variant: "destructive",
-        });
+        toast.error(error?.message || `Failed to delete ${entityName}. Please try again.`);
       }
     },
   });
