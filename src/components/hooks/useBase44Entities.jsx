@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./queryKeys";
 import { getMonthlyIncome, getHistoricalAverageIncome } from "../utils/financialCalculations";
 import { ensureSystemBudgetsExist, snapshotFutureBudgets } from "../utils/budgetInitialization";
@@ -95,7 +95,7 @@ export const useTransactions = (startDate = null, endDate = null) => {
       }
       return await fetchWithRetry(() => base44.entities.Transaction.list('-date', 500));
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -153,7 +153,7 @@ export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = nu
         200
       ));
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
@@ -181,7 +181,7 @@ export const useTransactionsForCustomBudgets = (customBudgetIds = [], monthStart
       }
       return await fetchWithRetry(() => base44.entities.Transaction.filter(filter));
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     enabled: customBudgetIds && customBudgetIds.length > 0,
     staleTime: 1000 * 60 * 5,
   });
@@ -202,7 +202,7 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
         200
       ));
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
@@ -230,7 +230,7 @@ export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
         200
       ));
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
