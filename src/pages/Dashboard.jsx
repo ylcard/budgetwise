@@ -30,7 +30,7 @@ import {
   useTransactionActions,
   useCustomBudgetActions,
 } from "../components/hooks/useActions";
-import { getSystemBudgetStats } from "../components/utils/financialCalculations";
+import { getSystemBudgetStats, getCustomBudgetStats } from "../components/utils/financialCalculations";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
 import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard";
