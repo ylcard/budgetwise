@@ -110,35 +110,26 @@ export const useTransactionWindow = (selectedMonth, selectedYear) => {
     [anchorMonth, anchorYear]
   );
 
-  // Determine if we need to shift the anchor (selected month is outside cached window)
-  // We calculate this OUTSIDE the query to decide whether to update the anchor state
-  const selectedMonthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
-  const selectedMonthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
-
   // Check if the selected month is covered by the current window
-  const isCovered = useMemo(
-    () => isMonthCovered(selectedMonth, selectedYear, windowStart, windowEnd),
-    [selectedMonth, selectedYear, windowStart, windowEnd]
-  );
+  const isCovered = isMonthCovered(selectedMonth, selectedYear, windowStart, windowEnd);
 
   // If not covered, shift the anchor. This will trigger a new query.
-  // Using a ref to track the "pending shift" to avoid render loops.
-  const shiftScheduled = useRef(false);
+  // useEffect ensures this runs AFTER render, avoiding setState-during-render errors.
+  const pendingShift = useRef(null);
 
-  if (!isCovered && !shiftScheduled.current) {
-    shiftScheduled.current = true;
-    // Schedule anchor update for next tick to avoid setState-during-render
-    Promise.resolve().then(() => {
-      // When user moves FORWARD past the window end, anchor on the selected month
-      // When user moves BACKWARD past the window start, anchor on the selected month
-      // In both cases, the new window will be [selectedMonth - 6 ... selectedMonth]
-      setAnchorMonth(selectedMonth);
-      setAnchorYear(selectedYear);
-      shiftScheduled.current = false;
-    });
-  } else if (isCovered) {
-    shiftScheduled.current = false;
+  if (!isCovered) {
+    // Store the intended shift so the effect can apply it
+    pendingShift.current = { month: selectedMonth, year: selectedYear };
   }
+
+  useEffect(() => {
+    if (pendingShift.current) {
+      const { month, year } = pendingShift.current;
+      pendingShift.current = null;
+      setAnchorMonth(month);
+      setAnchorYear(year);
+    }
+  });
 
   // Single wide-window fetch
   const { data: allTransactions = [], isLoading, error } = useQuery({
@@ -155,6 +146,10 @@ export const useTransactionWindow = (selectedMonth, selectedYear) => {
     keepPreviousData: true,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // Compute the selected month boundaries for filtering
+  const selectedMonthStart = getFirstDayOfMonth(selectedMonth, selectedYear);
+  const selectedMonthEnd = getLastDayOfMonth(selectedMonth, selectedYear);
 
   // Filter transactions for the selected period (with settlement buffer for late-paid items)
   const periodTransactions = useMemo(() => {
