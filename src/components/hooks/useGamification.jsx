@@ -21,22 +21,21 @@ export const useGamification = () => {
    * 1. Fetch User Experience Data
    * Uses TanStack Query to cache user stats.
    */
+  // FIXED 10-Mar-2026: Replaced non-standard base44.eval/create with correct SDK methods
   const { data: userExp, isLoading } = useQuery({
     queryKey: ['userExp', user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
 
-      // Try to find existing record
-      const records = await base44.eval('UserExp', {
-        filter: { user_email: { _eq: user.email } }
-      });
+      // Try to find existing record using standard SDK filter
+      const records = await base44.entities.UserExp.filter({ user_email: user.email });
 
       if (records && records.length > 0) {
         return records[0];
       }
 
       // Create default record if new user (Seed Logic)
-      const newRecord = await base44.create('UserExp', {
+      const newRecord = await base44.entities.UserExp.create({
         user_email: user.email,
         total_exp: 0,
         current_streak: 0,
@@ -46,7 +45,7 @@ export const useGamification = () => {
       return newRecord;
     },
     enabled: !!user?.email,
-    staleTime: 1000 * 60 * 5, // 5 mins
+    staleTime: 1000 * 60 * 10, // CHANGED 10-Mar-2026: 10 mins (was 5)
   });
 
   /**
@@ -76,7 +75,8 @@ export const useGamification = () => {
         });
       }
 
-      return await base44.update('UserExp', userExp.id, {
+      // FIXED 10-Mar-2026: Use standard SDK method
+      return await base44.entities.UserExp.update(userExp.id, {
         total_exp: newTotal
       });
     },
@@ -126,7 +126,8 @@ export const useGamification = () => {
         description = "Try to stick to your budget tomorrow!";
       }
 
-      await base44.update('UserExp', userExp.id, {
+      // FIXED 10-Mar-2026: Use standard SDK method
+      await base44.entities.UserExp.update(userExp.id, {
         current_streak: newStreak,
         total_exp: (userExp.total_exp || 0) + xpGain,
         last_reward: new Date().toISOString() // Save actual timestamp for audit, calculation uses normalized
