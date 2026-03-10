@@ -49,7 +49,7 @@ import { formatDateString, getFirstDayOfMonth } from "../components/utils/dateUt
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { WrappedStory } from "../components/dashboard/WrappedStory";
-import { HealthProvider } from "../components/utils/HealthContext";
+import { HealthProvider, useHealth } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
 import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
