@@ -453,6 +453,7 @@ export default function Dashboard() {
                     settings={settings}
                     monthStatus={monthStatus}
                     healthData={healthData}
+                    goals={goals}
                     isLoading={isLoading}
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
