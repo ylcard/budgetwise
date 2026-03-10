@@ -132,9 +132,10 @@ export default function Dashboard() {
   const { allSystemBudgets } = useSystemBudgetsAll(user, monthStart, monthEnd);
   const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
-  // Fetch specific history for the projection engine
-  // This ensures we have the full 6-month context, not just the current view's buffer
-  const { incomeTransactions: historicalIncome } = useHistoricalIncomeTransactions(user);
+  // REMOVED 10-Mar-2026: useHistoricalIncomeTransactions was a separate DB call
+  // The projection engine and dashboard summary now use the main transactions list
+  // which already fetches with a 30-day buffer via useTransactions.
+  // const { incomeTransactions: historicalIncome } = useHistoricalIncomeTransactions(user);
 
   const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
@@ -146,7 +147,7 @@ export default function Dashboard() {
     systemBudgets,
     categories,
     settings,
-    historicalIncome // Pass the full history
+    transactions // CHANGED 10-Mar-2026: Reuse main transaction list instead of separate historical fetch
   );
 
   const { detailedBreakdown } = useMonthlyBreakdown(
