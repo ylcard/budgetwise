@@ -25,14 +25,13 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { showToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import TutorialSettings from "../components/tutorial/TutorialSettings";
 
 // Utils & Hooks
 import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm } from "../components/hooks/useActions";
 import { formatCurrency } from "../components/utils/currencyUtils";
-import { SETTINGS_KEYS } from "../components/utils/constants";
 import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
@@ -229,7 +228,7 @@ export function PreferencesSection() {
           <CustomButton
             onClick={() => {
               reset(settings);
-              showToast({ title: "Discarded", description: "Changes reverted." });
+              toast.success("Discarded", { description: "Changes reverted." });
             }}
             variant="ghost"
             size="sm"
@@ -322,7 +321,7 @@ export function AccountSection() {
       const userEmail = user?.email;
       if (!userEmail) throw new Error("No user email found");
 
-      showToast({ title: "Deleting...", description: "Removing all your data...", variant: "destructive" });
+      toast.error("Deleting...", { description: "Removing all your data..." });
 
       // Delete user's data from all entities
       await Promise.all([
@@ -341,10 +340,9 @@ export function AccountSection() {
       ]);
 
       // Note: Actual user account deletion from auth system would need a backend function
-      showToast({
-        title: "Data Deleted",
+      toast.error("Data Deleted", {
         description: "All your data has been removed. Logging out...",
-        variant: "destructive"
+        duration: 2000
       });
 
       setTimeout(() => {
@@ -352,10 +350,8 @@ export function AccountSection() {
       }, 1500);
     } catch (error) {
       console.error("Deletion failed:", error);
-      showToast({
-        title: "Error",
-        description: "Failed to delete account data. Please contact support.",
-        variant: "destructive"
+      toast.error("Error", {
+        description: "Failed to delete account data. Please contact support."
       });
     }
   };
@@ -369,9 +365,9 @@ export function AccountSection() {
     setIsSaving(true);
     try {
       await updateSettings({ displayName: localName });
-      showToast({ title: "Profile Updated", description: "Your display name has been saved." });
+      toast.success("Profile Updated", { description: "Your display name has been saved." });
     } catch (err) {
-      showToast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
+      toast.error("Error", { description: "Failed to update profile." });
     } finally {
       setIsSaving(false);
     }
@@ -379,17 +375,17 @@ export function AccountSection() {
 
   const handleUpdateFullName = async () => {
     if (!localName.trim()) {
-      showToast({ title: "Error", description: "Name cannot be empty", variant: "destructive" });
+      toast.error("Error", { description: "Name cannot be empty" });
       return;
     }
 
     setIsSaving(true);
     try {
       await base44.auth.updateMe({ full_name: localName.trim() });
-      showToast({ title: "Name Updated", description: "Your full name has been changed." });
+      toast.success("Name Updated", { description: "Your full name has been changed." });
     } catch (err) {
       console.error(err);
-      showToast({ title: "Error", description: "Failed to update name.", variant: "destructive" });
+      toast.error("Error", { description: "Failed to update name." });
     } finally {
       setIsSaving(false);
     }
@@ -397,20 +393,18 @@ export function AccountSection() {
 
   const handleChangeEmail = async () => {
     if (!newEmail.trim() || !currentPassword.trim()) {
-      showToast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
+      toast.error("Error", { description: "Please fill all fields" });
       return;
     }
 
     setIsSaving(true);
     try {
       // This would require a backend function to update email in auth system
-      showToast({
-        title: "Not Implemented",
-        description: "Email change requires backend support. Contact administrator.",
-        variant: "destructive"
+      toast.error("Not Implemented", {
+        description: "Email change requires backend support. Contact administrator."
       });
     } catch (err) {
-      showToast({ title: "Error", description: err.message, variant: "destructive" });
+      toast.error("Error", { description: err.message });
     } finally {
       setIsSaving(false);
       setIsChangingEmail(false);
@@ -421,30 +415,28 @@ export function AccountSection() {
 
   const handleChangePassword = async () => {
     if (!currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-      showToast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
+      toast.error("Error", { description: "Please fill all fields" });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast({ title: "Error", description: "New passwords don't match", variant: "destructive" });
+      toast.error("Error", { description: "New passwords don't match" });
       return;
     }
 
     if (newPassword.length < 8) {
-      showToast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
+      toast.error("Error", { description: "Password must be at least 8 characters" });
       return;
     }
 
     setIsSaving(true);
     try {
       // This would require a backend function to update password in auth system
-      showToast({
-        title: "Not Implemented",
-        description: "Password change requires backend support. Contact administrator.",
-        variant: "destructive"
+      toast.error("Not Implemented", {
+        description: "Password change requires backend support. Contact administrator."
       });
     } catch (err) {
-      showToast({ title: "Error", description: err.message, variant: "destructive" });
+      toast.error("Error", { description: err.message });
     } finally {
       setIsSaving(false);
       setIsChangingPassword(false);
@@ -544,7 +536,7 @@ export function AccountSection() {
           `budgetwise-data-${formatDateString(new Date())}.json`,
           'application/json'
         );
-        showToast({ title: "Export Complete", description: "JSON data downloaded successfully." });
+        toast.success("Export Complete", { description: "JSON data downloaded successfully." });
       } else if (fileFormat === 'csv') {
         // Export each entity type as separate CSV
         const csvFiles = [];
@@ -568,14 +560,13 @@ export function AccountSection() {
             `budgetwise-${mainFile.name}-${formatDateString(new Date())}.csv`,
             'text/csv'
           );
-          showToast({
-            title: "CSV Export Complete",
-            description: `Downloaded ${mainFile.name}.csv. Other entities available in JSON format.`
+          toast.success("CSV Export Complete", {
+            description: `Downloaded ${mainFile.name}.csv.`
           });
         }
       } else if (fileFormat === 'pdf') {
         // Call backend function to generate PDF
-        showToast({ title: "Generating PDF", description: "Creating your report..." });
+        toast("Generating PDF", { description: "Creating your report..." });
 
         const response = await base44.functions.invoke('generatePdfReport', {
           template: pdfTemplate,
@@ -598,20 +589,20 @@ export function AccountSection() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        showToast({ title: "PDF Export Complete", description: "Your report has been downloaded." });
+        toast.success("PDF Export Complete", { description: "Your report has been downloaded." });
       }
 
       setShowExportDialog(false);
     } catch (error) {
       console.error("Export failed:", error);
-      showToast({ title: "Error", description: "Failed to export data.", variant: "destructive" });
+      toast.error("Error", { description: "Failed to export data." });
     } finally {
       setIsExporting(false);
     }
   };
 
   const handleLogout = () => {
-    showToast({ title: "Logging out", description: "Securely ending your session..." });
+    toast("Logging out", { description: "Securely ending your session..." });
     logout();
   };
 
