@@ -32,6 +32,7 @@ import {
   normalizeToMidnight,
 } from "../utils/dateUtils";
 
+
 /** Number of historical months to prefetch (excluding the selected month itself) */
 const PREFETCH_MONTHS_BACK = 6;
 
