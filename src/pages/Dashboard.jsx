@@ -516,21 +516,25 @@ export default function Dashboard() {
 
             {/* RIGHT COLUMN: Quick Actions + Activity Hub (Sidebar) */}
             <div className="hidden lg:flex lg:flex-col lg:col-span-4 gap-4 min-w-0 max-w-full" data-tutorial="activity-hub">
-              <QuickActions
-                onAddIncome={() => setQuickAddIncomeState('new')}
-                onAddExpense={() => setQuickAddState('new')}
-                onImport={() => setShowImportWizard(true)}
-                onSync={handleGlobalSync}
-                hasActiveConnections={hasActiveConnections}
-                syncState={syncState}
-                isEmptyMonth={(!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0)}
-                onNavigateBank={() => navigate('/BankSync')}
-              />
               <div
-                className="relative overflow-hidden"
+                className="flex flex-col justify-center"
                 style={{ height: velocityHeight > 0 ? velocityHeight : 'auto' }}
               >
-                <div className="absolute inset-0 w-full h-full">
+                <QuickActions
+                  onAddIncome={() => setQuickAddIncomeState('new')}
+                  onAddExpense={() => setQuickAddState('new')}
+                  onImport={() => setShowImportWizard(true)}
+                  onSync={handleGlobalSync}
+                  hasActiveConnections={hasActiveConnections}
+                  syncState={syncState}
+                  isEmptyMonth={(!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0)}
+                  onNavigateBank={() => navigate('/BankSync')}
+                />
+              </div>
+
+              <div className="relative flex-1 min-h-[400px]">
+                <div className="absolute inset-0">
+
                   <ActivityHub
                     recurringWithStatus={recurringWithStatus}
                     onMarkPaid={handleMarkPaid}
