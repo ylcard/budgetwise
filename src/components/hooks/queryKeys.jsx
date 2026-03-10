@@ -21,4 +21,5 @@ export const QUERY_KEYS = {
     NEEDS_REVIEW: 'needsReview',
     BUDGET: 'budget', // For the specific detail view
     ALL_CUSTOM_BUDGETS: 'allCustomBudgets', // For the heavy lookup fetch
+    RULE_CANDIDATES: 'ruleCandidates',
 };
