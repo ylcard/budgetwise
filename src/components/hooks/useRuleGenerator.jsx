@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useSettings } from "@/components/utils/SettingsContext";
-import { showToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { QUERY_KEYS } from "./queryKeys";
 import { fetchWithRetry } from "../utils/generalUtils";
 import { formatDateString, normalizeToMidnight } from "../utils/dateUtils";
@@ -304,12 +304,12 @@ export function useRuleGenerator() {
     },
     onSuccess: ({ count }) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORY_RULES] });
-      showToast({ title: "Rules Created", description: `${count} rules saved.` });
+      toast.success("Rules Created", { description: `${count} rules saved.` });
       setIsOpen(false);
       setCandidates([]);
     },
     onError: (error) => {
-      showToast({ title: "Error", description: error?.message, variant: "destructive" });
+      toast.error("Error", { description: error?.message });
     },
   });
 
