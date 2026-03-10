@@ -51,7 +51,9 @@ import { formatDateString, getFirstDayOfMonth } from "../components/utils/dateUt
 import { VelocityWidget } from "../components/ui/VelocityWidget";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { WrappedStory } from "../components/dashboard/WrappedStory";
-import { HealthProvider, useHealth } from "../components/utils/HealthContext";
+// REMOVED 10-Mar-2026: HealthProvider no longer needed — Layout already provides it
+// import { HealthProvider, useHealth } from "../components/utils/HealthContext";
+import { useHealth } from "../components/utils/HealthContext";
 import { useMonthlyRewindTrigger } from "../components/hooks/useMonthlyRewindTrigger";
 import { useProjections } from "../components/hooks/useProjections";
 import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
