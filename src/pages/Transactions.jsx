@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { showToast } from "@/components/ui/use-toast";
+// REMOVED 10-Mar-2026: showToast from use-toast replaced with sonner
+// import { showToast } from "@/components/ui/use-toast";
 import { toast } from "sonner";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { PullToRefresh } from "../components/ui/PullToRefresh";
@@ -336,12 +337,12 @@ export function TransactionHistory({
                     // Wrap in retry logic just in case
                     await fetchWithRetry(() => base44.entities.Transaction.deleteMany({ id: { $in: chunk } }));
                 }
-                showToast({ title: "Success", description: `Deleted ${selectedIds.size} transactions.` });
+                toast.success(`Deleted ${selectedIds.size} transactions.`);
                 setSelectedIds(new Set());
             } catch (e) {
                 // 2. Rollback on ultimate failure
                 previousQueries.forEach(([queryKey, oldData]) => queryClient.setQueryData(queryKey, oldData));
-                showToast({ title: "Error", description: "Failed to delete. Reverting.", variant: "destructive" });
+                toast.error("Failed to delete. Reverting.");
             } finally {
                 setIsBulkDeleting(false);
                 queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] }); // Resync with truth
@@ -373,13 +374,13 @@ export function TransactionHistory({
                 await new Promise(r => setTimeout(r, 200));
             }
 
-            showToast({ title: "Success", description: `Updated ${selectedIds.size} transactions.` });
+            toast.success(`Updated ${selectedIds.size} transactions.`);
             setSelectedIds(new Set()); // Clear selection
             setShowMassEdit(false);
         } catch (e) {
             // 3. Rollback on ultimate failure
             previousQueries.forEach(([queryKey, oldData]) => queryClient.setQueryData(queryKey, oldData));
-            showToast({ title: "Update Failed", description: "Could not update some transactions. Reverting.", variant: "destructive" });
+            toast.error("Could not update some transactions. Reverting.");
         } finally {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] }); // Resync with truth
         }

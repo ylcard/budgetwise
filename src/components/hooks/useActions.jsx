@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { showToast } from "@/components/ui/use-toast";
+// REMOVED 10-Mar-2026: showToast from use-toast replaced with sonner
+// import { showToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useCreateEntity } from "./useCreateEntity";
 import { useUpdateEntity } from "./useUpdateEntity";
 import { useDeleteEntity } from "./useDeleteEntity";
@@ -186,10 +188,10 @@ export const useTransactionActions = (options = {}) => {
       }));
 
       queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
-      showToast({ title: "Match Confirmed", description: `Linked to ${template.title}` });
+      toast.success(`Linked to ${template.title}`);
     } catch (error) {
       console.error("Match confirmation failed:", error);
-      showToast({ title: "Error", description: "Failed to confirm match.", variant: "destructive" });
+      toast.error("Failed to confirm match.");
     }
   };
 
@@ -601,17 +603,10 @@ export const useSettingsForm = (initialSettings, updateSettings) => {
       reset(data);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      showToast({
-        title: "Success",
-        description: "Settings saved successfully",
-      });
+      toast.success("Settings saved successfully");
     } catch (error) {
       console.error('Error saving settings:', error);
-      showToast({
-        title: "Error",
-        description: error?.message || "Failed to save settings. Please try again.",
-        variant: "destructive",
-      });
+      toast.error(error?.message || "Failed to save settings. Please try again.");
     }
   };
 
