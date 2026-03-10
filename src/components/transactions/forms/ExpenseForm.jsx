@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/components/hooks/queryKeys";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -12,7 +11,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertCircle, Check, ChevronsUpDown, Calendar, Banknote, StickyNote, Tag, Search, CheckCircle2, ShieldAlert, Camera } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 import AmountInput from "@/components/ui/AmountInput";
 import CategorySelect from "@/components/ui/CategorySelect";
@@ -253,7 +252,6 @@ export default function TransactionFormContent({
   const queryClient = useQueryClient();
   const { settings, user } = useSettings();
   const isAdmin = user?.role === 'admin';
-  const { toast } = useToast();
   const { confirmAction } = useConfirm();
   const { exchangeRates, refreshRates, isRefreshing, refetch, isLoading } = useExchangeRates();
   const { rules } = useCategoryRules(user);
@@ -527,16 +525,12 @@ export default function TransactionFormContent({
     );
 
     if (result.success) {
-      toast({
-        title: result.alreadyFresh ? "Rates Up to Date" : (result.skipped ? "Historical Rate Skipped" : "Success"),
+      toast.success(result.alreadyFresh ? "Rates Up to Date" : (result.skipped ? "Historical Rate Skipped" : "Success"), {
         description: result.message,
-        variant: result.skipped ? "warning" : "default"
       });
     } else {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: result.message,
-        variant: "destructive",
       });
     }
   };
@@ -604,7 +598,10 @@ export default function TransactionFormContent({
 
       // AUTO-FETCH ON SUBMIT: If rate is missing and not paid, try to fetch it now
       if ((!sourceRate || !targetRate) && !formData.isPaid) {
-        toast({ title: "Fetching Exchange Rates...", description: "Please wait while we update rates." });
+        toast("Fetching Exchange Rates...", {
+          description: "Please wait while we update rates.",
+          duration: 3000
+        });
 
         const result = await refreshRates(
           formData.originalCurrency,
@@ -718,9 +715,8 @@ export default function TransactionFormContent({
       amount: result.amount ? result.amount.toString() : prev.amount,
       // Optionally parse date if it's high confidence
     }));
-    toast({
-      title: "Receipt Scanned",
-      description: `Found ${result.title} for ${result.amount}`,
+    toast.success("Receipt Scanned", {
+      description: `Found ${result.title} for ${result.amount}`
     });
   };
 
