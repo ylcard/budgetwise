@@ -5,7 +5,7 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthStatus = 'current' }) => {
+export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthStatus = 'current', headerRef }) => {
   // --- STATE: Expansion (Persisted) ---
   const [isExpanded, setIsExpanded] = useState(() => {
     const saved = localStorage.getItem("velocity_widget_expanded");
@@ -119,6 +119,7 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
     >
       {/* Header / Trigger Area */}
       <div
+        ref={headerRef}
         onClick={() => {
           setIsExpanded(!isExpanded);
           setRotation(prev => prev - 180);
