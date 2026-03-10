@@ -1,9 +1,7 @@
-import { useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { showToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useConfirm } from "../ui/ConfirmDialogProvider";
-import { QUERY_KEYS } from "./queryKeys";
 import { calculateNextOccurrence } from "../utils/recurringUtils";
 import { fetchWithRetry } from "../utils/generalUtils";
 
@@ -45,11 +43,11 @@ export const useRecurringTransactionActions = (user) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
-      showToast({ title: "Success", description: "Recurring transaction created." });
+      toast.success("Recurring transaction created.");
     },
     onError: (error) => {
       console.error("Create recurring error:", error);
-      showToast({ title: "Error", description: "Failed to create recurring transaction.", variant: "destructive" });
+      toast.error("Failed to create recurring transaction.");
     },
   });
 
@@ -73,11 +71,11 @@ export const useRecurringTransactionActions = (user) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
-      showToast({ title: "Success", description: "Recurring transaction updated." });
+      toast.success("Recurring transaction updated.");
     },
     onError: (error) => {
       console.error("Update recurring error:", error);
-      showToast({ title: "Error", description: "Failed to update recurring transaction.", variant: "destructive" });
+      toast.error("Failed to update recurring transaction.");
     },
   });
 
@@ -86,11 +84,11 @@ export const useRecurringTransactionActions = (user) => {
     mutationFn: (id) => fetchWithRetry(() => base44.entities.RecurringTransaction.delete(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
-      showToast({ title: "Success", description: "Recurring transaction deleted." });
+      toast.success("Recurring transaction deleted.");
     },
     onError: (error) => {
       console.error("Delete recurring error:", error);
-      showToast({ title: "Error", description: "Failed to delete recurring transaction.", variant: "destructive" });
+      toast.error("Failed to delete recurring transaction.");
     },
   });
 
@@ -107,14 +105,11 @@ export const useRecurringTransactionActions = (user) => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
-      showToast({
-        title: "Success",
-        description: variables.isActive ? "Recurring transaction paused." : "Recurring transaction resumed.",
-      });
+      toast.success(variables.isActive ? "Recurring transaction paused." : "Recurring transaction resumed.");
     },
     onError: (error) => {
       console.error("Toggle recurring error:", error);
-      showToast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+      toast.error("Failed to update status.");
     },
   });
 
