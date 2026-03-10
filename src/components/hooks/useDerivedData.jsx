@@ -548,7 +548,8 @@ export const useBudgetBarsData = (
         targetPercentage = goal?.target_percentage || 0;
       }
 
-      const stats = getSystemBudgetStats(sb, transactions, categories, allCustomBudgets, startDate, endDate, monthlyIncome, settings, historicalAverage);
+      // UPDATED 10-Mar-2026: Aligned with new getSystemBudgetStats signature
+      const stats = getSystemBudgetStats(sb, transactions, startDate, endDate, allCustomBudgets);
 
       const maxHeight = Math.max(targetAmount, stats.totalSpent);
       const isOverBudget = stats.totalSpent > targetAmount;
