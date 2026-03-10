@@ -5,7 +5,7 @@ import { formatCurrency } from "../utils/currencyUtils";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthStatus = 'current', headerRef }) => {
+export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthStatus = 'current', targetHeight }) => {
   // --- STATE: Expansion (Persisted) ---
   const [isExpanded, setIsExpanded] = useState(() => {
     const saved = localStorage.getItem("velocity_widget_expanded");
@@ -118,13 +118,14 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
       )}
     >
       {/* Header / Trigger Area */}
-      <div
-        ref={headerRef}
+      <motion.div
+        animate={{ height: targetHeight > 0 ? targetHeight : 'auto' }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         onClick={() => {
           setIsExpanded(!isExpanded);
           setRotation(prev => prev - 180);
         }}
-        className="p-4 md:p-5 cursor-pointer flex flex-col relative z-10 group"
+        className="p-4 md:p-5 cursor-pointer flex flex-col justify-center relative z-10 group overflow-hidden"
       >
         {/* Background Glows (Subtle) */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-[hsl(var(--stat-income-bg))] dark:bg-[hsl(var(--stat-income-bg))] blur-[40px] rounded-full -z-10 transition-opacity duration-500" style={{ opacity: isExpanded ? 1 : 0.5 }} />
@@ -158,7 +159,7 @@ export const VelocityWidget = ({ chartData = [], totals = {}, settings, monthSta
             <ChevronDown size={20} />
           </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Expandable Chart Area */}
       <AnimatePresence>
