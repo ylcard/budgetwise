@@ -212,24 +212,33 @@ export const useSystemBudgetsAll = (user, monthStart = null, monthEnd = null) =>
   return { allSystemBudgets, isLoading };
 };
 
-// Hook for fetching system budgets for a specific period
+// UPDATED 10-Mar-2026: Fetch ALL user system budgets once, filter client-side.
+// Previously, every month navigation changed the query key and triggered a new DB call.
 export const useSystemBudgetsForPeriod = (user, monthStart, monthEnd) => {
-  const { data: systemBudgets = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, monthStart, monthEnd],
+  const { data: allUserSystemBudgets = [], isLoading } = useQuery({
+    queryKey: [QUERY_KEYS.SYSTEM_BUDGETS, user?.email],
     queryFn: async () => {
       if (!user) return [];
-      return await fetchWithRetry(() => base44.entities.SystemBudget.filter({
-        created_by: user.email,
-        startDate: monthStart,
-        endDate: monthEnd
-      }));
+      return await fetchWithRetry(() => base44.entities.SystemBudget.filter(
+        { created_by: user.email },
+        '-startDate',
+        200
+      ));
     },
     keepPreviousData: true,
-    enabled: !!user && !!monthStart && !!monthEnd,
+    enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
 
-  return { systemBudgets, isLoading };
+  // Client-side period filtering
+  const systemBudgets = useMemo(() => {
+    if (!monthStart || !monthEnd) return [];
+    return allUserSystemBudgets.filter(sb =>
+      sb.startDate === monthStart && sb.endDate === monthEnd
+    );
+  }, [allUserSystemBudgets, monthStart, monthEnd]);
+
+  return { systemBudgets, isLoading, allUserSystemBudgets };
 };
 
 // Hook for fetching allocations for a budget
