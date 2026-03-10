@@ -11,7 +11,8 @@ import {
   useTransactions,
   useGoals,
   useCustomBudgetsForPeriod,
-  useSystemBudgetsAll,
+  // REMOVED 10-Mar-2026: useSystemBudgetsAll - consolidated with useSystemBudgetsForPeriod
+  // useSystemBudgetsAll,
   useSystemBudgetsForPeriod,
   // REMOVED 10-Mar-2026: useHistoricalIncomeTransactions - consolidated into main transactions fetch
   // useHistoricalIncomeTransactions
