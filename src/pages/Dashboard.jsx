@@ -201,11 +201,20 @@ export default function Dashboard() {
   // --- RECURRING BILLS LOGIC ---
   const { recurringTransactions, isLoading: recurringLoading } = useRecurringTransactions(user);
 
-  // OPTIMIZED 10-Mar-2026: Removed separate useTransactions call for recurring status.
-  // The main `transactions` already includes a 30-day buffer (fetched with subDays(start, 30)),
-  // which covers the recent context needed for recurring bill matching.
-  // Previously this was a 2nd separate DB query contributing to 429 errors.
-  const recurringWithStatus = useRecurringStatus(recurringTransactions, transactions);
+  // FIXED 10-Mar-2026: Recurring status must ALWAYS be computed against the current real-life
+  // month's transactions, NOT the navigated period. Otherwise, navigating to a past month causes
+  // the Upcoming Transactions component to lose its payment matches and show items as "unpaid".
+  // We extract current-month transactions from the wide allTransactions window (client-side filter).
+  const realMonthTransactions = useMemo(() => {
+    const now = new Date();
+    const realStart = getFirstDayOfMonth(now.getMonth(), now.getFullYear());
+    // SETTLEMENT_BUFFER: Include 30 days before current month for late-paid matching
+    const bufferStart = formatDateString(subDays(new Date(now.getFullYear(), now.getMonth(), 1), 30));
+    const realEnd = getFirstDayOfMonth(now.getMonth() + 1 > 11 ? 0 : now.getMonth() + 1, now.getMonth() + 1 > 11 ? now.getFullYear() + 1 : now.getFullYear());
+    return allTransactions.filter(t => t.date && t.date >= bufferStart && t.date < realEnd);
+  }, [allTransactions]);
+
+  const recurringWithStatus = useRecurringStatus(recurringTransactions, realMonthTransactions);
 
   // --- TEMPORAL CONTEXT ---
   // Determine if we are looking at the past, present, or future
