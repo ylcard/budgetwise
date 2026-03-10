@@ -6,7 +6,7 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
-import { useToast } from "../components/ui/use-toast";
+import { toast } from "sonner";
 import BankConnectionCard from "../components/banksync/BankConnectionCard";
 import BulkReviewInbox from "../components/banksync/BulkReviewInbox";
 import {
@@ -37,7 +37,6 @@ import { useBankSync } from "../components/banksync/useBankSync";
  */
 export default function BankSync() {
   const { settings, user } = useSettings();
-  const { toast } = useToast();
   const { confirmAction } = useConfirm();
   const queryClient = useQueryClient();
   const { setFabButtons, clearFabButtons } = useFAB();
@@ -82,10 +81,8 @@ export default function BankSync() {
 
       window.location.href = response.data.authUrl;
     } catch (error) {
-      toast({
-        title: "Failed to start connection",
+      toast.error("Failed to start connection", {
         description: error.message,
-        variant: "destructive"
       });
     }
   }, [toast]);
@@ -107,10 +104,8 @@ export default function BankSync() {
       const errorDesc = urlParams.get('error_description');
 
       if (error) {
-        toast({
-          title: "Connection failed",
+        toast.error("Connection failed", {
           description: errorDesc || error,
-          variant: "destructive"
         });
         window.history.replaceState({}, '', '/BankSync');
         return;
@@ -124,10 +119,8 @@ export default function BankSync() {
         const storedProvider = sessionStorage.getItem('bank_sync_provider');
 
         if (state !== storedState) {
-          toast({
-            title: "Security error",
+          toast.error("Security error", {
             description: "Invalid state parameter",
-            variant: "destructive"
           });
           return;
         }
@@ -171,8 +164,7 @@ export default function BankSync() {
             // Immediately trigger first sync to populate account info
             executeSync(newConn, formatDateString(subDays(new Date(), 30)));
 
-            toast({
-              title: "Bank connected!",
+            toast.success("Bank connected!", {
               description: "Successfully connected via TrueLayer"
             });
           }
@@ -188,10 +180,8 @@ export default function BankSync() {
           // Reset lock on failure to allow retry if needed (optional)
           // processedRef.current = false;
 
-          toast({
-            title: "Failed to complete connection",
+          toast.error("Failed to complete connection", {
             description: error.message,
-            variant: "destructive"
           });
         }
       }
@@ -226,8 +216,7 @@ export default function BankSync() {
     mutationFn: (id) => base44.entities.BankConnection.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['bankConnections']);
-      toast({
-        title: "Connection removed",
+      toast.success("Connection removed", {
         description: "Bank connection has been deleted"
       });
     }
