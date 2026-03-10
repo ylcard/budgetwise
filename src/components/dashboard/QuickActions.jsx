@@ -42,7 +42,7 @@ const QuickActions = memo(function QuickActions({
       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5 px-0.5">
         Quick Actions
       </p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 text-center gap-2">
         {/* Add Income */}
         {isEmptyMonth ? (
           <motion.div
