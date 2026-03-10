@@ -234,7 +234,16 @@ export default function Dashboard() {
   const isCurrentMonth = monthStatus === 'current';
 
   // --- FINANCIAL HEALTH SCORE ---
-  const { healthData } = useFinancialHealthScore(user, selectedMonth, selectedYear);
+  // UPDATED 10-Mar-2026: Pass all data from Dashboard's existing fetches instead of letting
+  // useFinancialHealthScore make its own redundant DB calls (was a major 429 source).
+  const { healthData } = useFinancialHealthScore({
+    allTransactions,
+    categories,
+    goals,
+    customBudgets: allCustomBudgets,
+    targetMonth: selectedMonth,
+    targetYear: selectedYear
+  });
 
   // --- BANK SYNC LOGIC ---
   const [syncState, setSyncState] = useState('idle');
