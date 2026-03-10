@@ -139,32 +139,32 @@ export const useGoals = (user) => {
   return { goals, isLoading };
 };
 
-// Hook for fetching custom budgets filtered by period
+// UPDATED 10-Mar-2026: Fetch ALL user custom budgets once, filter client-side.
+// Previously, every month navigation changed the query key and triggered a new DB call.
+// Now we cache all budgets with a stable key and do the date overlap filter in useMemo.
 export const useCustomBudgetsForPeriod = (user, monthStart = null, monthEnd = null) => {
-  const { data: customBudgets = [], isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.CUSTOM_BUDGETS, user?.email, monthStart, monthEnd],
+  const { data: allUserCustomBudgets = [], isLoading } = useQuery({
+    queryKey: [QUERY_KEYS.CUSTOM_BUDGETS, user?.email],
     queryFn: async () => {
       if (!user) return [];
-
-      if (monthStart && monthEnd) {
-        // Overlap Logic: Start <= EndSelected AND End >= StartSelected
-        return await fetchWithRetry(() => base44.entities.CustomBudget.filter({
-          created_by: user.email,
-          startDate: { $lte: monthEnd },
-          endDate: { $gte: monthStart }
-        }));
-      }
-
       return await fetchWithRetry(() => base44.entities.CustomBudget.filter(
         { created_by: user.email },
         '-startDate',
-        100
+        200
       ));
     },
     keepPreviousData: true,
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Client-side period filtering (no DB call on month navigation)
+  const customBudgets = useMemo(() => {
+    if (!monthStart || !monthEnd) return allUserCustomBudgets;
+    return allUserCustomBudgets.filter(cb =>
+      cb.startDate <= monthEnd && cb.endDate >= monthStart
+    );
+  }, [allUserCustomBudgets, monthStart, monthEnd]);
 
   return { customBudgets, isLoading };
 };
