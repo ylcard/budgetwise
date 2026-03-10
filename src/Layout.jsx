@@ -431,6 +431,9 @@ const LayoutContent = ({ children }) => {
         consent={consent}
         onUpdateConsent={handleUpdateConsent}
       />
+
+      {/* ADDED 10-Mar-2026: Sonner toast renderer — required for toast.success/error calls to display */}
+      <SonnerToaster position="top-center" richColors closeButton />
     </SidebarProvider>
   );
 };
