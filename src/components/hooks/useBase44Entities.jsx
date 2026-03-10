@@ -284,7 +284,7 @@ export const useAllBudgets = (user) => {
 // Hook for fetching category rules
 export const useCategoryRules = (user) => {
   const { data: rules = [], isLoading } = useQuery({
-    queryKey: ['CATEGORY_RULES'],
+    queryKey: [QUERY_KEYS.CATEGORY_RULES],
     queryFn: async () => {
       if (!user) return [];
       const allRules = await fetchWithRetry(() => base44.entities.CategoryRule.filter({ created_by: user.email }));
