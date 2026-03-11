@@ -398,7 +398,7 @@ export default function GoalsPage() {
         </Dialog.Root>
       ) : (
         <Drawer open={createDrawerOpen} onOpenChange={setCreateDrawerOpen}>
-          <DrawerContent className="px-4 pb-8">
+          <DrawerContent className="px-4 max-h-[96dvh] flex flex-col">
             <DrawerHeader>
               <DrawerTitle>Create New Goal</DrawerTitle>
             </DrawerHeader>
@@ -427,7 +427,7 @@ export default function GoalsPage() {
         </Dialog.Root>
       ) : (
         <Drawer open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
-          <DrawerContent className="px-4 pb-8">
+          <DrawerContent className="px-4 max-h-[96dvh] flex flex-col">
             <DrawerHeader>
               <DrawerTitle>Edit Goal</DrawerTitle>
             </DrawerHeader>
