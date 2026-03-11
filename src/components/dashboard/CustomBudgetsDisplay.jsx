@@ -37,11 +37,10 @@ export default function CustomBudgetsDisplay({
             <div className="hidden md:flex items-center gap-3">
               <CustomButton
                 variant="budget"
-                className="rounded-lg bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-2 px-3 py-1 text-sm font-medium"
                 onClick={onCreateBudget}
               >
                 Custom Budgets
-                <Plus className="w-4 h-4" />
+                <Plus />
               </CustomButton>
             </div>
           </CardHeader>
@@ -89,8 +88,12 @@ export default function CustomBudgetsDisplay({
               You haven't set up any custom budgets for this month yet.
               Create one to track specific spending categories.
             </p>
-            <CustomButton variant="primary" onClick={onCreateBudget} className="min-w-[200px] shadow-md hover:shadow-lg transition-shadow">
-              <Plus className="w-4 h-4 mr-2" />
+            <CustomButton
+              variant="budget"
+              onClick={onCreateBudget}
+              className="min-w-[200px]"
+            >
+              <Plus />
               Create First Budget
             </CustomButton>
           </CardContent>
