@@ -1,0 +1,86 @@
+@layer base {
+  /* --- True High Contrast (WCAG AAA) --- */
+  [data-a11y-theme="high-contrast"] {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 25%;
+    --accent: 0 0% 90%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 100% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+    --ring: 0 0% 0%;
+    --stat-income-from: 120 100% 25%;
+    --stat-income-to: 120 100% 20%;
+    --stat-income-bg: 120 100% 92%;
+    --stat-income-text: 120 100% 18%;
+    --stat-expense-from: 0 100% 40%;
+    --stat-expense-to: 0 100% 35%;
+    --stat-expense-bg: 0 100% 92%;
+    --stat-expense-text: 0 100% 30%;
+    --stat-balance-pos-from: 220 100% 35%;
+    --stat-balance-pos-to: 220 100% 30%;
+    --stat-balance-pos-bg: 220 100% 92%;
+    --stat-balance-pos-text: 220 100% 25%;
+    --stat-balance-neg-from: 30 100% 40%;
+    --stat-balance-neg-to: 30 100% 35%;
+   --stat-balance-neg-bg: 30 100% 92%;
+    --stat-balance-neg-text: 30 100% 30%;
+    --status-paid-bg: 120 100% 92%;
+    --status-paid-text: 120 100% 18%;
+    --status-unpaid-bg: 30 100% 92%;
+    --status-unpaid-text: 30 100% 30%;
+  }
+  .dark[data-a11y-theme="high-contrast"] {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 75%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 55%;
+    --destructive-foreground: 0 0% 0%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 0 0% 100%;
+    --bg-subtle: #000000;
+    --stat-income-from: 120 100% 45%;
+    --stat-income-to: 120 100% 40%;
+    --stat-income-bg: 120 100% 8%;
+    --stat-income-text: 120 100% 65%;
+    --stat-expense-from: 0 100% 50%;
+    --stat-expense-to: 0 100% 45%;
+    --stat-expense-bg: 0 100% 8%;
+    --stat-expense-text: 0 100% 65%;
+    --stat-balance-pos-from: 220 100% 50%;
+    --stat-balance-pos-to: 220 100% 45%;
+    --stat-balance-pos-bg: 220 100% 8%;
+    --stat-balance-pos-text: 220 100% 70%;
+    --stat-balance-neg-from: 30 100% 50%;
+    --stat-balance-neg-to: 30 100% 45%;
+    --stat-balance-neg-bg: 30 100% 8%;
+    --stat-balance-neg-text: 30 100% 65%;
+    --status-paid-bg: 120 100% 8%;
+    --status-paid-text: 120 100% 65%;
+    --status-unpaid-bg: 30 100% 8%;
+    --status-unpaid-text: 30 100% 65%;
+  }
+}
