@@ -14,6 +14,7 @@ import {
   useSystemBudgetsForPeriod,
 } from "../components/hooks/useBase44Entities";
 import { useTransactionWindow } from "../components/hooks/useTransactionWindow";
+import { useAllBudgetTransactions } from "../components/hooks/useBudgetTransactions";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import {
   useMonthlyIncome,
@@ -135,6 +136,11 @@ export default function Dashboard() {
   const { categories, isLoading: categoriesLoading } = useMergedCategories();
   const { goals } = useGoals(user);
   const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
+
+  // NEW: Fetch ALL history for these specific budgets to ensure "Arch" accuracy
+  const activeBudgetIds = useMemo(() => rawActiveCustomBudgets.map(b => b.id), [rawActiveCustomBudgets]);
+  const { data: budgetHistory = [] } = useAllBudgetTransactions(activeBudgetIds);
+
   // OPTIMIZED 10-Mar-2026: useSystemBudgetsAll and useSystemBudgetsForPeriod were two separate DB calls
   // with overlapping date ranges. useSystemBudgetsAll is used by useActiveBudgets which just filters locally.
   // We can reuse the period-specific data for both purposes.
@@ -175,7 +181,14 @@ export default function Dashboard() {
   // Previously done by useEnrichedCustomBudgets (which made its own DB call). Now uses allTransactions.
   const activeCustomBudgets = useMemo(() => {
     return rawActiveCustomBudgets.map(budget => {
-      const stats = getCustomBudgetStats(budget, allTransactions);
+      // Use the full budgetHistory instead of the 7-month window
+      const stats = getCustomBudgetStats(budget, budgetHistory);
+
+      // Calculate amount paid BEFORE the currently selected month start
+      const paidPrior = budgetHistory
+        .filter(t => t.budgetId === budget.id && t.type === 'expense' && t.isPaid)
+        .filter(t => (t.paidDate || t.date) < monthStart)
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
 
       // Filter allTransactions for this budget that were paid BEFORE the current month start
       const paidPrior = allTransactions
