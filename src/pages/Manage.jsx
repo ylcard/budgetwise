@@ -255,7 +255,7 @@ export function PreferencesSection() {
             `}>
         <CustomButton
           onClick={() => reset(settings)}
-          variant="secondary"
+          variant="deleteAction"
           className="flex-1 shadow-lg border-gray-200 bg-white text-gray-700"
         >
           Discard
@@ -263,7 +263,7 @@ export function PreferencesSection() {
         <CustomButton
           onClick={handleSubmit(onSubmit)}
           disabled={isSaving}
-          variant="primary"
+          variant="success"
           className="flex-1 shadow-lg"
         >
           Save
@@ -281,7 +281,6 @@ export function AccountSection() {
   const { settings, updateSettings } = useSettings();
   const [localName, setLocalName] = useState(settings.displayName || "");
   const [isSaving, setIsSaving] = useState(false);
-  const [isRepairing, setIsRepairing] = useState(false);
 
   // Email/Password Change State
   const [isChangingEmail, setIsChangingEmail] = useState(false);
