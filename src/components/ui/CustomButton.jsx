@@ -12,7 +12,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Original ShadcnUI variants
-        default:
+        defaultVariant:
           "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive:
           "bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:ring-red-600",
@@ -28,7 +28,7 @@ const buttonVariants = cva(
           "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-md hover:opacity-90 focus-visible:ring-primary",
         modify:
           "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-primary",
-        delete:
+        deleteAction:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 focus-visible:ring-destructive",
         success:
           "bg-[hsl(var(--status-paid-text))] text-white shadow-sm hover:brightness-90",
@@ -48,7 +48,7 @@ const buttonVariants = cva(
           "bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] border border-[hsl(var(--stat-income-text))]/20 hover:brightness-95 dark:hover:brightness-110",
         expense:
           "bg-[hsl(var(--stat-expense-bg))] text-[hsl(var(--stat-expense-text))] border border-[hsl(var(--stat-expense-text))]/20 hover:brightness-95 dark:hover:brightness-110",
-        import:
+        importimportData:
           "bg-[hsl(var(--stat-balance-pos-bg))] text-[hsl(var(--stat-balance-pos-text))] border border-[hsl(var(--stat-balance-pos-text))]/20 hover:brightness-95 dark:hover:brightness-110",
         sync:
           "bg-muted text-muted-foreground border border-border hover:bg-accent hover:text-accent-foreground shadow-sm",
@@ -56,7 +56,7 @@ const buttonVariants = cva(
           "bg-[var(--primary-600)] text-white shadow-md hover:bg-[var(--primary-700)] focus-visible:ring-[var(--primary-500)]",
       },
       size: {
-        default: "h-9 px-4 py-2",
+        defaultSize: "h-9 px-4 py-2",
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-10 rounded-md px-8",
         icon: "h-9 w-9",
