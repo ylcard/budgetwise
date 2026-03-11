@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { applyA11yTheme } from '@/components/utils/accessibilityThemes';
+import { applyStyleTheme } from '@/components/theme/StyleThemePicker';
 
 const SettingsContext = createContext();
 
@@ -71,6 +72,10 @@ export const SettingsProvider = ({ children }) => {
                 if (parsed.themeConfig?.a11yTheme) {
                     applyA11yTheme(parsed.themeConfig.a11yTheme);
                 }
+                // ADDED 11-Mar-2026: Apply style theme instantly from cache
+                if (parsed.themeConfig?.styleTheme) {
+                    applyStyleTheme(parsed.themeConfig.styleTheme);
+                }
                 return parsed;
             }
         } catch (error) {
@@ -99,6 +104,10 @@ export const SettingsProvider = ({ children }) => {
                 // ADDED 11-Mar-2026: Apply persisted accessibility theme on load
                 if (userSettings.themeConfig?.a11yTheme) {
                     applyA11yTheme(userSettings.themeConfig.a11yTheme);
+                }
+                // ADDED 11-Mar-2026: Apply persisted style theme on load
+                if (userSettings.themeConfig?.styleTheme) {
+                    applyStyleTheme(userSettings.themeConfig.styleTheme);
                 }
 
                 const newSettings = {
