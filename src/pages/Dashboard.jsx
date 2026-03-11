@@ -14,7 +14,7 @@ import {
   useSystemBudgetsForPeriod,
 } from "../components/hooks/useBase44Entities";
 import { useTransactionWindow } from "../components/hooks/useTransactionWindow";
-import { useAllBudgetTransactions } from "../components/hooks/useBudgetTransactions";
+import { useBudgetTransactions } from "../components/hooks/useBudgetTransactions";
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import {
   useMonthlyIncome,
@@ -139,7 +139,7 @@ export default function Dashboard() {
 
   // NEW: Fetch ALL history for these specific budgets to ensure "Arch" accuracy
   const activeBudgetIds = useMemo(() => rawActiveCustomBudgets.map(b => b.id), [rawActiveCustomBudgets]);
-  const { data: budgetHistory = [] } = useAllBudgetTransactions(activeBudgetIds);
+  const { data: budgetHistory = [] } = useBudgetTransactions(activeBudgetIds);
 
   // OPTIMIZED 10-Mar-2026: useSystemBudgetsAll and useSystemBudgetsForPeriod were two separate DB calls
   // with overlapping date ranges. useSystemBudgetsAll is used by useActiveBudgets which just filters locally.
