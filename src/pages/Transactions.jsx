@@ -409,14 +409,14 @@ export function TransactionHistory({
       key: 'sync',
       label: syncState === 'syncing' ? 'Syncing...' : (hasActiveConnections ? 'Smart Sync' : 'Connect Bank'),
       icon: syncState === 'syncing' ? 'Loader2' : (hasActiveConnections ? 'RefreshCw' : 'Building2'),
-      variant: 'secondary',
+      variant: 'sync',
       onClick: hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')
     },
     {
       key: 'import',
       label: 'Import Data',
       icon: 'FileUp',
-      variant: 'primary',
+      variant: 'importData',
       onClick: () => setShowImportWizard(true) // Assumes these setters are available or passed via context
     },
     {
@@ -430,14 +430,14 @@ export function TransactionHistory({
       key: 'expense',
       label: 'Add Expense',
       icon: 'MinusCircle',
-      variant: 'warning',
+      variant: 'expense',
       onClick: () => setShowAddExpense(true)
     },
     {
       key: 'income',
       label: 'Add Income',
       icon: 'PlusCircle',
-      variant: 'success',
+      variant: 'income',
       onClick: () => setShowAddIncome(true)
     }
   ], [setShowImportWizard, setShowAddExpense, setShowAddIncome, setShowRecurringForm, setEditingRecurring, hasActiveConnections, handleGlobalSync, syncState, navigate]);
