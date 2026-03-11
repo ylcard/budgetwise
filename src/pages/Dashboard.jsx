@@ -199,7 +199,7 @@ export default function Dashboard() {
         rawStats: stats
       };
     });
-  }, [rawActiveCustomBudgets, allTransactions, monthStart]);
+  }, [rawActiveCustomBudgets, allTransactions, monthStart, budgetHistory]);
 
   // UPDATED 10-Mar-2026: Aligned with new getSystemBudgetStats signature
   const systemBudgetsData = useMemo(() => {
