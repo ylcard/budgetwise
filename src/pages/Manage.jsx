@@ -230,7 +230,7 @@ export function PreferencesSection() {
               reset(settings);
               toast.success("Discarded", { description: "Changes reverted." });
             }}
-            variant="ghost"
+            variant="delete"
             size="sm"
           >
             Discard
