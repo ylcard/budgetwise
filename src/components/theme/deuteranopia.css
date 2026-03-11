@@ -1,6 +1,6 @@
 @layer base {
   /* --- Deuteranopia & Protanopia (Red-Green Color Blindness) --- */
-  [data-a11y-theme="deuteranopia"] {
+  :root[data-a11y-theme="deuteranopia"] {
     --stat-income-from: 210 90% 50%;
     --stat-income-to: 220 85% 45%;
     --stat-income-bg: 210 90% 95%;
@@ -22,7 +22,7 @@
     --status-unpaid-bg: 30 95% 95%;
     --status-unpaid-text: 30 95% 38%;
   }
-  .dark[data-a11y-theme="deuteranopia"] {
+  .dark:root[data-a11y-theme="deuteranopia"] {
     --stat-income-from: 210 80% 40%;
     --stat-income-to: 220 75% 35%;
     --stat-income-bg: 210 80% 12%;
