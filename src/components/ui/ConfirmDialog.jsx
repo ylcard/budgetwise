@@ -36,7 +36,7 @@ export default function ConfirmDialog({
                         Cancel
                     </CustomButton>
                     <CustomButton
-                        variant={destructive ? "delete" : "success"}
+                        variant={destructive ? "deleteAction" : "success"}
                         onClick={handleConfirm}
                     >
                         Confirm
