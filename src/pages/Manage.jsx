@@ -213,7 +213,7 @@ export function PreferencesSection() {
       </Card>
 
       {/* ADDED 15-Feb-2026: Tutorial Settings */}
-      // <TutorialSettings />
+      {/* <TutorialSettings /> */}
 
       {/* Sticky Action Bar - Only visible when changes exist */}
       <div className={`
