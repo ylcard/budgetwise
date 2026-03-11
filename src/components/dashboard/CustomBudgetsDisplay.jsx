@@ -3,10 +3,6 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
 import { useSettings } from "../utils/SettingsContext";
-// REMOVED 10-Mar-2026: usePeriod and useEnrichedCustomBudgets — data now passed from Dashboard
-// This eliminates 2 separate DB calls (CustomBudget + Transaction) that were duplicating Dashboard fetches.
-// import { usePeriod } from "../hooks/usePeriod";
-// import { useEnrichedCustomBudgets } from "../hooks/useDerivedData";
 import {
   Carousel,
   CarouselContent,
