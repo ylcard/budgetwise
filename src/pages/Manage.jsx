@@ -230,7 +230,7 @@ export function PreferencesSection() {
               reset(settings);
               toast.success("Discarded", { description: "Changes reverted." });
             }}
-            variant="delete"
+            variant="deleteAction"
             size="sm"
           >
             Discard
@@ -238,7 +238,7 @@ export function PreferencesSection() {
           <CustomButton
             onClick={handleSubmit(onSubmit)}
             disabled={isSaving}
-            variant="primary"
+            variant="success"
             size="sm"
           >
             {isSaving ? 'Saving...' : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
