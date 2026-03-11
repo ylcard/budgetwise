@@ -181,15 +181,23 @@ export default function Dashboard() {
   const activeCustomBudgets = useMemo(() => {
     return rawActiveCustomBudgets.map(budget => {
       const stats = getCustomBudgetStats(budget, allTransactions);
+
+      // Calculate amount paid BEFORE the currently selected month start
+      const paidPrior = allTransactions
+        .filter(t => t.budgetId === budget.id && t.type === 'expense' && t.isPaid)
+        .filter(t => (t.paidDate || t.date) < monthStart)
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
       return {
         ...budget,
         calculatedPaid: stats?.paid?.totalBaseCurrencyAmount ?? 0,
         calculatedUnpaid: stats?.unpaid?.totalBaseCurrencyAmount ?? 0,
         calculatedTotal: budget.allocatedAmount || budget.budgetAmount || 0,
+        paidPrior,
         rawStats: stats
       };
     });
-  }, [rawActiveCustomBudgets, allTransactions]);
+  }, [rawActiveCustomBudgets, allTransactions, monthStart]);
 
   // UPDATED 10-Mar-2026: Aligned with new getSystemBudgetStats signature
   const systemBudgetsData = useMemo(() => {
