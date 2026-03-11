@@ -1,6 +1,6 @@
 @layer base {
   /* --- Focus Mode (ADHD / Dyslexia Support) --- */
-  [data-a11y-theme="focus"] {
+  :root[data-a11y-theme="focus"] {
     --background: 220 10% 98%;
     --foreground: 220 15% 12%;
     --card: 220 10% 97%;
@@ -42,7 +42,7 @@
     --status-unpaid-bg: 25 75% 94%;
     --status-unpaid-text: 25 90% 35%;
   }
-  .dark[data-a11y-theme="focus"] {
+  .dark:root[data-a11y-theme="focus"] {
     --background: 225 15% 8%;
     --foreground: 220 10% 90%;
     --card: 225 15% 10%;
