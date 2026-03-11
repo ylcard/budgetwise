@@ -12,7 +12,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Original ShadcnUI variants
-        defaultVariant:
+        default:
           "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive:
           "bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:ring-red-600",
