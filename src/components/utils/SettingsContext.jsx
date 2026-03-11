@@ -66,7 +66,12 @@ export const SettingsProvider = ({ children }) => {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
-                return { ...defaultSettings, ...JSON.parse(stored) };
+                const parsed = { ...defaultSettings, ...JSON.parse(stored) };
+                // ADDED 11-Mar-2026: Apply a11y theme instantly from cache
+                if (parsed.themeConfig?.a11yTheme) {
+                    applyA11yTheme(parsed.themeConfig.a11yTheme);
+                }
+                return parsed;
             }
         } catch (error) {
             console.error('Error loading settings from localStorage:', error);
