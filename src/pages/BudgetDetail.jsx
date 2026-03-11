@@ -415,7 +415,7 @@ export default function BudgetDetail() {
                       Reactivate
                     </CustomButton>
                   )}
-                  <CustomButton variant="delete" onClick={handleDeleteBudget}>
+                  <CustomButton variant="deleteAction" onClick={handleDeleteBudget}>
                     <Trash2 className="w-4 h-4 mr-2" /> Delete
                   </CustomButton>
                 </>
