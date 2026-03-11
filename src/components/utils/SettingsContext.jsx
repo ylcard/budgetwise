@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { applyA11yTheme } from '@/components/utils/accessibilityThemes';
 
 const SettingsContext = createContext();
 
@@ -90,6 +91,11 @@ export const SettingsProvider = ({ children }) => {
 
             if (userSettings) {
                 setSettingsId(userSettings.id);
+                // ADDED 11-Mar-2026: Apply persisted accessibility theme on load
+                if (userSettings.themeConfig?.a11yTheme) {
+                    applyA11yTheme(userSettings.themeConfig.a11yTheme);
+                }
+
                 const newSettings = {
                     baseCurrency: userSettings.baseCurrency || 'USD',
                     currencySymbol: userSettings.currencySymbol || '$',
