@@ -1,6 +1,6 @@
 @layer base {
   /* --- OLED / Pitch Black (Light Sensitivity) --- */
-  [data-a11y-theme="oled"] {
+  :root[data-a11y-theme="oled"] {
     --background: 0 0% 0%;
     --foreground: 0 0% 85%;
     --card: 0 0% 2%;
