@@ -178,14 +178,17 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
                       currency={baseCurrency}
                     />
                   ) : (
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        {...register('funding_percentage')}
-                        className="pr-8"
-                        placeholder="0"
-                      />
-                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                    <AmountInput
+                      value={watch('funding_percentage')}
+                      onChange={(value) => setValue('funding_percentage', value)}
+                      placeholder="0"
+                      hideSymbol={true}
+                      className="pr-8"
+                    />
+                  )}
+                  {fundingType === 'percentage' && (
+                    <div className="absolute right-3 top-[34px] pointer-events-none">
+                      <Percent className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -196,10 +199,10 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
                     value={watch('funding_frequency')}
                     onValueChange={(value) => setValue('funding_frequency', value)}
                   >
-                    <SelectTrigger className="text-sm">
+                    <SelectTrigger className="text-sm bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-[300]">
                       {FREQUENCY_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
