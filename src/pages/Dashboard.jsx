@@ -137,16 +137,23 @@ export default function Dashboard() {
   const { goals } = useGoals(user);
   const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user, monthStart, monthEnd);
 
-  // NEW: Fetch ALL history for these specific budgets to ensure "Arch" accuracy
-  const activeBudgetIds = useMemo(() => rawActiveCustomBudgets.map(b => b.id), [rawActiveCustomBudgets]);
-  const { data: budgetHistory = [] } = useBudgetTransactions(activeBudgetIds);
-
   // OPTIMIZED 10-Mar-2026: useSystemBudgetsAll and useSystemBudgetsForPeriod were two separate DB calls
   // with overlapping date ranges. useSystemBudgetsAll is used by useActiveBudgets which just filters locally.
   // We can reuse the period-specific data for both purposes.
   const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
   // Alias for useActiveBudgets which expects 'allSystemBudgets' — same data when viewing one month
   const allSystemBudgets = systemBudgets;
+
+  const { activeCustomBudgets: rawActiveCustomBudgets } = useActiveBudgets(
+    allCustomBudgets,
+    allSystemBudgets,
+    selectedMonth,
+    selectedYear
+  );
+
+  // NEW: Fetch ALL history for these specific budgets to ensure "Arch" accuracy
+  const activeBudgetIds = useMemo(() => rawActiveCustomBudgets.map(b => b.id), [rawActiveCustomBudgets]);
+  const { data: budgetHistory = [] } = useBudgetTransactions(activeBudgetIds);
 
   const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
@@ -166,13 +173,6 @@ export default function Dashboard() {
     categories,
     monthlyIncome,
     allCustomBudgets,
-    selectedMonth,
-    selectedYear
-  );
-
-  const { activeCustomBudgets: rawActiveCustomBudgets } = useActiveBudgets(
-    allCustomBudgets,
-    allSystemBudgets,
     selectedMonth,
     selectedYear
   );
