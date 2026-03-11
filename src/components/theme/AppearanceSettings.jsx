@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useSettings } from '@/components/utils/SettingsContext';
+import { useEffect } from 'react';
 import { Sun, Moon, Monitor, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -72,73 +71,55 @@ const applyThemePreview = (config) => {
   }
 };
 
-export default function AppearanceSettings() {
-  const { settings, updateSettings } = useSettings();
-
+export default function AppearanceSettings({ themeConfig, onChange, savedThemeConfig }) {
   const defaultSchedules = [{ time: '08:00', theme: 'light' }, { time: '20:00', theme: 'dark' }];
-  const savedThemeConfig = settings?.themeConfig || { mode: 'system', schedules: defaultSchedules, a11yTheme: 'none' };
+  const currentConfig = themeConfig || { mode: 'system', schedules: defaultSchedules, a11yTheme: 'none' };
 
-  const [localConfig, setLocalConfig] = useState(savedThemeConfig);
-  const [isDirty, setIsDirty] = useState(false);
-
-  // Keep local state in sync if settings change externally
+  // Apply preview whenever the form value changes
   useEffect(() => {
-    setLocalConfig(savedThemeConfig);
-    setIsDirty(false);
-  }, [settings?.themeConfig]);
+    applyThemePreview(currentConfig);
+  }, [currentConfig]);
 
   // Revert preview if component unmounts without saving
   useEffect(() => {
-    return () => applyThemePreview(savedThemeConfig);
+    return () => applyThemePreview(savedThemeConfig || { mode: 'system', a11yTheme: 'none' });
   }, [savedThemeConfig]);
 
   // Handle system preference changes for live preview
   useEffect(() => {
-    if (localConfig.mode === 'system') {
+    if (currentConfig.mode === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => applyThemePreview(localConfig);
+      const handleChange = () => applyThemePreview(currentConfig);
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
-  }, [localConfig]);
+  }, [currentConfig]);
 
   // Re-check scheduled themes every minute
   useEffect(() => {
-    if (localConfig.mode === 'scheduled') {
-      const interval = setInterval(() => applyThemePreview(localConfig), 60000);
+    if (currentConfig.mode === 'scheduled') {
+      const interval = setInterval(() => applyThemePreview(currentConfig), 60000);
       return () => clearInterval(interval);
     }
-  }, [localConfig]);
-
-  const updateLocalAndPreview = (newConfig) => {
-    setLocalConfig(newConfig);
-    setIsDirty(true);
-    applyThemePreview(newConfig);
-  };
+  }, [currentConfig]);
 
   const handleModeChange = (newMode) => {
-    if (localConfig.mode === newMode) return;
-    updateLocalAndPreview({ ...localConfig, mode: newMode });
+    if (currentConfig.mode === newMode) return;
+    onChange({ ...currentConfig, mode: newMode });
   };
 
   const handleScheduleChange = (index, field, value) => {
-    const newSchedules = [...(localConfig.schedules || defaultSchedules)];
+    const newSchedules = [...(currentConfig.schedules || defaultSchedules)];
     newSchedules[index] = { ...newSchedules[index], [field]: value };
-    updateLocalAndPreview({ ...localConfig, schedules: newSchedules });
+    onChange({ ...currentConfig, schedules: newSchedules });
   };
 
   const handleTimeChange = (field, value) => {
-    updateLocalAndPreview({ ...localConfig, [field]: value });
+    onChange({ ...currentConfig, [field]: value });
   };
 
   const handleA11yThemeChange = (themeId) => {
-    updateLocalAndPreview({ ...localConfig, a11yTheme: themeId });
-  };
-
-  const handleSave = async () => {
-    sessionStorage.removeItem('budgetwise_temp_theme');
-    await updateSettings({ themeConfig: localConfig });
-    setIsDirty(false);
+    onChange({ ...currentConfig, a11yTheme: themeId });
   };
 
   const handleCancel = () => {
@@ -157,7 +138,7 @@ export default function AppearanceSettings() {
         {/* Segmented Control */}
         <div className="flex p-1 bg-muted/40 rounded-lg border border-border sm:max-w-md w-full">
           {MODES.map(({ id, label, icon: Icon }) => {
-            const isActive = localConfig.mode === id;
+            const isActive = currentConfig.mode === id;
 
             return (
               <button
@@ -181,7 +162,7 @@ export default function AppearanceSettings() {
       </div>
 
       <AnimatePresence>
-        {localConfig.mode === 'scheduled' && (
+        {currentConfig.mode === 'scheduled' && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -189,7 +170,7 @@ export default function AppearanceSettings() {
             className="overflow-hidden"
           >
             <div className="space-y-2 pt-2 border-t border-border mt-2">
-              {(localConfig.schedules || defaultSchedules).map((schedule, idx) => (
+              {(currentConfig.schedules || defaultSchedules).map((schedule, idx) => (
                 <div key={idx} className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg bg-muted/20 border border-border">
                   <div className="flex items-center gap-2 flex-1 min-w-[140px]">
                     <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -232,7 +213,7 @@ export default function AppearanceSettings() {
                 </div>
                 <input
                   type="time"
-                  value={localConfig.darkStart || ''}
+                  value={currentConfig.darkStart || ''}
                   onChange={(e) => handleTimeChange('darkStart', e.target.value)}
                   className="bg-transparent border-none outline-none text-foreground font-medium text-right focus:ring-0 min-w-[80px]"
                 />
@@ -245,35 +226,10 @@ export default function AppearanceSettings() {
       {/* ADDED 11-Mar-2026: Accessibility theme picker */}
       <div className="pt-2 border-t border-border">
         <AccessibilityThemePicker
-          value={localConfig.a11yTheme || 'none'}
+          value={currentConfig.a11yTheme || 'none'}
           onChange={handleA11yThemeChange}
         />
       </div>
-
-      {/* Save / Cancel Actions */}
-      <AnimatePresence>
-        {isDirty && (
-          <motion.div
-            initial={{ opacity: 0, height: 0, marginTop: 0 }}
-            animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
-            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-            className="flex items-center justify-end gap-3 overflow-hidden"
-          >
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 text-sm font-medium transition-colors rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-primary-foreground transition-colors rounded-lg bg-primary hover:bg-primary/90"
-            >
-              Save Changes
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
