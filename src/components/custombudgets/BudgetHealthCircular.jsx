@@ -92,6 +92,11 @@ const BudgetHealthCircular = ({ budget, transactions, settings }) => {
         <p className="text-muted-foreground/70 text-[10px] mt-1">
           {formatCurrency(spent, settings)} / {formatCurrency(total, settings)}
         </p>
+        {budget.paidPrior > 0 && (
+          <p className="text-muted-foreground/50 text-[9px] mt-0.5 italic">
+            Inc. {formatCurrency(budget.paidPrior, settings)} paid prior
+          </p>
+        )}
       </div>
     </div>
   );
