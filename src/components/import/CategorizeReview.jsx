@@ -164,7 +164,7 @@ export default function CategorizeReview({ data, categories, allBudgets = [], on
           </div>
           {selectedIndices.size > 0 && (
             <CustomButton
-              variant="delete"
+              variant="deleteAction"
               size="sm"
               onClick={handleDeleteSelected}
               className="animate-in fade-in slide-in-from-top-1"
