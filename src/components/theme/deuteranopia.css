@@ -1,0 +1,47 @@
+@layer base {
+  /* --- Deuteranopia & Protanopia (Red-Green Color Blindness) --- */
+  [data-a11y-theme="deuteranopia"] {
+    --stat-income-from: 210 90% 50%;
+    --stat-income-to: 220 85% 45%;
+    --stat-income-bg: 210 90% 95%;
+    --stat-income-text: 210 90% 35%;
+    --stat-expense-from: 30 95% 55%;
+    --stat-expense-to: 20 90% 50%;
+    --stat-expense-bg: 30 95% 95%;
+    --stat-expense-text: 30 95% 38%;
+    --stat-balance-pos-from: 190 80% 45%;
+    --stat-balance-pos-to: 200 75% 50%;
+    --stat-balance-pos-bg: 190 80% 95%;
+    --stat-balance-pos-text: 190 80% 35%;
+    --stat-balance-neg-from: 15 90% 50%;
+    --stat-balance-neg-to: 5 85% 45%;
+    --stat-balance-neg-bg: 15 90% 95%;
+    --stat-balance-neg-text: 15 90% 38%;
+    --status-paid-bg: 210 90% 95%;
+    --status-paid-text: 210 90% 35%;
+    --status-unpaid-bg: 30 95% 95%;
+    --status-unpaid-text: 30 95% 38%;
+  }
+  .dark[data-a11y-theme="deuteranopia"] {
+    --stat-income-from: 210 80% 40%;
+    --stat-income-to: 220 75% 35%;
+    --stat-income-bg: 210 80% 12%;
+    --stat-income-text: 210 80% 65%;
+    --stat-expense-from: 30 85% 45%;
+    --stat-expense-to: 20 80% 40%;
+    --stat-expense-bg: 30 85% 12%;
+    --stat-expense-text: 30 85% 65%;
+    --stat-balance-pos-from: 190 70% 35%;
+    --stat-balance-pos-to: 200 65% 40%;
+    --stat-balance-pos-bg: 190 70% 12%;
+    --stat-balance-pos-text: 190 70% 65%;
+    --stat-balance-neg-from: 15 80% 40%;
+    --stat-balance-neg-to: 5 75% 35%;
+    --stat-balance-neg-bg: 15 80% 12%;
+    --stat-balance-neg-text: 15 80% 65%;
+    --status-paid-bg: 210 80% 12%;
+    --status-paid-text: 210 80% 65%;
+    --status-unpaid-bg: 30 85% 12%;
+    --status-unpaid-text: 30 85% 65%;
+  }
+}
