@@ -79,7 +79,7 @@ const QuickActions = memo(function QuickActions({
 
         {/* Import */}
         <CustomButton
-          variant="budget"
+          variant="import"
           onClick={onImport}
           className="w-full h-auto py-2 px-3 rounded-lg text-xs"
         >
