@@ -48,7 +48,7 @@ const buttonVariants = cva(
           "bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] border border-[hsl(var(--stat-income-text))]/20 hover:brightness-95 dark:hover:brightness-110",
         expense:
           "bg-[hsl(var(--stat-expense-bg))] text-[hsl(var(--stat-expense-text))] border border-[hsl(var(--stat-expense-text))]/20 hover:brightness-95 dark:hover:brightness-110",
-        importimportData:
+        importData:
           "bg-[hsl(var(--stat-balance-pos-bg))] text-[hsl(var(--stat-balance-pos-text))] border border-[hsl(var(--stat-balance-pos-text))]/20 hover:brightness-95 dark:hover:brightness-110",
         sync:
           "bg-muted text-muted-foreground border border-border hover:bg-accent hover:text-accent-foreground shadow-sm",
