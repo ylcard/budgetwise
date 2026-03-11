@@ -12,7 +12,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Original ShadcnUI variants
-        default:
+        defaultVariant:
           "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive:
           "bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:ring-red-600",
@@ -56,7 +56,7 @@ const buttonVariants = cva(
           "bg-[var(--primary-600)] text-white shadow-md hover:bg-[var(--primary-700)] focus-visible:ring-[var(--primary-500)]",
       },
       size: {
-        default: "h-9 px-4 py-2",
+        defaultSize: "h-9 px-4 py-2",
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-10 rounded-md px-8",
         icon: "h-9 w-9",
@@ -65,8 +65,8 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: {
-      variant: "default",
-      size: "default",
+      variant: "defaultVariant",
+      size: "defaultSize",
     },
   }
 );
