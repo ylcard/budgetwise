@@ -1,0 +1,52 @@
+@layer base {
+  /* --- OLED / Pitch Black (Light Sensitivity) --- */
+  [data-a11y-theme="oled"] {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 85%;
+    --card: 0 0% 2%;
+    --card-foreground: 0 0% 85%;
+    --popover: 0 0% 2%;
+    --popover-foreground: 0 0% 85%;
+    --primary: 0 0% 85%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 6%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 6%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 8%;
+    --accent-foreground: 0 0% 85%;
+    --destructive: 0 60% 35%;
+    --destructive-foreground: 0 0% 85%;
+    --border: 0 0% 10%;
+    --input: 0 0% 10%;
+    --ring: 0 0% 50%;
+    --bg-subtle: #000000;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 0 0% 85%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 6%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 0 0% 10%;
+    --stat-income-from: 142 50% 30%;
+    --stat-income-to: 160 55% 25%;
+    --stat-income-bg: 146 50% 6%;
+    --stat-income-text: 142 50% 55%;
+    --stat-expense-from: 0 55% 35%;
+    --stat-expense-to: 346 55% 30%;
+    --stat-expense-bg: 0 55% 6%;
+    --stat-expense-text: 0 55% 55%;
+    --stat-balance-pos-from: 217 60% 35%;
+    --stat-balance-pos-to: 279 60% 35%;
+    --stat-balance-pos-bg: 214 60% 6%;
+    --stat-balance-pos-text: 217 60% 60%;
+    --stat-balance-neg-from: 24 60% 35%;
+    --stat-balance-neg-to: 0 55% 30%;
+    --stat-balance-neg-bg: 33 60% 6%;
+    --stat-balance-neg-text: 24 60% 55%;
+    --status-paid-bg: 146 50% 6%;
+    --status-paid-text: 142 50% 55%;
+    --status-unpaid-bg: 33 60% 6%;
+    --status-unpaid-text: 24 60% 55%;
+  }
+}
