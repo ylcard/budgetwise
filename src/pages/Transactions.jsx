@@ -201,6 +201,8 @@ export default function TransactionsLayout() {
                   hasActiveConnections={hasActiveConnections}
                   handleGlobalSync={handleGlobalSync}
                   syncState={syncState}
+                  setShowRecurringForm={setShowRecurringForm}
+                  setEditingRecurring={setEditingRecurring}
                 />
               ) : (
                 <RecurringTransactions
@@ -261,7 +263,9 @@ export function TransactionHistory({
   setShowImportWizard,
   hasActiveConnections,
   handleGlobalSync,
-  syncState
+  syncState,
+  setShowRecurringForm,
+  setEditingRecurring
 }) {
   const { user } = useSettings();
   const { confirmAction } = useConfirm();
@@ -416,6 +420,13 @@ export function TransactionHistory({
       onClick: () => setShowImportWizard(true) // Assumes these setters are available or passed via context
     },
     {
+      key: 'recurring',
+      label: 'Recurring',
+      icon: 'Repeat',
+      variant: 'create',
+      onClick: () => { setEditingRecurring(null); setShowRecurringForm(true); }
+    },
+    {
       key: 'expense',
       label: 'Add Expense',
       icon: 'MinusCircle',
@@ -429,7 +440,7 @@ export function TransactionHistory({
       variant: 'success',
       onClick: () => setShowAddIncome(true)
     }
-  ], [setShowImportWizard, setShowAddExpense, setShowAddIncome, hasActiveConnections, handleGlobalSync, syncState, navigate]);
+  ], [setShowImportWizard, setShowAddExpense, setShowAddIncome, setShowRecurringForm, setEditingRecurring, hasActiveConnections, handleGlobalSync, syncState, navigate]);
 
   useEffect(() => {
     setFabButtons(historyFab);
