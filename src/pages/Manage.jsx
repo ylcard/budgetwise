@@ -74,7 +74,8 @@ export function PreferencesSection() {
     settings?.thousandSeparator,
     settings?.decimalSeparator,
     settings?.decimalPlaces,
-    settings?.hideTrailingZeros
+    settings?.hideTrailingZeros,
+    settings?.themeConfig
   ]);
 
   const {
@@ -207,7 +208,11 @@ export function PreferencesSection() {
       {/* Appearance Settings */}
       <Card>
         <CardContent className="pt-6">
-          <AppearanceSettings />
+          <AppearanceSettings 
+            themeConfig={formData.themeConfig}
+            onChange={(newConfig) => setValue('themeConfig', newConfig, { shouldDirty: true })}
+            savedThemeConfig={settings?.themeConfig}
+          />
         </CardContent>
       </Card>
 
