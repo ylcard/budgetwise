@@ -42,6 +42,18 @@ const buttonVariants = cva(
           "border border-white/30 bg-transparent text-white shadow-sm hover:bg-white/20 hover:border-white/50 hover:text-white",
         seamless:
           "bg-transparent text-white shadow-sm hover:bg-white/20 hover:text-white",
+
+        // Domain-specific variants
+        income:
+          "bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] border border-[hsl(var(--stat-income-text))]/20 hover:brightness-95 dark:hover:brightness-110",
+        expense:
+          "bg-[hsl(var(--stat-expense-bg))] text-[hsl(var(--stat-expense-text))] border border-[hsl(var(--stat-expense-text))]/20 hover:brightness-95 dark:hover:brightness-110",
+        import:
+          "bg-[hsl(var(--stat-balance-pos-bg))] text-[hsl(var(--stat-balance-pos-text))] border border-[hsl(var(--stat-balance-pos-text))]/20 hover:brightness-95 dark:hover:brightness-110",
+        sync:
+          "bg-muted text-muted-foreground border border-border hover:bg-accent hover:text-accent-foreground shadow-sm",
+        budget:
+          "bg-[var(--primary-600)] text-white shadow-md hover:bg-[var(--primary-700)] focus-visible:ring-[var(--primary-500)]",
       },
       size: {
         default: "h-9 px-4 py-2",
@@ -87,6 +99,13 @@ export { CustomButton, buttonVariants };
 // - info: Sky blue for informational actions (View, Details, Info)
 // - primary: Same as create, for primary CTAs
 // 
+// Domain-Specific Variants:
+// - income: Green tinted background/text for inflows
+// - expense: Red tinted background/text for outflows
+// - import: Subtle purple/blue tinted for external data actions
+// - sync: Muted neutral outline for background processes
+// - budget: Strong brand blue (primary-600) for core app features
+//
 // Original ShadcnUI Variants (preserved):
 // - default: Primary brand color
 // - destructive: Red, similar to delete but follows ShadcnUI naming
