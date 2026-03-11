@@ -139,7 +139,7 @@ const BankConnectionCard = memo(function BankConnectionCard({
                         {isSyncing ? 'Syncing...' : 'Sync Now'}
                     </CustomButton>
                     <CustomButton
-                        variant="delete"
+                        variant="deleteAction"
                         size="sm"
                         onClick={() => onDelete(connection)}
                     >
