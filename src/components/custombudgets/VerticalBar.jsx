@@ -106,7 +106,7 @@ export default function VerticalBar({
               )}
               {onDelete && (
                 <CustomButton
-                  variant="delete"
+                  variant="deleteAction"
                   size="icon-sm"
                   className="h-6 w-6"
                   onClick={(e) => {
