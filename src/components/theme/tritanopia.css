@@ -1,0 +1,47 @@
+@layer base {
+  /* --- Tritanopia (Blue-Yellow Color Blindness) --- */
+  [data-a11y-theme="tritanopia"] {
+    --stat-income-from: 340 75% 50%;
+    --stat-income-to: 350 70% 45%;
+    --stat-income-bg: 340 75% 95%;
+    --stat-income-text: 340 75% 35%;
+    --stat-expense-from: 180 70% 40%;
+    --stat-expense-to: 190 65% 35%;
+    --stat-expense-bg: 180 70% 95%;
+    --stat-expense-text: 180 70% 30%;
+    --stat-balance-pos-from: 320 65% 50%;
+    --stat-balance-pos-to: 330 60% 45%;
+    --stat-balance-pos-bg: 320 65% 95%;
+    --stat-balance-pos-text: 320 65% 35%;
+    --stat-balance-neg-from: 170 60% 40%;
+    --stat-balance-neg-to: 160 55% 35%;
+    --stat-balance-neg-bg: 170 60% 95%;
+    --stat-balance-neg-text: 170 60% 30%;
+    --status-paid-bg: 340 75% 95%;
+    --status-paid-text: 340 75% 35%;
+    --status-unpaid-bg: 180 70% 95%;
+    --status-unpaid-text: 180 70% 30%;
+  }
+  .dark[data-a11y-theme="tritanopia"] {
+    --stat-income-from: 340 65% 40%;
+    --stat-income-to: 350 60% 35%;
+    --stat-income-bg: 340 65% 12%;
+    --stat-income-text: 340 65% 65%;
+    --stat-expense-from: 180 60% 30%;
+    --stat-expense-to: 190 55% 25%;
+    --stat-expense-bg: 180 60% 12%;
+    --stat-expense-text: 180 60% 60%;
+    --stat-balance-pos-from: 320 55% 40%;
+    --stat-balance-pos-to: 330 50% 35%;
+    --stat-balance-pos-bg: 320 55% 12%;
+    --stat-balance-pos-text: 320 55% 65%;
+    --stat-balance-neg-from: 170 50% 30%;
+    --stat-balance-neg-to: 160 45% 25%;
+    --stat-balance-neg-bg: 170 50% 12%;
+    --stat-balance-neg-text: 170 50% 60%;
+    --status-paid-bg: 340 65% 12%;
+    --status-paid-text: 340 65% 65%;
+    --status-unpaid-bg: 180 60% 12%;
+    --status-unpaid-text: 180 60% 60%;
+  }
+}
