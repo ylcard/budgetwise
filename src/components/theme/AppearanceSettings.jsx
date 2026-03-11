@@ -21,66 +21,131 @@ const AVAILABLE_THEMES = [
   // Future expansion: { id: 'midnight', label: 'Midnight Blue' }
 ];
 
+// Helper to determine which scheduled theme is active right now
+const getActiveScheduledTheme = (schedules) => {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Sort times chronologically
+  const sorted = [...schedules].sort((a, b) => {
+    const [aH, aM] = a.time.split(':').map(Number);
+    const [bH, bM] = b.time.split(':').map(Number);
+    return (aH * 60 + aM) - (bH * 60 + bM);
+  });
+
+  if (sorted.length === 0) return 'light';
+
+  // Default to the last schedule of the previous day
+  let active = sorted[sorted.length - 1].theme;
+  for (const sched of sorted) {
+    const [h, m] = sched.time.split(':').map(Number);
+    if (currentMinutes >= h * 60 + m) {
+      active = sched.theme;
+    } else {
+      break;
+    }
+  }
+  return active;
+};
+
+// Helper to strictly preview theme changes on the DOM without saving
+const applyThemePreview = (config) => {
+  applyA11yTheme(config.a11yTheme || 'none');
+
+  const root = window.document.documentElement;
+  let isDark = false;
+
+  if (config.mode === 'dark') {
+    isDark = true;
+  } else if (config.mode === 'system') {
+    isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } else if (config.mode === 'scheduled') {
+    isDark = getActiveScheduledTheme(config.schedules || []) === 'dark';
+  }
+
+  if (isDark) {
+    root.classList.add('dark');
+    root.classList.remove('light');
+  } else {
+    root.classList.add('light');
+    root.classList.remove('dark');
+  }
+};
+
 export default function AppearanceSettings() {
   const { settings, updateSettings } = useSettings();
 
   const defaultSchedules = [{ time: '08:00', theme: 'light' }, { time: '20:00', theme: 'dark' }];
-  const themeConfig = settings?.themeConfig || { mode: 'system', schedules: defaultSchedules };
+  const savedThemeConfig = settings?.themeConfig || { mode: 'system', schedules: defaultSchedules, a11yTheme: 'none' };
 
-  const handleModeChange = async (newMode) => {
-    if (themeConfig.mode === newMode) return;
+  const [localConfig, setLocalConfig] = useState(savedThemeConfig);
+  const [isDirty, setIsDirty] = useState(false);
 
-    // Clear any manual quick-toggles so the user sees their new setting applied immediately
-    sessionStorage.removeItem('budgetwise_temp_theme');
-
-    await updateSettings({
-      themeConfig: {
-        ...themeConfig,
-        mode: newMode
-      }
-    });
-  };
-
-  const handleScheduleChange = async (index, field, value) => {
-    const newSchedules = [...(themeConfig.schedules || defaultSchedules)];
-    newSchedules[index] = { ...newSchedules[index], [field]: value };
-
-    // Clear any manual quick-toggles so scheduled changes take effect immediately
-    sessionStorage.removeItem('budgetwise_temp_theme');
-
-    await updateSettings({
-      themeConfig: {
-        ...themeConfig,
-        schedules: newSchedules
-      }
-    });
-  };
-
-  const handleTimeChange = async (field, value) => {
-    await updateSettings({
-      themeConfig: {
-        ...themeConfig,
-        [field]: value
-      }
-    });
-  };
-
-  const handleA11yThemeChange = async (themeId) => {
-    applyA11yTheme(themeId);
-    await updateSettings({
-      themeConfig: {
-        ...themeConfig,
-        a11yTheme: themeId
-      }
-    });
-  };
-
-  // Apply saved a11y theme on mount
+  // Keep local state in sync if settings change externally
   useEffect(() => {
-    if (themeConfig.a11yTheme) {
-      applyA11yTheme(themeConfig.a11yTheme);
+    setLocalConfig(savedThemeConfig);
+    setIsDirty(false);
+  }, [settings?.themeConfig]);
+
+  // Revert preview if component unmounts without saving
+  useEffect(() => {
+    return () => applyThemePreview(savedThemeConfig);
+  }, [savedThemeConfig]);
+
+  // Handle system preference changes for live preview
+  useEffect(() => {
+    if (localConfig.mode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => applyThemePreview(localConfig);
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
     }
-  }, [themeConfig.a11yTheme]);
+  }, [localConfig]);
+
+  // Re-check scheduled themes every minute
+  useEffect(() => {
+    if (localConfig.mode === 'scheduled') {
+      const interval = setInterval(() => applyThemePreview(localConfig), 60000);
+      return () => clearInterval(interval);
+    }
+  }, [localConfig]);
+
+  const updateLocalAndPreview = (newConfig) => {
+    setLocalConfig(newConfig);
+    setIsDirty(true);
+    applyThemePreview(newConfig);
+  };
+
+  const handleModeChange = (newMode) => {
+    if (localConfig.mode === newMode) return;
+    updateLocalAndPreview({ ...localConfig, mode: newMode });
+  };
+
+  const handleScheduleChange = (index, field, value) => {
+    const newSchedules = [...(localConfig.schedules || defaultSchedules)];
+    newSchedules[index] = { ...newSchedules[index], [field]: value };
+    updateLocalAndPreview({ ...localConfig, schedules: newSchedules });
+  };
+
+  const handleTimeChange = (field, value) => {
+    updateLocalAndPreview({ ...localConfig, [field]: value });
+  };
+
+  const handleA11yThemeChange = (themeId) => {
+    updateLocalAndPreview({ ...localConfig, a11yTheme: themeId });
+  };
+
+  const handleSave = async () => {
+    sessionStorage.removeItem('budgetwise_temp_theme');
+    await updateSettings({ themeConfig: localConfig });
+    setIsDirty(false);
+  };
+
+  const handleCancel = () => {
+    setLocalConfig(savedThemeConfig);
+    applyThemePreview(savedThemeConfig);
+    setIsDirty(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -92,7 +157,7 @@ export default function AppearanceSettings() {
         {/* Segmented Control */}
         <div className="flex p-1 bg-muted/40 rounded-lg border border-border sm:max-w-md w-full">
           {MODES.map(({ id, label, icon: Icon }) => {
-            const isActive = themeConfig.mode === id;
+            const isActive = localConfig.mode === id;
 
             return (
               <button
@@ -116,7 +181,7 @@ export default function AppearanceSettings() {
       </div>
 
       <AnimatePresence>
-        {themeConfig.mode === 'scheduled' && (
+        {localConfig.mode === 'scheduled' && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -124,7 +189,7 @@ export default function AppearanceSettings() {
             className="overflow-hidden"
           >
             <div className="space-y-2 pt-2 border-t border-border mt-2">
-              {(themeConfig.schedules || defaultSchedules).map((schedule, idx) => (
+              {(localConfig.schedules || defaultSchedules).map((schedule, idx) => (
                 <div key={idx} className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg bg-muted/20 border border-border">
                   <div className="flex items-center gap-2 flex-1 min-w-[140px]">
                     <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -167,7 +232,7 @@ export default function AppearanceSettings() {
                 </div>
                 <input
                   type="time"
-                  value={themeConfig.darkStart}
+                  value={localConfig.darkStart || ''}
                   onChange={(e) => handleTimeChange('darkStart', e.target.value)}
                   className="bg-transparent border-none outline-none text-foreground font-medium text-right focus:ring-0 min-w-[80px]"
                 />
@@ -180,10 +245,35 @@ export default function AppearanceSettings() {
       {/* ADDED 11-Mar-2026: Accessibility theme picker */}
       <div className="pt-2 border-t border-border">
         <AccessibilityThemePicker
-          value={themeConfig.a11yTheme || 'none'}
+          value={localConfig.a11yTheme || 'none'}
           onChange={handleA11yThemeChange}
         />
       </div>
+
+      {/* Save / Cancel Actions */}
+      <AnimatePresence>
+        {isDirty && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+            className="flex items-center justify-end gap-3 overflow-hidden"
+          >
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 text-sm font-medium transition-colors rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 text-sm font-medium text-primary-foreground transition-colors rounded-lg bg-primary hover:bg-primary/90"
+            >
+              Save Changes
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
