@@ -184,12 +184,6 @@ export default function Dashboard() {
       // Use the full budgetHistory instead of the 7-month window
       const stats = getCustomBudgetStats(budget, budgetHistory);
 
-      // Calculate amount paid BEFORE the currently selected month start
-      const paidPrior = budgetHistory
-        .filter(t => t.budgetId === budget.id && t.type === 'expense' && t.isPaid)
-        .filter(t => (t.paidDate || t.date) < monthStart)
-        .reduce((sum, t) => sum + (t.amount || 0), 0);
-
       // Filter allTransactions for this budget that were paid BEFORE the current month start
       const paidPrior = allTransactions
         .filter(t => t.budgetId === budget.id && t.type === 'expense' && t.isPaid)
