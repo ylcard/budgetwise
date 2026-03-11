@@ -124,6 +124,6 @@ export { CustomButton, buttonVariants };
 // 
 // Usage Examples:
 // <CustomButton variant="create">Add New</CustomButton>
-// <CustomButton variant="delete" size="sm">Delete</CustomButton>
+// <CustomButton variant="deleteAction" size="sm">Delete</CustomButton>
 // <CustomButton variant="modify">Edit</CustomButton>
 // <CustomButton variant="success">Complete</CustomButton>
