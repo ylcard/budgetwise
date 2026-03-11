@@ -1,6 +1,6 @@
 @layer base {
   /* --- Soft / Sepia (Blue Light Reduction) --- */
-  :roo[data-a11y-theme="sepia"] {
+  :root[data-a11y-theme="sepia"] {
     --background: 35 30% 96%;
     --foreground: 25 20% 15%;
     --card: 35 25% 94%;
@@ -49,7 +49,7 @@
     --status-unpaid-bg: 25 55% 92%;
     --status-unpaid-text: 25 65% 35%;
   }
-  .dark:roo[data-a11y-theme="sepia"] {
+  .dark:root[data-a11y-theme="sepia"] {
     --background: 25 15% 10%;
     --foreground: 35 20% 80%;
     --card: 25 15% 12%;
