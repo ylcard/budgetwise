@@ -465,6 +465,8 @@ export default function TransactionList({
                         {!isIncome && transaction.paidDate && (
                           <CheckCircle2 className="w-3 h-3 text-[hsl(var(--status-paid-text))] shrink-0" />
                         )}
+                      </div>
+                      <div>
                         {transaction.notes && <StickyNote className="w-3 h-3 text-muted-foreground/40 shrink-0" />}
                       </div>
                     </div>
