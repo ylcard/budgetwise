@@ -1,4 +1,4 @@
-@layer base {
+
   /* --- Soft / Sepia (Blue Light Reduction) --- */
   [data-a11y-theme="sepia"] {
     --background: 35 30% 96%;
@@ -98,4 +98,3 @@
     --status-unpaid-bg: 25 45% 10%;
     --status-unpaid-text: 25 55% 55%;
   }
-}
