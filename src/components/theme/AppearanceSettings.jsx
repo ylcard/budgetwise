@@ -56,6 +56,15 @@ export default function AppearanceSettings() {
     });
   };
 
+  const handleTimeChange = async (field, value) => {
+    await updateSettings({
+      themeConfig: {
+        ...themeConfig,
+        [field]: value
+      }
+    });
+  };
+
   const handleA11yThemeChange = async (themeId) => {
     applyA11yTheme(themeId);
     await updateSettings({
