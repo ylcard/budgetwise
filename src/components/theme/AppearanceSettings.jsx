@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AccessibilityThemePicker from './AccessibilityThemePicker';
+import { applyA11yTheme } from '@/components/utils/accessibilityThemes';
 
 const MODES = [
   { id: 'system', label: 'System', icon: Monitor },
@@ -54,8 +56,25 @@ export default function AppearanceSettings() {
     });
   };
 
+  const handleA11yThemeChange = async (themeId) => {
+    applyA11yTheme(themeId);
+    await updateSettings({
+      themeConfig: {
+        ...themeConfig,
+        a11yTheme: themeId
+      }
+    });
+  };
+
+  // Apply saved a11y theme on mount
+  useEffect(() => {
+    if (themeConfig.a11yTheme) {
+      applyA11yTheme(themeConfig.a11yTheme);
+    }
+  }, [themeConfig.a11yTheme]);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Appearance</h3>
@@ -148,6 +167,14 @@ export default function AppearanceSettings() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ADDED 11-Mar-2026: Accessibility theme picker */}
+      <div className="pt-2 border-t border-border">
+        <AccessibilityThemePicker
+          value={themeConfig.a11yTheme || 'none'}
+          onChange={handleA11yThemeChange}
+        />
+      </div>
     </div>
   );
 }
