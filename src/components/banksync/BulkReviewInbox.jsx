@@ -14,7 +14,7 @@ import { MobileDrawerSelect } from "@/components/ui/MobileDrawerSelect";
 import { FINANCIAL_PRIORITIES } from "@/components/utils/constants";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, BrainCircuit, Receipt, Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Loader2, BrainCircuit, Receipt, Sparkles, ShieldCheck, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useMergedCategories } from "@/components/hooks/useMergedCategories";
 import { Input } from "@/components/ui/input"
@@ -34,6 +34,44 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
 
   // Local state to hold the user's selections for each group before saving
   const [selections, setSelections] = useState({});
+  const [dismissingId, setDismissingId] = useState(null);
+
+  // Dismiss a group without creating a rule
+  const { mutate: dismissGroup, isPending: isDismissing } = useMutation({
+    mutationFn: async (group) => {
+      const transactionsToUpdate = group.transactions;
+
+      const chunkSize = 20;
+      for (let i = 0; i < transactionsToUpdate.length; i += chunkSize) {
+        const chunk = transactionsToUpdate.slice(i, i + chunkSize);
+        await Promise.all(chunk.map(tx =>
+          fetchWithRetry(() => base44.entities.Transaction.update(tx.id, {
+            needsReview: false
+          }))
+        ));
+
+        if (i + chunkSize < transactionsToUpdate.length) {
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
+      }
+      return { txCount: transactionsToUpdate.length };
+    },
+    onMutate: (group) => {
+      setDismissingId(group.key);
+    },
+    onSettled: () => {
+      setDismissingId(null);
+    },
+    onSuccess: (data) => {
+      toast.success("Group Dismissed", {
+        description: `Marked ${data.txCount} transactions as reviewed without a rule.`,
+      });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+    },
+    onError: (error) => {
+      toast.error("Failed to dismiss", { description: error.message });
+    }
+  });
 
   // 1. Smart Grouping Logic
   const groupedTransactions = useMemo(() => {
@@ -259,9 +297,9 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
               const canSave = currentSelection.categoryId && currentSelection.priority;
 
               return (
-                <div key={group.key} className="bg-white rounded-2xl p-4 sm:p-5 border shadow-sm">
+                <div key={group.key} className="bg-white rounded-2xl p-4 sm:p-5 border shadow-sm relative group/card">
                   <div className="flex justify-between items-start mb-4">
-                    <div>
+                    <div className="pr-8">
                       <h4 className="font-bold text-gray-900 text-lg">{group.displayTitle}</h4>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-1 rounded-md">
@@ -273,6 +311,14 @@ export default function BulkReviewInbox({ open, onOpenChange, transactions = [] 
                         </span>
                       </div>
                     </div>
+                    <button
+                      onClick={() => dismissGroup(group)}
+                      disabled={isDismissing || isSaving}
+                      className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                      title="Dismiss group without rule"
+                    >
+                      {dismissingId === group.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
