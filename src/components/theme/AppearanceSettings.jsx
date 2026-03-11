@@ -6,6 +6,7 @@ import { twMerge } from 'tailwind-merge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AccessibilityThemePicker from './AccessibilityThemePicker';
 import { applyA11yTheme } from '@/components/utils/accessibilityThemes';
+import StyleThemePicker, { applyStyleTheme } from './StyleThemePicker';
 
 const MODES = [
   { id: 'system', label: 'System', icon: Monitor },
@@ -50,11 +51,16 @@ const getActiveScheduledTheme = (schedules) => {
 // Helper to strictly preview theme changes on the DOM without saving
 const applyThemePreview = (config) => {
   applyA11yTheme(config.a11yTheme || 'none');
+  applyStyleTheme(config.styleTheme || 'none');
 
   const root = window.document.documentElement;
+  const hasStyleThemeOverride = config.styleTheme && config.styleTheme !== 'none';
   let isDark = false;
 
-  if (config.mode === 'dark') {
+  if (hasStyleThemeOverride) {
+    // Style themes like cyberpunk force dark mode
+    isDark = true;
+  } else if (config.mode === 'dark') {
     isDark = true;
   } else if (config.mode === 'system') {
     isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -120,6 +126,10 @@ export default function AppearanceSettings({ themeConfig, onChange, savedThemeCo
 
   const handleA11yThemeChange = (themeId) => {
     onChange({ ...currentConfig, a11yTheme: themeId });
+  };
+
+  const handleStyleThemeChange = (themeId) => {
+    onChange({ ...currentConfig, styleTheme: themeId });
   };
 
   const handleCancel = () => {
@@ -223,7 +233,15 @@ export default function AppearanceSettings({ themeConfig, onChange, savedThemeCo
         )}
       </AnimatePresence>
 
-      {/* ADDED 11-Mar-2026: Accessibility theme picker */}
+      {/* Style / cosmetic themes */}
+      <div className="pt-2 border-t border-border">
+        <StyleThemePicker
+          value={currentConfig.styleTheme || 'none'}
+          onChange={handleStyleThemeChange}
+        />
+      </div>
+
+      {/* Accessibility theme picker */}
       <div className="pt-2 border-t border-border">
         <AccessibilityThemePicker
           value={currentConfig.a11yTheme || 'none'}
