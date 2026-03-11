@@ -407,7 +407,7 @@ export function TransactionHistory({
   const historyFab = useMemo(() => [
     {
       key: 'sync',
-      label: syncState === 'syncing' ? 'Syncing...' : (hasActiveConnections ? 'Smart Sync' : 'Connect Bank'),
+      label: syncState === 'syncing' ? 'Syncing...' : (hasActiveConnections ? 'Sync' : 'Connect Bank'),
       icon: syncState === 'syncing' ? 'Loader2' : (hasActiveConnections ? 'RefreshCw' : 'Building2'),
       variant: 'sync',
       onClick: hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')
