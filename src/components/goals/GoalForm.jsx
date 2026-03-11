@@ -7,9 +7,11 @@ import { CustomButton } from '@/components/ui/CustomButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AmountInput } from '@/components/ui/AmountInput';
 import DatePicker from '@/components/ui/DatePicker';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSettings } from '../utils/SettingsContext';
 import { formatDateString, addDays, normalizeToMidnight } from '../utils/dateUtils';
-import { TrendingUp, DollarSign, Percent } from 'lucide-react';
+import { TrendingUp, DollarSign, Percent, Zap } from 'lucide-react';
 
 const FREQUENCY_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
@@ -34,6 +36,7 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
   const { settings } = useSettings();
   const baseCurrency = settings?.baseCurrency || 'EUR';
   const [fundingType, setFundingType] = useState(goal?.funding_rule?.type || 'fixed');
+  const [enableStrategy, setEnableStrategy] = useState(!!goal?.funding_rule);
 
   const {
     register,
@@ -65,13 +68,13 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
       deadline: data.deadline,
       icon: data.icon,
       color: data.color,
-      funding_rule: {
+      funding_rule: enableStrategy ? {
         type: fundingType,
         frequency: data.funding_frequency,
         ...(fundingType === 'fixed'
           ? { amount: parseFloat(data.funding_amount) }
           : { percentage: parseFloat(data.funding_percentage) })
-      }
+      } : null
     };
 
     onSubmit(goalData);
@@ -130,91 +133,82 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
           )}
         </div>
 
-        {/* Funding Rule Header */}
-        <div className="pt-4 border-t border-border">
-          <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Funding Strategy
-          </h4>
-        </div>
-
-        {/* Funding Type */}
-        <div className="space-y-2">
-          <Label>Contribution Type</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {FUNDING_TYPE_OPTIONS.map((option) => {
-              const Icon = option.icon;
-              return (
-                <CustomButton
-                  key={option.value}
-                  type="button"
-                  variant={fundingType === option.value ? 'default' : 'outline'}
-                  onClick={() => setFundingType(option.value)}
-                  className="justify-start gap-2"
-                >
-                  <Icon className="w-4 h-4" />
-                  {option.label}
-                </CustomButton>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Funding Amount/Percentage */}
-        <div className="space-y-2">
-          <Label htmlFor={fundingType === 'fixed' ? 'funding_amount' : 'funding_percentage'}>
-            {fundingType === 'fixed' ? 'Contribution Amount' : 'Contribution Percentage'}
-          </Label>
-          {fundingType === 'fixed' ? (
-            <AmountInput
-              value={watch('funding_amount')}
-              onChange={(value) => setValue('funding_amount', value)}
-              placeholder="0.00"
-              currency={baseCurrency}
+        {/* Progressive Disclosure: Funding Strategy */}
+        <div className="pt-4 border-t border-border space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                Automate Funding
+              </Label>
+              <p className="text-xs text-muted-foreground">Set a recurring contribution rule</p>
+            </div>
+            <Switch
+              checked={enableStrategy}
+              onCheckedChange={setEnableStrategy}
             />
-          ) : (
-            <div className="relative">
-              <Input
-                id="funding_percentage"
-                type="number"
-                step="0.1"
-                min="0"
-                max="100"
-                placeholder="5"
-                {...register('funding_percentage', {
-                  min: { value: 0, message: 'Must be at least 0' },
-                  max: { value: 100, message: 'Cannot exceed 100%' }
-                })}
-              />
-              <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
+
+          {enableStrategy && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* Funding Type Toggle */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Strategy: Fixed vs Proportional</Label>
+                <Tabs value={fundingType} onValueChange={setFundingType} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="fixed" className="gap-2">
+                      <DollarSign className="w-4 h-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="percentage" className="gap-2">
+                      <Percent className="w-4 h-4" />
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {/* Consolidated Row: Amount + Frequency */}
+              <div className="grid grid-cols-[1fr_120px] gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">{fundingType === 'fixed' ? 'Amount' : 'Percent'}</Label>
+                  {fundingType === 'fixed' ? (
+                    <AmountInput
+                      value={watch('funding_amount')}
+                      onChange={(value) => setValue('funding_amount', value)}
+                      placeholder="0.00"
+                      currency={baseCurrency}
+                    />
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        {...register('funding_percentage')}
+                        className="pr-8"
+                        placeholder="0"
+                      />
+                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Frequency</Label>
+                  <Select
+                    value={watch('funding_frequency')}
+                    onValueChange={(value) => setValue('funding_frequency', value)}
+                  >
+                    <SelectTrigger className="text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FREQUENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           )}
-          {errors.funding_amount && (
-            <p className="text-xs text-destructive">{errors.funding_amount.message}</p>
-          )}
-          {errors.funding_percentage && (
-            <p className="text-xs text-destructive">{errors.funding_percentage.message}</p>
-          )}
-        </div>
-
-        {/* Frequency */}
-        <div className="space-y-2">
-          <Label htmlFor="funding_frequency">Contribution Frequency</Label>
-          <Select
-            value={watch('funding_frequency')}
-            onValueChange={(value) => setValue('funding_frequency', value)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FREQUENCY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
