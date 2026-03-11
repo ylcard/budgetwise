@@ -459,13 +459,13 @@ export default function TransactionList({
                         <p className="text-sm font-semibold text-foreground truncate max-w-[18ch]">
                           {transaction.title}
                         </p>
-                        {transaction.notes && <StickyNote className="w-3 h-3 text-muted-foreground/40 shrink-0" />}
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                         <span>{formatDate(transaction.date, "MMM d")}</span>
                         {!isIncome && transaction.paidDate && (
                           <CheckCircle2 className="w-3 h-3 text-[hsl(var(--status-paid-text))] shrink-0" />
                         )}
+                        {transaction.notes && <StickyNote className="w-3 h-3 text-muted-foreground/40 shrink-0" />}
                       </div>
                     </div>
 
