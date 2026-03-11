@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-// import TutorialSettings from "../components/tutorial/TutorialSettings";
 
 // Utils & Hooks
 import { useSettings } from "../components/utils/SettingsContext";
@@ -211,9 +210,6 @@ export function PreferencesSection() {
           <AppearanceSettings />
         </CardContent>
       </Card>
-
-      {/* ADDED 15-Feb-2026: Tutorial Settings */}
-      {/* <TutorialSettings /> */}
 
       {/* Sticky Action Bar - Only visible when changes exist */}
       <div className={`
