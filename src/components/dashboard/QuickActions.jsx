@@ -22,11 +22,11 @@ const QuickActions = memo(function QuickActions({
   const handleSyncClick = hasActiveConnections ? onSync : onNavigateBank;
 
   const renderSyncIcon = () => {
-    if (!hasActiveConnections) return <Building2 className="h-4 w-4" />;
-    if (syncState === 'syncing') return <Loader2 className="h-4 w-4 animate-spin" />;
-    if (syncState === 'success') return <Check className="h-4 w-4" />;
-    if (syncState === 'error') return <X className="h-4 w-4" />;
-    return <RefreshCw className="h-4 w-4" />;
+    if (!hasActiveConnections) return <Building2 />;
+    if (syncState === 'syncing') return <Loader2 className="animate-spin" />;
+    if (syncState === 'success') return <Check />;
+    if (syncState === 'error') return <X />;
+    return <RefreshCw />;
   };
 
   const getSyncLabel = () => {
@@ -48,56 +48,56 @@ const QuickActions = memo(function QuickActions({
             className="relative"
           >
             <div className="absolute -inset-0.5 bg-[hsl(var(--stat-income-text))]/30 rounded-lg blur-md animate-pulse" />
-            <button
+            <CustomButton
+              variant="outline"
               onClick={onAddIncome}
-              className="relative w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
-                bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] hover:brightness-95 dark:hover:brightness-110 border border-[hsl(var(--stat-income-text))]/20"
+              className="relative w-full h-auto py-2 px-3 rounded-lg text-xs bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] border-[hsl(var(--stat-income-text))]/20 hover:bg-[hsl(var(--stat-income-bg))] hover:text-[hsl(var(--stat-income-text))] hover:brightness-95 dark:hover:brightness-110"
             >
-              <PlusCircle className="h-4 w-4" />
+              <PlusCircle />
               Add Income
-            </button>
+            </CustomButton>
           </motion.div>
         ) : (
-          <button
+          <CustomButton
+            variant="outline"
             onClick={onAddIncome}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
-              bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] hover:brightness-95 dark:hover:brightness-110 border border-[hsl(var(--stat-income-text))]/20"
+            className="w-full h-auto py-2 px-3 rounded-lg text-xs bg-[hsl(var(--stat-income-bg))] text-[hsl(var(--stat-income-text))] border-[hsl(var(--stat-income-text))]/20 hover:bg-[hsl(var(--stat-income-bg))] hover:text-[hsl(var(--stat-income-text))] hover:brightness-95 dark:hover:brightness-110"
           >
-            <PlusCircle className="h-4 w-4" />
+            <PlusCircle />
             Add Income
-          </button>
+          </CustomButton>
         )}
 
         {/* Add Expense */}
-        <button
+        <CustomButton
+          variant="outline"
           onClick={onAddExpense}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
-            bg-[hsl(var(--stat-expense-bg))] text-[hsl(var(--stat-expense-text))] hover:brightness-95 dark:hover:brightness-110 border border-[hsl(var(--stat-expense-text))]/20"
+          className="w-full h-auto py-2 px-3 rounded-lg text-xs bg-[hsl(var(--stat-expense-bg))] text-[hsl(var(--stat-expense-text))] border-[hsl(var(--stat-expense-text))]/20 hover:bg-[hsl(var(--stat-expense-bg))] hover:text-[hsl(var(--stat-expense-text))] hover:brightness-95 dark:hover:brightness-110"
         >
-          <MinusCircle className="h-4 w-4" />
+          <MinusCircle />
           Add Expense
-        </button>
+        </CustomButton>
 
         {/* Import */}
-        <button
+        <CustomButton
+          variant="outline"
           onClick={onImport}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors
-            bg-[hsl(var(--stat-balance-pos-bg))] text-[hsl(var(--stat-balance-pos-text))] hover:brightness-95 dark:hover:brightness-110 border border-[hsl(var(--stat-balance-pos-text))]/20"
+          className="w-full h-auto py-2 px-3 rounded-lg text-xs bg-[hsl(var(--stat-balance-pos-bg))] text-[hsl(var(--stat-balance-pos-text))] border-[hsl(var(--stat-balance-pos-text))]/20 hover:bg-[hsl(var(--stat-balance-pos-bg))] hover:text-[hsl(var(--stat-balance-pos-text))] hover:brightness-95 dark:hover:brightness-110"
         >
-          <FileUp className="h-4 w-4" />
+          <FileUp />
           Import Data
-        </button>
+        </CustomButton>
 
         {/* Sync */}
-        <button
+        <CustomButton
+          variant="outline"
           onClick={handleSyncClick}
           disabled={syncState === 'syncing'}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-60
-            bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground border border-border"
+          className="w-full h-auto py-2 px-3 rounded-lg text-xs bg-muted text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
         >
           {renderSyncIcon()}
           {getSyncLabel()}
-        </button>
+        </CustomButton>
       </div>
     </div>
   );
