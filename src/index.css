@@ -5,6 +5,7 @@
 @import "./components/theme/oled.css";
 @import "./components/theme/sepia.css";
 @import "./components/theme/focus.css";
+@import "./components/theme/cyberpunk.css";
 
 @tailwind base;
 @tailwind components;
