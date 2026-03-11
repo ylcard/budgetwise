@@ -1,6 +1,6 @@
 @layer base {
   /* --- Monochromacy / Achromatopsia (Total Color Blindness) --- */
-  [data-a11y-theme="monochromacy"] {
+  :root[data-a11y-theme="monochromacy"] {
     --stat-income-from: 0 0% 30%;
     --stat-income-to: 0 0% 25%;
     --stat-income-bg: 0 0% 94%;
@@ -22,7 +22,7 @@
     --status-unpaid-bg: 0 0% 88%;
     --status-unpaid-text: 0 0% 45%;
   }
-  .dark[data-a11y-theme="monochromacy"] {
+  .dark:root[data-a11y-theme="monochromacy"] {
     --stat-income-from: 0 0% 60%;
     --stat-income-to: 0 0% 55%;
     --stat-income-bg: 0 0% 12%;
