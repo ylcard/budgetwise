@@ -1,6 +1,6 @@
 @layer base {
   /* --- True High Contrast (WCAG AAA) --- */
-  [data-a11y-theme="high-contrast"] {
+  :root[data-a11y-theme="high-contrast"] {
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
     --card: 0 0% 100%;
@@ -41,7 +41,7 @@
     --status-unpaid-bg: 30 100% 92%;
     --status-unpaid-text: 30 100% 30%;
   }
-  .dark[data-a11y-theme="high-contrast"] {
+  .dark:root[data-a11y-theme="high-contrast"] {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
     --card: 0 0% 0%;
