@@ -40,7 +40,7 @@ export default function CustomBudgetsDisplay({
           <CardHeader className="relative flex flex-row items-center justify-end md:justify-between space-y-0 py-4 pr-6 min-h-[70px]">
             <div className="hidden md:flex items-center gap-3">
               <CustomButton
-                variant="create"
+                variant="budget"
                 className="rounded-lg bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-2 px-3 py-1 text-sm font-medium"
                 onClick={onCreateBudget}
               >
