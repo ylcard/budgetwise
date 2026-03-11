@@ -142,11 +142,6 @@ export default function Dashboard() {
   // Alias for useActiveBudgets which expects 'allSystemBudgets' — same data when viewing one month
   const allSystemBudgets = systemBudgets;
 
-  // REMOVED 10-Mar-2026: useHistoricalIncomeTransactions was a separate DB call
-  // The projection engine and dashboard summary now use the main transactions list
-  // which already fetches with a 30-day buffer via useTransactions.
-  // const { incomeTransactions: historicalIncome } = useHistoricalIncomeTransactions(user);
-
   const monthlyIncome = useMonthlyIncome(transactions, selectedMonth, selectedYear);
 
   const { currentMonthIncome, currentMonthExpenses, bonusSavingsPotential, projectedIncome, isUsingProjection } = useDashboardSummary(
@@ -182,7 +177,7 @@ export default function Dashboard() {
     return rawActiveCustomBudgets.map(budget => {
       const stats = getCustomBudgetStats(budget, allTransactions);
 
-      // Calculate amount paid BEFORE the currently selected month start
+      // Filter allTransactions for this budget that were paid BEFORE the current month start
       const paidPrior = allTransactions
         .filter(t => t.budgetId === budget.id && t.type === 'expense' && t.isPaid)
         .filter(t => (t.paidDate || t.date) < monthStart)
