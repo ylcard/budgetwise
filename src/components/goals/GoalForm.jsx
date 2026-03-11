@@ -78,146 +78,148 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-      {/* Title */}
-      <div className="space-y-2">
-        <Label htmlFor="title">Goal Title *</Label>
-        <Input
-          id="title"
-          placeholder="e.g., Emergency Fund, Vacation, New Car"
-          {...register('title', { required: 'Title is required' })}
-        />
-        {errors.title && (
-          <p className="text-xs text-destructive">{errors.title.message}</p>
-        )}
-      </div>
-
-      {/* Description */}
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          placeholder="Optional: Add notes about this goal..."
-          rows={2}
-          {...register('description')}
-        />
-      </div>
-
-      {/* Target Amount */}
-      <div className="space-y-2">
-        <Label htmlFor="target_amount">Target Amount *</Label>
-        <AmountInput
-          value={watch('target_amount')}
-          onChange={(value) => setValue('target_amount', value)}
-          placeholder="0.00"
-          currency={baseCurrency}
-        />
-        {errors.target_amount && (
-          <p className="text-xs text-destructive">{errors.target_amount.message}</p>
-        )}
-      </div>
-
-      {/* Deadline */}
-      <div className="space-y-2">
-        <Label>Deadline *</Label>
-        <DatePicker
-          value={deadline}
-          onChange={(date) => setValue('deadline', date)}
-        />
-        {errors.deadline && (
-          <p className="text-xs text-destructive">{errors.deadline.message}</p>
-        )}
-      </div>
-
-      {/* Funding Rule Header */}
-      <div className="pt-4 border-t border-border">
-        <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" />
-          Funding Strategy
-        </h4>
-      </div>
-
-      {/* Funding Type */}
-      <div className="space-y-2">
-        <Label>Contribution Type</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {FUNDING_TYPE_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            return (
-              <CustomButton
-                key={option.value}
-                type="button"
-                variant={fundingType === option.value ? 'default' : 'outline'}
-                onClick={() => setFundingType(option.value)}
-                className="justify-start gap-2"
-              >
-                <Icon className="w-4 h-4" />
-                {option.label}
-              </CustomButton>
-            );
-          })}
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
+        {/* Title */}
+        <div className="space-y-2">
+          <Label htmlFor="title">Goal Title *</Label>
+          <Input
+            id="title"
+            placeholder="e.g., Emergency Fund, Vacation, New Car"
+            {...register('title', { required: 'Title is required' })}
+          />
+          {errors.title && (
+            <p className="text-xs text-destructive">{errors.title.message}</p>
+          )}
         </div>
-      </div>
 
-      {/* Funding Amount/Percentage */}
-      <div className="space-y-2">
-        <Label htmlFor={fundingType === 'fixed' ? 'funding_amount' : 'funding_percentage'}>
-          {fundingType === 'fixed' ? 'Contribution Amount' : 'Contribution Percentage'}
-        </Label>
-        {fundingType === 'fixed' ? (
+        {/* Description */}
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            placeholder="Optional: Add notes about this goal..."
+            rows={2}
+            {...register('description')}
+          />
+        </div>
+
+        {/* Target Amount */}
+        <div className="space-y-2">
+          <Label htmlFor="target_amount">Target Amount *</Label>
           <AmountInput
-            value={watch('funding_amount')}
-            onChange={(value) => setValue('funding_amount', value)}
+            value={watch('target_amount')}
+            onChange={(value) => setValue('target_amount', value)}
             placeholder="0.00"
             currency={baseCurrency}
           />
-        ) : (
-          <div className="relative">
-            <Input
-              id="funding_percentage"
-              type="number"
-              step="0.1"
-              min="0"
-              max="100"
-              placeholder="5"
-              {...register('funding_percentage', {
-                min: { value: 0, message: 'Must be at least 0' },
-                max: { value: 100, message: 'Cannot exceed 100%' }
-              })}
-            />
-            <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          </div>
-        )}
-        {errors.funding_amount && (
-          <p className="text-xs text-destructive">{errors.funding_amount.message}</p>
-        )}
-        {errors.funding_percentage && (
-          <p className="text-xs text-destructive">{errors.funding_percentage.message}</p>
-        )}
-      </div>
+          {errors.target_amount && (
+            <p className="text-xs text-destructive">{errors.target_amount.message}</p>
+          )}
+        </div>
 
-      {/* Frequency */}
-      <div className="space-y-2">
-        <Label htmlFor="funding_frequency">Contribution Frequency</Label>
-        <Select
-          value={watch('funding_frequency')}
-          onValueChange={(value) => setValue('funding_frequency', value)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FREQUENCY_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Deadline */}
+        <div className="space-y-2">
+          <Label>Deadline *</Label>
+          <DatePicker
+            value={deadline}
+            onChange={(date) => setValue('deadline', date)}
+          />
+          {errors.deadline && (
+            <p className="text-xs text-destructive">{errors.deadline.message}</p>
+          )}
+        </div>
+
+        {/* Funding Rule Header */}
+        <div className="pt-4 border-t border-border">
+          <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Funding Strategy
+          </h4>
+        </div>
+
+        {/* Funding Type */}
+        <div className="space-y-2">
+          <Label>Contribution Type</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {FUNDING_TYPE_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              return (
+                <CustomButton
+                  key={option.value}
+                  type="button"
+                  variant={fundingType === option.value ? 'default' : 'outline'}
+                  onClick={() => setFundingType(option.value)}
+                  className="justify-start gap-2"
+                >
+                  <Icon className="w-4 h-4" />
+                  {option.label}
+                </CustomButton>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Funding Amount/Percentage */}
+        <div className="space-y-2">
+          <Label htmlFor={fundingType === 'fixed' ? 'funding_amount' : 'funding_percentage'}>
+            {fundingType === 'fixed' ? 'Contribution Amount' : 'Contribution Percentage'}
+          </Label>
+          {fundingType === 'fixed' ? (
+            <AmountInput
+              value={watch('funding_amount')}
+              onChange={(value) => setValue('funding_amount', value)}
+              placeholder="0.00"
+              currency={baseCurrency}
+            />
+          ) : (
+            <div className="relative">
+              <Input
+                id="funding_percentage"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                placeholder="5"
+                {...register('funding_percentage', {
+                  min: { value: 0, message: 'Must be at least 0' },
+                  max: { value: 100, message: 'Cannot exceed 100%' }
+                })}
+              />
+              <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
+          )}
+          {errors.funding_amount && (
+            <p className="text-xs text-destructive">{errors.funding_amount.message}</p>
+          )}
+          {errors.funding_percentage && (
+            <p className="text-xs text-destructive">{errors.funding_percentage.message}</p>
+          )}
+        </div>
+
+        {/* Frequency */}
+        <div className="space-y-2">
+          <Label htmlFor="funding_frequency">Contribution Frequency</Label>
+          <Select
+            value={watch('funding_frequency')}
+            onValueChange={(value) => setValue('funding_frequency', value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FREQUENCY_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-3 pt-4 border-t border-border bg-background mt-auto pb-6">
         <CustomButton
           type="button"
           variant="outline"
