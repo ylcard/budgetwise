@@ -1,0 +1,61 @@
+@layer base {
+  /* --- Cyberpunk 2077 Inspired Theme ---
+     Neon yellow (#FCE300) primary, hot magenta accents,
+     deep dark blue-black backgrounds. Forces dark palette. */
+  :root[data-style-theme="cyberpunk"] {
+    --background: 230 25% 6%;
+    --foreground: 55 100% 88%;
+    --card: 230 22% 8%;
+    --card-foreground: 55 100% 88%;
+    --popover: 230 22% 8%;
+    --popover-foreground: 55 100% 88%;
+    --primary: 55 97% 50%;
+    --primary-foreground: 230 25% 6%;
+    --secondary: 230 20% 13%;
+    --secondary-foreground: 55 100% 88%;
+    --muted: 230 18% 14%;
+    --muted-foreground: 200 15% 55%;
+    --accent: 320 85% 52%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 230 20% 16%;
+    --input: 230 20% 16%;
+    --ring: 55 97% 50%;
+    --bg-subtle: #0a0c14;
+    --sidebar-background: 230 25% 5%;
+    --sidebar-foreground: 55 100% 88%;
+    --sidebar-primary: 55 97% 50%;
+    --sidebar-primary-foreground: 230 25% 6%;
+    --sidebar-accent: 230 20% 12%;
+    --sidebar-accent-foreground: 55 100% 88%;
+    --sidebar-border: 230 20% 14%;
+    --chart-1: 55 97% 50%;
+    --chart-2: 320 85% 52%;
+    --chart-3: 180 100% 45%;
+    --chart-4: 270 80% 60%;
+    --chart-5: 15 95% 55%;
+
+    /* Semantic stat colors — neon cyber palette */
+    --stat-income-from: 180 100% 42%;
+    --stat-income-to: 165 90% 38%;
+    --stat-income-bg: 180 80% 8%;
+    --stat-income-text: 180 100% 60%;
+    --stat-expense-from: 320 85% 52%;
+    --stat-expense-to: 340 80% 48%;
+    --stat-expense-bg: 320 70% 8%;
+    --stat-expense-text: 320 85% 65%;
+    --stat-balance-pos-from: 55 97% 50%;
+    --stat-balance-pos-to: 45 95% 45%;
+    --stat-balance-pos-bg: 55 80% 8%;
+    --stat-balance-pos-text: 55 97% 65%;
+    --stat-balance-neg-from: 0 85% 50%;
+    --stat-balance-neg-to: 15 80% 45%;
+    --stat-balance-neg-bg: 0 70% 8%;
+    --stat-balance-neg-text: 0 85% 60%;
+    --status-paid-bg: 180 80% 8%;
+    --status-paid-text: 180 100% 60%;
+    --status-unpaid-bg: 320 70% 8%;
+    --status-unpaid-text: 320 85% 65%;
+  }
+}
