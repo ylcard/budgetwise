@@ -1,0 +1,47 @@
+@layer base {
+  /* --- Monochromacy / Achromatopsia (Total Color Blindness) --- */
+  [data-a11y-theme="monochromacy"] {
+    --stat-income-from: 0 0% 30%;
+    --stat-income-to: 0 0% 25%;
+    --stat-income-bg: 0 0% 94%;
+    --stat-income-text: 0 0% 20%;
+    --stat-expense-from: 0 0% 55%;
+    --stat-expense-to: 0 0% 50%;
+    --stat-expense-bg: 0 0% 90%;
+    --stat-expense-text: 0 0% 40%;
+    --stat-balance-pos-from: 0 0% 15%;
+    --stat-balance-pos-to: 0 0% 10%;
+    --stat-balance-pos-bg: 0 0% 96%;
+    --stat-balance-pos-text: 0 0% 10%;
+    --stat-balance-neg-from: 0 0% 65%;
+    --stat-balance-neg-to: 0 0% 60%;
+    --stat-balance-neg-bg: 0 0% 88%;
+    --stat-balance-neg-text: 0 0% 45%;
+    --status-paid-bg: 0 0% 94%;
+    --status-paid-text: 0 0% 20%;
+    --status-unpaid-bg: 0 0% 88%;
+    --status-unpaid-text: 0 0% 45%;
+  }
+  .dark[data-a11y-theme="monochromacy"] {
+    --stat-income-from: 0 0% 60%;
+    --stat-income-to: 0 0% 55%;
+    --stat-income-bg: 0 0% 12%;
+    --stat-income-text: 0 0% 75%;
+    --stat-expense-from: 0 0% 40%;
+    --stat-expense-to: 0 0% 35%;
+    --stat-expense-bg: 0 0% 8%;
+    --stat-expense-text: 0 0% 60%;
+    --stat-balance-pos-from: 0 0% 70%;
+    --stat-balance-pos-to: 0 0% 65%;
+    --stat-balance-pos-bg: 0 0% 14%;
+    --stat-balance-pos-text: 0 0% 80%;
+    --stat-balance-neg-from: 0 0% 30%;
+    --stat-balance-neg-to: 0 0% 25%;
+    --stat-balance-neg-bg: 0 0% 6%;
+    --stat-balance-neg-text: 0 0% 50%;
+    --status-paid-bg: 0 0% 12%;
+    --status-paid-text: 0 0% 75%;
+    --status-unpaid-bg: 0 0% 8%;
+    --status-unpaid-text: 0 0% 60%;
+  }
+}
