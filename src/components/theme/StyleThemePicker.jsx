@@ -63,8 +63,7 @@ const StyleThemePicker = memo(function StyleThemePicker({ value = 'none', onChan
             label={theme.label}
             isActive={visualId === theme.id}
             onClick={() => handleSelect(theme)}
-            themeClass={theme.themeClass}
-            styleThemeAttr={theme.styleAttr}
+            paletteId={theme.paletteId}
           />
         ))}
       </div>
