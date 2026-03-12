@@ -144,7 +144,7 @@ const CategoryDetailDrawer = React.memo(({ category, onClose, transactionCount, 
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
+      <Drawer open={open} onOpenChange={(o) => !o && onClose()} shouldScaleBackground={false}>
         <DrawerContent>
           <DrawerHeader className="text-left hidden">
             <DrawerTitle className="sr-only">Category Details</DrawerTitle>
