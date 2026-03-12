@@ -63,6 +63,8 @@ export default function Dashboard() {
   // Measure QuickActions to set the "standard" top-row height
   const [actionsRef, { height: actionsHeight }] = useMeasure();
 
+  const dashboardScrollRef = useRef(null);
+
   const { user, settings } = useSettings();
   const [quickAddState, setQuickAddState] = useState(null); // null | 'new' | templateObject
   const [quickAddIncomeState, setQuickAddIncomeState] = useState(null); // UPDATED: null | 'new' | templateObject
@@ -432,11 +434,9 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* REMOVED 10-Mar-2026: Inner HealthProvider — the Layout already wraps all pages in HealthProvider. */}
-      {/* Dashboard now pushes health data up via useHealth().setBudgetHealth instead. */}
-      {/* Mobile: No padding on sides (components handle it). Desktop: Standard padding. */}
-      <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden px-0 py-4 md:p-8 relative">
-        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24">
+      {/* Main Scroll Container */}
+      <div ref={dashboardScrollRef} className="h-[calc(100vh-var(--header-total-height)-var(--nav-total-height))] w-full max-w-[100vw] overflow-y-auto overflow-x-hidden px-0 py-4 md:p-8 relative scroll-smooth">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-32">
           {/* Desktop Header Only */}
           <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-4 md:px-0">
             <div>
@@ -660,8 +660,8 @@ export default function Dashboard() {
             user={user}
           />
         </div>
+        <ScrollToTopButton scrollRef={dashboardScrollRef} />
       </div>
-      <ScrollToTopButton />
     </>
   );
 }
