@@ -41,7 +41,7 @@ const ScrollToTopButton = memo(function ScrollToTopButton({ scrollRef, threshold
           transition={{ duration: 0.2, ease: "easeOut" }}
           onClick={scrollToTop}
           className="fixed left-1/2 -translate-x-1/2 z-30 w-10 h-10 rounded-full bg-white/60 dark:bg-card/60 backdrop-blur-md border border-border/50 shadow-lg flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition-all"
-          style={{ bottom: "calc(var(--nav-total-height) - 100px)" }}
+          style={{ bottom: "calc(var(--nav-total-height) - 50px)" }}
           aria-label="Scroll to top"
         >
           <ChevronUp className="w-5 h-5" />
