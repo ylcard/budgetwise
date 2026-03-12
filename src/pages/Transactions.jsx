@@ -35,7 +35,7 @@ import LastSyncInfo from "@/components/ui/LastSyncInfo";
  * Transactions Layout - Main wrapper for History and Recurring tabs
  */
 export default function TransactionsLayout() {
-  const { user } = useSettings();
+  const { user, settings } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   // Initialize tab based on URL, but then handle locally
@@ -297,7 +297,7 @@ export function TransactionHistory({
   setShowRecurringForm,
   setEditingRecurring
 }) {
-  const { user, settings } = useSettings();
+  const { user } = useSettings();
   const { confirmAction } = useConfirm();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
