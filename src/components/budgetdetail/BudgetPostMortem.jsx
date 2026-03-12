@@ -176,7 +176,7 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             {budget && normalizeToMidnight(budget.startDate) > normalizeToMidnight(new Date())
               ? "Budget starts in the future. Insights will appear once expenses are added."
               : "Add expenses to see insights and recommendations."}
@@ -224,20 +224,20 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Accuracy Score */}
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div>
-            <p className="text-xs text-gray-500 mb-1">
+        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground mb-1">
               {analysis.isCompleted ? 'Final Accuracy' : 'Current Status'}
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-gray-900">
+              <span className="text-2xl font-bold text-foreground">
                 {analysis.accuracy.toFixed(0)}%
               </span>
               <VarianceIcon className={`w-5 h-5 ${getVarianceColor()}`} />
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500">Variance</p>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-muted-foreground">Variance</p>
             <p className={`text-sm font-semibold ${getVarianceColor()}`}>
               {analysis.variance >= 0 ? '+' : ''}
               {formatCurrency(analysis.variance, settings)}
@@ -247,7 +247,7 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
 
         {/* Category Breakdown */}
         <div>
-          <h5 className="text-xs font-semibold text-gray-700 mb-2">Top Categories</h5>
+          <h5 className="text-xs font-semibold text-foreground/70 mb-2">Top Categories</h5>
           <div className="space-y-2">
             {Object.entries(analysis.categoryBreakdown)
               .sort((a, b) => b[1] - a[1])
@@ -255,13 +255,13 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
               .map(([category, amount]) => {
                 const percentage = (amount / analysis.totalSpent) * 100;
                 return (
-                  <div key={category} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{category}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">
+                  <div key={category} className="flex items-center justify-between text-sm gap-2">
+                    <span className="text-muted-foreground truncate">{category}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-muted-foreground/60">
                         {percentage.toFixed(0)}%
                       </span>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-foreground">
                         {formatCurrency(amount, settings)}
                       </span>
                     </div>
@@ -274,7 +274,7 @@ export default function BudgetPostMortem({ budget, transactions, categories, set
         {/* Insights */}
         {analysis.insights.length > 0 && (
           <div className="space-y-2">
-            <h5 className="text-xs font-semibold text-gray-700">Recommendations</h5>
+            <h5 className="text-xs font-semibold text-foreground/70">Recommendations</h5>
             {analysis.insights.map((insight, idx) => {
               const Icon = insight.type === 'success' ? CheckCircle2 :
                 insight.type === 'warning' ? AlertTriangle :
