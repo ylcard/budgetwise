@@ -29,6 +29,7 @@ import { AdminConsistencyChecker } from "../components/transactions/AdminConsist
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2, Repeat } from "lucide-react";
 import { useBankSync } from "../components/banksync/useBankSync";
+import LastSyncInfo from "../ui/LastSyncInfo";
 
 /**
  * Transactions Layout - Main wrapper for History and Recurring tabs
@@ -63,6 +64,14 @@ export default function TransactionsLayout() {
   });
 
   const hasActiveConnections = connections.some(c => c.status === 'active');
+
+  const lastSyncDate = useMemo(() => {
+    const syncDates = connections
+      .filter(c => c.status === 'active' && c.last_sync)
+      .map(c => new Date(c.last_sync).getTime());
+    return syncDates.length > 0 ? new Date(Math.max(...syncDates)) : null;
+  }, [connections]);
+
   const { executeSync } = useBankSync(user);
 
   const queryClient = useQueryClient();
@@ -127,19 +136,36 @@ export default function TransactionsLayout() {
               <CustomButton
                 variant="sync"
                 size="sm"
-                className={`h-9 gap-2 transition-all duration-300 ${hasActiveConnections ? 'w-[110px]' : 'w-auto'}`}
+                className={`h-auto py-1 px-3 gap-2 transition-all duration-300 ${hasActiveConnections ? 'min-w-[110px]' : 'w-auto'}`}
                 onClick={hasActiveConnections ? handleGlobalSync : () => navigate('/BankSync')}
                 disabled={syncState === 'syncing'}
               >
                 {!hasActiveConnections ? (
                   <><Building2 className="h-4 w-4" /> Connect Bank</>
                 ) : (
-                  <>
-                    {syncState === 'idle' && <><RefreshCw className="h-4 w-4" /> Sync</>}
-                    {syncState === 'syncing' && <><Loader2 className="h-4 w-4 animate-spin" /> Syncing</>}
-                    {syncState === 'success' && <><Check className="h-4 w-4 text-emerald-500" /> Synced</>}
-                    {syncState === 'error' && <><X className="h-4 w-4 text-rose-500" /> Failed</>}
-                  </>
+                  <div className="flex items-center gap-2">
+                    {syncState === 'idle' && <RefreshCw className="h-4 w-4" />}
+                    {syncState === 'syncing' && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {syncState === 'success' && <Check className="h-4 w-4 text-emerald-500" />}
+                    {syncState === 'error' && <X className="h-4 w-4 text-rose-500" />}
+
+                    <div className="flex flex-col items-start leading-tight">
+                      <span className="text-xs font-medium">
+                        {syncState === 'idle' && "Sync"}
+                        {syncState === 'syncing' && "Syncing"}
+                        {syncState === 'success' && "Synced"}
+                        {syncState === 'error' && "Failed"}
+                      </span>
+                      {lastSyncDate && syncState === 'idle' && (
+                        <LastSyncInfo
+                          date={lastSyncDate}
+                          prefix="Last:"
+                          formatOverride="MMM dd"
+                          className="text-[10px] opacity-60 font-normal text-inherit"
+                        />
+                      )}
+                    </div>
+                  </div>
                 )}
               </CustomButton>
 
@@ -267,7 +293,7 @@ export function TransactionHistory({
   setShowRecurringForm,
   setEditingRecurring
 }) {
-  const { user } = useSettings();
+  const { user, settings } = useSettings();
   const { confirmAction } = useConfirm();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
