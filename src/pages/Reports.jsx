@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -29,6 +29,7 @@ import {
 } from "../components/utils/dateUtils";
 import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
 import useEmblaCarousel from "embla-carousel-react";
+import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
  * Financial Reports Page
@@ -69,6 +70,10 @@ export default function Reports() {
   // ADDED: Mobile State
   const [mobileTab, setMobileTab] = useState("analysis"); // 'analysis' | 'breakdown'
   const [fullScreenChart, setFullScreenChart] = useState(null); // Content to show in full screen
+
+  // Scroll refs for mobile tabs (for ScrollToTopButton)
+  const analysisScrollRef = useRef(null);
+  const breakdownScrollRef = useRef(null);
 
   // Derived data
   const monthlyTransactions = useMonthlyTransactions(transactions, selectedMonth, selectedYear);
