@@ -328,7 +328,7 @@ export default function Reports() {
 
           {/* TAB: ANALYSIS (Carousel) */}
           {mobileTab === 'analysis' && (
-            <div className="h-full pb-20 pt-4 space-y-8 overflow-y-auto">
+            <div className="h-full pb-20 pt-4 space-y-8 overflow-y-auto overflow-x-hidden">
 
               <section>
                 <h2 className="px-4 md:px-0 text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Overview</h2>
