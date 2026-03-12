@@ -27,6 +27,7 @@ export default function CustomBudgetsDisplay({
 
   const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [canScroll, setCanScroll] = useState(false);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -36,6 +37,11 @@ export default function CustomBudgetsDisplay({
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on('select', onSelect);
+    // ADDED 12-Mar-2026: Track whether carousel is scrollable (more slides than visible)
+    const updateCanScroll = () => setCanScroll(emblaApi.canScrollNext() || emblaApi.canScrollPrev());
+    emblaApi.on('resize', updateCanScroll);
+    emblaApi.on('reInit', updateCanScroll);
+    updateCanScroll();
   }, [emblaApi, onSelect]);
 
   return (
