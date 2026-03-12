@@ -236,7 +236,6 @@ export const TUTORIALS = {
       },
     ],
   },
-};
 
   // ADDED 12-Mar-2026: Transaction History tab tutorial
   [TUTORIAL_IDS.TRANSACTION_HISTORY]: {
@@ -291,6 +290,7 @@ export const TUTORIALS = {
       },
     ],
   },
+};
 
 // Helper to get ordered tutorial list for settings UI
 export const getTutorialList = () => {
