@@ -92,15 +92,20 @@ function TransactionMonthGroup({ date, categories, customBudgets, onEdit, onDele
                       {formatDate(transaction.date, "MMM d")}
                     </p>
                     {customBudget && (
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] px-1.5 py-0 font-medium max-w-[120px] truncate ${crossPeriodInfo.isCrossPeriod
-                          ? 'bg-[hsl(var(--status-unpaid-bg))] text-[hsl(var(--status-unpaid-text))] border-[hsl(var(--status-unpaid-text))/0.2]'
-                          : 'bg-muted text-muted-foreground border-border'
-                          } transition-all inline-flex items-center gap-1`}
+                      <Link
+                        to={`/BudgetDetail?id=${customBudget.id}`}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {customBudget.name}
-                      </Badge>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-1.5 py-0 font-medium max-w-[120px] truncate cursor-pointer hover:opacity-80 ${crossPeriodInfo.isCrossPeriod
+                            ? 'bg-[hsl(var(--status-unpaid-bg))] text-[hsl(var(--status-unpaid-text))] border-[hsl(var(--status-unpaid-text))/0.2]'
+                            : 'bg-muted text-muted-foreground border-border'
+                            } transition-all inline-flex items-center gap-1`}
+                        >
+                          {customBudget.name}
+                        </Badge>
+                      </Link>
                     )}
                   </div>
                 </div>
