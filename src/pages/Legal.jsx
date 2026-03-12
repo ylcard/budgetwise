@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Shield, FileText, Cookie, AlertTriangle } from "lucide-react";
 import LegalSegmentedControl from "@/components/legal/LegalSegmentedControl";
 import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Import existing page components
 import PrivacyPolicy from "./PrivacyPolicy";
@@ -57,15 +58,22 @@ export default function LegalPage() {
 
             {/* Content Area — all tabs stay mounted, only the active one is visible */}
             <div className="w-full max-w-4xl mx-auto pb-32 px-0">
-                <Suspense fallback={<div className="p-8 text-center text-muted-foreground animate-pulse">Loading policy...</div>}>
-                    {TAB_CONFIG.map((item) => (
-                        <div
-                            key={item.value}
-                            className={currentTab === item.value ? "block" : "hidden"}
-                        >
-                            <item.component />
-                        </div>
-                    ))}
+                <Suspense fallback={<div className="p-8 text-center text-muted-foreground animate-pulse font-medium">Loading policy...</div>}>
+                    <AnimatePresence mode="wait">
+                        {TAB_CONFIG.map((item) => (
+                            currentTab === item.value && (
+                                <motion.div
+                                    key={item.value}
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.2, ease: "easeOut" }}
+                                >
+                                    <item.component />
+                                </motion.div>
+                            )
+                        ))}
+                    </AnimatePresence>
                 </Suspense>
             </div>
 
