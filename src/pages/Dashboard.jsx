@@ -270,6 +270,14 @@ export default function Dashboard() {
     staleTime: 1000 * 60 * 15, // CHANGED 10-Mar-2026: 15 mins (was 5) — bank connections rarely change
   });
   const hasActiveConnections = connections.some(c => c.status === 'active');
+
+  const lastSyncDate = useMemo(() => {
+    const syncDates = connections
+      .filter(c => c.status === 'active' && c.last_sync)
+      .map(c => new Date(c.last_sync).getTime());
+    return syncDates.length > 0 ? new Date(Math.max(...syncDates)) : null;
+  }, [connections]);
+
   const { executeSync } = useBankSync(user);
 
   const handleGlobalSync = async () => {
@@ -283,6 +291,7 @@ export default function Dashboard() {
       }
       setSyncState('success');
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRANSACTIONS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BANK_CONNECTIONS] });
       setTimeout(() => setSyncState('idle'), 3000);
     } catch (error) {
       setSyncState('error');
@@ -534,6 +543,8 @@ export default function Dashboard() {
                   onSync={handleGlobalSync}
                   hasActiveConnections={hasActiveConnections}
                   syncState={syncState}
+                  lastSyncDate={lastSyncDate}
+                  settings={settings}
                   isEmptyMonth={(!currentMonthIncome || currentMonthIncome === 0) && (!currentMonthExpenses || currentMonthExpenses === 0)}
                   onNavigateBank={() => navigate('/BankSync')}
                 />
