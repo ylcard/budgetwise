@@ -193,59 +193,71 @@ export default function MonthlyBreakdown({
             </div>
           </CardHeader>
           <CardContent className="pt-6 flex-1">
-            {sortedBreakdown.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200 min-h-[200px]">
-                <p>No expenses to show yet</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {sortedBreakdown.map((item) => {
-                  const IconComponent = getCategoryIcon(item.icon);
-                  const alertStyles = getAlertCardStyles(item.alertStatus);
+            {/* MOBILE: Compact ordered list (ADDED 12-Mar-2026) */}
+            <div className="md:hidden">
+              <MobileBreakdownList
+                items={sortedBreakdown}
+                settings={settings}
+                onSelect={setSelectedCategory}
+              />
+            </div>
 
-                  return (
-                    <div
-                      key={item.id || item.name}
-                      onClick={() => setSelectedCategory(item)}
-                      className={`group relative p-3 rounded-2xl border hover:shadow-md transition-all duration-200 flex flex-col justify-between h-28 overflow-hidden cursor-pointer hover:scale-[1.03] active:scale-[0.98] ${alertStyles}`}
-                    >
-                      {/* Top Row: Icon & Amount */}
-                      <div className="flex justify-between items-start mb-2">
-                        <div
-                          className="p-2 rounded-xl transition-colors"
-                          style={{ backgroundColor: `${item.color}15` }}
-                        >
-                          <IconComponent size={18} strokeWidth={2.5} style={{ color: item.color }} />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <StatusIndicator status={item?.alertStatus} diff={item?.diffPercentage} />
-                          <span className="font-bold text-gray-900 text-sm">
-                            {formatCurrency(item.amount, settings)}
-                          </span>
-                        </div>
-                      </div>
-                      {/* Bottom Row: Label & Stats */}
-                      <div>
-                        <h3 className="font-medium text-gray-700 text-sm mb-1 truncate" title={item.name}>
-                          {item.name}
-                        </h3>
+            {/* DESKTOP: Card grid (unchanged) */}
+            <div className="hidden md:block">
+              {sortedBreakdown.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground bg-muted/30 rounded-2xl border border-dashed border-border min-h-[200px]">
+                  <p>No expenses to show yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {sortedBreakdown.map((item) => {
+                    const IconComponent = getCategoryIcon(item.icon);
+                    const alertStyles = getAlertCardStyles(item.alertStatus);
 
-                        {/* Progress Bar Background */}
-                        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden flex mb-1.5">
+                    return (
+                      <div
+                        key={item.id || item.name}
+                        onClick={() => setSelectedCategory(item)}
+                        className={`group relative p-3 rounded-2xl border hover:shadow-md transition-all duration-200 flex flex-col justify-between h-28 overflow-hidden cursor-pointer hover:scale-[1.03] active:scale-[0.98] ${alertStyles}`}
+                      >
+                        {/* Top Row: Icon & Amount */}
+                        <div className="flex justify-between items-start mb-2">
                           <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${item.expensePercentage}%`,
-                              backgroundColor: item.color
-                            }}
-                          />
+                            className="p-2 rounded-xl transition-colors"
+                            style={{ backgroundColor: `${item.color}15` }}
+                          >
+                            <IconComponent size={18} strokeWidth={2.5} style={{ color: item.color }} />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <StatusIndicator status={item?.alertStatus} diff={item?.diffPercentage} />
+                            <span className="font-bold text-foreground text-sm">
+                              {formatCurrency(item.amount, settings)}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Bottom Row: Label & Stats */}
+                        <div>
+                          <h3 className="font-medium text-muted-foreground text-sm mb-1 truncate" title={item.name}>
+                            {item.name}
+                          </h3>
+
+                          {/* Progress Bar Background */}
+                          <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden flex mb-1.5">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${item.expensePercentage}%`,
+                                backgroundColor: item.color
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </CardContent>
         </>
       )}
