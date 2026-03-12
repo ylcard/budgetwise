@@ -1,72 +1,60 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useGamification } from '@/components/hooks/useGamification';
 import { useAuth } from '@/lib/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
-import { Flame, Lock, Star, Zap } from 'lucide-react';
+import { Flame, Star, Zap, Palette } from 'lucide-react';
 import { CustomButton } from "@/components/ui/CustomButton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import BadgeFrame from '@/components/gamification/BadgeFrame';
+import AvatarPicker from '@/components/gamification/AvatarPicker';
+import { useAvatarImage } from '@/components/gamification/useAvatarImage';
+// COMMENTED OUT 12-Mar-2026: Lock no longer used in this file after removing static placeholder unlocks
+// import { Lock } from 'lucide-react';
 
 export const UserAvatar = ({ size = "sm" }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { level, progress, currentExp, nextLevelExp, streak, isLoading } = useGamification();
+  const {
+    level, progress, currentExp, nextLevelExp, streak, isLoading,
+    selectedAvatarStyle, selectedBadgeId, avatarSeed,
+    updateProfile, isUpdatingProfile,
+  } = useGamification();
+  const [showCustomize, setShowCustomize] = useState(false);
+
+  // Generate the DiceBear avatar image
+  const diceBearUri = useAvatarImage(selectedAvatarStyle, avatarSeed);
+
+  const handleSaveProfile = useCallback((profileData) => {
+    updateProfile(profileData);
+    setShowCustomize(false);
+  }, [updateProfile]);
 
   if (isLoading) return <div className="w-8 h-8 rounded-full bg-muted/50 animate-pulse" />;
 
-  // Configuration for the SVG Circle
-  const radius = 18;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
   const Trigger = (
     <div className="relative cursor-pointer group select-none">
-      {/* Progress Ring Container */}
-      <div className="relative w-10 h-10 flex items-center justify-center">
-        {/* Background Ring */}
-        <svg className="absolute w-full h-full transform -rotate-90">
-          <circle
-            cx="20" cy="20" r={radius}
-            stroke="currentColor"
-            strokeWidth="3"
-            fill="transparent"
-            className="text-muted/20"
-          />
-        </svg>
+      <BadgeFrame badgeId={selectedBadgeId} size={40} color="hsl(var(--primary))">
+        {diceBearUri ? (
+          <img src={diceBearUri} alt="Avatar" className="w-full h-full object-cover" />
+        ) : (
+          <Avatar className="w-full h-full">
+            <AvatarImage src={user?.picture} alt={user?.name} />
+            <AvatarFallback className="text-[10px] font-bold bg-primary/10 text-primary">
+              {user?.name?.substring(0, 2).toUpperCase() || 'BW'}
+            </AvatarFallback>
+          </Avatar>
+        )}
+      </BadgeFrame>
 
-        {/* Animated Progress Ring */}
-        <svg className="absolute w-full h-full transform -rotate-90">
-          <motion.circle
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            cx="20" cy="20" r={radius}
-            stroke="currentColor"
-            strokeWidth="3"
-            fill="transparent"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            className="text-primary drop-shadow-[0_0_2px_rgba(var(--primary),0.5)]"
-          />
-        </svg>
-
-        {/* The Actual Avatar */}
-        <Avatar className="w-7 h-7 border-2 border-background">
-          <AvatarImage src={user?.picture} alt={user?.name} />
-          <AvatarFallback className="text-[10px] font-bold bg-primary/10 text-primary">
-            {user?.name?.substring(0, 2).toUpperCase() || 'BW'}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Level Badge (Tiny Pill) */}
-        <div className="absolute -bottom-1 bg-background border border-border rounded-full px-1 py-[1px] flex items-center justify-center shadow-sm">
-          <span className="text-[8px] font-bold text-foreground leading-none">
-            {level}
-          </span>
-        </div>
+      {/* Level Badge (Tiny Pill) */}
+      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-background border border-border rounded-full px-1 py-[1px] flex items-center justify-center shadow-sm z-20">
+        <span className="text-[8px] font-bold text-foreground leading-none">
+          {level}
+        </span>
       </div>
     </div>
   );

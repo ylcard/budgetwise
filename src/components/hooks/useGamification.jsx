@@ -155,6 +155,25 @@ export const useGamification = () => {
     ((totalExp - currentLevelStartExp) / (nextLevelExp - currentLevelStartExp)) * 100
   ));
 
+  /**
+   * 4. Update Avatar/Badge Mutation
+   * ADDED 12-Mar-2026: Persists avatar style, badge frame, and seed to UserExp.
+   */
+  const updateProfileMutation = useMutation({
+    mutationFn: async ({ style, badge, seed }) => {
+      if (!userExp) return;
+      return await base44.entities.UserExp.update(userExp.id, {
+        selected_avatar_style: style,
+        selected_badge_id: badge,
+        avatar_seed: seed,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_EXP, user?.email] });
+      toast.success('Profile updated!');
+    },
+  });
+
   return {
     userExp,
     isLoading,
@@ -163,6 +182,12 @@ export const useGamification = () => {
     nextLevelExp,
     currentExp: totalExp,
     streak: userExp?.current_streak || 0,
+    // Avatar / Badge state (ADDED 12-Mar-2026)
+    selectedAvatarStyle: userExp?.selected_avatar_style || 'initials',
+    selectedBadgeId: userExp?.selected_badge_id || 'circle',
+    avatarSeed: userExp?.avatar_seed || user?.email || 'default',
+    updateProfile: updateProfileMutation.mutate,
+    isUpdatingProfile: updateProfileMutation.isPending,
     addXP: addXPMutation.mutate,
     checkDailyStreak: checkDailyStreakMutation.mutate
   };
