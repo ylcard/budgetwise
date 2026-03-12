@@ -511,7 +511,7 @@ export function TransactionHistory({
           transactions={paginatedTransactions} categories={categories}
           onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading}
           customBudgets={allCustomBudgets}
-          monthStart={usePeriod().monthStart} monthEnd={usePeriod().monthEnd}
+          monthStart={periodStart} monthEnd={periodEnd}
           currentPage={currentPage}
           totalPages={Math.ceil(filteredTransactions.length / itemsPerPage) || 1}
           onPageChange={setCurrentPage}
