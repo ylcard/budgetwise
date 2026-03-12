@@ -1,4 +1,4 @@
-import { useMemo, memo, useEffect } from "react";
+import { memo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Target, PiggyBank, Activity } from "lucide-react";
 import { formatCurrency } from "../utils/currencyUtils";
@@ -291,16 +291,9 @@ const HealthCell = memo(({ label, score, description, wiki }) => {
  * Renders a composite "Wellness Score" with a DNA-like breakdown of 5 key metrics.
  */
 export const FinancialHealthScore = memo(function FinancialHealthScore({
-  startDate,
+  healthData,
   className
 }) {
-  const { user } = useSettings();
-  const start = parseDate(startDate);
-  if (!start) return null; // Guard against invalid dates
-  const month = start.getMonth();
-  const year = start.getFullYear();
-
-  const { healthData, isLoading } = useFinancialHealthScore(user, month, year);
 
   // 2. If no healthData (First time loading this month), show Skeleton
   if (!healthData) {
