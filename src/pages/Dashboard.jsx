@@ -1,6 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
