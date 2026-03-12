@@ -433,6 +433,39 @@ export const getHistoricalAverageIncome = (transactions, selectedMonth, selected
 };
 
 /**
+ * Filters out outliers from a dataset using the Mean +/- 2 * StdDev method.
+ * Returns the average of the non-outlier values.
+ * @param {number[]} values - Array of monthly spending amounts
+ * @returns {number} Adjusted average
+ */
+export const calculateAdjustedAverage = (values) => {
+  if (!values || values.length === 0) return 0;
+  if (values.length === 1) return values[0];
+
+  // 1. Calculate Mean
+  const sum = values.reduce((a, b) => new Decimal(a).plus(b).toNumber(), 0);
+  const mean = new Decimal(sum).dividedBy(values.length).toNumber();
+
+  // 2. Calculate Standard Deviation
+  const squareDiffs = values.map(value => Math.pow(value - mean, 2));
+  const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+  const stdDev = Math.sqrt(avgSquareDiff);
+
+  // 3. Filter Outliers (Z-Score > 2)
+  if (stdDev === 0) return mean; // All values same
+
+  const filteredValues = values.filter(value => {
+    const zScore = Math.abs((value - mean) / stdDev);
+    return zScore <= 2;
+  });
+
+  if (filteredValues.length === 0) return mean;
+
+  const filteredSum = filteredValues.reduce((a, b) => new Decimal(a).plus(b).toNumber(), 0);
+  return new Decimal(filteredSum).dividedBy(filteredValues.length).toNumber();
+};
+
+/**
  * HELPER: Math Utils for Projection
  */
 const calculateMedian = (values) => {
