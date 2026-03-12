@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   Save,
   Trash2,
@@ -35,7 +35,6 @@ import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
 import ExportDialog from "../components/manage/ExportDialog";
-import ManageSegmentedControl from "../components/manage/ManageSegmentedControl";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import AppearanceSettings from "../components/theme/AppearanceSettings";
 import { formatDateString } from "../components/utils/dateUtils";
@@ -45,26 +44,29 @@ import ScrollToTopButton from "../components/ui/ScrollToTopButton";
  * Manage Layout - Wrapper for Settings Pages
  */
 export default function ManageLayout() {
+  const [searchParams] = useSearchParams();
+  // Default to preferences if no tab is specified
+  const currentTab = searchParams.get("tab") || "preferences";
+
   return (
     <div className="min-h-screen p-4 md:p-8 pb-24 bg-gray-50/50">
       <div className="max-w-6xl mx-auto space-y-8">
 
-        {/* Header — desktop only (mobile uses layout header) */}
-        <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Manage</h1>
             <p className="text-gray-500 mt-1">Configure your workspace, data, and preferences.</p>
           </div>
         </div>
-
-        {/* Mobile Segmented Control */}
-        <div className="md:hidden -mt-4">
-          <ManageSegmentedControl />
-        </div>
-
-        {/* Main Content (Child Route) */}
-        <main className="flex-1 min-w-0 animate-in fade-in-50 duration-300">
-          <Outlet />
+        {/* Main Content - Both sections stay mounted to preserve unsaved form state */}
+        <main className="flex-1 min-w-0 relative">
+          <div className={currentTab === 'preferences' ? 'block animate-in fade-in duration-300' : 'hidden'}>
+            <PreferencesSection />
+          </div>
+          <div className={currentTab === 'account' ? 'block animate-in fade-in duration-300' : 'hidden'}>
+            <AccountSection />
+          </div>
         </main>
       </div>
       <ScrollToTopButton />
@@ -217,7 +219,7 @@ export function PreferencesSection() {
       {/* Appearance Settings */}
       <Card>
         <CardContent className="pt-6">
-          <AppearanceSettings 
+          <AppearanceSettings
             themeConfig={formData.themeConfig}
             onChange={(newConfig) => setValue('themeConfig', newConfig, { shouldDirty: true })}
             savedThemeConfig={settings?.themeConfig}
