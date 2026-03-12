@@ -75,8 +75,8 @@ export default function MonthlyBreakdown({
 }) {
   const { settings, user } = useSettings();
   const { notifications } = useNotifications();
-  const isMobile = useIsMobile();
-  // COMMENTED OUT 12-Mar-2026: Replaced by isMobile check + CategoryDetailDrawer
+  // COMMENTED OUT 12-Mar-2026: Desktop/mobile split now handled by CSS and CategoryDetailDrawer
+  // const isMobile = useIsMobile();
   // const isDesktop = !isMobile;
 
   // State for Modal/Drawer
