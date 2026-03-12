@@ -112,7 +112,7 @@ export default function ManageLayout() {
 
             {/* Sub-Tab Pill Navigation (Horizontal Scrollable) */}
             {SUB_TABS[currentGroup]?.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+              <div className="flex justify-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
                 {SUB_TABS[currentGroup].map(tab => (
                   <button
                     key={tab.value}
