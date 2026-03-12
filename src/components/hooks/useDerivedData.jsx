@@ -11,9 +11,9 @@ import {
   calculateBonusSavingsPotential,
   resolveBudgetLimit,
   getHistoricalAverageIncome,
-  calculateIncomeProjection
+  calculateIncomeProjection,
+  calculateAdjustedAverage
 } from "../utils/financialCalculations";
-import { calculateProjection } from "../utils/projectionUtils";
 import { FINANCIAL_PRIORITIES } from "../utils/constants";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { Banknote } from "lucide-react";
@@ -657,11 +657,35 @@ export const useMonthlyBreakdown = (transactions, categories, monthlyIncome, all
     // 2. Calculate Category Breakdown (Existing Logic)
     const categoryMap = createEntityMap(categories);
 
-    // REFINED: Use existing projection engine for mathematically sound baselines (outliers removed)
-    const projectionData = calculateProjection(transactions, categories, 6);
+    // --- Calculate Historical Averages internally (Replaces calculateProjection) ---
     const historicalAverages = {};
-    projectionData.categoryProjections.forEach(cp => {
-      historicalAverages[cp.categoryId] = cp.averageSpend;
+    const now = new Date();
+    // Get boundary for 6 months ago to last month
+    const historyStartStr = getMonthBoundaries(safeMonth - 6, safeYear).monthStart;
+    const historyEndStr = getMonthBoundaries(safeMonth - 1, safeYear).monthEnd;
+    const historyStartD = parseDate(historyStartStr);
+    const historyEndD = parseDate(historyEndStr);
+
+    // Group historical expenses by category and month (YYYY-MM)
+    const historyByCategory = {};
+    categories.forEach(c => historyByCategory[c.id] = {});
+    historyByCategory['uncategorized'] = {};
+
+    transactions.forEach(t => {
+      if (t.type !== 'expense') return;
+      const tDate = parseDate(t.paidDate || t.date);
+      if (!tDate || tDate < historyStartD || tDate > historyEndD) return;
+
+      const catId = t.category_id || 'uncategorized';
+      const monthKey = tDate.toISOString().substring(0, 7); // YYYY-MM
+      if (!historyByCategory[catId]) historyByCategory[catId] = {};
+      historyByCategory[catId][monthKey] = (historyByCategory[catId][monthKey] || 0) + Number(t.amount || 0);
+    });
+
+    // Calculate the safe Z-Score average for each category
+    Object.keys(historyByCategory).forEach(catId => {
+      const monthlyValues = Object.values(historyByCategory[catId]);
+      historicalAverages[catId] = calculateAdjustedAverage(monthlyValues);
     });
 
     // Parse the boundaries using your app's date utility to avoid timezone shifts
