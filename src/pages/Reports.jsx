@@ -13,7 +13,10 @@ import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import ProjectionChart from "../components/reports/ProjectionChart";
 import CashFlowWave from "../components/reports/CashFlowWave"; // ADDED
-import ReportStats, { FinancialHealthScore } from "../components/reports/ReportStats";
+import { SavingsRateCard } from "../components/reports/cards/SavingsRateCard";
+import { NetFlowCard } from "../components/reports/cards/NetFlowCard";
+import { EfficiencyBonusCard } from "../components/reports/cards/EfficiencyBonusCard";
+import FinancialHealthScore from "../components/reports/FinancialHealthScore";
 import { calculateProjection, estimateCurrentMonth } from "../components/utils/projectionUtils";
 import { calculateBonusSavingsPotential, getMonthlyIncome, getMonthlyPaidExpenses } from "../components/utils/financialCalculations";
 import { LayoutDashboard, List, Maximize2, X } from "lucide-react";
@@ -24,9 +27,7 @@ import {
   formatDate,
   isDateInRange
 } from "../components/utils/dateUtils";
-import { useKeenSlider } from "keen-slider/react";
-import "keen-slider/keen-slider.min.css";
-import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
+import useEmblaCarousel from "embla-carousel-react";
 
 /**
  * Financial Reports Page
@@ -142,12 +143,11 @@ export default function Reports() {
     return dataPoints;
   }, [transactions, loadingTransactions, selectedMonth, selectedYear, projectionData]);
 
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [sliderRef, instanceRef] = useKeenSlider({
-    initial: 0,
-    slideChanged(slider) {
-      setCurrentSlide(slider.track.details.rel);
-    },
+  // Local Embla instance for the Stats cards
+  const [statsEmblaRef] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    breakpoints: { '(min-width: 768px)': { active: false } }
   });
 
   // --- Helper for Mobile Chart Wrapper ---
@@ -171,26 +171,52 @@ export default function Reports() {
       </div>
     </div>
   );
+  // Shared calculations for the cards
+  const totalPaidExpenses = useMemo(() => Math.abs(getMonthlyPaidExpenses(monthlyTransactions, monthStart, monthEnd)), [monthlyTransactions, monthStart, monthEnd]);
+  const prevPaidExpenses = useMemo(() => prevMonthlyTransactions.reduce((sum, t) => {
+    if (t.category?.name === 'Income' || t.type === 'income') return sum;
+    return sum + (Number(t.amount) || 0);
+  }, 0), [prevMonthlyTransactions]);
 
-  // --- Component Instances (memoized/variable to avoid duplication logic) ---
-  // We render these once and use CSS/Structure to place them.
-  // Note: For React, passing the same component instance to two locations in DOM is not possible without re-rendering.
-  // However, since we use `md:hidden`, we are rendering two separate trees. This is acceptable for responsiveness vs complexity trade-off.
-
-  const statsComponent = (
-    <ReportStats
-      transactions={monthlyTransactions}
-      monthlyIncome={monthlyIncome}
-      prevTransactions={prevMonthlyTransactions}
-      prevMonthlyIncome={prevMonthlyIncome}
-      isLoading={isLoading}
-      settings={settings}
-      safeBaseline={projectionData.totalProjectedMonthly}
-      startDate={monthStart}
-      endDate={monthEnd}
-      bonusSavingsPotential={bonusSavingsPotential}
-      healthData={healthData} // Pass pre-fetched data
-    />
+  const statsComponent = isLoading ? (
+    <div className="w-full overflow-hidden py-1" ref={statsEmblaRef}>
+      <div className="flex px-4 md:px-0 gap-4 md:grid md:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-40 bg-gray-100 animate-pulse rounded-xl flex-[0_0_85%] md:col-span-1" />
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div className="w-full overflow-hidden py-1" ref={statsEmblaRef}>
+      <div className="flex touch-pan-y px-4 md:px-0 gap-4 md:grid md:grid-cols-3 items-stretch">
+        <div className="flex-[0_0_85%] min-w-0 md:col-span-1">
+          <SavingsRateCard
+            monthlyIncome={monthlyIncome}
+            totalPaidExpenses={totalPaidExpenses}
+            prevMonthlyIncome={prevMonthlyIncome}
+            prevPaidExpenses={prevPaidExpenses}
+          />
+        </div>
+        <div className="flex-[0_0_85%] min-w-0 md:col-span-1">
+          <NetFlowCard
+            transactions={monthlyTransactions}
+            monthlyIncome={monthlyIncome}
+            totalPaidExpenses={totalPaidExpenses}
+            prevMonthlyIncome={prevMonthlyIncome}
+            prevPaidExpenses={prevPaidExpenses}
+            safeBaseline={projectionData.totalProjectedMonthly}
+            startDate={monthStart}
+            settings={settings}
+          />
+        </div>
+        <div className="flex-[0_0_85%] min-w-0 md:col-span-1">
+          <EfficiencyBonusCard
+            bonusSavingsPotential={bonusSavingsPotential}
+            settings={settings}
+          />
+        </div>
+      </div>
+    </div>
   );
 
   const healthComponent = (
@@ -300,52 +326,29 @@ export default function Reports() {
 
           {/* TAB: ANALYSIS (Carousel) */}
           {mobileTab === 'analysis' && (
-            <div className="h-full relative w-full">
-              <div ref={sliderRef} className="keen-slider h-full w-full">
+            <div className="h-full pb-20 pt-4 space-y-8 overflow-y-auto">
 
-                {/* Slide 1: Summary Stats */}
-                <div className="keen-slider__slide h-full p-4 pb-12 overflow-y-auto">
-                  <div className="space-y-4">
-                    {statsComponent}
-                  </div>
-                </div>
+              <section>
+                <h2 className="px-4 md:px-0 text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Overview</h2>
+                {statsComponent}
+              </section>
 
-                {/* Slide 2: Financial Health */}
-                <div className="keen-slider__slide h-full p-4 pb-12">
-                  <MobileChartCard title="Financial Health" className="h-full" contentClassName="overflow-visible" onMaximize={() => setFullScreenChart({ title: "Financial Health", content: healthComponent })}>
-                    {healthComponent}
-                  </MobileChartCard>
-                </div>
+              <section>
+                <h2 className="px-4 md:px-0 text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Financial Health</h2>
+                {healthComponent}
+              </section>
 
-                {/* Slide 3: Cash Flow Wave */}
-                <div className="keen-slider__slide h-full p-4 pb-12">
-                  <MobileChartCard title="Cash Flow Wave" className="h-full" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
-                    {waveComponent}
-                  </MobileChartCard>
-                </div>
+              <section className="px-4 md:px-0">
+                <MobileChartCard title="Cash Flow Wave" className="h-[400px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
+                  {waveComponent}
+                </MobileChartCard>
+              </section>
 
-                {/* Slide 4: Financial Horizon */}
-                <div className="keen-slider__slide h-full p-4 pb-12">
-                  <MobileChartCard title="Financial Horizon" className="h-full" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
-                    {projectionComponent}
-                  </MobileChartCard>
-                </div>
-
-              </div>
-
-              {/* Custom Navigation Dots */}
-              {instanceRef?.current && (
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-                  {[...Array(instanceRef.current.track.details.slides.length).keys()].map((idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => instanceRef.current?.moveToIdx(idx)}
-                      className={`w-2 h-2 rounded-full transition-all ${currentSlide === idx ? "bg-blue-600 w-4" : "bg-gray-300"}`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
+              <section className="px-4 md:px-0">
+                <MobileChartCard title="Financial Horizon" className="h-[400px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
+                  {projectionComponent}
+                </MobileChartCard>
+              </section>
             </div>
           )}
 
