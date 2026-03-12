@@ -1,6 +1,8 @@
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+// COMMENTED OUT 12-Mar-2026: useCallback no longer needed after moving carousel logic to ActivityHub
+// import { useCallback } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
@@ -32,7 +34,8 @@ import MonthNavigator from "../components/ui/MonthNavigator";
 import RemainingBudgetCard from "../components/dashboard/RemainingBudgetCard";
 import MobileRemainingBudgetCard from "../components/dashboard/MobileRemainingBudgetCard";
 import CustomBudgetsDisplay from "../components/dashboard/CustomBudgetsDisplay";
-import RecentTransactions from "../components/dashboard/RecentTransactions";
+// COMMENTED OUT 12-Mar-2026: RecentTransactions now rendered exclusively inside ActivityHub
+// import RecentTransactions from "../components/dashboard/RecentTransactions";
 import ExpenseFormDialog from "../components/transactions/dialogs/ExpenseFormDialog";
 import IncomeFormDialog from "../components/transactions/dialogs/IncomeFormDialog";
 import QuickAddBudget from "../components/dashboard/QuickAddBudget";
