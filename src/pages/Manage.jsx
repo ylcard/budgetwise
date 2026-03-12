@@ -18,7 +18,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +38,7 @@ import { toast } from "sonner";
 // Utils & Hooks
 import { useSettings } from "../components/utils/SettingsContext";
 import { useSettingsForm } from "../components/hooks/useActions";
+import { formatCurrency } from "../components/utils/currencyUtils";
 import { useCurrencies } from "../components/hooks/useCurrencies";
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from "@/api/base44Client";
@@ -115,8 +118,8 @@ export default function ManageLayout() {
                     key={tab.value}
                     onClick={() => setSearchParams({ group: currentGroup, tab: tab.value }, { replace: true })}
                     className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${currentTab === tab.value
-                        ? 'bg-blue-100 text-blue-700 shadow-sm'
-                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      ? 'bg-blue-100 text-blue-700 shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                       }`}
                   >
                     {tab.icon}
@@ -210,8 +213,87 @@ export function PreferencesSection({ currentTab }) {
             <CardDescription>Customize how financial data is displayed across the application.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
-            {/* Keep your exact existing Currency and Number Formatting JSX here */}
-            {/* (I omitted the long blocks of inputs to keep this diff readable, but keep your code intact) */}
+            {/* Currency Group */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Currency</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Base Currency</Label>
+                  <Select value={formData.baseCurrency || 'USD'} onValueChange={handleCurrencyChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {currencies.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{c.symbol} - {c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Symbol Position</Label>
+                  <Select value={formData.currencyPosition} onValueChange={(v) => setValue('currencyPosition', v, { shouldDirty: true })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="before">Before ({formData.currencySymbol}100)</SelectItem>
+                      <SelectItem value="after">After (100{formData.currencySymbol})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Formatting Group */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Number Formatting</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Thousand Separator</Label>
+                  <Select value={formData.thousandSeparator} onValueChange={(v) => setValue('thousandSeparator', v, { shouldDirty: true })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=",">Comma (,)</SelectItem>
+                      <SelectItem value=".">Period (.)</SelectItem>
+                      <SelectItem value=" ">Space</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Decimal Separator</Label>
+                  <Select value={formData.decimalSeparator} onValueChange={(v) => setValue('decimalSeparator', v, { shouldDirty: true })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=".">Period (.)</SelectItem>
+                      <SelectItem value=",">Comma (,)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Decimal Places</Label>
+                  <Input
+                    {...register('decimalPlaces', { valueAsNumber: true })}
+                    type="number"
+                    min="0"
+                    max="4"
+                  />
+                </div>
+                <div className="flex items-center justify-between h-full pt-6">
+                  <Label className="cursor-pointer">Hide Trailing Zeros</Label>
+                  <Switch
+                    checked={formData.hideTrailingZeros}
+                    onCheckedChange={(c) => setValue('hideTrailingZeros', c, { shouldDirty: true })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Preview Box */}
+            <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 flex items-center justify-between">
+              <span className="text-sm text-slate-500">Preview:</span>
+              <span className="text-2xl font-bold text-slate-900">
+                {formatCurrency(1234567.89, formData)}
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
