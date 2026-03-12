@@ -192,144 +192,142 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col min-w-0 relative min-h-[400px] md:min-h-[500px] px-0 md:px-6 pb-6">
-        <div className="h-[300px] md:h-[400px] w-full">
-          <ResponsiveContainer width="100%" height="100%" aspect={window.innerWidth < 768 ? 1.5 : undefined}>
-            <ComposedChart
-              data={data}
-              margin={{ top: 20, right: 10, left: 0, bottom: 0 }}
-            >
-              <defs>
-                {/* Gradient for income area */}
-                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                  <stop offset="50%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
+      <CardContent className="flex-1 flex flex-col min-h-0 min-w-0 relative h-[450px] md:h-[550px] px-0 md:px-6 pb-8">
+        <ResponsiveContainer width="99%" height="85%">
+          <ComposedChart
+            data={data}
+            margin={{ top: 20, right: 10, left: 0, bottom: 0 }}
+          >
+            <defs>
+              {/* Gradient for income area */}
+              <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                <stop offset="50%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
 
-                {/* Gradient for expense area */}
-                <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
-                  <stop offset="50%" stopColor="#ef4444" stopOpacity={0} />
-                </linearGradient>
+              {/* Gradient for expense area */}
+              <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                <stop offset="50%" stopColor="#ef4444" stopOpacity={0} />
+              </linearGradient>
 
-                {/* Pattern for projected areas */}
-                <pattern
-                  id="projectionPattern"
-                  patternUnits="userSpaceOnUse"
-                  width="8"
-                  height="8"
-                  patternTransform="rotate(45)"
-                >
-                  <line
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="8"
-                    stroke="#94a3b8"
-                    strokeWidth="1"
-                    strokeDasharray="2,2"
-                  />
-                </pattern>
-
-                {/* MASK: Fades the left and right edges so the "wall" disappears */}
-                <linearGradient id="fadeGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="white" stopOpacity={0} />
-                  <stop offset="5%" stopColor="white" stopOpacity={1} />
-                  <stop offset="95%" stopColor="white" stopOpacity={1} />
-                  <stop offset="100%" stopColor="white" stopOpacity={0} />
-                </linearGradient>
-                <mask id="fadeMask">
-                  <rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" />
-                </mask>
-              </defs>
-
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-
-              <XAxis
-                dataKey="month"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={{ stroke: '#e5e7eb' }}
-                padding={{ left: 20, right: 20 }}
-              />
-
-              {/* SINGLE AXIS: Restores data integrity */}
-              <YAxis
-                tick={{ fill: '#6b7280', fontSize: 11 }}
-                tickLine={{ stroke: '#e5e7eb' }}
-                tickCount={5}
-                width={45}
-                tickFormatter={(value) => Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(value)}
-              />
-
-              <Tooltip content={<CustomTooltip />} />
-
-              {/* Zero reference line */}
-              <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
-
-              {/* "Ghost Car" Safe Baseline Reference Line */}
-              <ReferenceLine
-                y={stats.avgExpense}
-                stroke="#f87171"
-                strokeWidth={1}
-                strokeDasharray="5 5"
-                label={{
-                  position: 'insideBottomRight',
-                  value: 'Avg Expense',
-                  fill: '#ef4444',
-                  fontSize: 10,
-                  offset: 5
-                }}
-              />
-
-              {/* 1. BARS FIRST (Draws behind the lines/dots to prevent obscuring) */}
-              <Bar
-                dataKey="netFlow"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={40}
-                isAnimationActive={true}
-                animationDuration={800}
+              {/* Pattern for projected areas */}
+              <pattern
+                id="projectionPattern"
+                patternUnits="userSpaceOnUse"
+                width="8"
+                height="8"
+                patternTransform="rotate(45)"
               >
-                {data.map((entry, index) => (
-                  <Cell
-                    key={`bar-${index}`}
-                    fill={entry.netFlow >= 0 ? '#3b82f6' : '#ef4444'}
-                    fillOpacity={entry.isProjection ? 0.3 : 1}
-                    stroke={entry.isProjection ? (entry.netFlow >= 0 ? '#3b82f6' : '#ef4444') : 'none'}
-                    strokeWidth={entry.isProjection ? 2 : 0}
-                    strokeDasharray={entry.isProjection ? '4 4' : '0'}
-                  />
-                ))}
-              </Bar>
+                <line
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="8"
+                  stroke="#94a3b8"
+                  strokeWidth="1"
+                  strokeDasharray="2,2"
+                />
+              </pattern>
 
-              {/* 2. AREAS LAST (Draws on top so dots align and stay visible) */}
-              <Area
-                type="monotone"
-                dataKey="income"
-                stroke="#10b981"
-                strokeWidth={3}
-                fill="url(#incomeGradient)"
-                fillOpacity={1}
-                mask="url(#fadeMask)"
-                activeDot={{ r: 6, strokeWidth: 0 }}
-                isAnimationActive={true}
-                animationDuration={1000}
-              />
+              {/* MASK: Fades the left and right edges so the "wall" disappears */}
+              <linearGradient id="fadeGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="white" stopOpacity={0} />
+                <stop offset="5%" stopColor="white" stopOpacity={1} />
+                <stop offset="95%" stopColor="white" stopOpacity={1} />
+                <stop offset="100%" stopColor="white" stopOpacity={0} />
+              </linearGradient>
+              <mask id="fadeMask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" />
+              </mask>
+            </defs>
 
-              <Area
-                type="monotone"
-                dataKey="expense"
-                stroke="#ef4444"
-                strokeWidth={3}
-                fill="url(#expenseGradient)"
-                fillOpacity={1}
-                mask="url(#fadeMask)"
-                activeDot={{ r: 6, strokeWidth: 0 }}
-                isAnimationActive={true}
-                animationDuration={1000}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+
+            <XAxis
+              dataKey="month"
+              tick={{ fill: '#6b7280', fontSize: 12 }}
+              tickLine={{ stroke: '#e5e7eb' }}
+              padding={{ left: 20, right: 20 }}
+            />
+
+            {/* SINGLE AXIS: Restores data integrity */}
+            <YAxis
+              tick={{ fill: '#6b7280', fontSize: 11 }}
+              tickLine={{ stroke: '#e5e7eb' }}
+              tickCount={5}
+              width={45}
+              tickFormatter={(value) => Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(value)}
+            />
+
+            <Tooltip content={<CustomTooltip />} />
+
+            {/* Zero reference line */}
+            <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
+
+            {/* "Ghost Car" Safe Baseline Reference Line */}
+            <ReferenceLine
+              y={stats.avgExpense}
+              stroke="#f87171"
+              strokeWidth={1}
+              strokeDasharray="5 5"
+              label={{
+                position: 'insideBottomRight',
+                value: 'Avg Expense',
+                fill: '#ef4444',
+                fontSize: 10,
+                offset: 5
+              }}
+            />
+
+            {/* 1. BARS FIRST (Draws behind the lines/dots to prevent obscuring) */}
+            <Bar
+              dataKey="netFlow"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={40}
+              isAnimationActive={true}
+              animationDuration={800}
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={`bar-${index}`}
+                  fill={entry.netFlow >= 0 ? '#3b82f6' : '#ef4444'}
+                  fillOpacity={entry.isProjection ? 0.3 : 1}
+                  stroke={entry.isProjection ? (entry.netFlow >= 0 ? '#3b82f6' : '#ef4444') : 'none'}
+                  strokeWidth={entry.isProjection ? 2 : 0}
+                  strokeDasharray={entry.isProjection ? '4 4' : '0'}
+                />
+              ))}
+            </Bar>
+
+            {/* 2. AREAS LAST (Draws on top so dots align and stay visible) */}
+            <Area
+              type="monotone"
+              dataKey="income"
+              stroke="#10b981"
+              strokeWidth={3}
+              fill="url(#incomeGradient)"
+              fillOpacity={1}
+              mask="url(#fadeMask)"
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              isAnimationActive={true}
+              animationDuration={1000}
+            />
+
+            <Area
+              type="monotone"
+              dataKey="expense"
+              stroke="#ef4444"
+              strokeWidth={3}
+              fill="url(#expenseGradient)"
+              fillOpacity={1}
+              mask="url(#fadeMask)"
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              isAnimationActive={true}
+              animationDuration={1000}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
 
         <CustomLegend />
       </CardContent>
