@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useConfirm } from "../components/ui/ConfirmDialogProvider";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -36,6 +36,8 @@ import ScrollToTopButton from "../components/ui/ScrollToTopButton";
  * Transactions Layout - Main wrapper for History and Recurring tabs
  */
 export default function TransactionsLayout() {
+  const transactionsScrollRef = useRef(null);
+
   const { user, settings } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
@@ -124,8 +126,8 @@ export default function TransactionsLayout() {
 
   return (
     <>
-      <div className="min-h-screen p-2 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-4 pb-24">
+      <div ref={transactionsScrollRef} className="h-[calc(100vh-var(--header-total-height)-var(--nav-total-height))] w-full max-w-[100vw] overflow-y-auto overflow-x-hidden p-2 md:p-8 relative scroll-smooth">
+        <div className="max-w-6xl mx-auto space-y-4 pb-32">
           {/* Header: Hidden on mobile, visible on desktop */}
           <div className="hidden md:flex flex-row justify-between items-center gap-4 px-2">
             <div>
@@ -242,6 +244,7 @@ export default function TransactionsLayout() {
               )}
             </div>
           </Tabs>
+          <ScrollToTopButton scrollRef={transactionsScrollRef} />
         </div>
       </div>
 
@@ -278,7 +281,6 @@ export default function TransactionsLayout() {
         transaction={editingRecurring}
         categories={categories}
       />
-      <ScrollToTopButton />
     </>
   );
 }
