@@ -90,19 +90,16 @@ export default memo(function FinancialHealthScore({ healthData, className }) {
 
   if (!healthData) {
     return (
-      <div className="w-full overflow-hidden" ref={emblaRef}>
-        <div className="flex touch-pan-y gap-4 md:grid md:grid-cols-5 animate-pulse">
-          <div className="flex-[0_0_90vw] sm:flex-[0_0_70vw] md:flex-auto min-w-0 md:col-span-5">
+      <div className="w-full overflow-hidden px-4 md:px-0" ref={emblaRef}>
+        <div className="flex touch-pan-y gap-3 md:grid md:grid-cols-5 md:gap-4 animate-pulse">
+          <div className="flex-[0_0_85%] sm:flex-[0_0_65%] md:flex-auto min-w-0 md:col-span-5">
             <div className="h-24 bg-gray-100 rounded-xl border border-gray-200 w-full" />
           </div>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex-[0_0_65vw] sm:flex-[0_0_45vw] md:flex-auto min-w-0 md:col-span-1">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex-[0_0_60%] sm:flex-[0_0_40%] md:flex-auto min-w-0 md:col-span-1">
               <div className="h-32 bg-gray-50 rounded-lg border border-gray-100 w-full" />
             </div>
           ))}
-          <div className="flex-[0_0_65vw] sm:flex-[0_0_45vw] md:flex-auto min-w-0 md:col-span-1">
-            <div className="h-32 bg-gray-50 rounded-lg border border-gray-100 w-full" />
-          </div>
         </div>
       </div>
     );
