@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { usePeriod } from "../components/hooks/usePeriod";
 import {
@@ -10,7 +10,6 @@ import {
 import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/useDerivedData";
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
-import PriorityChart from "../components/reports/PriorityChart";
 import MonthNavigator from "../components/ui/MonthNavigator";
 import ProjectionChart from "../components/reports/ProjectionChart";
 import CashFlowWave from "../components/reports/CashFlowWave"; // ADDED
@@ -34,7 +33,7 @@ import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth"
  * Displays detailed analysis, cash flow projections, and financial health scores.
  */
 export default function Reports() {
-  const { user, settings, updateSettings } = useSettings();
+  const { user, settings } = useSettings();
 
   // Period management
   const {
@@ -87,8 +86,6 @@ export default function Reports() {
     targetMonth: selectedMonth,
     targetYear: selectedYear
   });
-  // COMMENTED 10-Mar-2026: healthLoading no longer returned (hook is pure computation now)
-  const healthLoading = false;
 
   // Calculate Efficiency Bonus
   const bonusSavingsPotential = useMemo(() => {
