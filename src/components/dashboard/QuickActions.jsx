@@ -36,7 +36,7 @@ const QuickActions = memo(function QuickActions({
     if (syncState === 'syncing') return "Syncing…";
     if (syncState === 'success') return "Synced!";
     if (syncState === 'error') return "Failed";
-    return "Smart Sync";
+    return "Sync";
   };
 
   return (
