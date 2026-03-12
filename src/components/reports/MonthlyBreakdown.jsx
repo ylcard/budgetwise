@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings } from "../utils/SettingsContext";
@@ -6,11 +6,15 @@ import { useMonthlyBreakdown } from "../hooks/useDerivedData";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
 import { AlertCircle, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+// COMMENTED OUT 12-Mar-2026: Replaced by CategoryDetailDrawer
+// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+// import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useNotifications } from "../hooks/useNotifications";
 import { notifyCategorySpendingAlert } from "../utils/notificationHelpers";
 import { useIsMobile } from "@/hooks/use-mobile";
+import MobileBreakdownList from "./MobileBreakdownList";
+import CategoryDetailDrawer from "./CategoryDetailDrawer";
+import { parseDate, getMonthBoundaries } from "../utils/dateUtils";
 
 /**
  * Helper for Alert Icon based on spending status
