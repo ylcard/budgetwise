@@ -309,13 +309,29 @@ export function TransactionHistory({
   // FAB Logic moved to leaf component
   const { setFabButtons } = useFAB();
 
-  // History State
-  const [filters, setFilters] = useState({
-    search: '', type: 'all', category: [], paymentStatus: 'all',
-    cashStatus: 'all', financialPriority: 'all', budgetId: 'all',
-    startDate: usePeriod().monthStart, endDate: usePeriod().monthEnd, minAmount: '', maxAmount: '',
-    idSearch: '' // Admin ID Search
-  });
+  // UPDATED 12-Mar-2026: Read URL search params for deep-link filter support
+  const location = useLocation();
+  const initialFilters = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const { monthStart: defaultStart, monthEnd: defaultEnd } = usePeriod();
+    return {
+      search: '',
+      type: params.get('type') || 'all',
+      category: params.get('category') ? [params.get('category')] : [],
+      paymentStatus: 'all',
+      cashStatus: 'all',
+      financialPriority: 'all',
+      budgetId: 'all',
+      startDate: params.get('startDate') || defaultStart,
+      endDate: params.get('endDate') || defaultEnd,
+      minAmount: '',
+      maxAmount: '',
+      idSearch: '',
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only compute once on mount
+
+  const [filters, setFilters] = useState(initialFilters);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
