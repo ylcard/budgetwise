@@ -28,93 +28,89 @@ const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
-    <Layout currentPageName={currentPageName}>{children}</Layout>
-    : <>{children}</>;
+  <Layout currentPageName={currentPageName}>{children}</Layout>
+  : <>{children}</>;
 
 const AuthenticatedApp = () => {
-    // const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+  // const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
 
-    // Destructure 'user' so we can pass it to the setup hook
-    const { user, isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+  // Destructure 'user' so we can pass it to the setup hook
+  const { user, isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
 
-    const { settings } = useSettings();
-    
-    // Mount the Just-In-Time Theme Validation Engine
-    useThemeSync(settings);
+  const { settings } = useSettings();
 
-    // Show loading spinner while checking app public settings or auth
-    if (isLoadingPublicSettings || isLoadingAuth) {
-        return (
-            <div className="fixed inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+  // Mount the Just-In-Time Theme Validation Engine
+  useThemeSync(settings);
 
-    // Handle authentication errors
-    if (authError) {
-        if (authError.type === 'user_not_registered') {
-            return <UserNotRegisteredError />;
-        } else if (authError.type === 'auth_required') {
-            // Redirect to login automatically
-            navigateToLogin();
-            return null;
-        }
-    }
-
-    // Render the main app
+  // Show loading spinner while checking app public settings or auth
+  if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-        <LayoutWrapper currentPageName={mainPageKey}>
-            <Routes>
-                <Route path="/" element={<MainPage />} />
-
-                {/* Transactions Route */}
-                <Route path="/transactions" element={<TransactionsPage />} />
-
-                {/* Manage Nested Routes */}
-                <Route path="/manage" element={<ManagePage />}>
-                    <Route index element={<Navigate to="preferences" replace />} />
-                    <Route path="preferences" element={<PreferencesSection />} />
-                    <Route path="categories" element={<Categories />} />
-                    <Route path="automation" element={<Automation />} />
-                    <Route path="banksync" element={<BankSync />} />
-                    <Route path="account" element={<AccountSection />} />
-                </Route>
-
-                {/* Legal Tabbed Routes */}
-                <Route path="/legal/:tab?" element={<LegalPage />} />
-
-                {/* Standard Page Fallback */}
-                {Object.entries(Pages).map(([path, Page]) => (
-                    // Skip routes we handled manually
-                    (path !== 'manage' && path !== 'transactions') ?
-                        <Route key={path} path={`/${path}`} element={<Page />} /> : null
-                ))}
-                <Route path="*" element={<PageNotFound />} />
-            </Routes>
-        </LayoutWrapper>
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      </div>
     );
+  }
+
+  // Handle authentication errors
+  if (authError) {
+    if (authError.type === 'user_not_registered') {
+      return <UserNotRegisteredError />;
+    } else if (authError.type === 'auth_required') {
+      // Redirect to login automatically
+      navigateToLogin();
+      return null;
+    }
+  }
+
+  // Render the main app
+  return (
+    <LayoutWrapper currentPageName={mainPageKey}>
+      <Routes>
+        <Route path="/" element={<MainPage />} />
+
+        {/* Transactions Route */}
+        <Route path="/transactions" element={<TransactionsPage />} />
+
+        {/* Flattened Manage Routes */}
+        <Route path="/manage" element={<ManagePage />} />
+        <Route path="/manage/categories" element={<Categories />} />
+        <Route path="/manage/automation" element={<Automation />} />
+        <Route path="/manage/banksync" element={<BankSync />} />
+
+        {/* Legal Tabbed Routes */}
+        <Route path="/legal/:tab?" element={<LegalPage />} />
+
+        {/* Standard Page Fallback */}
+        {Object.entries(Pages).map(([path, Page]) => (
+          // Skip routes we handled manually
+          (path !== 'manage' && path !== 'transactions') ?
+            <Route key={path} path={`/${path}`} element={<Page />} /> : null
+        ))}
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </LayoutWrapper>
+  );
 };
 
 
 function App() {
 
-    return (
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <AuthProvider>
-                <SettingsProvider>
-                    <QueryClientProvider client={queryClientInstance}>
-                        <Router>
-                            <NavigationTracker />
-                            <AuthenticatedApp />
-                        </Router>
-                        <Toaster />
-                        <VisualEditAgent />
-                    </QueryClientProvider>
-                </SettingsProvider>
-            </AuthProvider>
-        </ThemeProvider>
-    )
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AuthProvider>
+        <SettingsProvider>
+          <QueryClientProvider client={queryClientInstance}>
+            <Router>
+              <NavigationTracker />
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+            <VisualEditAgent />
+          </QueryClientProvider>
+        </SettingsProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  )
 }
 
 export default App
