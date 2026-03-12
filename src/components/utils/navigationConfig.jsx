@@ -34,11 +34,12 @@ export const navigationItems = [
     url: createPageUrl("Manage"),
     icon: Settings,
     items: [
-      { title: "Preferences", url: "/manage?tab=preferences" },
-      { title: "Categories", url: "/manage/categories" },
-      { title: "Automation", url: "/manage/automation" },
-      { title: "Bank Sync", url: "/manage/banksync" },
-      { title: "Account", url: "/manage?tab=account" },
+      { title: "Display", url: "/manage?group=app&tab=display" },
+      { title: "Appearance", url: "/manage?group=app&tab=appearance" },
+      { title: "Categories", url: "/manage?group=finance&tab=categories" },
+      { title: "Automation", url: "/manage?group=finance&tab=automation" },
+      { title: "Bank Sync", url: "/manage?group=finance&tab=banksync" },
+      { title: "Account", url: "/manage?group=account&tab=profile" },
     ]
   },
   // Secondary Nav (Legal Pages)
