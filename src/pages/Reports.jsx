@@ -198,19 +198,7 @@ export default function Reports() {
 
   const healthComponent = (
     <FinancialHealthScore
-      monthlyIncome={monthlyIncome}
-      transactions={monthlyTransactions}
-      prevMonthlyIncome={prevMonthlyIncome}
-      fullHistory={transactions}
-      prevTransactions={prevMonthlyTransactions}
-      startDate={monthStart}
-      endDate={monthEnd}
-      isLoading={isLoading || healthLoading} // Merge loading states
       healthData={healthData} // Pass pre-fetched data
-      settings={settings}
-      categories={categories}
-      allCustomBudgets={allCustomBudgets}
-      goals={goals}
       className="h-full"
     />
   );
