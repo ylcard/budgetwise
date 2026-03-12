@@ -535,7 +535,7 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* RIGHT COLUMN: Quick Actions + Activity Hub (Sidebar) */}
+                        {/* RIGHT COLUMN: Quick Actions + Activity Hub (Sidebar) — Desktop only */}
                         <div className="hidden lg:flex lg:flex-col lg:col-span-4 gap-4 min-w-0 max-w-full" data-tutorial="activity-hub">
                             <div ref={actionsRef}>
                                 <QuickActions
@@ -554,7 +554,6 @@ export default function Dashboard() {
 
                             <div className="relative flex-1 min-h-[400px]">
                                 <div className="absolute inset-0">
-
                                     <ActivityHub
                                         recurringWithStatus={recurringWithStatus}
                                         onMarkPaid={handleMarkPaid}
@@ -563,51 +562,25 @@ export default function Dashboard() {
                                         customBudgets={allCustomBudgets}
                                         transactionActions={transactionActions}
                                         settings={settings}
-                                        embedded={true}
+                                        isMobile={false}
                                     />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* MOBILE ONLY: Activity Carousel (Kept as requested) */}
-                    <div className="lg:hidden w-full max-w-full mx-auto overflow-hidden mt-2">
-                        <div className="overflow-hidden rounded-xl" ref={emblaRef}>
-                            <div className="flex touch-pan-y h-[calc(100dvh-var(--header-total-height)-var(--nav-total-height)-5rem)]">
-                                {/* Slide 1: Upcoming */}
-                                <div className="flex-[0_0_100%] min-w-0 px-4 h-full overflow-y-auto scrollbar-hide" data-tutorial="upcoming-transactions">
-                                    <UpcomingTransactions
-                                        recurringWithStatus={recurringWithStatus}
-                                        onMarkPaid={handleMarkPaid}
-                                        isLoading={isLoading}
-                                        categories={categories}
-                                        embedded={false}
-                                    />
-                                </div>
-                                {/* Slide 2: Recent */}
-                                <div className="flex-[0_0_100%] min-w-0 px-4 h-full overflow-y-auto scrollbar-hide" data-tutorial="recent-transactions">
-                                    <RecentTransactions
-                                        categories={categories}
-                                        settings={settings}
-                                        customBudgets={allCustomBudgets}
-                                        onEdit={(data, transaction) => transactionActions.handleSubmit(data, transaction)}
-                                        onDelete={transactionActions.handleDelete}
-                                        embedded={false}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Pagination Dots */}
-                        <div className="flex justify-center items-center gap-1.5 mt-4">
-                            {[0, 1].map((index) => (
-                                <div
-                                    key={index}
-                                    className={`h-1.5 rounded-full transition-all duration-300 ${selectedIndex === index ? "w-4 bg-primary" : "w-1.5 bg-border"
-                                        }`}
-                                />
-                            ))}
-                        </div>
+                    {/* UPDATED 12-Mar-2026: Mobile activity now rendered by ActivityHub (carousel logic moved there) */}
+                    <div className="lg:hidden" data-tutorial="activity-hub-mobile">
+                        <ActivityHub
+                            recurringWithStatus={recurringWithStatus}
+                            onMarkPaid={handleMarkPaid}
+                            isLoading={isLoading}
+                            categories={categories}
+                            customBudgets={allCustomBudgets}
+                            transactionActions={transactionActions}
+                            settings={settings}
+                            isMobile={true}
+                        />
                     </div>
 
                     {/* Hidden dialog components - opened by FAB button onClick handlers */}
