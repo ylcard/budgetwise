@@ -1,5 +1,5 @@
 import { Shield, Lock, Database, Eye, Globe } from "lucide-react";
-import { LegalCard, LegalCardHeader, LegalCardTitle, LegalCardContent } from "../components/legal/LegalCard";
+import { LegalCard, LegalCardHeader, LegalCardTitle, LegalCardContent } from "@/components/legal/LegalCard";
 
 export default function PrivacyPolicy() {
     return (

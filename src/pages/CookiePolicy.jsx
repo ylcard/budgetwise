@@ -1,7 +1,7 @@
 // COMMENTED OUT 12-Mar-2026: Replaced with mobile-friendly LegalCard wrappers
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cookie, Info, Settings, Shield } from "lucide-react"; // UPDATED 14-Feb-2026: Added Shield icon
-import { LegalCard, LegalCardHeader, LegalCardTitle, LegalCardContent } from "../components/legal/LegalCard";
+import { LegalCard, LegalCardHeader, LegalCardTitle, LegalCardContent } from "@/components/legal/LegalCard";
 
 export default function CookiePolicy() {
     return (

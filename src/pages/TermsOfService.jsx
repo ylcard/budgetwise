@@ -1,7 +1,7 @@
 // COMMENTED OUT 12-Mar-2026: Replaced with mobile-friendly LegalCard wrappers
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, AlertTriangle, Ban, XCircle } from "lucide-react";
-import { LegalCard, LegalCardHeader, LegalCardTitle, LegalCardContent } from "../components/legal/LegalCard";
+import { LegalCard, LegalCardHeader, LegalCardTitle, LegalCardContent } from "@/components/legal/LegalCard";
 
 export default function TermsOfService() {
     return (
