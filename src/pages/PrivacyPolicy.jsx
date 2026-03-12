@@ -3,12 +3,12 @@ import { Shield, Lock, Database, Eye, Globe } from "lucide-react";
 
 export default function PrivacyPolicy() {
     return (
-        <div className="w-full py-6 pb-24">
-            <div className="max-w-4xl mx-auto space-y-6">
-                <div className="text-center space-y-2 mb-8">
-                    <Shield className="w-12 h-12 mx-auto text-primary" />
-                    <h1 className="text-3xl md:text-4xl font-bold text-foreground">Privacy Policy</h1>
-                    <p className="text-muted-foreground">Last Updated: February 14, 2026</p>
+        <div className="w-full py-4 md:py-6 pb-12">
+            <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 px-3 md:px-4">
+                <div className="text-center space-y-1.5 md:space-y-2 mb-4 md:mb-8">
+                    <Shield className="w-8 h-8 md:w-12 md:h-12 mx-auto text-primary" />
+                    <h1 className="text-2xl md:text-4xl font-bold text-foreground">Privacy Policy</h1>
+                    <p className="text-xs md:text-base text-muted-foreground">Last Updated: February 14, 2026</p>
                 </div>
 
                 <Card>

@@ -69,29 +69,27 @@ export default function LegalPage() {
         onValueChange={handleTabChange}
         className="w-full flex flex-col"
       >
-        {/* Header Section (Not Sticky to fix layout bugs) */}
-        <div className="w-full bg-background border-b border-border shadow-sm z-10">
-          <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4 pb-0">
+        {/* Header Section — sticky on mobile so tabs remain accessible while scrolling long legal text */}
+        <div className="w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm z-20 sticky top-0">
+          <div className="max-w-4xl mx-auto px-3 md:px-8 pt-3 md:pt-4 pb-0">
             {/* Desktop Title */}
             <div className="hidden md:block mb-4">
               <h1 className="text-2xl font-bold text-foreground">Legal Center</h1>
               <p className="text-muted-foreground text-sm">Review our policies and terms</p>
             </div>
 
-            <TabsList className="w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-3 gap-2 md:gap-4">
+            <TabsList className="w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-2.5 md:pb-3 gap-1.5 md:gap-4">
               {tabItems.map((item) => (
                 <TabsTrigger
                   key={item.id}
                   value={item.id}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all whitespace-nowrap",
-                    // Active: Dark text/border or specific brand color
+                    "flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border text-xs md:text-sm font-medium transition-all whitespace-nowrap shrink-0",
                     "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary",
-                    // Inactive: Simple gray
                     "data-[state=inactive]:bg-background data-[state=inactive]:text-muted-foreground data-[state=inactive]:border-border data-[state=inactive]:hover:bg-muted"
                   )}
                 >
-                  <item.icon className="w-4 h-4" />
+                  <item.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   {item.label}
                 </TabsTrigger>
               ))}
@@ -100,7 +98,7 @@ export default function LegalPage() {
         </div>
 
         {/* Content Area */}
-        <div className="w-full max-w-5xl mx-auto pb-32">
+        <div className="w-full max-w-5xl mx-auto pb-32 px-0">
           {tabItems.map((item) => (
             <TabsContent
               key={item.id}
