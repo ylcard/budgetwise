@@ -76,7 +76,8 @@ export default function MonthlyBreakdown({
   const { settings, user } = useSettings();
   const { notifications } = useNotifications();
   const isMobile = useIsMobile();
-  const isDesktop = !isMobile;
+  // COMMENTED OUT 12-Mar-2026: Replaced by isMobile check + CategoryDetailDrawer
+  // const isDesktop = !isMobile;
 
   // State for Modal/Drawer
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -86,6 +87,25 @@ export default function MonthlyBreakdown({
   const { categoryBreakdown, totalExpenses, needsTotal, wantsTotal } = useMonthlyBreakdown(
     transactions, categories, monthlyIncome, allCustomBudgets, selectedMonth, selectedYear
   );
+
+  // ADDED 12-Mar-2026: Count transactions per category for the detail drawer
+  const transactionCountMap = useMemo(() => {
+    const safeMonth = selectedMonth ?? new Date().getMonth();
+    const safeYear = selectedYear ?? new Date().getFullYear();
+    const { monthStart, monthEnd } = getMonthBoundaries(safeMonth, safeYear);
+    const startD = parseDate(monthStart);
+    const endD = parseDate(monthEnd);
+
+    const counts = {};
+    (transactions || []).forEach((t) => {
+      if (t.type !== "expense") return;
+      const tDate = parseDate(t.paidDate || t.date);
+      if (!tDate || tDate < startD || tDate > endD) return;
+      const catId = t.category_id || "uncategorized";
+      counts[catId] = (counts[catId] || 0) + 1;
+    });
+    return counts;
+  }, [transactions, selectedMonth, selectedYear]);
 
   // --- NEW: Proactive Notification Engine ---
   useEffect(() => {
