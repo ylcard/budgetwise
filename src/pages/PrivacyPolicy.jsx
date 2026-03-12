@@ -1,10 +1,5 @@
 import { Shield, Lock, Database, Eye, Globe } from "lucide-react";
-
-// ADDED 12-Mar-2026: Mobile-friendly Card wrappers to reduce padding on small screens
-const MCard = ({ className = "", ...props }) => <div className={`rounded-xl border bg-card text-card-foreground shadow ${className}`} {...props} />;
-const MCardHeader = ({ className = "", ...props }) => <div className={`flex flex-col space-y-1.5 p-4 md:p-6 ${className}`} {...props} />;
-const MCardTitle = ({ className = "", ...props }) => <div className={`font-semibold leading-none tracking-tight text-sm md:text-base ${className}`} {...props} />;
-const MCardContent = ({ className = "", ...props }) => <div className={`p-4 md:p-6 pt-0 ${className}`} {...props} />;
+import { LegalCard, LegalCardHeader, LegalCardTitle, LegalCardContent } from "../components/legal/LegalCard";
 
 export default function PrivacyPolicy() {
     return (
@@ -16,21 +11,21 @@ export default function PrivacyPolicy() {
                     <p className="text-xs md:text-base text-muted-foreground">Last Updated: February 14, 2026</p>
                 </div>
 
-                <MCard>
-                    <MCardHeader>
-                        <MCardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <Eye className="w-4 h-4 md:w-5 md:h-5 shrink-0" /> Introduction
-                        </MCardTitle>
-                    </MCardHeader>
-                    <MCardContent className="prose prose-sm max-w-none text-muted-foreground">
-                        <p className="text-xs md:text-sm">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="prose prose-sm max-w-none text-muted-foreground">
+                        <p>
                             BudgetWise ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our personal finance management application.
                         </p>
-                        <p className="font-semibold text-foreground text-xs md:text-sm">
+                        <p className="font-semibold text-foreground">
                             By using BudgetWise, you agree to the collection and use of information in accordance with this policy.
                         </p>
-                    </MCardContent>
-                </MCard>
+                    </LegalCardContent>
+                </LegalCard>
 
                 <Card>
                     <CardHeader>
