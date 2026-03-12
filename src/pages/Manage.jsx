@@ -38,7 +38,8 @@ import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import AppearanceSettings from "../components/theme/AppearanceSettings";
 import { formatDateString } from "../components/utils/dateUtils";
-import ScrollToTopButton from "../components/ui/ScrollToTopButton";
+// REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout for universal coverage
+// import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
  * Manage Layout - Wrapper for Settings Pages
@@ -60,7 +61,7 @@ export default function ManageLayout() {
           <Outlet />
         </main>
       </div>
-      <ScrollToTopButton />
+      {/* REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout */}
     </div>
   );
 }

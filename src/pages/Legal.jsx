@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Shield, FileText, Cookie, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ScrollToTopButton from "../components/ui/ScrollToTopButton";
+// REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout for universal coverage
+// import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 // Import existing page components
 import PrivacyPolicy from "./PrivacyPolicy";
@@ -112,7 +113,7 @@ export default function LegalPage() {
                     ))}
                 </div>
             </Tabs>
-            <ScrollToTopButton />
+            {/* REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout */}
         </div>
     );
 }

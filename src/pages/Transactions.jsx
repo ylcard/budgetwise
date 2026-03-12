@@ -30,7 +30,8 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2, Repeat } from "lucide-react";
 import { useBankSync } from "../components/banksync/useBankSync";
 import LastSyncInfo from "@/components/ui/LastSyncInfo";
-import ScrollToTopButton from "../components/ui/ScrollToTopButton";
+// REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout for universal coverage
+// import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
  * Transactions Layout - Main wrapper for History and Recurring tabs
@@ -278,7 +279,7 @@ export default function TransactionsLayout() {
         transaction={editingRecurring}
         categories={categories}
       />
-      <ScrollToTopButton />
+      {/* REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout */}
     </>
   );
 }

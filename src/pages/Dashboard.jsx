@@ -54,7 +54,8 @@ import { ActivityHub } from "../components/dashboard/ActivityHub";
 import QuickActions from "../components/dashboard/QuickActions";
 import { useBankSync } from "../components/banksync/useBankSync";
 import { toast } from "sonner";
-import ScrollToTopButton from "../components/ui/ScrollToTopButton";
+// REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout for universal coverage
+// import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
  * Main Dashboard Page
@@ -661,7 +662,7 @@ export default function Dashboard() {
           />
         </div>
       </div>
-      <ScrollToTopButton />
+      {/* REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout */}
     </>
   );
 }
