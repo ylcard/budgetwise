@@ -1,5 +1,5 @@
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useRef } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
@@ -79,6 +79,8 @@ export default function Dashboard() {
   // Carousel for Mobile Activity (Upcoming/Recent)
   const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const analysisScrollRef = useRef(null);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
