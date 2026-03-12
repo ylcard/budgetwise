@@ -6,8 +6,6 @@ import { getMonthlyPaidExpenses } from "../utils/financialCalculations";
 import { estimateCurrentMonth } from "../utils/projectionUtils";
 import { motion, useTransform, animate, useMotionValue } from "framer-motion";
 import InfoTooltip from "../ui/InfoTooltip";
-import { useFinancialHealthScore } from "../hooks/useFinancialHealth";
-import { useSettings } from "../utils/SettingsContext";
 import { parseDate } from "../utils/dateUtils";
 
 /**
