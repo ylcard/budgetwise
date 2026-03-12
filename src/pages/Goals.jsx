@@ -22,6 +22,7 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { useSettings } from '../components/utils/SettingsContext';
 import { useGoalActions, useSavingsGoalActions } from '../components/hooks/useActions';
 import { useFAB } from '../components/hooks/FABContext';
+import ScrollToTopButton from '../components/ui/ScrollToTopButton';
 
 // Icons
 import { Target, Plus, TrendingUp, CheckCircle2, Archive, X, Wallet } from 'lucide-react';
@@ -464,6 +465,8 @@ export default function GoalsPage() {
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
       />
+
+      <ScrollToTopButton />
     </div>
   );
 }
