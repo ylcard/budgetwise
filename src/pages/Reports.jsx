@@ -11,14 +11,13 @@ import { useMergedCategories } from "../components/hooks/useMergedCategories";
 import { useMonthlyTransactions, useMonthlyIncome } from "../components/hooks/useDerivedData";
 import MonthlyBreakdown from "../components/reports/MonthlyBreakdown";
 import MonthNavigator from "../components/ui/MonthNavigator";
-import ProjectionChart from "../components/reports/ProjectionChart";
-import CashFlowWave from "../components/reports/CashFlowWave"; // ADDED
+import CashFlowWave from "../components/reports/CashFlowWave";
 import { SavingsRateCard } from "../components/reports/cards/SavingsRateCard";
 import { NetFlowCard } from "../components/reports/cards/NetFlowCard";
 import { EfficiencyBonusCard } from "../components/reports/cards/EfficiencyBonusCard";
 import FinancialHealthScore from "../components/reports/FinancialHealthScore";
-import { calculateProjection, estimateCurrentMonth } from "../components/utils/projectionUtils";
-import { calculateBonusSavingsPotential, getMonthlyIncome, getMonthlyPaidExpenses } from "../components/utils/financialCalculations";
+import { useProjections } from "../components/hooks/useProjections";
+import { calculateBonusSavingsPotential, getMonthlyIncome, getMonthlyPaidExpenses, calculateAdjustedAverage } from "../components/utils/financialCalculations";
 import { LayoutDashboard, List, Maximize2, X } from "lucide-react";
 import {
     parseDate,
@@ -95,6 +94,9 @@ export default function Reports() {
         targetYear: selectedYear
     });
 
+    // Get projection totals for the NetFlowCard & CashFlowWave
+    const { totals: projectionTotals } = useProjections(transactions, selectedMonth, selectedYear);
+
     // Calculate Efficiency Bonus
     const bonusSavingsPotential = useMemo(() => {
         if (!monthStart || !monthEnd || !systemBudgets) return 0;
@@ -103,8 +105,24 @@ export default function Reports() {
         return calculateBonusSavingsPotential(systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, goalMode);
     }, [systemBudgets, transactions, categories, allCustomBudgets, monthStart, monthEnd, monthlyIncome, settings]);
 
-    // Calculate the "Safe Baseline" using your existing logic
-    const projectionData = useMemo(() => calculateProjection(transactions, categories, 6), [transactions, categories]);
+    // Calculate the "Safe Baseline" (Overall 6-month average expense)
+    const safeBaselineTotal = useMemo(() => {
+        const historyStartStr = getMonthBoundaries(selectedMonth - 6, selectedYear).monthStart;
+        const historyEndStr = getMonthBoundaries(selectedMonth - 1, selectedYear).monthEnd;
+        const historyStartD = parseDate(historyStartStr);
+        const historyEndD = parseDate(historyEndStr);
+
+        const monthlyTotals = {};
+        transactions.forEach(t => {
+            if (t.type !== 'expense') return;
+            const tDate = parseDate(t.paidDate || t.date);
+            if (!tDate || tDate < historyStartD || tDate > historyEndD) return;
+            const monthKey = tDate.toISOString().substring(0, 7);
+            monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + Number(t.amount || 0);
+        });
+
+        return calculateAdjustedAverage(Object.values(monthlyTotals));
+    }, [transactions, selectedMonth, selectedYear]);
 
     /**
      * Prepare data for the CashFlowWave chart.
@@ -131,12 +149,7 @@ export default function Reports() {
 
             // If it is the real current month, use the projection estimate for better accuracy
             if (isRealCurrentMonth) {
-                // Filter transactions just for this month to estimate
-                const currentTrans = transactions.filter(t =>
-                    isDateInRange(t.date || t.created_date, mStart, mEnd)
-                );
-
-                expense = estimateCurrentMonth(currentTrans, projectionData.sixMonthAvg || 0).total;
+                expense = projectionTotals.finalProjectedExpense || expense;
             }
 
             dataPoints.push({
@@ -148,7 +161,7 @@ export default function Reports() {
             });
         }
         return dataPoints;
-    }, [transactions, loadingTransactions, selectedMonth, selectedYear, projectionData]);
+    }, [transactions, loadingTransactions, selectedMonth, selectedYear, projectionTotals]);
 
     // Local Embla instance for the Stats cards
     const [statsEmblaRef] = useEmblaCarousel({
@@ -212,7 +225,8 @@ export default function Reports() {
                         totalPaidExpenses={totalPaidExpenses}
                         prevMonthlyIncome={prevMonthlyIncome}
                         prevPaidExpenses={prevPaidExpenses}
-                        safeBaseline={projectionData.totalProjectedMonthly}
+                        safeBaseline={safeBaselineTotal}
+                        projectedExpenseTotal={projectionTotals.finalProjectedExpense}
                         startDate={monthStart}
                         settings={settings}
                     />
@@ -235,7 +249,6 @@ export default function Reports() {
     );
 
     const waveComponent = <CashFlowWave data={cashFlowData} settings={settings} />;
-    const projectionComponent = <ProjectionChart settings={settings} projectionData={projectionData} />;
 
     return (
         <div className="bg-gray-50/50 md:min-h-screen">
@@ -271,9 +284,6 @@ export default function Reports() {
                 <div className="w-full space-y-8">
                     <div className="h-[400px] md:h-[450px]">
                         {waveComponent}
-                    </div>
-                    <div className="h-[400px] md:h-[450px]">
-                        {projectionComponent}
                     </div>
                 </div>
 
@@ -352,11 +362,6 @@ export default function Reports() {
                                     <section className="px-4">
                                         <MobileChartCard title="Cash Flow Wave" className="h-[400px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                                             {waveComponent}
-                                        </MobileChartCard>
-                                    </section>
-                                    <section className="px-4">
-                                        <MobileChartCard title="Financial Horizon" className="h-[400px]" onMaximize={() => setFullScreenChart({ title: "Financial Horizon", content: projectionComponent })}>
-                                            {projectionComponent}
                                         </MobileChartCard>
                                     </section>
                                 </div>
