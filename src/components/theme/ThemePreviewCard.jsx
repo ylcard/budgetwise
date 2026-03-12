@@ -1,18 +1,17 @@
 /**
  * CREATED 12-Mar-2026: Mini app preview card for theme selection.
- * Renders a tiny skeleton dashboard using hardcoded color tokens per theme.
- * CSS variables don't properly isolate in nested divs (they inherit from :root),
- * so we use a static color map to guarantee accurate previews.
+ * UPDATED 12-Mar-2026: Hardcoded color palettes for true CSS isolation.
+ *   Added special "split" and "scheduled" layout variants.
  */
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 
 /**
  * Static color palettes per theme ID for truly isolated previews.
  * Each key maps to the resolved HSL values from index.css / globals.css.
  */
-const THEME_PALETTES = {
+export const THEME_PALETTES = {
   light: {
     background: '#ffffff',
     foreground: '#0a0a0a',
@@ -51,11 +50,60 @@ const THEME_PALETTES = {
   },
 };
 
+/** Renders a mini dashboard skeleton using a given palette object */
+const MiniDashboard = ({ p, className }) => (
+  <div
+    className={cn("w-full h-full p-2 flex flex-col gap-1.5", className)}
+    style={{ backgroundColor: p.background, color: p.foreground }}
+  >
+    {/* Mini header */}
+    <div className="flex items-center gap-1.5">
+      <div className="w-4 h-4 rounded-md shrink-0" style={{ background: 'linear-gradient(135deg, #3b82f6, #a855f7)' }} />
+      <div className="h-1.5 rounded-full flex-1 max-w-[40%]" style={{ backgroundColor: p.muted }} />
+    </div>
+    {/* Stat cards */}
+    <div className="flex gap-1 flex-1 min-h-0">
+      <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.incBg }}>
+        <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.incText + '66' }} />
+        <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.incText }} />
+      </div>
+      <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.expBg }}>
+        <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.expText + '66' }} />
+        <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.expText }} />
+      </div>
+      <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.balBg }}>
+        <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.balText + '66' }} />
+        <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.balText }} />
+      </div>
+    </div>
+    {/* Transaction list skeleton */}
+    <div className="flex-1 rounded-md p-1.5 flex flex-col gap-1 min-h-0" style={{ backgroundColor: p.card, border: `1px solid ${p.border}` }}>
+      {[0.7, 0.5, 0.6].map((w, i) => (
+        <div key={i} className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.muted }} />
+          <div className="h-1.5 rounded-full" style={{ backgroundColor: p.mutedFg + '30', width: `${w * 100}%` }} />
+          <div className="h-1.5 w-5 rounded-full ml-auto" style={{ backgroundColor: p.mutedFg + '20' }} />
+        </div>
+      ))}
+    </div>
+    {/* Bottom nav */}
+    <div className="flex items-center justify-around rounded-md py-1" style={{ backgroundColor: p.card, border: `1px solid ${p.border}` }}>
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: i === 0 ? p.primary : p.mutedFg + '50' }} />
+      ))}
+    </div>
+  </div>
+);
+
+/**
+ * Standard theme preview — full dashboard in one palette.
+ */
 const ThemePreviewCard = memo(function ThemePreviewCard({
   label,
   isActive,
   onClick,
-  paletteId = 'light', // key into THEME_PALETTES
+  paletteId = 'light',
+  variant = 'standard', // 'standard' | 'split' | 'scheduled'
 }) {
   const p = THEME_PALETTES[paletteId] || THEME_PALETTES.light;
 
@@ -76,59 +124,31 @@ const ThemePreviewCard = memo(function ThemePreviewCard({
         </div>
       )}
 
-      {/* Preview — fully inline-styled for isolation */}
       <div className="w-full aspect-[4/3] overflow-hidden">
-        <div
-          className="w-full h-full p-2 flex flex-col gap-1.5"
-          style={{ backgroundColor: p.background, color: p.foreground }}
-        >
-          {/* Mini header */}
-          <div className="flex items-center gap-1.5">
-            <div
-              className="w-4 h-4 rounded-md shrink-0"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #a855f7)' }}
-            />
-            <div className="h-1.5 rounded-full flex-1 max-w-[40%]" style={{ backgroundColor: p.muted }} />
-          </div>
-
-          {/* Stat cards */}
-          <div className="flex gap-1 flex-1 min-h-0">
-            <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.incBg }}>
-              <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.incText + '66' }} />
-              <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.incText }} />
+        {variant === 'split' ? (
+          /* System card — split light/dark diagonally */
+          <div className="w-full h-full relative">
+            <div className="absolute inset-0 overflow-hidden" style={{ clipPath: 'polygon(0 0, 100% 0, 0 100%)' }}>
+              <MiniDashboard p={THEME_PALETTES.light} />
             </div>
-            <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.expBg }}>
-              <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.expText + '66' }} />
-              <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.expText }} />
-            </div>
-            <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.balBg }}>
-              <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.balText + '66' }} />
-              <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.balText }} />
+            <div className="absolute inset-0 overflow-hidden" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}>
+              <MiniDashboard p={THEME_PALETTES.dark} />
             </div>
           </div>
-
-          {/* Transaction list skeleton */}
-          <div className="flex-1 rounded-md p-1.5 flex flex-col gap-1 min-h-0" style={{ backgroundColor: p.card, border: `1px solid ${p.border}` }}>
-            {[0.7, 0.5, 0.6].map((w, i) => (
-              <div key={i} className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.muted }} />
-                <div className="h-1.5 rounded-full" style={{ backgroundColor: p.mutedFg + '30', width: `${w * 100}%` }} />
-                <div className="h-1.5 w-5 rounded-full ml-auto" style={{ backgroundColor: p.mutedFg + '20' }} />
+        ) : variant === 'scheduled' ? (
+          /* Scheduled card — clock icon over a subtle gradient */
+          <div className="w-full h-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${THEME_PALETTES.light.background}, ${THEME_PALETTES.dark.background})` }}>
+            <div className="flex flex-col items-center gap-1.5">
+              <Clock className="w-8 h-8" style={{ color: '#a78bfa' }} />
+              <div className="flex gap-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
               </div>
-            ))}
+            </div>
           </div>
-
-          {/* Bottom nav */}
-          <div className="flex items-center justify-around rounded-md py-1" style={{ backgroundColor: p.card, border: `1px solid ${p.border}` }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="w-2.5 h-2.5 rounded-sm"
-                style={{ backgroundColor: i === 0 ? p.primary : p.mutedFg + '50' }}
-              />
-            ))}
-          </div>
-        </div>
+        ) : (
+          <MiniDashboard p={p} />
+        )}
       </div>
 
       {/* Label */}
