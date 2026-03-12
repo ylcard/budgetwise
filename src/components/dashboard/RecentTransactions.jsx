@@ -165,7 +165,8 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
   return (
     <>
       <div className={clsx("flex flex-col h-full w-full max-w-full", !embedded && "bg-card border-none shadow-lg rounded-xl")}>
-        {!embedded && (
+        {/* COMMENTED OUT 12-Mar-2026: Old standalone header with "View All" — replaced by subtitle link for both embedded and non-embedded */}
+        {/* {!embedded && (
           <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 shrink-0">
             <CardTitle>Recent Transactions</CardTitle>
             <Link to={createPageUrl("Transactions")} className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
@@ -173,20 +174,18 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
               <ArrowRight className="w-4 h-4" />
             </Link>
           </CardHeader>
-        )}
+        )} */}
 
-        {/* ADDED 12-Mar-2026: Subtitle link when embedded in ActivityHub */}
-        {embedded && (
-          <div className="px-3 pt-2 pb-1 flex-shrink-0">
-            <Link
-              to="/transactions?tab=history"
-              className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
-            >
-              Manage all transactions
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-          </div>
-        )}
+        {/* UPDATED 12-Mar-2026: Subtitle link shown for ALL modes (embedded + non-embedded/mobile) */}
+        <div className="px-3 pt-2 pb-1 flex-shrink-0">
+          <Link
+            to="/transactions?tab=history"
+            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+          >
+            Manage all transactions
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
 
         <div className={clsx("flex-1 overflow-y-auto", !embedded && "p-4")}>
           {/* UPDATED 12-Mar-2026: Removed space-y-4 to fix gap showing behind sticky month headers */}
