@@ -4,37 +4,51 @@ import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * ScrollToTopButton
- * UPDATED 12-Mar-2026: Replaced ref-based approach with DOM attribute query.
- * When no scrollRef is passed, auto-detects the Layout's main scroll container
- * via [data-scroll-main] attribute — eliminates ref timing issues entirely.
+ * UPDATED 12-Mar-2026: Per-page integration approach.
  *
- * @param {React.RefObject} [scrollRef] - Optional ref to a specific scrollable container (e.g. Reports tabs).
- *   If omitted, queries the DOM for [data-scroll-main].
+ * Usage:
+ * 1. With explicit ref (e.g. Reports inner tabs): <ScrollToTopButton scrollRef={myRef} />
+ * 2. Without ref (auto-detects Layout's [data-scroll-main] wrapper): <ScrollToTopButton />
+ *
+ * @param {React.RefObject} [scrollRef] - Optional ref to a specific scrollable container.
  * @param {number} [threshold=80] - Scroll distance (px) before the button appears
  */
 const ScrollToTopButton = memo(function ScrollToTopButton({ scrollRef, threshold = 80 }) {
   const [visible, setVisible] = useState(false);
 
-  // Resolve the scrollable element: explicit ref > data-attribute query
+  // Resolve the scrollable element: explicit ref > Layout's data-scroll-main
   const getScrollElement = useCallback(() => {
     if (scrollRef?.current) return scrollRef.current;
     return document.querySelector('[data-scroll-main]') || null;
   }, [scrollRef]);
 
-  // Attach scroll listener — re-runs when scrollRef identity changes
+  // Attach scroll listener
   useEffect(() => {
-    const el = getScrollElement();
-    if (!el) return;
+    // Small delay to ensure DOM is ready (Layout mounts before page content)
+    const timerId = setTimeout(() => {
+      const el = getScrollElement();
+      if (!el) return;
 
-    const handleScroll = () => {
-      setVisible(el.scrollTop > threshold);
+      const handleScroll = () => {
+        setVisible(el.scrollTop > threshold);
+      };
+
+      // Check initial scroll position
+      handleScroll();
+
+      el.addEventListener("scroll", handleScroll, { passive: true });
+
+      // Store cleanup ref for the timeout-deferred listener
+      cleanupRef.current = () => el.removeEventListener("scroll", handleScroll);
+    }, 50);
+
+    // Mutable ref to hold inner cleanup
+    const cleanupRef = { current: null };
+
+    return () => {
+      clearTimeout(timerId);
+      cleanupRef.current?.();
     };
-
-    // Check initial position (page may already be scrolled on mount)
-    handleScroll();
-
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
   }, [getScrollElement, threshold]);
 
   const scrollToTop = useCallback(() => {
