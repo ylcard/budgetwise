@@ -356,7 +356,7 @@ export default function Reports() {
 
           {/* TAB: BREAKDOWN */}
           {mobileTab === 'breakdown' && (
-            <div className="h-full pb-20 overflow-y-auto">
+            <div className="h-full pb-20 overflow-y-auto overflow-x-hidden">
               <MonthlyBreakdown
                 transactions={transactions}
                 categories={categories}
