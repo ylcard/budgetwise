@@ -46,7 +46,8 @@ import "@/components/utils/typography";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useGamification } from "@/components/hooks/useGamification";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"; // ADDED 10-Mar-2026: Mount Sonner toast renderer
-import ScrollToTopButton from "./components/ui/ScrollToTopButton"; // ADDED 12-Mar-2026: Universal scroll-to-top
+// COMMENTED OUT 12-Mar-2026: Layout-level approach didn't work — moved to per-page integration
+// import ScrollToTopButton from "./components/ui/ScrollToTopButton";
 
 const LayoutContent = ({ children }) => {
   const location = useLocation();
@@ -419,8 +420,8 @@ const LayoutContent = ({ children }) => {
           </nav>
           {/* GlobalFAB now consumes context internally */}
           <GlobalFAB />
-          {/* ADDED 12-Mar-2026: Universal scroll-to-top button — uses data-scroll-main attribute, no ref needed */}
-          <ScrollToTopButton />
+          {/* COMMENTED OUT 12-Mar-2026: Layout-level approach didn't work — moved to per-page integration */}
+          {/* <ScrollToTopButton /> */}
         </main>
       </div>
 

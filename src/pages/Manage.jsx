@@ -38,8 +38,8 @@ import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import AppearanceSettings from "../components/theme/AppearanceSettings";
 import { formatDateString } from "../components/utils/dateUtils";
-// REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout for universal coverage
-// import ScrollToTopButton from "../components/ui/ScrollToTopButton";
+// RESTORED 12-Mar-2026: Layout approach didn't work — back to per-page integration
+import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
  * Manage Layout - Wrapper for Settings Pages
@@ -61,7 +61,8 @@ export default function ManageLayout() {
           <Outlet />
         </main>
       </div>
-      {/* REMOVED 12-Mar-2026: ScrollToTopButton moved to Layout */}
+      {/* RESTORED 12-Mar-2026: Per-page scroll-to-top (auto-detects Layout's data-scroll-main) */}
+      <ScrollToTopButton />
     </div>
   );
 }
