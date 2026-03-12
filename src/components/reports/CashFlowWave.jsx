@@ -49,6 +49,11 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
     };
   }, [data]);
 
+  // Extract the projected month (if any) to calculate the overspend/savings insight
+  const projectedMonth = useMemo(() => data.find(d => d.isProjection), [data]);
+  const insightNet = projectedMonth ? (projectedMonth.netFlow || 0) : 0;
+  const isInsightPositive = insightNet >= 0;
+
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || payload.length === 0) return null;
@@ -113,6 +118,10 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
         <div className="w-4 h-1 border-t-2 border-dashed border-gray-400" />
         <span className="text-gray-700">Projected</span>
       </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-1 border-t border-dashed border-red-400" />
+        <span className="text-gray-700">Safe Baseline (Avg Expense)</span>
+      </div>
     </div>
   );
 
@@ -134,8 +143,25 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
   return (
     <Card className="border-none shadow-none md:shadow-lg bg-transparent md:bg-card h-full flex flex-col">
       <CardHeader className="pb-2 px-0 md:px-6 pt-0 md:pt-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <CardTitle>Cash Flow Wave</CardTitle>
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <CardTitle>Cash Flow Wave</CardTitle>
+              {projectedMonth && (
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${isInsightPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                  {isInsightPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {isInsightPositive ? 'Savings Proj.' : 'Overspend Risk'}
+                </div>
+              )}
+            </div>
+            {projectedMonth && (
+              <p className="text-sm text-gray-500">
+                {isInsightPositive
+                  ? `On track to save ${formatCurrency(insightNet, settings)} this month.`
+                  : `Projected to overspend by ${formatCurrency(Math.abs(insightNet), settings)}.`}
+              </p>
+            )}
+          </div>
           <div className="flex items-center justify-between w-full md:w-auto gap-2 md:gap-4 text-sm bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-green-600" />
@@ -239,6 +265,21 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
 
             {/* Zero reference line */}
             <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
+
+            {/* "Ghost Car" Safe Baseline Reference Line */}
+            <ReferenceLine
+              y={stats.avgExpense}
+              stroke="#f87171"
+              strokeWidth={1}
+              strokeDasharray="5 5"
+              label={{
+                position: 'insideBottomRight',
+                value: 'Avg Expense',
+                fill: '#ef4444',
+                fontSize: 10,
+                offset: 5
+              }}
+            />
 
             {/* 1. BARS FIRST (Draws behind the lines/dots to prevent obscuring) */}
             <Bar
