@@ -1,4 +1,6 @@
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useCallback } from "react";
+// COMMENTED OUT 12-Mar-2026: Replaced useMemo (ActiveComponent pattern) with always-mounted approach
+// import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 // COMMENTED OUT 12-Mar-2026: Replaced Tabs with SegmentedControl to fix mobile overflow
 // import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -37,17 +39,11 @@ export default function LegalPage() {
     }
   }, [tab, navigate]);
 
-  // Handle tab switching
-  const handleTabChange = (value) => {
+  // Handle tab switching — memoised to avoid re-creating on every render
+  const handleTabChange = useCallback((value) => {
     navigate(`/legal/${value}`, { replace: true });
     legalScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
-  };
-
-  // Resolve active component
-  const ActiveComponent = useMemo(() => {
-    const match = TAB_CONFIG.find((t) => t.value === currentTab);
-    return match ? match.component : PrivacyPolicy;
-  }, [currentTab]);
+  }, [navigate]);
 
   return (
     <div ref={legalScrollRef} className="h-[calc(100vh-var(--header-total-height)-var(--nav-total-height))] w-full overflow-y-auto overflow-x-hidden bg-muted/30 scroll-smooth">
@@ -69,9 +65,16 @@ export default function LegalPage() {
         </div>
       </div>
 
-      {/* Content Area */}
+      {/* Content Area — all tabs stay mounted, only the active one is visible */}
       <div className="w-full max-w-4xl mx-auto pb-32 px-0">
-        <ActiveComponent />
+        {TAB_CONFIG.map((item) => (
+          <div
+            key={item.value}
+            className={currentTab === item.value ? "block" : "hidden"}
+          >
+            <item.component />
+          </div>
+        ))}
       </div>
 
       <ScrollToTopButton scrollRef={legalScrollRef} />
