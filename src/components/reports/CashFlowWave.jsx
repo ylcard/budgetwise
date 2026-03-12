@@ -136,7 +136,7 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
       <CardHeader className="pb-2 px-0 md:px-6 pt-0 md:pt-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <CardTitle>Cash Flow Wave</CardTitle>
-          <div className="flex items-center justify-between w-full md:w-auto gap-4 text-sm bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg">
+          <div className="flex items-center justify-between w-full md:w-auto gap-2 md:gap-4 text-sm bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-green-600" />
               <div>
