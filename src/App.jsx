@@ -71,11 +71,8 @@ const AuthenticatedApp = () => {
         {/* Transactions Route */}
         <Route path="/transactions" element={<TransactionsPage />} />
 
-        {/* Flattened Manage Routes */}
+        {/* Single Manage Route - Sub-pages are lazy loaded internally */}
         <Route path="/manage" element={<ManagePage />} />
-        <Route path="/manage/categories" element={<Categories />} />
-        <Route path="/manage/automation" element={<Automation />} />
-        <Route path="/manage/banksync" element={<BankSync />} />
 
         {/* Legal Tabbed Routes */}
         <Route path="/legal/:tab?" element={<LegalPage />} />
