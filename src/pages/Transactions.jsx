@@ -226,6 +226,8 @@ export default function TransactionsLayout() {
                   setShowImportWizard={setShowImportWizard}
                   hasActiveConnections={hasActiveConnections}
                   handleGlobalSync={handleGlobalSync}
+                  lastSyncDate={lastSyncDate}
+                  settings={settings}
                   syncState={syncState}
                   setShowRecurringForm={setShowRecurringForm}
                   setEditingRecurring={setEditingRecurring}
@@ -289,6 +291,8 @@ export function TransactionHistory({
   setShowImportWizard,
   hasActiveConnections,
   handleGlobalSync,
+  lastSyncDate,
+  settings,
   syncState,
   setShowRecurringForm,
   setEditingRecurring
