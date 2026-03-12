@@ -238,6 +238,7 @@ export default function AppearanceSettings({ themeConfig, onChange, savedThemeCo
         <StyleThemePicker
           value={currentConfig.styleTheme || 'none'}
           onChange={handleStyleThemeChange}
+          isDarkMode={currentConfig.mode === 'dark' || (currentConfig.mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)}
         />
       </div>
 
