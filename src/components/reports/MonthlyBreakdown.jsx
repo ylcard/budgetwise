@@ -153,7 +153,8 @@ export default function MonthlyBreakdown({
   // const renderCategoryDetails = () => { ... };
 
   return (
-    <Card className="w-full h-full border-none shadow-lg flex flex-col bg-white">
+    {/* UPDATED 12-Mar-2026: Removed h-full to prevent mobile overflow clipping */}
+    <Card className="w-full border-none shadow-lg flex flex-col bg-white">
       {isLoading ? (
         <div className="p-6 space-y-6">
           <div className="flex justify-between">
