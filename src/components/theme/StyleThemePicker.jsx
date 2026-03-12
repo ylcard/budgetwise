@@ -11,9 +11,9 @@ import { memo } from 'react';
 import ThemePreviewCard from './ThemePreviewCard';
 
 export const STYLE_THEMES = [
-  { id: 'none', label: 'Light', themeClass: 'light', styleAttr: '' },
-  { id: 'none-dark', label: 'Dark', themeClass: 'dark', styleAttr: '' },
-  { id: 'cyberpunk', label: 'Cyberpunk', themeClass: 'dark', styleAttr: 'cyberpunk' },
+  { id: 'none', label: 'Light', paletteId: 'light' },
+  { id: 'none-dark', label: 'Dark', paletteId: 'dark' },
+  { id: 'cyberpunk', label: 'Cyberpunk', paletteId: 'cyberpunk' },
 ];
 
 /**
