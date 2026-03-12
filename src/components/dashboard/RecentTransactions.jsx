@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Banknote, ExternalLink, Pencil, Trash2, ChevronDown } from "lucide-react";
-// COMMENTED OUT 12-Mar-2026: ArrowRight unused in embedded mode but kept for standalone header
-// ExternalLink now also used for embedded subtitle link
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// COMMENTED OUT 12-Mar-2026: ArrowRight no longer used after removing standalone "View All" header
+// import { ArrowRight, Banknote, ExternalLink, Pencil, Trash2, ChevronDown } from "lucide-react";
+import { Banknote, ExternalLink, Pencil, Trash2, ChevronDown } from "lucide-react";
+// COMMENTED OUT 12-Mar-2026: CardHeader and CardTitle no longer used after removing standalone header
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { createPageUrl } from "@/utils";
+// COMMENTED OUT 12-Mar-2026: createPageUrl no longer used — replaced by direct /transactions link
+// import { createPageUrl } from "@/utils";
 import { createEntityMap } from "../utils/generalUtils";
 import { formatCurrency } from "../utils/currencyUtils";
 import { getCategoryIcon } from "../utils/iconMapConfig";
