@@ -87,7 +87,8 @@ export default function CustomBudgetsDisplay({
                 </div>
               </div>
 
-              {budgets.length > 1 && (
+              {/* UPDATED 12-Mar-2026: Only show dots when carousel is scrollable (not all items visible) */}
+              {canScroll && budgets.length > 1 && (
                 <div className="flex justify-center items-center gap-1.5 mt-4">
                   {budgets.map((_, index) => (
                     <div
