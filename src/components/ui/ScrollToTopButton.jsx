@@ -7,14 +7,22 @@ import { motion, AnimatePresence } from "framer-motion";
  * A floating button that appears when the user scrolls down inside a scrollable container.
  * Scrolls the container back to the top smoothly when clicked.
  *
- * @param {React.RefObject} scrollRef - Ref to the scrollable container element
+ * @param {React.RefObject} [scrollRef] - Ref to the scrollable container element.
+ *   If omitted, the component auto-detects the Layout's main scrollable wrapper.
  * @param {number} [threshold=80] - Scroll distance (px) before the button appears
  */
 const ScrollToTopButton = memo(function ScrollToTopButton({ scrollRef, threshold = 80 }) {
   const [visible, setVisible] = useState(false);
 
+  // Resolve the scrollable element: explicit ref > Layout's main scroller
+  const getScrollElement = useCallback(() => {
+    if (scrollRef?.current) return scrollRef.current;
+    // Layout's main content wrapper — the first child of <main> with overflow-auto
+    return document.querySelector('main .overflow-auto') || null;
+  }, [scrollRef]);
+
   useEffect(() => {
-    const el = scrollRef?.current;
+    const el = getScrollElement();
     if (!el) return;
 
     const handleScroll = () => {
@@ -23,13 +31,13 @@ const ScrollToTopButton = memo(function ScrollToTopButton({ scrollRef, threshold
 
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
-  }, [scrollRef, threshold]);
+  }, [getScrollElement, threshold]);
 
   const scrollToTop = useCallback(() => {
-    const el = scrollRef?.current;
+    const el = getScrollElement();
     if (!el) return;
     el.scrollTo({ top: 0, behavior: "smooth" });
-  }, [scrollRef]);
+  }, [getScrollElement]);
 
   return (
     <AnimatePresence>
