@@ -31,6 +31,9 @@ import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building
 import { useBankSync } from "../components/banksync/useBankSync";
 import LastSyncInfo from "@/components/ui/LastSyncInfo";
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
+// ADDED 12-Mar-2026: Tutorial system integration for History and Recurring tabs
+import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
+import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 
 /**
  * Transactions Layout - Main wrapper for History and Recurring tabs
@@ -495,6 +498,9 @@ export function TransactionHistory({
     // Removing setFabButtons from dependency array to prevent loops
   }, [historyFab]);
 
+  // ADDED 12-Mar-2026: Trigger history tab tutorial when data is loaded
+  useTutorialTrigger(TUTORIAL_IDS.TRANSACTION_HISTORY, 800, !isLoading);
+
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-4 mt-0">
@@ -502,11 +508,14 @@ export function TransactionHistory({
           <AdminConsistencyChecker transactions={transactions} />
         )}
 
-        <TransactionFilters
-          filters={filters} setFilters={setFilters}
-          categories={categories} allCustomBudgets={allCustomBudgets}
-          sortConfig={sortConfig} onSort={setSortConfig} // Passed down for Mobile Drawer
-        />
+        <div data-tutorial="txn-filters">
+          <TransactionFilters
+            filters={filters} setFilters={setFilters}
+            categories={categories} allCustomBudgets={allCustomBudgets}
+            sortConfig={sortConfig} onSort={setSortConfig} // Passed down for Mobile Drawer
+          />
+        </div>
+        <div data-tutorial="txn-list">
         <TransactionList
           transactions={paginatedTransactions} categories={categories}
           onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading}
@@ -528,7 +537,9 @@ export function TransactionHistory({
           onDeleteSelected={handleDeleteSelected} isBulkDeleting={isBulkDeleting}
           onEditSelected={() => setShowMassEdit(true)} // Pass the handler
           sortConfig={sortConfig} onSort={setSortConfig}
+          data-tutorial="txn-sort"
         />
+        </div>
 
         <MassEditDrawer
           open={showMassEdit}
@@ -587,17 +598,23 @@ export function RecurringTransactions({ setEditingRecurring, setShowRecurringFor
     await queryClient.invalidateQueries({ queryKey: ['RECURRING_TRANSACTIONS'] });
   };
 
+  // ADDED 12-Mar-2026: Trigger recurring tab tutorial when data is loaded
+  useTutorialTrigger(TUTORIAL_IDS.TRANSACTION_RECURRING, 800, !isLoading);
+
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-4">
-        <RecurringTransactionList
-          recurringTransactions={recurringTransactions}
-          categories={categories}
-          onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
-          onDelete={handleDelete}
-          onToggleActive={handleToggleActive}
-          isLoading={isLoading}
-        />
+        <div data-tutorial="recurring-list">
+          <RecurringTransactionList
+            recurringTransactions={recurringTransactions}
+            categories={categories}
+            onEdit={(r) => { setEditingRecurring(r); setShowRecurringForm(true); }}
+            onDelete={handleDelete}
+            onToggleActive={handleToggleActive}
+            isLoading={isLoading}
+            data-tutorial="recurring-toggle"
+          />
+        </div>
       </div>
     </PullToRefresh>
   );
