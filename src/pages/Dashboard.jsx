@@ -573,7 +573,7 @@ export default function Dashboard() {
           </div>
 
           {/* MOBILE ONLY: Activity Carousel (Kept as requested) */}
-          <div className="lg:hidden w-full max-w-full mx-auto overflow-hidden mt-2">
+          <div ref={analysisScrollRef} className="lg:hidden w-full max-w-full mx-auto overflow-hidden mt-2">
             <div className="overflow-hidden rounded-xl" ref={emblaRef}>
               <div className="flex touch-pan-y h-[calc(100dvh-var(--header-total-height)-var(--nav-total-height)-5rem)]">
                 {/* Slide 1: Upcoming */}
