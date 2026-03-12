@@ -110,11 +110,11 @@ export default memo(function FinancialHealthScore({ healthData, className }) {
   const headerStyle = getHeaderStyle(totalScore);
 
   return (
-    <div className="w-full overflow-hidden py-1" ref={emblaRef}>
-      <div className={`flex touch-pan-y gap-4 md:grid md:grid-cols-5 md:auto-rows-max items-stretch ${className || ''}`}>
+    <div className="w-full overflow-hidden py-1 px-4 md:px-0" ref={emblaRef}>
+      <div className={`flex touch-pan-y gap-3 md:grid md:grid-cols-5 md:gap-4 md:auto-rows-max items-stretch ${className || ''}`}>
 
         {/* Main Header Card - Hero Slide on Mobile, Span 5 on Desktop */}
-        <div className="flex-[0_0_90vw] sm:flex-[0_0_70vw] md:flex-auto min-w-0 md:col-span-5">
+        <div className="flex-[0_0_85%] sm:flex-[0_0_65%] md:flex-auto min-w-0 md:col-span-5">
           <div className={`relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-5 rounded-xl border shadow-md transition-colors duration-300 gap-4 h-full ${headerStyle.bg} ${headerStyle.border}`}>
             <div className={`absolute inset-0 bg-gradient-to-br ${headerStyle.gradient} opacity-60`} />
             <div className="relative z-10 flex items-center gap-3 md:gap-4 w-full sm:w-auto">
