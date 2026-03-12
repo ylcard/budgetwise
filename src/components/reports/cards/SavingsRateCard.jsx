@@ -25,7 +25,7 @@ export const SavingsRateCard = memo(function SavingsRateCard({
     : <ArrowDownRight className="w-3 h-3" />;
 
   return (
-    <Card className="border-none shadow-lg h-full">
+    <Card className="border-none shadow-lg h-full w-full min-w-0 overflow-hidden">
       <CardContent className="p-4 md:p-6 text-center h-full flex flex-col justify-between">
         <div className="flex flex-col items-center">
           <p className="text-sm font-medium text-gray-500 flex items-center justify-center gap-1">
@@ -34,11 +34,11 @@ export const SavingsRateCard = memo(function SavingsRateCard({
           </p>
           <motion.h3
             initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}
-            className={`text-2xl font-bold mt-1 ${savingsRate >= 20 ? 'text-emerald-600' : savingsRate > 0 ? 'text-blue-600' : 'text-rose-600'}`}
+            className={`text-2xl font-bold mt-1 w-full truncate px-2 ${savingsRate >= 20 ? 'text-emerald-600' : savingsRate > 0 ? 'text-blue-600' : 'text-rose-600'}`}
           >
             {savingsRate.toFixed(1)}%
           </motion.h3>
-          <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${savingsRateDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+          <div className={`flex items-center justify-center flex-wrap text-center gap-1 mt-2 text-xs font-medium w-full ${savingsRateDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
             {getArrow(savingsRateDiff)}
             <span>{Math.abs(savingsRateDiff).toFixed(1)}% vs last month</span>
           </div>
