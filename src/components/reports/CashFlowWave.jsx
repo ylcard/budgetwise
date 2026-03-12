@@ -38,13 +38,13 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
     const historical = data.filter(d => !d.isProjection);
     const avgIncome = historical.reduce((sum, d) => sum + (d.income || 0), 0) / (historical.length || 1);
     const avgExpense = historical.reduce((sum, d) => sum + (d.expense || 0), 0) / (historical.length || 1);
-    const totalNetFlow = historical.reduce((sum, d) => sum + (d.netFlow || 0), 0);
+    const avgNetFlow = avgIncome - avgExpense;
 
     return {
       avgIncome,
       avgExpense,
-      totalNetFlow,
-      isPositive: totalNetFlow >= 0,
+      avgNetFlow,
+      isPositive: avgNetFlow >= 0,
     };
   }, [data]);
 
@@ -183,9 +183,9 @@ const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${stats.isPositive ? 'bg-green-600' : 'bg-red-600'}`} />
               <div>
-                <p className="text-xs text-gray-500">Total Net</p>
+                <p className="text-xs text-gray-500">Avg Net Flow</p>
                 <p className={`font-semibold ${stats.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(stats.totalNetFlow, settings)}
+                  {formatCurrency(stats.avgNetFlow, settings)}
                 </p>
               </div>
             </div>
