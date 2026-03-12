@@ -27,13 +27,13 @@ export default function PrivacyPolicy() {
                     </LegalCardContent>
                 </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <Database className="w-5 h-5" /> Data We Collect
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <div>
                             <h3 className="font-semibold text-foreground mb-2">1. Personal Information</h3>
                             <ul className="list-disc pl-6 space-y-1 text-sm text-muted-foreground">
@@ -65,16 +65,16 @@ export default function PrivacyPolicy() {
                                 <li><strong>Local Storage:</strong> Session data, cached preferences, temporary data</li>
                             </ul>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <Globe className="w-5 h-5" /> Third-Party Services
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             We integrate with the following third-party services. Your data may be transmitted to these services:
                         </p>
@@ -105,16 +105,16 @@ export default function PrivacyPolicy() {
                                 <p className="text-sm text-muted-foreground">Used for transaction categorization. Transaction descriptions (without sensitive details) may be processed for AI-powered categorization.</p>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <Lock className="w-5 h-5" /> Security Measures
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             We implement industry-standard security measures to protect your data:
                         </p>
@@ -133,14 +133,14 @@ export default function PrivacyPolicy() {
                                 <strong>Important:</strong> While we employ robust security measures, no method of transmission over the Internet or electronic storage is 100% secure. We cannot guarantee absolute security.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>How We Use Your Data</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>How We Use Your Data</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <ul className="list-disc pl-6 space-y-2 text-sm text-muted-foreground">
                             <li>To provide core budgeting and financial tracking features</li>
                             <li>To sync transactions from connected bank accounts</li>
@@ -161,14 +161,14 @@ export default function PrivacyPolicy() {
                             <li>Share your data with advertisers</li>
                             <li>Access your data unless necessary for support or security</li>
                         </ul>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Your Rights</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>Your Rights</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">You have the right to:</p>
 
                         <ul className="list-disc pl-6 space-y-2 text-sm text-muted-foreground">
@@ -183,14 +183,14 @@ export default function PrivacyPolicy() {
                         <p className="text-sm text-muted-foreground mt-4">
                             To exercise any of these rights, visit your Account Settings or contact us directly.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Data Retention</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>Data Retention</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             We retain your data for as long as your account is active. If you delete your account:
                         </p>
@@ -200,41 +200,41 @@ export default function PrivacyPolicy() {
                             <li>Anonymized analytics data may be retained indefinitely</li>
                             <li>Data required for legal or regulatory compliance will be retained as required by law</li>
                         </ul>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Children's Privacy</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>Children's Privacy</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             BudgetWise is not intended for users under 18 years of age. We do not knowingly collect personal information from children. If you believe we have inadvertently collected data from a minor, please contact us immediately.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Changes to This Policy</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>Changes to This Policy</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the "Last Updated" date. Your continued use of the app after changes constitutes acceptance of the updated policy.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle>Contact Us</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard className="border-primary/20 bg-primary/5">
+                    <LegalCardHeader>
+                        <LegalCardTitle>Contact Us</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             If you have questions about this Privacy Policy or your data, please contact us through the app's support channels or your account administrator.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
             </div>
         </div>
     );
