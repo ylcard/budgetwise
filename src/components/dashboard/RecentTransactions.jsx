@@ -42,10 +42,10 @@ function TransactionMonthGroup({ date, categories, customBudgets, onEdit, onDele
   if (isLoading) return <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">Loading {formatDate(date, 'MMMM')}...</div>;
   if (transactions.length === 0) return null;
 
-  // UPDATED 12-Mar-2026: Removed mb-2 gap; sticky header now uses border-t instead of border-b to avoid visual gap
+  // UPDATED 12-Mar-2026: Fixed sticky gap bug — solid bg-card (no transparency), -mt-px collapses gaps between groups
   return (
-    <div>
-      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50">
+    <div className="-mt-px first:mt-0">
+      <div className="sticky top-0 z-10 bg-card px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50">
         {formatDate(date, 'MMMM yyyy')}
       </div>
       <div className="space-y-1 p-2 relative z-0">
