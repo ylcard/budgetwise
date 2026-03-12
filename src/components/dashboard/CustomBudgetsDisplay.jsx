@@ -43,7 +43,6 @@ export default function CustomBudgetsDisplay({
       {budgets.length > 0 && (
         <Card className="border-none shadow-lg">
           <div className="px-3 pt-4 pb-0 flex flex-col items-center text-center md:flex-row md:justify-between md:px-6 md:pt-6">
-            <h2 className="text-lg font-bold text-foreground">Custom Budgets</h2>
             <CustomButton
               variant="budget"
               onClick={onCreateBudget}
