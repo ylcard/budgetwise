@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback, lazy, Suspense, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useRef, useCallback, lazy, Suspense, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Shield, FileText, Cookie, AlertTriangle } from "lucide-react";
 import LegalSegmentedControl from "@/components/legal/LegalSegmentedControl";
 import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
@@ -19,29 +19,21 @@ const TAB_CONFIG = [
 ];
 
 export default function LegalPage() {
-    const { tab } = useParams();
-    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const legalScrollRef = useRef(null);
 
-    // Use local state to drive the UI instantly without a Router trigger
-    const [activeTab, setActiveTab] = useState(tab || "privacy");
+    const currentTab = searchParams.get("tab") || "privacy";
 
-    // Redirect to default tab if none specified
     useEffect(() => {
-        if (!tab) {
-            navigate("/legal/privacy", { replace: true });
-        } else if (tab !== activeTab) {
-            setActiveTab(tab);
+        if (!searchParams.get("tab")) {
+            setSearchParams({ tab: "privacy" }, { replace: true });
         }
-    }, [tab, navigate, activeTab]);
+    }, [searchParams, setSearchParams]);
 
-    // Handle tab switching — memoised to avoid re-creating on every render
     const handleTabChange = useCallback((value) => {
-        setActiveTab(value);
-        // Update URL without triggering a React Router navigation event
-        window.history.replaceState(null, "", `/legal/${value}`);
+        setSearchParams({ tab: value }, { replace: true });
         legalScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
-    }, []);
+    }, [setSearchParams]);
 
     return (
         <div ref={legalScrollRef} className="h-[calc(100vh-var(--header-total-height)-var(--nav-total-height))] w-full overflow-y-auto overflow-x-hidden bg-muted/30 scroll-smooth">
@@ -57,7 +49,7 @@ export default function LegalPage() {
 
                     <LegalSegmentedControl
                         options={TAB_CONFIG}
-                        value={activeTab}
+                        value={currentTab}
                         onChange={handleTabChange}
                     />
                 </div>
@@ -69,7 +61,7 @@ export default function LegalPage() {
                     {TAB_CONFIG.map((item) => (
                         <div
                             key={item.value}
-                            className={activeTab === item.value ? "block" : "hidden"}
+                            className={currentTab === item.value ? "block" : "hidden"}
                         >
                             <item.component />
                         </div>
