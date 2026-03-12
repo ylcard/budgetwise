@@ -3,7 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import {
   Save,
   Trash2,
-  Download
+  Download,
+  Settings as SettingsIcon,
+  User as UserIcon
 } from "lucide-react";
 
 // UI Components
@@ -39,12 +41,18 @@ import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exp
 import AppearanceSettings from "../components/theme/AppearanceSettings";
 import { formatDateString } from "../components/utils/dateUtils";
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
+import LegalSegmentedControl from "@/components/legal/LegalSegmentedControl";
+
+const MANAGE_TABS = [
+  { value: "preferences", icon: <SettingsIcon className="w-3.5 h-3.5" />, text: "Preferences" },
+  { value: "account", icon: <UserIcon className="w-3.5 h-3.5" />, text: "Account" },
+];
 
 /**
  * Manage Layout - Wrapper for Settings Pages
  */
 export default function ManageLayout() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   // Default to preferences if no tab is specified
   const currentTab = searchParams.get("tab") || "preferences";
 
@@ -57,6 +65,15 @@ export default function ManageLayout() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Manage</h1>
             <p className="text-gray-500 mt-1">Configure your workspace, data, and preferences.</p>
+          </div>
+
+          {/* Mobile Tab Navigation */}
+          <div className="md:hidden w-full mt-2">
+            <LegalSegmentedControl
+              options={MANAGE_TABS}
+              value={currentTab}
+              onChange={(value) => setSearchParams({ tab: value }, { replace: true })}
+            />
           </div>
         </div>
         {/* Main Content - Both sections stay mounted to preserve unsaved form state */}
