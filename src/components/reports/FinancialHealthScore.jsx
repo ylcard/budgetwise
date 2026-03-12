@@ -146,19 +146,19 @@ export default memo(function FinancialHealthScore({ healthData, className }) {
         </div>
 
         {/* DNA Grid Factors - Individual slides on Mobile, Cols 1 on Desktop */}
-        <div className="flex-[0_0_65vw] sm:flex-[0_0_45vw] md:flex-auto min-w-0 md:col-span-1">
+        <div className="flex-[0_0_60%] sm:flex-[0_0_40%] md:flex-auto min-w-0 md:col-span-1">
           <HealthCell label="Pacing" score={pacingScore} description="Compares your current spending to your 3-month historical average for the same day of the month." />
         </div>
-        <div className="flex-[0_0_65vw] sm:flex-[0_0_45vw] md:flex-auto min-w-0 md:col-span-1">
+        <div className="flex-[0_0_60%] sm:flex-[0_0_40%] md:flex-auto min-w-0 md:col-span-1">
           <HealthCell label="Burn" score={ratioScore} description="Sustainability: Will you run out of money before the month ends?" wiki="https://en.wikipedia.org/wiki/Burn_rate" />
         </div>
-        <div className="flex-[0_0_65vw] sm:flex-[0_0_45vw] md:flex-auto min-w-0 md:col-span-1">
+        <div className="flex-[0_0_60%] sm:flex-[0_0_40%] md:flex-auto min-w-0 md:col-span-1">
           <HealthCell label="Stability" score={stabilityScore} description="Measures how predictable your monthly expenses are. High stability = fewer surprises." wiki="https://en.wikipedia.org/wiki/Coefficient_of_variation" />
         </div>
-        <div className="flex-[0_0_65vw] sm:flex-[0_0_45vw] md:flex-auto min-w-0 md:col-span-1">
+        <div className="flex-[0_0_60%] sm:flex-[0_0_40%] md:flex-auto min-w-0 md:col-span-1">
           <HealthCell label="Sharpe" score={sharpeScore} description="Risk-adjusted savings consistency. High score = you save consistently, not just occasionally." wiki="https://en.wikipedia.org/wiki/Sharpe_ratio" />
         </div>
-        <div className="flex-[0_0_65vw] sm:flex-[0_0_45vw] md:flex-auto min-w-0 md:col-span-1">
+        <div className="flex-[0_0_60%] sm:flex-[0_0_40%] md:flex-auto min-w-0 md:col-span-1">
           <HealthCell label="Creep" score={creepScore} description="Lifestyle Creep: Are your expenses growing faster than your income?" wiki="https://en.wikipedia.org/wiki/Lifestyle_inflation" />
         </div>
 
