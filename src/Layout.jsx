@@ -58,8 +58,8 @@ const LayoutContent = ({ children }) => {
   const { settings, updateSettings, user } = useSettings();
   const { checkDailyStreak } = useGamification();
 
-  // ADDED 12-Mar-2026: Ref for main scroll container — used by ScrollToTopButton
-  const mainScrollRef = useRef(null);
+  // COMMENTED OUT 12-Mar-2026: Ref no longer needed — ScrollToTopButton now uses data-scroll-main attribute query
+  // const mainScrollRef = useRef(null);
 
   // Cookie Consent
   const { showBanner, consent, acceptAll, acceptNecessary, updateConsent } = useCookieConsent();
@@ -324,7 +324,7 @@ const LayoutContent = ({ children }) => {
             <BudgetAvatar health={budgetHealth} showText={false} isFloating={true} />
           )}
 
-          <div ref={mainScrollRef} className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
+          <div data-scroll-main className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
             <RouteTransition>
               {children}
             </RouteTransition>
@@ -419,8 +419,8 @@ const LayoutContent = ({ children }) => {
           </nav>
           {/* GlobalFAB now consumes context internally */}
           <GlobalFAB />
-          {/* ADDED 12-Mar-2026: Universal scroll-to-top button */}
-          <ScrollToTopButton scrollRef={mainScrollRef} />
+          {/* ADDED 12-Mar-2026: Universal scroll-to-top button — uses data-scroll-main attribute, no ref needed */}
+          <ScrollToTopButton />
         </main>
       </div>
 
