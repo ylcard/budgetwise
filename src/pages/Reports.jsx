@@ -328,7 +328,7 @@ export default function Reports() {
         </header>
 
         {/* 2. Mobile Content Area */}
-        <div className={`flex-1 overflow-x-hidden bg-gray-50 ${mobileTab === 'analysis' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4'}`}>
+        <div className={`flex-1 overflow-x-hidden bg-gray-50 ${mobileTab === 'analysis' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4'}`} style={{ maxWidth: '100vw' }}>
 
           {/* TAB: ANALYSIS (Carousel) */}
           {mobileTab === 'analysis' && (
