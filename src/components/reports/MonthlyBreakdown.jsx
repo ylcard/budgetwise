@@ -11,7 +11,8 @@ import { AlertCircle, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-reac
 // import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useNotifications } from "../hooks/useNotifications";
 import { notifyCategorySpendingAlert } from "../utils/notificationHelpers";
-import { useIsMobile } from "@/hooks/use-mobile";
+// COMMENTED OUT 12-Mar-2026: No longer used directly; CategoryDetailDrawer handles mobile detection
+// import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBreakdownList from "./MobileBreakdownList";
 import CategoryDetailDrawer from "./CategoryDetailDrawer";
 import { parseDate, getMonthBoundaries } from "../utils/dateUtils";
