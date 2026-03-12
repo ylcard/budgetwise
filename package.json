@@ -92,7 +92,9 @@
     "i18next-browser-languagedetector": "8.2.1",
     "typography": "^0.16.19",
     "typography-theme-moraga": "^0.16.19",
-    "typography-theme-fairy-gates": "^0.16.19"
+    "typography-theme-fairy-gates": "^0.16.19",
+    "@dicebear/core": "^9.4.0",
+    "@dicebear/collection": "^9.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
