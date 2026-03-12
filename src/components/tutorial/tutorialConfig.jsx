@@ -28,6 +28,9 @@ export const TUTORIAL_IDS = {
   CATEGORIES: 'categories',
   RECURRING_TRANSACTIONS: 'recurring_transactions',
   REPORTS: 'reports',
+  // ADDED 12-Mar-2026: Isolated tutorials for Transactions page tabs
+  TRANSACTION_HISTORY: 'transaction_history',
+  TRANSACTION_RECURRING: 'transaction_recurring',
 };
 
 export const TUTORIALS = {
@@ -234,6 +237,60 @@ export const TUTORIALS = {
     ],
   },
 };
+
+  // ADDED 12-Mar-2026: Transaction History tab tutorial
+  [TUTORIAL_IDS.TRANSACTION_HISTORY]: {
+    id: TUTORIAL_IDS.TRANSACTION_HISTORY,
+    title: 'Transaction History',
+    description: 'Browse, filter, and manage all your transactions',
+    steps: [
+      {
+        target: '[data-tutorial="txn-filters"]',
+        title: 'Filters & Search',
+        content: 'Use these filters to narrow down transactions by type, category, date range, payment status, and more.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tutorial="txn-list"]',
+        title: 'Transaction List',
+        content: 'All your transactions appear here. Tap any row to edit or delete it. Use long-press or checkboxes for bulk actions.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tutorial="txn-sort"]',
+        title: 'Sorting',
+        content: 'Tap column headers to sort by date, amount, or category. The arrow shows the current direction.',
+        placement: 'bottom',
+      },
+    ],
+  },
+
+  // ADDED 12-Mar-2026: Recurring Transactions tab tutorial
+  [TUTORIAL_IDS.TRANSACTION_RECURRING]: {
+    id: TUTORIAL_IDS.TRANSACTION_RECURRING,
+    title: 'Recurring Transactions',
+    description: 'Automate regular bills and income',
+    steps: [
+      {
+        target: '[data-tutorial="recurring-list"]',
+        title: 'Your Recurring Items',
+        content: 'This list shows all your recurring transactions — rent, salary, subscriptions, etc. Each card shows the next occurrence and frequency.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tutorial="recurring-toggle"]',
+        title: 'Pause or Resume',
+        content: 'Toggle the switch to temporarily pause a recurring transaction without deleting it.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tutorial="mobile-fab"]',
+        title: 'Add Recurring',
+        content: 'Tap the floating button to create a new recurring transaction. Set the amount, frequency, and category.',
+        placement: 'top',
+      },
+    ],
+  },
 
 // Helper to get ordered tutorial list for settings UI
 export const getTutorialList = () => {
