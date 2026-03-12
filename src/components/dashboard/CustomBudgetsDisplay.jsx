@@ -3,12 +3,8 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
 import { useSettings } from "../utils/SettingsContext";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselDots
-} from "@/components/ui/carousel";
+import useEmblaCarousel from 'embla-carousel-react';
+import { useState, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion";
 
@@ -29,8 +25,21 @@ export default function CustomBudgetsDisplay({
 }) {
   const { settings } = useSettings();
 
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on('select', onSelect);
+  }, [emblaApi, onSelect]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 md:px-0">
       {budgets.length > 0 && (
         <Card className="border-none shadow-lg">
           <CardHeader className="relative flex flex-row items-center justify-end md:justify-between space-y-0 py-4 pr-6 min-h-[70px]">
@@ -49,30 +58,41 @@ export default function CustomBudgetsDisplay({
               layout
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
             >
-              <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent
+              <div className="overflow-hidden w-full" ref={emblaRef}>
+                <div
                   className={cn(
-                    "items-stretch",
+                    "flex touch-pan-y",
                     budgets.length < 2 && "sm:justify-center",
                     budgets.length < 3 && "md:justify-center",
                     budgets.length < 4 && "lg:justify-center"
                   )}
                 >
                   {budgets.map((budget) => (
-                    <CarouselItem
+                    <div
                       key={budget.id}
-                      className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                      className="flex-[0_0_100%] sm:flex-[0_0_50%] md:flex-[0_0_33.333%] lg:flex-[0_0_25%] min-w-0"
                     >
                       <BudgetHealthCircular
                         budget={budget}
                         transactions={[]}
                         settings={settings}
                       />
-                    </CarouselItem>
+                    </div>
                   ))}
-                </CarouselContent>
-                <CarouselDots />
-              </Carousel>
+                </div>
+              </div>
+
+              {budgets.length > 1 && (
+                <div className="flex justify-center items-center gap-1.5 mt-4">
+                  {budgets.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${selectedIndex === index ? "w-4 bg-primary" : "w-1.5 bg-border"
+                        }`}
+                    />
+                  ))}
+                </div>
+              )}
             </motion.div>
           </CardContent>
         </Card>
