@@ -261,30 +261,14 @@ export default function MonthlyBreakdown({
           </CardContent>
         </>
       )}
-      {/* Detail Overlay (Desktop vs Mobile) */}
-      {isDesktop ? (
-        <Dialog open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-          <DialogContent className="sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle className="sr-only">Category Details</DialogTitle>
-              <DialogDescription className="sr-only">Detailed breakdown and insights for {selectedCategory?.name}</DialogDescription>
-            </DialogHeader>
-            {renderCategoryDetails()}
-          </DialogContent>
-        </Dialog>
-      ) : (
-        <Drawer open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-          <DrawerContent>
-            <DrawerHeader className="text-left hidden">
-              <DrawerTitle className="sr-only">Category Details</DrawerTitle>
-              <DrawerDescription className="sr-only">Detailed breakdown and insights for {selectedCategory?.name}</DrawerDescription>
-            </DrawerHeader>
-            <div className="px-5 pb-8">
-              {renderCategoryDetails()}
-            </div>
-          </DrawerContent>
-        </Drawer>
-      )}
-    </Card >
+      {/* UPDATED 12-Mar-2026: Unified detail overlay via CategoryDetailDrawer */}
+      <CategoryDetailDrawer
+        category={selectedCategory}
+        onClose={() => setSelectedCategory(null)}
+        transactionCount={selectedCategory ? (transactionCountMap[selectedCategory.id] || 0) : 0}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+      />
+    </Card>
   );
 }
