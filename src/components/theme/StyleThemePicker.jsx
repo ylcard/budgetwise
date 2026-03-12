@@ -2,14 +2,18 @@
  * CREATED 11-Mar-2026: Style / cosmetic theme picker.
  * Lets users choose fun visual themes (cyberpunk, etc.) that override the entire palette.
  * Separate from the accessibility theme picker.
+ * UPDATED 12-Mar-2026: Replaced bland boxes with live ThemePreviewCard previews.
  */
 import { memo } from 'react';
-import { cn } from '@/lib/utils';
-import { Check, Palette, Zap } from 'lucide-react';
+// COMMENTED OUT 12-Mar-2026: No longer using inline icon boxes
+// import { cn } from '@/lib/utils';
+// import { Check, Palette, Zap } from 'lucide-react';
+import ThemePreviewCard from './ThemePreviewCard';
 
 export const STYLE_THEMES = [
-  { id: 'none', label: 'Default', description: 'Standard app look', icon: Palette },
-  { id: 'cyberpunk', label: 'Cyberpunk', description: 'Neon-soaked Night City', icon: Zap },
+  { id: 'none', label: 'Light', themeClass: 'light', styleAttr: '' },
+  { id: 'none-dark', label: 'Dark', themeClass: 'dark', styleAttr: '' },
+  { id: 'cyberpunk', label: 'Cyberpunk', themeClass: 'dark', styleAttr: 'cyberpunk' },
 ];
 
 /**
