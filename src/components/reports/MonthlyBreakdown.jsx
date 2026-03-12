@@ -152,8 +152,8 @@ export default function MonthlyBreakdown({
   // COMMENTED OUT 12-Mar-2026: Moved to dedicated CategoryDetailDrawer component
   // const renderCategoryDetails = () => { ... };
 
+  // UPDATED 12-Mar-2026: Removed h-full to prevent mobile overflow clipping
   return (
-    // UPDATED 12-Mar-2026: Removed h-full to prevent mobile overflow clipping
     <Card className="w-full border-none shadow-lg flex flex-col bg-white">
       {isLoading ? (
         <div className="p-6 space-y-6">
