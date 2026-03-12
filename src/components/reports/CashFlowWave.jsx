@@ -1,16 +1,16 @@
 import { memo, useMemo } from "react";
 import {
-    ComposedChart,
-    Area,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-    ReferenceLine,
-    Cell,
+  ComposedChart,
+  Area,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+  Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "../utils/currencyUtils";
@@ -34,264 +34,265 @@ import { TrendingUp, TrendingDown } from "lucide-react";
  */
 
 const CashFlowWave = memo(function CashFlowWave({ data = [], settings }) {
-    // Calculate summary stats
-    const stats = useMemo(() => {
-        const historical = data.filter(d => !d.isProjection);
-        const avgIncome = historical.reduce((sum, d) => sum + (d.income || 0), 0) / (historical.length || 1);
-        const avgExpense = historical.reduce((sum, d) => sum + (d.expense || 0), 0) / (historical.length || 1);
-        const totalNetFlow = historical.reduce((sum, d) => sum + (d.netFlow || 0), 0);
+  // Calculate summary stats
+  const stats = useMemo(() => {
+    const historical = data.filter(d => !d.isProjection);
+    const avgIncome = historical.reduce((sum, d) => sum + (d.income || 0), 0) / (historical.length || 1);
+    const avgExpense = historical.reduce((sum, d) => sum + (d.expense || 0), 0) / (historical.length || 1);
+    const totalNetFlow = historical.reduce((sum, d) => sum + (d.netFlow || 0), 0);
 
-        return {
-            avgIncome,
-            avgExpense,
-            totalNetFlow,
-            isPositive: totalNetFlow >= 0,
-        };
-    }, [data]);
-
-    // Custom tooltip
-    const CustomTooltip = ({ active, payload, label }) => {
-        if (!active || !payload || payload.length === 0) return null;
-
-        const dataPoint = payload[0].payload;
-        const isProjection = dataPoint.isProjection;
-
-        return (
-            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
-                <p className="font-semibold text-gray-900 mb-2">
-                    {label}
-                    {isProjection && (
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                            Projected
-                        </span>
-                    )}
-                </p>
-                <div className="space-y-1 text-sm">
-                    <div className="flex items-center justify-between gap-4">
-                        <span className="text-green-600 font-medium">Income:</span>
-                        <span className="font-semibold">{formatCurrency(dataPoint.income || 0, settings)}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                        <span className="text-red-600 font-medium">Expenses:</span>
-                        <span className="font-semibold">{formatCurrency(dataPoint.expense || 0, settings)}</span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-1 mt-1">
-                        <div className="flex items-center justify-between gap-4">
-                            <span className={`font-bold ${dataPoint.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                Net Flow:
-                            </span>
-                            <span className={`font-bold ${dataPoint.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatCurrency(dataPoint.netFlow || 0, settings)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+    return {
+      avgIncome,
+      avgExpense,
+      totalNetFlow,
+      isPositive: totalNetFlow >= 0,
     };
+  }, [data]);
 
-    // Custom legend
-    const CustomLegend = () => (
-        <div className="flex flex-wrap items-center justify-center gap-x-3 md:gap-x-6 gap-y-2 mt-4 text-[10px] md:text-sm">
-            <div className="flex items-center gap-2">
-                <div className="w-4 h-3 bg-green-500/20 border-2 border-green-500 rounded" />
-                <span className="text-gray-700">Income</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="w-4 h-3 bg-red-500/20 border-2 border-red-500 rounded" />
-                <span className="text-gray-700">Expenses</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="w-4 h-3 bg-blue-600 rounded" />
-                <span className="text-gray-700">Net Flow (Positive)</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="w-4 h-3 bg-red-600 rounded" />
-                <span className="text-gray-700">Net Flow (Negative)</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="w-4 h-1 border-t-2 border-dashed border-gray-400" />
-                <span className="text-gray-700">Projected</span>
-            </div>
-        </div>
-    );
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || payload.length === 0) return null;
 
-    if (!data || data.length === 0) {
-        return (
-            <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle>Cash Flow Wave</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-center py-12 text-gray-500">
-                        No data available for visualization
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
+    const dataPoint = payload[0].payload;
+    const isProjection = dataPoint.isProjection;
 
     return (
-        <Card className="border-none shadow-lg h-full flex flex-col">
-            <CardHeader className="pb-2">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle>Cash Flow Wave</CardTitle>
-                    <div className="flex items-center justify-between w-full md:w-auto gap-4 text-sm bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg">
-                        <div className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-green-600" />
-                            <div>
-                                <p className="text-xs text-gray-500">Avg Income</p>
-                                <p className="font-semibold text-green-600">
-                                    {formatCurrency(stats.avgIncome, settings)}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <TrendingDown className="w-4 h-4 text-red-600" />
-                            <div>
-                                <p className="text-xs text-gray-500">Avg Expenses</p>
-                                <p className="font-semibold text-red-600">
-                                    {formatCurrency(stats.avgExpense, settings)}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${stats.isPositive ? 'bg-green-600' : 'bg-red-600'}`} />
-                            <div>
-                                <p className="text-xs text-gray-500">Total Net</p>
-                                <p className={`font-semibold ${stats.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                    {formatCurrency(stats.totalNetFlow, settings)}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="flex-1 min-h-0 min-w-0 relative h-[300px] md:h-[400px] px-2 md:px-6">
-                <ResponsiveContainer width="99%" height="100%">
-                    <ComposedChart
-                        data={data}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                    >
-                        <defs>
-                            {/* Gradient for income area */}
-                            <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                                <stop offset="50%" stopColor="#10b981" stopOpacity={0} />
-                            </linearGradient>
-
-                            {/* Gradient for expense area */}
-                            <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
-                                <stop offset="50%" stopColor="#ef4444" stopOpacity={0} />
-                            </linearGradient>
-
-                            {/* Pattern for projected areas */}
-                            <pattern
-                                id="projectionPattern"
-                                patternUnits="userSpaceOnUse"
-                                width="8"
-                                height="8"
-                                patternTransform="rotate(45)"
-                            >
-                                <line
-                                    x1="0"
-                                    y1="0"
-                                    x2="0"
-                                    y2="8"
-                                    stroke="#94a3b8"
-                                    strokeWidth="1"
-                                    strokeDasharray="2,2"
-                                />
-                            </pattern>
-
-                            {/* MASK: Fades the left and right edges so the "wall" disappears */}
-                            <linearGradient id="fadeGradient" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="white" stopOpacity={0} />
-                                <stop offset="5%" stopColor="white" stopOpacity={1} />
-                                <stop offset="95%" stopColor="white" stopOpacity={1} />
-                                <stop offset="100%" stopColor="white" stopOpacity={0} />
-                            </linearGradient>
-                            <mask id="fadeMask">
-                                <rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" />
-                            </mask>
-                        </defs>
-
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-
-                        <XAxis
-                            dataKey="month"
-                            tick={{ fill: '#6b7280', fontSize: 12 }}
-                            tickLine={{ stroke: '#e5e7eb' }}
-                            padding={{ left: 20, right: 20 }}
-                        />
-
-                        {/* SINGLE AXIS: Restores data integrity */}
-                        <YAxis
-                            tick={{ fill: '#6b7280', fontSize: 12 }}
-                            tickLine={{ stroke: '#e5e7eb' }}
-                            tickCount={5}
-                            tickFormatter={(value) => formatCurrency(value, settings)}
-                        />
-
-                        <Tooltip content={<CustomTooltip />} />
-
-                        {/* Zero reference line */}
-                        <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
-
-                        {/* 1. BARS FIRST (Draws behind the lines/dots to prevent obscuring) */}
-                        <Bar
-                            dataKey="netFlow"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={40}
-                            isAnimationActive={true}
-                            animationDuration={800}
-                        >
-                            {data.map((entry, index) => (
-                                <Cell
-                                    key={`bar-${index}`}
-                                    fill={entry.netFlow >= 0 ? '#3b82f6' : '#ef4444'}
-                                    fillOpacity={entry.isProjection ? 0.3 : 1}
-                                    stroke={entry.isProjection ? (entry.netFlow >= 0 ? '#3b82f6' : '#ef4444') : 'none'}
-                                    strokeWidth={entry.isProjection ? 2 : 0}
-                                    strokeDasharray={entry.isProjection ? '4 4' : '0'}
-                                />
-                            ))}
-                        </Bar>
-
-                        {/* 2. AREAS LAST (Draws on top so dots align and stay visible) */}
-                        <Area
-                            type="monotone"
-                            dataKey="income"
-                            stroke="#10b981"
-                            strokeWidth={3}
-                            fill="url(#incomeGradient)"
-                            fillOpacity={1}
-                            mask="url(#fadeMask)"
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                            isAnimationActive={true}
-                            animationDuration={1000}
-                        />
-
-                        <Area
-                            type="monotone"
-                            dataKey="expense"
-                            stroke="#ef4444"
-                            strokeWidth={3}
-                            fill="url(#expenseGradient)"
-                            fillOpacity={1}
-                            mask="url(#fadeMask)"
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                            isAnimationActive={true}
-                            animationDuration={1000}
-                        />
-                    </ComposedChart>
-                </ResponsiveContainer>
-
-                <CustomLegend />
-            </CardContent>
-        </Card>
+      <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
+        <p className="font-semibold text-gray-900 mb-2">
+          {label}
+          {isProjection && (
+            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+              Projected
+            </span>
+          )}
+        </p>
+        <div className="space-y-1 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-green-600 font-medium">Income:</span>
+            <span className="font-semibold">{formatCurrency(dataPoint.income || 0, settings)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-red-600 font-medium">Expenses:</span>
+            <span className="font-semibold">{formatCurrency(dataPoint.expense || 0, settings)}</span>
+          </div>
+          <div className="border-t border-gray-200 pt-1 mt-1">
+            <div className="flex items-center justify-between gap-4">
+              <span className={`font-bold ${dataPoint.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                Net Flow:
+              </span>
+              <span className={`font-bold ${dataPoint.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(dataPoint.netFlow || 0, settings)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     );
+  };
+
+  // Custom legend
+  const CustomLegend = () => (
+    <div className="flex flex-wrap items-center justify-center gap-x-3 md:gap-x-6 gap-y-2 mt-4 text-[10px] md:text-sm">
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-3 bg-green-500/20 border-2 border-green-500 rounded" />
+        <span className="text-gray-700">Income</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-3 bg-red-500/20 border-2 border-red-500 rounded" />
+        <span className="text-gray-700">Expenses</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-3 bg-blue-600 rounded" />
+        <span className="text-gray-700">Net Flow (Positive)</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-3 bg-red-600 rounded" />
+        <span className="text-gray-700">Net Flow (Negative)</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-1 border-t-2 border-dashed border-gray-400" />
+        <span className="text-gray-700">Projected</span>
+      </div>
+    </div>
+  );
+
+  if (!data || data.length === 0) {
+    return (
+      <Card className="border-none shadow-none md:shadow-lg bg-transparent md:bg-card">
+        <CardHeader className="px-0 md:px-6 pt-0 md:pt-6">
+          <CardTitle>Cash Flow Wave</CardTitle>
+        </CardHeader>
+        <CardContent className="px-0 md:px-6">
+          <div className="text-center py-12 text-gray-500">
+            No data available for visualization
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-none shadow-none md:shadow-lg bg-transparent md:bg-card h-full flex flex-col">
+      <CardHeader className="pb-2 px-0 md:px-6 pt-0 md:pt-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <CardTitle>Cash Flow Wave</CardTitle>
+          <div className="flex items-center justify-between w-full md:w-auto gap-4 text-sm bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-600" />
+              <div>
+                <p className="text-xs text-gray-500">Avg Income</p>
+                <p className="font-semibold text-green-600">
+                  {formatCurrency(stats.avgIncome, settings)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrendingDown className="w-4 h-4 text-red-600" />
+              <div>
+                <p className="text-xs text-gray-500">Avg Expenses</p>
+                <p className="font-semibold text-red-600">
+                  {formatCurrency(stats.avgExpense, settings)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${stats.isPositive ? 'bg-green-600' : 'bg-red-600'}`} />
+              <div>
+                <p className="text-xs text-gray-500">Total Net</p>
+                <p className={`font-semibold ${stats.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(stats.totalNetFlow, settings)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 min-h-0 min-w-0 relative h-[300px] md:h-[400px] px-0 md:px-6">
+        <ResponsiveContainer width="99%" height="100%">
+          <ComposedChart
+            data={data}
+            margin={{ top: 20, right: 10, left: 0, bottom: 0 }}
+          >
+            <defs>
+              {/* Gradient for income area */}
+              <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                <stop offset="50%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
+
+              {/* Gradient for expense area */}
+              <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                <stop offset="50%" stopColor="#ef4444" stopOpacity={0} />
+              </linearGradient>
+
+              {/* Pattern for projected areas */}
+              <pattern
+                id="projectionPattern"
+                patternUnits="userSpaceOnUse"
+                width="8"
+                height="8"
+                patternTransform="rotate(45)"
+              >
+                <line
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="8"
+                  stroke="#94a3b8"
+                  strokeWidth="1"
+                  strokeDasharray="2,2"
+                />
+              </pattern>
+
+              {/* MASK: Fades the left and right edges so the "wall" disappears */}
+              <linearGradient id="fadeGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="white" stopOpacity={0} />
+                <stop offset="5%" stopColor="white" stopOpacity={1} />
+                <stop offset="95%" stopColor="white" stopOpacity={1} />
+                <stop offset="100%" stopColor="white" stopOpacity={0} />
+              </linearGradient>
+              <mask id="fadeMask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" />
+              </mask>
+            </defs>
+
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+
+            <XAxis
+              dataKey="month"
+              tick={{ fill: '#6b7280', fontSize: 12 }}
+              tickLine={{ stroke: '#e5e7eb' }}
+              padding={{ left: 20, right: 20 }}
+            />
+
+            {/* SINGLE AXIS: Restores data integrity */}
+            <YAxis
+              tick={{ fill: '#6b7280', fontSize: 11 }}
+              tickLine={{ stroke: '#e5e7eb' }}
+              tickCount={5}
+              width={45}
+              tickFormatter={(value) => Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(value)}
+            />
+
+            <Tooltip content={<CustomTooltip />} />
+
+            {/* Zero reference line */}
+            <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1} strokeDasharray="3 3" />
+
+            {/* 1. BARS FIRST (Draws behind the lines/dots to prevent obscuring) */}
+            <Bar
+              dataKey="netFlow"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={40}
+              isAnimationActive={true}
+              animationDuration={800}
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={`bar-${index}`}
+                  fill={entry.netFlow >= 0 ? '#3b82f6' : '#ef4444'}
+                  fillOpacity={entry.isProjection ? 0.3 : 1}
+                  stroke={entry.isProjection ? (entry.netFlow >= 0 ? '#3b82f6' : '#ef4444') : 'none'}
+                  strokeWidth={entry.isProjection ? 2 : 0}
+                  strokeDasharray={entry.isProjection ? '4 4' : '0'}
+                />
+              ))}
+            </Bar>
+
+            {/* 2. AREAS LAST (Draws on top so dots align and stay visible) */}
+            <Area
+              type="monotone"
+              dataKey="income"
+              stroke="#10b981"
+              strokeWidth={3}
+              fill="url(#incomeGradient)"
+              fillOpacity={1}
+              mask="url(#fadeMask)"
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              isAnimationActive={true}
+              animationDuration={1000}
+            />
+
+            <Area
+              type="monotone"
+              dataKey="expense"
+              stroke="#ef4444"
+              strokeWidth={3}
+              fill="url(#expenseGradient)"
+              fillOpacity={1}
+              mask="url(#fadeMask)"
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              isAnimationActive={true}
+              animationDuration={1000}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+
+        <CustomLegend />
+      </CardContent>
+    </Card>
+  );
 });
 
 export default CashFlowWave;
