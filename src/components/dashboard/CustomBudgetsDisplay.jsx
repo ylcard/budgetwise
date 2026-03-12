@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Plus } from "lucide-react";
 import BudgetHealthCircular from "../custombudgets/BudgetHealthCircular";
@@ -42,18 +42,18 @@ export default function CustomBudgetsDisplay({
     <div className="space-y-6 px-4 md:px-0">
       {budgets.length > 0 && (
         <Card className="border-none shadow-lg">
-          <CardHeader className="relative flex flex-row items-center justify-end md:justify-between space-y-0 py-4 pr-6 min-h-[70px]">
-            <div className="hidden md:flex items-center gap-3">
-              <CustomButton
-                variant="budget"
-                onClick={onCreateBudget}
-              >
-                Custom Budgets
-                <Plus />
-              </CustomButton>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-4 overflow-hidden">
+          <div className="px-3 pt-4 pb-0 flex flex-col items-center text-center md:flex-row md:justify-between md:px-6 md:pt-6">
+            <h2 className="text-lg font-bold text-foreground">Custom Budgets</h2>
+            <CustomButton
+              variant="budget"
+              onClick={onCreateBudget}
+              className="hidden md:flex"
+            >
+              Custom Budgets
+              <Plus />
+            </CustomButton>
+          </div>
+          <CardContent className="pt-2 overflow-hidden">
             <motion.div
               layout
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
