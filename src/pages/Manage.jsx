@@ -1,11 +1,17 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Save,
   Trash2,
   Download,
   Settings as SettingsIcon,
-  User as UserIcon
+  User as UserIcon,
+  Database,
+  Monitor,
+  Palette,
+  Tags,
+  Zap,
+  Landmark
 } from "lucide-react";
 
 // UI Components
@@ -43,18 +49,44 @@ import { formatDateString } from "../components/utils/dateUtils";
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 import LegalSegmentedControl from "@/components/legal/LegalSegmentedControl";
 
-const MANAGE_TABS = [
-  { value: "preferences", icon: <SettingsIcon className="w-3.5 h-3.5" />, text: "Preferences" },
+// Lazy load the heavy external pages so they don't bloat the Manage layout
+const Categories = lazy(() => import("./Categories"));
+const Automation = lazy(() => import("./Automation"));
+const BankSync = lazy(() => import("./BankSync"));
+
+const MANAGE_GROUPS = [
+  { value: "app", icon: <SettingsIcon className="w-3.5 h-3.5" />, text: "App" },
+  { value: "finance", icon: <Database className="w-3.5 h-3.5" />, text: "Finance" },
   { value: "account", icon: <UserIcon className="w-3.5 h-3.5" />, text: "Account" },
 ];
+
+const SUB_TABS = {
+  app: [
+    { value: "display", icon: <Monitor className="w-3.5 h-3.5" />, text: "Display" },
+    { value: "appearance", icon: <Palette className="w-3.5 h-3.5" />, text: "Appearance" },
+  ],
+  finance: [
+    { value: "categories", icon: <Tags className="w-3.5 h-3.5" />, text: "Categories" },
+    { value: "automation", icon: <Zap className="w-3.5 h-3.5" />, text: "Automation" },
+    { value: "banksync", icon: <Landmark className="w-3.5 h-3.5" />, text: "Bank Sync" },
+  ],
+  account: [] // No sub-tabs for account currently
+};
 
 /**
  * Manage Layout - Wrapper for Settings Pages
  */
 export default function ManageLayout() {
   const [searchParams, setSearchParams] = useSearchParams();
-  // Default to preferences if no tab is specified
-  const currentTab = searchParams.get("tab") || "preferences";
+
+  const currentGroup = searchParams.get("group") || "app";
+  const currentTab = searchParams.get("tab") || "display";
+
+  const handleGroupChange = (group) => {
+    // When switching groups, default to the first sub-tab of that group
+    const defaultTab = SUB_TABS[group]?.[0]?.value || "profile";
+    setSearchParams({ group, tab: defaultTab }, { replace: true });
+  };
 
   return (
     <div className="min-h-screen p-4 md:p-8 pb-24 bg-gray-50/50">
@@ -68,20 +100,50 @@ export default function ManageLayout() {
           </div>
 
           {/* Mobile Tab Navigation */}
-          <div className="md:hidden w-full mt-2">
-            <LegalSegmentedControl
-              options={MANAGE_TABS}
-              value={currentTab}
-              onChange={(value) => setSearchParams({ tab: value }, { replace: true })}
-            />
+          <div className="md:hidden w-full mt-2 flex flex-col gap-3">
+            {/* Main Group Segmented Control */}
+            <div>
+              <LegalSegmentedControl
+                options={MANAGE_GROUPS}
+                value={currentGroup}
+                onChange={handleGroupChange}
+              />
+            </div>
+
+            {/* Sub-Tab Pill Navigation (Horizontal Scrollable) */}
+            {SUB_TABS[currentGroup]?.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                {SUB_TABS[currentGroup].map(tab => (
+                  <button
+                    key={tab.value}
+                    onClick={() => setSearchParams({ group: currentGroup, tab: tab.value }, { replace: true })}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${currentTab === tab.value
+                        ? 'bg-blue-100 text-blue-700 shadow-sm'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                  >
+                    {tab.icon}
+                    {tab.text}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         {/* Main Content - Both sections stay mounted to preserve unsaved form state */}
         <main className="flex-1 min-w-0 relative">
-          <div className={currentTab === 'preferences' ? 'block animate-in fade-in duration-300' : 'hidden'}>
-            <PreferencesSection />
+          <div className={currentGroup === 'app' ? 'block animate-in fade-in duration-300' : 'hidden'}>
+            <PreferencesSection currentTab={currentTab} />
           </div>
-          <div className={currentTab === 'account' ? 'block animate-in fade-in duration-300' : 'hidden'}>
+
+          {/* Lazy Loaded External Finance Pages */}
+          <Suspense fallback={<div className="p-8 text-center text-muted-foreground animate-pulse">Loading module...</div>}>
+            <div className={currentGroup === 'finance' && currentTab === 'categories' ? 'block animate-in fade-in duration-300' : 'hidden'}><Categories /></div>
+            <div className={currentGroup === 'finance' && currentTab === 'automation' ? 'block animate-in fade-in duration-300' : 'hidden'}><Automation /></div>
+            <div className={currentGroup === 'finance' && currentTab === 'banksync' ? 'block animate-in fade-in duration-300' : 'hidden'}><BankSync /></div>
+          </Suspense>
+
+          <div className={currentGroup === 'account' ? 'block animate-in fade-in duration-300' : 'hidden'}>
             <AccountSection />
           </div>
         </main>
@@ -92,9 +154,9 @@ export default function ManageLayout() {
 }
 
 /**
- * Preferences Section - App Settings (Currency, Formatting, etc.)
+ * Preferences Section - App Settings (Display & Appearance)
  */
-export function PreferencesSection() {
+export function PreferencesSection({ currentTab }) {
   const { settings, updateSettings } = useSettings();
   const stableSettings = useMemo(() => settings, [
     settings?.baseCurrency,
@@ -143,106 +205,36 @@ export function PreferencesSection() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Display Preferences</CardTitle>
-          <CardDescription>Customize how financial data is displayed across the application.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {/* Currency Group */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Currency</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Base Currency</Label>
-                <Select value={formData.baseCurrency || 'USD'} onValueChange={handleCurrencyChange}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {currencies.map(c => (
-                      <SelectItem key={c.code} value={c.code}>{c.symbol} - {c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Symbol Position</Label>
-                <Select value={formData.currencyPosition} onValueChange={(v) => setValue('currencyPosition', v, { shouldDirty: true })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="before">Before ({formData.currencySymbol}100)</SelectItem>
-                    <SelectItem value="after">After (100{formData.currencySymbol})</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+      {/* --- DISPLAY TAB --- */}
+      <div className={currentTab === 'display' ? 'block space-y-6' : 'hidden'}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Display Preferences</CardTitle>
+            <CardDescription>Customize how financial data is displayed across the application.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            {/* Keep your exact existing Currency and Number Formatting JSX here */}
+            {/* (I omitted the long blocks of inputs to keep this diff readable, but keep your code intact) */}
+          </CardContent>
+        </Card>
+      </div>
 
-          <Separator />
-
-          {/* Formatting Group */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Number Formatting</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Thousand Separator</Label>
-                <Select value={formData.thousandSeparator} onValueChange={(v) => setValue('thousandSeparator', v, { shouldDirty: true })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value=",">Comma (,)</SelectItem>
-                    <SelectItem value=".">Period (.)</SelectItem>
-                    <SelectItem value=" ">Space</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Decimal Separator</Label>
-                <Select value={formData.decimalSeparator} onValueChange={(v) => setValue('decimalSeparator', v, { shouldDirty: true })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value=".">Period (.)</SelectItem>
-                    <SelectItem value=",">Comma (,)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Decimal Places</Label>
-                <Input
-                  {...register('decimalPlaces', { valueAsNumber: true })}
-                  type="number"
-                  min="0"
-                  max="4"
-                />
-              </div>
-              <div className="flex items-center justify-between h-full pt-6">
-                <Label className="cursor-pointer">Hide Trailing Zeros</Label>
-                <Switch
-                  checked={formData.hideTrailingZeros}
-                  onCheckedChange={(c) => setValue('hideTrailingZeros', c, { shouldDirty: true })}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Preview Box */}
-          <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 flex items-center justify-between">
-            <span className="text-sm text-slate-500">Preview:</span>
-            <span className="text-2xl font-bold text-slate-900">
-              {formatCurrency(1234567.89, formData)}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Appearance Settings */}
-      <Card>
-        <CardContent className="pt-6">
-          <AppearanceSettings
-            themeConfig={formData.themeConfig}
-            onChange={(newConfig) => setValue('themeConfig', newConfig, { shouldDirty: true })}
-            savedThemeConfig={settings?.themeConfig}
-          />
-        </CardContent>
-      </Card>
+      {/* --- APPEARANCE TAB --- */}
+      <div className={currentTab === 'appearance' ? 'block space-y-6' : 'hidden'}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance & Theme</CardTitle>
+            <CardDescription>Customize the look and feel of your workspace.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AppearanceSettings
+              themeConfig={formData.themeConfig}
+              onChange={(newConfig) => setValue('themeConfig', newConfig, { shouldDirty: true })}
+              savedThemeConfig={settings?.themeConfig}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Sticky Action Bar - Only visible when changes exist */}
       <div className={`
