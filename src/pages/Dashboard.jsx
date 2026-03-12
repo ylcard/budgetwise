@@ -664,6 +664,7 @@ export default function Dashboard() {
       </div>
       {/* RESTORED 12-Mar-2026: Per-page scroll-to-top (auto-detects Layout's data-scroll-main) */}
       <ScrollToTopButton />
+      // <ScrollToTopButton scrollRef={analysisScrollRef} />
     </>
   );
 }
