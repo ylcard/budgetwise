@@ -75,7 +75,7 @@ export default function CustomBudgetsDisplay({
                   {budgets.map((budget) => (
                     <div
                       key={budget.id}
-                      className="flex-[0_0_100%] sm:flex-[0_0_50%] md:flex-[0_0_33.333%] lg:flex-[0_0_25%] min-w-0"
+                      className="flex-[0_0_100%] sm:flex-[0_0_50%] md:flex-[0_0_33.333%] lg:flex-[0_0_25%] min-w-0 px-1.5"
                     >
                       <BudgetHealthCircular
                         budget={budget}
