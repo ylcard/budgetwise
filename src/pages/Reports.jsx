@@ -27,6 +27,7 @@ import {
   formatDate,
   isDateInRange
 } from "../components/utils/dateUtils";
+import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
 import useEmblaCarousel from "embla-carousel-react";
 
 /**
