@@ -5,8 +5,12 @@ import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
 
+// UPDATED 12-Mar-2026: Default shouldScaleBackground to false to prevent blank-page bug
+// Vaul's background scaling applies CSS transforms to [data-vaul-drawer-wrapper] which
+// conflicts with fixed-position layouts (header, bottom nav) and can leave stale transforms
+// on close, causing the entire page to appear blank.
 const Drawer = ({
-    shouldScaleBackground = true,
+    shouldScaleBackground = false,
     ...props
 }) => (
     <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />

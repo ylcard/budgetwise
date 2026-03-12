@@ -142,9 +142,26 @@ const CategoryDetailDrawer = React.memo(({ category, onClose, transactionCount, 
   const isMobile = useIsMobile();
   const open = !!category;
 
+  // DEBUG 12-Mar-2026: Track drawer lifecycle to diagnose blank-page issue
+  React.useEffect(() => {
+    console.log("[CategoryDetailDrawer] open:", open, "| isMobile:", isMobile, "| category:", category?.name ?? null);
+    if (!open) {
+      // Check if vaul left stale transforms on the wrapper after closing
+      const wrapper = document.querySelector("[data-vaul-drawer-wrapper]");
+      if (wrapper) {
+        const style = wrapper.getAttribute("style") || "";
+        console.log("[CategoryDetailDrawer] wrapper style after close:", style);
+        if (style.includes("transform")) {
+          console.warn("[CategoryDetailDrawer] ⚠️ Stale transform detected on wrapper — forcing cleanup");
+          wrapper.style.transform = "";
+        }
+      }
+    }
+  }, [open, isMobile, category?.name]);
+
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={(o) => !o && onClose()} shouldScaleBackground={false}>
+      <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
         <DrawerContent>
           <DrawerHeader className="text-left hidden">
             <DrawerTitle className="sr-only">Category Details</DrawerTitle>
