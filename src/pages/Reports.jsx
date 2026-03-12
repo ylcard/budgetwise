@@ -237,7 +237,7 @@ export default function Reports() {
   const projectionComponent = <ProjectionChart settings={settings} projectionData={projectionData} />;
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-gray-50/50 flex flex-col">
       {/* --- DESKTOP VIEW (Original Layout) --- */}
       <div className="hidden md:block max-w-7xl mx-auto px-8 py-8 space-y-8">
         {/* Header Section */}
