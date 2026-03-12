@@ -2,7 +2,7 @@ import { memo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { FileUp, MinusCircle, PlusCircle, Building2, RefreshCw, Loader2, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
-import { formatDate } from "../utils/dateUtils";
+import LastSyncInfo from "@/components/ui/LastSyncInfo";
 
 /**
  * QuickActions Component
@@ -102,9 +102,12 @@ const QuickActions = memo(function QuickActions({
             <div className="flex flex-col items-start leading-tight">
               <span>{getSyncLabel()}</span>
               {hasActiveConnections && lastSyncDate && syncState === 'idle' && (
-                <span className="text-[10px] opacity-60 font-normal">
-                  Last: {formatDate(lastSyncDate, "MMM dd")}
-                </span>
+                <LastSyncInfo
+                  date={lastSyncDate}
+                  prefix="Last:"
+                  formatOverride="MMM dd"
+                  className="text-[10px] opacity-60 font-normal text-inherit"
+                />
               )}
             </div>
           </div>
