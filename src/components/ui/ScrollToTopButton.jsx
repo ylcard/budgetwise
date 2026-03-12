@@ -4,52 +4,44 @@ import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * ScrollToTopButton
- * A floating button that appears when the user scrolls down inside a scrollable container.
- * Scrolls the container back to the top smoothly when clicked.
+ * UPDATED 12-Mar-2026: Replaced ref-based approach with DOM attribute query.
+ * When no scrollRef is passed, auto-detects the Layout's main scroll container
+ * via [data-scroll-main] attribute — eliminates ref timing issues entirely.
  *
- * @param {React.RefObject} [scrollRef] - Ref to the scrollable container element.
- *   If omitted, the component auto-detects the Layout's main scrollable wrapper via DOM query.
+ * @param {React.RefObject} [scrollRef] - Optional ref to a specific scrollable container (e.g. Reports tabs).
+ *   If omitted, queries the DOM for [data-scroll-main].
  * @param {number} [threshold=80] - Scroll distance (px) before the button appears
  */
 const ScrollToTopButton = memo(function ScrollToTopButton({ scrollRef, threshold = 80 }) {
   const [visible, setVisible] = useState(false);
-  // ADDED 12-Mar-2026: Track the resolved element in state so we can re-attach
-  // the listener when the ref becomes available (fixes timing with Layout mount).
-  const [scrollEl, setScrollEl] = useState(null);
 
-  // Resolve the scrollable element once the ref is populated or DOM is ready
-  useEffect(() => {
-    const resolve = () => {
-      if (scrollRef?.current) return scrollRef.current;
-      return document.querySelector('main .overflow-auto') || null;
-    };
-
-    const el = resolve();
-    if (el) {
-      setScrollEl(el);
-    } else {
-      // Ref may not be populated on first render — retry after a short delay
-      const timer = setTimeout(() => setScrollEl(resolve()), 100);
-      return () => clearTimeout(timer);
-    }
+  // Resolve the scrollable element: explicit ref > data-attribute query
+  const getScrollElement = useCallback(() => {
+    if (scrollRef?.current) return scrollRef.current;
+    return document.querySelector('[data-scroll-main]') || null;
   }, [scrollRef]);
 
-  // Attach scroll listener to the resolved element
+  // Attach scroll listener — re-runs when scrollRef identity changes
   useEffect(() => {
-    if (!scrollEl) return;
+    const el = getScrollElement();
+    if (!el) return;
 
     const handleScroll = () => {
-      setVisible(scrollEl.scrollTop > threshold);
+      setVisible(el.scrollTop > threshold);
     };
 
-    scrollEl.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scrollEl.removeEventListener("scroll", handleScroll);
-  }, [scrollEl, threshold]);
+    // Check initial position (page may already be scrolled on mount)
+    handleScroll();
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [getScrollElement, threshold]);
 
   const scrollToTop = useCallback(() => {
-    if (!scrollEl) return;
-    scrollEl.scrollTo({ top: 0, behavior: "smooth" });
-  }, [scrollEl]);
+    const el = getScrollElement();
+    if (!el) return;
+    el.scrollTo({ top: 0, behavior: "smooth" });
+  }, [getScrollElement]);
 
   return (
     <AnimatePresence>
