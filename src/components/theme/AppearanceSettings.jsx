@@ -7,7 +7,7 @@
 import { useEffect } from 'react';
 import AccessibilityThemePicker from './AccessibilityThemePicker';
 import { applyA11yTheme } from '@/components/utils/accessibilityThemes';
-import { applyStyleTheme } from './StyleThemePicker';
+import StyleThemePicker, { applyStyleTheme } from './StyleThemePicker';
 
 // COMMENTED OUT 12-Mar-2026: Old imports no longer needed after removing segmented mode control
 // import { Sun, Moon, Monitor, Clock } from 'lucide-react';
