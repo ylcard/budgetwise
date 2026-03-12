@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Wallet, LogOut, ChevronLeft, MoreHorizontal, Moon, Sun, Ghost, ChevronRight } from "lucide-react";
-import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { SettingsProvider, useSettings } from "./components/utils/SettingsContext";
 import { ConfirmDialogProvider } from "./components/ui/ConfirmDialogProvider";
 import { navigationItems } from "./components/utils/navigationConfig";
@@ -46,8 +46,6 @@ import "@/components/utils/typography";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useGamification } from "@/components/hooks/useGamification";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"; // ADDED 10-Mar-2026: Mount Sonner toast renderer
-// COMMENTED OUT 12-Mar-2026: Layout-level approach didn't work — moved to per-page integration
-// import ScrollToTopButton from "./components/ui/ScrollToTopButton";
 
 const LayoutContent = ({ children }) => {
   const location = useLocation();
@@ -58,9 +56,6 @@ const LayoutContent = ({ children }) => {
   const { budgetHealth } = useHealth();
   const { settings, updateSettings, user } = useSettings();
   const { checkDailyStreak } = useGamification();
-
-  // COMMENTED OUT 12-Mar-2026: Ref no longer needed — ScrollToTopButton now uses data-scroll-main attribute query
-  // const mainScrollRef = useRef(null);
 
   // Cookie Consent
   const { showBanner, consent, acceptAll, acceptNecessary, updateConsent } = useCookieConsent();
@@ -325,7 +320,7 @@ const LayoutContent = ({ children }) => {
             <BudgetAvatar health={budgetHealth} showText={false} isFloating={true} />
           )}
 
-          <div data-scroll-main className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
+          <div className="flex-1 overflow-auto pt-14 md:pt-0 md:pb-0" style={{ paddingBottom: 'var(--nav-total-height)' }}>
             <RouteTransition>
               {children}
             </RouteTransition>
@@ -420,8 +415,6 @@ const LayoutContent = ({ children }) => {
           </nav>
           {/* GlobalFAB now consumes context internally */}
           <GlobalFAB />
-          {/* COMMENTED OUT 12-Mar-2026: Layout-level approach didn't work — moved to per-page integration */}
-          {/* <ScrollToTopButton /> */}
         </main>
       </div>
 

@@ -22,7 +22,6 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { useSettings } from '../components/utils/SettingsContext';
 import { useGoalActions, useSavingsGoalActions } from '../components/hooks/useActions';
 import { useFAB } from '../components/hooks/FABContext';
-// RESTORED 12-Mar-2026: Layout approach didn't work — back to per-page integration
 import ScrollToTopButton from '../components/ui/ScrollToTopButton';
 
 // Icons
@@ -467,7 +466,6 @@ export default function GoalsPage() {
         selectedYear={selectedYear}
       />
 
-      {/* RESTORED 12-Mar-2026: Per-page scroll-to-top (auto-detects Layout's data-scroll-main) */}
       <ScrollToTopButton />
     </div>
   );

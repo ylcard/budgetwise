@@ -38,7 +38,6 @@ import ExportDialog from "../components/manage/ExportDialog";
 import { convertToCSV, downloadFile, CSV_HEADERS } from "../components/utils/exportHelpers";
 import AppearanceSettings from "../components/theme/AppearanceSettings";
 import { formatDateString } from "../components/utils/dateUtils";
-// RESTORED 12-Mar-2026: Layout approach didn't work — back to per-page integration
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
@@ -61,7 +60,6 @@ export default function ManageLayout() {
           <Outlet />
         </main>
       </div>
-      {/* RESTORED 12-Mar-2026: Per-page scroll-to-top (auto-detects Layout's data-scroll-main) */}
       <ScrollToTopButton />
     </div>
   );

@@ -1,5 +1,5 @@
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient, useRef } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
@@ -54,7 +54,6 @@ import { ActivityHub } from "../components/dashboard/ActivityHub";
 import QuickActions from "../components/dashboard/QuickActions";
 import { useBankSync } from "../components/banksync/useBankSync";
 import { toast } from "sonner";
-// RESTORED 12-Mar-2026: Layout approach didn't work — back to per-page integration
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
@@ -79,8 +78,6 @@ export default function Dashboard() {
   // Carousel for Mobile Activity (Upcoming/Recent)
   const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const analysisScrollRef = useRef(null);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -573,7 +570,7 @@ export default function Dashboard() {
           </div>
 
           {/* MOBILE ONLY: Activity Carousel (Kept as requested) */}
-          <div ref={analysisScrollRef} className="lg:hidden w-full max-w-full mx-auto overflow-hidden mt-2">
+          <div className="lg:hidden w-full max-w-full mx-auto overflow-hidden mt-2">
             <div className="overflow-hidden rounded-xl" ref={emblaRef}>
               <div className="flex touch-pan-y h-[calc(100dvh-var(--header-total-height)-var(--nav-total-height)-5rem)]">
                 {/* Slide 1: Upcoming */}
@@ -664,8 +661,7 @@ export default function Dashboard() {
           />
         </div>
       </div>
-      {/* Per-page scroll-to-top (auto-detects Layout's data-scroll-main) */}
-      <ScrollToTopButton scrollRef={analysisScrollRef} />
+      <ScrollToTopButton />
     </>
   );
 }

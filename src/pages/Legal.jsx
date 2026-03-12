@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Shield, FileText, Cookie, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-// RESTORED 12-Mar-2026: Layout approach didn't work — back to per-page integration
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 // Import existing page components
@@ -113,7 +112,6 @@ export default function LegalPage() {
                     ))}
                 </div>
             </Tabs>
-            {/* RESTORED 12-Mar-2026: Per-page scroll-to-top (auto-detects Layout's data-scroll-main) */}
             <ScrollToTopButton />
         </div>
     );

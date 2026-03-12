@@ -30,7 +30,6 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2, Repeat } from "lucide-react";
 import { useBankSync } from "../components/banksync/useBankSync";
 import LastSyncInfo from "@/components/ui/LastSyncInfo";
-// RESTORED 12-Mar-2026: Layout approach didn't work — back to per-page integration
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 /**
@@ -279,7 +278,6 @@ export default function TransactionsLayout() {
         transaction={editingRecurring}
         categories={categories}
       />
-      {/* RESTORED 12-Mar-2026: Per-page scroll-to-top (auto-detects Layout's data-scroll-main) */}
       <ScrollToTopButton />
     </>
   );
