@@ -92,7 +92,7 @@ export default function ProjectionChart({ settings }) {
 
   if (isLoading || data.length < 3) {
     return (
-      <Card className="border-none shadow-sm h-full flex items-center justify-center min-h-[300px] w-full">
+      <Card className="border-none shadow-none md:shadow-sm bg-transparent md:bg-card h-full flex items-center justify-center min-h-[300px] w-full">
         <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
       </Card>
     );
@@ -107,8 +107,8 @@ export default function ProjectionChart({ settings }) {
   const isPositive = currentNet >= 0;
 
   return (
-    <Card className="border-none shadow-sm h-full flex flex-col overflow-hidden">
-      <CardHeader className="pb-2 flex-none">
+    <Card className="border-none shadow-none md:shadow-sm bg-transparent md:bg-card h-full flex flex-col overflow-hidden">
+      <CardHeader className="pb-2 flex-none px-0 md:px-6 pt-0 md:pt-6">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-gray-800">
             Financial Horizon
@@ -129,8 +129,8 @@ export default function ProjectionChart({ settings }) {
             : `Projected to overspend by ${formatCurrency(Math.abs(currentNet), settings)}.`}
         </p>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 relative h-[300px] md:h-[400px]">
-        <div className="absolute inset-4 flex flex-col justify-end">
+      <CardContent className="flex-1 min-h-0 relative h-[300px] md:h-[400px] px-0 md:px-6">
+        <div className="absolute inset-0 md:inset-4 flex flex-col justify-end">
           {/* The Chart Area - 3 distinct columns */}
           <div className="flex items-end justify-between h-full gap-4 pt-6 px-2 relative">
 
