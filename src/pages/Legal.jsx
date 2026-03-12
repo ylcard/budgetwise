@@ -63,7 +63,7 @@ export default function LegalPage() {
   const currentTab = tab || "privacy";
 
   return (
-    <div ref={legalScrollRef} className="h-[calc(100vh-var(--header-total-height)-var(--nav-total-height))] w-full overflow-y-auto bg-muted/30 scroll-smooth">
+    <div ref={legalScrollRef} className="h-[calc(100vh-var(--header-total-height)-var(--nav-total-height))] w-full overflow-y-auto overflow-x-hidden bg-muted/30 scroll-smooth">
       <Tabs
         value={currentTab}
         onValueChange={handleTabChange}
