@@ -5,7 +5,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Shield, FileText, Cookie, AlertTriangle } from "lucide-react";
 // COMMENTED OUT 12-Mar-2026: No longer needed after removing Tabs
 // import { cn } from "@/lib/utils";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
+// COMMENTED OUT 12-Mar-2026: Replaced shared SegmentedControl with isolated LegalSegmentedControl
+// import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import LegalSegmentedControl from "@/components/legal/LegalSegmentedControl";
 import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
 
 // Import existing page components
@@ -15,10 +17,10 @@ import CookiePolicy from "./CookiePolicy";
 import FinancialDisclaimer from "./FinancialDisclaimer";
 
 const TAB_CONFIG = [
-  { value: "privacy",    label: <Shield className="w-3.5 h-3.5" />,        desktopLabel: "Privacy",    component: PrivacyPolicy },
-  { value: "terms",      label: <FileText className="w-3.5 h-3.5" />,      desktopLabel: "Terms",      component: TermsOfService },
-  { value: "cookies",    label: <Cookie className="w-3.5 h-3.5" />,        desktopLabel: "Cookies",    component: CookiePolicy },
-  { value: "disclaimer", label: <AlertTriangle className="w-3.5 h-3.5" />, desktopLabel: "Disclaimer", component: FinancialDisclaimer },
+  { value: "privacy",    icon: <Shield className="w-3.5 h-3.5" />,        text: "Privacy",    component: PrivacyPolicy },
+  { value: "terms",      icon: <FileText className="w-3.5 h-3.5" />,      text: "Terms",      component: TermsOfService },
+  { value: "cookies",    icon: <Cookie className="w-3.5 h-3.5" />,        text: "Cookies",    component: CookiePolicy },
+  { value: "disclaimer", icon: <AlertTriangle className="w-3.5 h-3.5" />, text: "Disclaimer", component: FinancialDisclaimer },
 ];
 
 export default function LegalPage() {
@@ -59,11 +61,10 @@ export default function LegalPage() {
             <p className="text-muted-foreground text-sm">Review our policies and terms</p>
           </div>
 
-          <SegmentedControl
+          <LegalSegmentedControl
             options={TAB_CONFIG}
             value={currentTab}
             onChange={handleTabChange}
-            className="justify-start h-auto"
           />
         </div>
       </div>
