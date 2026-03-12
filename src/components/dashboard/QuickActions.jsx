@@ -2,6 +2,7 @@ import { memo } from "react";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { FileUp, MinusCircle, PlusCircle, Building2, RefreshCw, Loader2, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { formatDate } from "../utils/dateUtils";
 
 /**
  * QuickActions Component
@@ -15,6 +16,8 @@ const QuickActions = memo(function QuickActions({
   onSync,
   hasActiveConnections,
   syncState,
+  lastSyncDate,
+  settings,
   isEmptyMonth,
   onNavigateBank
 }) {
@@ -94,8 +97,17 @@ const QuickActions = memo(function QuickActions({
           disabled={syncState === 'syncing'}
           className="w-full h-auto py-2 px-3 rounded-lg text-xs disabled:opacity-60"
         >
-          {renderSyncIcon()}
-          {getSyncLabel()}
+          <div className="flex items-center gap-2">
+            {renderSyncIcon()}
+            <div className="flex flex-col items-start leading-tight">
+              <span>{getSyncLabel()}</span>
+              {hasActiveConnections && lastSyncDate && syncState === 'idle' && (
+                <span className="text-[10px] opacity-60 font-normal">
+                  Last: {formatDate(lastSyncDate, "MMM dd")}
+                </span>
+              )}
+            </div>
+          </div>
         </CustomButton>
       </div>
     </div>
