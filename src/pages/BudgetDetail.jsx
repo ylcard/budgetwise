@@ -6,11 +6,18 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { PullToRefresh } from "../components/ui/PullToRefresh";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { Badge } from "@/components/ui/badge";
+// COMMENTED OUT 12-Mar-2026: Popover replaced with Dialog for mobile-friendly edit form
+// import {
+//   Popover,
+//   PopoverContent,
+//   PopoverTrigger,
+// } from "@/components/ui/popover";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, Trash2, AlertCircle, Calendar, Target, CreditCard, Receipt, Layers } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -372,56 +379,52 @@ export default function BudgetDetail() {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center gap-4">
-            <CustomButton variant="ghost" size="icon" onClick={() => navigate(location.state?.from || '/Budgets')}>
-              <ArrowLeft className="w-5 h-5" />
-            </CustomButton>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{budget.name}</h1>
-                {budget.isSystemBudget && <Badge variant="outline">System</Badge>}
-                {isCompleted && <Badge className="bg-green-100 text-green-800">Completed</Badge>}
-              </div>
-              <p className="text-gray-500 mt-1">
-                {formatDate(budget.startDate, settings.dateFormat)} - {formatDate(budget.endDate, settings.dateFormat)}
-              </p>
+          {/* Header: Back + Title */}
+        <div className="flex items-start gap-3">
+          <CustomButton variant="ghost" size="icon" className="shrink-0 mt-0.5" onClick={() => navigate(location.state?.from || '/Budgets')}>
+            <ArrowLeft className="w-5 h-5" />
+          </CustomButton>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground truncate">{budget.name}</h1>
+              {budget.isSystemBudget && <Badge variant="outline">System</Badge>}
+              {isCompleted && <Badge className="bg-green-100 text-green-800">Completed</Badge>}
             </div>
-            <div className="flex gap-2">
-              {!budget.isSystemBudget && !isCompleted && (
-                <Popover open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
-                  <PopoverTrigger asChild>
-                    <CustomButton variant="modify">Edit Budget</CustomButton>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[600px] max-h-[90vh] overflow-y-auto">
-                    <CustomBudgetForm
-                      budget={budget}
-                      onSubmit={handleEditBudget}
-                      onCancel={() => budgetActions.setShowForm(false)}
-                      isSubmitting={budgetActions.isSubmitting}
-                      baseCurrency={settings.baseCurrency}
-                      settings={settings}
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-              {!budget.isSystemBudget && (
-                <>
-                  {budget.status === 'active' ? (
-                    <CustomButton variant="success" onClick={() => completeBudgetMutation.mutate(budgetId)} disabled={completeBudgetMutation.isPending}>
-                      <CheckCircle className="w-4 h-4 mr-2" /> Complete
-                    </CustomButton>
-                  ) : (
-                    <CustomButton variant="success" onClick={() => reactivateBudgetMutation.mutate(budgetId)} disabled={reactivateBudgetMutation.isPending}>
-                      Reactivate
-                    </CustomButton>
-                  )}
-                  <CustomButton variant="deleteAction" onClick={handleDeleteBudget}>
-                    <Trash2 className="w-4 h-4 mr-2" /> Delete
-                  </CustomButton>
-                </>
-              )}
-            </div>
+            <p className="text-muted-foreground text-sm mt-1">
+              {formatDate(budget.startDate, settings.dateFormat)} – {formatDate(budget.endDate, settings.dateFormat)}
+            </p>
           </div>
+        </div>
+
+        {/* Action Buttons — stacked on mobile, inline on desktop */}
+        {!budget.isSystemBudget && (
+          <div className="flex flex-wrap gap-2">
+            {!isCompleted && (
+              <>
+                {/* COMMENTED OUT 12-Mar-2026: Popover replaced with Dialog for mobile-friendly edit form */}
+                {/* <Popover open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
+                  <PopoverTrigger asChild><CustomButton variant="modify">Edit Budget</CustomButton></PopoverTrigger>
+                  <PopoverContent className="w-[600px] max-h-[90vh] overflow-y-auto">...</PopoverContent>
+                </Popover> */}
+                <CustomButton variant="modify" onClick={() => budgetActions.setShowForm(true)} className="flex-1 md:flex-none">
+                  Edit Budget
+                </CustomButton>
+              </>
+            )}
+            {budget.status === 'active' ? (
+              <CustomButton variant="success" onClick={() => completeBudgetMutation.mutate(budgetId)} disabled={completeBudgetMutation.isPending} className="flex-1 md:flex-none">
+                <CheckCircle className="w-4 h-4 mr-2" /> Complete
+              </CustomButton>
+            ) : (
+              <CustomButton variant="success" onClick={() => reactivateBudgetMutation.mutate(budgetId)} disabled={reactivateBudgetMutation.isPending} className="flex-1 md:flex-none">
+                Reactivate
+              </CustomButton>
+            )}
+            <CustomButton variant="deleteAction" onClick={handleDeleteBudget} className="flex-1 md:flex-none">
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </CustomButton>
+          </div>
+        )}
 
           {/* Budget Insights - ADDED: 16-Jan-2026, MODIFIED: 16-Jan-2026 - Disabled for system budgets */}
           {!budget.isSystemBudget && (
