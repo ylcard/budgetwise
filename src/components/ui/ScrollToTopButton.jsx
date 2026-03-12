@@ -60,7 +60,7 @@ const ScrollToTopButton = memo(function ScrollToTopButton({ scrollRef, threshold
           exit={{ opacity: 0, scale: 0.7, y: 10 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           onClick={scrollToTop}
-          className="fixed inset-x-0 mx-auto z-50 w-10 h-10 rounded-full bg-white/40 dark:bg-card/40 backdrop-blur-md border border-border/40 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition-all"
+          className="fixed inset-x-0 mx-auto z-5000 w-10 h-10 rounded-full bg-white/40 dark:bg-card/40 backdrop-blur-md border border-border/40 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           style={{ bottom: "calc(var(--nav-total-height) + 12px)" }}
           aria-label="Scroll to top"
         >
