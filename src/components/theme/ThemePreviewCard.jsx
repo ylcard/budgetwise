@@ -1,23 +1,64 @@
 /**
  * CREATED 12-Mar-2026: Mini app preview card for theme selection.
- * Renders a tiny skeleton dashboard using actual CSS variables from each theme.
- * Used by StyleThemePicker to give a live visual preview of each theme.
+ * Renders a tiny skeleton dashboard using hardcoded color tokens per theme.
+ * CSS variables don't properly isolate in nested divs (they inherit from :root),
+ * so we use a static color map to guarantee accurate previews.
  */
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 
 /**
- * A miniature fake dashboard rendered inside an isolated container.
- * The container gets the theme's data attributes + class so it pulls the correct CSS vars.
+ * Static color palettes per theme ID for truly isolated previews.
+ * Each key maps to the resolved HSL values from index.css / globals.css.
  */
+const THEME_PALETTES = {
+  light: {
+    background: '#ffffff',
+    foreground: '#0a0a0a',
+    card: '#ffffff',
+    primary: '#171717',
+    muted: '#f5f5f5',
+    mutedFg: '#737373',
+    border: '#e5e5e5',
+    incBg: '#ecfdf5', incText: '#166534',
+    expBg: '#fef2f2', expText: '#991b1b',
+    balBg: '#eff6ff', balText: '#2563eb',
+  },
+  dark: {
+    background: '#0a0a0a',
+    foreground: '#fafafa',
+    card: '#0a0a0a',
+    primary: '#fafafa',
+    muted: '#262626',
+    mutedFg: '#a1a1a1',
+    border: '#262626',
+    incBg: '#052e16', incText: '#4ade80',
+    expBg: '#2a0a0a', expText: '#f87171',
+    balBg: '#0a1a3a', balText: '#60a5fa',
+  },
+  cyberpunk: {
+    background: '#0c0e1a',
+    foreground: '#ffe066',
+    card: '#10131f',
+    primary: '#facc15',
+    muted: '#1a1d2e',
+    mutedFg: '#5a6a80',
+    border: '#1e2236',
+    incBg: '#0a1f1f', incText: '#00e5cc',
+    expBg: '#1f0a1f', expText: '#e040a0',
+    balBg: '#1a1a05', balText: '#facc15',
+  },
+};
+
 const ThemePreviewCard = memo(function ThemePreviewCard({
   label,
   isActive,
   onClick,
-  themeClass = '',        // 'dark' | 'light' | ''
-  styleThemeAttr = '',    // 'cyberpunk' | ''
+  paletteId = 'light', // key into THEME_PALETTES
 }) {
+  const p = THEME_PALETTES[paletteId] || THEME_PALETTES.light;
+
   return (
     <button
       type="button"
@@ -29,124 +70,61 @@ const ThemePreviewCard = memo(function ThemePreviewCard({
           : "border-border hover:border-primary/40 hover:shadow-sm"
       )}
     >
-      {/* Active check */}
       {isActive && (
         <div className="absolute top-2 right-2 z-20 bg-primary rounded-full p-0.5">
           <Check className="w-3 h-3 text-primary-foreground" />
         </div>
       )}
 
-      {/* Preview area — isolated theme scope */}
-      <div
-        className={cn("w-full aspect-[4/3] overflow-hidden", themeClass)}
-        {...(styleThemeAttr ? { 'data-style-theme': styleThemeAttr } : {})}
-        style={{ colorScheme: themeClass === 'dark' ? 'dark' : 'light' }}
-      >
+      {/* Preview — fully inline-styled for isolation */}
+      <div className="w-full aspect-[4/3] overflow-hidden">
         <div
           className="w-full h-full p-2 flex flex-col gap-1.5"
-          style={{
-            backgroundColor: 'hsl(var(--background))',
-            color: 'hsl(var(--foreground))',
-          }}
+          style={{ backgroundColor: p.background, color: p.foreground }}
         >
-          {/* Mini header bar */}
+          {/* Mini header */}
           <div className="flex items-center gap-1.5">
             <div
               className="w-4 h-4 rounded-md shrink-0"
-              style={{ background: 'linear-gradient(135deg, hsl(217 91% 60%), hsl(279 94% 54%))' }}
+              style={{ background: 'linear-gradient(135deg, #3b82f6, #a855f7)' }}
             />
-            <div
-              className="h-1.5 rounded-full flex-1 max-w-[40%]"
-              style={{ backgroundColor: 'hsl(var(--foreground) / 0.15)' }}
-            />
+            <div className="h-1.5 rounded-full flex-1 max-w-[40%]" style={{ backgroundColor: p.muted }} />
           </div>
 
-          {/* Stat cards row */}
+          {/* Stat cards */}
           <div className="flex gap-1 flex-1 min-h-0">
-            {/* Income card */}
-            <div
-              className="flex-1 rounded-md p-1.5 flex flex-col justify-between"
-              style={{ backgroundColor: 'hsl(var(--stat-income-bg))' }}
-            >
-              <div
-                className="h-1 w-3/5 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--stat-income-text) / 0.4)' }}
-              />
-              <div
-                className="h-2 w-4/5 rounded-full mt-auto"
-                style={{ backgroundColor: 'hsl(var(--stat-income-text))' }}
-              />
+            <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.incBg }}>
+              <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.incText + '66' }} />
+              <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.incText }} />
             </div>
-            {/* Expense card */}
-            <div
-              className="flex-1 rounded-md p-1.5 flex flex-col justify-between"
-              style={{ backgroundColor: 'hsl(var(--stat-expense-bg))' }}
-            >
-              <div
-                className="h-1 w-3/5 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--stat-expense-text) / 0.4)' }}
-              />
-              <div
-                className="h-2 w-4/5 rounded-full mt-auto"
-                style={{ backgroundColor: 'hsl(var(--stat-expense-text))' }}
-              />
+            <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.expBg }}>
+              <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.expText + '66' }} />
+              <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.expText }} />
             </div>
-            {/* Balance card */}
-            <div
-              className="flex-1 rounded-md p-1.5 flex flex-col justify-between"
-              style={{ backgroundColor: 'hsl(var(--stat-balance-pos-bg))' }}
-            >
-              <div
-                className="h-1 w-3/5 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--stat-balance-pos-text) / 0.4)' }}
-              />
-              <div
-                className="h-2 w-4/5 rounded-full mt-auto"
-                style={{ backgroundColor: 'hsl(var(--stat-balance-pos-text))' }}
-              />
+            <div className="flex-1 rounded-md p-1.5 flex flex-col justify-between" style={{ backgroundColor: p.balBg }}>
+              <div className="h-1 w-3/5 rounded-full" style={{ backgroundColor: p.balText + '66' }} />
+              <div className="h-2 w-4/5 rounded-full mt-auto" style={{ backgroundColor: p.balText }} />
             </div>
           </div>
 
           {/* Transaction list skeleton */}
-          <div
-            className="flex-1 rounded-md p-1.5 flex flex-col gap-1 min-h-0"
-            style={{ backgroundColor: 'hsl(var(--card))' }}
-          >
+          <div className="flex-1 rounded-md p-1.5 flex flex-col gap-1 min-h-0" style={{ backgroundColor: p.card, border: `1px solid ${p.border}` }}>
             {[0.7, 0.5, 0.6].map((w, i) => (
               <div key={i} className="flex items-center gap-1">
-                <div
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: 'hsl(var(--muted))' }}
-                />
-                <div
-                  className="h-1.5 rounded-full"
-                  style={{
-                    backgroundColor: 'hsl(var(--foreground) / 0.12)',
-                    width: `${w * 100}%`,
-                  }}
-                />
-                <div
-                  className="h-1.5 w-5 rounded-full ml-auto"
-                  style={{ backgroundColor: 'hsl(var(--foreground) / 0.08)' }}
-                />
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.muted }} />
+                <div className="h-1.5 rounded-full" style={{ backgroundColor: p.mutedFg + '30', width: `${w * 100}%` }} />
+                <div className="h-1.5 w-5 rounded-full ml-auto" style={{ backgroundColor: p.mutedFg + '20' }} />
               </div>
             ))}
           </div>
 
-          {/* Bottom nav bar */}
-          <div
-            className="flex items-center justify-around rounded-md py-1"
-            style={{ backgroundColor: 'hsl(var(--card))' }}
-          >
-            {[1, 2, 3, 4].map((_, i) => (
+          {/* Bottom nav */}
+          <div className="flex items-center justify-around rounded-md py-1" style={{ backgroundColor: p.card, border: `1px solid ${p.border}` }}>
+            {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
                 className="w-2.5 h-2.5 rounded-sm"
-                style={{
-                  backgroundColor: i === 0
-                    ? 'hsl(var(--primary))'
-                    : 'hsl(var(--muted-foreground) / 0.3)',
-                }}
+                style={{ backgroundColor: i === 0 ? p.primary : p.mutedFg + '50' }}
               />
             ))}
           </div>
@@ -154,11 +132,8 @@ const ThemePreviewCard = memo(function ThemePreviewCard({
       </div>
 
       {/* Label */}
-      <div className="px-2 py-2 text-center" style={{ backgroundColor: 'hsl(var(--card))' }}>
-        <span className={cn(
-          "text-xs font-semibold",
-          isActive ? "text-primary" : "text-muted-foreground"
-        )}>
+      <div className="px-2 py-2 text-center bg-card">
+        <span className={cn("text-xs font-semibold", isActive ? "text-primary" : "text-muted-foreground")}>
           {label}
         </span>
       </div>
