@@ -146,8 +146,7 @@ export default function Reports() {
 
   // Local Embla instance for the Stats cards
   const [statsEmblaRef] = useEmblaCarousel({
-    align: "start",
-    containScroll: "trimSnaps",
+    align: "center",
     breakpoints: { '(min-width: 768px)': { active: false } }
   });
 
@@ -181,7 +180,7 @@ export default function Reports() {
 
   const statsComponent = isLoading ? (
     <div className="w-full overflow-hidden py-1" ref={statsEmblaRef}>
-      <div className="flex touch-pan-y md:grid md:grid-cols-3 md:gap-4">
+      <div className="flex gap-4 md:grid md:grid-cols-3">
         {[1, 2].map((i) => (
           <div key={i} className="flex-[0_0_85%] min-w-0 pl-4 md:pl-0 md:col-span-1">
             <div className="h-40 bg-gray-100 animate-pulse rounded-xl w-full" />
@@ -194,7 +193,7 @@ export default function Reports() {
     </div>
   ) : (
     <div className="w-full overflow-hidden py-1" ref={statsEmblaRef}>
-      <div className="flex touch-pan-y md:grid md:grid-cols-3 md:gap-4 items-stretch">
+      <div className="flex touch-pan-y gap-4 md:grid md:grid-cols-3 items-stretch">
         <div className="flex-[0_0_85%] min-w-0 pl-4 md:pl-0 md:col-span-1">
           <SavingsRateCard
             monthlyIncome={monthlyIncome}
