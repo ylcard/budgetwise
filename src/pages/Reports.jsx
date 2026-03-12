@@ -237,7 +237,7 @@ export default function Reports() {
   const projectionComponent = <ProjectionChart settings={settings} projectionData={projectionData} />;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex flex-col">
+    <div className="bg-gray-50/50 md:min-h-screen">
       {/* --- DESKTOP VIEW (Original Layout) --- */}
       <div className="hidden md:block max-w-7xl mx-auto px-8 py-8 space-y-8">
         {/* Header Section */}
@@ -293,7 +293,7 @@ export default function Reports() {
       </div>
 
       {/* --- MOBILE VIEW (New App-Like Layout) --- */}
-      <div className="md:hidden flex flex-col min-h-0 flex-1">
+      <div className="md:hidden flex flex-col" style={{ height: 'calc(100vh - var(--header-total-height) - var(--nav-total-height))' }}>
 
         {/* Mobile Content Area — single scrollable column per tab */}
         {/* TAB: ANALYSIS */}
