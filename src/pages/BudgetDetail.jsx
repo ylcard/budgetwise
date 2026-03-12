@@ -454,7 +454,7 @@ export default function BudgetDetail() {
           <Card className="border-none shadow-xl bg-gradient-to-br from-card to-muted/20 overflow-hidden">
             <div className="grid md:grid-cols-12 gap-0">
               {/* Left Side: Circular Health Visualization */}
-              <div className="md:col-span-4 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border/50">
+              <div className="md:col-span-4 p-4 md:p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border/50">
                 <BudgetHealthCircular
                   budget={{
                     ...budget,
@@ -468,8 +468,8 @@ export default function BudgetDetail() {
               </div>
 
               {/* Right Side: Detailed Stats Grid */}
-              <div className="md:col-span-8 p-6">
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="md:col-span-8 p-4 md:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {/* Timeline Info */}
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-muted-foreground">
@@ -584,10 +584,10 @@ export default function BudgetDetail() {
           {budget.isSystemBudget && relatedCustomBudgetsForDisplay.length > 0 && (
             <Card className="border-none shadow-lg">
               <CardHeader>
-                <CardTitle>Linked Custom Budgets ({relatedCustomBudgetsForDisplay.length})</CardTitle>
+                <CardTitle className="text-base md:text-lg">Linked Custom Budgets ({relatedCustomBudgetsForDisplay.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
                   {relatedCustomBudgetsForDisplay.map((cb) => {
                     const cbStats = getCustomBudgetStats(cb, transactions);
                     return (
@@ -610,8 +610,8 @@ export default function BudgetDetail() {
           )}
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg md:text-xl font-bold truncate">
                 {budget.isSystemBudget ? 'Direct Expenses' : 'Budget Transactions'}
               </h2>
               <ExpenseFormDialog
@@ -674,6 +674,25 @@ export default function BudgetDetail() {
             categories={mergedCategories}
             customBudgets={allCustomBudgets}
           />
+
+          {/* Edit Budget Dialog (mobile-friendly replacement for Popover) */}
+          {!budget.isSystemBudget && !isCompleted && (
+            <Dialog open={budgetActions.showForm} onOpenChange={budgetActions.setShowForm}>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Budget</DialogTitle>
+                </DialogHeader>
+                <CustomBudgetForm
+                  budget={budget}
+                  onSubmit={handleEditBudget}
+                  onCancel={() => budgetActions.setShowForm(false)}
+                  isSubmitting={budgetActions.isSubmitting}
+                  baseCurrency={settings.baseCurrency}
+                  settings={settings}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
     </PullToRefresh>
