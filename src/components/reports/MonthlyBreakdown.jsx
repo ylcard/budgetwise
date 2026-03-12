@@ -148,69 +148,8 @@ export default function MonthlyBreakdown({
   // SORTING: Ensure highest expenses are first (Top Left)
   const sortedBreakdown = [...categoryBreakdown].sort((a, b) => b.amount - a.amount);
 
-  // Helper to render the content inside the Modal/Drawer
-  const renderCategoryDetails = () => {
-    if (!selectedCategory) return null;
-    const IconComponent = getCategoryIcon(selectedCategory.icon);
-    const diffAbs = Math.abs(selectedCategory.amount - selectedCategory.averageSpend);
-    const isAlert = selectedCategory.alertStatus && selectedCategory.alertStatus !== 'normal';
-
-    return (
-      <div className="space-y-6 pt-2">
-        <div className="flex items-center gap-4">
-          <div className="p-4 rounded-2xl" style={{ backgroundColor: `${selectedCategory.color}20` }}>
-            <IconComponent size={32} style={{ color: selectedCategory.color }} />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">{selectedCategory.name}</h3>
-            <p className="text-2xl font-bold" style={{ color: selectedCategory.color }}>
-              {formatCurrency(selectedCategory.amount, settings)}
-            </p>
-          </div>
-        </div>
-
-        {isAlert && selectedCategory.averageSpend > 0 && (
-          <div className={`p-4 rounded-xl border ${getAlertCardStyles(selectedCategory.alertStatus)}`}>
-            <div className="flex items-start gap-3">
-              <StatusIndicator status={selectedCategory.alertStatus} diff={selectedCategory.diffPercentage} />
-              <div>
-                <p className="font-bold text-sm text-gray-900">
-                  {selectedCategory.alertStatus === 'saving' ? 'Great job saving!' : 'Spending Alert'}
-                </p>
-                <p className="text-sm mt-1 text-gray-600 leading-snug">
-                  You spent <strong>{formatCurrency(diffAbs, settings)}</strong> {selectedCategory.alertStatus === 'saving' ? 'less' : 'more'} than your 6-month average of <strong>{formatCurrency(selectedCategory.averageSpend, settings)}</strong>.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!isAlert && selectedCategory.averageSpend > 0 && (
-          <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100 flex items-center justify-between px-4">
-            <span className="text-sm text-gray-500 font-medium">6-Month Average</span>
-            <span className="text-sm font-bold text-gray-900">{formatCurrency(selectedCategory.averageSpend, settings)}</span>
-          </div>
-        )}
-
-        {selectedCategory.averageSpend === 0 && (
-          <div className="bg-blue-50/30 p-3 rounded-xl border border-blue-100 text-center">
-            <span className="text-xs text-blue-600 font-medium">First expense in this category in 6 months.</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-center">
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Share of Expenses</p>
-            <p className="text-xl font-bold text-gray-900">{selectedCategory.expensePercentage.toFixed(1)}%</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-center">
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Share of Income</p>
-            <p className="text-xl font-bold text-gray-900">{selectedCategory.percentage.toFixed(1)}%</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // COMMENTED OUT 12-Mar-2026: Moved to dedicated CategoryDetailDrawer component
+  // const renderCategoryDetails = () => { ... };
 
   return (
     <Card className="w-full h-full border-none shadow-lg flex flex-col bg-white">
