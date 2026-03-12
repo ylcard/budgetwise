@@ -190,7 +190,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
           </Link>
         </div>
 
-        <div className={clsx("flex-1 overflow-y-auto", !embedded && "p-4")}>
+        <div className={clsx("flex-1 overflow-y-auto", !embedded && "px-4 pb-4")}>
           {/* UPDATED 12-Mar-2026: Removed space-y-4 to fix gap showing behind sticky month headers */}
           <div className="pb-4">
             {loadedOffsets.map((offset, index) => {
