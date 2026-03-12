@@ -293,48 +293,46 @@ export default function Reports() {
       </div>
 
       {/* --- MOBILE VIEW (New App-Like Layout) --- */}
-      <div className="md:hidden flex flex-col h-screen overflow-hidden">
-        {/* 1. Mobile Fixed Header */}
-        <header className="bg-white border-b border-gray-100 flex-none z-20">
-          <div className="px-4 py-3 flex items-center justify-between">
-            <MonthNavigator
-              currentMonth={selectedMonth}
-              currentYear={selectedYear}
-              onMonthChange={(m, y) => { setSelectedMonth(m); setSelectedYear(y); }}
-              resetPosition="right"
-            />
-          </div>
+      <div className="md:hidden flex flex-col min-h-0 flex-1">
 
-          {/* Segmented Control Tabs */}
-          <div className="px-4 pb-3">
-            <div className="flex p-1 bg-gray-100 rounded-lg">
-              {[
-                { id: 'analysis', label: 'Analysis', icon: LayoutDashboard },
-                { id: 'breakdown', label: 'Details', icon: List },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setMobileTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${mobileTab === tab.id
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              ))}
+        {/* Mobile Content Area — single scrollable column per tab */}
+        {/* TAB: ANALYSIS */}
+        {mobileTab === 'analysis' && (
+          <div ref={analysisScrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 pb-20" style={{ maxWidth: '100vw' }}>
+
+            {/* Inline header (scrolls with content) */}
+            <div className="bg-white border-b border-gray-100">
+              <div className="px-4 py-3 flex items-center justify-center">
+                <MonthNavigator
+                  currentMonth={selectedMonth}
+                  currentYear={selectedYear}
+                  onMonthChange={(m, y) => { setSelectedMonth(m); setSelectedYear(y); }}
+                  resetPosition="right"
+                />
+              </div>
+              <div className="px-4 pb-3">
+                <div className="flex p-1 bg-gray-100 rounded-lg">
+                  {[
+                    { id: 'analysis', label: 'Analysis', icon: LayoutDashboard },
+                    { id: 'breakdown', label: 'Details', icon: List },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setMobileTab(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${mobileTab === tab.id
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </header>
 
-        {/* 2. Mobile Content Area */}
-        <div className={`flex-1 overflow-x-hidden bg-gray-50 ${mobileTab === 'analysis' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4'}`} style={{ maxWidth: '100vw' }}>
-
-          {/* TAB: ANALYSIS (Carousel) */}
-          {mobileTab === 'analysis' && (
-            <div className="h-full pb-20 pt-4 space-y-8 overflow-y-auto overflow-x-hidden">
-
+            <div className="pt-4 space-y-8">
               <section>
                 <h2 className="px-4 md:px-0 text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Overview</h2>
                 {statsComponent}
@@ -357,11 +355,48 @@ export default function Reports() {
                 </MobileChartCard>
               </section>
             </div>
-          )}
 
-          {/* TAB: BREAKDOWN */}
-          {mobileTab === 'breakdown' && (
-            <div className="h-full pb-20 overflow-y-auto overflow-x-hidden">
+            <ScrollToTopButton scrollRef={analysisScrollRef} />
+          </div>
+        )}
+
+        {/* TAB: BREAKDOWN */}
+        {mobileTab === 'breakdown' && (
+          <div ref={breakdownScrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 pb-20" style={{ maxWidth: '100vw' }}>
+
+            {/* Inline header (scrolls with content) */}
+            <div className="bg-white border-b border-gray-100">
+              <div className="px-4 py-3 flex items-center justify-center">
+                <MonthNavigator
+                  currentMonth={selectedMonth}
+                  currentYear={selectedYear}
+                  onMonthChange={(m, y) => { setSelectedMonth(m); setSelectedYear(y); }}
+                  resetPosition="right"
+                />
+              </div>
+              <div className="px-4 pb-3">
+                <div className="flex p-1 bg-gray-100 rounded-lg">
+                  {[
+                    { id: 'analysis', label: 'Analysis', icon: LayoutDashboard },
+                    { id: 'breakdown', label: 'Details', icon: List },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setMobileTab(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${mobileTab === tab.id
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4">
               <MonthlyBreakdown
                 transactions={transactions}
                 categories={categories}
@@ -372,8 +407,10 @@ export default function Reports() {
                 allCustomBudgets={allCustomBudgets}
               />
             </div>
-          )}
-        </div>
+
+            <ScrollToTopButton scrollRef={breakdownScrollRef} />
+          </div>
+        )}
 
         {/* 3. Full Screen Overlay (Focus Mode) */}
         {fullScreenChart && (
