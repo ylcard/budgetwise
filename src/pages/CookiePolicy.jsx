@@ -212,9 +212,9 @@ export default function CookiePolicy() {
                         <LegalCardTitle>6. Privacy Signal Support (DNT & GPC)</LegalCardTitle>
                     </LegalCardHeader>
                     <LegalCardContent className="space-y-4">
-                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4">
-                            <h5 className="font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
+                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3 md:p-4">
+                            <h5 className="font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2 text-xs md:text-sm">
+                                <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse shrink-0"></span>
                                 Global Privacy Control (GPC) - FULLY SUPPORTED
                             </h5>
                             <p className="text-sm text-green-700 dark:text-green-300 mb-3">
@@ -235,8 +235,8 @@ export default function CookiePolicy() {
                             </p>
                         </div>
 
-                        <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-4">
-                            <h5 className="font-semibold text-primary mb-2">Do Not Track (DNT) - HONORED (Best Effort)</h5>
+                        <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-3 md:p-4">
+                            <h5 className="font-semibold text-primary mb-2 text-xs md:text-sm">Do Not Track (DNT) - HONORED (Best Effort)</h5>
                             <p className="text-sm text-primary/80 mb-3">
                                 We honor Do Not Track (DNT) browser signals on a best-effort basis, though DNT is not legally binding and lacks industry standardization.
                             </p>
@@ -251,8 +251,8 @@ export default function CookiePolicy() {
                             </div>
                         </div>
 
-                        <div className="bg-amber-50 border-2 border-amber-500 rounded-lg p-4">
-                            <h5 className="font-semibold text-amber-700 dark:text-amber-400 mb-2">⚠️ Third-Party Service Disclaimer</h5>
+                        <div className="bg-amber-50 border-2 border-amber-500 rounded-lg p-3 md:p-4">
+                            <h5 className="font-semibold text-amber-700 dark:text-amber-400 mb-2 text-xs md:text-sm">⚠️ Third-Party Service Disclaimer</h5>
                             <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
                                 <strong>IMPORTANT:</strong> While we strictly enforce GPC and DNT within our own systems, we cannot fully guarantee compliance by third-party services we integrate with:
                             </p>
