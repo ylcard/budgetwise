@@ -70,15 +70,15 @@ export default function LegalPage() {
         className="w-full flex flex-col"
       >
         {/* Header Section — sticky on mobile so tabs remain accessible while scrolling long legal text */}
-        <div className="w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm z-20 sticky top-0">
-          <div className="max-w-4xl mx-auto px-3 md:px-8 pt-3 md:pt-4 pb-0">
+        <div className="w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm z-20 sticky top-0 overflow-hidden">
+          <div className="max-w-4xl mx-auto px-3 md:px-8 pt-3 md:pt-4 pb-0 min-w-0">
             {/* Desktop Title */}
             <div className="hidden md:block mb-4">
               <h1 className="text-2xl font-bold text-foreground">Legal Center</h1>
               <p className="text-muted-foreground text-sm">Review our policies and terms</p>
             </div>
 
-            <TabsList className="w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-2.5 md:pb-3 gap-1.5 md:gap-4">
+            <TabsList className="w-full max-w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-2.5 md:pb-3 gap-1.5 md:gap-4">
               {tabItems.map((item) => (
                 <TabsTrigger
                   key={item.id}
