@@ -46,13 +46,13 @@ export default function UpcomingTransactions({
     )}>
       {/* Header Area (Only show if NOT embedded, otherwise ActivityHub handles title) */}
       {!embedded && (
-        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
-          <div>
+        <div className="p-4 border-b border-border flex flex-col items-center justify-center gap-2 flex-shrink-0">
+          <div className="flex flex-col items-center text-center">
             {/* UPDATED 12-Mar-2026: Renamed title; subtitle is now a link to recurring tab */}
             <h2 className="text-lg font-bold text-foreground">Upcoming Transactions</h2>
             <Link
               to="/transactions?tab=recurring"
-              className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+              className="text-sm text-muted-foreground hover:text-primary flex items-center justify-center gap-1 transition-colors"
             >
               Manage your recurring transactions
               <ExternalLink className="w-3 h-3" />
@@ -62,10 +62,10 @@ export default function UpcomingTransactions({
       )}
       {/* ADDED 12-Mar-2026: Subtitle link when embedded in ActivityHub */}
       {embedded && (
-        <div className="px-3 pt-2 pb-1 flex-shrink-0">
+        <div className="px-3 pt-2 pb-1 flex-shrink-0 flex justify-center">
           <Link
             to="/transactions?tab=recurring"
-            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+            className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1 transition-colors"
           >
             Manage recurring transactions
             <ExternalLink className="w-3 h-3" />
