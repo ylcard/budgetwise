@@ -48,24 +48,24 @@ export function ActivityHub({
           </Tabs.List>
         </div>
 
-        {/* Scrollable Content Area - Defined Height controlled by Parent Grid */}
+        {/* UPDATED 12-Mar-2026: Reordered content — Recent first, Upcoming second */}
         <div className="flex-1 min-h-0 overflow-hidden relative">
-          <Tabs.Content value="upcoming" className="h-full overflow-y-auto outline-none">
-            <UpcomingTransactions
-              recurringWithStatus={recurringWithStatus}
-              onMarkPaid={onMarkPaid}
-              isLoading={isLoading}
-              categories={categories}
-              embedded={true} // New prop to tell component it's inside a wrapper
-            />
-          </Tabs.Content>
-
           <Tabs.Content value="recent" className="h-full overflow-y-auto outline-none">
             <RecentTransactions
               categories={categories}
               customBudgets={customBudgets}
               onEdit={(data, tx) => transactionActions.handleSubmit(data, tx)}
               onDelete={transactionActions.handleDelete}
+              embedded={true}
+            />
+          </Tabs.Content>
+
+          <Tabs.Content value="upcoming" className="h-full overflow-y-auto outline-none">
+            <UpcomingTransactions
+              recurringWithStatus={recurringWithStatus}
+              onMarkPaid={onMarkPaid}
+              isLoading={isLoading}
+              categories={categories}
               embedded={true}
             />
           </Tabs.Content>
