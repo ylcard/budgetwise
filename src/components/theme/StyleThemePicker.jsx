@@ -29,46 +29,44 @@ export function applyStyleTheme(themeId) {
   }
 }
 
-const StyleThemePicker = memo(function StyleThemePicker({ value = 'none', onChange }) {
+/**
+ * Resolves the effective value for comparison.
+ * The parent stores 'none' for default. We distinguish light/dark via the mode picker,
+ * so both 'none' and 'none-dark' map to style theme 'none' for the parent.
+ * We use an internal "visual ID" to track which preview card is selected.
+ */
+const resolveVisualId = (parentValue, isDarkMode) => {
+  if (parentValue && parentValue !== 'none') return parentValue;
+  return isDarkMode ? 'none-dark' : 'none';
+};
+
+const StyleThemePicker = memo(function StyleThemePicker({ value = 'none', onChange, isDarkMode = false }) {
+  const visualId = resolveVisualId(value, isDarkMode);
+
+  const handleSelect = (theme) => {
+    // For 'none' and 'none-dark', the parent receives 'none' — mode picker handles light/dark
+    const parentValue = theme.id === 'none-dark' ? 'none' : theme.id;
+    onChange(parentValue);
+  };
+
   return (
     <div className="space-y-3">
       <div>
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">Style Themes</h3>
-        <p className="text-xs text-muted-foreground">Cosmetic palette overrides — pick a vibe</p>
+        <p className="text-xs text-muted-foreground">Choose your app's visual style</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {STYLE_THEMES.map((theme) => {
-          const Icon = theme.icon;
-          const isActive = value === theme.id;
-
-          return (
-            <button
-              key={theme.id}
-              type="button"
-              onClick={() => onChange(theme.id)}
-              className={cn(
-                "relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center",
-                isActive
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-border hover:border-primary/30 hover:bg-accent/50"
-              )}
-            >
-              {isActive && (
-                <div className="absolute top-1.5 right-1.5">
-                  <Check className="w-3.5 h-3.5 text-primary" />
-                </div>
-              )}
-              <Icon className={cn("w-5 h-5", isActive ? "text-primary" : "text-muted-foreground")} />
-              <span className={cn("text-xs font-medium leading-tight", isActive ? "text-foreground" : "text-muted-foreground")}>
-                {theme.label}
-              </span>
-              <span className="text-[9px] text-muted-foreground/70 leading-tight">
-                {theme.description}
-              </span>
-            </button>
-          );
-        })}
+      <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {STYLE_THEMES.map((theme) => (
+          <ThemePreviewCard
+            key={theme.id}
+            label={theme.label}
+            isActive={visualId === theme.id}
+            onClick={() => handleSelect(theme)}
+            themeClass={theme.themeClass}
+            styleThemeAttr={theme.styleAttr}
+          />
+        ))}
       </div>
     </div>
   );
