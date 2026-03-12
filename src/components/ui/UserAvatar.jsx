@@ -59,31 +59,61 @@ export const UserAvatar = ({ size = "sm" }) => {
     </div>
   );
 
+  // Shared body content for both Drawer and Dialog
+  const BodyContent = (
+    <div className="space-y-6">
+      <StatsBody
+        streak={streak}
+        currentExp={currentExp}
+        progress={progress}
+        level={level}
+        nextLevelExp={nextLevelExp}
+      />
+
+      {/* Customize Profile Section */}
+      {!showCustomize ? (
+        <CustomButton variant="outline" className="w-full gap-2" onClick={() => setShowCustomize(true)}>
+          <Palette className="w-4 h-4" /> Customize Avatar & Badge
+        </CustomButton>
+      ) : (
+        <AvatarPicker
+          level={level}
+          currentStyle={selectedAvatarStyle}
+          currentBadge={selectedBadgeId}
+          currentSeed={avatarSeed}
+          userName={user?.name}
+          onSave={handleSaveProfile}
+          isSaving={isUpdatingProfile}
+        />
+      )}
+    </div>
+  );
+
   if (isMobile) {
     return (
-      <Drawer>
+      <Drawer onClose={() => setShowCustomize(false)}>
         <DrawerTrigger asChild>
           {Trigger}
         </DrawerTrigger>
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader className="flex flex-col items-center pt-8 pb-4">
-              <StatsHeader user={user} level={level} />
+              <ProfileHeader
+                user={user}
+                level={level}
+                selectedAvatarStyle={selectedAvatarStyle}
+                selectedBadgeId={selectedBadgeId}
+                avatarSeed={avatarSeed}
+              />
             </DrawerHeader>
 
-            <div className="px-6 pb-8 space-y-6">
-              <StatsBody
-                streak={streak}
-                currentExp={currentExp}
-                progress={progress}
-                level={level}
-                nextLevelExp={nextLevelExp}
-              />
+            <div className="px-6 pb-8 max-h-[60vh] overflow-y-auto">
+              {BodyContent}
             </div>
 
             <DrawerFooter>
               <DrawerClose asChild>
-                <CustomButton variant="outline" className="w-full">Close</CustomButton>
+                <CustomButton variant="outline" className="w-full" onClick={() => setShowCustomize(false)}>Close</CustomButton>
               </DrawerClose>
             </DrawerFooter>
           </div>
@@ -93,52 +123,67 @@ export const UserAvatar = ({ size = "sm" }) => {
   }
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => { if (!open) setShowCustomize(false); }}>
       <DialogTrigger asChild>
         {Trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-[440px] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="flex flex-col items-center pt-4 pb-2">
-          <StatsHeader user={user} level={level} />
+          <ProfileHeader
+            user={user}
+            level={level}
+            selectedAvatarStyle={selectedAvatarStyle}
+            selectedBadgeId={selectedBadgeId}
+            avatarSeed={avatarSeed}
+          />
         </DialogHeader>
 
-        <div className="px-2 pb-2 space-y-6">
-          <StatsBody
-            streak={streak}
-            currentExp={currentExp}
-            progress={progress}
-            level={level}
-            nextLevelExp={nextLevelExp}
-          />
+        <div className="px-2 pb-2">
+          {BodyContent}
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-const StatsHeader = ({ user, level }) => (
-  <>
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className="relative mb-4"
-    >
-      <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-      <Avatar className="w-24 h-24 border-4 border-background shadow-xl relative z-10">
-        <AvatarImage src={user?.picture} />
-        <AvatarFallback className="text-2xl font-bold">
-          {user?.name?.substring(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full border-2 border-background shadow-sm z-20">
-        Lvl {level}
-      </div>
-    </motion.div>
+// COMMENTED OUT 12-Mar-2026: Replaced with ProfileHeader that uses DiceBear + BadgeFrame
+// const StatsHeader = ({ user, level }) => ( ... );
 
-    <h2 className="text-2xl font-bold text-center">{user?.name}</h2>
-    <p className="text-muted-foreground text-sm text-center">Budget Master</p>
-  </>
-);
+const ProfileHeader = ({ user, level, selectedAvatarStyle, selectedBadgeId, avatarSeed }) => {
+  const diceBearUri = useAvatarImage(selectedAvatarStyle, avatarSeed);
+
+  return (
+    <>
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="relative mb-4"
+      >
+        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+        <div className="relative z-10">
+          <BadgeFrame badgeId={selectedBadgeId} size={96} color="hsl(var(--primary))">
+            {diceBearUri ? (
+              <img src={diceBearUri} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <Avatar className="w-full h-full">
+                <AvatarImage src={user?.picture} />
+                <AvatarFallback className="text-2xl font-bold">
+                  {user?.name?.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </BadgeFrame>
+        </div>
+        <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full border-2 border-background shadow-sm z-20">
+          Lvl {level}
+        </div>
+      </motion.div>
+
+      <h2 className="text-2xl font-bold text-center">{user?.name}</h2>
+      <p className="text-muted-foreground text-sm text-center">Budget Master</p>
+    </>
+  );
+};
 
 const StatsBody = ({ streak, currentExp, progress, level, nextLevelExp }) => (
   <>
@@ -172,22 +217,13 @@ const StatsBody = ({ streak, currentExp, progress, level, nextLevelExp }) => (
       </p>
     </div>
 
-    {/* Unlocks Teaser */}
-    <div className="space-y-3 pt-2">
+    {/* COMMENTED OUT 12-Mar-2026: Static placeholder unlocks replaced by AvatarPicker in parent */}
+    {/* <div className="space-y-3 pt-2">
       <h4 className="text-sm font-semibold flex items-center gap-2">
         <Zap className="w-4 h-4 text-primary" />
         Next Unlocks
       </h4>
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        <div className="min-w-[100px] h-24 rounded-lg border border-border bg-card flex flex-col items-center justify-center gap-2 p-2 opacity-50">
-          <Lock className="w-5 h-5 text-muted-foreground" />
-          <span className="text-xs text-center text-muted-foreground">Dark Gold Theme</span>
-        </div>
-        <div className="min-w-[100px] h-24 rounded-lg border border-border bg-card flex flex-col items-center justify-center gap-2 p-2 opacity-50">
-          <Lock className="w-5 h-5 text-muted-foreground" />
-          <span className="text-xs text-center text-muted-foreground">Pro Charts</span>
-        </div>
-      </div>
-    </div>
+      ...
+    </div> */}
   </>
 );
