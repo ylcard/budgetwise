@@ -291,7 +291,7 @@ const LayoutContent = ({ children }) => {
 
             {/* Desktop Theme Toggle */}
             <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-accent/50 rounded-md mb-1 transition-colors select-none group">
-              <Link to="/manage/preferences" className="font-medium text-sm text-muted-foreground group-hover:text-foreground transition-colors flex items-center gap-1">
+              <Link to="/manage?group=app&tab=appearance" className="font-medium text-sm text-muted-foreground group-hover:text-foreground transition-colors flex items-center gap-1">
                 More Themes <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
               </Link>
               <ThemeSwitcher theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
@@ -394,7 +394,7 @@ const LayoutContent = ({ children }) => {
 
                       {/* Mobile Theme Toggle */}
                       <div className="flex items-center justify-between px-6 py-4 hover:bg-accent transition-colors">
-                        <Link to="/manage/preferences" onClick={() => setIsMoreMenuOpen(false)} className="flex items-center gap-4 flex-1">
+                        <Link to="/manage?group=app&tab=appearance" onClick={() => setIsMoreMenuOpen(false)} className="flex items-center gap-4 flex-1">
                           {theme === 'dark' ? <Moon className="w-5 h-5 text-muted-foreground" /> : <Sun className="w-5 h-5 text-muted-foreground" />}
                           <span className="font-medium text-foreground">More Themes</span>
                         </Link>
