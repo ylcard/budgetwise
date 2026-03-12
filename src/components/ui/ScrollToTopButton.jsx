@@ -8,36 +8,48 @@ import { motion, AnimatePresence } from "framer-motion";
  * Scrolls the container back to the top smoothly when clicked.
  *
  * @param {React.RefObject} [scrollRef] - Ref to the scrollable container element.
- *   If omitted, the component auto-detects the Layout's main scrollable wrapper.
+ *   If omitted, the component auto-detects the Layout's main scrollable wrapper via DOM query.
  * @param {number} [threshold=80] - Scroll distance (px) before the button appears
  */
 const ScrollToTopButton = memo(function ScrollToTopButton({ scrollRef, threshold = 80 }) {
   const [visible, setVisible] = useState(false);
+  // ADDED 12-Mar-2026: Track the resolved element in state so we can re-attach
+  // the listener when the ref becomes available (fixes timing with Layout mount).
+  const [scrollEl, setScrollEl] = useState(null);
 
-  // Resolve the scrollable element: explicit ref > Layout's main scroller
-  const getScrollElement = useCallback(() => {
-    if (scrollRef?.current) return scrollRef.current;
-    // Layout's main content wrapper — the first child of <main> with overflow-auto
-    return document.querySelector('main .overflow-auto') || null;
-  }, [scrollRef]);
-
+  // Resolve the scrollable element once the ref is populated or DOM is ready
   useEffect(() => {
-    const el = getScrollElement();
-    if (!el) return;
-
-    const handleScroll = () => {
-      setVisible(el.scrollTop > threshold);
+    const resolve = () => {
+      if (scrollRef?.current) return scrollRef.current;
+      return document.querySelector('main .overflow-auto') || null;
     };
 
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, [getScrollElement, threshold]);
+    const el = resolve();
+    if (el) {
+      setScrollEl(el);
+    } else {
+      // Ref may not be populated on first render — retry after a short delay
+      const timer = setTimeout(() => setScrollEl(resolve()), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [scrollRef]);
+
+  // Attach scroll listener to the resolved element
+  useEffect(() => {
+    if (!scrollEl) return;
+
+    const handleScroll = () => {
+      setVisible(scrollEl.scrollTop > threshold);
+    };
+
+    scrollEl.addEventListener("scroll", handleScroll, { passive: true });
+    return () => scrollEl.removeEventListener("scroll", handleScroll);
+  }, [scrollEl, threshold]);
 
   const scrollToTop = useCallback(() => {
-    const el = getScrollElement();
-    if (!el) return;
-    el.scrollTo({ top: 0, behavior: "smooth" });
-  }, [getScrollElement]);
+    if (!scrollEl) return;
+    scrollEl.scrollTo({ top: 0, behavior: "smooth" });
+  }, [scrollEl]);
 
   return (
     <AnimatePresence>
