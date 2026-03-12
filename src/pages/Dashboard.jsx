@@ -5,7 +5,8 @@ import { useSettings } from "../components/utils/SettingsContext";
 import { useRecurringTransactions } from "../components/hooks/useRecurringTransactions";
 import { useRecurringStatus } from "../components/hooks/useRecurringStatus";
 import useMeasure from "react-use-measure";
-import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
+// COMMENTED OUT 12-Mar-2026: UpcomingTransactions now rendered exclusively inside ActivityHub
+// import UpcomingTransactions from "../components/dashboard/UpcomingTransactions";
 import { usePeriod } from "../components/hooks/usePeriod";
 import { useFAB } from "../components/hooks/FABContext";
 import {
@@ -46,7 +47,8 @@ import { useProjections } from "../components/hooks/useProjections";
 import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth";
 import { QUERY_KEYS } from "../components/hooks/queryKeys";
 import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
-import useEmblaCarousel from 'embla-carousel-react';
+// COMMENTED OUT 12-Mar-2026: Embla carousel now managed inside ActivityHub
+// import useEmblaCarousel from 'embla-carousel-react';
 import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 import { useTutorial } from '../components/tutorial/TutorialContext';
 import { subDays } from 'date-fns';
@@ -77,26 +79,24 @@ export default function Dashboard() {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
-    // Carousel for Mobile Activity (Upcoming/Recent)
-    const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
-    const [selectedIndex, setSelectedIndex] = useState(0);
-
-    const onSelect = useCallback(() => {
-        if (!emblaApi) return;
-        setSelectedIndex(emblaApi.selectedScrollSnap());
-    }, [emblaApi]);
-
-    useEffect(() => {
-        if (!emblaApi) return;
-        emblaApi.on('select', onSelect);
-    }, [emblaApi, onSelect]);
+    // COMMENTED OUT 12-Mar-2026: Carousel state moved into ActivityHub component
+    // const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', skipSnaps: false });
+    // const [selectedIndex, setSelectedIndex] = useState(0);
+    // const onSelect = useCallback(() => {
+    //     if (!emblaApi) return;
+    //     setSelectedIndex(emblaApi.selectedScrollSnap());
+    // }, [emblaApi]);
+    // useEffect(() => {
+    //     if (!emblaApi) return;
+    //     emblaApi.on('select', onSelect);
+    // }, [emblaApi, onSelect]);
 
     // Automatically checks and triggers the dashboard tutorial
     useTutorialTrigger(TUTORIAL_IDS.DASHBOARD_OVERVIEW);
     const { activeTutorial } = useTutorial();
 
+    // COMMENTED OUT 12-Mar-2026: isMobile for carousel moved into ActivityHub; kept for budget card switch
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', handleResize);
