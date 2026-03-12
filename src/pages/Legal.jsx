@@ -67,7 +67,7 @@ export default function LegalPage() {
       <Tabs
         value={currentTab}
         onValueChange={handleTabChange}
-        className="w-full flex flex-col"
+        className="w-full min-w-0 flex flex-col"
       >
         {/* Header Section — sticky on mobile so tabs remain accessible while scrolling long legal text */}
         <div className="w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm z-20 sticky top-0 overflow-hidden">
@@ -78,7 +78,7 @@ export default function LegalPage() {
               <p className="text-muted-foreground text-sm">Review our policies and terms</p>
             </div>
 
-            <TabsList className="w-full max-w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-2.5 md:pb-3 gap-1.5 md:gap-4">
+            <TabsList className="w-auto max-w-full h-auto flex justify-start overflow-x-auto no-scrollbar bg-transparent p-0 pb-2.5 md:pb-3 gap-1.5 md:gap-4">
               {tabItems.map((item) => (
                 <TabsTrigger
                   key={item.id}
@@ -98,7 +98,7 @@ export default function LegalPage() {
         </div>
 
         {/* Content Area */}
-        <div className="w-full max-w-5xl mx-auto pb-32 px-0">
+        <div className="w-full max-w-4xl mx-auto pb-32 px-0">
           {tabItems.map((item) => (
             <TabsContent
               key={item.id}
