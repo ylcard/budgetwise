@@ -29,7 +29,7 @@ import { AdminConsistencyChecker } from "../components/transactions/AdminConsist
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2, Repeat } from "lucide-react";
 import { useBankSync } from "../components/banksync/useBankSync";
-import LastSyncInfo from "../ui/LastSyncInfo";
+import LastSyncInfo from "@/components/ui/LastSyncInfo";
 
 /**
  * Transactions Layout - Main wrapper for History and Recurring tabs
