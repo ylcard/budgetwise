@@ -181,16 +181,21 @@ export default function Reports() {
 
   const statsComponent = isLoading ? (
     <div className="w-full overflow-hidden py-1" ref={statsEmblaRef}>
-      <div className="flex px-4 md:px-0 gap-4 md:grid md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-40 bg-gray-100 animate-pulse rounded-xl flex-[0_0_85%] md:col-span-1" />
+      <div className="flex touch-pan-y md:grid md:grid-cols-3 md:gap-4">
+        {[1, 2].map((i) => (
+          <div key={i} className="flex-[0_0_85%] min-w-0 pl-4 md:pl-0 md:col-span-1">
+            <div className="h-40 bg-gray-100 animate-pulse rounded-xl w-full" />
+          </div>
         ))}
+        <div className="flex-[0_0_85%] min-w-0 px-4 md:px-0 md:col-span-1">
+          <div className="h-40 bg-gray-100 animate-pulse rounded-xl w-full" />
+        </div>
       </div>
     </div>
   ) : (
     <div className="w-full overflow-hidden py-1" ref={statsEmblaRef}>
-      <div className="flex touch-pan-y px-4 md:px-0 gap-4 md:grid md:grid-cols-3 items-stretch">
-        <div className="flex-[0_0_85%] min-w-0 md:col-span-1">
+      <div className="flex touch-pan-y md:grid md:grid-cols-3 md:gap-4 items-stretch">
+        <div className="flex-[0_0_85%] min-w-0 pl-4 md:pl-0 md:col-span-1">
           <SavingsRateCard
             monthlyIncome={monthlyIncome}
             totalPaidExpenses={totalPaidExpenses}
@@ -198,7 +203,7 @@ export default function Reports() {
             prevPaidExpenses={prevPaidExpenses}
           />
         </div>
-        <div className="flex-[0_0_85%] min-w-0 md:col-span-1">
+        <div className="flex-[0_0_85%] min-w-0 pl-4 md:pl-0 md:col-span-1">
           <NetFlowCard
             transactions={monthlyTransactions}
             monthlyIncome={monthlyIncome}
@@ -210,7 +215,8 @@ export default function Reports() {
             settings={settings}
           />
         </div>
-        <div className="flex-[0_0_85%] min-w-0 md:col-span-1">
+        {/* The last slide uses px-4 to ensure there is padding on the right screen edge when scrolled to the end */}
+        <div className="flex-[0_0_85%] min-w-0 px-4 md:px-0 md:col-span-1">
           <EfficiencyBonusCard
             bonusSavingsPotential={bonusSavingsPotential}
             settings={settings}
