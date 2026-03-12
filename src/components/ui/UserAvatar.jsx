@@ -3,10 +3,14 @@ import { useGamification } from '@/components/hooks/useGamification';
 import { useAuth } from '@/lib/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
+// COMMENTED OUT 12-Mar-2026: DialogTitle unused in current layout (title is inside ProfileHeader)
+// import { DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
-import { Flame, Star, Zap, Palette } from 'lucide-react';
+import { Flame, Star, Palette } from 'lucide-react';
+// COMMENTED OUT 12-Mar-2026: Zap no longer used after removing static placeholder unlocks
+// import { Zap } from 'lucide-react';
 import { CustomButton } from "@/components/ui/CustomButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import BadgeFrame from '@/components/gamification/BadgeFrame';
