@@ -180,6 +180,7 @@ export default function RecentTransactions({ categories, customBudgets, onEdit, 
 
         {/* UPDATED 12-Mar-2026: Subtitle link shown for ALL modes (embedded + non-embedded/mobile) */}
         <div className="px-3 pt-2 pb-1 flex-shrink-0">
+        <h2 className="text-lg font-bold text-foreground">Recent Transactions</h2>
           <Link
             to="/transactions?tab=history"
             className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
