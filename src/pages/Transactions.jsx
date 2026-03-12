@@ -310,10 +310,11 @@ export function TransactionHistory({
   const { setFabButtons } = useFAB();
 
   // UPDATED 12-Mar-2026: Read URL search params for deep-link filter support
-  const location = useLocation();
-  const initialFilters = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    const { monthStart: defaultStart, monthEnd: defaultEnd } = usePeriod();
+  const { monthStart: periodStart, monthEnd: periodEnd } = usePeriod();
+  const locationForFilters = useLocation();
+
+  const [filters, setFilters] = useState(() => {
+    const params = new URLSearchParams(locationForFilters.search);
     return {
       search: '',
       type: params.get('type') || 'all',
@@ -322,16 +323,13 @@ export function TransactionHistory({
       cashStatus: 'all',
       financialPriority: 'all',
       budgetId: 'all',
-      startDate: params.get('startDate') || defaultStart,
-      endDate: params.get('endDate') || defaultEnd,
+      startDate: params.get('startDate') || periodStart,
+      endDate: params.get('endDate') || periodEnd,
       minAmount: '',
       maxAmount: '',
       idSearch: '',
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only compute once on mount
-
-  const [filters, setFilters] = useState(initialFilters);
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
