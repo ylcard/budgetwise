@@ -30,6 +30,9 @@ import { useFinancialHealthScore } from "../components/hooks/useFinancialHealth"
 import useEmblaCarousel from "embla-carousel-react";
 import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 import { motion, AnimatePresence } from "framer-motion";
+// ADDED 12-Mar-2026: Tutorial system integration for Reports page
+import { useTutorialTrigger } from '../components/tutorial/useTutorialTrigger';
+import { TUTORIAL_IDS } from '../components/tutorial/tutorialConfig';
 
 /**
  * Financial Reports Page
@@ -251,6 +254,9 @@ export default function Reports() {
 
   const waveComponent = <CashFlowWave data={cashFlowData} settings={settings} />;
 
+  // ADDED 12-Mar-2026: Trigger Reports tutorial when data is loaded
+  useTutorialTrigger(TUTORIAL_IDS.REPORTS, 800, !isLoading);
+
   return (
     <div className="bg-gray-50/50 md:min-h-screen">
       {/* --- DESKTOP VIEW (Original Layout) --- */}
@@ -277,19 +283,19 @@ export default function Reports() {
 
         {/* 1. Top Row: KPIs + Goal Allocation */}
         <div className="flex flex-col gap-8">
-          {statsComponent}
-          {healthComponent}
+          <div data-tutorial="reports-stats">{statsComponent}</div>
+          <div data-tutorial="reports-health">{healthComponent}</div>
         </div>
 
         {/* 2. Historical Context & Future Projection */}
-        <div className="w-full space-y-8">
+        <div className="w-full space-y-8" data-tutorial="reports-cashflow">
           <div className="h-[400px] md:h-[450px]">
             {waveComponent}
           </div>
         </div>
 
         {/* 3. Bottom Row: Monthly Breakdown + Priority Chart */}
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8" data-tutorial="reports-breakdown">
           <div className="lg:col-span-2">
             <MonthlyBreakdown
               transactions={transactions}
@@ -352,15 +358,15 @@ export default function Reports() {
                 className="absolute inset-0 overflow-y-auto bg-gray-50 pb-20"
               >
                 <div className="pt-4 space-y-8">
-                  <section>
+                  <section data-tutorial="reports-stats">
                     <h2 className="px-4 text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Overview</h2>
                     {statsComponent}
                   </section>
-                  <section>
+                  <section data-tutorial="reports-health">
                     <h2 className="px-4 text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Financial Health</h2>
                     {healthComponent}
                   </section>
-                  <section className="px-4">
+                  <section className="px-4" data-tutorial="reports-cashflow">
                     <MobileChartCard title="Cash Flow Wave" className="h-[400px]" onMaximize={() => setFullScreenChart({ title: "Cash Flow Wave", content: waveComponent })}>
                       {waveComponent}
                     </MobileChartCard>
@@ -377,6 +383,7 @@ export default function Reports() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
                 className="absolute inset-0 overflow-y-auto bg-gray-50 pb-20 p-4"
+                data-tutorial="reports-breakdown"
               >
                 <MonthlyBreakdown
                   transactions={transactions}

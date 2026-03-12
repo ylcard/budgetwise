@@ -217,22 +217,35 @@ export const TUTORIALS = {
     ],
   },
 
+  // UPDATED 12-Mar-2026: Expanded Reports tutorial with page-specific steps
   [TUTORIAL_IDS.REPORTS]: {
     id: TUTORIAL_IDS.REPORTS,
     title: 'Financial Reports',
     description: 'Analyze your spending patterns and trends',
     steps: [
       {
-        target: '[data-tutorial="reports-tab"]',
-        title: 'Reports',
-        content: 'View detailed charts and insights about your financial health.',
-        placement: 'right',
+        target: '[data-tutorial="reports-stats"]',
+        title: 'Key Metrics',
+        content: 'Swipe through your Savings Rate, Net Flow, and Efficiency Bonus cards for a quick financial snapshot.',
+        placement: 'bottom',
       },
       {
-        target: '[data-tutorial="spending-chart"]',
-        title: 'Spending Analysis',
-        content: 'See where your money goes with visual breakdowns by category and priority.',
+        target: '[data-tutorial="reports-health"]',
+        title: 'Financial Health Score',
+        content: 'This score grades your overall financial well-being based on spending habits, savings rate, and budget adherence.',
         placement: 'bottom',
+      },
+      {
+        target: '[data-tutorial="reports-cashflow"]',
+        title: 'Cash Flow Wave',
+        content: 'Track your income vs expenses over the last 6 months. The current month includes projections based on your patterns.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tutorial="reports-breakdown"]',
+        title: 'Monthly Breakdown',
+        content: 'See a detailed category-by-category breakdown of your spending. Tap any category for transaction details.',
+        placement: 'top',
       },
     ],
   },
