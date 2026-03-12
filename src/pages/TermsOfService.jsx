@@ -13,24 +13,24 @@ export default function TermsOfService() {
                     <p className="text-xs md:text-base text-muted-foreground">Last Updated: February 14, 2026</p>
                 </div>
 
-                <Card className="border-amber-500/20 bg-amber-500/10">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <LegalCard className="border-amber-500/20 bg-amber-500/10">
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                             <AlertTriangle className="w-5 h-5" /> Important Notice
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-amber-700 dark:text-amber-300">
                             <strong>Please read these Terms of Service carefully before using BudgetWise.</strong> By accessing or using the app, you agree to be bound by these terms. If you do not agree, you must discontinue use immediately.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>1. Acceptance of Terms</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>1. Acceptance of Terms</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             By creating an account and using BudgetWise ("the Service"), you confirm that:
                         </p>
@@ -40,14 +40,14 @@ export default function TermsOfService() {
                             <li>You meet the eligibility requirements outlined below</li>
                             <li>You will comply with all applicable laws and regulations</li>
                         </ul>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>2. User Eligibility</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>2. User Eligibility</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">To use BudgetWise, you must:</p>
 
                         <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
@@ -63,14 +63,14 @@ export default function TermsOfService() {
                         <p className="text-sm text-muted-foreground">
                             <strong>Parental Supervision:</strong> If you are between 13-17 years old and your local laws permit use with parental consent, you may use the Service only under the direct supervision of a parent or legal guardian who agrees to these terms.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>3. Account Responsibilities</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>3. Account Responsibilities</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <h4 className="font-semibold text-foreground mb-2">You are responsible for:</h4>
                         <ul className="list-disc pl-6 space-y-2 text-sm text-muted-foreground">
                             <li>Maintaining the confidentiality of your login credentials</li>
@@ -83,16 +83,16 @@ export default function TermsOfService() {
                         <p className="text-sm text-muted-foreground mt-4">
                             <strong>Note:</strong> We are not responsible for losses resulting from unauthorized use of your account if you fail to maintain adequate security measures.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <Ban className="w-5 h-5 text-destructive" /> 4. Prohibited Conduct
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">You agree NOT to:</p>
 
                         <div className="space-y-3">
@@ -136,16 +136,16 @@ export default function TermsOfService() {
                                 </ul>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <XCircle className="w-5 h-5 text-destructive" /> 5. Account Termination
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <h4 className="font-semibold text-foreground">5.1 Termination by You</h4>
                         <p className="text-sm text-muted-foreground">
                             You may terminate your account at any time through the Account Settings page. Upon termination:
@@ -173,14 +173,14 @@ export default function TermsOfService() {
                                 <strong>Important:</strong> Termination does not absolve you of any obligations incurred before termination. We are not liable for any damages or losses resulting from account suspension or termination.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>6. Intellectual Property</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>6. Intellectual Property</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground mb-4">
                             All content, features, and functionality of BudgetWise (including but not limited to software, design, text, graphics, logos) are owned by us or our licensors and are protected by copyright, trademark, and other intellectual property laws.
                         </p>
@@ -189,14 +189,14 @@ export default function TermsOfService() {
                         <p className="text-sm text-muted-foreground">
                             Subject to these terms, we grant you a limited, non-exclusive, non-transferable, revocable license to access and use BudgetWise for your personal, non-commercial use only.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>7. Disclaimer of Warranties</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>7. Disclaimer of Warranties</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
                             <p className="text-sm text-foreground font-semibold mb-2">THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE"</p>
                             <p className="text-sm text-muted-foreground">
@@ -214,14 +214,14 @@ export default function TermsOfService() {
                         <p className="text-sm text-muted-foreground">
                             You use the Service at your own risk. We disclaim all warranties, express or implied, including merchantability, fitness for a particular purpose, and non-infringement.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>8. Limitation of Liability</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>8. Limitation of Liability</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground mb-4">
                             TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE SHALL NOT BE LIABLE FOR:
                         </p>
@@ -239,14 +239,14 @@ export default function TermsOfService() {
                                 <strong>Maximum Liability:</strong> Our total liability for all claims shall not exceed the amount you paid us (if any) in the 12 months preceding the claim, or $100, whichever is greater.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>9. Indemnification</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>9. Indemnification</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             You agree to indemnify, defend, and hold harmless BudgetWise, its affiliates, and their respective officers, directors, employees, and agents from any claims, liabilities, damages, losses, or expenses (including legal fees) arising from:
                         </p>
@@ -256,41 +256,41 @@ export default function TermsOfService() {
                             <li>Your violation of any third-party rights</li>
                             <li>Any data you provide to the Service</li>
                         </ul>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>10. Changes to Terms</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>10. Changes to Terms</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             We reserve the right to modify these Terms at any time. Changes will be effective immediately upon posting. Material changes will be communicated via email or in-app notification. Your continued use of the Service after changes constitutes acceptance of the updated Terms.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>11. Governing Law</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>11. Governing Law</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             These Terms shall be governed by and construed in accordance with the laws of your jurisdiction, without regard to conflict of law principles. Any disputes shall be resolved in the courts of your jurisdiction.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle>Contact & Support</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard className="border-primary/20 bg-primary/5">
+                    <LegalCardHeader>
+                        <LegalCardTitle>Contact & Support</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             For questions about these Terms or to report violations, please contact us through the app's support channels or your account administrator.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
             </div>
         </div>
     );

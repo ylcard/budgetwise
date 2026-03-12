@@ -13,26 +13,26 @@ export default function FinancialDisclaimer() {
                     <p className="text-xs md:text-base text-muted-foreground">Last Updated: February 14, 2026</p>
                 </div>
 
-                <Card className="border-destructive/20 bg-destructive/10">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-destructive">
+                <LegalCard className="border-destructive/20 bg-destructive/10">
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2 text-destructive">
                             <AlertTriangle className="w-5 h-5" /> Critical Notice
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-destructive font-semibold">
                             BudgetWise is a budgeting and financial tracking tool for informational and organizational purposes only. It is NOT financial advice, and we are NOT certified financial advisors, accountants, tax professionals, or investment advisors.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <DollarSign className="w-5 h-5" /> Not Financial Advice
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             All information, features, calculations, and suggestions provided by BudgetWise are for <strong>informational purposes only</strong> and should not be construed as:
                         </p>
@@ -53,16 +53,16 @@ export default function FinancialDisclaimer() {
                                 ⚠️ Always consult with qualified financial professionals before making significant financial decisions.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <Calculator className="w-5 h-5" /> Accuracy of Data & Calculations
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             While we strive to provide accurate and reliable tools, we make <strong>no guarantees</strong> about the accuracy, completeness, or reliability of:
                         </p>
@@ -104,14 +104,14 @@ export default function FinancialDisclaimer() {
                                 <strong>Errors May Occur:</strong> Software bugs, integration failures, or user input errors may result in inaccurate calculations. Always verify critical financial data independently.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>No Liability for Financial Decisions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>No Liability for Financial Decisions</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             <strong>You are solely responsible</strong> for all financial decisions you make. BudgetWise and its creators, employees, and affiliates shall not be held liable for:
                         </p>
@@ -131,16 +131,16 @@ export default function FinancialDisclaimer() {
                                 ⚖️ Use of this app constitutes acknowledgment that all financial decisions are your own and that you bear full responsibility for outcomes.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <TrendingUp className="w-5 h-5" /> Investment Data Disclaimer
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             If you connect investment accounts (e.g., eToro), please note:
                         </p>
@@ -158,14 +158,14 @@ export default function FinancialDisclaimer() {
                                 <strong>Consult a Financial Advisor:</strong> For investment decisions, always seek guidance from licensed investment professionals who understand your specific financial situation and risk tolerance.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>User Responsibility</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>User Responsibility</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             As a user of BudgetWise, you are responsible for:
                         </p>
@@ -178,14 +178,14 @@ export default function FinancialDisclaimer() {
                             <li><strong>Professional Advice:</strong> Seeking qualified financial, legal, or tax advice when needed</li>
                             <li><strong>Due Diligence:</strong> Performing your own research and analysis before making financial decisions</li>
                         </ul>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>No Warranty</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>No Warranty</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             BudgetWise is provided "as is" without any warranties, express or implied. We do not warrant that:
                         </p>
@@ -195,14 +195,14 @@ export default function FinancialDisclaimer() {
                             <li>Third-party integrations will always function correctly</li>
                             <li>The service will be available uninterrupted or secure</li>
                         </ul>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Regional Considerations</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>Regional Considerations</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground mb-4">
                             Financial regulations, tax laws, and best practices vary by country and region. BudgetWise:
                         </p>
@@ -216,19 +216,19 @@ export default function FinancialDisclaimer() {
                         <p className="text-sm text-muted-foreground mt-4">
                             Users are responsible for ensuring their use of the app complies with local laws and regulations.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle>Questions?</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard className="border-primary/20 bg-primary/5">
+                    <LegalCardHeader>
+                        <LegalCardTitle>Questions?</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             If you have questions about this disclaimer or need clarification on the limitations of BudgetWise, please contact us through the app's support channels. For financial advice, please consult qualified professionals.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
             </div>
         </div>
     );

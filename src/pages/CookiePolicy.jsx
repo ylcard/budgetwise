@@ -13,24 +13,24 @@ export default function CookiePolicy() {
                     <p className="text-xs md:text-base text-muted-foreground">Last Updated: February 14, 2026</p>
                 </div>
 
-                <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-primary">
+                <LegalCard className="border-primary/20 bg-primary/5">
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2 text-primary">
                             <Info className="w-5 h-5" /> What This Policy Covers
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-primary">
                             This policy explains how BudgetWise uses cookies, local storage, session storage, and similar technologies to store data on your device. By using the app, you consent to the use of these technologies as described below.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>1. What Are Cookies and Local Storage?</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>1. What Are Cookies and Local Storage?</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <div>
                             <h4 className="font-semibold text-foreground mb-2">Cookies</h4>
                             <p className="text-sm text-muted-foreground">
@@ -51,14 +51,14 @@ export default function CookiePolicy() {
                                 Session Storage is similar to Local Storage but is cleared when you close the browser tab. We use it for temporary, session-specific data.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>2. What We Store on Your Device</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>2. What We Store on Your Device</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <div className="space-y-3">
                             <div className="border-l-4 border-green-500 pl-4">
                                 <h5 className="font-semibold text-foreground">Strictly Necessary Storage</h5>
@@ -102,14 +102,14 @@ export default function CookiePolicy() {
                                 </ul>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>3. Third-Party Cookies & Storage</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>3. Third-Party Cookies & Storage</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             Some features integrate with third-party services that may set their own cookies or storage:
                         </p>
@@ -140,14 +140,14 @@ export default function CookiePolicy() {
                         <p className="text-sm text-muted-foreground mt-4">
                             <strong>Note:</strong> We do not control third-party cookies. Review their policies for details on how they use cookies.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>4. GDPR Compliance (EU Users)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>4. GDPR Compliance (EU Users)</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             Under the General Data Protection Regulation (GDPR), we are required to inform EU users about the use of cookies and storage technologies.
                         </p>
@@ -165,16 +165,16 @@ export default function CookiePolicy() {
                         <p className="text-sm text-muted-foreground">
                             By continuing to use BudgetWise, you consent to the storage of data as described in this policy. If you are located in the EU and wish to withdraw consent, you must clear your browser storage and discontinue use of the app.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle className="flex items-center gap-2">
                             <Settings className="w-5 h-5" /> 5. Managing Cookies & Storage
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <h4 className="font-semibold text-foreground">Browser Settings</h4>
                         <p className="text-sm text-muted-foreground">
                             You can manage or delete cookies and local storage through your browser settings:
@@ -204,14 +204,14 @@ export default function CookiePolicy() {
                                 <strong>Warning:</strong> Clearing cookies and local storage will log you out and may reset your preferences. Some app functionality may not work properly without these technologies.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>6. Privacy Signal Support (DNT & GPC)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>6. Privacy Signal Support (DNT & GPC)</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent className="space-y-4">
                         <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4">
                             <h5 className="font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
                                 <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
@@ -304,14 +304,14 @@ export default function CookiePolicy() {
                                 When GPC or DNT is detected, BudgetWise will display a confirmation banner at the top of the app indicating that enhanced privacy mode is active. You can verify privacy signal enforcement by checking your browser's developer console (F12) for privacy signal detection logs.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>7. Data Retention</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>7. Data Retention</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground mb-3">Storage technologies retain data for varying durations:</p>
                         <ul className="list-disc pl-6 space-y-1 text-sm text-muted-foreground">
                             <li><strong>Session Storage:</strong> Cleared when you close the browser tab</li>
@@ -319,30 +319,30 @@ export default function CookiePolicy() {
                             <li><strong>Local Storage Preferences:</strong> Retained indefinitely until manually cleared</li>
                             <li><strong>Cached Data:</strong> Automatically refreshed and replaced with newer data (typically 5-10 minutes)</li>
                         </ul>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>8. Changes to This Policy</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard>
+                    <LegalCardHeader>
+                        <LegalCardTitle>8. Changes to This Policy</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             We may update this Cookie Policy from time to time to reflect changes in technology or legal requirements. Changes will be posted on this page with an updated "Last Updated" date. Continued use of the app after changes constitutes acceptance of the updated policy.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
 
-                <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle>Questions?</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <LegalCard className="border-primary/20 bg-primary/5">
+                    <LegalCardHeader>
+                        <LegalCardTitle>Questions?</LegalCardTitle>
+                    </LegalCardHeader>
+                    <LegalCardContent>
                         <p className="text-sm text-muted-foreground">
                             If you have questions about how we use cookies or local storage, please contact us through the app's support channels or review our full Privacy Policy.
                         </p>
-                    </CardContent>
-                </Card>
+                    </LegalCardContent>
+                </LegalCard>
             </div>
         </div>
     );
