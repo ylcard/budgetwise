@@ -3,7 +3,9 @@ import { useMemo } from 'react';
 // This eliminates a separate DB call that was competing with useTransactionWindow and causing 429s.
 // import { useTransactions } from './useBase44Entities';
 import { formatDateString, parseDate, normalizeToMidnight, getLastDayOfMonth } from '../utils/dateUtils';
-import { calculateIncomeProjections, calculateExpenseProjections } from '../utils/projectionEngine';
+import { calculateIncomeProjections, calculateExpenseProjectionsByPriority } from '../utils/projectionEngine';
+// COMMENTED OUT 13-Mar-2026: Replaced by calculateExpenseProjectionsByPriority which returns per-priority maps
+// import { calculateExpenseProjections } from '../utils/projectionEngine';
 
 /**
  * HOOK: useProjections
@@ -38,7 +40,10 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
     const isCurrentMonth = selectedYear === today.getFullYear() && selectedMonth === today.getMonth();
     const todayDay = today.getDate();
 
+    // UPDATED 13-Mar-2026: Use priority-aware expense projection engine
     let predictedExpensesMap = {};
+    let predictedExpensesNeedsMap = {};
+    let predictedExpensesWantsMap = {};
     let predictedIncomesMap = {};
 
     // --- PROJECTION ENGINE EXECUTION ---
@@ -55,8 +60,12 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
         return t.type === 'income' && tDate && tDate.getMonth() === selectedMonth && tDate.getFullYear() === selectedYear;
       });
 
-      // Generate Maps: { [day]: amount }
-      predictedExpensesMap = calculateExpenseProjections(historyTxns, currentExpenses, daysInMonth, todayDay);
+      // UPDATED 13-Mar-2026: Generate per-priority + aggregate expense maps
+      const expResult = calculateExpenseProjectionsByPriority(historyTxns, currentExpenses, daysInMonth, todayDay);
+      predictedExpensesMap = expResult.aggregate;
+      predictedExpensesNeedsMap = expResult.needs;
+      predictedExpensesWantsMap = expResult.wants;
+
       predictedIncomesMap = calculateIncomeProjections(historyTxns, currentIncomes, daysInMonth, todayDay);
     }
 
@@ -65,6 +74,9 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
     let actualExpenseTotal = 0;
     let projectedRemainingIncome = 0;
     let projectedRemainingExpense = 0;
+    // ADDED 13-Mar-2026: Per-priority projected expense totals
+    let projectedRemainingExpenseNeeds = 0;
+    let projectedRemainingExpenseWants = 0;
 
     // Create an array of days 1..N for the chart
     const chartData = Array.from({ length: daysInMonth }, (_, i) => {
@@ -100,6 +112,9 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
       if (isFutureDate) {
         projectedRemainingExpense += mapExp;
         projectedRemainingIncome += mapInc;
+        // ADDED 13-Mar-2026: Accumulate per-priority projected expense totals
+        projectedRemainingExpenseNeeds += (predictedExpensesNeedsMap[currentDay] || 0);
+        projectedRemainingExpenseWants += (predictedExpensesWantsMap[currentDay] || 0);
       }
 
       return {
@@ -123,6 +138,9 @@ export const useProjections = (currentTransactions = [], selectedMonth, selected
         actualExpense: actualExpenseTotal,
         projectedRemainingIncome,
         projectedRemainingExpense,
+        // ADDED 13-Mar-2026: Per-priority projected expense amounts
+        projectedRemainingExpenseNeeds,
+        projectedRemainingExpenseWants,
         finalProjectedIncome: actualIncomeTotal + projectedRemainingIncome,
         finalProjectedExpense: actualExpenseTotal + projectedRemainingExpense
       }
