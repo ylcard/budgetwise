@@ -36,25 +36,7 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       captionLayout="dropdown"
       startMonth={new Date(1986, 0)}
       endMonth={new Date(2100, 11)}
-      // classNames={classNames}
-      classNames={{
-        ...classNames,
-        month_caption: "flex items-center justify-between h-10 mb-4 px-1",
-        caption_label: "hidden",
-        dropdowns: "flex items-center justify-center gap-1 flex-1 mx-2",
-        dropdown: "appearance-none bg-transparent border-none py-1.5 px-2 font-bold text-[0.9rem] rounded-md hover:bg-accent active:bg-accent/80 cursor-pointer transition-colors focus:outline-none text-foreground",
-        nav: "flex items-center",
-        button_previous: "h-9 w-9 flex items-center justify-center hover:bg-accent rounded-md transition-colors",
-        button_next: "h-9 w-9 flex items-center justify-center hover:bg-accent rounded-md transition-colors",
-        month: "w-full",
-        table: "w-full border-collapse",
-        head_cell: "text-muted-foreground w-full font-normal text-[0.8rem] pb-3",
-        cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-full",
-        day: cn(
-          "h-11 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md transition-colors flex items-center justify-center",
-        ),
-        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-      }}
+      classNames={classNames}
       components={{
         // IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
         // IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
