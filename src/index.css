@@ -305,7 +305,7 @@
   padding: 2px 4px;
 }
 
-.rdp-day_selected {
+.rdp-selected {
   background-color: var(--rdp-accent-color) !important;
   color: white;
   font-weight: 500;
@@ -313,19 +313,19 @@
   /* Matches shadcn radius */
 }
 
-.rdp-day_selected:hover {
+.rdp-selected:hover {
   background-color: rgb(37 99 235);
   /* blue-600 */
 }
 
-.rdp-day_range_middle {
+.rdp-range_middle {
   background-color: var(--rdp-accent-background-color);
   color: var(--rdp-accent-color);
   border-radius: 0;
   /* Keeps the "bar" look for the middle */
 }
 
-.rdp-day_today:not(.rdp-day_selected) {
+.rdp-today:not(.rdp-selected) {
   font-weight: 600;
   color: var(--rdp-accent-color);
   background-color: var(--rdp-accent-background-color);
