@@ -38,10 +38,8 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       endMonth={new Date(2100, 11)}
       classNames={classNames}
       components={{
-        // IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
-        // IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
-        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-5 w-5 opacity-70", className)} {...props} />,
-        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-5 w-5 opacity-70", className)} {...props} />,
+        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
+        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
       }}
       {...props}
     />
