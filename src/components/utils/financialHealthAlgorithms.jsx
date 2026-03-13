@@ -107,15 +107,6 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
     const spendM2 = getHistoryByDayX(2);
     const spendM3 = getHistoryByDayX(3);
 
-    // debugging pacing score
-    console.log("=== PACING SCORE HISTORY DEBUG ===", {
-        dayCursor,
-        spend1MonthAgo: spendM1,
-        spend2MonthsAgo: spendM2,
-        spend3MonthsAgo: spendM3,
-        rawHistorySummary: historySummary
-    });
-
     const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
     const averageSpendAtPointX = historyPoints.length > 0
         ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
@@ -153,22 +144,9 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
             }
         }
 
-        // Debugging pacing score
-        console.log("=== PACING SCORE DEBUG ===", {
-            currentSpend,
-            averageSpendAtPointX,
-            velocityScore,
-            projectedFullMonthSpend,
-            historicalFullMonthAvg,
-            trajectoryScore,
-            finalScore: (velocityScore + trajectoryScore) / 2
-        });
-
         return (velocityScore + trajectoryScore) / 2;
     }
 
-    // debugging pacing score
-    console.log("=== PACING SCORE DEBUG (MTD ONLY) ===", { currentSpend, averageSpendAtPointX, velocityScore });
     return velocityScore;
 };
 
@@ -246,15 +224,6 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
         velocityScore = Math.max(0, 100 - (overRatio * penaltyMultiplier * 200));
     }
 
-    // debugging burn ratio
-    // DEBUG LOG
-    console.log("=== BURN RATIO PRIORITY DEBUG ===", {
-        dayCursor,
-        velocityScore,
-        needsSpendMTD: transactions.filter(t => t.type === 'expense' && t.financial_priority === 'needs' && getDay(t) <= dayCursor).reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0),
-        wantsSpendMTD: transactions.filter(t => t.type === 'expense' && t.financial_priority === 'wants' && getDay(t) <= dayCursor).reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0),
-    });
-
     // --- 2. TRAJECTORY COMPONENT (Projections) ---
     if (isCurrentMonthView && projectionTotals?.finalProjectedExpense > 0 && totalBudget > 0) {
         const projectedFullMonthSpend = projectionTotals.finalProjectedExpense;
@@ -295,24 +264,9 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
             trajectoryScore = Math.max(0, 100 - (overRatioFull * penaltyMultiplier * 200));
         }
 
-        // debugging burn score
-        console.log("=== BURN RATIO DEBUG ===", {
-            totalBudget,
-            currentSpend,
-            needsSpend: breakdown.needsTotal || 0,
-            wantsSpend: breakdown.wantsTotal || 0,
-            bufferedTarget,
-            velocityScore,
-            projectedFullMonthSpend,
-            bufferedTargetFull,
-            trajectoryScore,
-            finalScore: (velocityScore + trajectoryScore) / 2
-        });
         return (velocityScore + trajectoryScore) / 2;
     }
 
-    // debugging burn score
-    console.log("=== BURN RATIO DEBUG (MTD ONLY) ===", { totalBudget, currentSpend, bufferedTarget, velocityScore });
     return velocityScore;
 };
 
