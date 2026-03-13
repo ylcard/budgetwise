@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { CustomButton } from '@/components/ui/CustomButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AmountInput } from '@/components/ui/AmountInput';
-import DatePicker from '@/components/ui/DatePicker';
+// import DatePicker from '@/components/ui/DatePicker';
+import DatePickerV2 from "@/components/ui/DatePickerV2";
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSettings } from '../utils/SettingsContext';
@@ -124,7 +125,7 @@ export const GoalForm = ({ goal, onSubmit, onCancel }) => {
         {/* Deadline */}
         <div className="space-y-2">
           <Label>Deadline *</Label>
-          <DatePicker
+          <DatePickerV2
             value={deadline}
             onChange={(date) => setValue('deadline', date)}
           />
