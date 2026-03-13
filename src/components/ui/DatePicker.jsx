@@ -39,19 +39,19 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       // classNames={classNames}
       classNames={{
         ...classNames,
-        month_caption: "flex justify-center h-9 relative items-center mb-4",
+        month_caption: "flex items-center justify-between h-10 mb-4 px-1",
         caption_label: "hidden",
-        dropdowns: "flex items-center justify-center gap-1 z-10",
-        dropdown: "appearance-none bg-transparent border-none py-1 px-2 font-bold text-sm rounded-md hover:bg-accent cursor-pointer transition-colors focus:outline-none text-foreground",
-        nav: "flex items-center justify-between absolute w-full left-0 px-1 pointer-events-none",
-        button_previous: "pointer-events-auto relative z-20",
-        button_next: "pointer-events-auto relative z-20",
+        dropdowns: "flex items-center justify-center gap-1 flex-1 mx-2",
+        dropdown: "appearance-none bg-transparent border-none py-1.5 px-2 font-bold text-[0.9rem] rounded-md hover:bg-accent active:bg-accent/80 cursor-pointer transition-colors focus:outline-none text-foreground",
+        nav: "flex items-center",
+        button_previous: "h-9 w-9 flex items-center justify-center hover:bg-accent rounded-md transition-colors",
+        button_next: "h-9 w-9 flex items-center justify-center hover:bg-accent rounded-md transition-colors",
         month: "w-full",
         table: "w-full border-collapse",
-        head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem] pb-2",
+        head_cell: "text-muted-foreground w-full font-normal text-[0.8rem] pb-3",
         cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-full",
         day: cn(
-          "h-10 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md transition-colors",
+          "h-11 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md transition-colors flex items-center justify-center",
         ),
         day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
       }}
