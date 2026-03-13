@@ -271,7 +271,7 @@
   /* blue-500 */
   --rdp-accent-background-color: rgb(239 246 255);
   /* blue-50 */
-  margin: 0;
+  margin: 0 auto;
 }
 
 /* Dark Mode Overrides for Calendar */
@@ -282,11 +282,12 @@
   /* Subtle transparent blue */
 }
 
-/* Ensure calendar text/nav buttons use the correct foreground color in dark mode */
-.dark .rdp-caption_label,
-.dark .rdp-nav_button,
-.dark .rdp-head_cell {
-  color: var(--foreground);
+/* Style the native selects for Month/Year jump */
+.rdp-dropdown {
+  background-color: transparent;
+  color: inherit;
+  border-radius: 4px;
+  padding: 2px 4px;
 }
 
 .rdp-day_selected {
