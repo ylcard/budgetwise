@@ -9,7 +9,7 @@ import { useState, useCallback } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { CalendarView } from "@/components/ui/DatePicker";
+import { DayPicker, getDefaultClassNames } from "react-day-picker";
 import {
   Popover,
   PopoverContent,
