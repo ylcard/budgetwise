@@ -156,3 +156,75 @@ export const calculateExpenseProjections = (historyTxns, currentTxns, daysInMont
 
   return predictionMap;
 };
+
+/**
+ * ADDED 13-Mar-2026: Expense Projection Engine — Priority-Aware Variant
+ *
+ * Runs the same heatmap & burn-rate algorithm independently for each financial priority
+ * (needs / wants) and also returns an aggregate map. Transactions without a priority are
+ * bucketed proportionally to the needs/wants historical split.
+ *
+ * @param {Array} historyTxns - Multi-month historical transaction data (all types)
+ * @param {Array} currentTxns - Current month-to-date expense transactions
+ * @param {number} daysInMonth - Total days in the target month
+ * @param {number} todayDay - Current day of the month (1-31)
+ * @returns {{ aggregate: Object, needs: Object, wants: Object }}
+ *   Each key is a { [day]: amount } prediction map.
+ */
+export const calculateExpenseProjectionsByPriority = (historyTxns, currentTxns, daysInMonth, todayDay) => {
+  const PRIORITIES = ['needs', 'wants'];
+
+  // Separate history and current-month data by priority
+  const splitByPriority = (txns) => {
+    const buckets = { needs: [], wants: [], unset: [] };
+    txns.forEach(t => {
+      if (t.type !== 'expense') return;
+      const p = t.financial_priority;
+      if (p === 'needs') buckets.needs.push(t);
+      else if (p === 'wants') buckets.wants.push(t);
+      else buckets.unset.push(t);
+    });
+    return buckets;
+  };
+
+  const histBuckets = splitByPriority(historyTxns);
+  const currBuckets = splitByPriority(currentTxns);
+
+  // Calculate historical totals per priority to determine the "unset" redistribution ratio
+  const histTotal = (arr) => arr.reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
+  const needsHistTotal = histTotal(histBuckets.needs);
+  const wantsHistTotal = histTotal(histBuckets.wants);
+  const unsetHistTotal = histTotal(histBuckets.unset);
+  const labeledHistTotal = needsHistTotal + wantsHistTotal;
+
+  // Redistribution ratio for uncategorised historical transactions
+  const needsRatio = labeledHistTotal > 0 ? needsHistTotal / labeledHistTotal : 0.5;
+  // COMMENTED OUT 13-Mar-2026: wantsRatio not used directly — derived as (1 - needsRatio) inline
+  // const wantsRatio = 1 - needsRatio;
+
+  // Redistribute "unset" history proportionally into needs/wants
+  // We create synthetic lightweight transaction-like objects for the engine
+  const redistributeUnset = (bucket, ratio) => {
+    return bucket.map(t => ({ ...t, amount: Math.abs(Number(t.amount)) * ratio }));
+  };
+
+  const needsHistory = [...histBuckets.needs, ...redistributeUnset(histBuckets.unset, needsRatio)];
+  const wantsHistory = [...histBuckets.wants, ...redistributeUnset(histBuckets.unset, 1 - needsRatio)];
+
+  // For current-month unset: same redistribution
+  const needsCurrent = [...currBuckets.needs, ...redistributeUnset(currBuckets.unset, needsRatio)];
+  const wantsCurrent = [...currBuckets.wants, ...redistributeUnset(currBuckets.unset, 1 - needsRatio)];
+
+  // Run the standard projection engine independently for each priority
+  const needsMap = calculateExpenseProjections(needsHistory, needsCurrent, daysInMonth, todayDay);
+  const wantsMap = calculateExpenseProjections(wantsHistory, wantsCurrent, daysInMonth, todayDay);
+
+  // Build aggregate map by summing the two priority maps
+  const aggregate = {};
+  const allDays = new Set([...Object.keys(needsMap), ...Object.keys(wantsMap)]);
+  allDays.forEach(d => {
+    aggregate[d] = (needsMap[d] || 0) + (wantsMap[d] || 0);
+  });
+
+  return { aggregate, needs: needsMap, wants: wantsMap };
+};
