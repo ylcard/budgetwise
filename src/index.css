@@ -278,3 +278,59 @@
 [data-vaul-drawer-wrapper] {
   z-index: 110 !important;
 }
+
+/* =========================================================================
+   DatePickerV2: Mobile-constrained RDP Calendar (ADDED 13-Mar-2026)
+   Forces the react-day-picker v9 grid to respect the drawer width.
+   ========================================================================= */
+@media (max-width: 768px) {
+  .rdp-v2-calendar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden;
+  }
+  .rdp-v2-calendar .rdp-month {
+    width: 100%;
+  }
+  .rdp-v2-calendar .rdp-month_grid {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .rdp-v2-calendar .rdp-day {
+    padding: 2px;
+  }
+  .rdp-v2-calendar .rdp-day_button {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+  }
+  .rdp-v2-calendar .rdp-weekday {
+    padding: 2px;
+    font-size: 0.75rem;
+  }
+  /* Ensure nav bar stays within bounds */
+  .rdp-v2-calendar .rdp-nav {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+  .rdp-v2-calendar .rdp-month_caption {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  /* Kill any stray border from the calendar root or its children */
+  .rdp-v2-calendar,
+  .rdp-v2-calendar .rdp-root {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
