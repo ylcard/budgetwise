@@ -39,13 +39,15 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       // classNames={classNames}
       classNames={{
         ...classNames,
-        caption_label: "hidden", // Hide static "Month Year" text
-        dropdowns: "flex items-center justify-center gap-1 mx-8",
-        dropdown: "appearance-none bg-transparent border-none py-1 px-2 font-semibold text-sm rounded-md hover:bg-accent cursor-pointer transition-colors focus:outline-none",
-        caption: "flex justify-center pt-1 relative items-center mb-4 h-9",
-        nav: "flex items-center justify-between absolute w-full px-1 pointer-events-none",
-        button_previous: "pointer-events-auto z-10",
-        button_next: "pointer-events-auto z-10",
+        caption_label: "hidden",
+        dropdowns: "flex items-center gap-1 z-20",
+        dropdown: "appearance-none bg-transparent border-none py-1 px-1 font-bold text-sm rounded-md hover:bg-accent cursor-pointer transition-colors focus:outline-none",
+        caption: "flex justify-center pt-1 relative items-center mb-4 min-h-[40px]",
+        nav: "flex items-center justify-between absolute w-full left-0 px-1",
+        button_previous: "relative z-30",
+        button_next: "relative z-30",
+        month: "w-full max-w-full overflow-hidden",
+        table: "w-full border-collapse",
       }}
       components={{
         // IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
