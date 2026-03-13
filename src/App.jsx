@@ -11,7 +11,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { SettingsProvider, useSettings } from '@/components/utils/SettingsContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import "react-day-picker/style.css";
+// import "react-day-picker/style.css";
 import { ThemeProvider } from "next-themes";
 import { useThemeSync } from '@/components/hooks/useThemeSync';
 
