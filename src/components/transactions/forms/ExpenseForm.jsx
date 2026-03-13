@@ -29,6 +29,7 @@ import { FINANCIAL_PRIORITIES } from "@/components/utils/constants";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { getCategoryIcon } from "@/components/utils/iconMapConfig";
 import DatePicker, { CalendarView } from "@/components/ui/DatePicker";
+import DatePickerV2 from "@/components/ui/DatePickerV2";
 import ReceiptScanner from "./ReceiptScanner";
 import fuzzysort from "fuzzysort";
 
@@ -824,7 +825,7 @@ export default function TransactionFormContent({
             transition={{ type: "spring", bounce: 0, duration: 0.4 }}
           >
             <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Transaction Date</Label>
-            <DatePicker
+            <DatePickerV2
               value={formData.date}
               onChange={(d) => setFormData({ ...formData, date: d })}
               placeholder="Select date"
@@ -844,7 +845,7 @@ export default function TransactionFormContent({
                 className="flex-1 flex flex-col gap-1.5 min-w-0 overflow-hidden"
               >
                 <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider whitespace-nowrap">Paid Date</Label>
-                <DatePicker
+                <DatePickerV2
                   value={formData.paidDate}
                   onChange={(d) => setFormData({ ...formData, paidDate: d })}
                   className="h-11 border-primary/20 bg-primary/5"
