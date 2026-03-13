@@ -12,36 +12,38 @@ import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
 import classNames from "react-day-picker/style.module.css";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSettings } from "../utils/SettingsContext";
 import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Export the styled calendar so it can be embedded in drawers/dialogs directly
 export function CalendarView({ selected, onSelect, className, ...props }) {
-    return (
-        <DayPicker
-            mode="single"
-            selected={selected}
-            onSelect={onSelect}
-            defaultMonth={selected}
-            className={cn("p-3", className)}
-            weekStartsOn={1}
-            showOutsideDays
-            fixedWeeks
-            captionLayout="dropdown"
-            startMonth={new Date(1986, 0)}
-            endMonth={new Date(2100, 11)}
-            classNames={classNames}
-            components={{
-                IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
-                IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
-            }}
-            {...props}
-        />
-    );
+  return (
+    <DayPicker
+      mode="single"
+      selected={selected}
+      onSelect={onSelect}
+      defaultMonth={selected}
+      className={cn("p-3", className)}
+      weekStartsOn={1}
+      showOutsideDays
+      fixedWeeks
+      captionLayout="dropdown"
+      startMonth={new Date(1986, 0)}
+      endMonth={new Date(2100, 11)}
+      classNames={classNames}
+      components={{
+        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
+        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
+      }}
+      {...props}
+    />
+  );
 }
 
 /**
@@ -57,45 +59,61 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
  * @returns {JSX.Element} The date picker component.
  */
 export default function DatePicker({ value, onChange, placeholder = "Pick a date", className = "" }) {
-    const { settings } = useSettings();
+  const { settings } = useSettings();
+  const isMobile = useIsMobile();
 
-    /**
-     * @type {[boolean, function(boolean)]} Internal state to control the open/closed state of the Popover.
-     */
-    const [open, setOpen] = useState(false);
+  /**
+   * @type {[boolean, function(boolean)]} Internal state to control the open/closed state of the Popover.
+   */
+  const [open, setOpen] = useState(false);
 
-    // Parse the date string to a Date object
-    const dateValue = value ? parseDate(value) : undefined;
+  // Parse the date string to a Date object
+  const dateValue = value ? parseDate(value) : undefined;
 
-    /**
-     * Handles the date selection from the DayPicker component.
-     * Converts the selected Date object back into the standardized YYYY-MM-DD string format
-     * before calling the external onChange handler.
-     * @param {Date|undefined} date - The date object selected from the DayPicker.
-     */
-    const handleSelect = (date) => {
-        if (date) {
-            // Convert to YYYY-MM-DD format (timezone agnostic)
-            const formattedDate = formatDateString(date);
-            onChange(formattedDate);
-            setOpen(false);
-        }
-    };
+  /**
+   * Handles the date selection from the DayPicker component.
+   * Converts the selected Date object back into the standardized YYYY-MM-DD string format
+   * before calling the external onChange handler.
+   * @param {Date|undefined} date - The date object selected from the DayPicker.
+   */
+  const handleSelect = (date) => {
+    if (date) {
+      // Convert to YYYY-MM-DD format (timezone agnostic)
+      const formattedDate = formatDateString(date);
+      onChange(formattedDate);
+      setOpen(false);
+    }
+  };
 
+  const trigger = (
+    <CustomButton
+      variant="outline"
+      className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground", className)}
+    >
+      <CalendarIcon className="mr-2 h-4 w-4" />
+      {value ? formatDate(value, settings.dateFormat) : <span>{placeholder}</span>}
+    </CustomButton>
+  );
+
+  if (isMobile) {
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <CustomButton
-                    variant="outline"
-                   className={`w-full justify-start text-left font-normal ${!value && "text-muted-foreground"} ${className}`}
-                >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {value ? formatDate(value, settings.dateFormat) : <span>{placeholder}</span>}
-                </CustomButton>
-            </PopoverTrigger>
-           <PopoverContent className="w-auto p-0 z-[600]" align="start" sideOffset={4}>
-                <CalendarView selected={dateValue} onSelect={handleSelect} />
-            </PopoverContent>
-        </Popover>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+        <DrawerContent className="z-[600]">
+          <div className="p-4 pb-8 flex justify-center">
+            <CalendarView selected={dateValue} onSelect={handleSelect} />
+          </div>
+        </DrawerContent>
+      </Drawer>
     );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent className="w-auto p-0 z-[600]" align="start" sideOffset={4}>
+        <CalendarView selected={dateValue} onSelect={handleSelect} />
+      </PopoverContent>
+    </Popover>
+  );
 }
