@@ -11,9 +11,9 @@
  */
 
 import {
-  getFinancialBreakdown,
-  getMonthlyIncome,
-  getMonthlyTarget
+    getFinancialBreakdown,
+    getMonthlyIncome,
+    getMonthlyTarget
 } from "./financialCalculations";
 import { getMonthBoundaries, parseDate } from "./dateUtils";
 
@@ -22,12 +22,12 @@ import { getMonthBoundaries, parseDate } from "./dateUtils";
  * @param {number[]} values - Array of numerical values
  */
 const calculateStdDev = (values) => {
-  if (values.length < 2) return 0;
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
-  // USE SAMPLE VARIANCE (N-1) for small history sets
-  const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (values.length - 1);
-  return Math.sqrt(variance);
+    if (values.length < 2) return 0;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+    // USE SAMPLE VARIANCE (N-1) for small history sets
+    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (values.length - 1);
+    return Math.sqrt(variance);
 };
 
 // --- DATA PREP (O(N) Optimization) ---
@@ -41,34 +41,34 @@ const calculateStdDev = (values) => {
  * @param {Array} allCustomBudgets - Budget definitions
  */
 const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudgets) => {
-  const start = parseDate(startDate) || new Date();
+    const start = parseDate(startDate) || new Date();
 
-  // 1. Single pass: Group all historical transactions by YYYY-MM
-  const groupedTxns = {};
-  for (const t of fullHistory) {
-    const monthKey = t.date.substring(0, 7); // Safe extraction of YYYY-MM
-    if (!groupedTxns[monthKey]) groupedTxns[monthKey] = [];
-    groupedTxns[monthKey].push(t);
-  }
+    // 1. Single pass: Group all historical transactions by YYYY-MM
+    const groupedTxns = {};
+    for (const t of fullHistory) {
+        const monthKey = t.date.substring(0, 7); // Safe extraction of YYYY-MM
+        if (!groupedTxns[monthKey]) groupedTxns[monthKey] = [];
+        groupedTxns[monthKey].push(t);
+    }
 
-  // 2. Compute the precise 6 months we care about for the baseline
-  const historySummary = {};
-  for (let i = 1; i <= 6; i++) {
-    const targetDate = new Date(start.getFullYear(), start.getMonth() - i, 1);
-    const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
-    const { monthStart, monthEnd } = getMonthBoundaries(targetDate.getMonth(), targetDate.getFullYear());
+    // 2. Compute the precise 6 months we care about for the baseline
+    const historySummary = {};
+    for (let i = 1; i <= 6; i++) {
+        const targetDate = new Date(start.getFullYear(), start.getMonth() - i, 1);
+        const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+        const { monthStart, monthEnd } = getMonthBoundaries(targetDate.getMonth(), targetDate.getFullYear());
 
-    const monthTxns = groupedTxns[monthKey] || [];
+        const monthTxns = groupedTxns[monthKey] || [];
 
-    historySummary[i] = {
-      txns: monthTxns,
-      monthStart,
-      monthEnd,
-      totalIncome: getMonthlyIncome(monthTxns, monthStart, monthEnd),
-      totalExpenses: getFinancialBreakdown(monthTxns, categories, allCustomBudgets, monthStart, monthEnd).totalExpenses
-    };
-  }
-  return historySummary;
+        historySummary[i] = {
+            txns: monthTxns,
+            monthStart,
+            monthEnd,
+            totalIncome: getMonthlyIncome(monthTxns, monthStart, monthEnd),
+            totalExpenses: getFinancialBreakdown(monthTxns, categories, allCustomBudgets, monthStart, monthEnd).totalExpenses
+        };
+    }
+    return historySummary;
 };
 
 // METRIC CALCULATORS
@@ -87,60 +87,67 @@ const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudget
  * @param {Object|null} projectionTotals - Projection engine totals (from useProjections)
  */
 const calculatePacingScore = (transactions, historySummary, categories, allCustomBudgets, startDate, projectionTotals = null) => {
-  const today = new Date();
-  const start = parseDate(startDate) || new Date();
-  const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
+    const today = new Date();
+    const start = parseDate(startDate) || new Date();
+    const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
 
-  // --- PROJECTION-ENHANCED PATH (Current month with projection data) ---
-  if (isCurrentMonthView && projectionTotals?.finalProjectedExpense > 0) {
-    // Full-month projected expense (actual so far + engine's future predictions)
-    const projectedFullMonthSpend = projectionTotals.finalProjectedExpense;
+    const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    const { monthStart, monthEnd } = getMonthBoundaries(start.getMonth(), start.getFullYear());
 
-    // Historical baseline: Average FULL-MONTH expenses over last 3 months
-    const fullMonthPoints = [];
-    for (let i = 1; i <= 3; i++) {
-      if (historySummary[i]?.totalExpenses > 0) {
-        fullMonthPoints.push(historySummary[i].totalExpenses);
-      }
+    // --- 1. VELOCITY COMPONENT (MTD Actual vs MTD History) ---
+    const currentSpend = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd, dayCursor).totalExpenses;
+
+    const getHistoryByDayX = (offset) => {
+        const summary = historySummary[offset];
+        if (!summary || !summary.txns) return 0;
+        return getFinancialBreakdown(summary.txns, categories, allCustomBudgets, summary.monthStart, summary.monthEnd, dayCursor).totalExpenses;
+    };
+
+    const spendM1 = getHistoryByDayX(1);
+    const spendM2 = getHistoryByDayX(2);
+    const spendM3 = getHistoryByDayX(3);
+
+    const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
+    const averageSpendAtPointX = historyPoints.length > 0
+        ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
+        : null;
+
+    let velocityScore = 100;
+    if (averageSpendAtPointX !== null) {
+        const diff = currentSpend - averageSpendAtPointX;
+        if (diff > 0) {
+            const deviation = averageSpendAtPointX > 0 ? diff / averageSpendAtPointX : 1;
+            velocityScore = Math.max(0, 100 - (deviation * 100));
+        }
     }
-    const historicalFullMonthAvg = fullMonthPoints.length > 0
-      ? fullMonthPoints.reduce((a, b) => a + b, 0) / fullMonthPoints.length
-      : null;
 
-    if (historicalFullMonthAvg === null) return 0;
+    // --- 2. TRAJECTORY COMPONENT (Projected vs Full Month History) ---
+    if (isCurrentMonthView && projectionTotals?.finalProjectedExpense > 0) {
+        const projectedFullMonthSpend = projectionTotals.finalProjectedExpense;
 
-    const diff = projectedFullMonthSpend - historicalFullMonthAvg;
-    if (diff <= 0) return 100;
+        const fullMonthPoints = [];
+        for (let i = 1; i <= 3; i++) {
+            if (historySummary[i]?.totalExpenses > 0) {
+                fullMonthPoints.push(historySummary[i].totalExpenses);
+            }
+        }
+        const historicalFullMonthAvg = fullMonthPoints.length > 0
+            ? fullMonthPoints.reduce((a, b) => a + b, 0) / fullMonthPoints.length
+            : null;
 
-    const deviation = historicalFullMonthAvg > 0 ? diff / historicalFullMonthAvg : 1;
-    return Math.max(0, 100 - (deviation * 100));
-  }
+        let trajectoryScore = 100;
+        if (historicalFullMonthAvg !== null) {
+            const diffFull = projectedFullMonthSpend - historicalFullMonthAvg;
+            if (diffFull > 0) {
+                const deviationFull = historicalFullMonthAvg > 0 ? diffFull / historicalFullMonthAvg : 1;
+                trajectoryScore = Math.max(0, 100 - (deviationFull * 100));
+            }
+        }
 
-  // --- FALLBACK PATH (Past months or no projection data) ---
-  const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
-  const { monthStart, monthEnd } = getMonthBoundaries(start.getMonth(), start.getFullYear());
-  const currentSpend = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd, dayCursor).totalExpenses;
+        return (velocityScore + trajectoryScore) / 2;
+    }
 
-  const getHistoryByDayX = (offset) => {
-    const summary = historySummary[offset];
-    return getFinancialBreakdown(summary.txns, categories, allCustomBudgets, summary.monthStart, summary.monthEnd, dayCursor).totalExpenses;
-  };
-
-  const spendM1 = getHistoryByDayX(1);
-  const spendM2 = getHistoryByDayX(2);
-  const spendM3 = getHistoryByDayX(3);
-
-  const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
-  const averageSpendAtPointX = historyPoints.length > 0
-    ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
-    : null;
-
-  if (averageSpendAtPointX === null) return 0;
-  const diff = currentSpend - averageSpendAtPointX;
-  if (diff <= 0) return 100;
-
-  const deviation = averageSpendAtPointX > 0 ? diff / averageSpendAtPointX : 1;
-  return Math.max(0, 100 - (deviation * 100));
+    return velocityScore;
 };
 
 /**
@@ -161,99 +168,89 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
  * @param {Object|null} projectionTotals - Projection engine totals (from useProjections)
  */
 const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary, projectionTotals = null) => {
-  const start = parseDate(startDate) || new Date();
-  const year = start.getFullYear();
-  const month = start.getMonth();
-  const { monthStart, monthEnd } = getMonthBoundaries(month, year);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const start = parseDate(startDate) || new Date();
+    const year = start.getFullYear();
+    const month = start.getMonth();
+    const { monthStart, monthEnd } = getMonthBoundaries(month, year);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const today = new Date();
-  const isCurrentMonthView = today.getMonth() === month && today.getFullYear() === year;
+    const today = new Date();
+    const isCurrentMonthView = today.getMonth() === month && today.getFullYear() === year;
 
-  const needsLimit = getMonthlyTarget(goals, 'needs', monthlyIncome, settings);
-  const wantsLimit = getMonthlyTarget(goals, 'wants', monthlyIncome, settings);
-  const totalBudget = needsLimit + wantsLimit;
+    const needsLimit = getMonthlyTarget(goals, 'needs', monthlyIncome, settings);
+    const wantsLimit = getMonthlyTarget(goals, 'wants', monthlyIncome, settings);
+    const totalBudget = needsLimit + wantsLimit;
+    const dayCursor = isCurrentMonthView ? today.getDate() : daysInMonth;
 
-  // --- PROJECTION-ENHANCED PATH (Current month with projection data) ---
-  if (isCurrentMonthView && projectionTotals?.finalProjectedExpense > 0 && totalBudget > 0) {
-    const projectedFullMonthSpend = projectionTotals.finalProjectedExpense;
+    // --- 1. VELOCITY COMPONENT (MTD) ---
+    const linearTarget = totalBudget * (dayCursor / daysInMonth);
 
-    // Historical full-month average for smart target (same as Pacing)
-    let historicalFullMonthAvg = 0;
-    let histCount = 0;
+    let historicalAvgByDayX = 0;
+    let count = 0;
     for (let i = 1; i <= 3; i++) {
-      if (historySummary[i]?.totalExpenses > 0) {
-        historicalFullMonthAvg += historySummary[i].totalExpenses;
-        histCount++;
-      }
+        const h = historySummary[i];
+        if (h && h.totalExpenses > 0) {
+            historicalAvgByDayX += (h.totalExpenses * (dayCursor / daysInMonth));
+            count++;
+        }
     }
-    historicalFullMonthAvg = histCount > 0 ? historicalFullMonthAvg / histCount : totalBudget;
+    historicalAvgByDayX = count > 0 ? historicalAvgByDayX / count : linearTarget;
 
-    // Smart target: full-month budget vs historical full-month average (whichever is more lenient)
-    const smartTarget = Math.max(totalBudget, historicalFullMonthAvg);
-    const bufferedTarget = smartTarget * 1.10; // 10% buffer
+    const smartTarget = Math.max(linearTarget, historicalAvgByDayX);
+    const bufferedTarget = smartTarget * 1.10;
 
-    if (projectedFullMonthSpend <= bufferedTarget) return 100;
+    const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd, dayCursor);
+    const currentSpend = breakdown.totalExpenses;
 
-    // Priority-weighted penalty using projected full-month needs/wants
-    const projectedNeeds = (projectionTotals.actualExpense || 0) > 0
-      ? (projectionTotals.projectedRemainingExpenseNeeds || 0)
-      : 0;
-    const projectedWants = (projectionTotals.actualExpense || 0) > 0
-      ? (projectionTotals.projectedRemainingExpenseWants || 0)
-      : 0;
-
-    // Get actual needs/wants from current transactions
-    const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd);
-    const totalProjectedNeeds = (breakdown.needsTotal || 0) + projectedNeeds;
-    const totalProjectedWants = (breakdown.wantsTotal || 0) + projectedWants;
-    const totalTracked = totalProjectedNeeds + totalProjectedWants;
-
-    const wantsRatio = totalTracked > 0 ? (totalProjectedWants / totalTracked) : 1;
-    const penaltyMultiplier = 0.5 + wantsRatio; // Range: 0.5 to 1.5
-
-    const overRatio = bufferedTarget > 0 ? (projectedFullMonthSpend - bufferedTarget) / bufferedTarget : 1;
-    return Math.max(0, 100 - (overRatio * penaltyMultiplier * 200));
-  }
-
-  // --- FALLBACK PATH (Past months or no projection data) ---
-  const dayCursor = isCurrentMonthView ? today.getDate() : daysInMonth;
-
-  // A. The "Linear" Target (Standard Pacing)
-  const linearTarget = totalBudget * (dayCursor / daysInMonth);
-
-  // B. The "Historical" Target (Context Awareness)
-  let historicalAvgByDayX = 0;
-  let count = 0;
-  for (let i = 1; i <= 3; i++) {
-    const h = historySummary[i];
-    if (h && h.totalExpenses > 0) {
-      historicalAvgByDayX += (h.totalExpenses * (dayCursor / daysInMonth));
-      count++;
+    let velocityScore = 100;
+    if (currentSpend > bufferedTarget) {
+        const needsSpend = breakdown.needsTotal || 0;
+        const wantsSpend = breakdown.wantsTotal || 0;
+        const totalTracked = needsSpend + wantsSpend;
+        const wantsRatio = totalTracked > 0 ? (wantsSpend / totalTracked) : 1;
+        const penaltyMultiplier = 0.5 + wantsRatio;
+        const overRatio = bufferedTarget > 0 ? (currentSpend - bufferedTarget) / bufferedTarget : 1;
+        velocityScore = Math.max(0, 100 - (overRatio * penaltyMultiplier * 200));
     }
-  }
-  historicalAvgByDayX = count > 0 ? historicalAvgByDayX / count : linearTarget;
 
-  // C. The Smart Target: Max(Linear, Historical)
-  const smartTarget = Math.max(linearTarget, historicalAvgByDayX);
-  const bufferedTarget = smartTarget * 1.10;
+    // --- 2. TRAJECTORY COMPONENT (Projections) ---
+    if (isCurrentMonthView && projectionTotals?.finalProjectedExpense > 0 && totalBudget > 0) {
+        const projectedFullMonthSpend = projectionTotals.finalProjectedExpense;
 
-  // D. Current Spend Analysis
-  const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd, dayCursor);
-  const currentSpend = breakdown.totalExpenses;
+        let historicalFullMonthAvg = 0;
+        let histCount = 0;
+        for (let i = 1; i <= 3; i++) {
+            if (historySummary[i]?.totalExpenses > 0) {
+                historicalFullMonthAvg += historySummary[i].totalExpenses;
+                histCount++;
+            }
+        }
+        historicalFullMonthAvg = histCount > 0 ? historicalFullMonthAvg / histCount : totalBudget;
 
-  if (currentSpend <= bufferedTarget) return 100;
+        const smartTargetFull = Math.max(totalBudget, historicalFullMonthAvg);
+        const bufferedTargetFull = smartTargetFull * 1.10;
 
-  // E. Weighted Penalty Logic
-  const needsSpend = breakdown.needsTotal || 0;
-  const wantsSpend = breakdown.wantsTotal || 0;
-  const totalTracked = needsSpend + wantsSpend;
+        let trajectoryScore = 100;
+        if (projectedFullMonthSpend > bufferedTargetFull) {
+            const projectedNeeds = (projectionTotals.actualExpense || 0) > 0 ? (projectionTotals.projectedRemainingExpenseNeeds || 0) : 0;
+            const projectedWants = (projectionTotals.actualExpense || 0) > 0 ? (projectionTotals.projectedRemainingExpenseWants || 0) : 0;
 
-  const wantsRatio = totalTracked > 0 ? (wantsSpend / totalTracked) : 1;
-  const penaltyMultiplier = 0.5 + wantsRatio;
+            const fullBreakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd);
+            const totalProjectedNeeds = (fullBreakdown.needsTotal || 0) + projectedNeeds;
+            const totalProjectedWants = (fullBreakdown.wantsTotal || 0) + projectedWants;
+            const totalTracked = totalProjectedNeeds + totalProjectedWants;
 
-  const overRatio = bufferedTarget > 0 ? (currentSpend - bufferedTarget) / bufferedTarget : 1;
-  return Math.max(0, 100 - (overRatio * penaltyMultiplier * 200));
+            const wantsRatio = totalTracked > 0 ? (totalProjectedWants / totalTracked) : 1;
+            const penaltyMultiplier = 0.5 + wantsRatio;
+            const overRatioFull = bufferedTargetFull > 0 ? (projectedFullMonthSpend - bufferedTargetFull) / bufferedTargetFull : 1;
+
+            trajectoryScore = Math.max(0, 100 - (overRatioFull * penaltyMultiplier * 200));
+        }
+
+        return (velocityScore + trajectoryScore) / 2;
+    }
+
+    return velocityScore;
 };
 
 /**
@@ -263,24 +260,24 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
  * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateStabilityScore = (historySummary) => {
-  const monthlyExpenses = [];
+    const monthlyExpenses = [];
 
-  // Collect last 6 months of expenses
-  for (let i = 1; i <= 6; i++) {
-    if (historySummary[i].totalExpenses > 0) {
-      monthlyExpenses.push(historySummary[i].totalExpenses);
+    // Collect last 6 months of expenses
+    for (let i = 1; i <= 6; i++) {
+        if (historySummary[i].totalExpenses > 0) {
+            monthlyExpenses.push(historySummary[i].totalExpenses);
+        }
     }
-  }
 
-  if (monthlyExpenses.length < 2) return 50; // Not enough data, neutral score
+    if (monthlyExpenses.length < 2) return 50; // Not enough data, neutral score
 
-  const mean = monthlyExpenses.reduce((a, b) => a + b, 0) / monthlyExpenses.length;
-  const stdDev = calculateStdDev(monthlyExpenses);
-  const cv = mean > 0 ? stdDev / mean : 1; // Prevent div/0, default to high variance if mean 0
+    const mean = monthlyExpenses.reduce((a, b) => a + b, 0) / monthlyExpenses.length;
+    const stdDev = calculateStdDev(monthlyExpenses);
+    const cv = mean > 0 ? stdDev / mean : 1; // Prevent div/0, default to high variance if mean 0
 
-  // Score: CV of 0 = 100, CV of 0.5 or higher = 0
-  // Linear scale: Score = 100 - (CV * 200)
-  return Math.max(0, Math.min(100, 100 - (cv * 200)));
+    // Score: CV of 0 = 100, CV of 0.5 or higher = 0
+    // Linear scale: Score = 100 - (CV * 200)
+    return Math.max(0, Math.min(100, 100 - (cv * 200)));
 };
 
 /**
@@ -290,43 +287,43 @@ const calculateStabilityScore = (historySummary) => {
  * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateSharpeRatio = (historySummary) => {
-  const monthlySavings = [];
+    const monthlySavings = [];
 
-  // Collect last 6 months of net savings
-  for (let i = 1; i <= 6; i++) {
-    const income = historySummary[i].totalIncome;
-    const expenses = historySummary[i].totalExpenses;
-    if (income > 0) {
-      monthlySavings.push(income - expenses);
+    // Collect last 6 months of net savings
+    for (let i = 1; i <= 6; i++) {
+        const income = historySummary[i].totalIncome;
+        const expenses = historySummary[i].totalExpenses;
+        if (income > 0) {
+            monthlySavings.push(income - expenses);
+        }
     }
-  }
 
-  if (monthlySavings.length < 2) return 50; // Not enough data, neutral score
+    if (monthlySavings.length < 2) return 50; // Not enough data, neutral score
 
-  const avgSavings = monthlySavings.reduce((a, b) => a + b, 0) / monthlySavings.length;
-  let stdDev = calculateStdDev(monthlySavings);
+    const avgSavings = monthlySavings.reduce((a, b) => a + b, 0) / monthlySavings.length;
+    let stdDev = calculateStdDev(monthlySavings);
 
-  // FLOOR STDDEV to prevent infinite ratios on perfect consistency
-  // 1% of average or 1.0, whichever is larger
-  const minDev = Math.max(1, Math.abs(avgSavings * 0.01));
-  stdDev = Math.max(stdDev, minDev);
+    // FLOOR STDDEV to prevent infinite ratios on perfect consistency
+    // 1% of average or 1.0, whichever is larger
+    const minDev = Math.max(1, Math.abs(avgSavings * 0.01));
+    stdDev = Math.max(stdDev, minDev);
 
-  // Standard Sharpe Ratio
-  const sharpe = avgSavings / stdDev;
+    // Standard Sharpe Ratio
+    const sharpe = avgSavings / stdDev;
 
-  // Map Sharpe to 0-100 scale using a more forgiving curve
-  // If Sharpe is negative (Average is a loss), score is 0-25
-  if (sharpe < 0) {
-    return Math.max(0, 25 + (sharpe * 25));
-  }
+    // Map Sharpe to 0-100 scale using a more forgiving curve
+    // If Sharpe is negative (Average is a loss), score is 0-25
+    if (sharpe < 0) {
+        return Math.max(0, 25 + (sharpe * 25));
+    }
 
-  // If Sharpe is positive, we use a multiplier that rewards getting 
-  // closer to a 1.0 ratio (Consistency).
-  // 0.16 Sharpe will now result in ~40/100 (Fair/Warning)
-  // 0.50 Sharpe will result in ~70/100 (Good)
-  let score = 25 + (Math.sqrt(sharpe) * 65);
+    // If Sharpe is positive, we use a multiplier that rewards getting 
+    // closer to a 1.0 ratio (Consistency).
+    // 0.16 Sharpe will now result in ~40/100 (Fair/Warning)
+    // 0.50 Sharpe will result in ~70/100 (Good)
+    let score = 25 + (Math.sqrt(sharpe) * 65);
 
-  return Math.min(100, Math.round(score));
+    return Math.min(100, Math.round(score));
 };
 
 /**
@@ -336,36 +333,36 @@ const calculateSharpeRatio = (historySummary) => {
  * @param {Object} historySummary - Pre-calculated history buckets
  */
 const calculateLifestyleCreepIndex = (historySummary) => {
-  const dataPoints = [];
+    const dataPoints = [];
 
-  // Collect last 6 months of income and expenses
-  for (let i = 1; i <= 6; i++) {
-    const income = historySummary[i].totalIncome;
-    const expenses = historySummary[i].totalExpenses;
-    if (income > 0) dataPoints.push({ income, expenses });
-  }
+    // Collect last 6 months of income and expenses
+    for (let i = 1; i <= 6; i++) {
+        const income = historySummary[i].totalIncome;
+        const expenses = historySummary[i].totalExpenses;
+        if (income > 0) dataPoints.push({ income, expenses });
+    }
 
-  if (dataPoints.length < 3) return 50; // Not enough data, neutral score
+    if (dataPoints.length < 3) return 50; // Not enough data, neutral score
 
-  dataPoints.reverse(); // Oldest to newest
+    dataPoints.reverse(); // Oldest to newest
 
-  // Calculate growth rates (simple linear regression slope approximation)
-  // Smoothing: Compare average of first 2 months vs last 2 months
-  const startInc = (dataPoints[0].income + dataPoints[1].income) / 2;
-  const endInc = (dataPoints[dataPoints.length - 1].income + dataPoints[dataPoints.length - 2].income) / 2;
-  const startExp = (dataPoints[0].expenses + dataPoints[1].expenses) / 2;
-  const endExp = (dataPoints[dataPoints.length - 1].expenses + dataPoints[dataPoints.length - 2].expenses) / 2;
+    // Calculate growth rates (simple linear regression slope approximation)
+    // Smoothing: Compare average of first 2 months vs last 2 months
+    const startInc = (dataPoints[0].income + dataPoints[1].income) / 2;
+    const endInc = (dataPoints[dataPoints.length - 1].income + dataPoints[dataPoints.length - 2].income) / 2;
+    const startExp = (dataPoints[0].expenses + dataPoints[1].expenses) / 2;
+    const endExp = (dataPoints[dataPoints.length - 1].expenses + dataPoints[dataPoints.length - 2].expenses) / 2;
 
-  const incomeGrowth = (endInc - startInc) / startInc;
-  const expenseGrowth = (endExp - startExp) / startExp;
+    const incomeGrowth = (endInc - startInc) / startInc;
+    const expenseGrowth = (endExp - startExp) / startExp;
 
-  // Score: If expense growth <= income growth, score 100
-  // For every 1% that expenses outpace income, lose 5 points
-  const creepDelta = expenseGrowth - incomeGrowth;
+    // Score: If expense growth <= income growth, score 100
+    // For every 1% that expenses outpace income, lose 5 points
+    const creepDelta = expenseGrowth - incomeGrowth;
 
-  if (creepDelta <= 0) return 100; // No lifestyle creep
+    if (creepDelta <= 0) return 100; // No lifestyle creep
 
-  return Math.max(0, 100 - (creepDelta * 500)); // Penalize excess expense growth
+    return Math.max(0, 100 - (creepDelta * 500)); // Penalize excess expense growth
 };
 
 // MASTER CALCULATION FUNCTION
@@ -385,41 +382,41 @@ const calculateLifestyleCreepIndex = (historySummary) => {
  */
 // UPDATED 13-Mar-2026: Added projectionTotals param for projection-enhanced Pacing & Burn Ratio
 export const calculateFinancialHealth = (transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets, projectionTotals = null) => {
-  // --- 1. PREP PHASE (Tier 2 Optimization) ---
-  const historySummary = buildMonthlyBuckets(fullHistory, startDate, categories, allCustomBudgets);
+    // --- 1. PREP PHASE (Tier 2 Optimization) ---
+    const historySummary = buildMonthlyBuckets(fullHistory, startDate, categories, allCustomBudgets);
 
-  // --- 2. CALCULATE METRICS ---
-  const pacing = calculatePacingScore(transactions, historySummary, categories, allCustomBudgets, startDate, projectionTotals);
-  const ratio = calculateBurnRatio(transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary, projectionTotals);
-  const stability = calculateStabilityScore(historySummary);
-  const sharpe = calculateSharpeRatio(historySummary);
-  const creep = calculateLifestyleCreepIndex(historySummary);
+    // --- 2. CALCULATE METRICS ---
+    const pacing = calculatePacingScore(transactions, historySummary, categories, allCustomBudgets, startDate, projectionTotals);
+    const ratio = calculateBurnRatio(transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary, projectionTotals);
+    const stability = calculateStabilityScore(historySummary);
+    const sharpe = calculateSharpeRatio(historySummary);
+    const creep = calculateLifestyleCreepIndex(historySummary);
 
-  // Weighted average (can adjust weights as needed)
-  // Current weights: Pacing 25%, Ratio 25%, Stability 20%, Sharpe 15%, Creep 15%
-  const totalScore = Math.round(
-    (pacing * 0.25) +
-    (ratio * 0.25) +
-    (stability * 0.20) +
-    (sharpe * 0.15) +
-    (creep * 0.15)
-  );
+    // Weighted average (can adjust weights as needed)
+    // Current weights: Pacing 25%, Ratio 25%, Stability 20%, Sharpe 15%, Creep 15%
+    const totalScore = Math.round(
+        (pacing * 0.25) +
+        (ratio * 0.25) +
+        (stability * 0.20) +
+        (sharpe * 0.15) +
+        (creep * 0.15)
+    );
 
-  // Determine label
-  let label = 'Needs Work';
-  if (totalScore >= 90) label = 'Excellent';
-  else if (totalScore >= 75) label = 'Good';
-  else if (totalScore >= 60) label = 'Fair';
+    // Determine label
+    let label = 'Needs Work';
+    if (totalScore >= 90) label = 'Excellent';
+    else if (totalScore >= 75) label = 'Good';
+    else if (totalScore >= 60) label = 'Fair';
 
-  return {
-    totalScore,
-    breakdown: {
-      pacing: Math.round(pacing),
-      ratio: Math.round(ratio),
-      stability: Math.round(stability),
-      sharpe: Math.round(sharpe),
-      creep: Math.round(creep)
-    },
-    label
-  };
+    return {
+        totalScore,
+        breakdown: {
+            pacing: Math.round(pacing),
+            ratio: Math.round(ratio),
+            stability: Math.round(stability),
+            sharpe: Math.round(sharpe),
+            creep: Math.round(creep)
+        },
+        label
+    };
 };
