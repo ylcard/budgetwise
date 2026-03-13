@@ -21,52 +21,44 @@ import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
- * Shared DayPicker props — keeps desktop & mobile in sync.
- * Uses RDP v9 CSS variables for theming.
+ * Shared RDP v9 CSS variable overrides.
  */
-const RDP_CALENDAR_STYLE = {
+const BASE_RDP_VARS = {
   "--rdp-accent-color": "hsl(var(--primary))",
   "--rdp-accent-background-color": "hsl(var(--primary))",
   "--rdp-outside-opacity": "0.35",
-  "--rdp-day-width": "40px",
-  "--rdp-day-height": "40px",
-  "--rdp-day_button-width": "38px",
-  "--rdp-day_button-height": "38px",
-};
-
-/** Smaller cells for mobile so all 7 columns fit comfortably */
-const RDP_MOBILE_STYLE = {
-  ...RDP_CALENDAR_STYLE,
-  "--rdp-day-width": "36px",
-  "--rdp-day-height": "36px",
-  "--rdp-day_button-width": "34px",
-  "--rdp-day_button-height": "34px",
 };
 
 function StyledCalendar({ selected, onSelect, mobile = false }) {
   const defaultClassNames = getDefaultClassNames();
   return (
-    <DayPicker
-      mode="single"
-      navLayout="around"
-      selected={selected}
-      onSelect={onSelect}
-      defaultMonth={selected}
-      weekStartsOn={1}
-      showOutsideDays
-      fixedWeeks
-      captionLayout="dropdown"
-      startMonth={new Date(1986, 0)}
-      endMonth={new Date(2100, 11)}
-      className={cn("p-3", mobile && "w-full")}
-      style={mobile ? RDP_MOBILE_STYLE : RDP_CALENDAR_STYLE}
-      classNames={{
-        selected: `${defaultClassNames.selected} bg-primary text-primary-foreground rounded-md`,
-        today: `${defaultClassNames.today} font-bold text-primary`,
-        chevron: `${defaultClassNames.chevron} fill-foreground`,
-        outside: `${defaultClassNames.outside} text-muted-foreground/40`,
-      }}
-    />
+    <div
+      className={cn(
+        mobile && "w-full overflow-hidden px-2",
+      )}
+    >
+      <DayPicker
+        mode="single"
+        navLayout="around"
+        selected={selected}
+        onSelect={onSelect}
+        defaultMonth={selected}
+        weekStartsOn={1}
+        showOutsideDays
+        fixedWeeks
+        captionLayout="dropdown"
+        startMonth={new Date(1986, 0)}
+        endMonth={new Date(2100, 11)}
+        className="rdp-v2-calendar"
+        style={BASE_RDP_VARS}
+        classNames={{
+          selected: `${defaultClassNames.selected} bg-primary text-primary-foreground rounded-md`,
+          today: `${defaultClassNames.today} font-bold text-primary`,
+          chevron: `${defaultClassNames.chevron} fill-foreground`,
+          outside: `${defaultClassNames.outside} text-muted-foreground/40`,
+        }}
+      />
+    </div>
   );
 }
 
