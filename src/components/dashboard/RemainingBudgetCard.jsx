@@ -753,10 +753,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
             </div>
 
             {/* DETAILED HOVER LABEL OVERLAY (Fallback for tiny segments) */}
+            {/* UPDATED 13-Mar-2026: Show actual spend in detailed view, not projected total */}
             <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white dark:text-black pointer-events-none transition-opacity duration-300 ${!isSimpleView && (nR.p < 0.1 && nR.u < 0.1) ? 'opacity-100 group-hover:opacity-100' : 'opacity-0'}`}>
               <span className="truncate px-1">
-                {formatCurrency(needsTotal, settings)}
-                <span className="opacity-80 ml-1">({Math.round(needsUtil)}%)</span>
+                {formatCurrency(needsActual, settings)}
+                <span className="opacity-80 ml-1">({Math.round(needsActualUtil)}%)</span>
               </span>
             </div>
           </Link>
@@ -839,10 +840,11 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
               </div>
             </div>
 
+            {/* UPDATED 13-Mar-2026: Show actual spend in detailed view, not projected total */}
             <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white dark:text-black pointer-events-none transition-opacity duration-300 ${!isSimpleView && (wR.p < 0.1 && wR.u < 0.1) ? 'opacity-100 group-hover:opacity-100' : 'opacity-0'}`}>
               <span className="truncate px-1">
-                {formatCurrency(wantsTotal, settings)}
-                <span className="opacity-80 ml-1">({Math.round(wantsUtil)}%)</span>
+                {formatCurrency(wantsActual, settings)}
+                <span className="opacity-80 ml-1">({Math.round(wantsActualUtil)}%)</span>
               </span>
             </div>
           </Link>
