@@ -23,10 +23,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 /**
  * Shared RDP v9 CSS variable overrides.
  */
+/** @type {React.CSSProperties} RDP v9 CSS variable overrides */
 const BASE_RDP_VARS = {
   "--rdp-accent-color": "hsl(var(--primary))",
   "--rdp-accent-background-color": "hsl(var(--primary))",
   "--rdp-outside-opacity": "0.35",
+  /* Kill inherited border-color from global * { border-border } reset */
+  "--rdp-selected-border": "none",
 };
 
 /**
