@@ -30,9 +30,7 @@ export const NetFlowCard = memo(function NetFlowCard({
   const effectiveExpenses = isCurrentMonth && projectedExpenseTotal > 0 ? projectedExpenseTotal : totalPaidExpenses;
   const effectiveNetFlow = effectiveIncome - effectiveExpenses;
 
-  const netFlowDiffPercent = prevNetFlow !== 0
-    ? ((effectiveNetFlow - prevNetFlow) / Math.abs(prevNetFlow)) * 100
-    : 0;
+  const netFlowDiff = effectiveNetFlow - prevNetFlow;
 
   const getArrow = (diff) => diff >= 0
     ? <ArrowUpRight className="w-3 h-3" />
@@ -52,17 +50,13 @@ export const NetFlowCard = memo(function NetFlowCard({
           >
             {formatCurrency(effectiveNetFlow, settings)}
           </motion.h3>
-          <div className={`flex items-center justify-center flex-wrap text-center gap-1 mt-2 text-xs font-medium w-full ${netFlowDiffPercent >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {getArrow(netFlowDiffPercent)}
-            <span>{Math.abs(netFlowDiffPercent).toFixed(0)}% vs the previous month</span>
+          <div className={`flex items-center justify-center flex-wrap text-center gap-1 mt-2 text-xs font-medium w-full ${netFlowDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            {getArrow(netFlowDiff)}
+            <span>{formatCurrency(Math.abs(netFlowDiff), settings)} vs last month</span>
           </div>
-          {isCurrentMonth ? (
+          {isCurrentMonth && (
             <div className="flex items-center justify-center flex-wrap gap-1 mt-2 text-xs font-medium w-full truncate text-gray-500">
               <span className="text-center">Actual so far: {formatCurrency(actualNetFlow, settings)}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 mt-2 text-xs font-medium text-gray-400">
-              <span>Closed</span>
             </div>
           )}
         </div>
