@@ -20,11 +20,13 @@ import { useSettings } from "@/components/utils/SettingsContext";
  * @param {React.ReactNode} props.trigger - The button element to trigger the drawer
  */
 const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
+  const [open, setOpen] = useState(false);
+
   // Use parseDate to ensure local midnight time; fallback to now
   const dateValue = value ? parseDate(value) : new Date();
 
   return (
-    <Drawer>
+    <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent className="z-[200] flex flex-col max-h-[90dvh]">
         <DrawerHeader><DrawerTitle>Select Date</DrawerTitle></DrawerHeader>
@@ -32,7 +34,10 @@ const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
           <CalendarView
             selected={dateValue}
             onSelect={(date) => {
-              if (date) onChange(formatDateString(date));
+              if (date) {
+                onChange(formatDateString(date));
+                setOpen(false);
+              }
             }}
           />
         </div>
@@ -61,6 +66,7 @@ export default function IncomeFormContent({
 }) {
   const { settings } = useSettings();
   const [showNotes, setShowNotes] = useState(!!initialTransaction?.notes);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const getInitialDate = () => {
     const now = new Date();
@@ -156,7 +162,7 @@ export default function IncomeFormContent({
 
             {/* Desktop Date Popover */}
             <div className="hidden md:block">
-              <Popover modal={true}>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen} modal={true}>
                 <PopoverTrigger asChild>
                   <CustomButton
                     type="button"
@@ -173,7 +179,10 @@ export default function IncomeFormContent({
                   <CalendarView
                     selected={formData.date ? parseDate(formData.date) : new Date()}
                     onSelect={(date) => {
-                      if (date) setFormData({ ...formData, date: formatDateString(date) });
+                      if (date) {
+                        setFormData({ ...formData, date: formatDateString(date) });
+                        setIsCalendarOpen(false);
+                      }
                     }}
                     className="p-0"
                   />
