@@ -19,8 +19,11 @@ import {
 } from "@/components/ui/popover";
 import { useSettings } from "../utils/SettingsContext";
 import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+// COMMENTED OUT 13-Mar-2026: Drawer causes focus trap issues with native <select> dropdowns
+// inside react-day-picker v9's captionLayout="dropdown". Vaul intercepts pointer events
+// on the overlay, locking focus on the dropdown after selection. Replaced with Popover for all viewports.
+// import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+// import { useIsMobile } from "@/hooks/use-mobile";
 
 // Export the styled calendar so it can be embedded in drawers/dialogs directly
 export function CalendarView({ selected, onSelect, className, ...props }) {
@@ -84,7 +87,6 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
  */
 export default function DatePicker({ value, onChange, placeholder = "Pick a date", className = "" }) {
   const { settings } = useSettings();
-  const isMobile = useIsMobile();
 
   /**
    * @type {[boolean, function(boolean)]} Internal state to control the open/closed state of the Popover.
@@ -119,21 +121,9 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
     </CustomButton>
   );
 
-  if (isMobile) {
-    return (
-      // UPDATED 13-Mar-2026: Added modal={false} to prevent Vaul's focus trap from
-      // intercepting native <select> dropdown interactions inside the DayPicker.
-      <Drawer open={open} onOpenChange={setOpen} modal={false}>
-        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-        <DrawerContent className="z-[600]">
-          <div className="mx-auto w-full max-w-sm px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-2">
-            <CalendarView selected={dateValue} onSelect={handleSelect} className="w-full" />
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
+  // UPDATED 13-Mar-2026: Unified to Popover for both mobile and desktop.
+  // Vaul Drawer's focus trap and overlay pointer-event interception fundamentally
+  // breaks native <select> dropdowns used by react-day-picker v9 captionLayout="dropdown".
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
