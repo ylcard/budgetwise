@@ -334,3 +334,14 @@
     box-shadow: none !important;
   }
 }
+
+/* Kill inherited border-color on all RDP table elements (13-Mar-2026) */
+.rdp-v2-calendar tr,
+.rdp-v2-calendar td,
+.rdp-v2-calendar th,
+.rdp-v2-calendar thead,
+.rdp-v2-calendar tbody,
+.rdp-v2-calendar table {
+  border: none !important;
+  border-color: transparent !important;
+}
