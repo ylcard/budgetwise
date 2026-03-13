@@ -7,13 +7,9 @@
 
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-// REMOVED 13-Mar-2026: ChevronLeft/ChevronRight no longer needed — v9 uses its own Chevron component.
-// import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
-// UPDATED 13-Mar-2026: Corrected CSS import path for react-day-picker v9.
-// Previously used "react-day-picker/dist/style.css" (incorrect path) and before that CSS modules.
 import "react-day-picker/style.css";
 import {
   Popover,
@@ -30,10 +26,11 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
   return (
     <DayPicker
       mode="single"
+      navLayout="around"
       selected={selected}
       onSelect={onSelect}
       defaultMonth={selected}
-      className={cn("p-3", className)}
+      // className={cn("p-3", className)}
       weekStartsOn={1}
       showOutsideDays
       fixedWeeks
