@@ -106,11 +106,27 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
 
   // --- LOGIC: Breakdown extraction (matching desktop) ---
   const needsData = displayBreakdown?.needs || { paid: 0, unpaid: 0, total: 0 };
-  const needsTotal = needsData.total || ((needsData.paid || 0) + (needsData.unpaid || 0));
+  const needsActual = needsData.total || ((needsData.paid || 0) + (needsData.unpaid || 0));
 
   const wantsData = displayBreakdown?.wants || {};
-  const wantsTotal = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) +
+  const wantsActual = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) +
     (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
+
+  // UPDATED 13-Mar-2026: Incorporate projected remaining expenses into per-category totals
+  // Split proportionally based on goal limits (needs/wants ratio), matching desktop approach.
+  const needsLimit = resolveLimit('needs');
+  const wantsLimit = resolveLimit('wants');
+
+  const projNeedsShare = (() => {
+    if (!projectedRemainingExpense || projectedRemainingExpense <= 0) return 0;
+    const totalGoalExpense = needsLimit + wantsLimit;
+    if (totalGoalExpense <= 0) return projectedRemainingExpense * 0.5;
+    return projectedRemainingExpense * (needsLimit / totalGoalExpense);
+  })();
+  const projWantsShare = projectedRemainingExpense > 0 ? projectedRemainingExpense - projNeedsShare : 0;
+
+  const needsTotal = needsActual + projNeedsShare;
+  const wantsTotal = wantsActual + projWantsShare;
 
   // Calculate Percentages. If Empty, everything forces to 0 to create the "Morph" to empty effect.
   const needsPct = isDisplayedEmpty ? 0 : (needsTotal / safeIncome) * 100;
