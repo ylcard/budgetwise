@@ -21,6 +21,56 @@ import { parseDate, formatDateString, formatDate } from "../utils/dateUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
+ * Shared DayPicker props — keeps desktop & mobile in sync.
+ * Uses RDP v9 CSS variables for theming.
+ */
+const RDP_CALENDAR_STYLE = {
+  "--rdp-accent-color": "hsl(var(--primary))",
+  "--rdp-accent-background-color": "hsl(var(--primary))",
+  "--rdp-outside-opacity": "0.35",
+  "--rdp-day-width": "40px",
+  "--rdp-day-height": "40px",
+  "--rdp-day_button-width": "38px",
+  "--rdp-day_button-height": "38px",
+};
+
+/** Smaller cells for mobile so all 7 columns fit comfortably */
+const RDP_MOBILE_STYLE = {
+  ...RDP_CALENDAR_STYLE,
+  "--rdp-day-width": "36px",
+  "--rdp-day-height": "36px",
+  "--rdp-day_button-width": "34px",
+  "--rdp-day_button-height": "34px",
+};
+
+function StyledCalendar({ selected, onSelect, mobile = false }) {
+  const defaultClassNames = getDefaultClassNames();
+  return (
+    <DayPicker
+      mode="single"
+      navLayout="around"
+      selected={selected}
+      onSelect={onSelect}
+      defaultMonth={selected}
+      weekStartsOn={1}
+      showOutsideDays
+      fixedWeeks
+      captionLayout="dropdown"
+      startMonth={new Date(1986, 0)}
+      endMonth={new Date(2100, 11)}
+      className={cn("p-3", mobile && "w-full")}
+      style={mobile ? RDP_MOBILE_STYLE : RDP_CALENDAR_STYLE}
+      classNames={{
+        selected: `${defaultClassNames.selected} bg-primary text-primary-foreground rounded-md`,
+        today: `${defaultClassNames.today} font-bold text-primary`,
+        chevron: `${defaultClassNames.chevron} fill-foreground`,
+        outside: `${defaultClassNames.outside} text-muted-foreground/40`,
+      }}
+    />
+  );
+}
+
+/**
  * DatePickerV2 — same API as DatePicker.
  * Mobile: Base UI Drawer bottom sheet.
  * Desktop: Shadcn Popover.
@@ -70,7 +120,7 @@ export default function DatePickerV2({
           </CustomButton>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0 z-[600]" align="start" sideOffset={4}>
-          <CalendarView selected={dateValue} onSelect={handleSelect} />
+          <StyledCalendar selected={dateValue} onSelect={handleSelect} />
         </PopoverContent>
       </Popover>
     );
@@ -96,9 +146,7 @@ export default function DatePickerV2({
       />
 
       <Drawer.Portal>
-        <Drawer.Backdrop
-          className="fixed inset-0 bg-black/40 z-[9998]"
-        />
+        <Drawer.Backdrop className="fixed inset-0 bg-black/40 z-[9998]" />
         <Drawer.Viewport className="fixed inset-0 z-[9999] pointer-events-none">
           <Drawer.Popup
             className="pointer-events-auto fixed bottom-0 left-0 right-0 flex flex-col rounded-t-2xl bg-background shadow-xl will-change-transform"
@@ -107,20 +155,21 @@ export default function DatePickerV2({
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
           >
-            <Drawer.Content className="flex flex-col items-center px-4 pt-3 pb-6">
+            {/* Drawer.Content has no border/ring resets — pure container */}
+            <div className="flex flex-col items-center px-2 pt-3 pb-6">
               {/* Drag handle */}
               <div className="mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/30" />
 
               <Drawer.Title className="sr-only">Select a date</Drawer.Title>
 
-              <CalendarView selected={dateValue} onSelect={handleSelect} />
+              <StyledCalendar selected={dateValue} onSelect={handleSelect} mobile />
 
               <Drawer.Close
-                className="mt-2 w-full rounded-lg border border-border py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                className="mt-2 mx-2 w-[calc(100%-1rem)] rounded-lg border border-border py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
                 Cancel
               </Drawer.Close>
-            </Drawer.Content>
+            </div>
           </Drawer.Popup>
         </Drawer.Viewport>
       </Drawer.Portal>
