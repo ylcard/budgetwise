@@ -19,7 +19,7 @@ import { useThemeSync } from '@/components/hooks/useThemeSync';
 import ManagePage from './pages/Manage';
 import TransactionsPage from './pages/Transactions';
 import LegalPage from './pages/Legal';
-import TestDatePickerPage from './pages/TestDatePicker'; // ADDED 13-Mar-2026: Sandbox for DatePickerV2
+// import TestDatePickerPage from './pages/TestDatePicker'; // ADDED 13-Mar-2026: Sandbox for DatePickerV2
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -76,7 +76,7 @@ const AuthenticatedApp = () => {
         <Route path="/legal/:tab?" element={<LegalPage />} />
 
         {/* ADDED 13-Mar-2026: Sandbox page to test DatePickerV2 (Base UI Drawer) */}
-        <Route path="/TestDatePicker" element={<TestDatePickerPage />} />
+        {/* <Route path="/TestDatePicker" element={<TestDatePickerPage />} /> */}
 
         {/* Standard Page Fallback */}
         {Object.entries(Pages).map(([path, Page]) => (
