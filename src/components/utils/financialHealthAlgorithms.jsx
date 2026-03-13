@@ -75,26 +75,52 @@ const buildMonthlyBuckets = (fullHistory, startDate, categories, allCustomBudget
 
 /**
  * METRIC 1: Pacing Score (0-100)
- * Real-time: Compare current spend vs 3-month average for same day range
+ * UPDATED 13-Mar-2026: When projection data is available for the current month, uses
+ * full-month projected total vs full-month historical average. This eliminates
+ * small-sample noise from partial-month comparisons.
+ * Fallback: Original partial-month comparison (day 1→today vs history day 1→today).
  * @param {Array} transactions - Current month transactions
  * @param {Object} historySummary - Pre-calculated history buckets
  * @param {Array} categories - Category definitions
  * @param {Array} allCustomBudgets - Budget definitions
  * @param {string} startDate - Current view date (YYYY-MM-DD)
+ * @param {Object|null} projectionTotals - Projection engine totals (from useProjections)
  */
-const calculatePacingScore = (transactions, historySummary, categories, allCustomBudgets, startDate) => {
+const calculatePacingScore = (transactions, historySummary, categories, allCustomBudgets, startDate, projectionTotals = null) => {
   const today = new Date();
   const start = parseDate(startDate) || new Date();
-
-  // If viewing current month, compare "Day 1 to Today". If past month, compare full month.
   const isCurrentMonthView = today.getMonth() === start.getMonth() && today.getFullYear() === start.getFullYear();
-  const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
 
-  // Current spend (Using unified breakdown logic)
+  // --- PROJECTION-ENHANCED PATH (Current month with projection data) ---
+  if (isCurrentMonthView && projectionTotals?.finalProjectedExpense > 0) {
+    // Full-month projected expense (actual so far + engine's future predictions)
+    const projectedFullMonthSpend = projectionTotals.finalProjectedExpense;
+
+    // Historical baseline: Average FULL-MONTH expenses over last 3 months
+    const fullMonthPoints = [];
+    for (let i = 1; i <= 3; i++) {
+      if (historySummary[i]?.totalExpenses > 0) {
+        fullMonthPoints.push(historySummary[i].totalExpenses);
+      }
+    }
+    const historicalFullMonthAvg = fullMonthPoints.length > 0
+      ? fullMonthPoints.reduce((a, b) => a + b, 0) / fullMonthPoints.length
+      : null;
+
+    if (historicalFullMonthAvg === null) return 0;
+
+    const diff = projectedFullMonthSpend - historicalFullMonthAvg;
+    if (diff <= 0) return 100;
+
+    const deviation = historicalFullMonthAvg > 0 ? diff / historicalFullMonthAvg : 1;
+    return Math.max(0, 100 - (deviation * 100));
+  }
+
+  // --- FALLBACK PATH (Past months or no projection data) ---
+  const dayCursor = isCurrentMonthView ? today.getDate() : new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
   const { monthStart, monthEnd } = getMonthBoundaries(start.getMonth(), start.getFullYear());
   const currentSpend = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd, dayCursor).totalExpenses;
 
-  // Historical context (Average of last 3 months by Day X)
   const getHistoryByDayX = (offset) => {
     const summary = historySummary[offset];
     return getFinancialBreakdown(summary.txns, categories, allCustomBudgets, summary.monthStart, summary.monthEnd, dayCursor).totalExpenses;
@@ -104,27 +130,26 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
   const spendM2 = getHistoryByDayX(2);
   const spendM3 = getHistoryByDayX(3);
 
-  // Calculate baseline (average of non-zero months)
   const historyPoints = [spendM1, spendM2, spendM3].filter(v => v > 0);
   const averageSpendAtPointX = historyPoints.length > 0
     ? historyPoints.reduce((a, b) => a + b, 0) / historyPoints.length
-    : null; // No history found
+    : null;
 
-  // Score calculation
   if (averageSpendAtPointX === null) return 0;
   const diff = currentSpend - averageSpendAtPointX;
-  if (diff <= 0) return 100; // Under average = Perfect
+  if (diff <= 0) return 100;
 
-  // Penalize for being over average
   const deviation = averageSpendAtPointX > 0 ? diff / averageSpendAtPointX : 1;
   return Math.max(0, 100 - (deviation * 100));
 };
 
 /**
  * METRIC 2: Burn Ratio (0-100)
- * Real-time: Is spending rate sustainable for income?
- * Target: Spend < 80% of income by end of month
- * UPGRADE: Uses "Smart Target" (Historical Floor) and "Weighted Penalty" (Needs vs Wants)
+ * UPDATED 13-Mar-2026: When projection data is available for the current month, uses the
+ * projection engine's full-month forecast (actual + predicted remaining) compared against
+ * the full-month budget. Per-priority projected expenses drive the wants-ratio penalty
+ * for more accurate weighting than partial-month actuals.
+ * Fallback: Original linear-interpolation approach for past months or missing projections.
  * @param {Array} transactions - Current month transactions
  * @param {Array} categories - Category definitions
  * @param {Array} allCustomBudgets - Budget definitions
@@ -133,8 +158,9 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
  * @param {Object} settings - User settings
  * @param {Array} goals - User goals
  * @param {Object} historySummary - Pre-calculated history buckets
+ * @param {Object|null} projectionTotals - Projection engine totals (from useProjections)
  */
-const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary) => {
+const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary, projectionTotals = null) => {
   const start = parseDate(startDate) || new Date();
   const year = start.getFullYear();
   const month = start.getMonth();
@@ -143,25 +169,65 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
 
   const today = new Date();
   const isCurrentMonthView = today.getMonth() === month && today.getFullYear() === year;
-  const dayCursor = isCurrentMonthView ? today.getDate() : daysInMonth;
 
   const needsLimit = getMonthlyTarget(goals, 'needs', monthlyIncome, settings);
   const wantsLimit = getMonthlyTarget(goals, 'wants', monthlyIncome, settings);
   const totalBudget = needsLimit + wantsLimit;
 
+  // --- PROJECTION-ENHANCED PATH (Current month with projection data) ---
+  if (isCurrentMonthView && projectionTotals?.finalProjectedExpense > 0 && totalBudget > 0) {
+    const projectedFullMonthSpend = projectionTotals.finalProjectedExpense;
+
+    // Historical full-month average for smart target (same as Pacing)
+    let historicalFullMonthAvg = 0;
+    let histCount = 0;
+    for (let i = 1; i <= 3; i++) {
+      if (historySummary[i]?.totalExpenses > 0) {
+        historicalFullMonthAvg += historySummary[i].totalExpenses;
+        histCount++;
+      }
+    }
+    historicalFullMonthAvg = histCount > 0 ? historicalFullMonthAvg / histCount : totalBudget;
+
+    // Smart target: full-month budget vs historical full-month average (whichever is more lenient)
+    const smartTarget = Math.max(totalBudget, historicalFullMonthAvg);
+    const bufferedTarget = smartTarget * 1.10; // 10% buffer
+
+    if (projectedFullMonthSpend <= bufferedTarget) return 100;
+
+    // Priority-weighted penalty using projected full-month needs/wants
+    const projectedNeeds = (projectionTotals.actualExpense || 0) > 0
+      ? (projectionTotals.projectedRemainingExpenseNeeds || 0)
+      : 0;
+    const projectedWants = (projectionTotals.actualExpense || 0) > 0
+      ? (projectionTotals.projectedRemainingExpenseWants || 0)
+      : 0;
+
+    // Get actual needs/wants from current transactions
+    const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd);
+    const totalProjectedNeeds = (breakdown.needsTotal || 0) + projectedNeeds;
+    const totalProjectedWants = (breakdown.wantsTotal || 0) + projectedWants;
+    const totalTracked = totalProjectedNeeds + totalProjectedWants;
+
+    const wantsRatio = totalTracked > 0 ? (totalProjectedWants / totalTracked) : 1;
+    const penaltyMultiplier = 0.5 + wantsRatio; // Range: 0.5 to 1.5
+
+    const overRatio = bufferedTarget > 0 ? (projectedFullMonthSpend - bufferedTarget) / bufferedTarget : 1;
+    return Math.max(0, 100 - (overRatio * penaltyMultiplier * 200));
+  }
+
+  // --- FALLBACK PATH (Past months or no projection data) ---
+  const dayCursor = isCurrentMonthView ? today.getDate() : daysInMonth;
+
   // A. The "Linear" Target (Standard Pacing)
   const linearTarget = totalBudget * (dayCursor / daysInMonth);
 
   // B. The "Historical" Target (Context Awareness)
-  // Calculate what we USUALLY spend by this day (averaged over 3 months)
   let historicalAvgByDayX = 0;
   let count = 0;
   for (let i = 1; i <= 3; i++) {
     const h = historySummary[i];
     if (h && h.totalExpenses > 0) {
-      // Note: We approximate using total expenses scaled to dayCursor if exact daily history isn't cached,
-      // but for accuracy we ideally rely on daily pacing. 
-      // For now, we use the linear projection of that month's total as a safe proxy or 0 if data missing.
       historicalAvgByDayX += (h.totalExpenses * (dayCursor / daysInMonth));
       count++;
     }
@@ -169,9 +235,8 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
   historicalAvgByDayX = count > 0 ? historicalAvgByDayX / count : linearTarget;
 
   // C. The Smart Target: Max(Linear, Historical)
-  // Whitelists "Rent Day" spikes if they happen every month
   const smartTarget = Math.max(linearTarget, historicalAvgByDayX);
-  const bufferedTarget = smartTarget * 1.10; // 10% buffer
+  const bufferedTarget = smartTarget * 1.10;
 
   // D. Current Spend Analysis
   const breakdown = getFinancialBreakdown(transactions, categories, allCustomBudgets, monthStart, monthEnd, dayCursor);
@@ -180,18 +245,14 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
   if (currentSpend <= bufferedTarget) return 100;
 
   // E. Weighted Penalty Logic
-  // If overage is mostly NEEDS -> 0.5x penalty. If WANTS -> 1.5x penalty.
   const needsSpend = breakdown.needsTotal || 0;
   const wantsSpend = breakdown.wantsTotal || 0;
   const totalTracked = needsSpend + wantsSpend;
 
-  // Ratio of "Risk Spending" (Wants)
   const wantsRatio = totalTracked > 0 ? (wantsSpend / totalTracked) : 1;
-  const penaltyMultiplier = 0.5 + wantsRatio; // Range: 0.5 to 1.5
+  const penaltyMultiplier = 0.5 + wantsRatio;
 
   const overRatio = bufferedTarget > 0 ? (currentSpend - bufferedTarget) / bufferedTarget : 1;
-
-  // Apply sharper penalty (200x base) weighted by multiplier
   return Math.max(0, 100 - (overRatio * penaltyMultiplier * 200));
 };
 
@@ -322,13 +383,14 @@ const calculateLifestyleCreepIndex = (historySummary) => {
  * @param {Array} allCustomBudgets - Custom budgets list
  * @returns {Object} { totalScore, breakdown, label }
  */
-export const calculateFinancialHealth = (transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets) => {
+// UPDATED 13-Mar-2026: Added projectionTotals param for projection-enhanced Pacing & Burn Ratio
+export const calculateFinancialHealth = (transactions, fullHistory, monthlyIncome, startDate, settings, goals, categories, allCustomBudgets, projectionTotals = null) => {
   // --- 1. PREP PHASE (Tier 2 Optimization) ---
   const historySummary = buildMonthlyBuckets(fullHistory, startDate, categories, allCustomBudgets);
 
   // --- 2. CALCULATE METRICS ---
-  const pacing = calculatePacingScore(transactions, historySummary, categories, allCustomBudgets, startDate);
-  const ratio = calculateBurnRatio(transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary);
+  const pacing = calculatePacingScore(transactions, historySummary, categories, allCustomBudgets, startDate, projectionTotals);
+  const ratio = calculateBurnRatio(transactions, categories, allCustomBudgets, monthlyIncome, startDate, settings, goals, historySummary, projectionTotals);
   const stability = calculateStabilityScore(historySummary);
   const sharpe = calculateSharpeRatio(historySummary);
   const creep = calculateLifestyleCreepIndex(historySummary);
