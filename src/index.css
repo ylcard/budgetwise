@@ -239,10 +239,12 @@
 
 
 @layer base {
+  /*
   * {
     @apply border-border outline-ring/50 transition-colors duration-300 ease-in-out;
   }
-
+  */
+  
   body {
     @apply bg-background text-foreground;
     padding-top: env(safe-area-inset-top);
