@@ -461,8 +461,13 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     updateSettings({ barViewMode: checked });
   };
 
+  // UPDATED 13-Mar-2026: needsTotal/wantsTotal now include projections.
+  // Simple view uses projected utilization; detailed view shows actuals + ghost segment separately.
   const needsUtil = needsLimit > 0 ? (needsTotal / needsLimit) * 100 : 0;
   const wantsUtil = wantsLimit > 0 ? (wantsTotal / wantsLimit) * 100 : 0;
+  // Actual-only utilization for detailed-view segment labels
+  const needsActualUtil = needsLimit > 0 ? (needsActual / needsLimit) * 100 : 0;
+  const wantsActualUtil = wantsLimit > 0 ? (wantsActual / wantsLimit) * 100 : 0;
 
   // --- SHARED SAVINGS CALCULATIONS ---
   // Account for BOTH actual expenses and future projected expenses
