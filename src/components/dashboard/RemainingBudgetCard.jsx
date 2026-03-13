@@ -657,7 +657,7 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
     const targetSavingsUtil = getUtil(sTarget, savingsLimit);
     const extraSavingsUtil = getUtil(sExtra, savingsLimit);
 
-    // Labels
+    // Labels: Simple view shows projected %, detailed fallback shows actual %
     const needsLabel = `${Math.round(needsUtil)}%`;
     const wantsLabel = `${Math.round(wantsUtil)}%`;
 
