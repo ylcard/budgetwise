@@ -70,8 +70,8 @@ export default function Reports() {
   const { customBudgets: allCustomBudgets } = useCustomBudgetsForPeriod(user);
   const { systemBudgets } = useSystemBudgetsForPeriod(user, monthStart, monthEnd);
 
-  // ADDED: Mobile State
-  const [mobileTab, setMobileTab] = useState("analysis"); // 'analysis' | 'breakdown'
+  // Shared Tab State for Desktop & Mobile
+  const [activeTab, setActiveTab] = useState("analysis"); // 'analysis' | 'breakdown'
   const [fullScreenChart, setFullScreenChart] = useState(null); // Content to show in full screen
 
   // Scroll refs for mobile tabs (for ScrollToTopButton)
@@ -265,14 +265,13 @@ export default function Reports() {
   return (
     <div className="bg-gray-50/50 md:min-h-screen">
       {/* --- DESKTOP VIEW (Original Layout) --- */}
-      <div className="hidden md:block max-w-7xl mx-auto px-8 py-8 space-y-8">
+      <div className="hidden md:block max-w-7xl mx-auto px-8 py-8 space-y-6">
+
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Financial Reports</h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Performance analysis
-            </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-none">Financial Reports</h1>
+            <p className="text-gray-500 text-sm">Performance analysis</p>
           </div>
 
           {/* Global Month Navigator - Clean, no border box */}
@@ -286,33 +285,71 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* 1. Top Row: KPIs + Goal Allocation */}
-        <div className="flex flex-col gap-8">
-          <div data-tutorial="reports-stats">{statsComponent}</div>
-          <div data-tutorial="reports-health">{healthComponent}</div>
+        {/* Desktop Tabs */}
+        <div className="flex p-1 bg-gray-100 rounded-lg w-fit border border-gray-200/50 shadow-sm mb-6">
+          {[
+            { id: 'analysis', label: 'Analysis', icon: LayoutDashboard },
+            { id: 'breakdown', label: 'Details', icon: List },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center justify-center gap-2 px-6 py-2 text-sm font-bold rounded-md transition-all ${activeTab === tab.id
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* 2. Historical Context & Future Projection */}
-        <div className="w-full space-y-8" data-tutorial="reports-cashflow">
-          <div className="h-[400px] md:h-[450px]">
-            {waveComponent}
-          </div>
-        </div>
+        <AnimatePresence mode="wait">
+          {activeTab === 'analysis' ? (
+            <motion.div
+              key="desktop-analysis"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-8"
+            >
+              {/* 1. Top Row: KPIs + Goal Allocation */}
+              <div className="flex flex-col gap-8">
+                <div data-tutorial="reports-stats">{statsComponent}</div>
+                <div data-tutorial="reports-health">{healthComponent}</div>
+              </div>
 
-        {/* 3. Bottom Row: Monthly Breakdown + Priority Chart */}
-        <div className="grid lg:grid-cols-3 gap-8" data-tutorial="reports-breakdown">
-          <div className="lg:col-span-2">
-            <MonthlyBreakdown
-              transactions={transactions}
-              categories={categories}
-              monthlyIncome={monthlyIncome}
-              isLoading={isLoading}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              allCustomBudgets={allCustomBudgets}
-            />
-          </div>
-        </div>
+              {/* 2. Historical Context & Future Projection */}
+              <div className="w-full space-y-8" data-tutorial="reports-cashflow">
+                <div className="h-[400px] md:h-[450px]">
+                  {waveComponent}
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="desktop-breakdown"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-5xl"
+              data-tutorial="reports-breakdown"
+            >
+              <MonthlyBreakdown
+                transactions={transactions}
+                categories={categories}
+                monthlyIncome={monthlyIncome}
+                isLoading={isLoading}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                allCustomBudgets={allCustomBudgets}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* --- MOBILE VIEW (New App-Like Layout) --- */}
@@ -336,8 +373,8 @@ export default function Reports() {
               ].map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => setMobileTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${mobileTab === tab.id
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${activeTab === tab.id
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                     }`}
@@ -352,7 +389,7 @@ export default function Reports() {
 
         <div className="flex-1 relative overflow-hidden">
           <AnimatePresence mode="wait">
-            {mobileTab === 'analysis' ? (
+            {activeTab === 'analysis' ? (
               <motion.div
                 key="analysis"
                 ref={analysisScrollRef}
