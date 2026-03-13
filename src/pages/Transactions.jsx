@@ -51,6 +51,14 @@ export default function TransactionsLayout() {
     return params.get("tab") === "recurring" || location.pathname.includes("recurring") ? "recurring" : "history";
   });
 
+  // Keep tab state strictly synced with URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("tab") === "recurring" || params.get("tab") === "history") {
+      setActiveTab(params.get("tab"));
+    }
+  }, [location.search]);
+
   // Shared Modals State
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
