@@ -7,11 +7,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Calendar, StickyNote } from "lucide-react";
 import AmountInput from "@/components/ui/AmountInput";
-import DatePicker from "@/components/ui/DatePicker";
+// import DatePicker from "@/components/ui/DatePicker";
 import { formatDateString, getFirstDayOfMonth, formatDate, parseDate } from "@/components/utils/dateUtils";
 import { normalizeAmount } from "@/components/utils/generalUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
-
+import DatePickerV2 from "@/components/ui/DatePickerV2";
 /**
  * Form content for creating/editing Income transactions
  * @param {Object} props
@@ -110,7 +110,7 @@ export default function IncomeFormContent({
           </div>
 
           <div className="pt-0">
-            <DatePicker
+            <DatePickerV2
               value={formData.date}
               onChange={(d) => setFormData({ ...formData, date: d })}
               className="h-12 px-3 bg-accent/30 border-dashed border-border hover:bg-accent text-sm"
