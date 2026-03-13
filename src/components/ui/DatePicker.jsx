@@ -100,8 +100,8 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>{trigger}</DrawerTrigger>
         <DrawerContent className="z-[600]">
-          <div className="p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] flex justify-center">
-            <CalendarView selected={dateValue} onSelect={handleSelect} />
+          <div className="mx-auto w-full max-w-sm px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-2">
+            <CalendarView selected={dateValue} onSelect={handleSelect} className="w-full" />
           </div>
         </DrawerContent>
       </Drawer>
