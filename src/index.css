@@ -272,6 +272,15 @@
   --rdp-accent-background-color: rgb(239 246 255);
   /* blue-50 */
   margin: 0 auto;
+  width: 100%;
+}
+
+.rdp-month {
+  width: 100% !important;
+}
+
+.rdp-table {
+  max-width: 100% !important;
 }
 
 /* Dark Mode Overrides for Calendar */
