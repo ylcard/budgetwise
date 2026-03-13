@@ -328,6 +328,9 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
   projectedIncome = 0,
   isUsingProjection = false,
   projectedRemainingExpense = 0,
+  // ADDED 13-Mar-2026: Per-priority projected expense amounts from the priority-aware engine
+  projectedRemainingExpenseNeeds = 0,
+  projectedRemainingExpenseWants = 0,
   monthStatus = 'current',
   healthData = null
 }) {
@@ -378,19 +381,10 @@ const RemainingBudgetCard = memo(function RemainingBudgetCard({
   const wantsActual = wantsData.total;
   const totalSpent = currentMonthExpenses;
 
-  // UPDATED 13-Mar-2026: For current month, incorporate projected remaining expenses
-  // into per-category totals. Split proportionally based on goal ratios (needs/wants).
-  const projNeedsShare = (() => {
-    if (!projectedRemainingExpense || projectedRemainingExpense <= 0) return 0;
-    const totalGoalExpense = needsLimit + wantsLimit;
-    if (totalGoalExpense <= 0) return projectedRemainingExpense * 0.5;
-    return projectedRemainingExpense * (needsLimit / totalGoalExpense);
-  })();
-  const projWantsShare = projectedRemainingExpense > 0 ? projectedRemainingExpense - projNeedsShare : 0;
-
-  // Projected totals used for bar fill and utilization percentages
-  const needsTotal = needsActual + projNeedsShare;
-  const wantsTotal = wantsActual + projWantsShare;
+  // UPDATED 13-Mar-2026: Use per-priority projected amounts from the priority-aware engine
+  // instead of the proportional heuristic based on goal ratios.
+  const needsTotal = needsActual + projectedRemainingExpenseNeeds;
+  const wantsTotal = wantsActual + projectedRemainingExpenseWants;
 
   const needsColor = FINANCIAL_PRIORITIES.needs.color;
   const wantsColor = FINANCIAL_PRIORITIES.wants.color;
