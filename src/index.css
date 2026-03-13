@@ -283,6 +283,14 @@
   max-width: 100% !important;
 }
 
+/* Prevent iOS zoom on focus and clean up dropdown styling */
+.rdp-dropdown {
+  font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+  background-image: none !important;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Dark Mode Overrides for Calendar */
 .dark .rdp {
   --rdp-accent-color: rgb(96 165 250);
