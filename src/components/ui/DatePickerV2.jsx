@@ -29,6 +29,24 @@ const BASE_RDP_VARS = {
   "--rdp-outside-opacity": "0.35",
 };
 
+/**
+ * Prevents pointer events on <select> dropdowns from bubbling up to
+ * the Base UI Drawer drag handler, which otherwise interprets them as swipe gestures.
+ * @param {React.PointerEvent|React.TouchEvent} e
+ */
+function stopDragOnDropdowns(e) {
+  const tag = e.target?.tagName;
+  if (tag === "SELECT" || tag === "OPTION") {
+    e.stopPropagation();
+  }
+}
+
+/**
+ * @param {object} props
+ * @param {Date|undefined} props.selected
+ * @param {(date: Date) => void} props.onSelect
+ * @param {boolean} [props.mobile=false]
+ */
 function StyledCalendar({ selected, onSelect, mobile = false }) {
   const defaultClassNames = getDefaultClassNames();
   return (
@@ -36,6 +54,8 @@ function StyledCalendar({ selected, onSelect, mobile = false }) {
       className={cn(
         mobile && "w-full overflow-hidden px-2",
       )}
+      onPointerDown={mobile ? stopDragOnDropdowns : undefined}
+      onPointerMove={mobile ? stopDragOnDropdowns : undefined}
     >
       <DayPicker
         mode="single"
