@@ -200,13 +200,14 @@ const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchT
  */
 const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
   const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
 
   // Use parseDate to ensure local midnight consistency (avoids UTC off-by-one errors)
   const dateValue = value ? parseDate(value) : undefined;
 
   if (isMobile) {
     return (
-      <Drawer>
+      <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <CustomButton
             variant="outline"
@@ -218,7 +219,15 @@ const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
         </DrawerTrigger>
         <DrawerContent className="z-[200]">
           <div className="p-4 pb-8 flex justify-center">
-            <CalendarView selected={dateValue} onSelect={(d) => onChange(d ? formatDateString(d) : '')} />
+            <CalendarView
+              selected={dateValue}
+              onSelect={(d) => {
+                if (d) {
+                  onChange(formatDateString(d));
+                  setOpen(false);
+                }
+              }}
+            />
           </div>
         </DrawerContent>
       </Drawer>
