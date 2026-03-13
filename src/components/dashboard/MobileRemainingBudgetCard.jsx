@@ -32,6 +32,9 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
   projectedIncome = 0,
   isUsingProjection = false,
   projectedRemainingExpense = 0,
+  // ADDED 13-Mar-2026: Per-priority projected expense amounts from the priority-aware engine
+  projectedRemainingExpenseNeeds = 0,
+  projectedRemainingExpenseWants = 0,
   settings,
   isLoading,
   monthNavigator,
@@ -112,21 +115,10 @@ const MobileRemainingBudgetCard = memo(function MobileRemainingBudgetCard({
   const wantsActual = (wantsData.directPaid || 0) + (wantsData.customPaid || 0) +
     (wantsData.directUnpaid || 0) + (wantsData.customUnpaid || 0);
 
-  // UPDATED 13-Mar-2026: Incorporate projected remaining expenses into per-category totals
-  // Split proportionally based on goal limits (needs/wants ratio), matching desktop approach.
-  const needsLimit = resolveLimit('needs');
-  const wantsLimit = resolveLimit('wants');
-
-  const projNeedsShare = (() => {
-    if (!projectedRemainingExpense || projectedRemainingExpense <= 0) return 0;
-    const totalGoalExpense = needsLimit + wantsLimit;
-    if (totalGoalExpense <= 0) return projectedRemainingExpense * 0.5;
-    return projectedRemainingExpense * (needsLimit / totalGoalExpense);
-  })();
-  const projWantsShare = projectedRemainingExpense > 0 ? projectedRemainingExpense - projNeedsShare : 0;
-
-  const needsTotal = needsActual + projNeedsShare;
-  const wantsTotal = wantsActual + projWantsShare;
+  // UPDATED 13-Mar-2026: Use per-priority projected amounts from the priority-aware engine
+  // instead of the proportional heuristic based on goal ratios.
+  const needsTotal = needsActual + projectedRemainingExpenseNeeds;
+  const wantsTotal = wantsActual + projectedRemainingExpenseWants;
 
   // Calculate Percentages. If Empty, everything forces to 0 to create the "Morph" to empty effect.
   const needsPct = isDisplayedEmpty ? 0 : (needsTotal / safeIncome) * 100;
