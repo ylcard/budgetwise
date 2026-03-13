@@ -25,25 +25,48 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Export the styled calendar so it can be embedded in drawers/dialogs directly
 export function CalendarView({ selected, onSelect, className, ...props }) {
   return (
-    <DayPicker
-      mode="single"
-      navLayout="around"
-      selected={selected}
-      onSelect={onSelect}
-      defaultMonth={selected}
-      // className={cn("p-3", className)}
-      // classNames={classNames}
-      weekStartsOn={1}
-      showOutsideDays
-      fixedWeeks
-      captionLayout="dropdown"
-      startMonth={new Date(1986, 0)}
-      endMonth={new Date(2100, 11)}
-      // REMOVED 13-Mar-2026: classNames and custom components removed.
-      // v9 no longer uses IconLeft/IconRight — it uses a single Chevron component internally.
-      // Passing the old v8 component names was silently ignored, breaking nav icon rendering.
-      {...props}
-    />
+    // ADDED 13-Mar-2026: Wrapper div resets the global `* { border-color: ... }` rule from index.css
+    // which bleeds borders into DayPicker's internal <table>, <tr>, <td>, <th> elements.
+    <div className="rdp-reset-scope" style={{ all: 'unset', display: 'block' }}>
+      <style>{`
+        .rdp-reset-scope *,
+        .rdp-reset-scope *::before,
+        .rdp-reset-scope *::after {
+          border-color: initial;
+          border-style: none;
+          border-width: 0;
+          transition-property: none;
+        }
+        .rdp-reset-scope .rdp-root {
+          /* Re-enable transitions only on elements that DayPicker itself styles */
+          --rdp-accent-color: hsl(var(--primary));
+          --rdp-accent-background-color: hsl(var(--accent));
+        }
+        .rdp-reset-scope .rdp-selected .rdp-day_button {
+          background-color: var(--rdp-accent-color);
+          color: hsl(var(--primary-foreground));
+        }
+        .rdp-reset-scope .rdp-today:not(.rdp-selected) .rdp-day_button {
+          font-weight: 700;
+          color: var(--rdp-accent-color);
+        }
+      `}</style>
+      <DayPicker
+        mode="single"
+        navLayout="around"
+        selected={selected}
+        onSelect={onSelect}
+        defaultMonth={selected}
+        className={cn("p-3", className)}
+        weekStartsOn={1}
+        showOutsideDays
+        fixedWeeks
+        captionLayout="dropdown"
+        startMonth={new Date(1986, 0)}
+        endMonth={new Date(2100, 11)}
+        {...props}
+      />
+    </div>
   );
 }
 
