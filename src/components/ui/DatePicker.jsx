@@ -121,7 +121,9 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={setOpen}>
+      // UPDATED 13-Mar-2026: Added modal={false} to prevent Vaul's focus trap from
+      // intercepting native <select> dropdown interactions inside the DayPicker.
+      <Drawer open={open} onOpenChange={setOpen} modal={false}>
         <DrawerTrigger asChild>{trigger}</DrawerTrigger>
         <DrawerContent className="z-[600]">
           <div className="mx-auto w-full max-w-sm px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-2">
