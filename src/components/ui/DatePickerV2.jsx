@@ -141,14 +141,13 @@ export default function DatePickerV2({
         <Drawer.Backdrop className="fixed inset-0 bg-black/40 z-[9998]" />
         <Drawer.Viewport className="fixed inset-0 z-[9999] pointer-events-none">
           <Drawer.Popup
-            className="pointer-events-auto fixed bottom-0 left-0 right-0 flex flex-col rounded-t-2xl bg-background shadow-xl will-change-transform"
+            className="pointer-events-auto fixed bottom-0 left-0 right-0 flex flex-col rounded-t-2xl bg-background shadow-xl will-change-transform overflow-hidden"
             style={{
               transform: "translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)))",
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
           >
-            {/* Drawer.Content has no border/ring resets — pure container */}
-            <div className="flex flex-col items-center px-2 pt-3 pb-6">
+            <div className="flex flex-col items-center px-4 pt-3 pb-6 overflow-hidden">
               {/* Drag handle */}
               <div className="mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/30" />
 
