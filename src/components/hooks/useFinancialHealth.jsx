@@ -28,7 +28,8 @@ export const useFinancialHealthScore = ({
   goals = [],
   customBudgets = [],
   targetMonth,
-  targetYear
+  targetYear,
+  projectionTotals = null // ADDED 13-Mar-2026: Projection engine totals for enhanced Pacing & Burn
 }) => {
   const { settings } = useSettings();
 
@@ -56,6 +57,7 @@ export const useFinancialHealthScore = ({
       return null;
     }
 
+    // UPDATED 13-Mar-2026: Pass projectionTotals for projection-enhanced Pacing & Burn Ratio
     return calculateFinancialHealth(
       currentTransactions,
       allTransactions, // Full history for trend analysis
@@ -64,7 +66,8 @@ export const useFinancialHealthScore = ({
       settings,
       goals,
       categories,
-      customBudgets
+      customBudgets,
+      projectionTotals
     );
   }, [
     currentTransactions,
@@ -74,7 +77,8 @@ export const useFinancialHealthScore = ({
     settings,
     goals,
     categories,
-    customBudgets
+    customBudgets,
+    projectionTotals
   ]);
 
   return { healthData };

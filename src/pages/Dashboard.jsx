@@ -260,13 +260,16 @@ export default function Dashboard() {
     // --- FINANCIAL HEALTH SCORE ---
     // UPDATED 10-Mar-2026: Pass all data from Dashboard's existing fetches instead of letting
     // useFinancialHealthScore make its own redundant DB calls (was a major 429 source).
+    // UPDATED 13-Mar-2026: Pass projectionTotals so Pacing & Burn Ratio use the projection engine
+    // instead of crude linear interpolation. Zero extra fetches — all data already cached.
     const { healthData } = useFinancialHealthScore({
         allTransactions,
         categories,
         goals,
         customBudgets: allCustomBudgets,
         targetMonth: selectedMonth,
-        targetYear: selectedYear
+        targetYear: selectedYear,
+        projectionTotals
     });
 
     // --- BANK SYNC LOGIC ---
