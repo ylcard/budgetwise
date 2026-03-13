@@ -6,12 +6,15 @@
  */
 
 import { useState } from "react";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
+// REMOVED 13-Mar-2026: ChevronLeft/ChevronRight no longer needed — v9 uses its own Chevron component.
+// import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
-// import classNames from "react-day-picker/style.module.css";
-import "react-day-picker/dist/style.css";
+// UPDATED 13-Mar-2026: Corrected CSS import path for react-day-picker v9.
+// Previously used "react-day-picker/dist/style.css" (incorrect path) and before that CSS modules.
+import "react-day-picker/style.css";
 import {
   Popover,
   PopoverContent,
@@ -37,11 +40,9 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       captionLayout="dropdown"
       startMonth={new Date(1986, 0)}
       endMonth={new Date(2100, 11)}
-      // classNames={classNames}
-      components={{
-        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
-        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
-      }}
+      // REMOVED 13-Mar-2026: classNames and custom components removed.
+      // v9 no longer uses IconLeft/IconRight — it uses a single Chevron component internally.
+      // Passing the old v8 component names was silently ignored, breaking nav icon rendering.
       {...props}
     />
   );
