@@ -479,6 +479,8 @@ export default function Dashboard() {
                                         projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
                                         isUsingProjection={isCurrentMonth || isUsingProjection}
                                         projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
+                                        projectedRemainingExpenseNeeds={isCurrentMonth ? (projectionTotals?.projectedRemainingExpenseNeeds || 0) : 0}
+                                        projectedRemainingExpenseWants={isCurrentMonth ? (projectionTotals?.projectedRemainingExpenseWants || 0) : 0}
                                         settings={settings}
                                         monthStatus={monthStatus}
                                         healthData={healthData}
@@ -508,6 +510,8 @@ export default function Dashboard() {
                                         projectedIncome={isCurrentMonth ? projectionTotals?.finalProjectedIncome : projectedIncome}
                                         isUsingProjection={isCurrentMonth || isUsingProjection}
                                         projectedRemainingExpense={isCurrentMonth ? (projectionTotals?.projectedRemainingExpense || 0) : 0}
+                                        projectedRemainingExpenseNeeds={isCurrentMonth ? (projectionTotals?.projectedRemainingExpenseNeeds || 0) : 0}
+                                        projectedRemainingExpenseWants={isCurrentMonth ? (projectionTotals?.projectedRemainingExpenseWants || 0) : 0}
                                         healthData={healthData}
                                         goals={goals}
                                         monthStatus={monthStatus}
