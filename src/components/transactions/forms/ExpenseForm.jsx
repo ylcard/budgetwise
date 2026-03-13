@@ -193,53 +193,6 @@ const MobileBudgetFormSelect = ({ value, options, onSelect, placeholder, searchT
 };
 
 /**
- * Responsive Date Picker that switches between Drawer (Mobile) and Popover (Desktop)
- * @param {Object} props
- * @param {string} props.value - Date string YYYY-MM-DD
- * @param {Function} props.onChange - Handler for date change
- */
-const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
-  const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
-
-  // Use parseDate to ensure local midnight consistency (avoids UTC off-by-one errors)
-  const dateValue = value ? parseDate(value) : undefined;
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          <CustomButton
-            variant="outline"
-            className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground", className)}
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            {value ? formatDate(dateValue, 'MMM dd, yyyy') : <span>{placeholder}</span>}
-          </CustomButton>
-        </DrawerTrigger>
-        <DrawerContent className="z-[200]">
-          <div className="p-4 pb-8 flex justify-center">
-            <CalendarView
-              selected={dateValue}
-              onSelect={(d) => {
-                if (d) {
-                  onChange(formatDateString(d));
-                  setOpen(false);
-                }
-              }}
-            />
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  return (
-    <DatePicker value={value} onChange={onChange} placeholder={placeholder} className={className} />
-  );
-};
-
-/**
  * Main Expense Form Content
  * Handles creating and editing expense transactions with budget allocation, currency conversion, and receipt scanning.
  * @param {Object} props
@@ -871,7 +824,7 @@ export default function TransactionFormContent({
             transition={{ type: "spring", bounce: 0, duration: 0.4 }}
           >
             <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Transaction Date</Label>
-            <ResponsiveDatePicker
+            <DatePicker
               value={formData.date}
               onChange={(d) => setFormData({ ...formData, date: d })}
               placeholder="Select date"
@@ -891,7 +844,7 @@ export default function TransactionFormContent({
                 className="flex-1 flex flex-col gap-1.5 min-w-0 overflow-hidden"
               >
                 <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider whitespace-nowrap">Paid Date</Label>
-                <ResponsiveDatePicker
+                <DatePicker
                   value={formData.paidDate}
                   onChange={(d) => setFormData({ ...formData, paidDate: d })}
                   className="h-11 border-primary/20 bg-primary/5"
