@@ -33,7 +33,7 @@ export const EfficiencyBonusCard = memo(function EfficiencyBonusCard({
             {formatCurrency(displayValue, settings)}
           </motion.h3>
           <div className={`flex items-center justify-center flex-wrap text-center gap-1 mt-2 text-xs font-medium w-full ${isPositive ? 'text-emerald-600/80' : 'text-gray-400'}`}>
-            <span>{isPositive ? 'Unspent Needs & Wants' : 'Budget Fully Utilized'}</span>
+            <span>{isPositive ? 'Extra savings' : 'No extra savings'}</span>
           </div>
         </div>
         <div className="mt-4 flex justify-center">
