@@ -24,7 +24,7 @@ import RecurringFormDialog from "../components/recurring/dialogs/RecurringFormDi
 import { subDays, formatDateString } from "../components/utils/dateUtils";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MassEditDrawer } from "../components/transactions/MassEditDrawer";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AdminConsistencyChecker } from "../components/transactions/AdminConsistencyChecker";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { Check, X, Loader2, RefreshCw, Upload, PlusCircle, MinusCircle, Building2, Repeat } from "lucide-react";
@@ -227,8 +227,8 @@ export default function TransactionsLayout() {
               <TabsTrigger value="recurring">Recurring</TabsTrigger>
             </TabsList>
 
-            <div className="mt-4">
-              {activeTab === 'history' ? (
+            <div className="mt-4 relative min-h-[500px]">
+              <TabsContent value="history" className="m-0 border-none p-0 outline-none">
                 <TransactionHistory
                   setEditingTransaction={setEditingTransaction}
                   setShowAddIncome={setShowAddIncome}
@@ -242,13 +242,15 @@ export default function TransactionsLayout() {
                   setShowRecurringForm={setShowRecurringForm}
                   setEditingRecurring={setEditingRecurring}
                 />
-              ) : (
+              </TabsContent>
+
+              <TabsContent value="recurring" className="m-0 border-none p-0 outline-none">
                 <RecurringTransactions
                   setEditingRecurring={setEditingRecurring}
                   setShowRecurringForm={setShowRecurringForm}
                   showRecurringForm={showRecurringForm}
                 />
-              )}
+              </TabsContent>
             </div>
           </Tabs>
           <ScrollToTopButton scrollRef={transactionsScrollRef} />
