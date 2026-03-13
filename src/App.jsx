@@ -11,15 +11,12 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { SettingsProvider, useSettings } from '@/components/utils/SettingsContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// import "react-day-picker/style.css";
+import "react-day-picker/style.css";
 import { ThemeProvider } from "next-themes";
 import { useThemeSync } from '@/components/hooks/useThemeSync';
 
 // Page Imports for Nested Routing
-import ManagePage, { PreferencesSection, AccountSection } from './pages/Manage';
-import Categories from './pages/Categories';
-import Automation from './pages/Automation';
-import BankSync from './pages/BankSync';
+import ManagePage from './pages/Manage';
 import TransactionsPage from './pages/Transactions';
 import LegalPage from './pages/Legal';
 
