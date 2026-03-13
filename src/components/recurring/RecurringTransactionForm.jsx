@@ -10,7 +10,8 @@ import { AlertCircle, StickyNote, Tag, Search, Check, Calendar } from "lucide-re
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import AmountInput from "../ui/AmountInput";
-import DatePicker, { CalendarView } from "../ui/DatePicker";
+// import DatePicker, { CalendarView } from "../ui/DatePicker";
+import DatePickerV2 from "@/components/ui/DatePickerV2";
 import CategorySelect from "../ui/CategorySelect";
 import { useSettings } from "../utils/SettingsContext";
 import { formatDateString, formatDate, parseDate } from "../utils/dateUtils";
@@ -277,7 +278,7 @@ export default function RecurringTransactionForm({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Next Due Date</Label>
-            <DatePicker
+            <DatePickerV2
               value={formData.nextOccurrence}
               onChange={(value) => setFormData({ ...formData, nextOccurrence: value })}
               placeholder="Select date"
