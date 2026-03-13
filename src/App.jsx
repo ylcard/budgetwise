@@ -19,6 +19,7 @@ import { useThemeSync } from '@/components/hooks/useThemeSync';
 import ManagePage from './pages/Manage';
 import TransactionsPage from './pages/Transactions';
 import LegalPage from './pages/Legal';
+import TestDatePickerPage from './pages/TestDatePicker'; // ADDED 13-Mar-2026: Sandbox for DatePickerV2
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
