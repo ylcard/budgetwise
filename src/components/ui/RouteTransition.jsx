@@ -29,22 +29,24 @@ const pageTransition = {
     duration: 0.3,
 };
 
+// DISABLED 13-Mar-2026: Page transition animations removed per user request.
+// Original AnimatePresence/motion wrapper commented out; now a simple pass-through.
 export function RouteTransition({ children }) {
-    const location = useLocation();
-
-    return (
-        <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-                key={location.pathname}
-                initial="initial"
-                animate="in"
-                exit="out"
-                variants={pageVariants}
-                transition={pageTransition}
-                className="w-full h-full"
-            >
-                {children}
-            </motion.div>
-        </AnimatePresence>
-    );
+    // const location = useLocation();
+    // return (
+    //     <AnimatePresence mode="wait" initial={false}>
+    //         <motion.div
+    //             key={location.pathname}
+    //             initial="initial"
+    //             animate="in"
+    //             exit="out"
+    //             variants={pageVariants}
+    //             transition={pageTransition}
+    //             className="w-full h-full"
+    //         >
+    //             {children}
+    //         </motion.div>
+    //     </AnimatePresence>
+    // );
+    return <div className="w-full h-full">{children}</div>;
 }
