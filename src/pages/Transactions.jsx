@@ -44,8 +44,12 @@ export default function TransactionsLayout() {
   const { user, settings } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
+
   // Initialize tab based on URL, but then handle locally
-  const [activeTab, setActiveTab] = useState(location.pathname.includes("recurring") ? "recurring" : "history");
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("tab") === "recurring" || location.pathname.includes("recurring") ? "recurring" : "history";
+  });
 
   // Shared Modals State
   const [showAddIncome, setShowAddIncome] = useState(false);
@@ -516,29 +520,29 @@ export function TransactionHistory({
           />
         </div>
         <div data-tutorial="txn-list">
-        <TransactionList
-          transactions={paginatedTransactions} categories={categories}
-          onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading}
-          customBudgets={allCustomBudgets}
-          monthStart={periodStart} monthEnd={periodEnd}
-          currentPage={currentPage}
-          totalPages={Math.ceil(filteredTransactions.length / itemsPerPage) || 1}
-          onPageChange={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={(val) => {
-            setItemsPerPage(val);
-            setCurrentPage(1);
-          }}
-          totalItems={filteredTransactions.length}
-          selectedIds={selectedIds}
-          onToggleSelection={(id, s) => { const n = new Set(selectedIds); s ? n.add(id) : n.delete(id); setSelectedIds(n); }}
-          onSelectAll={(ids, s) => { const n = new Set(selectedIds); ids.forEach(id => s ? n.add(id) : n.delete(id)); setSelectedIds(n); }}
-          onClearSelection={() => setSelectedIds(new Set())}
-          onDeleteSelected={handleDeleteSelected} isBulkDeleting={isBulkDeleting}
-          onEditSelected={() => setShowMassEdit(true)} // Pass the handler
-          sortConfig={sortConfig} onSort={setSortConfig}
-          data-tutorial="txn-sort"
-        />
+          <TransactionList
+            transactions={paginatedTransactions} categories={categories}
+            onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading}
+            customBudgets={allCustomBudgets}
+            monthStart={periodStart} monthEnd={periodEnd}
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredTransactions.length / itemsPerPage) || 1}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={(val) => {
+              setItemsPerPage(val);
+              setCurrentPage(1);
+            }}
+            totalItems={filteredTransactions.length}
+            selectedIds={selectedIds}
+            onToggleSelection={(id, s) => { const n = new Set(selectedIds); s ? n.add(id) : n.delete(id); setSelectedIds(n); }}
+            onSelectAll={(ids, s) => { const n = new Set(selectedIds); ids.forEach(id => s ? n.add(id) : n.delete(id)); setSelectedIds(n); }}
+            onClearSelection={() => setSelectedIds(new Set())}
+            onDeleteSelected={handleDeleteSelected} isBulkDeleting={isBulkDeleting}
+            onEditSelected={() => setShowMassEdit(true)} // Pass the handler
+            sortConfig={sortConfig} onSort={setSortConfig}
+            data-tutorial="txn-sort"
+          />
         </div>
 
         <MassEditDrawer
