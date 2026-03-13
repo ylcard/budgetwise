@@ -7,44 +7,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Calendar, StickyNote } from "lucide-react";
 import AmountInput from "@/components/ui/AmountInput";
-import { CalendarView } from "@/components/ui/DatePicker";
+import DatePicker from "@/components/ui/DatePicker";
 import { formatDateString, getFirstDayOfMonth, formatDate, parseDate } from "@/components/utils/dateUtils";
 import { normalizeAmount } from "@/components/utils/generalUtils";
 import { useSettings } from "@/components/utils/SettingsContext";
-
-/**
- * Mobile drawer component for selecting income dates
- * @param {Object} props
- * @param {string} props.value - Currently selected date string (YYYY-MM-DD)
- * @param {Function} props.onChange - Handler for date updates
- * @param {React.ReactNode} props.trigger - The button element to trigger the drawer
- */
-const MobileIncomeDateDrawer = ({ value, onChange, trigger }) => {
-  const [open, setOpen] = useState(false);
-
-  // Use parseDate to ensure local midnight time; fallback to now
-  const dateValue = value ? parseDate(value) : new Date();
-
-  return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent className="z-[200] flex flex-col max-h-[90dvh]">
-        <DrawerHeader><DrawerTitle>Select Date</DrawerTitle></DrawerHeader>
-        <div className="p-4 flex justify-center pb-[calc(2rem+env(safe-area-inset-bottom))]">
-          <CalendarView
-            selected={dateValue}
-            onSelect={(date) => {
-              if (date) {
-                onChange(formatDateString(date));
-                setOpen(false);
-              }
-            }}
-          />
-        </div>
-      </DrawerContent>
-    </Drawer>
-  );
-};
 
 /**
  * Form content for creating/editing Income transactions
@@ -144,51 +110,11 @@ export default function IncomeFormContent({
           </div>
 
           <div className="pt-0">
-            {/* Mobile Date Drawer */}
-            <div className="md:hidden">
-              <MobileIncomeDateDrawer
-                value={formData.date}
-                onChange={(d) => setFormData({ ...formData, date: d })}
-                trigger={
-                  <CustomButton type="button" variant="outline" className="h-12 px-3 bg-accent/30 border-dashed border-border hover:bg-accent text-sm">
-                    <Calendar className="w-3.5 h-3.5 mr-2 text-[hsl(var(--status-paid-text))]" />
-                    <span className="text-[hsl(var(--status-paid-text))] font-medium">
-                      {formData.date ? formatDate(formData.date, 'MMM d') : 'Date'}
-                    </span>
-                  </CustomButton>
-                }
-              />
-            </div>
-
-            {/* Desktop Date Popover */}
-            <div className="hidden md:block">
-              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen} modal={true}>
-                <PopoverTrigger asChild>
-                  <CustomButton
-                    type="button"
-                    variant="outline"
-                    className="h-12 px-3 bg-accent/30 border-dashed border-border hover:border-border/80 hover:bg-accent transition-all text-sm"
-                  >
-                    <Calendar className="w-3.5 h-3.5 mr-2 text-[hsl(var(--status-paid-text))]" />
-                    <span className="text-[hsl(var(--status-paid-text))] font-medium">
-                      {formData.date ? formatDate(formData.date, 'MMM d') : 'Date'}
-                    </span>
-                  </CustomButton>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-4 popover-content-z-index" align="end" side="top">
-                  <CalendarView
-                    selected={formData.date ? parseDate(formData.date) : new Date()}
-                    onSelect={(date) => {
-                      if (date) {
-                        setFormData({ ...formData, date: formatDateString(date) });
-                        setIsCalendarOpen(false);
-                      }
-                    }}
-                    className="p-0"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <DatePicker
+              value={formData.date}
+              onChange={(d) => setFormData({ ...formData, date: d })}
+              className="h-12 px-3 bg-accent/30 border-dashed border-border hover:bg-accent text-sm"
+            />
           </div>
         </div>
 
