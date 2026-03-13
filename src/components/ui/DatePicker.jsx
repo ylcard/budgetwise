@@ -33,21 +33,27 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       weekStartsOn={1}
       showOutsideDays
       fixedWeeks
-      captionLayout="dropdown-buttons"
+      captionLayout="dropdown"
       startMonth={new Date(1986, 0)}
       endMonth={new Date(2100, 11)}
       // classNames={classNames}
       classNames={{
         ...classNames,
+        month_caption: "flex justify-center h-9 relative items-center mb-4",
         caption_label: "hidden",
-        dropdowns: "flex items-center gap-1 z-20",
-        dropdown: "appearance-none bg-transparent border-none py-1 px-1 font-bold text-sm rounded-md hover:bg-accent cursor-pointer transition-colors focus:outline-none",
-        caption: "flex justify-center pt-1 relative items-center mb-4 min-h-[40px]",
-        nav: "flex items-center justify-between absolute w-full left-0 px-1",
-        button_previous: "relative z-30",
-        button_next: "relative z-30",
-        month: "w-full max-w-full overflow-hidden",
+        dropdowns: "flex items-center justify-center gap-1 z-10",
+        dropdown: "appearance-none bg-transparent border-none py-1 px-2 font-bold text-sm rounded-md hover:bg-accent cursor-pointer transition-colors focus:outline-none text-foreground",
+        nav: "flex items-center justify-between absolute w-full left-0 px-1 pointer-events-none",
+        button_previous: "pointer-events-auto relative z-20",
+        button_next: "pointer-events-auto relative z-20",
+        month: "w-full",
         table: "w-full border-collapse",
+        head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem] pb-2",
+        cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-full",
+        day: cn(
+          "h-10 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md transition-colors",
+        ),
+        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
       }}
       components={{
         // IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
@@ -114,8 +120,8 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>{trigger}</DrawerTrigger>
         <DrawerContent className="z-[600]">
-          <div className="p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] flex justify-center">
-            <CalendarView selected={dateValue} onSelect={handleSelect} />
+          <div className="mx-auto w-full max-w-[350px] p-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+            <CalendarView selected={dateValue} onSelect={handleSelect} className="p-0" />
           </div>
         </DrawerContent>
       </Drawer>
