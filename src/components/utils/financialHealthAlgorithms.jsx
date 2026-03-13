@@ -144,9 +144,22 @@ const calculatePacingScore = (transactions, historySummary, categories, allCusto
             }
         }
 
+        // Debugging pacing score
+        console.log("=== PACING SCORE DEBUG ===", {
+            currentSpend,
+            averageSpendAtPointX,
+            velocityScore,
+            projectedFullMonthSpend,
+            historicalFullMonthAvg,
+            trajectoryScore,
+            finalScore: (velocityScore + trajectoryScore) / 2
+        });
+
         return (velocityScore + trajectoryScore) / 2;
     }
 
+    // debugging pacing score
+    console.log("=== PACING SCORE DEBUG (MTD ONLY) ===", { currentSpend, averageSpendAtPointX, velocityScore });
     return velocityScore;
 };
 
@@ -247,9 +260,24 @@ const calculateBurnRatio = (transactions, categories, allCustomBudgets, monthlyI
             trajectoryScore = Math.max(0, 100 - (overRatioFull * penaltyMultiplier * 200));
         }
 
+        // debugging burn score
+        console.log("=== BURN RATIO DEBUG ===", {
+            totalBudget,
+            currentSpend,
+            needsSpend: breakdown.needsTotal || 0,
+            wantsSpend: breakdown.wantsTotal || 0,
+            bufferedTarget,
+            velocityScore,
+            projectedFullMonthSpend,
+            bufferedTargetFull,
+            trajectoryScore,
+            finalScore: (velocityScore + trajectoryScore) / 2
+        });
         return (velocityScore + trajectoryScore) / 2;
     }
 
+    // debugging burn score
+    console.log("=== BURN RATIO DEBUG (MTD ONLY) ===", { totalBudget, currentSpend, bufferedTarget, velocityScore });
     return velocityScore;
 };
 
