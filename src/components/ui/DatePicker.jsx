@@ -10,6 +10,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CustomButton } from "@/components/ui/CustomButton";
 import { DayPicker } from "react-day-picker";
+import classNames from "react-day-picker/style.module.css";
 // import "react-day-picker/style.css";
 import {
   Popover,
@@ -31,6 +32,7 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       onSelect={onSelect}
       defaultMonth={selected}
       // className={cn("p-3", className)}
+      classNames={classNames}
       weekStartsOn={1}
       showOutsideDays
       fixedWeeks
