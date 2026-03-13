@@ -75,6 +75,9 @@ const AuthenticatedApp = () => {
         {/* Legal Tabbed Routes */}
         <Route path="/legal/:tab?" element={<LegalPage />} />
 
+        {/* ADDED 13-Mar-2026: Sandbox page to test DatePickerV2 (Base UI Drawer) */}
+        <Route path="/TestDatePicker" element={<TestDatePickerPage />} />
+
         {/* Standard Page Fallback */}
         {Object.entries(Pages).map(([path, Page]) => (
           // Skip routes we handled manually
