@@ -220,6 +220,9 @@ export default function Reports() {
             totalPaidExpenses={totalPaidExpenses}
             prevMonthlyIncome={prevMonthlyIncome}
             prevPaidExpenses={prevPaidExpenses}
+            projectedIncome={projectionTotals.finalProjectedIncome}
+            projectedExpenseTotal={projectionTotals.finalProjectedExpense}
+            startDate={monthStart}
           />
         </div>
         <div className="flex-[0_0_80%] min-w-0 md:flex-auto md:col-span-1">
@@ -231,6 +234,7 @@ export default function Reports() {
             prevPaidExpenses={prevPaidExpenses}
             safeBaseline={safeBaselineTotal}
             projectedExpenseTotal={projectionTotals.finalProjectedExpense}
+            projectedIncome={projectionTotals.finalProjectedIncome}
             startDate={monthStart}
             settings={settings}
           />
@@ -239,6 +243,7 @@ export default function Reports() {
           <EfficiencyBonusCard
             bonusSavingsPotential={bonusSavingsPotential}
             settings={settings}
+            startDate={monthStart}
           />
         </div>
       </div>
