@@ -33,13 +33,25 @@ export function CalendarView({ selected, onSelect, className, ...props }) {
       weekStartsOn={1}
       showOutsideDays
       fixedWeeks
-      captionLayout="dropdown"
+      captionLayout="dropdown-buttons"
       startMonth={new Date(1986, 0)}
       endMonth={new Date(2100, 11)}
-      classNames={classNames}
+      // classNames={classNames}
+      classNames={{
+        ...classNames,
+        caption_label: "hidden", // Hide static "Month Year" text
+        dropdowns: "flex items-center justify-center gap-1 mx-8",
+        dropdown: "appearance-none bg-transparent border-none py-1 px-2 font-semibold text-sm rounded-md hover:bg-accent cursor-pointer transition-colors focus:outline-none",
+        caption: "flex justify-center pt-1 relative items-center mb-4 h-9",
+        nav: "flex items-center justify-between absolute w-full px-1 pointer-events-none",
+        button_previous: "pointer-events-auto z-10",
+        button_next: "pointer-events-auto z-10",
+      }}
       components={{
-        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
-        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
+        // IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
+        // IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
+        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-5 w-5 opacity-70", className)} {...props} />,
+        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-5 w-5 opacity-70", className)} {...props} />,
       }}
       {...props}
     />
@@ -100,7 +112,7 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>{trigger}</DrawerTrigger>
         <DrawerContent className="z-[600]">
-          <div className="p-4 pb-8 flex justify-center">
+          <div className="p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] flex justify-center">
             <CalendarView selected={dateValue} onSelect={handleSelect} />
           </div>
         </DrawerContent>
