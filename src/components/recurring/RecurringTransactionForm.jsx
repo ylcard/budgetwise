@@ -107,44 +107,6 @@ const MobileCategoryFormSelect = ({ value, categories, onSelect, placeholder }) 
 };
 
 /**
- * Adaptive DatePicker that uses a Drawer on mobile and Popover on desktop.
- *
- * @param {Object} props
- * @param {string} props.value - Date string (YYYY-MM-DD)
- * @param {Function} props.onChange - Callback with new date string
- */
-const ResponsiveDatePicker = ({ value, onChange, placeholder, className }) => {
-  const isMobile = useIsMobile();
-  // Use parseDate to ensure timezone-safe conversion from YYYY-MM-DD string
-  const dateValue = value ? parseDate(value) : undefined;
-
-  if (isMobile) {
-    return (
-      <Drawer>
-        <DrawerTrigger asChild>
-          <CustomButton
-            variant="outline"
-            className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground", className)}
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            {value ? formatDate(dateValue, 'MMM dd, yyyy') : <span>{placeholder}</span>}
-          </CustomButton>
-        </DrawerTrigger>
-        <DrawerContent className="z-[600]">
-          <div className="p-4 pb-8 flex justify-center">
-            <CalendarView selected={dateValue} onSelect={(d) => onChange(d ? formatDateString(d) : '')} />
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  return (
-    <DatePicker value={value} onChange={onChange} placeholder={placeholder} className={className} />
-  );
-};
-
-/**
  * Form component for creating or editing recurring transactions.
  * Handles validation, adaptive inputs for mobile/desktop, and type toggling.
  *
@@ -315,7 +277,7 @@ export default function RecurringTransactionForm({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Next Due Date</Label>
-            <ResponsiveDatePicker
+            <DatePicker
               value={formData.nextOccurrence}
               onChange={(value) => setFormData({ ...formData, nextOccurrence: value })}
               placeholder="Select date"
